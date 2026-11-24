@@ -39,6 +39,8 @@ interface Screen { page: Answer; cards: Answer; worse?: Answer; pane?: Answer; n
 // What the stub answers with now: the screen whose page was asked last, and how the grid's polls are answered.
 let current = 'small-en';
 let mode: 'cards' | 'worse' | 'fail' = 'cards';
+// When set, the stub answers static/css/glyphs.css with a 404 (a sheet that did not load).
+let noGlyphs = false;
 
 /** A kept answer; '' when there is none (the stub then answers 404, as the server does for a pane that is gone). */
 function read(name: string): string {
@@ -101,6 +103,7 @@ function serve(index: Record<string, Screen>): Promise<Server> {
     }
     if (url.pathname === '/ui/strip/') return html(read(`strip-${screen?.lang ?? 'en'}`));
     let file = '';
+    if (noGlyphs && url.pathname.endsWith('/glyphs.css')) return void response.writeHead(404, headers).end();
     if (url.pathname.startsWith('/static/')) file = resolve(`.${url.pathname}`);
     else if (url.pathname === '/axe.js') file = resolve('node_modules/axe-core/axe.min.js');
     if (file && file.startsWith(resolve('.')) && existsSync(file)) {
@@ -142,6 +145,39 @@ function lowContrast(tab: Page): Promise<string[]> {
   });
 }
 
+/** On the desk page's cards: what is cut that must never be (a code, a state's word, a figure, "old", a figure running
+ *  out of its cell), and cards of one kind that are not one size. [] when none is. */
+function uncut(tab: Page): Promise<string[]> {
+  return tab.evaluate(() => {
+    const wrong: string[] = [];
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'));
+    const sizes = new Map<string, Set<string>>();
+    for (const card of cards) {
+      const kind = card.className.includes('is-fit') ? 'fit' : 'flow';
+      const box = card.getBoundingClientRect();
+      if (!sizes.has(kind)) sizes.set(kind, new Set());
+      sizes.get(kind)?.add(`${Math.round(box.width)}x${Math.round(box.height)}`);
+      const code = card.querySelector('h3')?.textContent?.trim() ?? '?';
+      for (const node of Array.from(card.querySelectorAll<HTMLElement>('h3, .monitor-state-word, dd b, [data-old]'))) {
+        if (!node.offsetParent) continue;
+        const own = node.getBoundingClientRect();
+        const cut = node.scrollWidth > node.clientWidth + 1 && getComputedStyle(node).overflowX !== 'visible';
+        let clipped = false;
+        for (let up = node.parentElement; up && up !== card.parentElement; up = up.parentElement) {
+          const style = getComputedStyle(up);
+          const frame = up.getBoundingClientRect();
+          if (style.overflowX !== 'visible' && (own.right > frame.right + 1.5 || own.left < frame.left - 1.5)) clipped = true;
+          if (style.overflowY !== 'visible' && (own.bottom > frame.bottom + 1.5 || own.top < frame.top - 1.5)) clipped = true;
+        }
+        const cell = node.closest('dl')?.getBoundingClientRect();
+        if (cut || clipped || (cell && own.right > cell.right + 1.5)) wrong.push(`${code}: "${(node.textContent ?? '').trim()}"`);
+      }
+    }
+    if (innerWidth >= 1100) for (const [kind, seen] of sizes) if (seen.size > 1) wrong.push(`${kind} cards of ${seen.size} sizes: ${[...seen].join(' ')}`);
+    return wrong;
+  });
+}
+
 interface Drawn { cards: number; links: number; states: string[]; glyphs: number; bare: number; sideways: number }
 
 /** What the screen shows: its cards, their links to the water, their state words, the glyphs drawn and those not. */
@@ -177,7 +213,9 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
   // (one page at a time: a page a failed check left open would go on polling the stub for another screen)
   const open = async (key: string, width: number, height: number): Promise<{ tab: Page; violations: string[] }> => {
     await Promise.all(browser.contexts().flatMap((context) => context.pages()).map((page) => page.close()));
-    const tab = await browser.newPage({ viewport: { width, height } });
+    // (reduced motion: the rail is never caught half way through its width's transition, which once looked like a
+    // squeezed rail in a screenshot)
+    const tab = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
     const violations = await watchCsp(tab);
     await tab.goto(`${origin}/page/${key}`);
     return { tab, violations };
@@ -186,7 +224,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
     for (const language of LANGUAGES) {
       for (const screen of ['small', 'simple', 'detailed', 'big']) {
         if (language !== 'en' && screen !== 'small') continue;            // every language on the Small cards
-        for (const width of [1440, 390]) {
+        for (const width of [1440, 1920, 390]) {
           await t.test(`${screen} ${language} at ${width} px: the cards, their links and glyphs, CSP, axe, 4.5:1`, async () => {
             mode = 'cards';
             const key = `${screen}-${language}`;
@@ -196,6 +234,13 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
             assert.ok(seen.cards >= 7, `${seen.cards} cards`);
             assert.equal(seen.links, seen.cards, 'every card links its tank\'s water');
             assert.ok(seen.states.every(Boolean), 'every card says its state');
+            if (width >= 1100) {
+              // the rail keeps its width beside the top bar, whatever the strip says (its alarms sentence is long here)
+              const rail = await tab.evaluate(() => [document.querySelector('.rail')?.getBoundingClientRect().width ?? 0,
+                Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-w'))]);
+              assert.ok(Math.abs((rail[0] ?? 0) - (rail[1] ?? 0)) < 0.5, `the rail is ${rail[0]} px, not ${rail[1]}`);
+            }
+            assert.deepEqual(await uncut(tab), [], 'a code, a state word, a figure, "old" is never cut; the cards are one size');
             assert.ok(seen.glyphs > 0, 'the state glyphs are drawn');
             assert.equal(seen.bare, 0, 'no glyph is a speck');
             assert.deepEqual(seen.sideways ? await sideways(tab) : [], [], `nothing scrolls sideways (${seen.sideways} px)`);
@@ -208,6 +253,71 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
         }
       }
     }
+
+    await t.test('the safety cues of the new look: the edge of each state, the hatch of an old value, the glyphs, the hatch in six themes', async () => {
+      mode = 'cards';
+      const { tab } = await open('small-en', 1440, 900);
+      await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
+      const cues = await tab.evaluate(() => {
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'));
+        const edge: Record<string, string> = {};
+        for (const card of cards) edge[card.dataset.state ?? ''] = getComputedStyle(card).borderLeftStyle;
+        const stale = cards.filter((card) => card.hasAttribute('data-stale')).map((card) => getComputedStyle(card).backgroundImage);
+        const masks = new Map<string, string>();
+        for (const card of cards) {
+          const shape = card.querySelector('.monitor-state .monitor-shape');
+          if (shape) masks.set(card.dataset.state ?? '', getComputedStyle(shape).maskImage);
+        }
+        return { edge, stale, masks: Array.from(masks.entries()) };
+      });
+      // the classic look's edge style of each state: dashed for no recent data and no limit, dotted for empty
+      assert.deepEqual([cues.edge.blind, cues.edge.unjudged, cues.edge.empty, cues.edge.critical, cues.edge.ok],
+                       ['dashed', 'dashed', 'dotted', 'solid', 'solid']);
+      // a card whose value is old keeps its hatch strip (an old critical, TW-08, and the blind ones)
+      assert.ok(cues.stale.length >= 2 && cues.stale.every((image) => image.includes('gradient')), cues.stale.join(' | '));
+      // one glyph of its own for each of the seven states
+      assert.equal(cues.masks.length, 7);
+      assert.equal(new Set(cues.masks.map(([, mask]) => mask)).size, 7);
+      // the blind head's hatch reads in the six themes (its stripe against the plate)
+      for (const theme of ['fjord', 'industry', 'polarnatt', 'nordlys', 'tang', 'laks']) {
+        const ratio = await tab.evaluate((name) => {
+          document.documentElement.dataset.theme = name;
+          const card = document.querySelector('.monitor-grid > article.monitor-blind') as HTMLElement;
+          const probe = document.createElement('i');
+          card.append(probe);
+          const colour = (value: string): number[] => {
+            probe.style.setProperty('color', value);
+            const text = getComputedStyle(probe).color;
+            const found = (text.match(/[0-9.]+/g) ?? []).slice(0, 3).map(Number);
+            return text.startsWith('color(') ? found.map((each) => each * 255) : found;
+          };
+          const lum = ([r = 0, g = 0, b = 0]: number[]): number => {
+            const c = [r, g, b].map((v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; });
+            return 0.2126 * (c[0] ?? 0) + 0.7152 * (c[1] ?? 0) + 0.0722 * (c[2] ?? 0);
+          };
+          const [high, low] = [lum(colour('var(--hatch)')), lum(colour('var(--plate)'))].sort((a, b) => b - a);
+          probe.remove();
+          return ((high ?? 0) + 0.05) / ((low ?? 0) + 0.05);
+        }, theme);
+        assert.ok(ratio >= 1.5, `the hatch in ${theme}: ${ratio.toFixed(2)}:1`);
+      }
+      await tab.close();
+      // without glyphs.css (a sheet that did not load): the classic shapes, never seven identical squares
+      noGlyphs = true;
+      try {
+        const bare = await open('small-en', 1440, 900);
+        await bare.tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
+        const shapes = await bare.tab.evaluate(() => Array.from(new Set(Array.from(document.querySelectorAll<HTMLElement>(
+          '.monitor-grid > .monitor-card .monitor-state .monitor-shape')).map((shape) => {
+          const style = getComputedStyle(shape);
+          return [style.clipPath, style.borderStyle, style.borderRadius, style.backgroundColor === 'rgba(0, 0, 0, 0)'].join(' ');
+        }))));
+        assert.ok(shapes.length >= 5, shapes.join(' | '));
+        await bare.tab.close();
+      } finally {
+        noGlyphs = false;
+      }
+    });
 
     await t.test('the pane: the Big card of the unit gone into, beside the Small cards', async () => {
       mode = 'cards';

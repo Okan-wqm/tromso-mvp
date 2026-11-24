@@ -17,7 +17,7 @@ built and read.
       harvest_world(admin, tank)      a harvest from TT-01 six days back
       treatment_world(admin, tank)    a thermal delousing of TT-01 five days back
       feeding_world(admin, tank)      a feeding of TT-01 the day before
-    monitoring_world(admin)           seven more units of Test Hall A, one in each state a monitoring card can be in,
+    monitoring_world(admin)           eight more units of Test Hall A, one in each state a monitoring card can be in,
                                       and a wall board of the hall's units on a 55" TV read from 2 m (wall_board)
                                       (OK, critical, warning, no recent data, no limit, note, empty); not part of world():
                                       the monitoring pages' test builds it after it (monitoring/tests/test_next_pages.py)"""
@@ -224,6 +224,9 @@ MONITORING_UNITS = (
                                                    'nitrite_n_mg_l': '0.05'}),
     ('TW-06', 'Test tank no protocol', True, False, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-07', 'Test tank empty', False, False, 0, {}),
+    # a critical oxygen that is old: the card stays critical and says the value is old (its second axis, the stale hatch)
+    ('TW-08', 'Test tank old critical', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2',
+                                                         'alkalinity_mg_l': '85'}),
 )
 
 
@@ -231,10 +234,11 @@ TEST_WALL = 'Test wall, Hall A'
 
 
 def monitoring_world(admin):
-    """Seven more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
+    """Eight more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
     and its warning limit), no recent data (its water 30 hours old), no limit (a nitrite no limit row judges), a note (no
-    feeding protocol: no ration, and why) and empty (no fish). 1,000 salmon of 50 g each, stocked ten days back; the
+    feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours old (critical, and stale).
+    1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where
     the record has one (stocking, the samples), straight into the tables otherwise (the protocol), as the tests do."""

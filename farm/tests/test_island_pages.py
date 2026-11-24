@@ -28,7 +28,7 @@ class IslandPagesTests(FrozenClock, TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
         made = world(cls.admin, Client())
-        refused = [each for each in made if not each.endswith(': 302')]
+        refused = [each for each in made if not each.endswith(': 302') and not each.startswith('hr:')]   # hr_world says its counts
         if refused:
             raise AssertionError(f'the test world was not built: {refused}')
         cls.unit = Tank.objects.get(code='TT-01')

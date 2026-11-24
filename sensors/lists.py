@@ -42,13 +42,14 @@ def connections(view, objects, context):
 
 def payload_formats(view, objects, context):
     def time(row):
-        return f'{row.time_path} · {row.get_time_unit_display()}' if row.time_path else _('When received')
+        # the design's: the path, its unit under it (the classic page says them on one line, "/ts · Milliseconds …")
+        return L.cell(row.time_path, sub=[row.get_time_unit_display()]) if row.time_path else L.cell(_('When received'))
     return {'columns': [L.column('format', _('Payload format')), L.column('shape', _('Shape')),
                         L.column('time', _('Time')), L.column('devices', _('Devices'), numeric=True)],
             'rows': [L.row(row.pk, {
                 'format': L.title(view, context, row, row.name),
                 'shape': L.cell(row.get_shape_display()),
-                'time': L.cell(time(row)),
+                'time': time(row),
                 'devices': L.cell(row.device_count),
             }, L.edit_delete(view, context, row, row.name)) for row in objects]}
 

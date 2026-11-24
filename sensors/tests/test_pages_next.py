@@ -53,6 +53,15 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
     def setUp(self):
         self.client.force_login(self.admin)
 
+    def apart(self, language):
+        """What the new page says apart that the classic page says in one run: a payload format's time unit, which the
+        classic list writes after its path ("/ts · Milliseconds since 1970") and the new one under it."""
+        from django.utils import translation
+
+        from sensors.models import PayloadFormat
+        with translation.override(language):
+            return {f'· {each.get_time_unit_display()}' for each in PayloadFormat.objects.exclude(time_path='')}
+
     def pages(self, route, query, language):
         self.client.cookies['django_language'] = language
         old = self.client.get(reverse(route), {**query, 'ui': 'classic'}).content.decode()
@@ -68,7 +77,7 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
                     old, new = self.pages(route, query, language)
                     props = props_of(new, island)
                     self.assertNotIn('class="data-table"', new)
-                    self.assertEqual(unsaid(old, props, new_html=new), [])
+                    self.assertEqual(unsaid(old, props, new_html=new, ignore=self.apart(language)), [])
                     main = new[new.index('<main'):new.index('</main>')]
                     self.assertIsNone(re.search(r'\sdata-modal[\s>=]', main), 'nothing opens the classic dialog')
                     if island == 'list-page' and name != 'sensors-dead':

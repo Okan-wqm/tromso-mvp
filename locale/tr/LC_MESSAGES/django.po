@@ -7676,6 +7676,20 @@ msgid "From"
 msgstr "Başlangıç"
 
 #, python-format
+msgid ""
+"From %(distance)s m this screen shows %(count)d card a page: the wall turns its pages. A nearer "
+"distance or a larger screen shows more."
+msgid_plural ""
+"From %(distance)s m this screen shows %(count)d cards a page: the wall turns its pages. A nearer "
+"distance or a larger screen shows more."
+msgstr[0] ""
+"%(distance)s m uzaklıktan bu ekran sayfa başına %(count)d kart gösterir: duvar sayfa çevirir. "
+"Daha yakın bir mesafe veya daha büyük bir ekran daha fazlasını gösterir."
+msgstr[1] ""
+"%(distance)s m uzaklıktan bu ekran sayfa başına %(count)d kart gösterir: duvar sayfa çevirir. "
+"Daha yakın bir mesafe veya daha büyük bir ekran daha fazlasını gösterir."
+
+#, python-format
 msgid "From %(low)s to %(high)s."
 msgstr "%(low)s ile %(high)s arası."
 
@@ -10847,6 +10861,14 @@ msgstr "Orada son 30 günde ölçülmemiş, girildiği gibi:"
 
 msgid "Not needed for a notice given by telephone."
 msgstr "Telefonla verilen bir bildirim için gerekmez."
+
+#, python-format
+msgid ""
+"Not one card a page can be read from %(distance)s m on this screen: read it from %(farthest)s m "
+"or nearer, or choose a larger screen."
+msgstr ""
+"Bu ekranda %(distance)s m uzaklıktan sayfa başına tek bir kart bile okunamaz: %(farthest)s m veya"
+" daha yakından okuyun ya da daha büyük bir ekran seçin."
 
 msgid "Not placed"
 msgstr "Yerleştirilmemiş"
@@ -16077,13 +16099,16 @@ msgstr ""
 
 msgid ""
 "The screen this board is shown on. With the distance below, a wall of small or big cards never "
-"sets its type smaller than can be read from there (20 arcmin for a state, 15 for every other "
-"text): it turns pages instead. The screen’s resolution is read from the screen itself."
+"sets its type smaller than can be read from there (20 arcmin for a state, 16 for every other "
+"text): it turns pages instead. The screen’s resolution is read from the screen itself. A screen "
+"and a distance at which not one card a page can be read are refused (another screen is taken as "
+"16:9)."
 msgstr ""
 "Bu panonun gösterildiği ekran. Aşağıdaki mesafeyle birlikte, küçük veya büyük kartlardan oluşan "
 "bir duvar yazısını oradan okunabilecek boyuttan asla küçük yapmaz (bir durum için 20 açı "
-"dakikası, diğer her yazı için 15): bunun yerine sayfa çevirir. Ekranın çözünürlüğü ekranın "
-"kendisinden okunur."
+"dakikası, diğer her yazı için 16): bunun yerine sayfa çevirir. Ekranın çözünürlüğü ekranın "
+"kendisinden okunur. Sayfa başına tek bir kartın bile okunamayacağı bir ekran ve mesafe reddedilir"
+" (başka bir ekran 16:9 kabul edilir)."
 
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."

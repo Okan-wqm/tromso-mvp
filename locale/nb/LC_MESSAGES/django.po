@@ -7649,6 +7649,20 @@ msgid "From"
 msgstr "Fra"
 
 #, python-format
+msgid ""
+"From %(distance)s m this screen shows %(count)d card a page: the wall turns its pages. A nearer "
+"distance or a larger screen shows more."
+msgid_plural ""
+"From %(distance)s m this screen shows %(count)d cards a page: the wall turns its pages. A nearer "
+"distance or a larger screen shows more."
+msgstr[0] ""
+"Fra %(distance)s m viser denne skjermen %(count)d kort per side: veggen blar om. En kortere "
+"avstand eller en større skjerm viser flere."
+msgstr[1] ""
+"Fra %(distance)s m viser denne skjermen %(count)d kort per side: veggen blar om. En kortere "
+"avstand eller en større skjerm viser flere."
+
+#, python-format
 msgid "From %(low)s to %(high)s."
 msgstr "Fra %(low)s til %(high)s."
 
@@ -10819,6 +10833,14 @@ msgstr "Ikke målt der de siste 30 dagene, som lagt inn:"
 
 msgid "Not needed for a notice given by telephone."
 msgstr "Trengs ikke for et varsel gitt på telefon."
+
+#, python-format
+msgid ""
+"Not one card a page can be read from %(distance)s m on this screen: read it from %(farthest)s m "
+"or nearer, or choose a larger screen."
+msgstr ""
+"Ikke ett kort per side kan leses fra %(distance)s m på denne skjermen: les den fra %(farthest)s m"
+" eller nærmere, eller velg en større skjerm."
 
 msgid "Not placed"
 msgstr "Ikke plassert"
@@ -16041,12 +16063,15 @@ msgstr ""
 
 msgid ""
 "The screen this board is shown on. With the distance below, a wall of small or big cards never "
-"sets its type smaller than can be read from there (20 arcmin for a state, 15 for every other "
-"text): it turns pages instead. The screen’s resolution is read from the screen itself."
+"sets its type smaller than can be read from there (20 arcmin for a state, 16 for every other "
+"text): it turns pages instead. The screen’s resolution is read from the screen itself. A screen "
+"and a distance at which not one card a page can be read are refused (another screen is taken as "
+"16:9)."
 msgstr ""
 "Skjermen tavlen vises på. Med avstanden under setter en vegg av små eller store kort aldri "
-"skriften mindre enn den kan leses derfra (20 bueminutter for en tilstand, 15 for all annen "
-"tekst): den blar heller om. Skjermens oppløsning leses fra skjermen selv."
+"skriften mindre enn den kan leses derfra (20 bueminutter for en tilstand, 16 for all annen "
+"tekst): den blar heller om. Skjermens oppløsning leses fra skjermen selv. En skjerm og en avstand"
+" der ikke ett kort per side kan leses, avvises (en annen skjerm regnes som 16:9)."
 
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."

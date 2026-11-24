@@ -25,11 +25,12 @@ class DeletePayloadTests(TestCase):
 
     def said(self, obj):
         url = reverse('farm:site_delete', args=[obj.pk])
-        old = self.client.get(url).content.decode()
+        # Read before the request: the request's own language middleware leaves the default language active after it.
         payload = delete_payload(obj, plan_delete(obj), SiteResource.name, action=url,
                                  cancel=reverse('farm:site_list'))
         # The page head (eyebrow and heading) is the shell's, outside the dialog; the dialog says it as its heading.
         head = {f'{SiteResource.group()} · {SiteResource.title()}'}
+        old = self.client.get(url).content.decode()
         return old, payload, head
 
     def test_the_payload_says_everything_the_old_confirmation_says(self):

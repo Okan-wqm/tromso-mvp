@@ -1,7 +1,7 @@
 {% load assets i18n %}<!doctype html>
 {# The signed-in console (docs/design/system): the rail, the top bar, the page head and, below 1024 px, the bottom bar. #}
 {% comment %} In the new look (data-ui="next", core/ui.py: ?ui=next) the same markup is drawn as the design console draws it
-   (static/css/ds.css, app.css), with the status strip in the top bar and the menu group over the title. {% endcomment %}
+   (the ds and app style sheets), with the status strip in the top bar and the menu group over the title. {% endcomment %}
 <html lang="{{ LANGUAGE_CODE }}" data-theme="{{ THEME|default:"industry" }}"{% if UI_NEXT %} data-ui="next"{% endif %}{% block html_attrs %}{% endblock %}>
 <head>
   <meta charset="utf-8">
@@ -80,10 +80,10 @@
     <div class="console">
       <header class="topbar ui-topbar">
         <nav class="ui-crumbs" aria-label="{% trans "You are here" %}">
-          <p class="eyebrow">{% block eyebrow %}{% trans "Panel" %}{% endblock %}</p>
+          <p class="eyebrow">{% if UI_NEXT and page_label %}{{ page_panel }}<span aria-hidden="true"> › </span>{% if page_group != page_panel %}{{ page_group }}<span aria-hidden="true"> › </span>{% endif %}<span class="ui-crumb-here">{{ page_label }}</span>{% else %}{% block eyebrow %}{% trans "Panel" %}{% endblock %}{% endif %}</p>
         </nav>
         {% if UI_NEXT and ui_strip %}<div class="ui-strip" role="group" aria-label="{% trans "Status" %}">
-          {% for item in ui_strip %}{% if item.url %}<a class="ui-strip-item" href="{{ item.url }}" data-strip="{{ item.key }}"{% if item.status %} data-status="{{ item.status }}"{% endif %}>{% if item.status == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% elif item.status == "warning" %}{% include "icons/_icon.html" with name="alert" %}{% endif %}{{ item.text }}</a>{% else %}<span class="ui-strip-item" data-strip="{{ item.key }}">{{ item.text }}</span>{% endif %}{% endfor %}
+          {% for item in ui_strip %}{% if item.poll %}<span class="ui-strip-poll" data-poll="{{ item.poll }}" data-poll-every="30" data-poll-state="loading">{% include "core/_strip_item.html" %}</span>{% else %}{% include "core/_strip_item.html" %}{% endif %}{% endfor %}
         </div>{% endif %}
         <div class="topbar-language">{% include "_language_switcher.html" %}</div>
 

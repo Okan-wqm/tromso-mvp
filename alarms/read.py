@@ -1,6 +1,6 @@
 """Reading the alarms: whether one is open, acknowledged, at which level, whether anyone could be notified, a
 notification's state, whether a transport is connected, who may acknowledge, and an alarm's history in time order. Every
-state is read from the append-only rows, never stored."""
+state is read from the append-only rows, never stored. `attention`: what needs a look now, alarms and water together."""
 from dataclasses import dataclass
 
 from django.db.models import Count, Exists, Max, OuterRef, Q
@@ -99,3 +99,48 @@ def history(alarm):
         events.append(Event(clearance.cleared_at, 'cleared', clearance))
     order = ['opened', 'notified', 'delivered', 'escalated', 'acknowledged', 'cleared']
     return sorted(events, key=lambda event: (event.at, order.index(event.kind)))
+
+
+@dataclass(frozen=True)
+class Attention:
+    """What needs a look now, for the new look's status strip (core/ui.py): the open alarms, and the live units' water as
+    the alarm engine and the monitoring cards judge it this moment (farm/water/read.py `unit_water`, the one judge), so
+    the strip never says "no open alarms" while a unit is critical but its alarm has not been raised yet (its on-delay, or
+    no engine pass since). `blind`: units with fish whose water cannot be judged now (old values only, a value the chemistry
+    core refuses, or no value at all in the window), only where there are fish; `unreadable`: the live values cannot be
+    read."""
+    alarms: int
+    alarms_critical: int
+    critical: int
+    warning: int
+    blind: int
+    unreadable: bool
+
+    @property
+    def status(self):
+        if self.alarms_critical or self.critical:
+            return 'critical'
+        if self.alarms or self.warning or self.blind or self.unreadable:
+            return 'warning'
+        return ''
+
+
+def attention(now=None):
+    from farm.models import Tank
+    from farm.stock import read as stock_read
+    from farm.water import read as water_read
+    from farm.water.evaluate import Status
+
+    open_alarms = listing('open')
+    alarms = open_alarms.count()
+    alarms_critical = open_alarms.filter(severity='critical').count()
+    found = water_read.unit_water(list(Tank.objects.all()), now)
+    judged = {unit_id: water for unit_id, water in found.items() if water is not None and water.point is not None}
+    statuses = [water.status for water in judged.values()]
+    # blind only where there are fish: an empty unit's old values put nobody at risk
+    stocked = {pk for pk, fish in stock_read.unit_counts(list(judged)).items() if fish > 0} if judged else set()
+    return Attention(alarms=alarms, alarms_critical=alarms_critical,
+                     critical=statuses.count(Status.CRITICAL), warning=statuses.count(Status.WARNING),
+                     blind=sum(1 for unit_id, water in judged.items()
+                               if unit_id in stocked and water.status in (Status.STALE, Status.UNEVALUATED, Status.NOT_MEASURED)),
+                     unreadable=any(water.sensors_failed for water in found.values() if water is not None))

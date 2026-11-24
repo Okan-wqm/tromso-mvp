@@ -57,16 +57,10 @@ def strip(user, now=None):
     now = now or timezone.now()
     items = []
     if user.has_perm('alarms.view_alarm'):
-        from alarms import read as alarms_read
-        from sensors.models.alarm import Severity
-        open_alarms = alarms_read.listing('open')
-        count = open_alarms.count()
-        critical = open_alarms.filter(severity=Severity.CRITICAL).exists()
-        items.append({
-            'key': 'alarms', 'url': reverse('alarms:alarm_list'),
-            'text': ngettext('%(count)d open alarm', '%(count)d open alarms', count) % {'count': count}
-            if count else _('No open alarms'),
-            'status': 'critical' if critical else 'warning' if count else ''})
+        # The alarms' item reads the water of every live unit (alarms.read.attention), so the page never waits for it:
+        # it comes as a fragment (frontend/poll.ts), and until it is there it says it is being read, never "no alarms".
+        items.append({'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'poll': reverse('core:ui_strip_alarms'),
+                      'text': _('Reading the alarms…'), 'status': ''})
     if user.has_perm('hr.view_attendancerecord'):
         from hr import read as hr_read
         from hr.models import SchedulingSettings
@@ -77,6 +71,36 @@ def strip(user, now=None):
     items.append({'key': 'clock', 'url': '', 'status': '',
                   'text': f'{timezone.localtime(now, zone):%d.%m.%Y, %H:%M} · {zone.key}'})
     return items
+
+
+def alarms_item(attention):
+    """The strip's alarms item from alarms.read.attention: the open alarms, and, where none is open yet, what the water
+    judges now. It says "No open alarms" only when nothing is open, critical, warning or blind."""
+    if attention.alarms:
+        text = ngettext('%(count)d open alarm', '%(count)d open alarms', attention.alarms) % {'count': attention.alarms}
+    elif attention.critical:
+        text = ngettext('%(count)d unit critical', '%(count)d units critical', attention.critical) % {'count': attention.critical}
+    elif attention.unreadable:
+        text = _('Live values cannot be read')
+    elif attention.blind:
+        text = ngettext('%(count)d unit without recent data', '%(count)d units without recent data',
+                        attention.blind) % {'count': attention.blind}
+    elif attention.warning:
+        text = ngettext('%(count)d unit with a warning', '%(count)d units with a warning',
+                        attention.warning) % {'count': attention.warning}
+    else:
+        text = _('No open alarms')
+    return {'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'text': text, 'status': attention.status}
+
+
+def strip_alarms(request):
+    """The strip's alarms item, again (polled by the top bar of the new look): 403 for a person who may not see alarms."""
+    from django.core.exceptions import PermissionDenied
+    from django.shortcuts import render
+    from alarms import read as alarms_read
+    if not request.user.has_perm('alarms.view_alarm'):
+        raise PermissionDenied
+    return render(request, 'core/_strip_item.html', {'item': alarms_item(alarms_read.attention())})
 
 
 def context(request):

@@ -5510,9 +5510,16 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   Regulatory reports (`ReportResource.list_template_next`, `templates/reports/report_list_next.html`: all eleven kinds,
   where each stands, the reports and notices due, what the records no longer give, closed without filing, not set up)
   and Messages (`messaging.views`, `templates/messaging/inbox_next.html`: the conversations and the open one as two
-  plates around the classic fragments the poll renders again). What opened a dialog on the classic page (an action, an
-  edit, a delete, New message) opens its own page. Held: `core/tests_panel_next.py` (each page, its views, tabs, kinds
-  and the drawer, against the classic page on the test world in three languages; no style attribute, no dialog link).
+  plates around the classic fragments the poll renders again; the open conversation's list is bounded in its plate, so it
+  opens at its newest message; on a phone one plate shows, as on the classic page). What opened a dialog on the classic
+  page (an action, an edit, a delete, New message, Members, Leave channel, a read page's Edit and Delete) opens its own
+  page; still classic, outside this batch: an experiment's read and edit pages (Start, Release, Replace, Copy). Urgent
+  and high priority are marked as chips, as the classic page marks them in colour. Held: `core/tests_panel_next.py` (each
+  page, its views, tabs, kinds and the drawer, against the classic page on the test world in three languages; the
+  Experiments list's rows say nothing the classic list does not; no style attribute, no dialog link, in the seven pages
+  and in every page they open) and `frontend/test/panelpages.browser.test.ts` (the server's answers recorded from the
+  test world, `frontend/test/pages/panel/`: CSP, axe, no page-wide scroll, the rail's full width, a 60-message
+  conversation opening at its end; three languages, 1440 and 390).
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

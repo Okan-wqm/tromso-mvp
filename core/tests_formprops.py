@@ -157,7 +157,9 @@ class EveryDrawableTabTests(TestCase):
                         continue
                     drawn.append(f'{resource.__name__} {what}')
                     self.assertIsNone(resource.question_template, 'a tab that may ask the guard\'s question is not drawn')
-                    self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode()), [])
+                    # the old page says a tab's label on its tab and again as its panel's heading: the island, on its tab
+                    labels = {tab['label'] for tab in props['form']['tabs']}
+                    self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode(), once=labels), [])
                     checked += 1
         self.assertGreater(checked, 20, drawn)
 

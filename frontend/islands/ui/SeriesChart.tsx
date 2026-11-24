@@ -13,7 +13,7 @@
 //   - `markers`: moments (a sensor moved, calibrated; a feeding, a treatment, an alarm), a vertical line each;
 //   - a series `dashed` (a line) or `hollow` (points): a value worked out, not measured (NH₃-N);
 //   - `range`: the window's edges, so charts on one time axis line up whatever their values;
-//   - `zone` and `decimals`: the site's clock on the time axis (dd.mm over days, HH:MM within one) and the quantity's
+//   - `zone` and `decimals`: the site's clock on the time axis (dd.mm at midnight, HH:MM otherwise) and the quantity's
 //     decimals on the values.
 import { useEffect, useRef } from 'react';
 import uPlot from 'uplot';
@@ -87,12 +87,12 @@ export function hasValues(series: Series[]): boolean {
 
 const two = (value: number): string => String(value).padStart(2, '0');
 
-/** A tick of the time axis on the site's clock: dd.mm over days, HH:MM within them, dd.mm under a midnight. */
-export function clockText(seconds: number, zone: string | undefined, days: boolean): string {
+/** A tick of the time axis on the site's clock: dd.mm at a midnight, HH:MM at any other time (never one day twice). */
+export function clockText(seconds: number, zone: string | undefined): string {
   const date = zone ? uPlot.tzDate(new Date(seconds * 1000), zone) : new Date(seconds * 1000);
   const day = `${two(date.getDate())}.${two(date.getMonth() + 1)}`;
   const time = `${two(date.getHours())}:${two(date.getMinutes())}`;
-  return days || time === '00:00' ? day : time;
+  return time === '00:00' ? day : time;
 }
 
 /** The value axis's extent: the values, and every limit the person must see the values against. */
@@ -118,7 +118,6 @@ export function SeriesChart({ times, series, unit, emptyLabel, height = 220, env
     const status = { warning: role(element, '--chart-warn'), critical: role(element, '--chart-crit') };
     const stale = role(element, '--chart-stale');
     const [low, high] = extent(series, envelope, limits);
-    const longSpan = range ? range[1] - range[0] > 2 * 86400 : false;
     const shade = (u: uPlot, colour: string, alpha: number, x0: number, x1: number, y0: number, y1: number) => {
       const ctx = u.ctx;
       ctx.save();
@@ -226,7 +225,7 @@ export function SeriesChart({ times, series, unit, emptyLabel, height = 220, env
       },
       axes: [
         { stroke: ink, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 }, space: 64,
-          values: (_u: uPlot, splits: number[]) => splits.map((split) => clockText(split, zone, longSpan)) },
+          values: (_u: uPlot, splits: number[]) => splits.map((split) => clockText(split, zone)) },
         { stroke: ink, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 }, label: unit,
           ...(decimals !== undefined ? { values: (_u: uPlot, splits: number[]) => splits.map((split) => split.toFixed(decimals)) } : {}) },
       ],

@@ -121,7 +121,7 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
                    if each['cells']['unit']['text'] == 'TM-01')
         oxygen = row['cells']['oxygen']
         self.assertEqual(oxygen['chip'], {'kind': 'stale', 'text': '5.20'})
-        self.assertRegex(oxygen['sub'][0], r'^Was critical: Stale · Critical · \d{2}\.\d{2}\.\d{4} \d{2}:\d{2} · 3 days ago$')
+        self.assertRegex(oxygen['sub'][0], r'^Was critical: Stale · Critical · \d{2}\.\d{2}\.\d{4} \d{2}:\d{2} · 3\sdays ago$')
         title = re.search(r'wq-was-critical" title="([^"]*)"', old).group(1)
         self.assertIn(htmllib.unescape(title), oxygen['sub'][0])
         self.assertNotIn(htmllib.unescape(title), said_another_way(old))

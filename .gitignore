@@ -7,6 +7,8 @@ staticfiles/
 
 # Compiled from frontend/*.ts by `npm run build`
 static/js/
+# Built from frontend/islands by `npm run build` (vite.config.mjs, scripts/islands.mjs)
+static/islands/
 node_modules/
 
 # Built from locale/*/LC_MESSAGES/django.po by `manage.py compile_catalogs`

@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true
+  },
+  "include": [
+    "frontend/islands/**/*.ts",
+    "frontend/islands/**/*.tsx",
+    "frontend/test/gallery/**/*.tsx"
+  ],
+  "exclude": [
+    "frontend/**/*.test.ts",
+    "frontend/**/*.test.tsx"
+  ]
+}

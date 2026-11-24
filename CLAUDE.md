@@ -92,7 +92,7 @@ when `chemcore/` or `requirements.txt` changed.
   owner's approval and an independent check.
 - **Text.** UI source text is English, with Norwegian bokmål and Turkish translations in the same change; the
   activity log is stored in English and translated at display. Dates are shown dd.mm.yyyy. Every text file is LF.
-- **Design.** Tailwind v4 compiled to `static/css/tw.css` over the role tokens (all five themes must work; no CDN,
+- **Design.** Tailwind v4 compiled to `static/css/tw.css` over the role tokens (all six themes must work; no CDN,
   CSP-safe). Overview and dashboard pages are dense metric-card grids; a redesign never drops information the old
   page showed. Page-design work uses the frontend-design skill. Pages are redesigned one at a time, and only the
   page the owner has named (`F:\dev\balik-notes\plan\pages\PAGES.md`).

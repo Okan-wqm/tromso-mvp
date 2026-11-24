@@ -25,8 +25,12 @@ class ThemeCookieTests(TestCase):
         self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(self.admin)
 
-    def test_fjord_is_the_default(self):
+    def test_fjord_is_the_classic_looks_default_and_industry_the_new_looks(self):
         self.assertIn('data-theme="fjord"', html_tag(self.client.get(reverse('home'))))
+        self.assertIn('data-theme="industry"', html_tag(self.client.get(reverse('home'), {'ui': 'next'})))
+        self.client.post(reverse('core:set_theme'), {'theme': 'tang', 'next': '/'})
+        self.assertIn('data-theme="tang"', html_tag(self.client.get(reverse('home'))))       # a choice holds in both looks
+        self.assertIn('data-theme="tang"', html_tag(self.client.get(reverse('home'), {'ui': 'next'})))
 
     def test_choosing_a_theme_sets_the_cookie_and_returns_to_the_page(self):
         response = self.client.post(reverse('core:set_theme'), {'theme': 'polarnatt',
@@ -39,7 +43,7 @@ class ThemeCookieTests(TestCase):
         self.assertIn('data-theme="polarnatt"', html_tag(self.client.get(reverse('home'))))
 
     def test_every_theme_of_the_design_system_is_offered(self):
-        for value in ('fjord', 'polarnatt', 'nordlys', 'tang', 'laks'):
+        for value in ('industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks'):
             with self.subTest(theme=value):
                 self.client.post(reverse('core:set_theme'), {'theme': value, 'next': '/'})
                 self.assertIn(f'data-theme="{value}"', html_tag(self.client.get(reverse('home'))))
@@ -72,15 +76,15 @@ class ThemeCookieTests(TestCase):
         self.client.cookies[theme.COOKIE] = 'nordlys'
         self.assertIn('data-theme="nordlys"', html_tag(self.client.get(reverse('login'))))
 
-    def test_the_user_menu_offers_the_five_themes_beside_the_language(self):
+    def test_the_user_menu_offers_the_six_themes_beside_the_language(self):
         self.client.post(reverse('core:set_theme'), {'theme': 'laks', 'next': '/'})
         html = self.client.get(reverse('home')).content.decode()
         menu = html[html.index('id="user-panel"'):]
         menu = menu[:menu.index('</form>', menu.index('name="theme"'))]
         self.assertIn('menu-language', menu)
         buttons = re.findall(r'<button[^>]*name="theme"[^>]*>', menu)
-        self.assertEqual([re.search(r'value="(\w+)"', button).group(1) for button in buttons], ['fjord', 'polarnatt', 'nordlys', 'tang', 'laks'])
-        self.assertEqual([('aria-pressed="true"' in button) for button in buttons], [False, False, False, False, True])
+        self.assertEqual([re.search(r'value="(\w+)"', button).group(1) for button in buttons], ['industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks'])
+        self.assertEqual([('aria-pressed="true"' in button) for button in buttons], [False, False, False, False, False, True])
 
 
 class ThemeIsNeverTheSystemsTests(SimpleTestCase):
@@ -104,14 +108,15 @@ class SelfHostedFontsTests(SimpleTestCase):
     def test_every_font_the_stylesheet_names_is_served_here_with_its_licence(self):
         fonts = (ROOT / 'static' / 'css' / 'fonts.css').read_text(encoding='utf-8')
         files = re.findall(r'url\("\.\./fonts/([^"]+)"\)', fonts)
-        self.assertEqual(len(files), 4)
+        self.assertEqual(len(files), 8)
         for name in files:
             self.assertTrue((ROOT / 'static' / 'fonts' / name).is_file(), name)
-        for licence in ('OFL-atkinson-hyperlegible-next.txt', 'OFL-bricolage-grotesque.txt'):
+        for licence in ('OFL-atkinson-hyperlegible-next.txt', 'OFL-bricolage-grotesque.txt', 'OFL-barlow.txt'):
             self.assertIn('SIL Open Font License', (ROOT / 'static' / 'fonts' / licence).read_text(encoding='utf-8'))
         third_party = (ROOT / 'THIRD_PARTY.md').read_text(encoding='utf-8')
         self.assertIn('Atkinson Hyperlegible Next', third_party)
         self.assertIn('Bricolage Grotesque', third_party)
+        self.assertIn('Barlow', third_party)
 
 
 class TokenSourceTests(SimpleTestCase):

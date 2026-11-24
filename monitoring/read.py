@@ -527,17 +527,22 @@ def clock_notes(water, now):
 
 
 # ---- the state ---------------------------------------------------------------------------------------------------------
-def _middle(card):
-    """The PointWater of the card's middle point (always the first, when there is one), else None."""
-    first = card.water[0] if card.water else None
+def middle_of(water):
+    """The PointWater of a unit's middle point out of its points' water (water_read.points_water: the middle one first,
+    when there is one), else None."""
+    first = water[0] if water else None
     return first if first is not None and first.point is not None and (
         first.for_unit or first.point.kind == water_read.MIDDLE) else None
 
 
-def _key_readings(card):
-    """[(label, reading or None)] of the temperature and the oxygen at the card's middle point (oxygen: the mg/L or
-    the saturation, whichever is there): None when the point has none, or no middle point."""
-    middle = _middle(card)
+def _middle(card):
+    """The PointWater of the card's middle point (always the first, when there is one), else None."""
+    return middle_of(card.water)
+
+
+def key_readings(middle):
+    """[(label, reading or None)] of the temperature and the oxygen at a unit's middle point (oxygen: the mg/L or the
+    saturation, whichever is there): None when the point has none, or there is no middle point."""
     found = []
     for code, label in ((parameters.TEMPERATURE, parameters.get(parameters.TEMPERATURE).label),
                         ('oxygen', parameters.get(parameters.OXYGEN_MG_L).label)):
@@ -651,6 +656,53 @@ def _brief(reading, middle, stale):
                  limit, reading.judged == Status.CRITICAL, stale, label, source.judged_value)
 
 
+@dataclass(frozen=True)
+class WaterRungs:
+    """The water's part of the ladder for one stocked unit (`water_rungs`): each rung's reasons, the owning read's words."""
+    critical: tuple = ()
+    warning: tuple = ()
+    old: tuple = ()          # the critical or warning reasons that are old values
+    blind: tuple = ()
+    unjudged: tuple = ()
+
+    @property
+    def key(self):
+        """The rung the water alone puts a stocked unit on: CRITICAL, WARNING, BLIND, UNJUDGED or OK (a card adds the
+        stock's and the feeding's warnings and the notes, _ladder)."""
+        return (CRITICAL if self.critical else WARNING if self.warning else BLIND if self.blind
+                else UNJUDGED if self.unjudged else OK)
+
+
+def water_rungs(middle, now):
+    """Rungs 1 to 4 of the ladder (_ladder) from a stocked unit's middle point's water: the ONE rule the cards and the new
+    look's status strip (alarms.read.attention) both apply. Critical and warning values (fresh or old, the old ones
+    marked); a value the chemistry core refuses to work out (beside a critical, else a warning); the unit's own stale
+    value its system stands in for. Blind: the temperature or the oxygen missing or older than its freshness, no middle
+    point at all (`middle` None), a timestamp in the future, the live sensors not read. Unjudged: a value no limit row
+    judges for these fish."""
+    critical, warning, old = _alerts(middle, now)
+    unevaluated = [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
+    unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
+    if critical:
+        return WaterRungs(critical=(*critical, *unevaluated), old=tuple(text for text in old if text in critical))
+    warning += unevaluated
+    stale = []
+    for label, reading in key_readings(middle):
+        if reading is None:
+            stale.append(_('%(label)s: no recent data') % {'label': label})
+        elif not reading.fresh(now):
+            stale.append(_('%(label)s: no recent data, %(age)s old') % {'label': label, 'age': _age(reading, now)})
+    if middle is not None:
+        stale += [_('%(label)s: timestamp in the future') % {'label': reading.parameter.label}
+                  for reading in middle.future]       # a data error, never silently OK
+    if middle is not None and middle.sensors_failed:
+        stale.append(_('Live sensor values could not be read: samples only.'))
+    unjudged = [_('%(label)s: no limit for these fish') % {'label': reading.parameter.label}
+                for reading in (middle.unjudged if middle is not None else ())]
+    return WaterRungs(warning=tuple(warning), old=tuple(text for text in old if text in warning), blind=tuple(stale),
+                      unjudged=tuple(unjudged))
+
+
 def state_of(card):
     """The card's roll-up (`_ladder`), with its data-quality notes (a device of its water whose clock is off, owner
     2026-11-09) said whatever its rung: beside a critical, a warning or a blind card's reasons, and as a note where it
@@ -682,42 +734,25 @@ def _ladder(card):
     if card.stock is None:
         return State(EMPTY_STATE, (), basis)
     note = []
-    middle = _middle(card)                  # the unit's own water: a detailed card's other points do not change its state
-    critical, warning, old = _alerts(middle, card.now)
-    # A value the limits would judge that the chemistry core refuses to work out (PointWater.unevaluated): said with the
-    # core's reason, as its alarm is (alarms/sources.py; the verification of 2026-11-18, V-A), never OK: beside a
-    # critical (its limits' basis past the critical limit, the re-check's RC-3), else a warning.
-    unevaluated = [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
-    # A status the unit's own stale value keeps while its system's value stands in (read.last_own, F3-9): said beside it.
-    unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
-    if critical:
-        return State(CRITICAL, (*critical, *unevaluated), basis, tuple(text for text in old if text in critical))
-    warning += unevaluated
+    # The unit's own water (a detailed card's other points do not change its state), rungs 1 to 4 by the one rule the
+    # strip shares (water_rungs): a value the chemistry core refuses to work out is said with the core's reason, as its
+    # alarm is (alarms/sources.py; V-A), beside a critical (RC-3), else a warning; a status the unit's own stale value
+    # keeps while its system's value stands in (read.last_own, F3-9) is said beside it.
+    rungs = water_rungs(_middle(card), card.now)
+    if rungs.critical:
+        return State(CRITICAL, rungs.critical, basis, rungs.old)
+    warning = list(rungs.warning)
     if card.stock.over_capacity:
         warning.append(_('Over capacity'))
     if card.drift == 'now':
         warning.append(_('Weigh now: the estimate is not reliable'))
     if warning:
-        return State(WARNING, tuple(warning), basis, tuple(text for text in old if text in warning))
+        return State(WARNING, tuple(warning), basis, rungs.old)
     if WATER in card.sections:
-        stale = []
-        for label, reading in _key_readings(card):
-            if reading is None:
-                stale.append(_('%(label)s: no recent data') % {'label': label})
-            elif not reading.fresh(card.now):
-                stale.append(_('%(label)s: no recent data, %(age)s old') % {'label': label,
-                                                                               'age': _age(reading, card.now)})
-        if middle is not None:
-            stale += [_('%(label)s: timestamp in the future') % {'label': reading.parameter.label}
-                      for reading in middle.future]       # a data error, never silently OK
-        if middle is not None and middle.sensors_failed:
-            stale.append(_('Live sensor values could not be read: samples only.'))
-        if stale:
-            return State(BLIND, tuple(stale), basis, tuple(stale))
-        unjudged = [_('%(label)s: no limit for these fish') % {'label': reading.parameter.label}
-                    for reading in (middle.unjudged if middle is not None else ())]
-        if unjudged:
-            return State(UNJUDGED, tuple(unjudged), basis)
+        if rungs.blind:
+            return State(BLIND, rungs.blind, basis, rungs.blind)
+        if rungs.unjudged:
+            return State(UNJUDGED, rungs.unjudged, basis)
     if card.withdrawal:
         text, first = _('Medicine withdrawal in force'), card.withdrawal[0]
         # (in short, with its end in the product's one wording, farm.handling.withdrawal.harvest_from: the first day

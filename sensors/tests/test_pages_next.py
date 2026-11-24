@@ -137,11 +137,11 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
 
         from sensors import bindings
         from sensors.models import Binding, Channel
-        from farm.models import Tank
         from farm.tests.helpers import point_of
         oxygen = Channel.objects.get(device__code='PROBE-TT01', quantity='oxygen_mg_l')
         first = Binding.objects.filter(channel=oxygen).earliest('valid_from')
-        there = point_of(Tank.objects.get(code='TM-01'))
+        from farm.models import System
+        there = point_of(System.objects.get(code='TL1'))                 # the loop, on the probe's own site
         bindings.move(self.admin, oxygen, MOMENT - timedelta(days=1), role='primary', note='', point=there)
         old, new = self.pages('sensors:binding_list', {'channel': str(oxygen.pk)}, 'en')
         props = props_of(new, 'list-page')
@@ -171,10 +171,16 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
         now = props_of(self.pages('sensors:binding_list', {'bound': 'now'}, 'en')[1], 'list-page')
         self.assertEqual(len(now['table']['rows']), Binding.objects.visible().at(MOMENT).count())
         self.assertTrue(all(row['cells']['until'].get('chip') for row in now['table']['rows']), 'only those open now')
-        south = Site.objects.get(code='TSS')
-        there = props_of(self.pages('sensors:binding_list', {'site': str(south.pk)}, 'en')[1], 'list-page')
+        north = Site.objects.get(code='TSN')
+        there = props_of(self.pages('sensors:binding_list', {'site': str(north.pk)}, 'en')[1], 'list-page')
         self.assertEqual(len(there['table']['rows']),
-                         Binding.objects.visible().filter(channel__device__site=south).count())
+                         Binding.objects.visible().filter(channel__device__site=north).count())
+        self.assertEqual([option['label'] for option in there['toolbar']['filters'][0]['options']],
+                         ['All sites', 'Test Site North'])                # only the sites that have sensors
+        # a site that has no sensor is not a choice: every binding, as the classic filters treat a stale value
+        south = Site.objects.get(code='TSS')
+        self.assertEqual(len(props_of(self.pages('sensors:binding_list', {'site': str(south.pk)}, 'en')[1],
+                                      'list-page')['table']['rows']), everything)
         # the classic page reads the same address the same way (it has no control for them)
         old, new = self.pages('sensors:binding_list', {'bound': 'now'}, 'en')
         self.assertEqual(unsaid(old, props_of(new, 'list-page'), new_html=new), [])

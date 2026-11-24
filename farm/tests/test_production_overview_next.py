@@ -99,10 +99,12 @@ class ProductionOverviewNextTests(FrozenClock, TestCase):
 
     def test_a_stale_value_that_was_critical_is_never_only_stale(self):
         rows = props_of(self.page('next'), 'production')['attention']['rows']
-        stale = [value for row in rows for value in row['values'] if value['kind'] == 'stale']
-        self.assertTrue(stale, 'TM-01\'s old critical oxygen is in Needs attention')
-        for value in stale:
-            self.assertTrue(value['sub'][0].startswith('Stale, was '), value)
+        [row] = [row for row in rows if row['title'] == 'TM-01']
+        self.assertEqual(row['chip'], {'kind': 'critical', 'text': 'Critical, no recent data'})
+        [oxygen] = row['values']
+        # in the chip of what its limits said, and said stale in words, with when it was taken
+        self.assertEqual((oxygen['kind'], oxygen['figure']), ('critical', '5.20'))
+        self.assertRegex(oxygen['sub'][0], r'^Stale, was critical · \d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$')
 
     def test_a_unit_under_withdrawal_is_in_needs_attention_with_its_drawer(self):
         from farm import withdrawal_gate as gate

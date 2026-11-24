@@ -473,10 +473,13 @@ function begin(): void {
   });
   held.clear();
   document.querySelectorAll<HTMLElement>('[data-scroll-end]').forEach((list) => { list.scrollTop = list.scrollHeight; });
-  document.querySelectorAll<HTMLElement>('[data-poll]').forEach((element) => { watch(element); });
   document.querySelectorAll<HTMLTextAreaElement>('textarea[data-submit-on-enter]').forEach(sendOnEnter);
   document.querySelectorAll<HTMLFormElement>('form[data-live]').forEach(live);
 }
+// Every polled part the page was drawn with is watched now, so it waits at the gate from the first moment: a `poll:now`
+// sent to it before the start (a click on a data-poll-url link, windows.ts following the pane) is kept, and one stopped
+// before the start is never started by a later scan.
+document.querySelectorAll<HTMLElement>('[data-poll]').forEach((element) => { watch(element); });
 if (document.readyState === 'complete') {
   begin();
 } else {

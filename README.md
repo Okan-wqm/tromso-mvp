@@ -757,7 +757,8 @@ holding "Loading the cards…" (`templates/monitoring/_loading.html`), the pane'
 windows' place. It has no band, no tally, no card, no state word and no state colour, so a page whose cards have not come
 never reads as all is well, and it reads no card source (no stock, feeding or water read, no change token): it costs the same
 few queries whatever the farm. The grid is drawn with `data-poll-state="loading"` and its address carries no token, so
-`frontend/poll.ts` asks for the fragment at once and its first answer is always the cards (200), with the next address
+`frontend/poll.ts` asks for the fragment at once (as soon as every script of the page has run, so `announce.ts` is in
+place to hear a first failure) and its first answer is always the cards (200), with the next address
 (`X-Poll-Next`), from which the polls go on as below; the fragment replaces the placeholder by key, and that first fill says
 nothing aloud (it is the first load); then the page goes to the card a `#card-<unit>` address names, as a page drawn
 whole does. A first answer that fails (the 503 of a source the cards need, a server error, no answer within 35 s, a 204,

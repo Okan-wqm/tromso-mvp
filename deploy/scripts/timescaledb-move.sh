@@ -106,8 +106,8 @@ SQL
   psql_ "$DB_NAME" -c "SELECT job_id, proc_name, sqlerrcode, left(err_message, 80) FROM timescaledb_information.job_errors
     ORDER BY start_time DESC LIMIT 20" || true
   start=$(psql_ "$DB_NAME" -c "SELECT now()")
-  psql_ "$DB_NAME" -c "SELECT count(alter_job(job_id, next_start => now())) FROM timescaledb_information.jobs
-    WHERE job_id >= 1000 AND scheduled" > /dev/null
+  psql_ "$DB_NAME" -c "SELECT count(*) FROM timescaledb_information.jobs j,
+    LATERAL alter_job(j.job_id, next_start => now()) WHERE j.job_id >= 1000 AND j.scheduled" > /dev/null
   for _ in $(seq 1 60); do
     pending=$(psql_ "$DB_NAME" -c "SELECT count(*) FROM timescaledb_information.jobs j
       JOIN timescaledb_information.job_stats s USING (job_id)

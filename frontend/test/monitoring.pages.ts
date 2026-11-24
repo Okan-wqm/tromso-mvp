@@ -117,33 +117,46 @@ function serve(index: Record<string, Screen>): Promise<Server> {
   return new Promise((done) => server.listen(0, '127.0.0.1', () => done(server)));
 }
 
-/** The text of the cards, the band and the pane under 4.5:1 on the ground it stands on (the nearest opaque background). */
-function lowContrast(tab: Page): Promise<string[]> {
-  return tab.evaluate(() => {
-    const parse = (value: string): number[] => (value.match(/[\d.]+/g) ?? []).map(Number);
+/** The text of the cards, the band and the pane (or of `within`) under 4.5:1 on the ground it stands on: the nearest
+ *  opaque background, and every hatch an ancestor draws behind it on the way there (a ::before with a gradient: the
+ *  blind head's, review round 2, B4: the text lay on its stripe at 3.2 to 3.7:1), against the hatch's stripe. */
+function lowContrast(tab: Page, within = '.monitor-grid *, .monitor-dock *'): Promise<string[]> {
+  return tab.evaluate((selector) => {
+    // (a colour as rgb() or, from color-mix, as color(srgb 0..1 ...))
+    const parse = (value: string): number[] => {
+      const found = (value.match(/[\d.]+/g) ?? []).map(Number);
+      return value.trim().startsWith('color(') ? found.map((each, index) => (index < 3 ? each * 255 : each)) : found;
+    };
     const lum = ([r = 0, g = 0, b = 0]: number[]): number => {
       const c = [r, g, b].map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
       return 0.2126 * (c[0] ?? 0) + 0.7152 * (c[1] ?? 0) + 0.0722 * (c[2] ?? 0);
     };
-    const ground = (element: Element): number[] => {
+    const grounds = (element: Element): number[][] => {
+      const stripes: number[][] = [];
       for (let at: Element | null = element; at; at = at.parentElement) {
         const value = parse(getComputedStyle(at).backgroundColor);
-        if (value.length === 3 || (value[3] ?? 0) > 0.5) return value.slice(0, 3);
+        if (value.length === 3 || (value[3] ?? 0) > 0.5) return [value.slice(0, 3), ...stripes];
+        const before = getComputedStyle(at, '::before');
+        const stripe = before.content !== 'none' && before.backgroundImage.includes('gradient')
+          ? /(?:rgba?|color)\([^)]*\)/.exec(before.backgroundImage) : null;
+        if (stripe) stripes.push(parse(stripe[0]).slice(0, 3));
       }
-      return parse(getComputedStyle(document.body).backgroundColor).slice(0, 3);
+      return [parse(getComputedStyle(document.body).backgroundColor).slice(0, 3), ...stripes];
     };
     const low: string[] = [];
-    for (const element of document.querySelectorAll('.monitor-grid *, .monitor-dock *')) {
+    for (const element of document.querySelectorAll(selector)) {
       const own = Array.from(element.childNodes).some((node) => node.nodeType === 3 && (node.textContent ?? '').trim());
       const box = element.getBoundingClientRect();
       if (!own || box.width < 2 || element.closest('svg, .sr-only, [aria-hidden="true"]')) continue;
       const fore = parse(getComputedStyle(element).color).slice(0, 3);
-      const [high, lower] = [lum(fore), lum(ground(element))].sort((a, b) => b - a);
-      const ratio = ((high ?? 0) + 0.05) / ((lower ?? 0) + 0.05);
-      if (ratio < 4.5) low.push(`${element.className || element.tagName} "${(element.textContent ?? '').trim().slice(0, 30)}" ${ratio.toFixed(2)}`);
+      for (const behind of grounds(element)) {
+        const [high, lower] = [lum(fore), lum(behind)].sort((a, b) => b - a);
+        const ratio = ((high ?? 0) + 0.05) / ((lower ?? 0) + 0.05);
+        if (ratio < 4.5) low.push(`${element.className || element.tagName} "${(element.textContent ?? '').trim().slice(0, 30)}" ${ratio.toFixed(2)}`);
+      }
     }
     return low;
-  });
+  }, within);
 }
 
 /** On the desk page's cards: what is cut that must never be (a code, a state's word, a figure, "old", a figure running
@@ -327,6 +340,8 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
           return ((high ?? 0) + 0.05) / ((low ?? 0) + 0.05);
         }, theme);
         assert.ok(ratio >= 1.5, `the hatch in ${theme}: ${ratio.toFixed(2)}:1`);
+        // ... and the text on it still at 4.5:1 (review round 2, B4)
+        assert.deepEqual(await lowContrast(tab, '.monitor-grid > .monitor-blind > .monitor-card-head *'), [], `text on the hatch in ${theme}`);
       }
       await tab.close();
       // without glyphs.css (a sheet that did not load): the classic shapes, never seven identical squares

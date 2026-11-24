@@ -64,6 +64,11 @@ html[data-ui="next"] .monitor-blind > .monitor-card-head::before {
   content: ""; position: absolute; z-index: -1; inset: -.35em -.5em -.2em;
   background-image: repeating-linear-gradient(135deg, var(--hatch) 0 .3em, transparent .3em .6em);
 }
+/* ... with every word of the head on a pad of the plate, so no text lies on a stripe (review round 2, B4: the quiet name
+   line and the water link were at 3.2 to 4.1:1 on it); the pad's margin is a shadow, which takes no room. */
+html[data-ui="next"] .monitor-blind > .monitor-card-head :is(h3, .monitor-card-name > p, .monitor-card-state > *) {
+  background-color: var(--plate); box-shadow: 0 0 0 .15em var(--plate);
+}
 /* The code: the text face, bold, as the design's unit codes; a card's name stays the quiet line beside it. */
 html[data-ui="next"] .monitor-card h3 { font-family: var(--font-text); font-weight: 700; letter-spacing: .01em; }
 /* The figures: the display face (narrower than the text face: a five-figure value keeps its room). */

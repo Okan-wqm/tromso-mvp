@@ -176,10 +176,18 @@ def list_words(row_list, obj):
 
 
 def template_words(words):
-    """Words of the project's own msgids for a classic template, as its trans tag gave them (a msgid is the project's text,
-    so the tag marks it safe): the page's bytes stay what they were when the template said them itself."""
+    """Words for a classic template, escaped as a text node needs (&, <, >, ") and marked safe, so a template prints them
+    with the bytes its own trans tag printed (it printed a msgid as it is: an apostrophe stays an apostrophe, where
+    autoescape would write &#x27;). Only ever put between tags, never in an attribute: an apostrophe there would be
+    harmless only in double quotes (core/tests_formpanels.py, TemplateWordsTests: hostile text)."""
     from django.utils.safestring import mark_safe
-    return {key: template_words(value) if isinstance(value, dict) else mark_safe(value) for key, value in words.items()}
+
+    def text(value):
+        value = str(value)
+        for raw, shown in (('&', '&amp;'), ('<', '&lt;'), ('>', '&gt;'), ('"', '&quot;')):
+            value = value.replace(raw, shown)
+        return mark_safe(value)
+    return {key: template_words(value) if isinstance(value, dict) else text(value) for key, value in words.items()}
 
 
 def rows(view, obj, row_list, formset, extra):

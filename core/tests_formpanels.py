@@ -402,3 +402,14 @@ class GuardQuestionSavesTests(GuardTestCase):
         self.assertEqual(self.client.post(block['action'], {**data, box['name']: [box['value']]}).status_code, 302)
         self.assertEqual(list(bath.withdrawals.values_list('days', flat=True)), [7])
         self.assertEqual(WithdrawalAcknowledgement.objects.get().record_type, 'medicine')
+
+
+class TemplateWordsTests(TestCase):
+    """A row list's words reach a classic template escaped where markup could start, an apostrophe as it is (as the trans
+    tag printed it: the classic pages stay byte-identical, scripts/classic_snapshot.py)."""
+
+    def test_hostile_words_are_escaped_and_an_apostrophe_stays(self):
+        from .formpanels import template_words
+        words = template_words({'help': "<script>alert(1)</script> & \"x\" week's", 'fields': {'DELETE': '<b>Remove</b>'}})
+        self.assertEqual(words['help'], "&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;x&quot; week's")
+        self.assertEqual(words['fields']['DELETE'], '&lt;b&gt;Remove&lt;/b&gt;')

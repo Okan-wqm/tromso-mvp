@@ -42,10 +42,11 @@ class FixturePrivacyTests(SimpleTestCase):
 
 
 # The recorded fixtures (scripts/record_test_world.py) and the fields in them that name a person: every such name is one of
-# the test world's people ("Test …", an account test.…), never anyone else's.
+# the test world's people ("Test …", an account test.…), or "system", the activity log's name for a write no person made
+# (core.audit: a record the test world makes in the models); never anyone else's.
 RECORDED = ROOT / 'frontend' / 'test' / 'pages'
 PERSON_FIELDS = {'employee', 'user', 'manager', 'assignees', 'site_manager', 'examined_by', 'asked_by'}
-TEST_PERSON = re.compile(r'^(?:Test |test\.)')
+TEST_PERSON = re.compile(r'^(?:Test |test\.|system$)')
 
 
 def people_in(value, found=None, person=False):

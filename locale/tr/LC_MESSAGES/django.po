@@ -9801,6 +9801,9 @@ msgstr "Hesap yok"
 msgid "No alarm events."
 msgstr "Alarm olayı yok."
 
+msgid "No alarm is open for them yet."
+msgstr "Bunlar için henüz açık alarm yok."
+
 msgid "No alarm is open."
 msgstr "Açık alarm yok."
 
@@ -10757,6 +10760,10 @@ msgstr "İzinde"
 
 msgid "On site now"
 msgstr "Şu an sahada"
+
+#, python-format
+msgid "On the Monitoring screen: %(units)s."
+msgstr "İzleme ekranında: %(units)s."
 
 msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
 msgstr "Yerin sahasının saatine göre. Her kanalın şu ana kadarki ataması o zaman sona erer."
@@ -13024,6 +13031,9 @@ msgstr "Günlük kaydı görün"
 
 msgid "See the feedings"
 msgstr "Yemlemeleri gör"
+
+msgid "See them on Monitoring"
+msgstr "İzleme ekranında görün"
 
 msgid "Seed"
 msgstr "Tohum"
@@ -15859,6 +15869,9 @@ msgstr ""
 #, python-format
 msgid "The units take %(placed)s fish, but %(count)s arrive: the split must add up."
 msgstr "Birimler %(placed)s balık alıyor, ama %(count)s balık geliyor: dağılımın toplamı tutmalı."
+
+msgid "The units that need a look could not be read here."
+msgstr "Bakılması gereken birimler burada okunamadı."
 
 msgid "The units the fish go into and how many each takes; together they take every fish arriving."
 msgstr ""

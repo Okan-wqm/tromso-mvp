@@ -7,6 +7,7 @@
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
 {% include "alarms/_not_sent.html" %}
+{% if units_note %}{% comment %} The units the strip counts (alarms.views.units_note): a red strip never leads to an empty page. {% endcomment %}<p class="notice {% if units_note.failed or units_note.status == "critical" %}notice-error{% else %}notice-warning{% endif %}" role="status" data-units-note>{% if units_note.failed %}{% include "icons/_icon.html" with name="alert" %}<span>{% trans "The units that need a look could not be read here." %}{% else %}{% if units_note.status == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% else %}{% include "icons/_icon.html" with name="alert" %}{% endif %}<span>{% blocktrans trimmed with units=units_note.text %}On the Monitoring screen: {{ units }}.{% endblocktrans %}{% if units_note.none_open %} {% trans "No alarm is open for them yet." %}{% endif %}{% endif %}{% if units_note.url %} <a href="{{ units_note.url }}">{% trans "See them on Monitoring" %}</a>{% endif %}</span></p>{% endif %}
 <form method="get" class="filters">
   <div class="field">
     <label for="f-state">{% trans "Show" %}</label>

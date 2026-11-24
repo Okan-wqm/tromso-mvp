@@ -84,7 +84,7 @@ def hue_gap(a, b):
 class RoleContrastTests(SimpleTestCase):
     def test_every_text_and_shape_pair_passes_in_every_theme(self):
         found = themes()
-        self.assertEqual(len(found), 5)
+        self.assertEqual(len(found), 6)
         for selector, tokens in found.items():
             for front, ground, least in PAIRS:
                 with self.subTest(theme=selector, pair=f'{front} on {ground}'):

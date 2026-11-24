@@ -287,3 +287,272 @@
 .card { display: flex; flex-direction: column; }
 .tile { display: flex; flex-direction: column; min-width: 11rem; padding: var(--space-4) var(--space-5); color: var(--text-1); text-decoration: none; }
 :is(.tile, a.ui-card):hover { border-color: var(--action); }
+
+/* ============================================================================================ The new look ===
+   The design console of 2026-11-23 (F:\dev\balik-notes\design-in, "Suderra Console.dc.html", direction B, the
+   design's default; docs/design/system/README.md, "The new look"): the same patterns, drawn as the Industry design
+   system draws them. <html data-ui="next"> turns it on (core/ui.py: ?ui=next, kept in a cookie); its tokens are the
+   `look` block of tokens.json (square objects, Barlow headings, sizes that scale with --k). The rules below are only what
+   the tokens cannot say: the density per width, the registration marks, the grid paper, and the shapes the design
+   changes. Every pattern of this section is also what the islands draw (frontend/islands/ui), with the same classes. */
+[data-ui="next"] {
+  --k: 1.08;                    /* density: type and controls scale with it (desk 1.08, wide 1.15, phone 1.04, wall 1.55) */
+  --h: 40px;                    /* a control's height: 40 at the desk, 48 for a finger, 56 on the wall */
+  --edge: 32px;                 /* the page's side gutter */
+  --gap: 16px;                  /* between plates */
+  --cell-py: 7px;               /* a cell's padding (direction B: denser cells) */
+  --cell-px: 12px;
+  --plate: var(--surface-sheet);
+  --mark: color-mix(in srgb, var(--text-1) 55%, transparent);
+  --grid-paper: color-mix(in srgb, var(--line-hair) 45%, transparent);
+  --rail-hover: color-mix(in srgb, var(--text-on-rail) 7%, transparent);
+  --rail-active: color-mix(in srgb, var(--text-on-rail) 12%, transparent);
+}
+@media (min-width: 1800px) { [data-ui="next"] { --k: 1.15; } }
+@media (max-width: 1099px) { [data-ui="next"] { --edge: 24px; } }
+@media (max-width: 639px) { [data-ui="next"] { --k: 1.04; --edge: 16px; } }
+@media (pointer: coarse) { [data-ui="next"] { --h: 48px; } }
+[data-ui="next"][data-wall] { --k: 1.55; --h: 56px; --edge: 48px; }
+[data-ui="next"] :is(h1, h2, h3, h4) { font-family: var(--font-display); font-weight: 600; }
+
+/* The registration marks: a "+" at each corner of a plate and of the one primary button, drawn outside the box by one
+   pseudo-element (no extra markup). ui-marks puts them on anything else the design frames. */
+[data-ui="next"] :is(.ui-plate, .ui-marks, .ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger)) { position: relative; }
+[data-ui="next"] :is(.ui-plate, .ui-marks, .ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger))::before {
+  content: ""; position: absolute; inset: -6px; pointer-events: none;
+  background:
+    linear-gradient(var(--mark), var(--mark)) left 5px top 0 / 1px 11px no-repeat,
+    linear-gradient(var(--mark), var(--mark)) left 0 top 5px / 11px 1px no-repeat,
+    linear-gradient(var(--mark), var(--mark)) right 5px top 0 / 1px 11px no-repeat,
+    linear-gradient(var(--mark), var(--mark)) right 0 top 5px / 11px 1px no-repeat,
+    linear-gradient(var(--mark), var(--mark)) left 5px bottom 0 / 1px 11px no-repeat,
+    linear-gradient(var(--mark), var(--mark)) left 0 bottom 5px / 11px 1px no-repeat,
+    linear-gradient(var(--mark), var(--mark)) right 5px bottom 0 / 1px 11px no-repeat,
+    linear-gradient(var(--mark), var(--mark)) right 0 bottom 5px / 11px 1px no-repeat;
+}
+
+/* Buttons: Barlow 600 at the control's height, square; the primary is the theme's primary with the marks; ghost is the
+   action colour without a border; danger is the only red fill (a destructive confirm, never beside Edit); danger-text
+   is the red word (Delete in a drawer's foot). Busy: the label stays, a ring turns in place of its icon, and it takes no
+   press (aria-disabled). */
+[data-ui="next"] :is(.ui-btn, .button, .filter-button) {
+  min-height: var(--h); padding: 0 14px; gap: var(--space-2);
+  border: 1px solid var(--line-control);
+  background: transparent; font-family: var(--font-display); font-size: var(--fs-body); font-weight: 600; line-height: 1;
+}
+[data-ui="next"] :is(.ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger)) { padding: 0 18px; letter-spacing: .02em; }
+/* the filled ones keep their fill over the outlined default above */
+[data-ui="next"] :is(.ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger)) { border-color: var(--primary); background: var(--primary); }
+[data-ui="next"] :is(.ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger)):hover { border-color: var(--primary-hover); background: var(--primary-hover); }
+[data-ui="next"] :is(.ui-btn[data-variant="danger"], .button-danger) { border-color: var(--crit); background: var(--crit); }
+[data-ui="next"] :is(.ui-btn[data-variant="danger"], .button-danger):hover { border-color: var(--crit-text); background: var(--crit-text); }
+[data-ui="next"] :is(.ui-btn, .button-ghost, .filter-button):not([data-variant]):hover { background: var(--surface-sunken); }
+[data-ui="next"] :is(.ui-btn[data-variant="danger"], .button-danger) { padding: 0 var(--space-4); }
+[data-ui="next"] .ui-btn[data-variant="ghost"] { padding: 0 var(--space-2); border-color: transparent; color: var(--action); }
+[data-ui="next"] .ui-btn[data-variant="ghost"]:hover { background: var(--action-tint); color: var(--action); }
+[data-ui="next"] .ui-btn[data-variant="danger-text"] { padding: 0 var(--space-2); border-color: transparent; color: var(--crit-text); }
+[data-ui="next"] .ui-btn[data-variant="danger-text"]:hover { background: var(--crit-tint); color: var(--crit-text); }
+[data-ui="next"] :is(.ui-btn, .button, .filter-button):is(:disabled, [disabled], [aria-disabled="true"]) { opacity: .45; }
+[data-ui="next"] .ui-btn[data-size="coarse"] { min-height: calc(var(--h) + 8px); }
+.ui-btn[data-variant="ghost"] { border-color: transparent; background: none; color: var(--action); }
+.ui-btn[data-variant="danger-text"] { border-color: transparent; background: none; color: var(--crit-text); }
+/* busy: React Aria marks a pending button data-pending (aria-disabled, the press refused); a server-rendered one says aria-busy */
+:is(.ui-btn[data-pending], .ui-btn[aria-busy="true"]) { cursor: progress; }
+/* React Aria's one press rule, here instead of the <style> it would add to the page (frontend/islands/ui/mount.tsx) */
+[data-react-aria-pressable] { touch-action: pan-x pan-y pinch-zoom; }
+.ui-spinner {
+  flex: none; width: var(--icon-inline); height: var(--icon-inline);
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: var(--radius-pill);
+  animation: ui-spin .8s linear infinite;
+}
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ui-spinner { animation: none; border-right-color: currentColor; border-style: dotted; } }
+/* the square icon button and a row's actions */
+[data-ui="next"] .icon-button { width: var(--h); height: var(--h); border-color: var(--line-hair); color: var(--text-2); }
+[data-ui="next"] .icon-button .icon { width: 18px; height: 18px; stroke-width: 1.5; }
+[data-ui="next"] .icon-button-danger { color: var(--crit-text); }
+.ui-row-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+[data-ui="next"] .ui-row-actions .icon-button { width: 36px; height: 36px; }
+
+/* A segmented choice (Open alarms | Every alarm): the pressed one is outlined twice in the action colour, with a check. */
+.ui-seg { display: inline-flex; }
+.ui-seg > * { margin-right: -1px; }
+.ui-seg > [aria-pressed="true"] { position: relative; z-index: 1; border: 2px solid var(--action); background: var(--action-tint); color: var(--action); }
+
+/* Fields: label above (13/600), help below (12, text-3), the unit inside the control's frame, the error in words with
+   the octagon and a 2 px critical edge. */
+[data-ui="next"] .field { margin-bottom: 0; display: flex; flex-direction: column; gap: 6px; }
+[data-ui="next"] :is(.field label, .field > legend, .field .field-label) { margin: 0; font-size: var(--fs-label); font-weight: 600; line-height: 1.3; color: var(--text-1); }
+[data-ui="next"] :is(.field input:not([type="checkbox"], [type="radio"], [type="hidden"]), .field select, .field textarea, .ui-control, .ui-select, .search input,
+    :is(.ui-toolbar, .toolbar, .filters, .filter-bar) :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select)) {
+  min-height: var(--h); border-width: 1px; background: var(--surface-sheet); font-size: var(--fs-body);
+}
+[data-ui="next"] .field textarea { min-height: calc(var(--h) * 2); }
+[data-ui="next"] :is(.field input, .field select, .field textarea, .ui-control, .ui-select):focus { box-shadow: none; outline: 2px solid var(--action); outline-offset: -1px; }
+[data-ui="next"] :is(.field.has-error :is(input, select, textarea), .field [aria-invalid="true"]) { border: 2px solid var(--crit); }
+[data-ui="next"] .help { margin: 0; font-size: var(--fs-caption); }
+[data-ui="next"] .errorlist { margin: 0; font-size: var(--fs-small); font-weight: 400; }
+.ui-field-error { display: flex; align-items: flex-start; gap: 6px; }
+.ui-field-error .icon { flex: none; width: var(--icon-inline); height: var(--icon-inline); margin-top: 1px; }
+/* a control with its unit inside the frame (Capacity [120,000 | kg]) */
+.ui-unit { display: flex; min-height: var(--h, var(--control-h)); border: 1px solid var(--line-control); border-radius: var(--radius-control); background: var(--surface-sheet); }
+.ui-unit:focus-within { outline: 2px solid var(--action); outline-offset: -1px; }
+.field .ui-unit input:not([type="checkbox"], [type="radio"], [type="hidden"]) { flex: 1; width: auto; min-width: 0; min-height: 0; border: 0; background: transparent; text-align: right; outline: none; box-shadow: none; }
+.ui-unit-label { display: flex; align-items: center; padding: 0 var(--space-3); border-left: 1px solid var(--line-hair); color: var(--text-2); font-size: var(--fs-small); white-space: nowrap; }
+:is(.field.has-error .ui-unit, .ui-unit:has([aria-invalid="true"])) { border: 2px solid var(--crit); }
+/* a value chosen once and shown read-only where a field stood */
+.ui-fixed { display: flex; align-items: center; min-height: var(--h, var(--control-h)); padding: 0 var(--space-3); border: 1px dashed var(--line-hair); background: var(--surface-sunken); color: var(--text-1); }
+/* a group of boxes */
+.ui-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-1) var(--space-3); }
+.ui-check { display: flex; align-items: center; gap: var(--space-2); min-height: 32px; font-size: var(--fs-small); cursor: pointer; }
+.ui-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--action); }
+.field .ui-check { display: flex; margin: 0; font-size: var(--fs-small); font-weight: 400; }
+/* the fields of a form, two or more to a row, a wide one across (the drawer's grid) */
+.ui-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--space-4) var(--space-5); }
+.ui-form-grid > [data-wide] { grid-column: 1 / -1; }
+.ui-form-group { grid-column: 1 / -1; margin: var(--space-2) 0 calc(-1 * var(--space-1)); padding-top: 10px; border-top: 1px solid var(--line-hair); font-family: var(--font-display); font-size: var(--fs-body); font-weight: 600; }
+.ui-form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+
+/* Chips in the new look: 13/600, square, glyph and word; ok is the word and its check in ok-text, no fill. */
+[data-ui="next"] :is(.ui-chip, .badge) { font-size: var(--fs-small); }
+[data-ui="next"] .ui-chip[data-status="ok"] { color: var(--ok-text); }
+[data-ui="next"] .ui-chip[data-status="ok"] > span { color: var(--ok-text); }
+[data-ui="next"] .ui-chip[data-state="stale"] { border-color: transparent; background: var(--surface-sunken); color: var(--text-2); }
+.ui-chip[data-status="accent"] { border-color: var(--action); background: none; color: var(--action); }
+.ui-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Tabs: Barlow 600, the action underline 3 px across the tab; a count in a square. */
+[data-ui="next"] :is(.ui-tab, .tab, .view-tab) { padding: 0 var(--space-4); font-family: var(--font-display); font-size: var(--fs-tab); }
+[data-ui="next"] :is(.ui-tab, .tab, .view-tab):is([aria-selected="true"], [aria-current="page"]) { color: var(--action); }
+[data-ui="next"] :is(.ui-tab, .tab, .view-tab):is([aria-selected="true"], [aria-current="page"])::after { left: 0; right: 0; }
+[data-ui="next"] :is(.ui-count, .view-count) { min-width: 22px; font-family: var(--font-text); }
+
+/* Tables: head on sunken (12/600, +0.04em), cells 14 with the dense padding, figures right; a row's status is its 4 px
+   edge; the actions column stays at the right edge while the table scrolls. */
+[data-ui="next"] :is(.ui-table-wrap, .table-wrap) { background-color: var(--plate); }
+.ui-plate :is(.ui-table-wrap, .table-wrap) { border: 0; }
+[data-ui="next"] :is(.ui-table, .data-table) { font-size: var(--fs-cell); }
+[data-ui="next"] :is(.ui-table, .data-table) :is(th, td) { padding: var(--cell-py) var(--cell-px); border-bottom: 0; border-top: 1px solid var(--line-hair); }
+[data-ui="next"] :is(.ui-table, .data-table) thead th { border-top: 0; font-size: var(--fs-head); letter-spacing: .04em; vertical-align: bottom; }
+.ui-table tr[data-status="critical"] > :first-child { box-shadow: var(--edge-crit); }
+.ui-table tr[data-status="warning"] > :first-child { box-shadow: var(--edge-warn); }
+.ui-table tr[data-voided] > * { opacity: .6; }
+.ui-cell-sub { display: block; color: var(--text-3); font-size: var(--fs-small); font-weight: 400; white-space: normal; }
+.ui-cell-strong { font-weight: 600; }
+.ui-table :is(th, td).ui-actions { position: sticky; right: 0; padding-top: var(--space-1); padding-bottom: var(--space-1); background: var(--plate, var(--surface-sheet)); box-shadow: -1px 0 0 var(--line-hair); vertical-align: middle; }
+.ui-table thead th.ui-actions { background: var(--surface-sunken); }
+.ui-table .ui-actions { width: 1%; white-space: nowrap; }
+.ui-table-foot { padding: 6px var(--cell-px, var(--space-3)); border-top: 1px solid var(--line-hair); color: var(--text-3); font-size: var(--fs-caption); }
+
+/* ======================================================================================================= Plate ===
+   ui-plate: the design's top-level panel, a hairline-framed sheet (with the marks in the new look) and a head: title
+   (h2), a badge, the meta (text-3), a link at the right ("Alarms →"). A safety notice may stand under the head. Plates
+   stand in ui-plates, a 12-column grid; data-span="4|6|8|12" (the whole width under 1100 px, half from 640 px). */
+.ui-plates { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap, var(--space-5)); align-items: start; }
+.ui-plates > * { grid-column: 1 / -1; min-width: 0; }
+@media (min-width: 1100px) {
+  .ui-plates > [data-span="4"] { grid-column: span 4; }
+  .ui-plates > [data-span="6"] { grid-column: span 6; }
+  .ui-plates > [data-span="8"] { grid-column: span 8; }
+}
+@media (min-width: 640px) and (max-width: 1099px) {
+  .ui-plates > :is([data-span="4"], [data-span="6"]) { grid-column: span 6; }
+}
+.ui-plate { display: flex; flex-direction: column; align-self: stretch; min-width: 0; border: 1px solid var(--line-hair); border-radius: var(--radius-object); background: var(--plate, var(--surface-sheet)); }
+.ui-plate-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--space-3); padding: 10px var(--cell-px, var(--space-4)); border-bottom: 1px solid var(--line-hair); }
+.ui-plate-head h2 { margin: 0; font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.2; color: var(--text-1); }
+.ui-plate-meta { margin-right: auto; color: var(--text-3); font-size: var(--fs-caption); }
+.ui-plate-link { margin-left: auto; font-family: var(--font-display); font-size: var(--fs-small); font-weight: 600; letter-spacing: .02em; text-decoration: none; white-space: nowrap; }
+.ui-plate-meta + .ui-plate-link { margin-left: 0; }
+.ui-plate-link:hover { text-decoration: underline; }
+.ui-plate-body { padding: var(--cell-py, var(--space-3)) var(--cell-px, var(--space-4)) var(--space-4); }
+.ui-plate > .ui-notice { border-bottom: 1px solid var(--line-hair); }
+
+/* ======================================================================================================== Tile ===
+   ui-tile: one figure people read at a glance (a metric card), in a ui-tiles grid inside a plate: label (13/600, text-2),
+   the figure (as large as the cell allows, never wrapped), a sub-line, a source and time. The whole tile is the link to
+   where the figure comes from. Grey; only an abnormal figure gets its 4 px edge, its glyph and the status's text colour.
+   data-size="small" on the grid: breakdown cells. */
+.ui-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); margin: 0 -1px -1px 0; }
+.ui-tiles[data-size="small"] { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+[data-wall] .ui-tiles { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.ui-tile {
+  container-type: inline-size;
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  padding: var(--cell-py, var(--space-3)) var(--cell-px, var(--space-4));
+  border-right: 1px solid var(--line-hair); border-bottom: 1px solid var(--line-hair);
+  color: var(--text-1); text-decoration: none;
+}
+a.ui-tile:hover { background: var(--surface-sunken); color: var(--text-1); }
+.ui-tile[data-status="critical"] { box-shadow: var(--edge-crit); }
+.ui-tile[data-status="warning"] { box-shadow: var(--edge-warn); }
+a.ui-tile:focus-visible { box-shadow: var(--ring-focus); }
+a.ui-tile[data-status="critical"]:focus-visible { box-shadow: var(--ring-focus), var(--edge-crit); }
+a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), var(--edge-warn); }
+.ui-tile-label { display: flex; align-items: center; gap: 6px; color: var(--text-2); font-size: var(--fs-small); font-weight: 600; line-height: 1.3; }
+.ui-tile-label .icon { flex: none; width: var(--icon-inline); height: var(--icon-inline); }
+.ui-tile[data-status="critical"] .ui-tile-label .icon { color: var(--crit); }
+.ui-tile[data-status="warning"] .ui-tile-label .icon { color: var(--warn); }
+.ui-tile-figure { overflow: hidden; font-family: var(--font-display); font-size: clamp(var(--fs-figure), 14cqi, var(--fs-tile)); font-weight: 600; line-height: 1.05; white-space: nowrap; text-overflow: ellipsis; }
+.ui-tiles[data-size="small"] .ui-tile-figure { font-size: clamp(var(--fs-figure), 14cqi, var(--fs-h1)); }
+.ui-tile[data-status="critical"] .ui-tile-figure { color: var(--crit-text); }
+.ui-tile[data-status="warning"] .ui-tile-figure { color: var(--warn-text); }
+.ui-tile-sub { color: var(--text-2); font-size: var(--fs-small); }
+.ui-tile-sub2 { color: var(--text-3); font-size: var(--fs-small); }
+.ui-tile-source { margin-top: auto; padding-top: var(--space-1); color: var(--text-3); font-size: var(--fs-caption); }
+
+/* ====================================================================================================== Notice ===
+   ui-notice: a sentence that must stay in sight. data-tone="warning" is the safety line ("Nothing is sent yet: …"), "ok"
+   the flash after a save (with its close), "critical" an error, none a note. Glyph and words, a 4 px edge. */
+.ui-notice { display: flex; align-items: flex-start; gap: var(--space-2); margin: 0; padding: 10px 14px; background: var(--surface-sunken); color: var(--text-1); box-shadow: inset 4px 0 0 var(--line-control); font-size: var(--fs-small); text-wrap: pretty; }
+.ui-notice > .icon { flex: none; width: var(--icon-inline); height: var(--icon-inline); margin-top: 2px; }
+.ui-notice[data-tone="warning"] { background: var(--warn-tint); color: var(--warn-text); box-shadow: inset 4px 0 0 var(--warn); }
+.ui-notice[data-tone="warning"] > .icon { color: var(--warn); }
+.ui-notice[data-tone="ok"] { align-items: center; background: var(--ok-tint); color: var(--ok-text); box-shadow: inset 4px 0 0 var(--ok); font-weight: 600; }
+.ui-notice[data-tone="critical"] { background: var(--crit-tint); color: var(--crit-text); box-shadow: inset 4px 0 0 var(--crit); }
+.ui-notice[data-tone="critical"] > .icon { color: var(--crit); }
+.ui-notice-body { flex: 1; min-width: 0; }
+.ui-notice-title { display: block; font-weight: 600; }
+.ui-notice > .icon-button { width: 32px; height: 32px; margin: -6px -6px -6px 0; border-color: transparent; color: inherit; }
+
+/* ======================================================================================= Empty, loading, error ===
+   ui-empty: a dashed box that says what is not there yet and why, with the one action that fills it. ui-loading: what
+   is being fetched, in words (never a bare spinner), over skeleton rows that can never read as values. ui-error: what
+   could not be read and what to do (a critical notice with Try again). */
+.ui-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-5); border: 1px dashed var(--line-control); border-radius: var(--radius-object); }
+.ui-empty-title { margin: 0; font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.2; }
+.ui-empty-text { margin: 0; max-width: 70ch; color: var(--text-2); font-size: var(--fs-small); text-wrap: pretty; }
+.ui-empty .ui-btn { margin-top: var(--space-2); }
+.ui-loading { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--cell-py, var(--space-3)) var(--cell-px, var(--space-4)); color: var(--text-2); font-size: var(--fs-small); }
+.ui-loading-line { display: flex; align-items: center; gap: var(--space-2); }
+.ui-skeleton { height: 14px; background: var(--gradient-skeleton); background-size: 200% 100%; animation: ui-shimmer 1.4s ease-in-out infinite; }
+.ui-skeleton:nth-child(3n) { width: 70%; }
+.ui-skeleton:nth-child(3n+1) { width: 90%; }
+@keyframes ui-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .ui-skeleton { animation: none; } }
+.ui-error { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+
+/* ================================================================================================= Chart frame ===
+   ui-chart: a figure: its head (title, the latest value at the right), the drawing (an svg, or the canvas of an
+   interactive series, uPlot), its keys and a caption that says where the values come from. The drawing reads its colours
+   from the chart roles (chart-*); the frame never draws data. */
+.ui-chart { display: flex; flex-direction: column; min-width: 0; margin: 0; }
+.ui-chart-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); padding: 10px 14px var(--space-1); }
+.ui-chart-head h3 { margin: 0 auto 0 0; font-family: var(--font-display); font-size: var(--fs-body); font-weight: 600; line-height: 1.2; }
+.ui-chart-now { font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
+.ui-chart-now[data-status="critical"] { color: var(--crit-text); }
+.ui-chart-now[data-status="warning"] { color: var(--warn-text); }
+.ui-chart-draw { position: relative; min-height: 160px; margin: 0 10px; border: 1px solid var(--line-hair); background: var(--surface-sheet); }
+.ui-chart-draw > :is(svg, canvas, div) { display: block; width: 100%; }
+.ui-chart-keys { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0; padding: var(--space-2) 14px 0; list-style: none; color: var(--text-2); font-size: var(--fs-caption); }
+.ui-chart-key { display: inline-flex; align-items: center; gap: 6px; }
+.ui-chart-key::before { content: ""; width: 18px; height: 2px; background: currentColor; }
+.ui-chart-key[data-series="1"] { color: var(--chart-s1); }
+.ui-chart-key[data-series="2"] { color: var(--chart-s2); }
+.ui-chart-key[data-series="3"] { color: var(--chart-s3); }
+.ui-chart-key[data-series="4"] { color: var(--chart-s4); }
+.ui-chart-key[data-series="5"] { color: var(--chart-s5); }
+.ui-chart-key > span { color: var(--text-2); }
+.ui-chart-empty { margin: 0; padding: var(--space-5) var(--space-4); }
+.ui-series { min-height: 160px; }
+.ui-chart-caption { margin-top: auto; padding: 6px 14px 10px; color: var(--text-2); font-size: var(--fs-caption); text-wrap: pretty; }

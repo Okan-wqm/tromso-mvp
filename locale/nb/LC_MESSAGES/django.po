@@ -327,6 +327,18 @@ msgid "%(count)d min"
 msgstr "%(count)d min"
 
 #, python-format
+msgid "%(count)d on site"
+msgid_plural "%(count)d on site"
+msgstr[0] "%(count)d på stedet"
+msgstr[1] "%(count)d på stedet"
+
+#, python-format
+msgid "%(count)d open alarm"
+msgid_plural "%(count)d open alarms"
+msgstr[0] "%(count)d åpen alarm"
+msgstr[1] "%(count)d åpne alarmer"
+
+#, python-format
 msgid "%(count)d open health event"
 msgid_plural "%(count)d open health events"
 msgstr[0] "%(count)d åpen helsehendelse"
@@ -10008,6 +10020,9 @@ msgstr "Ingen i teamet ennå."
 
 msgid "No one in the team yet. Use “Add person” to add a row."
 msgstr "Ingen i teamet ennå. Bruk «Legg til person» for å legge til en rad."
+
+msgid "No open alarms"
+msgstr "Ingen åpne alarmer"
 
 msgid "No open tasks"
 msgstr "Ingen åpne oppgaver"

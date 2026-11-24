@@ -175,7 +175,8 @@ def _sites(user, sites, now):
             'water': _site_water(row, now),
             'alarms': None if row['attention'] is None else {
                 'figure': whole(row['attention'].alarms),
-                'sub': ' · '.join(farm_wide_said(row['attention'])) or None},
+                # why the row's edge is critical or warning: the farm-wide alarms it holds and its units' line
+                'sub': ' · '.join([*farm_wide_said(row['attention']), *units_said(row['attention'])]) or None},
             'onSite': None if row['on_site'] is None else whole(row['on_site']),
         } for row in sites['rows']],
         'none': '—',
@@ -199,7 +200,8 @@ def _alarms(alarms):
         'more': (_('and %(count)s more: all alarms') % {'count': alarms['more']}) if alarms['more'] else None,
         # "No alarm is open." only when nothing needs a look (Attention.quiet, the strip's rule); with no alarm row but a
         # unit flagged, the plate says the units' line instead of an empty state
-        'empty': _('No alarm is open.') if alarms['attention'].quiet else None,
+        # (and only when it lists no alarm either: the reading may be a few seconds old, the list is live)
+        'empty': _('No alarm is open.') if alarms['attention'].quiet and not alarms['rows'] else None,
         'units': {'tone': 'critical' if alarms['attention'].critical or alarms['attention'].unreadable else 'warning',
                   'text': ' · '.join(units_said(alarms['attention']))} if units_said(alarms['attention']) else None}
 

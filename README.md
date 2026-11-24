@@ -876,10 +876,10 @@ updated), an optional one says "Could not be read: Tasks" on the frame, where no
 
 **In the new look** (`?ui=next`, see The new look; 2026-11-24). The same page, the same card read (`read.cards`,
 `_ladder`, `water_rungs`), the same templates, fragment, pane and polls (poll.ts's start-up gate, the merge by key, the
-announcer): the new look is a skin and one link. `templates/monitoring/monitor.html` loads `static/css/glyphs.css` and
-`static/css/monitor-next.css` only in the new look, and every rule of the second is under `html[data-ui="next"]`, so the
-classic page reads none of it (its markup is byte for byte what it was: the layout parts of the classic wall did not
-change). What it draws, from the design console: the state's glyph as the design's icons (critical the octagon,
+announcer): the new look is a skin, and the cards' markup is byte for byte the same in both looks
+(`monitoring/tests/test_next_pages.py`), so the change token does not need to know the look. `templates/monitoring/monitor.html`
+loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new look, and every rule of the second is under
+`html[data-ui="next"]`, so the classic page reads none of it. What it draws, from the design console: the state's glyph as the design's icons (critical the octagon,
 warning the triangle, no recent data the clock, no limit the gauge, note the bell, OK the check, empty the grid), a
 mask of the one icon source (`scripts/icons.mjs` builds `glyphs.css` from `templates/icons` beside the islands' set,
 `npm run check:icons` holds both), so the glyph a script sets (the band's "page of the worst card") follows; every rung
@@ -889,17 +889,14 @@ with no recent data hatched (the design's "not known": it never looks like an OK
 figures in Barlow, OK in its green; the band a plate on the desk page with the switch of the cards as a segmented control;
 a card that flows (Simple, Detailed) with its state as a chip and its figures in hairline cells; the Big card's chart and
 its three boxes framed. Nothing is cut, hidden or faded that the classic card shows: the fitted cards keep their unit
-and measure, and the wall's browser test runs every case again in the new look (`frontend/test/wall.browser.test.ts`,
-`wall-small-next-*.html`, `dock-big-next-tr.html` of `manage.py layout_pages`). The one thing the new look adds is **the
-link to Tank › Water** on every card, the pane's included (`templates/monitoring/_water_link.html`: the chart icon, and
-"Water history" in words on a full-height card and a card that flows; on the Small card its words are for a screen
-reader); Tank › Water opens in the new look only, so the classic card has no such link. The fragments are rendered
-without a request, so their context carries the look (`UI_NEXT`, `monitoring/views.py _look`), and the change token
-holds it (`read.change_token(look=)`; the classic token is what it was): a screen whose look changed never keeps the
-other look's cards behind a 204. Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py`
+and measure, and the wall's browser test runs every case again in the new look (`frontend/test/wall.browser.test.ts`, the same parts of
+`manage.py layout_pages` under the new look's sheets). **Every card links its tank's water history**, in both looks and
+the pane's included (`templates/monitoring/_water_link.html`, `farm:tank_water`: the chart icon, and "Water history" in
+words on a full-height card and a card that flows; on the Small card its words are for a screen reader): Tank › Water in
+the new look, the unit's history on Water chemistry in the classic look (the address redirects there). Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py`
 `monitoring_world`: a unit in each of the seven states): each card says in the new look what it says in the classic one
 (the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on the Small,
-Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish; and by `frontend/test/monitoring.pages.ts`
+Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish, and the link resolves in both looks; and by `frontend/test/monitoring.pages.ts`
 (`npm run test:pages`, on the pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the
 product's policy and nonce, its polls answered with the real fragments, at 1440 and 390 px (no CSP violation, no serious
 axe finding, card text at 4.5:1, no sideways scroll, a glyph and a link on every card), the pane, the wall at 1920×1080

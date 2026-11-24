@@ -4,8 +4,9 @@
 - the cards SAY in the new look what they say in the classic look, card for card and state for state (the golden
   extractor, monitoring/tests/golden.py: the state word, the reasons, every labelled figure and every link the same;
   every text and title of the classic card still there), on the Small, Simple, Detailed and Big cards and in the pane;
-- every card of the new look links its tank's water history (Tank › Water), and no classic card does;
-- the classic page loads none of the new look's sheets, the new one both; the change token holds the look;
+- every card links its tank's water history (Tank › Water) in both looks, and the link resolves (the classic look's to
+  the unit's history on Water chemistry); the cards are the same markup in both looks;
+- the classic page loads none of the new look's sheets, the new one both;
 - the pages are kept for the browser test (frontend/test/monitoring.pages.ts, `npm run test:pages`) under
   .build/monitor-pages/ (never committed: the repository is public, and nothing here comes from a real database):
   the shell of each screen as the server prints it, the fragments its polls are answered with, the pane, the strip, and
@@ -28,7 +29,6 @@ from farm.models import Tank
 from farm.tests.helpers import point_of
 from farm.water import services as water
 
-from .. import read
 from .golden import Normaliser, Tree, cards_say, multiset_missing
 
 OUT = Path(settings.BASE_DIR) / '.build' / 'monitor-pages'
@@ -114,34 +114,41 @@ class NextPagesTests(FrozenClock, TestCase):
                                if each.tag == 'a' and '/water/' in each.attrs.get('href', '')]
         return found
 
-    def test_every_card_of_the_new_look_links_its_tanks_water_and_no_classic_card_does(self):
+    def test_every_card_links_its_tanks_water_in_both_looks_and_the_link_resolves(self):
         for name, query in SCREENS.items():
-            new = self.links_of(self.fragment(query))
-            self.assertTrue(new, name)
-            for code, hrefs in new.items():
-                self.assertEqual(hrefs, [reverse('farm:tank_water', args=[self.units[code].pk])], f'{name} {code}')
-            self.assertEqual(set(map(tuple, self.links_of(self.fragment(query, look='')).values())), {()}, name)
+            for look in ('', ui.NEXT):
+                found = self.links_of(self.fragment(query, look=look))
+                self.assertTrue(found, name)
+                for code, hrefs in found.items():
+                    self.assertEqual(hrefs, [reverse('farm:tank_water', args=[self.units[code].pk])],
+                                     f'{name} {look or "classic"} {code}')
         pane = self.ask(PANE, {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}).content.decode()
         self.assertIn(f'href="{reverse("farm:tank_water", args=[self.units["TW-02"].pk])}"', pane)
         self.assertIn('id="pane-water-', pane)                  # a second card of its unit on the page: its own id
-        # the link is where it leads: Tank › Water in the new look
-        self.assertEqual(self.ask(reverse('farm:tank_water', args=[self.units['TW-02'].pk])).status_code, 200)
+        # where it leads: Tank › Water in the new look; in the classic look the unit's history on Water chemistry
+        from farm.water.views import history_url
+        for code in ('TW-01', 'TW-04', 'TW-07'):
+            unit = self.units[code]
+            address = reverse('farm:tank_water', args=[unit.pk])
+            self.assertEqual(self.ask(address).status_code, 200, code)
+            self.client.cookies.pop(ui.COOKIE, None)
+            response = self.client.get(address)
+            self.assertRedirects(response, history_url(unit), fetch_redirect_response=False)
+            self.assertEqual(self.client.get(response['Location']).status_code, 200, code)
+
+    def test_the_cards_are_the_same_markup_in_both_looks(self):
+        """The new look is a skin: the fragment and the pane are byte for byte the classic ones (the change token
+        need not know the look)."""
+        for name, query in SCREENS.items():
+            self.assertEqual(self.fragment(query), self.fragment(query, look=''), name)
+        focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
+        self.assertEqual(self.ask(PANE, focus).content, self.ask(PANE, focus, look='').content)
 
     def test_the_classic_page_loads_none_of_the_new_looks_sheets(self):
         for look, expected in (('', False), (ui.NEXT, True)):
             html = self.ask(PAGE, SCREENS['small'], look=look).content.decode()
             for sheet in ('css/glyphs.css', 'css/monitor-next.css'):
                 self.assertEqual(sheet in html, expected, f'{look or "classic"} {sheet}')
-
-    def test_the_token_holds_the_look_and_the_classic_token_is_what_it_was(self):
-        query = 'mode=small&occupancy=all'
-        classic = read.change_token(self.admin, query)
-        self.assertEqual(read.change_token(self.admin, query, look=''), classic)
-        self.assertNotEqual(read.change_token(self.admin, query, look=ui.NEXT), classic)
-        # a screen whose look changed never gets 204 for the other look's cards
-        response = self.ask(CARDS, {**SCREENS['small'], 'after': self.ask(CARDS, SCREENS['small'], look='')['X-Poll-Next']
-                                    .rpartition('after=')[2]})
-        self.assertEqual(response.status_code, 200)
 
     def keep(self, name, response):
         """Writes an answer for the browser test: its body, and its next address."""

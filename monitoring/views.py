@@ -25,7 +25,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgettext
 from django.views.decorators.http import require_POST
 
-from core import audit, navigation, ui
+from core import audit, navigation
 from core.dates import company_today, company_zone
 from core.crud import render_page
 from farm.models import ProductionDepartment, Site, System, Tank
@@ -53,13 +53,6 @@ def _keep_alive(request, params):
     today = company_today().isoformat()
     if request.session.get(SESSION_DAY) != today:
         request.session[SESSION_DAY] = today      # modifying the session saves it with a new expiry
-
-
-def _look(request):
-    """The look the cards are drawn in (core/ui.py): 'next' for the new look, '' for the classic one. The fragments are rendered
-    without a request, so their context carries it (UI_NEXT, as the context processor names it for a page), and the
-    change tokens hold it: a screen that changes its look never keeps the other look's cards behind a 204."""
-    return ui.NEXT if ui.is_next(request) else ''
 
 
 def _poll_url(query, token, name=POLL):
@@ -98,7 +91,6 @@ def _grid(request, params, board, now=None):
         'openers': openers,
         'band': band, 'modes': _modes(params, board), 'chart_views': _chart_views(params, found),
         'params': params, 'card_width': board.card_width if board is not None else CardWidth.AUTO,
-        'UI_NEXT': bool(_look(request)),
         'computed_at': timezone.make_naive(now, company_zone()),     # naive: a template shows an aware one in UTC
         'shown': len(found), 'on_farm': farm,
         'count_line': ngettext('%(shown)d of %(farm)d unit shown', '%(shown)d of %(farm)d units shown', farm)
@@ -192,12 +184,11 @@ def _pane(request, params, now=None):
         return None
     card = found[0]
     return {'row': {'card': card, 'flip': {}, 'zoom': _zoom_urls(params, card, PANE), 'pane': True, 'ns': 'pane-'},
-            'pane_unit': unit, 'close_url': _address(params.canonical(focus='')), 'UI_NEXT': bool(_look(request))}
+            'pane_unit': unit, 'close_url': _address(params.canonical(focus=''))}
 
 
 def _pane_token(request, params, revision=None):
-    return read.change_token(request.user, f'pane?{params.canonical()}', board=params.board, revision=revision,
-                             look=_look(request))
+    return read.change_token(request.user, f'pane?{params.canonical()}', board=params.board, revision=revision)
 
 
 def _flip_urls(params, card):
@@ -257,8 +248,7 @@ def _full(request, params):
     """The full page (`?full=1`): toolbar, grid with the cards, the windows' place. The token is read before the cards,
     so a change between the two shows at the first poll."""
     revision = audit.revision()                  # once, before any data, for both tokens
-    token = read.change_token(request.user, params.canonical(), board=params.board, revision=revision,
-                              look=_look(request))
+    token = read.change_token(request.user, params.canonical(), board=params.board, revision=revision)
     now = timezone.now()
     board = _board(params)
     pane_token = _pane_token(request, params, revision)
@@ -280,7 +270,7 @@ def cards(request):
     params = read.Params.from_query(request.GET)
     _keep_alive(request, params)
     query = params.canonical()
-    token = read.change_token(request.user, query, board=params.board, look=_look(request))
+    token = read.change_token(request.user, query, board=params.board)
     headers = {'Cache-Control': 'no-store', 'X-Poll-Next': _poll_url(query, token)}
     if request.GET.get('after') == token:
         return HttpResponse(status=204, headers=headers)

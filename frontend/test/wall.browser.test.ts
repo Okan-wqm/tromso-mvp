@@ -6,9 +6,9 @@
 // text is cut but the three that carry their whole text in a title (the unit's name, a long reason, why a picture
 // cannot be drawn), a figure, a label, a code and a state word never, and the smallest text is at least 11 px; in
 // Turkish too. On a 1280x720 window the wall turns pages rather than shrink: PageDown and PageUp turn them and the
-// band says which. The same in the NEW LOOK (?ui=next: the cards' own markup with the link to Tank › Water, the theme
-// Industry, static/css/glyphs.css and monitor-next.css after the page's sheets): wall-small-next-*.html and
-// dock-big-next-tr.html, every test of the wall run again on them. Test code only.
+// band says which. The same parts again in the NEW LOOK (?ui=next: data-ui="next", the theme Industry, and
+// static/css/glyphs.css and monitor-next.css after the page's sheets, as monitor.html links them then): every test of
+// the wall run again. Test code only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -30,8 +30,8 @@ const SHEETS_NEXT = linksOf('app_base.html', ['monitor', 'card-grid', 'glyphs', 
 /** The wall's page; `pane`: with the pane of a unit gone into in its dock (frontend/test/pages/dock-big-tr.html, the
  *  dock's own markup around the unit's Big card). */
 function page(language: string, pane = false, next = false): string {
-  const part = readFileSync(join(PAGES, `wall-small-${next ? 'next-' : ''}${language}.html`), 'utf8');
-  const docked = pane ? readFileSync(join(PAGES, next ? 'dock-big-next-tr.html' : 'dock-big-tr.html'), 'utf8') : '';
+  const part = readFileSync(join(PAGES, `wall-small-${language}.html`), 'utf8');
+  const docked = pane ? readFileSync(join(PAGES, 'dock-big-tr.html'), 'utf8') : '';
   const look = next ? 'data-theme="industry" data-ui="next"' : 'data-theme="fjord"';
   return `<!doctype html><html lang="${language}" ${look} data-wall><head><meta charset="utf-8"><title>wall</title>
 ${next ? SHEETS_NEXT : SHEETS}<script type="module" src="/js/wall.js"></script></head>

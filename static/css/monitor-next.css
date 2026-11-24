@@ -1,9 +1,9 @@
 /* Monitoring in the new look (`?ui=next`, core/ui.py; docs/design/system/README.md, The new look): the cards, the band and
    the pane as the design console draws them (F:\dev\balik-notes\design-in, "Suderra Console.dc.html", Monitoring).
    Loaded by templates/monitoring/monitor.html AFTER monitor.css and only in the new look, and every rule is under
-   html[data-ui="next"] besides: the classic look never reads a line of it. The markup is the classic one (the same card
-   read, the same templates, the same fragment and poll); the new look adds only the link to Tank › Water
-   (monitoring/_water_link.html). Tokens only: no colour, no raw font size, no radius.
+   html[data-ui="next"] besides: the classic look never reads a line of it (the same card
+   read, the same templates, the same fragment and poll: the markup is the classic one, byte for byte). Tokens only: no
+   colour, no raw font size, no radius.
 
    What it changes, and what it never does:
    - the state's glyph: the design's icons (octagon, triangle, clock, ...) in place of the classic shapes, from the one
@@ -88,12 +88,6 @@ html[data-ui="next"] .monitor-warning:not(.is-fit) .monitor-card-state > .monito
 html[data-ui="next"] .monitor-card:not(.is-fit) .metrics { gap: 0; border-top: 1px solid var(--line-hair); border-left: 1px solid var(--line-hair); }
 html[data-ui="next"] .monitor-card:not(.is-fit) .metrics > div { padding: .4em .6em; border-right: 1px solid var(--line-hair); border-bottom: 1px solid var(--line-hair); }
 html[data-ui="next"] .monitor-card:not(.is-fit) .monitor-card-foot { padding-top: .5em; border-top: 1px solid var(--line-hair); }
-
-/* ---- the link to Tank › Water (monitoring/_water_link.html) ------------------------------------------------------- */
-html[data-ui="next"] .monitor-water { display: inline-flex; flex: none; align-items: center; gap: .3em; color: var(--action); text-decoration: none; white-space: nowrap; }
-html[data-ui="next"] .monitor-water .icon { width: 1.1em; height: 1.1em; }
-html[data-ui="next"] .monitor-water:hover .monitor-water-word,
-html[data-ui="next"] .monitor-water:focus-visible .monitor-water-word { text-decoration: underline; }
 
 /* ---- the band (desk page; a wall keeps its own one-row band: monitor.css, "the wall") ----------------------------- */
 html[data-ui="next"]:not([data-wall]) .monitor-band { padding: .7em 1em; border: 1px solid var(--line-hair); background: var(--plate); }

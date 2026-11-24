@@ -283,10 +283,12 @@ def hours_of(segment):
 
 def chart_rows(segment, width, tier, zone):
     """The segment's buckets: (start, n, sum, min, max, first, last), clean values only. On the hour tiers the whole
-    hours come from the rollup and the parts of hours from the readings (`hours_of`)."""
+    hours come from the rollup and the parts of hours from the readings (`hours_of`). Each sum adds its rows in time
+    order: a float sum in whatever order the database meets the rows (parallel workers) differed in its last digit
+    from one read to the next, so the same chart and its CSV were not the same twice."""
     clean = f'(quality & {BAD_MASK}) = 0'
     if tier == RAW:
-        sql = (f'SELECT time_bucket(%s, ts) AS b, sum(n)::bigint, sum(coalesce(run_sum, value)), '
+        sql = (f'SELECT time_bucket(%s, ts) AS b, sum(n)::bigint, sum(coalesce(run_sum, value) ORDER BY ts), '
                f'min(coalesce(run_min, value)), max(coalesce(run_max, value)), min(ts), max(ts) FROM sensors_reading '
                f'WHERE channel_no = %s AND ts >= %s AND ts < %s AND {clean} GROUP BY b ORDER BY b')
         params = [width, segment.channel_no, segment.start, segment.end]
@@ -295,7 +297,7 @@ def chart_rows(segment, width, tier, zone):
         on = ', %s' if tier == LOCAL_DAY else ''
         (first, last), parts = hours_of(segment)
         parts = (parts + [(segment.start, segment.start)] * 2)[:2]
-        sql = (f'SELECT b, sum(n)::bigint, sum(s), min(lo), max(hi), min(f), max(l) FROM ('
+        sql = (f'SELECT b, sum(n)::bigint, sum(s ORDER BY f, s), min(lo), max(hi), min(f), max(l) FROM ('
                f'SELECT time_bucket(%s, bucket{on}) AS b, n, sum_v AS s, vmin AS lo, vmax AS hi, first_ts AS f, '
                f'last_ts AS l FROM sensors_rollup_1h WHERE channel_no = %s AND bucket >= %s AND bucket < %s '
                f'UNION ALL SELECT time_bucket(%s, ts{on}), n, coalesce(run_sum, value), coalesce(run_min, value), '

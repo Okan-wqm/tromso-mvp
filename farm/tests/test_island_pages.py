@@ -72,10 +72,10 @@ class IslandPagesTests(FrozenClock, TestCase):
             self.assertTrue(ranged['path'] and all(ranged['path']))
             self.assertTrue(any(isoline['label'] for isoline in ranged['chart']['isolines']))   # placed by the server
             self.assertTrue(ranged['chart']['regions'])                       # the NH₃-N and CO₂ limits: their regions
-            # the window's last day has no diagram (the lab's alkalinity is four days old): said, never a star read as now
-            self.assertTrue(ranged['stale'])
-            self.assertNotIn('Temperature', ranged['stale'])        # the live probe seen: frames on the hour (N1)
-            self.assertEqual((ranged['now'], ranged['now_status']), (ranged['stale'], 'warning'))
+            # the frames on the hour see the live probe (review recheck N1): the window's end has its diagram, said as
+            # the water at its time, not stale (the stale end is test_range_deffeyes's)
+            self.assertEqual((ranged['stale'], ranged['now_status']), ('', ''))
+            self.assertEqual(ranged['now'], ranged['words']['water'])
             keep(f'water-{language}', props)
 
     def test_tank_water_reads_a_custom_window_in_the_date_boxs_shape(self):

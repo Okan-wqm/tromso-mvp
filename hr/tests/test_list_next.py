@@ -7,7 +7,8 @@ import re
 from pathlib import Path
 from unittest import mock
 
-from django.test import override_settings
+from django.contrib.auth import get_user_model
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from core import listprops
@@ -100,3 +101,57 @@ class ListPropsTests(PeopleTestCase):
         with self.assertRaises(ValueError):
             listprops.notice('n', 'loud', 'Odd')
         self.assertEqual(listprops.cell('Ann', sub=['', None, 'E-1'])['sub'], ['E-1'])
+
+
+# Every list drawn by the list-page island, as scripts/record_test_world.py records it: {name: (route, query)}.
+LISTS = {
+    'team': ('hr:employee_list', {}), 'team-production': ('hr:production_employee_list', {}),
+    'departments': ('hr:officedepartment_list', {}), 'attendance': ('hr:attendancerecord_list', {}),
+    'attendance-production': ('hr:production_attendancerecord_list', {}),
+    'leave': ('hr:leaverequest_list', {}), 'leave-all': ('hr:leaverequest_list', {'tab': 'all'}),
+    'leave-production': ('hr:production_leaverequest_list', {'tab': 'all'}),
+    'shifts': ('hr:shift_list', {}), 'holidays': ('hr:holiday_list', {}), 'leave-types': ('hr:leavetype_list', {}),
+}
+
+
+@override_settings(ISLANDS_MANIFEST=MANIFEST)
+class EveryListOnTheTestWorldTests(TestCase):
+    """The test world (core/test_world.py), its clock pinned: every HR list in the new look says all its classic page says,
+    in three languages, and a row's links are the record's own pages (no dialog)."""
+
+    def setUp(self):
+        from core.test_world import MOMENT, world
+        clock = mock.patch('django.utils.timezone.now', return_value=MOMENT)
+        clock.start()
+        self.addCleanup(clock.stop)
+        self.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
+        world(self.admin)
+        self.client.force_login(self.admin)
+
+    def test_every_list_says_everything_its_classic_page_says_in_three_languages(self):
+        for name, (route, query) in LISTS.items():
+            for language in ('en', 'nb', 'tr'):
+                with self.subTest(page=name, language=language):
+                    self.client.cookies['django_language'] = language
+                    old = self.client.get(reverse(route), {**query, 'ui': 'classic'}).content.decode()
+                    new = self.client.get(reverse(route), {**query, 'ui': 'next'}).content.decode()
+                    props = props_of(new)
+                    self.assertIsNotNone(props)
+                    if name != 'leave':     # Company › HR's pending tab: the office has none pending (its empty state)
+                        self.assertTrue(props['table']['rows'], 'the test world has rows on every list')
+                    self.assertEqual(unsaid(old, props, new_html=new), [])
+                    self.assertNotIn('data-modal', new)
+
+    def test_the_leave_lists_tabs_count_and_the_cancel_posts_with_the_token(self):
+        new = self.client.get(reverse('hr:leaverequest_list'), {'ui': 'next', 'tab': 'all'}).content.decode()
+        props = props_of(new)
+        tabs = {tab['href']: tab for tab in props['tabs']['tabs']}
+        self.assertTrue(tabs['?tab=all']['current'])
+        # Company › HR reads the office's people (the realm): the approved request; the pending one is Production's
+        self.assertEqual((tabs['?tab=pending']['count'], tabs['?tab=approved']['count'], tabs['?tab=all']['count']),
+                         ('0', '1', '1'))
+        production = props_of(self.client.get(reverse('hr:production_leaverequest_list'), {'ui': 'next'}).content.decode())
+        [pending] = production['table']['rows']
+        self.assertEqual([action['kind'] for action in pending['actions']], ['link', 'link', 'post'])
+        self.assertEqual(pending['actions'][2]['href'], reverse('hr:production_leaverequest_cancel', args=[pending['key']]))
+        self.assertTrue(props['csrfToken'])

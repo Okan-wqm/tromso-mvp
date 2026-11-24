@@ -204,7 +204,7 @@ test('a list page: one GET form for the search and the filters, the table with i
   assert.match(page, /<a class="ui-tab" href="\?tab=pending" aria-current="page">Pending<span class="ui-count">2<\/span><\/a>/);
   assert.match(page, /<a class="ui-btn" data-variant="primary" href="\/hr\/team\/new\/">/);
   assert.doesNotMatch(page, /data-modal/, 'a list link opens the record\'s page, never the classic dialog');
-  assert.match(page, /<a href="\/hr\/team\/1\/">Ann Alfa<\/a><span class="ui-cell-sub">E-1<\/span>/);
+  assert.match(page, /<span class="ui-cell-strong"><a href="\/hr\/team\/1\/">Ann Alfa<\/a><\/span><span class="ui-cell-sub">E-1<\/span>/);
   assert.match(page, /<tr data-status="warning">/);
   assert.match(page, /<td class="num">0\.5<\/td>/);
   assert.match(page, /<form action="\/hr\/leave\/1\/cancel\/" method="post"><input type="hidden" name="csrfmiddlewaretoken" value="test-token"\/><input type="hidden" name="next" value="\/hr\/leave\/"\/><button type="submit" class="icon-button icon-button-danger" aria-label="Cancel the request"/);

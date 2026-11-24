@@ -27,6 +27,10 @@ msgid "%(age)s ago"
 msgstr "%(age)s siden"
 
 #, python-format
+msgid "%(alarms)s; and %(more)d more, see the alarm list"
+msgstr "%(alarms)s; og %(more)d til, se alarmlisten"
+
+#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s har ingen fisk i %(place)s nå."
 
@@ -5682,13 +5686,13 @@ msgstr "Kritikalitet"
 msgid ""
 "Criticals only: after a message about a kind of critical alarm (one site, one quantity, rule or "
 "check), the next ones of that kind for that person are collected this long and go as one message "
-"naming each. 0: each at once. Critical 0 to 30; warning 0 (warnings are grouped by the flood "
-"window)."
+"naming each. 0: each at once. Critical 0 to 8, so a second critical still reaches the person "
+"within 10 s of its value; warning 0 (warnings are grouped by the flood window)."
 msgstr ""
 "Bare kritiske: etter en melding om et slag kritisk alarm (ett anlegg, én størrelse, regel eller "
 "kontroll) samles de neste av samme slag for samme person så lenge og går som én melding som "
-"nevner hver av dem. 0: hver med en gang. Kritisk 0 til 30; advarsel 0 (advarsler grupperes av "
-"flomvinduet)."
+"nevner hver av dem. 0: hver med en gang. Kritisk 0 til 8, så en kritisk alarm til fortsatt når "
+"personen innen 10 s etter verdien; advarsel 0 (advarsler grupperes av flomvinduet)."
 
 msgid "Crude fat (%)"
 msgstr "Råfett (%)"
@@ -19946,6 +19950,9 @@ msgstr "sjøvannsskalaen (SWS)"
 
 msgid "seconds"
 msgstr "sekunder"
+
+msgid "see the alarm list"
+msgstr "se alarmlisten"
 
 msgid "sensitivity test"
 msgstr "følsomhetsundersøkelse"

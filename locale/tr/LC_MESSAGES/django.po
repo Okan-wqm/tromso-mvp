@@ -29,6 +29,10 @@ msgid "%(age)s ago"
 msgstr "%(age)s önce"
 
 #, python-format
+msgid "%(alarms)s; and %(more)d more, see the alarm list"
+msgstr "%(alarms)s; ve %(more)d tane daha, alarm listesine bakın"
+
+#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s partisinin şu anda %(place)s yerinde balığı yok."
 
@@ -5702,13 +5706,14 @@ msgstr "Kritiklik"
 msgid ""
 "Criticals only: after a message about a kind of critical alarm (one site, one quantity, rule or "
 "check), the next ones of that kind for that person are collected this long and go as one message "
-"naming each. 0: each at once. Critical 0 to 30; warning 0 (warnings are grouped by the flood "
-"window)."
+"naming each. 0: each at once. Critical 0 to 8, so a second critical still reaches the person "
+"within 10 s of its value; warning 0 (warnings are grouped by the flood window)."
 msgstr ""
 "Yalnızca kritikler: bir kritik alarm türü (tek tesis, tek bir büyüklük, kural ya da denetim) "
 "hakkında bir mesajdan sonra, aynı kişi için aynı türden sonrakiler bu süre boyunca toplanır ve "
-"her birini adıyla sayan tek bir mesajla gider. 0: her biri hemen. Kritik 0 ile 30 arası; uyarı 0 "
-"(uyarılar sel penceresiyle gruplanır)."
+"her birini adıyla sayan tek bir mesajla gider. 0: her biri hemen. Kritik 0 ile 8 arası; böylece "
+"ikinci bir kritik alarm da değerinden sonraki 10 s içinde kişiye ulaşır; uyarı 0 (uyarılar sel "
+"penceresiyle gruplanır)."
 
 msgid "Crude fat (%)"
 msgstr "Ham yağ (%)"
@@ -19991,6 +19996,9 @@ msgstr "deniz suyu ölçeğinde (SWS)"
 
 msgid "seconds"
 msgstr "saniye"
+
+msgid "see the alarm list"
+msgstr "alarm listesine bakın"
 
 msgid "sensitivity test"
 msgstr "duyarlılık testi"

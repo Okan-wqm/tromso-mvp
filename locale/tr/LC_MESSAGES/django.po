@@ -11971,6 +11971,9 @@ msgstr "Üretim planı"
 msgid "Production plans"
 msgstr "Üretim planları"
 
+msgid "Production team today"
+msgstr "Bugün üretim ekibi"
+
 msgid "Production units"
 msgstr "Üretim birimleri"
 
@@ -19101,6 +19104,12 @@ msgstr "saat"
 
 msgid "https:// is added when it is left out."
 msgstr "Yazılmazsa https:// eklenir."
+
+#, python-format
+msgid "in %(count)s batch"
+msgid_plural "in %(count)s batches"
+msgstr[0] "%(count)s partide"
+msgstr[1] "%(count)s partide"
 
 #, python-format
 msgid "in %(count)s conversation"

@@ -5530,6 +5530,24 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `sensors/tests/test_pages_next.py` (every page against its classic page on the test world plus `sensors_world`, in
   three languages; nothing opens the classic dialog; the world's facts) and `frontend/test/prodrest.pages.ts` (each page
   at 1440 and 390: CSP, axe, 4.5:1, no sideways scroll, the screenshots).
+- **Production › Overview** (`config.views.production_home`): the classic body (`templates/_production_overview.html`)
+  drawn by the server, with what the design adds under `next` from real sources: the fish card's batch count ("in 4
+  batches", `farm.stock.views.overview`, one read of the stock with the tiles), the units under a medicine withdrawal today
+  in Needs attention (hold chip, each batch's "harvest from", a link to the unit's drawer) and "Production team today", the
+  HR board's bar (`config.views.team_today`, `core/stack.py`; the tiles add up to the people planned today) with the
+  muster count and the late ones. The classic page says none of them. Held: `farm/tests/test_production_overview_next.py`.
+- **Production › Production units** (`farm.stock.views.production_units`): the table on the shared list page
+  (`farm/stock/units_next.py`, from the rows the view read; the classic filter buttons are the toolbar's selects with the
+  same values), the unit's drawer as the server draws it on the classic page, beside it (`farm/_unit_drawer.html`, every
+  section). A row's code and batch open the drawer, Edit the unit's form (`farm:tank_edit`, with the right to change
+  units). A water value is its figure with its origin and age; a warning, critical or stale one is in its status's chip,
+  never drawn as OK. Held: `farm/tests/test_production_units_next.py` (the filter links and the values' titles are the
+  two things said another way, named there).
+- **System › Water** (`farm:system_water`, `/operations/systems/<id>/water/`; `farm/water/system_page.py`): the system's
+  points side by side, loop first, on one time axis, from `history_data` (the JSON of
+  `farm:water_system_chart?view=history`), drawn by Tank › Water's island; with more than one point each chart's title
+  starts with its point. Without the new look the address is the system's history on Water chemistry. Held:
+  `farm/tests/test_system_water_next.py`.
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

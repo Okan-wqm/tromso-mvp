@@ -11945,6 +11945,9 @@ msgstr "Produksjonsplan"
 msgid "Production plans"
 msgstr "Produksjonsplaner"
 
+msgid "Production team today"
+msgstr "Produksjonsteamet i dag"
+
 msgid "Production units"
 msgstr "Produksjonsenheter"
 
@@ -19062,6 +19065,12 @@ msgstr "timer"
 
 msgid "https:// is added when it is left out."
 msgstr "https:// legges til når det mangler."
+
+#, python-format
+msgid "in %(count)s batch"
+msgid_plural "in %(count)s batches"
+msgstr[0] "i %(count)s fiskegruppe"
+msgstr[1] "i %(count)s fiskegrupper"
 
 #, python-format
 msgid "in %(count)s conversation"

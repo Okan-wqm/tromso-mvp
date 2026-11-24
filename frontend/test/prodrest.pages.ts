@@ -1,5 +1,6 @@
 // The rest of Production and Sensors in a real browser (Playwright on the machine's own Chrome or Edge): the Sensors lists
-// (the shared list page), Sensors › Overview, Production › Overview and Production units, each mounted as Django mounts it
+// (the shared list page), Sensors › Overview, Production › Overview, Production units (its table, and its drawer as the
+// server draws it) and System › Water, each mounted as Django mounts it
 // (`{% island %}`: its root, its props as a JSON block, the built module of static/islands) with the props the real views
 // gave in the test run's database on THE test world (sensors/tests/test_pages_next.py and the Production tests keep them
 // in .build/island-props as {island, props}, core/island_props.py: never a recording of a real database), on the
@@ -26,7 +27,8 @@ const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascr
 // the pages of this test: the props files their Django tests keep, by name
 const PREFIXES = ['sensors-', 'production-'];
 
-interface Kept { island: string; props: unknown }
+/** an island's page ({island, props}), or a page the server draws in the new look ({html}: its <main>, scripts left out) */
+interface Kept { island?: string; props?: unknown; html?: string }
 interface Chunk { file: string; css?: string[]; imports?: string[]; name?: string; isEntry?: boolean }
 
 function pages(): string[] {
@@ -47,9 +49,15 @@ function entry(name: string): { file: string; css: string[] } {
 }
 
 function html(key: string): string {
-  const { island, props } = kept(key);
-  const { file, css } = entry(island);
+  const { island, props, html: main } = kept(key);
   const lang = key.split('-').at(-1) ?? 'en';
+  if (main !== undefined) {
+    return `<!doctype html><html lang="${lang}" data-theme="industry" data-ui="next"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>${key}</title>${linksOf('app_base.html')}</head>
+<body>${main.replace(/<script[\s\S]*?<\/script>/g, '')}</body></html>`;
+  }
+  if (!island) throw new Error(`${key}: neither an island nor a page`);
+  const { file, css } = entry(island);
   return `<!doctype html><html lang="${lang}" data-theme="industry" data-ui="next"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>${key}</title>${linksOf('app_base.html')}${css.map((sheet) => `<link rel="stylesheet" href="/islands/${sheet}">`).join('')}</head>
 <body><main class="content" id="content" data-measure="fluid"><div class="page-head ui-head"><div class="page-title"><h1>${key}</h1></div></div>
@@ -92,13 +100,15 @@ test('the rest of Production and Sensors in a browser', { skip: skipWithout(BROW
   try {
     for (const key of keys) {
       const { island } = kept(key);
+      const drawn = island ? `[data-island="${island}"][data-mounted] :is(table, .ui-tiles, .ui-empty, .ui-plate)` : 'main :is(.ui-sheet, .ui-plate, table, .empty)';
       for (const width of [1440, 390]) {
         await t.test(`${key} at ${width} px: drawn, no dialog link, no CSP violation, no serious axe finding, 4.5:1, no sideways scroll`, async () => {
           const tab = await browser.newPage({ viewport: { width, height: 900 } });
           const violations = await watchCsp(tab);
           await tab.goto(`${origin}/page/${key}`);
-          await tab.waitForSelector(`[data-island="${island}"][data-mounted] :is(table, .ui-tiles, .ui-empty, .ui-plate)`);
-          assert.equal(await tab.locator('[data-modal]').count(), 0, 'nothing opens the classic dialog');
+          await tab.waitForSelector(drawn);
+          // an island's page opens no classic dialog; a page the server draws keeps the dialogs of forms not redrawn yet
+          if (island) assert.equal(await tab.locator('[data-modal]').count(), 0, 'nothing opens the classic dialog');
           assert.deepEqual(violations, [], 'CSP violations');
           assert.deepEqual(await lowContrast(tab), [], 'text under 4.5:1');
           assert.deepEqual(await axeFindings(tab, origin), [], 'axe');

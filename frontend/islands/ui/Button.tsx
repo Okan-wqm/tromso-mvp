@@ -55,7 +55,7 @@ export function LinkButton({ href, variant = 'secondary', icon, children }: Link
 
 export interface IconButtonProps extends Omit<AriaButtonProps, 'className' | 'style' | 'children'> {
   icon: IconName;
-  /** what it does, for a screen reader and the tooltip: "Edit Bergen Hatchery" */
+  /** what it does, for a screen reader and the tooltip: "Edit Test Site North" */
   label: string;
   tone?: 'danger';
 }

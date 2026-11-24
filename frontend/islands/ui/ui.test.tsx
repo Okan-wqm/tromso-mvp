@@ -33,8 +33,8 @@ test('a button is the design system\'s ui-btn in every variant, and busy keeps i
 });
 
 test('an icon button is named by its label; a link button is a link', () => {
-  assert.match(html(<IconButton icon="trash" label="Delete Bergen Hatchery" tone="danger" />),
-    /class="icon-button icon-button-danger"[^>]*aria-label="Delete Bergen Hatchery"|aria-label="Delete Bergen Hatchery"[^>]*class="icon-button icon-button-danger"/);
+  assert.match(html(<IconButton icon="trash" label="Delete Test Site North" tone="danger" />),
+    /class="icon-button icon-button-danger"[^>]*aria-label="Delete Test Site North"|aria-label="Delete Test Site North"[^>]*class="icon-button icon-button-danger"/);
   assert.match(html(<LinkButton href="/sites/new/" variant="primary" icon="plus">Add site</LinkButton>),
     /^<a class="ui-btn" data-variant="primary" href="\/sites\/new\/">/);
 });
@@ -94,7 +94,7 @@ test('a field with the server\'s errors is invalid, says them in words and is de
   assert.match(field, /<ul class="errorlist" id="[^"]+-errors"><li class="ui-field-error"><svg[^>]*>.*<\/svg>Enter nine digits\.<\/li><\/ul>/);
   assert.doesNotMatch(html(<TextField name="n" label="Name" />), /aria-invalid|has-error/);
   assert.match(html(<TextField name="c" label="Capacity" unit="kg" numeric />), /<span class="ui-unit"><input[^>]*inputMode="decimal"[^>]*><span class="ui-unit-label">kg<\/span>/);
-  assert.match(html(<SelectField name="s" label="Site" options={[{ value: '1', label: 'Bergen' }]} />), /<select[^>]*><option value="1">Bergen<\/option><\/select>/);
+  assert.match(html(<SelectField name="s" label="Site" options={[{ value: '1', label: 'Test Site North' }]} />), /<select[^>]*><option value="1">Test Site North<\/option><\/select>/);
   assert.match(html(<CheckboxGroup name="x" label="Supplies" options={[{ value: 'f', label: 'Feed' }]} />), /^<fieldset class="field field-set"><legend>Supplies<\/legend>/);
   const form = html(<ServerForm action="/save/" csrfToken="t0k" formErrors={['Two people changed it.']} actions={<Button type="submit">Save</Button>}>x</ServerForm>);
   assert.match(form, /<input type="hidden" name="csrfmiddlewaretoken" value="t0k"\/>/);

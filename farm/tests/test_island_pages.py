@@ -9,7 +9,7 @@ on the same window.
     water-en, water-nb          Tank › Water of TT-01, 7 days (farm:tank_water)
     sensor-charts-en            Sensors › Charts, TT-01's pH over 7 days compared with its temperature (sensors:charts)"""
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from core.island_props import keep, render_island
@@ -26,7 +26,10 @@ class IslandPagesTests(FrozenClock, TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
-        world(cls.admin)
+        made = world(cls.admin, Client())
+        refused = [each for each in made if not each.endswith(': 302')]
+        if refused:
+            raise AssertionError(f'the test world was not built: {refused}')
         cls.unit = Tank.objects.get(code='TT-01')
 
     def setUp(self):

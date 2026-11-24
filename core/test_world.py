@@ -23,10 +23,12 @@ from django.urls import reverse
 MOMENT = datetime.fromisoformat('2026-11-23T12:42:00+00:00')
 
 
-def world(admin):
-    """The test world, built through a client signed in as `admin`; [what was made: its answer] of the parts posted."""
+def world(admin, client=None):
+    """The test world, built through a client signed in as `admin`; [what was made: its answer] of the parts posted.
+    `client`: the test's own (a test run allows only its own host); else one on localhost, as the recorder's server
+    allows."""
     from farm.models import Tank
-    client = Client(HTTP_HOST='localhost')
+    client = client or Client(HTTP_HOST='localhost')
     client.force_login(admin)
     made = company_world(admin, client)
     water_world(admin, {'tank': Tank.objects.get(code='TT-01')})

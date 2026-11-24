@@ -29,5 +29,14 @@
     "imports": [
       "_ui-Ef56Gh78.js"
     ]
+  },
+  "frontend/islands/list-page.tsx": {
+    "file": "list-page-Lp12Ab34.js",
+    "name": "list-page",
+    "src": "frontend/islands/list-page.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
   }
 }

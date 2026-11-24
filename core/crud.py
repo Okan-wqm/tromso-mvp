@@ -42,7 +42,7 @@ from django.urls import path, reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
-from . import audit, formprops, navigation, softdelete
+from . import audit, formprops, listprops, navigation, softdelete
 from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
 from .ui import is_next
@@ -434,6 +434,12 @@ class Resource:
     private_fields = ()   # form fields holding a person's own text (a leave reason): the activity log says
                           # "Private text" for a filled one and never stores the words
     mounts = ()           # Mount: the other places the tab is served, its rows there narrowed by `scoped`
+    # The list in the new look (core/listprops.py): `list_rows(view, objects, context)` gives its table (a classmethod;
+    # None keeps the classic list in the new look too). The search box's placeholder and the empty list's sentence when
+    # the tab's list template has its own (its blocks `search_placeholder` and `empty_text`): the same msgid.
+    list_rows = None
+    search_placeholder = ''
+    empty_text = ''
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -572,6 +578,11 @@ class Resource:
         return objects, {}
 
     @classmethod
+    def list_filters(cls, view, context):
+        """The list's filters in the new look (core.listprops.choice), from the values `filter_list` put in `context`."""
+        return []
+
+    @classmethod
     def detail_extras(cls, request, obj):
         """Extra context for the read page (detail_template)."""
         return {}
@@ -705,8 +716,12 @@ class ListView(ResourceView):
             objects = page.object_list
         kept = request.GET.copy()
         kept.pop('page', None)
-        return render_page(request, self.resource.list_template, self.context(
-            objects=objects, query=query, page=page, pager_query=kept.urlencode(), **filters))
+        context = self.context(objects=objects, query=query, page=page, pager_query=kept.urlencode(), **filters)
+        if self.resource.list_rows is not None and is_next(request):
+            # The new look's list page (core/listprops.py): the same rows, read by the same view, drawn by the island.
+            return render_page(request, 'crud/list_next.html',
+                               {**context, 'props': listprops.list_props(self, objects, context)})
+        return render_page(request, self.resource.list_template, context)
 
 
 class FormView(ResourceView):

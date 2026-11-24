@@ -1,6 +1,6 @@
 {% load i18n dates %}{# A conversation's messages, oldest first: the page's list, and the rows a poll adds (messaging.views.poll); in the new look a message is deleted on its own page, not in the dialog. #}
 {% for message in shown %}
-{% if message.pk == first_new %}<li class="chat-new" role="separator"><span>{% trans "New" %}</span></li>{% endif %}
+{% if message.pk == first_new %}<li class="chat-new"><span>{% trans "New" %}</span></li>{% endif %}
 <li class="msg{% if message.author_id == participant.pk %} msg-mine{% endif %}{% if message.is_deleted %} msg-deleted{% endif %}" id="m{{ message.pk }}">
   <p class="msg-meta">
     <strong class="msg-author">{{ message.author }}</strong>

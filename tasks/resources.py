@@ -261,7 +261,7 @@ class TaskSeriesResource(Resource):
                                       'trash', danger=True))
             rows.append(L.row(series.pk, {
                 'title': L.title(view, context, series, series.title,
-                                 sub=[f'{series.get_category_display()} · {series.get_priority_display()}']),
+                                 sub=[series.get_category_display(), series.get_priority_display()]),
                 'repeats': L.cell(rule_text(series), sub=[' · '.join(span)]),
                 'place': L.cell(place_label(place), sub=[place_context(place)]),
                 'assignees': L.cell(names) if names else L.cell(chip=L.chip('warning', gettext('Nobody'))),

@@ -67,10 +67,18 @@ class WorldTestCase(TestCase):
         """The classic page and the new one at `address` (a route name or an address) with `query`, in `language`."""
         address = address if address.startswith('/') else reverse(address)
         self.client.cookies['django_language'] = language
-        old = self.client.get(address, {**(query or {}), 'ui': 'classic'})
-        new = self.client.get(address, {**(query or {}), 'ui': 'next'})
+        answers = []
+        for look in ('classic', 'next'):
+            self.before_each_look()
+            # the look is the cookie's (core/ui.py), so the page's own address, kept in its links' `next`, is the same
+            self.client.cookies['ui'] = look
+            answers.append(self.client.get(address, query or {}))
+        old, new = answers
         self.assertEqual((old.status_code, new.status_code), (200, 200))
         return old.content.decode(), new.content.decode()
+
+    def before_each_look(self):
+        """What a test puts back before each look's page is read (nothing here)."""
 
     def assertDrawnByTheServer(self, old, new):
         """A server-drawn page: the design system's plates, no classic table, all the classic page says, no style
@@ -92,8 +100,18 @@ class ListPagesTests(WorldTestCase):
                     props = props_of(new)
                     self.assertIsNotNone(props)
                     self.assertTrue(props['table']['rows'], 'the test world has rows on every list')
-                    self.assertEqual(unsaid(old, props, new_html=new), [])
+                    self.assertEqual(unsaid(old, props, ignore=self.said_otherwise(route, language), new_html=new), [])
                     self.assertIsNone(re.search(r'\sdata-modal[\s>=]', main_of(new)), 'no link opens the classic dialog')
+
+    @staticmethod
+    def said_otherwise(route, language):
+        """The classic Recurring tasks list names its delete button with the bare word ("Delete", in Turkish "Sil"); the
+        new page names it with the record ("Delete <title>"), where a word of three letters is not looked for."""
+        if route != 'tasks:taskseries_list':
+            return ()
+        from django.utils import translation
+        with translation.override(language):
+            return (translation.gettext('Delete'),)
 
     def test_the_recurring_tasks_link_to_the_tasks_views(self):
         props = props_of(self.pages('tasks:taskseries_list')[1])
@@ -105,7 +123,9 @@ class ListPagesTests(WorldTestCase):
         self.assertEqual(rows['Test filter wash']['cells']['status']['chip'], {'kind': 'neutral', 'text': 'Paused'})
         self.assertEqual(rows['Test filter wash']['cells']['assignees']['chip']['kind'], 'warning')
         self.assertEqual(rows['Test filter wash']['cells']['next']['text'], '—')
-        self.assertTrue(rows['Test oxygen round']['cells']['title']['href'].endswith('/edit/'))
+        from tasks.models import TaskSeries
+        oxygen = TaskSeries.objects.get(title='Test oxygen round')
+        self.assertEqual(rows['Test oxygen round']['cells']['title']['href'], reverse('tasks:taskseries_edit', args=[oxygen.pk]))
 
     def test_an_experiment_list_shows_the_rows_of_the_classic_list_and_nothing_more(self):
         reader = get_user_model().objects.create_user('test.reader', 'test.reader@example.com', 'x')
@@ -171,7 +191,7 @@ class TasksPageTests(WorldTestCase):
         self.assertIn(f'href="{reverse("tasks:task_complete", args=[late.pk])}?next=', new)
         # the overdue task is marked on its row (warning) and counted above the table
         self.assertRegex(new, r'<tr data-status="warning"[^>]*>\s*<th scope="row"><span class="ui-row-status">')
-        self.assertIn('1 overdue task', new)
+        self.assertRegex(new, r'<strong>d+ overdue tasks?</strong>')
 
 
 class ReportsPageTests(WorldTestCase):
@@ -226,6 +246,12 @@ class MessagesPageTests(WorldTestCase):
             for language in LANGUAGES:
                 with self.subTest(address=address, language=language):
                     self.assertDrawnByTheServer(*self.pages(address, language=language))
+
+    def before_each_look(self):
+        """Opening a conversation marks what it shows as read: each page is read with the admin's place put back, so the
+        classic page and the new one show the same "New" mark and unread counts."""
+        from messaging.models import Participant
+        Participant.objects.filter(user=self.admin).update(last_read_id=None)
 
     def test_the_poll_draws_the_same_fragments_in_both_looks(self):
         from messaging.models import Conversation

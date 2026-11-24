@@ -160,8 +160,8 @@ class ExperimentResource(Resource):
             phase = None if experiment.is_template else read.progress(experiment, site_today(experiment.site))
             rows.append(L.row(experiment.pk, {
                 'experiment': L.cell(experiment.name, href=view.url('detail', experiment.pk), strong=True,
-                                     sub=[experiment.code, experiment.get_primary_endpoint_display()
-                                          if experiment.primary_endpoint else '']),
+                                     sub=[f'{experiment.code} · {experiment.get_primary_endpoint_display()}'
+                                          if experiment.primary_endpoint else experiment.code]),
                 'status': L.cell(chip=L.chip(cls.STATUS_CHIPS.get(experiment.status, 'neutral'),
                                              experiment.get_status_display()), chips=chips,
                                  sub=[cls.phase_text(phase)]),

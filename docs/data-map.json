@@ -5875,7 +5875,9 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/test_world.py",
         "core/tests_entry_key.py",
+        "core/tests_formpanels.py",
         "core/tests_workspaces.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
@@ -7088,6 +7090,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
@@ -7472,6 +7475,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -8941,6 +8945,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_formpanels.py",
         "core/tests_workspaces.py",
         "farm/tests/test_one_column_table.py",
         "farm/tests/test_protocols.py",
@@ -10017,7 +10023,9 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_erasure.py",
+        "core/tests_formpanels.py",
         "core/tests_pagesays.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
@@ -13165,6 +13173,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
@@ -15434,6 +15443,7 @@
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
         "core/tests_erasure.py",
+        "core/tests_formpanels.py",
         "core/tests_formpayload.py",
         "core/tests_private_log.py",
         "core/tests_query_pages.py",
@@ -16590,6 +16600,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
@@ -18586,6 +18597,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_feeds.py",
@@ -20072,6 +20084,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
@@ -23129,6 +23142,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_formpanels.py",
         "farm/tests/test_emptied_unit.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_withdrawal_ceiling.py",
@@ -28768,6 +28782,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
@@ -31937,6 +31952,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
@@ -35759,6 +35775,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "reports/tests/helpers.py",
@@ -38771,6 +38788,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
@@ -41611,6 +41629,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/test_models.py",
@@ -42600,6 +42619,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_formpanels.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/__init__.py",

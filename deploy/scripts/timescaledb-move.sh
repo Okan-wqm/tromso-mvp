@@ -124,7 +124,7 @@ checks() {
     echo "ok    $d: $got"
   done
   say "rows, chunks and jobs as before; compressed chunks as many or more (a compression job may have run meanwhile)"
-  after="${before%.facts}.checked-$(now).facts"     # beside the facts from before: the record of these checks
+  after="$before.checked-$(now)"                    # beside the facts from before: the record of these checks
   facts > "$after"
   grep -vE '^(version|compressed:)' "$before" > "$after.cmp-before"
   grep -vE '^(version|compressed:)' "$after" > "$after.cmp-now"
@@ -213,13 +213,13 @@ finish() {  # steps 3 to 8, each safe to run again
   manage core_rev_repair
   quiet_check
   step "7. pg_dump on the new release"
-  after="$dir/$label-after-$(now).dump"
-  $DB_EXEC pg_dump -U "$DB_USER" -Fc "$DB_NAME" > "$after"
-  [ -s "$after" ] || die "the dump is empty"
+  newdump="$dir/$label-after-$(now).dump"
+  $DB_EXEC pg_dump -U "$DB_USER" -Fc "$DB_NAME" > "$newdump"
+  [ -s "$newdump" ] || die "the dump is empty"
   step "8. the checks"
   checks "$dir/$label-before-$stamp.facts"
   rm -f "$state"
-  say "moved: $dir/$label-before-$stamp.dump (old release; .roles.sql and .facts beside it), $after (new release)"
+  say "moved: $dir/$label-before-$stamp.dump (old release; .roles.sql and .facts beside it), $newdump (new release)"
 }
 
 refuse_unfinished() {

@@ -499,6 +499,7 @@ SQL
   for kind in facts roles.sql; do
     ls "$T"/tsmove | grep -Eq "^dev-before-[0-9]{8}-[0-9]{6}\.$kind\$" || { echo "FAIL: no $kind beside the dump"; exit 1; }
   done
+  ls "$T"/tsmove | grep -Eq '^dev-after-[0-9]{8}-[0-9]{6}\.dump$' || { echo "FAIL: no dump on the new release"; exit 1; }
   if ls "$T"/tsmove | grep -q unfinished; then echo "FAIL: a finished move left its record"; exit 1; fi
   say "the move again, on the moved database: refused, nothing written"
   local before
@@ -515,7 +516,7 @@ SQL
 tsback() {
   local dump facts
   dump=$(ls "$T"/tsmove/dev-before-*.dump)
-  facts=$(ls "$T"/tsmove/dev-before-*.facts)
+  facts="${dump%.dump}.facts"
   say "the way back, as upgrade.md says: the database stopped first"
   docker stop tsmove > /dev/null
   say "a way back that fails (a dump cut short) removes its container and says how to remove the new volume"

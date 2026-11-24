@@ -244,3 +244,24 @@ test('a stacked bar: each part a segment as long as its share on the whole, ever
   assert.doesNotMatch(empty, /<svg/);
   assert.match(empty, /<p class="ui-stack-empty">Nobody is expected today<\/p>/);
 });
+
+test('a server form posts the CSRF token, says the form\'s errors in an alert, and its submit is ready until it posts', () => {
+  const form = html(<ServerForm action="/x/" csrfToken="t" label="Save" formErrors={['Choose a site.']}
+    actions={<Button type="submit" variant="primary">Save</Button>} noValidate>x</ServerForm>);
+  assert.match(form, /<form aria-label="Save" noValidate="" action="\/x\/" method="post">/);
+  assert.match(form, /<input type="hidden" name="csrfmiddlewaretoken" value="t"\/>/);
+  assert.match(form, /<div class="ui-notice" data-tone="critical" role="alert">.*<li>Choose a site\.<\/li>/);
+  assert.doesNotMatch(form, /disabled/);
+  const get = html(<ServerForm action="/x/" csrfToken="t" label="Find" method="get" actions={null}>x</ServerForm>);
+  assert.doesNotMatch(get, /csrfmiddlewaretoken/, 'a GET form never carries the token into the address');
+});
+
+test('a blocked delete: the plan\'s reasons are said and its Delete button is off (review F4); an open plan\'s is on', async () => {
+  const { ConfirmDelete } = await import('../pages/ConfirmDelete.js');
+  const { BLOCKED_PROPS, OPEN_PROPS } = await import('../../test/pages/delete-props.js');
+  const blocked = html(<ConfirmDelete {...BLOCKED_PROPS} />);
+  assert.match(blocked, /<button[^>]*type="submit"[^>]*disabled=""[^>]*>Delete leave type<\/button>|<button[^>]*disabled=""[^>]*type="submit"[^>]*>Delete leave type<\/button>/);
+  assert.match(blocked, /This leave type cannot be deleted yet\..*2 leave requests use it\./);
+  const open = html(<ConfirmDelete {...OPEN_PROPS} />);
+  assert.doesNotMatch(open, /<button[^>]*disabled/);
+});

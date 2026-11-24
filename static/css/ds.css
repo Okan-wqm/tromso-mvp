@@ -573,3 +573,7 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-audit-record { color: var(--text-2); }
 .ui-audit-who { margin-left: auto; color: var(--text-3); font-size: var(--fs-small); white-space: nowrap; }
 .ui-audit-who strong { color: var(--text-2); }
+
+/* A tab panel kept in the page while another tab is shown (Tabs keepMounted: a form posts the fields of every tab): out of
+   sight and, through React Aria's inert, out of the focus order. */
+.ui-tab-panel[data-inert] { display: none; }

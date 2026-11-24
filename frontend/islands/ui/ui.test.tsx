@@ -85,6 +85,18 @@ test('tabs are React Aria\'s, drawn as ui-tabs; link tabs mark the current view'
   assert.match(html(<LinkTabs label="Views" tabs={[{ href: '?s=open', label: 'Open', current: true }]} />), /aria-current="page"/);
 });
 
+test('kept mounted, every panel is in the page and an unselected one is inert (hidden by ds.css)', () => {
+  const items = [{ id: 'a', label: 'General', content: <input name="title" /> }, { id: 'b', label: 'Where', content: <input name="site" /> }];
+  const kept = html(<Tabs label="Task" items={items} keepMounted />);
+  assert.match(kept, /name="title"/);
+  assert.match(kept, /name="site"/);
+  assert.match(kept, /class="ui-tab-panel"[^>]*inert=""[^>]*data-inert="true"|data-inert="true"[^>]*inert=""/);
+  assert.equal((kept.match(/data-inert="true"/g) ?? []).length, 1);
+  assert.doesNotMatch(html(<Tabs label="Task" items={items} />), /name="site"/);
+  const css = readFileSync(resolve('static/css/ds.css'), 'utf8');
+  assert.match(css, /\.ui-tab-panel\[data-inert\] \{ display: none; \}/);
+});
+
 test('a field with the server\'s errors is invalid, says them in words and is described by them', () => {
   const field = html(<TextField name="org" label="Organisation number" help="Nine digits." errors={['Enter nine digits.']} />);
   assert.match(field, /^<div class="field has-error">/);

@@ -40,9 +40,12 @@ function loading(grid: boolean): string {
 
 interface Answer { status: number; body?: string; next?: string; delay?: number; }
 /** What the stub answers the grid's polls (and the pane's), in turn (the last one repeats), and what it was asked. */
-interface Stub { answers: Answer[]; asked: string[]; pane?: Answer[]; paneAsked?: string[]; }
-/** How the page is drawn: the grid's interval, a wall, the scripts, the pane, a sheet of the test's own. */
-interface Look { every?: number; wall?: boolean; scripts?: boolean; dock?: boolean; style?: string; lateAnnouncer?: number; }
+interface Stub { answers: Answer[]; asked: string[]; pane?: Answer[]; paneAsked?: string[]; served?: string[]; }
+/** How the page is drawn: the grid's interval, a wall, the scripts, the pane, a sheet of the test's own, announce.js
+ *  served that many ms late, the monitoring page's own scripts in its own order (windows.js, which imports poll.js,
+ *  before announce.js: templates/monitoring/monitor.html and app_base.html). */
+interface Look { every?: number; wall?: boolean; scripts?: boolean; dock?: boolean; style?: string; lateAnnouncer?: number;
+                 windows?: boolean; }
 
 function cards(states: string[]): string {
   return `<div data-key="band">${states.length} shown</div>` + states.map((state, index) =>
@@ -54,7 +57,11 @@ function page(look: Look): string {
   const dock = look.dock ? `<aside id="monitor-dock"><section class="monitor-window monitor-pane" data-dock-unit="1">
 <div class="monitor-window-body" data-window-body data-poll="/pane" data-poll-every="60" data-poll-merge="data-key"
  data-poll-state="loading" data-stale-text="Not updated." data-gone-text="Gone.">${loading(false)}</div></section></aside>` : '';
+  const template = look.windows ? `<template id="monitor-dock-template"><section class="monitor-window monitor-pane" tabindex="-1">
+<h2 data-dock-title></h2><a data-dock-close href="/">Close</a><div class="monitor-window-body" data-window-body></div></section></template>` : '';
   const scripts = look.scripts === false ? ''
+    : look.windows ? `${template}<script type="module" src="/js/windows.js"></script>` +
+                     '<script type="module" src="/js/announce.js"></script><script type="module" src="/js/poll.js"></script>'
     : '<script type="module" src="/js/poll.js"></script><script type="module" src="/js/announce.js"></script>';
   return `<!doctype html><html lang="en"${look.wall ? ' data-wall' : ''}><head><meta charset="utf-8"><title>shell</title>
 <link rel="stylesheet" href="/css/monitor.css">${look.style ? `<style>${look.style}</style>` : ''}</head><body>${dock}
@@ -84,6 +91,7 @@ function serve(stub: Stub, look: Look): Promise<Server> {
     if (url === '/') {
       response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(page(look));
     } else if (url.startsWith('/cards')) {
+      (stub.served ??= []).push('cards');
       answer(response, stub.answers, stub.asked, url);
     } else if (url.startsWith('/pane')) {
       answer(response, stub.pane ?? [{ status: 404 }], stub.paneAsked ??= [], url);
@@ -91,6 +99,7 @@ function serve(stub: Stub, look: Look): Promise<Server> {
       // announce.js arrives after the grid's first answer: poll.js must not have asked before it ran
       setTimeout(() => {
         if (!response.destroyed) {
+          (stub.served ??= []).push('announce.js');
           response.writeHead(200, { 'Content-Type': 'text/javascript' }).end(readFileSync(join(BUILD, 'announce.js')));
         }
       }, look.lateAnnouncer);
@@ -195,9 +204,24 @@ test('a 503 first is said even when announce.js comes after the answer: the grid
                                  { status: 204, next: '/cards?after=5' }], asked: [] };
   await run(stub, { every: 1, lateAnnouncer: 1500 }, async (tab) => {
     await until(tab, 'unread');
+    assert.deepEqual(stub.served?.slice(0, 2), ['announce.js', 'cards']);    // the grid waited for announce.js
     await politely(tab, UNREAD);
     await until(tab, 'live');
     await politely(tab, 'Updated again.');
+  });
+});
+
+test('the pane the server drew, adopted by windows.js, waits for announce.js too: its 503 is said',
+     { skip: skipWithout(BROWSERS) }, async () => {
+  // review F1: windows.js (which imports poll.js) watches the pane as it runs, before announce.js has; the pane waits at
+  // poll.ts's gate, so its first failure is still said. The monitoring page's own script order.
+  const stub: Stub = { answers: [{ status: 200, body: cards(['ok']), next: '/cards?after=9' }, { status: 204, next: '/cards?after=9' }],
+                       asked: [], pane: [{ status: 503 }] };
+  await run(stub, { dock: true, windows: true, lateAnnouncer: 1500, every: 1 }, async (tab) => {
+    await tab.waitForFunction(() => document.querySelector('.monitor-window-body')?.getAttribute('data-poll-state') === 'unread',
+                              undefined, { timeout: 12000 });
+    assert.equal(stub.served?.[0], 'announce.js');                             // nothing was asked before it ran
+    await politely(tab, UNREAD);
   });
 });
 

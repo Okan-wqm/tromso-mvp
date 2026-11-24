@@ -5284,7 +5284,9 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   draws again as it is filled in (`data-live`: its `data-live-part`s are swapped, its fields' errors put
   under them, the address kept in step; the water calculator), a list that follows new rows
   (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`). It is THE one polling
-  implementation, and `watch(element)` is what other scripts import. Every request has a 20 s timeout, each
+  implementation, and `watch(element)` is what other scripts import. Nothing is asked before every module script
+  of the page has run (DOMContentLoaded): an element watched earlier waits, a `poll:now` sent to it meanwhile kept, so
+  a script that listens (announce.ts) never misses the first answer whatever the scripts' order. Every request has a 20 s timeout, each
   wait a few per cent shorter or longer by chance (screens never line up), a failure doubles the wait up to
   a minute, nothing is asked while the page is hidden, one shared listener serves every element and an
   element that left the page is let go. The element carries `data-poll-state` (`live`, `stale` after two

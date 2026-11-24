@@ -51,6 +51,8 @@
 //                              A field with data-autosubmit sends the form instead (the page is drawn anew);
 //                              without the script the form is sent by its <noscript> button.
 //   data-live-delay="<ms>"     the pause after typing before asking (default 300)
+// Nothing is asked before every module script of the page has run (DOMContentLoaded; see `begin`): an element watched
+// earlier waits at the gate in `watch`, keeping a `poll:now` sent to it meanwhile.
 // An element that leaves the page stops being asked for; a request takes at most 20 seconds (35 for a placeholder's).
 
 // How close to the end (px) a list must be to follow new rows.
@@ -156,11 +158,44 @@ function shown(): void {
   });
 }
 
+// The start-up gate (`begin` below): an element watched before every module script of the page has run is held, with
+// whether a `poll:now` asked for it meanwhile (its address, if one came, is already its data-poll), and starts then.
+let begun = false;
+interface Held { asked: boolean; onNow: (event: Event) => void; started: (() => void) | null; }
+const held = new Map<HTMLElement, Held>();
+
 /** Starts asking for the fragment of `element` (data-poll, data-poll-every, and the attributes above); returns the
- *  function that stops it. An element asked for already is not asked for twice. */
+ *  function that stops it. An element asked for already is not asked for twice. Before the page's scripts have all
+ *  run, the element waits for them (`begin`); the function returned stops it before and after it starts. */
 export function watch(element: HTMLElement): () => void {
   const already = stoppers.get(element);
   if (already) return already;
+  if (begun) return start(element);
+  const waiting: Held = {
+    asked: false,
+    onNow: (event) => {
+      const next = (event as CustomEvent<{ url?: string } | null>).detail?.url;
+      if (next) element.dataset.poll = next;
+      waiting.asked = true;
+    },
+    started: null,
+  };
+  const stop = (): void => {
+    if (waiting.started) {
+      waiting.started();
+      return;
+    }
+    element.removeEventListener('poll:now', waiting.onNow);
+    held.delete(element);
+    if (stoppers.get(element) === stop) stoppers.delete(element);
+  };
+  element.addEventListener('poll:now', waiting.onNow);
+  held.set(element, waiting);
+  stoppers.set(element, stop);
+  return stop;
+}
+
+function start(element: HTMLElement): () => void {
   let url = element.dataset.poll ?? '';
   const seconds = Number(element.dataset.pollEvery);
   if (!url || !(seconds > 0)) return () => undefined;
@@ -421,13 +456,22 @@ document.addEventListener('click', (event) => {
 });
 /** The page's polled parts, lists and forms start once every module script of the page has run, never earlier: a
  *  script that listens to them (frontend/announce.ts) is in place before the first answer, whatever order the page
- *  loads its scripts in. A module script the page names runs after parsing (readyState is already "interactive") and
- *  before DOMContentLoaded, which waits for all of them; so this waits for DOMContentLoaded, with `load` as the
- *  fallback for a script added after it, and starts at once on a page that has finished loading. */
-let begun = false;
+ *  loads its scripts in, and an element another script watched meanwhile (windows.ts, a pane the server drew) waited
+ *  at the gate in `watch`, a `poll:now` sent to it (a click on a data-poll-url link, windows.ts following the pane)
+ *  kept. A module script the page names runs after parsing (readyState is already "interactive") and before
+ *  DOMContentLoaded, which waits for all of them; so this runs on DOMContentLoaded, with `load` as the fallback for a
+ *  script added after it, and at once on a page that has finished loading. */
 function begin(): void {
   if (begun) return;
   begun = true;
+  held.forEach((waiting, element) => {
+    element.removeEventListener('poll:now', waiting.onNow);
+    stoppers.delete(element);
+    const placeholder = element.dataset.pollState === LOADING;   // asked for at once by `start` anyway
+    waiting.started = start(element);
+    if (waiting.asked && !placeholder) element.dispatchEvent(new CustomEvent('poll:now'));
+  });
+  held.clear();
   document.querySelectorAll<HTMLElement>('[data-scroll-end]').forEach((list) => { list.scrollTop = list.scrollHeight; });
   document.querySelectorAll<HTMLElement>('[data-poll]').forEach((element) => { watch(element); });
   document.querySelectorAll<HTMLTextAreaElement>('textarea[data-submit-on-enter]').forEach(sendOnEnter);

@@ -643,15 +643,8 @@ def hypertables():
 
 
 def constraint_triggers_on_hypertables():
-    """(relation, constraint) of every constraint trigger on a hypertable or one of its chunks: a TimescaleDB update
-    renames the chunks' constraints and cannot rename one of these (deploy/scripts/timescaledb-move.sh)."""
     with connection.cursor() as cursor:
-        cursor.execute(
-            "WITH h AS (SELECT format('%I.%I', hypertable_schema, hypertable_name)::regclass AS rel "
-            "           FROM timescaledb_information.hypertables) "
-            "SELECT c.conrelid::regclass::text, c.conname FROM pg_constraint c WHERE c.contype = 't' "
-            "AND (c.conrelid IN (SELECT rel FROM h) "
-            "     OR c.conrelid IN (SELECT i.inhrelid FROM pg_inherits i JOIN h ON i.inhparent = h.rel)) ORDER BY 1, 2")
+        cursor.execute(rev.CONSTRAINT_TRIGGERS_ON_HYPERTABLES)
         return cursor.fetchall()
 
 

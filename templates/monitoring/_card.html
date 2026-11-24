@@ -14,7 +14,7 @@
     <div class="monitor-card-state">
       {% include "monitoring/_state_word.html" %}
       {% if card.withdrawal %}<span class="badge badge-note" title="{% for block in card.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% trans "Withdrawal" %} · {{ card.withdrawal.0|harvest_from }}</span>{% endif %}
-      {% if not row.preview %}{% include "monitoring/_water_link.html" %}{% endif %}{% if chosen.flip_to %}<a class="monitor-flip" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
+      {% if "water" in card.sections and not row.preview %}{% include "monitoring/_water_link.html" %}{% endif %}{% if chosen.flip_to %}<a class="monitor-flip" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
     </div>
   </header>
   {% if state.reasons %}<ul class="monitor-reasons" role="list">{% for reason in state.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>{% endif %}

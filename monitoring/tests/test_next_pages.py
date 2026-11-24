@@ -76,7 +76,7 @@ class NextPagesTests(FrozenClock, TestCase):
         said = cards_say(self.fragment(SCREENS['small']), self.norm)
         self.assertEqual({card['state'] for card in said.values()}, STATES)
         expected = {'TW-01': 'OK', 'TW-02': 'Critical', 'TW-03': 'Warning', 'TW-04': 'No recent data',
-                    'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty'}
+                    'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty', 'TW-08': 'Critical'}
         self.assertEqual({code: said[code]['state'] for code in expected}, expected)
         self.assertEqual(len(MONITORING_UNITS), len(expected))
 
@@ -135,6 +135,25 @@ class NextPagesTests(FrozenClock, TestCase):
             response = self.client.get(address)
             self.assertRedirects(response, history_url(unit), fetch_redirect_response=False)
             self.assertEqual(self.client.get(response['Location']).status_code, 200, code)
+
+    def test_the_water_link_is_only_for_a_person_who_may_read_the_water(self):
+        """Tank › Water needs the right to read water samples, which the cards do not: a person who may see the cards but
+        not the water has no link to it (a link that would answer 403), in both looks; with the right, every card has one."""
+        from django.contrib.auth.models import Group, Permission
+        address = reverse('farm:tank_water', args=[self.units['TW-02'].pk])
+        for codenames, shown in ((('view_stockoperation',), False), (('view_stockoperation', 'view_watermeasurement'), True)):
+            person = get_user_model().objects.create_user(f'test.cards{len(codenames)}', f'test.cards{len(codenames)}@example.com')
+            group = Group.objects.create(name=f'Test cards {len(codenames)}')
+            group.permissions.set(Permission.objects.filter(codename__in=codenames))
+            person.groups.add(group)
+            self.client.force_login(person)
+            for look in ('', ui.NEXT):
+                for name in ('small', 'simple', 'big'):
+                    with self.subTest(rights=codenames, look=look, screen=name):
+                        self.assertEqual(address in self.fragment(SCREENS[name], look=look), shown)
+            focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
+            self.assertEqual(address in self.ask(PANE, focus).content.decode(), shown)
+            self.assertEqual(self.client.get(address).status_code in (200, 302), shown)
 
     def test_the_cards_are_the_same_markup_in_both_looks(self):
         """The new look is a skin: the fragment and the pane are byte for byte the classic ones (the change token

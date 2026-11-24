@@ -10028,6 +10028,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "core/tests_erasure.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",

@@ -4892,6 +4892,9 @@ msgstr "Karşılaştırmak için listelerden bir yer ve bir miktar seçin."
 msgid "Choose a place from the list."
 msgstr "Listeden bir yer seçin."
 
+msgid "Choose a place, a quantity and a time, then Draw."
+msgstr "Bir yer, bir miktar ve bir zaman seçin, sonra Çiz'e basın."
+
 msgid "Choose a role or a person."
 msgstr "Bir rol ya da bir kişi seçin."
 
@@ -5231,6 +5234,9 @@ msgstr "Şirket"
 
 msgid "Company overview"
 msgstr "Şirket genel bakışı"
+
+msgid "Compare with"
+msgstr "Karşılaştır"
 
 msgid "Complete"
 msgstr "Tamamla"
@@ -6479,6 +6485,9 @@ msgstr "Tahmini: ölçülen ağırlık ile o zamandan beri verilen yemin beklene
 
 msgid "Event"
 msgstr "Olay"
+
+msgid "Events"
+msgstr "Olaylar"
 
 msgid "Every"
 msgstr "Her"
@@ -8976,6 +8985,12 @@ msgstr "Canlı değerler"
 msgid "Loading the cards…"
 msgstr "Kartlar yükleniyor…"
 
+msgid "Loading the chart…"
+msgstr "Grafik yükleniyor…"
+
+msgid "Loading the water history…"
+msgstr "Su geçmişi yükleniyor…"
+
 msgid "Loading…"
 msgstr "Yükleniyor…"
 
@@ -9897,6 +9912,9 @@ msgstr "Bu birimde henüz yemleme kaydedilmedi."
 msgid "No feeding recorded yet"
 msgstr "Henüz yemleme kaydedilmedi"
 
+msgid "No feeding, treatment, harvest or alarm in this time."
+msgstr "Bu sürede yemleme, tedavi, hasat veya alarm yok."
+
 msgid "No file"
 msgstr "Dosya yok"
 
@@ -10280,6 +10298,9 @@ msgstr "Ünitedeki balıklar için su sınırı tanımlanmamış."
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
 
+msgid "No water value in this time: nothing was measured or sampled here."
+msgstr "Bu sürede su değeri yok: burada hiçbir şey ölçülmedi veya numune alınmadı."
+
 msgid "No widget shows the oxygen."
 msgstr "Oksijeni gösteren bir bileşen yok."
 
@@ -10534,6 +10555,9 @@ msgstr "Doğrulanmadı"
 msgid "Not weighed since the fish came in."
 msgstr "Balıklar geldiğinden beri tartılmadı."
 
+msgid "Not worked out"
+msgstr "Hesaplanmadı"
+
 #, python-format
 msgid "Not worked out: %(why)s."
 msgstr "Hesaplanmadı: %(why)s."
@@ -10569,6 +10593,9 @@ msgstr "Depoda henüz hiçbir şey yok"
 msgid "Nothing is assumed for a missing value."
 msgstr "Eksik değer için hiçbir şey varsayılmaz."
 
+msgid "Nothing is bound here now."
+msgstr "Şu anda buraya bağlı bir şey yok."
+
 msgid "Nothing is filled in for a missing value."
 msgstr "Eksik bir değer için hiçbir şey doldurulmaz."
 
@@ -10600,6 +10627,9 @@ msgstr "Bu birimde henüz bir şey kaydedilmedi."
 
 msgid "Nothing recorded yet."
 msgstr "Henüz kayıt yok."
+
+msgid "Nothing to compare"
+msgstr "Karşılaştırılacak bir şey yok"
 
 msgid "Nothing to show yet"
 msgstr "Henüz gösterilecek bir şey yok"
@@ -11931,6 +11961,9 @@ msgstr "Miktar (kg)"
 msgid "Quantity and unit"
 msgstr "Parametre ve birim"
 
+msgid "Quantity to compare"
+msgstr "Karşılaştırılacak miktar"
+
 msgid "Quarantine"
 msgstr "Karantina"
 
@@ -13122,6 +13155,9 @@ msgstr "Duyarlı"
 
 msgid "Sensitivity tests"
 msgstr "Duyarlılık testleri"
+
+msgid "Sensor"
+msgstr "Sensör"
 
 msgid "Sensor alarm event"
 msgstr "Sensör alarm olayı"
@@ -15411,6 +15447,9 @@ msgstr "Tuzluluk varsayıldı: tatlı su."
 msgid "The salinity is fresh water’s."
 msgstr "Tuzluluk tatlı suyunkidir."
 
+msgid "The same quantity"
+msgstr "Aynı miktar"
+
 msgid "The scale must span at least half a pH unit, from the lower end to the higher."
 msgstr "Ölçek, alt uçtan üst uca en az yarım pH birimi kapsamalıdır."
 
@@ -16513,6 +16552,13 @@ msgid ""
 msgstr ""
 "Tam saniye cinsinden zamanlar, her saniye gönderilen mesajları ayırt edemez: en az %(seconds)d "
 "saniyede bir gönderin ya da milisaniyeli bir biçim kullanın."
+
+#, python-format
+msgid "Times on the site’s clock (%(zone)s)."
+msgstr "Saatler tesisin saatine göre (%(zone)s)."
+
+msgid "Times without a value are shaded, never filled."
+msgstr "Değeri olmayan süreler taranır, asla doldurulmaz."
 
 msgid "Timezone"
 msgstr "Saat dilimi"
@@ -17718,6 +17764,9 @@ msgstr "Üretim departmanı olmayanlar"
 
 msgid "Without a site"
 msgstr "Sahasız"
+
+msgid "Worked out"
+msgstr "Hesaplandı"
 
 #, python-format
 msgid "Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm."
@@ -19909,6 +19958,9 @@ msgstr "arınma süresi onayı"
 
 msgid "withdrawal acknowledgements"
 msgstr "arınma süresi onayları"
+
+msgid "worked out from each sample, not measured"
+msgstr "her numuneden hesaplandı, ölçülmedi"
 
 msgid "worked out from the sample"
 msgstr "numuneden hesaplandı"

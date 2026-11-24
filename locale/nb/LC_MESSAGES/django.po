@@ -4882,6 +4882,9 @@ msgstr "Velg et sted og en mengde fra listene å sammenligne med."
 msgid "Choose a place from the list."
 msgstr "Velg et sted fra listen."
 
+msgid "Choose a place, a quantity and a time, then Draw."
+msgstr "Velg et sted, en mengde og en tid, og trykk Tegn."
+
 msgid "Choose a role or a person."
 msgstr "Velg en rolle eller en person."
 
@@ -5215,6 +5218,9 @@ msgstr "Selskap"
 
 msgid "Company overview"
 msgstr "Selskapsoversikt"
+
+msgid "Compare with"
+msgstr "Sammenlign med"
 
 msgid "Complete"
 msgstr "Fullfør"
@@ -6464,6 +6470,9 @@ msgstr "Estimert: den målte vekten og fôret siden, delt på forventet FCR"
 
 msgid "Event"
 msgstr "Hendelse"
+
+msgid "Events"
+msgstr "Hendelser"
 
 msgid "Every"
 msgstr "Hver"
@@ -8947,6 +8956,12 @@ msgstr "Sanntidsverdier"
 msgid "Loading the cards…"
 msgstr "Laster kortene …"
 
+msgid "Loading the chart…"
+msgstr "Laster diagrammet…"
+
+msgid "Loading the water history…"
+msgstr "Laster vannhistorikken…"
+
 msgid "Loading…"
 msgstr "Laster …"
 
@@ -9871,6 +9886,9 @@ msgstr "Ingen fôring registrert i denne enheten ennå."
 msgid "No feeding recorded yet"
 msgstr "Ingen fôring registrert ennå"
 
+msgid "No feeding, treatment, harvest or alarm in this time."
+msgstr "Ingen fôring, behandling, slakting eller alarm i denne tiden."
+
 msgid "No file"
 msgstr "Ingen fil"
 
@@ -10260,6 +10278,9 @@ msgstr "Ingen vanngrense er satt for fisken i enheten."
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
 
+msgid "No water value in this time: nothing was measured or sampled here."
+msgstr "Ingen vannverdi i denne tiden: ingenting ble målt eller prøvetatt her."
+
 msgid "No widget shows the oxygen."
 msgstr "Ingen elementer viser oksygenet."
 
@@ -10512,6 +10533,9 @@ msgstr "Ikke bekreftet"
 msgid "Not weighed since the fish came in."
 msgstr "Ikke veid siden fisken kom inn."
 
+msgid "Not worked out"
+msgstr "Ikke beregnet"
+
 #, python-format
 msgid "Not worked out: %(why)s."
 msgstr "Ikke beregnet: %(why)s."
@@ -10547,6 +10571,9 @@ msgstr "Ingenting på lager ennå"
 msgid "Nothing is assumed for a missing value."
 msgstr "Ingenting antas for en manglende verdi."
 
+msgid "Nothing is bound here now."
+msgstr "Ingenting er koblet hit nå."
+
 msgid "Nothing is filled in for a missing value."
 msgstr "Ingenting fylles inn for en manglende verdi."
 
@@ -10577,6 +10604,9 @@ msgstr "Ingenting registrert i denne enheten ennå."
 
 msgid "Nothing recorded yet."
 msgstr "Ingenting registrert ennå."
+
+msgid "Nothing to compare"
+msgstr "Ingenting å sammenligne"
 
 msgid "Nothing to show yet"
 msgstr "Ingenting å vise ennå"
@@ -11906,6 +11936,9 @@ msgstr "Mengde (kg)"
 msgid "Quantity and unit"
 msgstr "Parameter og enhet"
 
+msgid "Quantity to compare"
+msgstr "Mengde å sammenligne"
+
 msgid "Quarantine"
 msgstr "Karantene"
 
@@ -13095,6 +13128,9 @@ msgstr "Følsom"
 
 msgid "Sensitivity tests"
 msgstr "Følsomhetsundersøkelser"
+
+msgid "Sensor"
+msgstr "Sensor"
 
 msgid "Sensor alarm event"
 msgstr "Sensoralarmhendelse"
@@ -15381,6 +15417,9 @@ msgstr "Saltholdigheten er antatt: ferskvann."
 msgid "The salinity is fresh water’s."
 msgstr "Saliniteten er ferskvannets."
 
+msgid "The same quantity"
+msgstr "Samme mengde"
+
 msgid "The scale must span at least half a pH unit, from the lower end to the higher."
 msgstr "Skalaen må spenne over minst en halv pH-enhet, fra den nedre enden til den øvre."
 
@@ -16476,6 +16515,13 @@ msgid ""
 msgstr ""
 "Tider i hele sekunder kan ikke skille meldinger som sendes hvert sekund: send hvert %(seconds)d. "
 "sekund eller sjeldnere, eller bruk et format med millisekunder."
+
+#, python-format
+msgid "Times on the site’s clock (%(zone)s)."
+msgstr "Tider etter anleggets klokke (%(zone)s)."
+
+msgid "Times without a value are shaded, never filled."
+msgstr "Tider uten verdi er skravert, aldri fylt."
 
 msgid "Timezone"
 msgstr "Tidssone"
@@ -17682,6 +17728,9 @@ msgstr "Uten produksjonsavdeling"
 
 msgid "Without a site"
 msgstr "Uten lokalitet"
+
+msgid "Worked out"
+msgstr "Beregnet"
 
 #, python-format
 msgid "Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm."
@@ -19871,6 +19920,9 @@ msgstr "kvittering for tilbakeholdelsestid"
 
 msgid "withdrawal acknowledgements"
 msgstr "kvitteringer for tilbakeholdelsestid"
+
+msgid "worked out from each sample, not measured"
+msgstr "beregnet fra hver prøve, ikke målt"
 
 msgid "worked out from the sample"
 msgstr "regnet ut fra prøven"

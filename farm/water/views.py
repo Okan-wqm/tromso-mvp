@@ -553,10 +553,10 @@ def _history_of(user, place, start, end, now, title):
     return {'charts': charts, 'worked': worked}
 
 
-def _owner_history(request, owner):
-    """A unit's water history (Tank › Water) or a system's (System › Water: each of its points side by side) as JSON:
+def history_data(request, owner, now=None):
+    """A unit's water history (Tank › Water) or a system's (System › Water: each of its points side by side), as data:
     the window, the charts, the values worked out, the events and the address of the Deffeyes replay of the window."""
-    now = timezone.now()
+    now = now or timezone.now()
     key, start, end = history_window(request, owner, now)
     user = request.user
     if isinstance(owner, System):
@@ -567,12 +567,63 @@ def _owner_history(request, owner):
     query = urlencode({'target': f'{owner_type_of(owner)}:{owner.pk}',
                        'start': timezone.localtime(start, zone_of(site_of(owner))).strftime('%Y-%m-%dT%H:%M'),
                        'end': timezone.localtime(end, zone_of(site_of(owner))).strftime('%Y-%m-%dT%H:%M')})
-    return JsonResponse({
+    return {
         'range': key, 'start': int(start.timestamp()), 'end': int(end.timestamp()),
         'zone': zone_of(site_of(owner)).key, 'places': places, 'events': history_events(user, owner, start, end),
         'deffeyes': f'{reverse("sensors:deffeyes_frames")}?{query}' if user.has_perm(SENSOR_READ) else '',
         'record': _dialog_url('farm:water_record', request, owner) if user.has_perm(RECORD) else '',
-        'samples': history_url(owner)})
+        'samples': history_url(owner)}
+
+
+def _owner_history(request, owner):
+    """`history_data` as JSON (`?view=history` of unit_chart and system_chart)."""
+    return JsonResponse(history_data(request, owner))
+
+
+# ---- Tank › Water: the one home of a tank's water history (behind ?ui=next) ---------------------------------------
+def _history_words():
+    """Every word Tank › Water and System › Water draw (the island words nothing of its own)."""
+    return {
+        'sensor': _('Sensor'), 'manual': _('Meter or test kit'), 'lab': _('Laboratory'), 'worked': _('Worked out'),
+        'warning': _('Warning'), 'critical': _('Critical'), 'noValue': _('No value'), 'time': _('Time'),
+        'custom': _('From and to'), 'from': _('From'), 'to': _('To'), 'draw': _('Draw'),
+        'empty': _('No water value in this time: nothing was measured or sampled here.'),
+        'noChart': _('No sensor values in this time.'),
+        'events': _('Events'), 'noEvents': _('No feeding, treatment, harvest or alarm in this time.'),
+        'notWorked': _('Not worked out'), 'record': _('Record water sample'), 'samples': _('Samples'),
+        'deffeyes': _('Deffeyes chart'), 'calculated': _('worked out from each sample, not measured'),
+        'zoneNote': _('Times on the site’s clock (%(zone)s).'),
+    }
+
+
+@permission_required(VIEW, raise_exception=True)
+def tank_water(request, pk):
+    """Tank › Water (owner-approved home of a tank's water history), in the new look only: every parameter on one time
+    axis, the sensors' lines and the samples on the same chart, the fish's limits as bands, the NH₃-N worked out per
+    sample, gaps shown, the events of the window (`history_data`). Without the new look the address is the unit's
+    history on Water chemistry, today's page for it."""
+    from core import ui
+
+    unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+    if not ui.is_next(request):
+        return redirect(history_url(unit))
+    data = history_data(request, unit)
+    here = reverse('farm:tank_water', args=[unit.pk])
+    zone = zone_of(site_of(unit))
+    data.update({
+        'unit': {'code': unit.code, 'name': unit.name, 'place': str(unit.production_department)},
+        'ranges': [{'key': key, 'label': key, 'href': f'{here}?{urlencode({"range": key})}',
+                    'current': data['range'] == key} for key in HISTORY_RANGES],
+        'custom': {'action': here, 'current': data['range'] == 'custom',
+                   'start': datetime.fromtimestamp(data['start'], tz=zone).strftime('%Y-%m-%dT%H:%M'),
+                   'end': datetime.fromtimestamp(data['end'], tz=zone).strftime('%Y-%m-%dT%H:%M')},
+        'words': {**_history_words(), 'zoneNote': _history_words()['zoneNote'] % {'zone': zone.key}},
+        'locale': request.LANGUAGE_CODE,
+    })
+    place = navigation.place('farm.view_stockoperation')
+    return render_page(request, 'farm/tank_water.html', {
+        'title': f'{unit.code} · {_("Water")}', 'eyebrow': f'{place.section.label} · {place.entry.label}', 'props': data,
+        'units_url': reverse('farm:production_units') + f'?{urlencode({"unit": unit.pk})}'})
 
 
 @permission_required(VIEW, raise_exception=True)

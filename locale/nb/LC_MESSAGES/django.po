@@ -499,6 +499,12 @@ msgstr[0] "%(count)d tilbakeholdelsesrad lagret."
 msgstr[1] "%(count)d tilbakeholdelsesrader lagret."
 
 #, python-format
+msgid "%(count)s channel"
+msgid_plural "%(count)s channels"
+msgstr[0] "%(count)s kanal"
+msgstr[1] "%(count)s kanaler"
+
+#, python-format
 msgid "%(count)s column"
 msgid_plural "%(count)s columns"
 msgstr[0] "%(count)s kolonne"
@@ -569,6 +575,10 @@ msgid "%(count)s of them for the whole farm"
 msgid_plural "%(count)s of them for the whole farm"
 msgstr[0] "%(count)s av dem for hele anlegget"
 msgstr[1] "%(count)s av dem for hele anlegget"
+
+#, python-format
+msgid "%(count)s offline"
+msgstr "%(count)s frakoblet"
 
 #, python-format
 msgid "%(count)s overdue"
@@ -1277,6 +1287,10 @@ msgid "%(people)s notification"
 msgid_plural "%(people)s notifications"
 msgstr[0] "%(people)s varsel"
 msgstr[1] "%(people)s varsler"
+
+#, python-format
+msgid "%(percent)s of capacity"
+msgstr "%(percent)s av kapasiteten"
 
 #, python-format
 msgid "%(person)s (can no longer be chosen)"
@@ -3541,6 +3555,9 @@ msgstr "Alle protokoller"
 msgid "All reports"
 msgstr "Alle rapporter"
 
+msgid "All roles"
+msgstr "Alle roller"
+
 msgid "All rules"
 msgstr "Alle regler"
 
@@ -4512,6 +4529,9 @@ msgstr "Kjøpt fisk har en leverandør; fisk fra eget klekkeri eller villfanget 
 
 msgid "Bought from a supplier"
 msgstr "Kjøpt fra leverandør"
+
+msgid "Bound"
+msgstr "Bundet"
 
 msgid "Bound to"
 msgstr "Knyttet til"
@@ -8150,6 +8170,10 @@ msgstr "Frisk, skal ikke brukes mer"
 msgid "Heart and skeletal muscle inflammation (HSMI)"
 msgstr "Hjerte- og skjelettmuskelbetennelse (HSMB)"
 
+#, python-format
+msgid "Heartbeat %(age)s ago"
+msgstr "Livstegn for %(age)s siden"
+
 msgid "Heartbeat (s)"
 msgstr "Hjerteslag (s)"
 
@@ -8581,6 +8605,9 @@ msgstr "Infeksiøs lakseanemi (ILA)"
 
 msgid "Ingest"
 msgstr "Innhenting"
+
+msgid "Ingest and devices"
+msgstr "Innhenting og enheter"
 
 msgid "Injection"
 msgstr "Injeksjon"
@@ -10659,6 +10686,9 @@ msgstr ""
 "Ingen varsles om en alarm før en regel sier hvem: en rolle eller en person, på én lokalitet eller"
 " alle, fra en alvorlighetsgrad, på et nivå."
 
+msgid "Nobody is planned today."
+msgstr "Ingen er planlagt i dag."
+
 msgid "Nobody to notify"
 msgstr "Ingen å varsle"
 
@@ -11007,6 +11037,12 @@ msgstr "Varsle straks"
 
 msgid "Now"
 msgstr "Nå"
+
+msgid "Now and before"
+msgstr "Nå og før"
+
+msgid "Now bound"
+msgstr "Bundet nå"
 
 msgid "Nullable"
 msgstr "Kan være tom"
@@ -12210,6 +12246,9 @@ msgstr "Produksjonsplan"
 
 msgid "Production plans"
 msgstr "Produksjonsplaner"
+
+msgid "Production team today"
+msgstr "Produksjonsteamet i dag"
 
 msgid "Production units"
 msgstr "Produksjonsenheter"
@@ -13546,6 +13585,9 @@ msgstr "Sensor"
 msgid "Sensor alarm event"
 msgstr "Sensoralarmhendelse"
 
+msgid "Sensor alarm events"
+msgstr "Alarmhendelser fra sensorer"
+
 msgid "Sensor alarm rule"
 msgstr "Sensoralarmregel"
 
@@ -14057,6 +14099,12 @@ msgstr "Rustfritt stål"
 msgid "Stale"
 msgstr "Utdatert"
 
+msgid "Stale, was critical"
+msgstr "Utdatert, var kritisk"
+
+msgid "Stale, was warning"
+msgstr "Utdatert, var advarsel"
+
 msgid "Standard week (minutes)"
 msgstr "Standarduke (minutter)"
 
@@ -14200,6 +14248,9 @@ msgstr "Satt ut"
 msgctxt "occupancy"
 msgid "Stocked"
 msgstr "Med fisk"
+
+msgid "Stocked and empty"
+msgstr "Med fisk og tomme"
 
 msgid "Stocked on"
 msgstr "Satt ut"
@@ -17691,6 +17742,10 @@ msgstr "Vanngrense"
 msgid "Water limits"
 msgstr "Vanngrenser"
 
+#, python-format
+msgid "Water of %(name)s"
+msgstr "Vannet i %(name)s"
+
 msgid "Water origin"
 msgstr "Vannopprinnelse"
 
@@ -17991,6 +18046,10 @@ msgstr ""
 
 msgid "Where"
 msgstr "Hvor"
+
+#, python-format
+msgid "Where %(channel)s was bound over time"
+msgstr "Hvor %(channel)s har vært bundet over tid"
 
 msgid ""
 "Where a PLC or field bus holds the value, as JSON. Modbus: unit_id, function, register; S7: db, "
@@ -19526,6 +19585,12 @@ msgstr "timer"
 
 msgid "https:// is added when it is left out."
 msgstr "https:// legges til når det mangler."
+
+#, python-format
+msgid "in %(count)s batch"
+msgid_plural "in %(count)s batches"
+msgstr[0] "i %(count)s fiskegruppe"
+msgstr[1] "i %(count)s fiskegrupper"
 
 #, python-format
 msgid "in %(count)s conversation"

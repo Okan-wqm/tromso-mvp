@@ -6,10 +6,12 @@ from django.utils.translation import gettext_lazy as _
 
 from farm.models import Equipment, ProductionDepartment, Site, System, Tank
 from farm.feeding.views import overview_tiles as feeding_tiles
-from farm.stock.views import overview_tiles
+from farm.stock.views import overview as stock_overview, overview_tiles
 from farm.water.views import RECORD as WATER_RECORD, overview as water_overview
+from core.stack import part, stack
 from core.ui import is_next
 from hr import read as hr_read, scope as hr_scope
+from hr.views import PLANNED_PARTS
 from reports import duties
 from reports.views import overview_upcoming
 from tasks.views import overview_tiles as task_tiles
@@ -83,6 +85,25 @@ def team_today(user):
             'url': reverse('hr:production_today')}
 
 
+TEAM_TONES = dict(PLANNED_PARTS)        # the HR board's bar's tones, one list (hr.views.PLANNED_PARTS)
+
+
+def _next_parts(user, stock_part):
+    """What the new look's Production › Overview says beyond the classic page (templates/_production_overview.html under
+    `new_look`): the fish's batch count on its card, the units under a medicine withdrawal today in Needs attention (each a
+    link to its drawer), and the production team today as the HR board's bar (`team_today`, its tiles adding up to the
+    people planned today)."""
+    team = team_today(user)
+    return {
+        'new_look': True,
+        'holds': stock_part['holds'] if stock_part else [],
+        'team': team,
+        'team_stack': stack(_('Planned today'), [part(tile['key'], tile['label'], tile['count'], TEAM_TONES[tile['key']])
+                                                 for tile in team['tiles']],
+                            empty=_('Nobody is planned today.')) if team else None,
+    }
+
+
 def production_home(request):
     """The production overview, the panel's landing page at the start of a shift and a dashboard
     (templates/production_home.html): the day's figures as metric cards (the stock now from the ledger, the feed given
@@ -92,11 +113,16 @@ def production_home(request):
     status, equipment, units and their kind) and the reports due. Each part only for a person who may read it, read by the
     areas' own functions; the one primary action, Record water sample, only for a person who may record one."""
     user = request.user
-    stock, feeding, tasks = overview_tiles(user), feeding_tiles(user), task_tiles(user)
+    look = is_next(request)
+    # The new look reads the stock once for its tiles and its withdrawal holds (farm.stock.views.overview).
+    stock_part = stock_overview(user) if look else None
+    stock = (stock_part or {}).get('tiles', []) if look else overview_tiles(user)
+    feeding, tasks = feeding_tiles(user), task_tiles(user)
     water = water_overview(user)
     upcoming = _upcoming(user)
     tasks_named = _named(tasks)
-    return render(request, 'production_home.html', {
+    context = {
+        **(_next_parts(user, stock_part) if look else {}),
         'stock_tiles': stock,
         'feeding_tiles': feeding,
         'water_tiles': water['tiles'] if water else [],
@@ -128,4 +154,9 @@ def production_home(request):
              'url': f"{reverse('farm:tank_list')}?kind={value}"}
             for value, label in Tank.Kind.choices
         ] if request.user.has_perm('farm.view_tank') else [],
-    })
+    }
+    if look:
+        # the design's layout: the island draws the same context (config/production_props.py); the head is the classic's
+        from .production_props import production_props
+        return render(request, 'production_home_next.html', {**context, 'props': production_props(context)})
+    return render(request, 'production_home.html', context)

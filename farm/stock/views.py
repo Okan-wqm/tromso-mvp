@@ -26,6 +26,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgettext
 
 from core import navigation
+from core.ui import is_next
 from core.crud import DRAFT, done, render_page
 from core.platform import correction_window_days
 
@@ -173,6 +174,10 @@ def production_units(request):
     if drawer_unit is not None:
         context.update(_drawer(request, drawer_unit, stock.get(drawer_unit.pk), feeding.get(drawer_unit.pk),
                                params))
+    if is_next(request):
+        # the new look: the table on the shared list page, the drawer as the server draws it (farm/stock/units_next.py)
+        from .units_next import units_props
+        return render_page(request, 'farm/production_units_next.html', {**context, 'props': units_props(request, context)})
     return render_page(request, 'farm/production_units.html', context)
 
 

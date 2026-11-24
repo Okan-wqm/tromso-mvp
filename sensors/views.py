@@ -30,7 +30,7 @@ from farm.models.site import zone_of
 from farm.water import deffeyes
 from core.widgets import EXAMPLE, MomentInput
 
-from . import bindings, chart, credentials, quantities, read, trail
+from . import bindings, chart, credentials, pages, quantities, read, trail
 from .forms import DeviceMoveForm, on_site_clock, place_choices, place_of
 from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason,
                      Device, IngestStatus)
@@ -47,14 +47,28 @@ def _context(url_name, **extra):
     return {'title': place.entry.label, 'eyebrow': f'{place.workspace.label} · {place.entry.label}', **extra}
 
 
+def _next_list(request, url_name, props, above=''):
+    """A Sensors page drawn by the shared list page in the new look (sensors/pages.py, templates/crud/list_next.html),
+    with `above` a template the server draws above it (a safety notice of the classic page)."""
+    context = _context(url_name, props=props)
+    return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow'], 'list_above': above})
+
+
 def home(request):
     """The Sensors overview: the configuration counted, for the parts the person may read (every signed-in person may
     open it; the panel is offered to those who can use something in it)."""
     tiles = [{'label': resource.title(), 'count': resource.model.objects.count(), 'url': reverse(resource.url_name('list'))}
              for resource in (ConnectionResource, DeviceResource, ChannelResource, PayloadFormatResource)
              if request.user.has_perm(resource.perm('view'))]
-    return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles,
-                                                               state_tiles=state_tiles(request.user, timezone.now())))
+    now = timezone.now()
+    state = state_tiles(request.user, now)
+    if ui.is_next(request):
+        # the design's setup row: the bindings and the credentials counted too
+        tiles += [{'label': resource.title(), 'count': resource.queryset().count(),     # what the list shows (visible)
+                   'url': reverse(resource.url_name('list'))}
+                  for resource in (BindingResource, CredentialResource) if request.user.has_perm(resource.perm('view'))]
+        return render_page(request, 'sensors/home_next.html', {'props': pages.home_props(tiles, state, now)})
+    return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles, state_tiles=state))
 
 
 @require_POST
@@ -299,13 +313,15 @@ def live(request):
     """Sensors › Operations › Live values: every channel listened to, its last value, how old it is and whether it is
     fresh, and where it is bound now."""
     now = timezone.now()
-    channels = list(Channel.objects.exclude(state=ChannelStatus.RETIRED).select_related('device')
+    channels = list(Channel.objects.exclude(state=ChannelStatus.RETIRED).select_related('device__site')
                     .order_by('device__code', 'code'))
     states = read.latest([channel.channel_no for channel in channels], now)
     places = {binding.channel_id: binding for binding in Binding.objects.visible().at(now)
               .select_related('point__unit', 'point__system', 'point__equipment', 'system', 'equipment')}
     rows = [{'channel': channel, 'state': states[channel.channel_no], 'binding': places.get(channel.pk)}
             for channel in channels]
+    if ui.is_next(request):
+        return _next_list(request, 'sensors:live', pages.live_props(request, rows))
     return render_page(request, 'sensors/live.html', _context('sensors:live', rows=rows, now=now))
 
 
@@ -400,6 +416,10 @@ def dead_letters(request):
             for letter in page.object_list]
     kept = request.GET.copy()
     kept.pop('page', None)
+    if ui.is_next(request):
+        return _next_list(request, 'sensors:dead_letters', pages.dead_letters_props(
+            request, rows, page=page, reasons=DeadReason.choices, reason=reason, show=request.GET.get('show', ''),
+            pager_query=kept.urlencode(), can_resolve=request.user.has_perm('sensors.change_deadletter')))
     return render_page(request, 'sensors/dead_letters.html', _context(
         'sensors:dead_letters', rows=rows, page=page, reasons=DeadReason.choices, reason=reason,
         show=request.GET.get('show', ''), pager_query=kept.urlencode(),
@@ -438,33 +458,40 @@ def state_tiles(user, now):
             text = _('Alive')
         else:
             text = _('Down')
-        tiles.append({'label': _('Ingest'), 'text': text, 'count': text,
+        tiles.append({'key': 'ingest', 'label': _('Ingest'), 'text': text, 'count': text,
+                      # the oldest heartbeat: the one that decides Down, so the line never says fresh over a Down
+                      'heartbeat': min((status.heartbeat_at for status in statuses), default=None),
                       'url': reverse('sensors:connection_list')})
         # What the ingest could not keep: QoS 0 messages it dropped on a full queue, messages the database refused (they
         # are dead letters too). Counted since the service started.
-        tiles.append({'label': _('QoS 0 messages dropped on a full queue'), 'url': reverse('sensors:connection_list'),
+        tiles.append({'key': 'qos0', 'label': _('QoS 0 messages dropped on a full queue'),
+                      'url': reverse('sensors:connection_list'),
                       'count': sum(status.qos0_dropped for status in statuses)})
-        tiles.append({'label': _('Messages the database refused'), 'url': reverse('sensors:connection_list'),
+        tiles.append({'key': 'refused', 'label': _('Messages the database refused'),
+                      'url': reverse('sensors:connection_list'),
                       'count': sum(status.poison_total for status in statuses)})
     if user.has_perm('sensors.view_device'):
         devices = list(Device.objects.filter(is_active=True))
         online = sum(1 for status in read.device_status(devices, now).values() if status.online)
-        tiles.append({'label': _('Devices online'), 'count': f'{online} / {len(devices)}',
+        tiles.append({'key': 'online', 'label': _('Devices online'), 'count': f'{online} / {len(devices)}',
+                      'offline': len(devices) - online,
                       'url': reverse('sensors:device_list')})
         # Out of the water (storage, calibration): its readings are stored and belong to no place.
-        tiles.append({'label': _('Devices not placed'), 'url': f'{reverse("sensors:device_list")}?placed=no',
+        tiles.append({'key': 'unplaced', 'label': _('Devices not placed'),
+                      'url': f'{reverse("sensors:device_list")}?placed=no',
                       'count': Device.objects.filter(is_active=True).exclude(bindings.placed()).count()})
     if user.has_perm('sensors.view_channel'):
         listened = Channel.objects.filter(state=ChannelStatus.ACTIVE, device__is_active=True, device__is_deleted=False)
         stale = sum(1 for state in read.latest(listened.values_list('channel_no', flat=True), now).values()
                     if not state.fresh)
-        tiles.append({'label': _('Channels without a fresh value'), 'count': stale,
+        tiles.append({'key': 'stale', 'label': _('Channels without a fresh value'), 'count': stale,
                       'url': reverse('sensors:channel_list')})
     if user.has_perm('sensors.view_alarmevent'):
-        tiles.append({'label': _('Open alarms'), 'url': reverse('sensors:alarm_events'),
-                      'count': AlarmEvent.objects.filter(closed_at__isnull=True).count()})
+        open_events = AlarmEvent.objects.filter(closed_at__isnull=True)
+        tiles.append({'key': 'alarms', 'label': _('Open alarms'), 'url': reverse('sensors:alarm_events'),
+                      'count': open_events.count(), 'critical': open_events.filter(rule__severity='critical').count()})
     if user.has_perm('sensors.view_deadletter'):
-        tiles.append({'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
+        tiles.append({'key': 'dead', 'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
                       'count': DeadLetter.objects.filter(last_at__gte=now - timedelta(days=1)).count()})
     return tiles
 
@@ -479,6 +506,11 @@ def alarm_events(request):
         'binding__system', 'binding__equipment').prefetch_related(
         'alarm__acknowledgements__user').order_by(F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
+    if ui.is_next(request):
+        props = pages.alarm_events_props(request, page.object_list, page=page, connected=alarms_read.connected(),
+                                         can_acknowledge=request.user.has_perm('sensors.change_alarmevent'))
+        # the classic page's {% alarm_watch %} above it, drawn by the server
+        return _next_list(request, 'sensors:alarm_events', props, above='sensors/_alarm_watch.html')
     return render_page(request, 'sensors/alarm_events.html', _context(
         'sensors:alarm_events', page=page, events=page.object_list, connected=alarms_read.connected(),
         can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))

@@ -2,7 +2,8 @@
 database (owner's privacy rule, 2026-11-24: the repository is public). Every person, address and name is a fixture value
 (names "Test …", addresses @example.com; core/tests_fixture_privacy.py guards the addresses). It is built in a test
 database only: by scripts/record_test_world.py in the throwaway database test_world (scripts/record_test_world.sh), and
-by the tests that make the islands' props in the test run's own database. The clock is pinned to MOMENT while it is
+by the tests that make the islands' props and pages in the test run's own database (farm/tests/test_island_pages.py).
+The clock is pinned to MOMENT while it is
 built and read.
 
     world(admin)                      every part below, in order, through a client signed in as `admin`
@@ -22,7 +23,11 @@ built and read.
                                       holiday, a leave type, leave requests and attendance
     roster_world(admin, client)       today's roster of the hall: one planned person in each state of the board
     panel_world(admin, client)        the production panel's pages: tasks_world, questions_world, experiments_world,
-                                      reports_world, storage_world, messages_world"""
+                                      reports_world, storage_world, messages_world
+    stale_water_world(admin)          after world(), for Production units' and Overview's tests only: TM-01's oxygen
+                                      stale and critical when taken (80 hours back)
+    sensors_world(admin)              after world(), for the Sensors pages' tests only: a simulated device, credentials,
+                                      alarm rules and events, dead letters, the ingest's heartbeat"""
 import math
 from datetime import datetime, time, timedelta
 from decimal import Decimal as D
@@ -173,6 +178,16 @@ def limits_world(tank):
                               ('co2_mg_l', {'warning_high': '10', 'critical_high': '15'})):
         WaterLimit.objects.create(species=species, parameter=parameter, water_type='any',
                                   **{key: D(value) for key, value in bounds.items()})
+
+
+def stale_water_world(admin):
+    """TM-01's oxygen gone stale while it was critical (F-244): a meter sample 80 hours before MOMENT, 5.2 mg/L under the
+    salmon's critical 6. Production units must say it is stale AND what it was (the classic `wq-was-critical`)."""
+    from farm.models import Tank
+    from farm.tests.helpers import point_of
+    from farm.water import services as water
+    water.record(admin, point=point_of(Tank.objects.get(code='TM-01')), measured_at=MOMENT - timedelta(hours=80),
+                 source='manual', values={'oxygen_mg_l': D('5.2')}, notes='')
 
 
 def channel_states(channels):
@@ -440,6 +455,51 @@ def messages_world(admin, client):
     for index, message in enumerate(messages):
         Message.objects.filter(pk=message.pk).update(created_at=MOMENT - timedelta(minutes=len(messages) - index))
     return [f'{Conversation.objects.count()} conversations']
+def sensors_world(admin):
+    """The Sensors panel's part, for its pages in the new look (sensors/tests/test_pages_next.py), built after world() and
+    called by those tests only (not by world(): its alarms would change the other pages' counts): a simulated device out
+    of the water with a channel, an enabled and a disabled broker credential, three alarm rules on the probe of TT-01, an
+    open alarm event of its oxygen and a closed one acknowledged, two dead letters (one resolved) and the ingest's
+    heartbeat four seconds before MOMENT."""
+    import hashlib
+
+    from alarms import services as alarm_services, sources as alarm_sources
+    from sensors.models import (AlarmEvent, AlarmRule, Binding, Channel, Connection, Credential, DeadLetter, Device,
+                                IngestStatus)
+    from sensors.tests import make_channel, make_device
+
+    probe = Device.objects.get(code='PROBE-TT01')
+    broker = probe.connection
+    simulated = make_device(broker, probe.payload_format, probe.site, code='SIM-TT02', name='Test simulated probe',
+                            is_simulated=True, manufacturer='Test maker', model='T1')
+    make_channel(simulated, 'oxygen_mg_l', code='OXYGEN-SIM')
+    Credential.objects.create(username='test-gateway', rotated_at=MOMENT - timedelta(days=3), is_enabled=True)
+    Credential.objects.create(username='test-old-gateway', is_enabled=False)
+    oxygen = Channel.objects.get(device=probe, quantity='oxygen_mg_l')
+    temperature = Channel.objects.get(device=probe, quantity='temperature_c')
+    silent = AlarmRule.objects.create(channel=oxygen, kind='no_data', for_s=600, severity='critical')
+    AlarmRule.objects.create(channel=temperature, kind='rate', threshold=1.0, for_s=60, severity='warning',
+                             is_active=False)
+    AlarmRule.objects.create(quantity='oxygen_mg_l', kind='device_offline', for_s=900, severity='warning')
+    binding = Binding.objects.filter(channel=oxygen).first()
+    AlarmEvent.objects.create(rule=silent, channel_no=oxygen.channel_no, binding=binding,
+                              opened_at=MOMENT - timedelta(minutes=12))
+    closed = AlarmEvent.objects.create(rule=silent, channel_no=oxygen.channel_no, binding=binding,
+                                       opened_at=MOMENT - timedelta(days=3, hours=20),
+                                       closed_at=MOMENT - timedelta(days=3, hours=8), peak=0.0)
+    alarm_services.acknowledge(alarm_sources.mirror(closed), admin, at=MOMENT - timedelta(days=3, hours=19))
+    for topic, reason, payload, times, resolved in (
+            ('test/probe-tt01', 'bad_value', b'{"ts":1795440480000,"oxygen_mg_l":"n/a"}', 3, False),
+            ('test/unknown', 'no_route', b'{"ts":1795440000000,"x":1}', 12, True)):
+        DeadLetter.objects.create(connection_id=broker.pk, topic=topic, reason=reason, payload=payload,
+                                  payload_sha256=hashlib.sha256(payload).hexdigest(), payload_len=len(payload),
+                                  count=times, first_at=MOMENT - timedelta(hours=5), last_at=MOMENT - timedelta(hours=1),
+                                  resolved_at=MOMENT - timedelta(minutes=30) if resolved else None,
+                                  resolved_by=admin if resolved else None)
+    IngestStatus.objects.create(connection_id=broker.pk, heartbeat_at=MOMENT - timedelta(seconds=4), connected=True,
+                                version='test')
+    return [f'sensors: {Device.objects.count()} devices, {AlarmEvent.objects.count()} alarm events, '
+            f'{Connection.objects.count()} connections']
 
 
 def roster_world(admin, client):

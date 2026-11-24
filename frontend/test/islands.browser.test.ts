@@ -210,6 +210,23 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
         const rows = await tab.evaluate(() => new Set([...document.querySelectorAll('[aria-label="Company today"] .ui-tile')]
           .map((tile) => Math.round(tile.getBoundingClientRect().top))).size);
         assert.equal(rows, width === 1440 ? 1 : 3);
+        // a tile's label has a slot of two lines: the figures of a row stand level whatever their labels' length, and a
+        // label longer than its slot is clamped with its whole text kept as its title
+        const level = await tab.evaluate(() => {
+          const tiles = [...document.querySelectorAll('[aria-label="Label slot"] .ui-tile')];
+          const byRow = new Map<number, Set<number>>();
+          for (const tile of tiles) {
+            const top = Math.round(tile.getBoundingClientRect().top);
+            const figure = tile.querySelector('.ui-tile-figure')?.getBoundingClientRect().top ?? -1;
+            byRow.set(top, (byRow.get(top) ?? new Set()).add(Math.round(figure - top)));
+          }
+          const long = tiles[2]?.querySelector<HTMLElement>('.ui-tile-label-text');
+          return { offsets: [...byRow.values()].map((each) => each.size), clamped: long ? long.scrollHeight > long.clientHeight : false,
+            title: long?.title ?? '' };
+        });
+        assert.ok(level.offsets.every((size) => size === 1), `figures not level: ${JSON.stringify(level.offsets)}`);
+        assert.ok(level.clamped, 'the long label is not clamped');
+        assert.match(level.title, /^QoS 0 messages dropped on a full queue of the ingest/);
         if (process.env.SHOTS) {
           mkdirSync(process.env.SHOTS, { recursive: true });
           await tab.screenshot({ path: join(process.env.SHOTS, `gallery-${width}.png`), fullPage: true });

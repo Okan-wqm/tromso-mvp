@@ -678,6 +678,24 @@ def _history_words():
     }
 
 
+def window_props(request, data, here, zone):
+    """The window and the words of a water history page's island (`water`: Tank › Water, System › Water) over its
+    `history_data`: the preset ranges as links to `here`, the custom window as the date box shows it (core.widgets.
+    MomentInput: dd.mm.yyyy HH:MM in every language) on the site's clock `zone`, every word with the zone named, and the
+    request's language for the figures."""
+    words = _history_words()
+    return {
+        'ranges': [{'key': key, 'label': key, 'href': f'{here}?{urlencode({"range": key})}',
+                    'current': data['range'] == key} for key in HISTORY_RANGES],
+        'custom': {'action': here, 'current': data['range'] == 'custom',
+                   'start': formats.localize_input(datetime.fromtimestamp(data['start'], tz=zone).replace(tzinfo=None)),
+                   'end': formats.localize_input(datetime.fromtimestamp(data['end'], tz=zone).replace(tzinfo=None)),
+                   'example': formats.localize_input(EXAMPLE)},
+        'words': {**words, 'zoneNote': words['zoneNote'] % {'zone': zone.key}},
+        'locale': request.LANGUAGE_CODE,
+    }
+
+
 @permission_required(VIEW, raise_exception=True)
 def tank_water(request, pk):
     """Tank › Water (owner-approved home of a tank's water history), in the new look only: every parameter on one time
@@ -688,20 +706,8 @@ def tank_water(request, pk):
     if not ui.is_next(request):
         return redirect(history_url(unit))
     data = history_data(request, unit)
-    here = reverse('farm:tank_water', args=[unit.pk])
-    zone = zone_of(site_of(unit))
-    data.update({
-        'unit': {'code': unit.code, 'name': unit.name, 'place': str(unit.production_department)},
-        'ranges': [{'key': key, 'label': key, 'href': f'{here}?{urlencode({"range": key})}',
-                    'current': data['range'] == key} for key in HISTORY_RANGES],
-        # the window's ends as the date box shows them (core.widgets.MomentInput): dd.mm.yyyy HH:MM in every language
-        'custom': {'action': here, 'current': data['range'] == 'custom',
-                   'start': formats.localize_input(datetime.fromtimestamp(data['start'], tz=zone).replace(tzinfo=None)),
-                   'end': formats.localize_input(datetime.fromtimestamp(data['end'], tz=zone).replace(tzinfo=None)),
-                   'example': formats.localize_input(EXAMPLE)},
-        'words': {**_history_words(), 'zoneNote': _history_words()['zoneNote'] % {'zone': zone.key}},
-        'locale': request.LANGUAGE_CODE,
-    })
+    data.update(window_props(request, data, reverse('farm:tank_water', args=[unit.pk]), zone_of(site_of(unit))))
+    data['unit'] = {'code': unit.code, 'name': unit.name, 'place': str(unit.production_department)}
     place = navigation.place('farm.view_stockoperation')
     return render_page(request, 'farm/tank_water.html', {
         'title': f'{unit.code} · {_("Water")}', 'eyebrow': f'{place.section.label} · {place.entry.label}', 'props': data,
@@ -878,7 +884,8 @@ def drawer(request, unit):
     point_water = read.unit_water([unit])[unit.pk]
     return {
         'water_point': point_water, 'water_readings': _drawer_order(point_water),
-        'water_history_url': history_url(unit),
+        # the unit's Tank › Water (owner 2026-11-24); in the classic look that address redirects to the old history
+        'water_history_url': reverse('farm:tank_water', args=[unit.pk]),
         'water_record_url': _dialog_url('farm:water_record', request, unit) if request.user.has_perm(RECORD) else '',
         'water_points_url': f'{reverse("farm:samplingpoint_list")}?{urlencode({"unit": unit.pk})}'
         if request.user.has_perm('farm.view_samplingpoint') else '',

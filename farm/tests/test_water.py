@@ -1094,7 +1094,7 @@ class ProductionUnitsTests(WaterTestCase):
                          (D('75.3'), Status.WARNING))                         # 8.5 / 11.288 mg/L at 10 °C
         html = response.content.decode()
         for text in ('Atlantic salmon: critical below 60.0, warning below 80.0', 'Record water sample',
-                     f'href="/operations/water/?unit={self.t1.pk}"', 'Un-ionised ammonia (mg/L NH₃ as N)'):
+                     f'href="/operations/units/{self.t1.pk}/water/"', 'Un-ionised ammonia (mg/L NH₃ as N)'):
             self.assertIn(text, html)
         record = response.context['water_record_url']
         self.assertTrue(record.startswith(f'{reverse("farm:water_record")}?next='))

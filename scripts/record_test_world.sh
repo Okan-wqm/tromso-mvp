@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/record_test_world.sh: records the browser tests' fixtures from the test world (scripts/record_test_world.py) in a
+# scripts/record_test_world.sh [--check]: records the browser tests' fixtures from the test world (scripts/record_test_world.py) in a
 # THROWAWAY database: a TimescaleDB server of its own on a network of its own (no host port, its data in memory), migrated,
 # the recorder run against it in the test runner's image, then everything removed on every way out. Never the dev database.
 set -euo pipefail
@@ -18,4 +18,4 @@ until docker exec "$DB" pg_isready -U balik -d test_world >/dev/null 2>&1; do sl
 sleep 2
 docker run --rm --network "$NET" -v "$REPO:/app" -w /app -e PYTHONDONTWRITEBYTECODE=1 \
   -e DB_HOST="$DB" -e DB_PORT=5432 -e DB_NAME=test_world -e DB_USER=balik -e DB_PASSWORD=world \
-  "$IMAGE" sh -c 'python manage.py migrate --noinput >/dev/null && python scripts/record_test_world.py'
+  "$IMAGE" sh -c 'python manage.py migrate --noinput >/dev/null && python scripts/record_test_world.py "$@"' sh "$@"

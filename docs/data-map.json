@@ -32339,6 +32339,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "messaging/tests/test_models.py",
         "messaging/tests/test_pages.py",
         "messaging/tests/test_services.py"

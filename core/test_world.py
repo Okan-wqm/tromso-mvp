@@ -203,6 +203,9 @@ def experiments_world(admin, client):
     Member.objects.create(experiment=planned, user=admin, role=Member.Role.LEAD)
     experiment('Test light trial', duration_days=84)
     experiment('Test design kept', duration_days=56, is_template=True)
+    # the list is newest first (Meta.ordering): made a minute apart, in the order above, not all on MOMENT
+    for minutes, code in enumerate(Experiment.objects.order_by('-code').values_list('code', flat=True)):
+        Experiment.objects.filter(code=code).update(created_at=MOMENT - timedelta(minutes=minutes))
     return [f'experiments: {Experiment.objects.count()}']
 
 
@@ -272,6 +275,13 @@ def messages_world(admin, client):
     long = services.create_channel(admin, 'Test long channel', [writer])
     for number in range(1, 61):      # a conversation longer than its plate: it opens at its newest message
         services.post_as(writer if number % 2 else admin, long.pk, f'Test message {number} of 60.')
+    # a message's time is taken when it is made, on the real clock (Message.created_at's default): put it on MOMENT's, a
+    # minute apart in the order they were written, so the pages say the same times on every run
+    from datetime import timedelta
+    from messaging.models import Message
+    messages = list(Message.objects.order_by('pk'))
+    for index, message in enumerate(messages):
+        Message.objects.filter(pk=message.pk).update(created_at=MOMENT - timedelta(minutes=len(messages) - index))
     return [f'conversations: {Conversation.objects.count()}']
 
 

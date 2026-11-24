@@ -5665,11 +5665,12 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   names "Test …", addresses @example.com; `core/test_world.py`, one function per part: `company_world`, `hr_world`,
   `panel_world` and its parts for tasks, questions, experiments, reports, storage and messages) in a transaction it
   rolls back, and writes `form-oracle.json`, `company-props-<language>.json`, `list-props-<language>.json` and
-  `panel-props-<language>.json` (the production panel's lists), the pages the server draws (`panel/`) and
-  `recorded-from.json`: the hash of every source the fixtures are rendered with (`core/recorded.py`: the recorder, the
-  test world, the form layer, the readers and resources, the templates, the catalogs). `core/tests_recorded_fixtures.py`
-  fails in CI when one of them changed since: record again and commit what the recorder writes (one check for every
-  recorded fixture; the fixtures themselves carry record ids, nonces and a few real-clock times, so they are not diffed). `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
+  `panel-props-<language>.json` (the production panel's lists), the pages the server draws (`panel/`).
+  `core/tests_fixtures_fresh.py` holds them fresh: it builds the test world in the test run with the clock pinned, renders
+  every fixture by the recorder's own function (`core.recorded_fixtures.render_all`), puts what varies from run to run in a
+  fixed form (record ids, a page's nonce and token, the assets' versions) and fails, naming the file and its first
+  differing line, when a committed one is not what the code renders today: run `scripts/record_test_world.sh` and commit
+  what it writes (`--check` compares without writing). `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
   `frontend/islands` and `core/testdata` outside example.com and the `.example` domains.
 
 ## One format for every tab

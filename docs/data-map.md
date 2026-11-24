@@ -2984,7 +2984,7 @@ A message: its author (a participant of the same conversation, a database rule),
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Messages › messages (never shown: body)
 - **forms**: `MessageForm`
 - **constraints**: message_has_text (check); message_deleted_when (check); message_in_conversation (unique: id, conversation)
-- **tests that mention it**: `messaging/tests/test_models.py`, `messaging/tests/test_pages.py`, `messaging/tests/test_services.py`
+- **tests that mention it**: `core/test_world.py`, `messaging/tests/test_models.py`, `messaging/tests/test_pages.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "a1ecbfc8-8a80-494d-9e05-57b77795f47c",
+    "key": "05820800-d9bd-4f64-a506-4fed0efa04aa",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/a1ecbfc8-8a80-494d-9e05-57b77795f47c/",
+    "href": "/sites/05820800-d9bd-4f64-a506-4fed0efa04aa/",
     "type": "Kara tesisi",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "d543896e-73b8-4c1e-b942-7fdb2b197d44",
+    "key": "877cd97e-86a5-4447-b299-16a0370ea4f7",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/d543896e-73b8-4c1e-b942-7fdb2b197d44/",
+    "href": "/sites/877cd97e-86a5-4447-b299-16a0370ea4f7/",
     "type": "Deniz kafesi",
     "status": "warning",
     "units": "1",
@@ -228,7 +228,7 @@
   },
   "rows": [
    {
-    "key": "a1ecbfc8-8a80-494d-9e05-57b77795f47c-ae5bdfaf-392e-4c1a-b11c-ca193188e4d0",
+    "key": "05820800-d9bd-4f64-a506-4fed0efa04aa-500958f7-8855-4672-ba5d-9a0b521c6e1a",
     "item": "Test Grower 4 (TG-4)",
     "site": "Test Site North",
     "onHand": "1.475 kg",
@@ -248,25 +248,25 @@
   },
   "rows": [
    {
-    "key": "a85caebd-98f2-4347-bb63-38867919e547",
+    "key": "ae122ece-4208-46bf-9f5e-01e5447d1814",
     "title": "Test long channel",
-    "href": "/messages/a85caebd-98f2-4347-bb63-38867919e547/",
+    "href": "/messages/ae122ece-4208-46bf-9f5e-01e5447d1814/",
     "text": "Test message 60 of 60.",
-    "when": "24.11.2026 19:17"
+    "when": "23.11.2026 13:41"
    },
    {
-    "key": "e406dee8-a969-42a3-8e36-65bff321e10a",
+    "key": "998aa73d-5ddb-43b8-959a-d43de15d4674",
     "title": "Test channel",
-    "href": "/messages/e406dee8-a969-42a3-8e36-65bff321e10a/",
+    "href": "/messages/998aa73d-5ddb-43b8-959a-d43de15d4674/",
     "text": "A test message to the channel.",
-    "when": "24.11.2026 19:17"
+    "when": "23.11.2026 12:41"
    },
    {
-    "key": "38975b1b-dc13-4b3e-a916-11577b84af82",
+    "key": "ea230f02-beff-4bac-8428-806566cdf251",
     "title": "Test Writer",
-    "href": "/messages/38975b1b-dc13-4b3e-a916-11577b84af82/",
+    "href": "/messages/ea230f02-beff-4bac-8428-806566cdf251/",
     "text": "A second test answer,\non two lines.",
-    "when": "24.11.2026 19:17"
+    "when": "23.11.2026 12:40"
    }
   ],
   "empty": null
@@ -280,7 +280,7 @@
   "critical": "Kritik",
   "entries": [
    {
-    "key": "fe01dcb0-1fc1-4d8d-83b5-1e565d339d8c",
+    "key": "12306987-91d5-40a4-94de-b411c5ed08e3",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Kanal · Test long channel",
@@ -292,7 +292,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "0caf794c-16f1-499d-b191-6b8e5d761d69",
+    "key": "1621767d-5d82-420a-ba94-aaf0b9f90605",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Kanal · Test channel",
@@ -304,7 +304,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "fdb999de-22ff-4059-9c92-ce8e6fc83f36",
+    "key": "fa9b4529-f7fb-45c9-8f74-646d278fa0c1",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Depo işlemi · Count · TS-01 · TG-4 TL-1, TG-4 TL-2 · 2026-11-21",
@@ -316,7 +316,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "9b47ea23-46be-40c1-8dc2-859dffb6de34",
+    "key": "04187c31-5710-42b7-99b7-18e6f482fe06",
     "action": "İptal edildi",
     "critical": false,
     "record": "Depo işlemi · Write-off · TS-01 · TG-4 TL-2 · 2026-11-19",
@@ -328,7 +328,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "dbb1302e-ac5c-4635-8efd-3c854058a577",
+    "key": "ec49e99a-4e35-4fb1-949c-d8c2bb94d56a",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Depo işlemi · Write-off · TS-01 · TG-4 TL-2 · 2026-11-19",
@@ -350,10 +350,10 @@
   },
   "rows": [
    {
-    "key": "408ba465-5375-4187-83d8-28cb11e59a06",
+    "key": "c8ecc8c5-24ff-4a30-892a-18a908dc14e1",
     "text": "A test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/408ba465-5375-4187-83d8-28cb11e59a06/view/",
+    "href": "/knowledge/entries/c8ecc8c5-24ff-4a30-892a-18a908dc14e1/view/",
     "kind": "neutral",
     "chip": "Taslak"
    }

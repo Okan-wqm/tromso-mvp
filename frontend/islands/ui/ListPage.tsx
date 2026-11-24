@@ -4,6 +4,8 @@
 // the server words every label, every cell and every address, and this component only draws them with the library.
 // A row's title opens the record's own page (the new record form), never the classic dialog. A row action is a link or a
 // small POST form with the page's CSRF token (cancelling a request): the server checks it like the classic page's.
+// Rows may come in groups (`groups`, Live values' one plate per device): each group a plate with its own table of the
+// shared columns; without groups the page is one table, as before.
 import { useId, type FocusEvent, type FormEvent } from 'react';
 
 import { tidy } from '../../date-input.js';
@@ -13,6 +15,7 @@ import { CellLines, Table } from './Table.js';
 import { Chip, type ChipKind } from './Chip.js';
 import { Gauge, type GaugeProps } from './Gauge.js';
 import { Icon, type IconName } from './Icon.js';
+import { Plate, Plates } from './Plate.js';
 import { EmptyState, Notice, type NoticeTone } from './States.js';
 import { LinkTabs, type LinkTab } from './Tabs.js';
 
@@ -51,6 +54,16 @@ export interface ListRow {
 
 export interface ListColumn { key: string; label: string; numeric?: boolean }
 
+/** A group of the table's rows drawn as a plate of its own (Live values: one per device): its title, chips beside it
+ *  (each a word), a meta line, and the keys of its rows in `table.rows` (every row in one group; the columns shared). */
+export interface ListGroup {
+  key: string;
+  title: string;
+  chips?: { kind: ChipKind; text: string }[];
+  meta?: string | null;
+  rows: string[];
+}
+
 export interface ListFilterOption { value: string; label: string }
 export interface ListFilter {
   /** a select (the default), or a day typed the European way (frontend/date-input.ts tidies it) */
@@ -80,6 +93,8 @@ export interface ListPageProps {
   /** lines above the table ("Showing 200 of 250 requests.") */
   lines: string[];
   table: { label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string };
+  /** the rows in groups, one plate and table each (optional: without it, one table) */
+  groups?: ListGroup[] | null;
   /** said when there is no row: "No … yet" with what to do, or "No … match" with the way back */
   empty: { title: string; text: string | null; link: ListLink | null; add: ListLink | null };
   pager: { label: string; range: string; page: string; previous: ListLink | null; next: ListLink | null } | null;
@@ -156,7 +171,45 @@ function Toolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) {
   );
 }
 
-export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, empty, pager }: ListPageProps) {
+function RowsTable({ label, columns, rows, actionsLabel, csrfToken }: {
+  label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string; csrfToken: string;
+}) {
+  return (
+    <Table<ListRow>
+      label={label}
+      rows={rows}
+      rowKey={(row) => row.key}
+      rowStatus={(row) => row.status ?? undefined}
+      rowVoided={(row) => Boolean(row.voided)}
+      columns={columns.map((column, index) => ({
+        key: column.key, label: column.label, numeric: Boolean(column.numeric), rowHeader: index === 0,
+        render: (row: ListRow) => { const cell = row.cells[column.key]; return cell ? <Cell cell={cell} /> : null; },
+      }))}
+      {...(rows.some((row) => row.actions.length) ? {
+        actions: (row: ListRow) => row.actions.map((action) => <Action key={action.href + action.label} action={action} csrfToken={csrfToken} />),
+        actionsLabel,
+      } : {})}
+    />
+  );
+}
+
+/** The rows in their groups: a plate each, its title, chips and meta in the head, its own table of the shared columns. */
+function Groups({ groups, table, csrfToken }: { groups: ListGroup[]; table: ListPageProps['table']; csrfToken: string }) {
+  const byKey = new Map(table.rows.map((row) => [row.key, row]));
+  return (
+    <Plates>
+      {groups.map((group) => (
+        <Plate key={group.key} title={group.title} {...(group.meta ? { meta: group.meta } : {})}
+          {...(group.chips?.length ? { badge: <>{group.chips.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>)}</> } : {})}>
+          <RowsTable label={group.title} columns={table.columns} actionsLabel={table.actionsLabel} csrfToken={csrfToken}
+            rows={group.rows.flatMap((key) => { const row = byKey.get(key); return row ? [row] : []; })} />
+        </Plate>
+      ))}
+    </Plates>
+  );
+}
+
+export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, empty, pager }: ListPageProps) {
   return (
     <>
       {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
@@ -165,21 +218,9 @@ export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, empt
       {table.rows.length ? (
         <>
           {lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}
-          <Table<ListRow>
-            label={table.label}
-            rows={table.rows}
-            rowKey={(row) => row.key}
-            rowStatus={(row) => row.status ?? undefined}
-            rowVoided={(row) => Boolean(row.voided)}
-            columns={table.columns.map((column, index) => ({
-              key: column.key, label: column.label, numeric: Boolean(column.numeric), rowHeader: index === 0,
-              render: (row: ListRow) => { const cell = row.cells[column.key]; return cell ? <Cell cell={cell} /> : null; },
-            }))}
-            {...(table.rows.some((row) => row.actions.length) ? {
-              actions: (row: ListRow) => row.actions.map((action) => <Action key={action.href + action.label} action={action} csrfToken={csrfToken} />),
-              actionsLabel: table.actionsLabel,
-            } : {})}
-          />
+          {groups && groups.length ? <Groups groups={groups} table={table} csrfToken={csrfToken} />
+            : <RowsTable label={table.label} columns={table.columns} rows={table.rows} actionsLabel={table.actionsLabel}
+              csrfToken={csrfToken} />}
           {pager ? (
             <nav className="pager list-pager" aria-label={pager.label}>
               <span>{pager.range}</span>

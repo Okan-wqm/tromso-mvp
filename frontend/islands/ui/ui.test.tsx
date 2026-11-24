@@ -257,6 +257,25 @@ test('a list cell with a gauge draws its text and sub-lines, then the gauge unde
   assert.match(page, /<td><span>7\.4 kg\/m³<\/span><span class="ui-cell-sub">Over<\/span><span class="ui-cell-sub"><span class="ui-gauge">[^]*?<span class="ui-gauge-text">12 % of capacity<\/span><\/span><\/span><\/td>/);
 });
 
+test('a list page with groups draws a plate per group, its head and its own table of the shared columns', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const row = (key: string, text: string) => ({ key, cells: { name: { text, strong: true } }, actions: [] });
+  const table = { ...LIST_PROPS.table, columns: [{ key: 'name', label: 'Channel' }], rows: [row('1', 'PH'), row('2', 'O2'), row('3', 'TEMP')] };
+  const groups = [
+    { key: 'a', title: 'PROBE-A · Probe A', chips: [{ kind: 'hold' as const, text: 'Simulated' }], meta: 'Site North · 2 channels', rows: ['1', '3'] },
+    { key: 'b', title: 'PROBE-B · Probe B', meta: null, rows: ['2'] },
+  ];
+  const page = html(<ListPage {...LIST_PROPS} table={table} groups={groups} />);
+  const plates = page.split('<section class="ui-plate"').slice(1);
+  assert.equal(plates.length, 2);
+  assert.match(plates[0] ?? '', /<h2>PROBE-A · Probe A<\/h2><span class="ui-chip"[^>]*>[^]*?Simulated[^]*?<span class="ui-plate-meta">Site North · 2 channels<\/span>/);
+  assert.match(plates[0] ?? '', /aria-label="PROBE-A · Probe A"[^]*?PH[^]*?TEMP/);
+  assert.doesNotMatch(plates[0] ?? '', />O2</);
+  assert.match(plates[1] ?? '', /<h2>PROBE-B · Probe B<\/h2>[^]*?>O2</);
+  assert.equal((html(<ListPage {...LIST_PROPS} table={table} />).match(/<table/g) ?? []).length, 1, 'without groups: one table');
+});
+
 test('a stacked bar: each part a segment as long as its share on the whole, every part in words, no style', async () => {
   const { StackedBar } = await import('./index.js');
   const bar = html(<StackedBar label="Planned today: 6" parts={[

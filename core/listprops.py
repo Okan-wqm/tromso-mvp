@@ -75,6 +75,13 @@ def row(key, cells, actions=(), status=None, voided=False):
     return {'key': str(key), 'status': status, 'voided': bool(voided), 'cells': cells, 'actions': list(actions)}
 
 
+def group(key, title, rows, chips=(), meta=None):
+    """A group of a list's rows, drawn as a plate of its own with its own table of the shared columns (ListPage.tsx
+    `groups`): its title, chips beside it, a meta line, and the keys of its rows (each a `row` of the table)."""
+    return {'key': str(key), 'title': str(title), 'chips': list(chips), 'meta': None if meta is None else str(meta),
+            'rows': [str(each) for each in rows]}
+
+
 def choice(name, label, chosen, options, groups=()):
     """A filter: a select named `name` (its label for a screen reader), `options` as (value, label) pairs (the first is
     "All …"), `groups` as (group label, options) for options under a heading (an empty group left out)."""

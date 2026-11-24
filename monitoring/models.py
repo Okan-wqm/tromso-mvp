@@ -105,8 +105,9 @@ class MonitorBoard(AuditedModel):
             # no screen and no diagonal; a preset and its own diagonal; another screen and a diagonal in range
             models.CheckConstraint(
                 condition=Q(screen='', screen_inches__isnull=True)
-                | Q(screen=WallScreen.OTHER, screen_inches__gte=SCREEN_INCHES[0], screen_inches__lte=SCREEN_INCHES[1])
-                | Q(*[Q(screen=preset, screen_inches=Decimal(preset)) for preset in WallScreen.values
+                | Q(screen=WallScreen.OTHER, screen_inches__isnull=False, screen_inches__gte=SCREEN_INCHES[0],
+                    screen_inches__lte=SCREEN_INCHES[1])
+                | Q(*[Q(screen=preset, screen_inches__isnull=False, screen_inches=Decimal(preset)) for preset in WallScreen.values
                       if preset != WallScreen.OTHER], _connector=Q.OR),
                 name='chk_monitor_boards_screen',
                 violation_error_message=_('Choose a screen, or another screen with its diagonal between 10 and 150 inches.')),

@@ -56,8 +56,8 @@ class MonitorBoardForm(TabbedForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['refresh_seconds'].widget.attrs.update({'min': REFRESH_MIN, 'max': REFRESH_MAX})
-        self.fields['screen_inches'].widget.attrs.update({'min': SCREEN_INCHES[0], 'max': SCREEN_INCHES[1], 'step': '0.1'})
-        self.fields['distance_m'].widget.attrs.update({'min': DISTANCE_M[0], 'max': DISTANCE_M[1], 'step': '0.1'})
+        self.fields['screen_inches'].widget.attrs.update({'min': str(SCREEN_INCHES[0]), 'max': str(SCREEN_INCHES[1]), 'step': '0.1'})
+        self.fields['distance_m'].widget.attrs.update({'min': str(DISTANCE_M[0]), 'max': str(DISTANCE_M[1]), 'step': '0.1'})
         self.fields['screen'].choices = [('', _('Not set'))] + list(self.fields['screen'].choices)[1:]
         templates(self.fields['default_template'], _('As the rules say'))
 

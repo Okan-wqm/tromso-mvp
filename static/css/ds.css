@@ -557,6 +557,9 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-chart-now { font-size: var(--fs-small); font-weight: 700; white-space: nowrap; }
 .ui-chart-now[data-status="critical"] { color: var(--crit-text); }
 .ui-chart-now[data-status="warning"] { color: var(--warn-text); }
+/* an abnormal "now" may be a sentence ("No diagram after 22.11.2026 13:42: no fresh value of Alkalinity"): it wraps, on a
+   phone it would push the page sideways (a figure "6.50 mg/L" is short and stays on its line) */
+.ui-chart-now[data-status] { min-width: 0; white-space: normal; text-wrap: pretty; }
 .ui-chart-draw { position: relative; min-height: 160px; margin: 0 10px; border: 1px solid var(--line-hair); background: var(--surface-sheet); }
 .ui-chart-draw > :is(svg, canvas, div) { display: block; width: 100%; }
 .ui-chart-keys { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0; padding: var(--space-2) 14px 0; list-style: none; color: var(--text-2); font-size: var(--fs-caption); }

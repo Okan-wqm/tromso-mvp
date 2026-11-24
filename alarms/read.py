@@ -106,13 +106,17 @@ def history(alarm):
 @dataclass(frozen=True)
 class Attention:
     """What needs a look now, for the new look's status strip (core/ui.py) and a page's open-alarms figure, on every site
-    or on one: the open alarms and every stocked unit's water on the monitoring cards' own ladder (monitoring.read
-    water_rungs, rungs 1 to 4: the cards and this never disagree), so it never says "no open alarms" while a unit is
-    critical whose alarm is not raised yet, or a stocked unit is blind (an old or missing temperature or oxygen, no
-    point at all) or unjudged (no limit for its fish).
+    or on one: the open alarms, and every stocked unit on rungs 1 to 4 of the monitoring cards' own ladder by the one
+    rule the cards apply (monitoring.read.upper_state: its water, its stock over capacity, an estimate that says weigh
+    now), so it never says "no open alarms" while a unit is critical whose alarm is not raised yet, over capacity, due to
+    be weighed now, blind (an old or missing temperature or oxygen, no point at all) or unjudged (no limit for its fish).
+    It is worked out with every section shown, as a card is for a person who may read them all (a person who may not
+    read the water sees no blind or unjudged card); the notes (a withdrawal, weigh soon, an open health event) are not
+    counted.
     `farm_wide`: the open alarms that belong to no site (the live values cannot be read, an alarm step failed, the rules
     incomplete); a site's count holds them too, as they are about every site. `unreadable`: units whose water could not
-    be read at all (each read on its own, as the engine does), never counted as fine. `units`: (unit id, rung) of each
+    be read at all (each read on its own, as the engine does), whose feeding could not be read (unless their water is
+    critical), or whose state could not be worked out: never counted as fine. `units`: (unit id, rung) of each
     stocked unit, for a caller (and the tests) to compare with the cards."""
     alarms: int = 0
     alarms_critical: int = 0
@@ -148,27 +152,41 @@ def open_alarms():
                 .values_list('site_id', 'severity'))
 
 
-def _unit_water(units, now):
-    """{unit id: [PointWater]} of the units' points (the middle one first), and [the ids of the units that could not be
-    read]: one read for all of them; when it fails, each unit on its own (a savepoint each), so one unit that cannot be
-    read never hides the others (as alarms/sources.py `_read` does for the engine)."""
+def _each(what, units, read):
+    """({unit id: what `read(units)` says of it}, [the ids of the units it could not be read for]): one read for all of
+    them; when it fails, each unit on its own (a savepoint each), so one unit that cannot be read never hides the others
+    (as alarms/sources.py `_read` does for the engine). `what` names it in the log."""
     from django.db import transaction
 
-    from farm.water import read as water_read
     try:
         with transaction.atomic():
-            return water_read.points_water(units, now, middle_only=[unit.pk for unit in units]), []
+            return read(units), []
     except Exception:
-        logger.exception('The water of the units could not be read at once; each unit is read on its own.')
+        logger.exception('The %s of the units could not be read at once; each unit is read on its own.', what)
     found, failed = {}, []
     for unit in units:
         try:
             with transaction.atomic():
-                found.update(water_read.points_water([unit], now, middle_only=[unit.pk]))
+                found.update(read([unit]))
         except Exception:
-            logger.exception('The water of unit %s could not be read.', unit)
+            logger.exception('The %s of unit %s could not be read.', what, unit)
             failed.append(unit.pk)
     return found, failed
+
+
+def _unit_water(units, now):
+    """{unit id: [PointWater]} of the units' points (the middle one first), and [the ids of the units that could not be
+    read] (`_each`)."""
+    from farm.water import read as water_read
+    return _each('water', units, lambda some: water_read.points_water(some, now, middle_only=[unit.pk for unit in some]))
+
+
+def _unit_feeding(units, held):
+    """{unit id: UnitFeeding with today's ration} (farm.feeding.read.figures, as the cards read it), and [the ids of the
+    units it could not be read for] (`_each`): what says whether a unit's estimate needs weighing now."""
+    from farm.feeding import read as feeding_read
+    return _each('feeding', units, lambda some: feeding_read.figures({unit.pk: held[unit.pk] for unit in some},
+                                                                       ration=True))
 
 
 def snapshot(now=None):
@@ -194,22 +212,39 @@ def _snapshot(now):
 
     from farm.models import Tank
     from farm.stock import read as stock_read
-    from monitoring import read as monitoring_read
 
     now = now or timezone.now()
-    units = list(Tank.objects.select_related('production_department'))
+    units = list(Tank.objects.select_related('production_department__site'))
     held = stock_read.stock_of(units) if units else {}
     stocked = [unit for unit in units if unit.pk in held]
     water, failed = _unit_water(stocked, now) if stocked else ({}, [])
+    feeding, unfed = _unit_feeding(stocked, held) if stocked else ({}, [])
     rungs = []
     for unit in stocked:
         site = unit.production_department.site_id if unit.production_department_id else None
-        if unit.pk in failed:
-            rungs.append((unit.pk, site, UNREADABLE))
-            continue
-        middle = monitoring_read.middle_of(water.get(unit.pk, ()))
-        rungs.append((unit.pk, site, monitoring_read.water_rungs(middle, now).key))
+        rungs.append((unit.pk, site, _rung(unit, held[unit.pk], water, feeding, failed, unfed, now)))
     return open_alarms(), rungs
+
+
+def _rung(unit, own, water, feeding, failed, unfed, now):
+    """The rung of one stocked unit (monitoring.read.upper_state, OK below it), or UNREADABLE: its water could not be read,
+    its feeding could not be read and its water is not critical, or working it out raised (logged). Each unit on its own,
+    so one never hides the others and the strip never answers 500 for one."""
+    from farm.stock.dates import local_today
+    from monitoring import read as monitoring_read
+
+    if unit.pk in failed:
+        return UNREADABLE
+    try:
+        rungs = monitoring_read.water_rungs(monitoring_read.middle_of(water.get(unit.pk, ())), now)
+        if unit.pk in unfed and not rungs.critical:
+            return UNREADABLE
+        drift = monitoring_read.weigh(monitoring_read.lines_of(own, feeding.get(unit.pk), local_today(unit)))
+        state = monitoring_read.upper_state(rungs, own.over_capacity, drift)
+    except Exception:
+        logger.exception('The state of unit %s could not be worked out.', unit)
+        return UNREADABLE
+    return state.key if state is not None else monitoring_read.OK
 
 
 def _count(alarms, rungs, site=None, every=True):

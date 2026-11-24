@@ -146,7 +146,7 @@ export function FieldOf({ field, optional, source, inRow = false }: { field: Fie
         .map((option) => ({ value: option.value, label: option.label, disabled: Boolean(option.attrs.disabled) })) }))
         .filter((group) => group.options.length);
       control = <SelectField {...base} key={follows ? `${widget.name}-${chosen ?? ''}` : widget.name} options={[]} groups={groups}
-        defaultValue={options(widget).filter(offered).find((option) => option.selected)?.value ?? ''} />;
+        defaultValue={options(widget).filter(offered).find((option) => option.selected)?.value} />;
       break;
     }
     case 'multiselect':

@@ -130,13 +130,13 @@ export interface CheckboxGroupProps extends FieldBase {
 }
 
 /** Boxes to tick, one or more (Supplies, Topics): a fieldset named by its legend. */
-export function CheckboxGroup({ name, label, help, errors, wide, disabled, options, defaultValues = [], mark }: CheckboxGroupProps) {
+export function CheckboxGroup({ name, label, help, errors, wide, disabled, options, defaultValues = [], mark, labelHidden }: CheckboxGroupProps) {
   const id = useId();
   const invalid = Boolean(errors && errors.length);
   return (
     <fieldset className={invalid ? 'field field-set has-error' : 'field field-set'} data-wide={wide ? '' : undefined}
       aria-describedby={describedBy(id, help, errors)} aria-invalid={invalid || undefined} disabled={disabled}>
-      <legend>{label}<FieldMark mark={mark} /></legend>
+      <legend className={labelHidden ? 'sr-only' : undefined}>{label}<FieldMark mark={mark} /></legend>
       <div className="ui-checks">
         {options.map((option) => (
           <label key={option.value} className="ui-check">

@@ -9,7 +9,11 @@ built and read.
     company_world(admin, client)      the company's: sites, a hall, a loop, units with fish, a storage location, a
                                       library document, a knowledge entry, a person, a role and an employee
     hr_world(admin, client)           the people's: office departments, employees placed and one who left, shifts, a
-                                      holiday, a leave type, leave requests and attendance"""
+                                      holiday, a leave type, leave requests and attendance
+    forms_world(admin, client)        the rows of the forms with lists of their own: a site's and a supplier's contacts,
+                                      a feeder's calibration, a feed's suitability, a medicine's withdrawal, a reorder
+                                      level, a board's card, a task's and a recurring task's checklist, a device with a
+                                      channel and its calibration, a sensor credential, a lice and a biomass report"""
 from datetime import datetime
 from decimal import Decimal as D
 
@@ -25,7 +29,7 @@ def world(admin):
     """The test world, built through a client signed in as `admin`; [what was made: its answer] of the parts posted."""
     client = Client(HTTP_HOST='localhost')
     client.force_login(admin)
-    return company_world(admin, client) + hr_world(admin, client)
+    return company_world(admin, client) + hr_world(admin, client) + forms_world(admin, client)
 
 
 def company_world(admin, client):
@@ -112,3 +116,108 @@ def hr_world(admin, client):
     AttendanceRecord.objects.create(employee=person, clock_in=MOMENT - timedelta(days=2), via=AttendanceRecord.Via.ENTERED,
                                     note='Test note, left open')
     return [f'hr: {Employee.objects.count()} employees, {OfficeDepartment.objects.count()} office departments']
+
+
+def forms_world(admin, client):
+    """The rows of the forms that have lists of their own (core.crud.RowList), each list saved through its own address as
+    a person saves it (its RowListView, the record's version sent with it): a contact of the north site, a supplier with
+    a contact, a feeder with a calibration, a feed suited to the salmon, a medicine with its withdrawal, a reorder level of
+    the store, a monitoring board with a card, a task and a recurring task with a checklist, a device with a channel and
+    its calibration, a sensor credential, and a draft lice report and biomass report. Made on MOMENT's day."""
+    from core.crud import Resource
+    from farm.models import Equipment, EquipmentType, Feed, Medicine, ProductionDepartment, Site, Species, Supplier, Tank
+    from farm.tests.helpers import rows_data
+    from inventory.models import StorageLocation
+    from monitoring.models import MonitorBoard
+    from sensors.models import Credential
+    from sensors.tests import make_channel, make_connection, make_device, make_format
+    from tasks.models import Frequency, Task, TaskSeries
+    made = []
+
+    def rows(record, key, items):
+        resource = next(each for each in Resource.registry
+                        if each.model is type(record) and any(listed.key == key for listed in each.row_lists))
+        response = client.post(reverse(resource.url_name(key), args=[record.pk]), rows_data(key, items, record=record))
+        made.append(f'{key} of {record}: {response.status_code}')
+    north, salmon = Site.objects.get(code='TSN'), Species.objects.get(code='SAL')
+    hall, tank = ProductionDepartment.objects.get(code='THA'), Tank.objects.get(code='TT-01')
+    rows(north, 'contacts', [{'name': 'Test Contact', 'role': 'Test manager', 'email': 'contact@example.com', 'phone': '',
+                              'is_primary': True}])
+    supplier = Supplier.objects.create(name='Test Supplier', code='TSU', supplies=['feed'])
+    rows(supplier, 'contacts', [{'name': 'Test Seller', 'role': 'Test sales', 'email': 'seller@example.com', 'phone': '',
+                                 'is_primary': True}])
+    feeder = Equipment.objects.create(name='Test Feeder', code='TFD', production_department=hall,
+                                      equipment_type=EquipmentType.objects.get(code='feeder-automatic'),
+                                      specifications={'capacity': 50, 'siloVolume': 200, 'controlType': 'timer',
+                                                      'autoFilling': True})
+    rows(feeder, 'calibrations', [{'feed_size_mm': '3', 'label': 'Test starter', 'grams_per_dispensing': '25',
+                                   'silo_capacity_kg': '250', 'notes': ''}])
+    feed = Feed.objects.create(name='Test Feed', code='TFE', feed_type='grower', manufacturer=supplier)
+    rows(feed, 'suitability', [{'species': str(salmon.pk), 'growth_stage': 'all', 'min_weight_g': '50',
+                                'max_weight_g': '150', 'notes': ''}])
+    medicine = Medicine.objects.create(name='Test Medicine', kind='lice', administration='bath',
+                                       active_substance='azamethiphos', lice_report_code='AZAMETHIPHOS')
+    rows(medicine, 'withdrawals', [{'species': '', 'degree_days': '150', 'days': '7', 'safety_margin_pct': '20',
+                                    'note': ''}])
+    rows(StorageLocation.objects.get(code='TS-01'), 'reorder', [{'feed': str(feed.pk), 'level': '600'}])
+    board = MonitorBoard.objects.create(name='Test Board')
+    rows(board, 'units', [{'unit': str(tank.pk), 'template': ''}])
+    task = Task(title='Test task', due_date=MOMENT.date())
+    task.set_place(tank)
+    task.save()
+    rows(task, 'checklist', [{'text': 'Test step one'}, {'text': 'Test step two'}])
+    series = TaskSeries(title='Test round', frequency=Frequency.DAILY, starts_on=MOMENT.date())
+    series.set_place(tank)
+    series.save()
+    rows(series, 'checklist', [{'text': 'Test round step'}])
+    device = make_device(make_connection('Test broker'), make_format('Test format'), north, code='TEST-1')
+    channel = make_channel(device, 'temperature_c', code='TEST-T')
+    rows(channel, 'calibrations', [{'valid_from': '22.11.2026 10:00', 'gain': '1.02', 'offset': '-0.1', 'performed_by': '',
+                                    'note': 'Test calibration'}])
+    Credential.objects.create(username='test-gateway')
+    from reports.models import Report
+    from reports.periods import month_start, week_start
+    contact = {'contact_name': 'Test Contact', 'contact_email': 'contact@example.com', 'created_by': admin, 'updated_by': admin}
+    Report.objects.create(kind='sea_lice', site=Site.objects.get(code='TSS'), period_start=week_start(MOMENT.date()),
+                          **contact)
+    Report.objects.create(kind='biomass', site=north, period_start=month_start(MOMENT.date()), **contact)
+    # A draft feeding protocol with a table of two bands by two temperature columns, saved through its own address.
+    from farm.models import FeedingProtocol
+    protocol = FeedingProtocol.objects.create(name='Test grow-out', species=salmon, expected_fcr=D('1.00'))
+    table = {'version': str(FeedingProtocol.objects.get(pk=protocol.pk).version), 'temperatures': '8 12',
+             'bands-TOTAL_FORMS': '2', 'bands-INITIAL_FORMS': '0', 'bands-MIN_NUM_FORMS': '0', 'bands-MAX_NUM_FORMS': '1000'}
+    for index, (low, high) in enumerate((('0', '100'), ('100', ''))):
+        table.update({f'bands-{index}-min_weight_g': low, f'bands-{index}-max_weight_g': high,
+                      f'bands-{index}-feed': str(feed.pk), f'bands-{index}-meals_per_day': '4',
+                      f'bands-{index}-expected_fcr': '', f'bands-{index}-sfr_80': '1.1', f'bands-{index}-sfr_120': '1.3'})
+    response = client.post(reverse('farm:feedingprotocol_table', args=[protocol.pk]), table)
+    made.append(f'table of {protocol}: {response.status_code}')
+    # A draft experiment (its creator leads it) with a design of one factor and one group, saved through its own address.
+    from experiments.models import Experiment
+    response = client.post(reverse('experiments:experiment_create'), {
+        'name': 'Test trial', 'species': str(salmon.pk), 'site': str(north.pk), 'hypothesis': 'A test hypothesis.',
+        'primary_endpoint': '', 'starts_on': '01.12.2026', 'duration_days': '28', 'notes': ''})
+    made.append(f'experiment: {response.status_code}')
+    trial = Experiment.objects.filter(name='Test trial').first()
+    if trial is not None:
+        response = client.post(reverse('experiments:experiment_design', args=[trial.pk]), {
+            'version': str(trial.version), 'factors-TOTAL_FORMS': '1', 'factors-INITIAL_FORMS': '0',
+            'factors-MIN_NUM_FORMS': '0', 'factors-MAX_NUM_FORMS': '1000', 'factors-0-id': '',
+            'factors-0-name': 'Test temperature', 'factors-0-kind': 'other', 'factors-0-unit': '°C',
+            'groups-TOTAL_FORMS': '1', 'groups-INITIAL_FORMS': '0', 'groups-MIN_NUM_FORMS': '0',
+            'groups-MAX_NUM_FORMS': '1000', 'groups-0-id': '', 'groups-0-name': 'Test control', 'groups-0-role': 'control',
+            'groups-0-label_0': 'Cold', 'groups-0-value_0': '8', 'groups-0-replicates': '2'})
+        made.append(f'design of {trial}: {response.status_code}')
+    return made
+
+
+def record_of(resource):
+    """The record of `resource` its edit page is shown and recorded with: of a tab with row lists, the one whose lists
+    hold the most rows (a site with contacts, not the one without), then the one with the most lists (a lice report's
+    three); else the first by key."""
+    records = list(resource.queryset().order_by('pk')[:50])
+    if not records or not resource.row_lists:
+        return records[0] if records else None
+    return max(records, key=lambda record: (
+        sum(rows.rows(record).count() for rows in resource.row_lists if rows.applies_to(record)),
+        sum(1 for rows in resource.row_lists if rows.applies_to(record))))

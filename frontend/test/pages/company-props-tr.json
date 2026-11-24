@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "f8c08b71-1d36-491a-9a9f-cefaf9a0a3f8",
+    "key": "2ad39ea3-b663-4032-a582-e742d7cc408f",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/f8c08b71-1d36-491a-9a9f-cefaf9a0a3f8/",
+    "href": "/sites/2ad39ea3-b663-4032-a582-e742d7cc408f/",
     "type": "Kara tesisi",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "4dfaaf22-76d0-4d3c-8992-6d3d7b296608",
+    "key": "62bc3b5c-b482-49d3-af09-b50b66bc09a6",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/4dfaaf22-76d0-4d3c-8992-6d3d7b296608/",
+    "href": "/sites/62bc3b5c-b482-49d3-af09-b50b66bc09a6/",
     "type": "Deniz kafesi",
     "status": "warning",
     "units": "1",
@@ -248,58 +248,58 @@
   "critical": "Kritik",
   "entries": [
    {
-    "key": "111bf347-d80d-471a-931e-f6cd78b16b1f",
-    "action": "Oluşturuldu",
-    "critical": false,
-    "record": "Bilgi kaydı · A test statement.",
-    "by": {
-     "before": "",
-     "name": "test.admin",
-     "after": "tarafından"
-    },
-    "when": "23.11.2026 13:42"
-   },
-   {
-    "key": "7fcf3a20-4773-4793-99d6-b58dec52ffb2",
-    "action": "Oluşturuldu",
-    "critical": false,
-    "record": "Belge · Test document",
-    "by": {
-     "before": "",
-     "name": "test.admin",
-     "after": "tarafından"
-    },
-    "when": "23.11.2026 13:42"
-   },
-   {
-    "key": "c9bc7f02-0f50-470f-8af9-31007df6b8a2",
-    "action": "Oluşturuldu",
-    "critical": false,
-    "record": "Depolama yeri · Test Store (TS-01)",
-    "by": {
-     "before": "",
-     "name": "test.admin",
-     "after": "tarafından"
-    },
-    "when": "23.11.2026 13:42"
-   },
-   {
-    "key": "24819d20-771f-482a-99d0-7e58a60a4d7f",
-    "action": "Oluşturuldu",
-    "critical": false,
-    "record": "Su numunesi · Water sample · TT-01 › Middle · 2026-11-23 12:42",
-    "by": {
-     "before": "",
-     "name": "test.admin",
-     "after": "tarafından"
-    },
-    "when": "23.11.2026 13:42"
-   },
-   {
-    "key": "6370746a-ac6f-4cd8-ba05-fe2e8f998001",
+    "key": "f119e6a9-da39-4176-af38-0585343865a9",
     "action": "Değiştirildi",
     "critical": false,
-    "record": "Birim · Unit TM-01 (TM-01)",
+    "record": "Deney · E-2026-001 · Test trial",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "5051f78d-0026-4394-b7bc-94b3ecf99ada",
+    "action": "Değiştirildi",
+    "critical": false,
+    "record": "Deney · E-2026-001 · Test trial",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "5c171a2f-a1a0-407e-95ce-c6a6acf7bd45",
+    "action": "Oluşturuldu",
+    "critical": false,
+    "record": "Deney · E-2026-001 · Test trial",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "b5e4406b-50cd-4e01-921c-cb11530cbc18",
+    "action": "Değiştirildi",
+    "critical": false,
+    "record": "Yemleme protokolü · Test grow-out",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "74c7d0e0-51ab-444e-af43-f78b238bf26e",
+    "action": "Değiştirildi",
+    "critical": false,
+    "record": "Kanal · TEST-1 › TEST-T",
     "by": {
      "before": "",
      "name": "test.admin",
@@ -318,10 +318,10 @@
   },
   "rows": [
    {
-    "key": "ab19bb62-1b39-4b3f-b589-030479ed5ec0",
+    "key": "9fe12b51-9bb5-4788-b3c0-eb75ee096ed1",
     "text": "A test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/ab19bb62-1b39-4b3f-b589-030479ed5ec0/view/",
+    "href": "/knowledge/entries/9fe12b51-9bb5-4788-b3c0-eb75ee096ed1/view/",
     "kind": "neutral",
     "chip": "Taslak"
    }

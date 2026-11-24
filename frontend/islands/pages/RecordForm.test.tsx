@@ -134,7 +134,7 @@ test('a field in a row of a list posts what it posts alone, its label for a scre
     const html = renderToStaticMarkup(<FieldOf field={field} optional="optional" source={() => undefined} inRow />);
     if (JSON.stringify(posted(controlsOf(html))) !== JSON.stringify(posted(controls))) failures.push(`${name}: posts differently in a row`);
     if (html.includes('ui-field-mark')) failures.push(`${name}: a mark in a row`);
-    if (field.widget.kind !== 'checkbox' && !/<label[^>]*class="sr-only"/.test(html)) failures.push(`${name}: a visible label in a row`);
+    if (field.widget.kind !== 'checkbox' && !/<(label|legend)[^>]*class="sr-only"/.test(html)) failures.push(`${name}: a visible label in a row`);
     for (const error of field.errors) if (!squash(html).includes(squash(error))) failures.push(`${name}: error not said`);
   }
   assert.deepEqual(failures.slice(0, 20), [], `${failures.length} row fields differ`);

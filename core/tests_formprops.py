@@ -16,6 +16,7 @@ from alarms.models import ParameterDeadband
 from core.models import AuditLog
 
 from .pagesays import unsaid
+from .test_world import record_of
 
 MANIFEST = str(Path(__file__).resolve().parent / 'testdata' / 'islands-company-manifest.json')
 CREATE, LIST = reverse('alarms:parameterdeadband_create'), reverse('alarms:parameterdeadband_list')
@@ -100,9 +101,9 @@ class RecordFormNextTests(TestCase):
     def test_a_dialog_and_a_form_the_island_cannot_draw_keep_the_classic_page(self):
         dialog = self.client.get(CREATE, {'ui': 'next'}, HTTP_X_MODAL='1').content.decode()
         self.assertIn('class="record-form"', dialog)
-        site_form = self.page(reverse('farm:site_create'), 'next')        # farm/site_form.html: panels of its own
-        self.assertIn('class="record-form"', site_form)
-        self.assertIsNone(props_of(site_form, 'record-form'))
+        designer = self.page(reverse('monitoring:cardtemplate_create'), 'next')    # the card designer: not ported
+        self.assertIn('class="record-form"', designer)
+        self.assertIsNone(props_of(designer, 'record-form'))
 
     def test_the_delete_confirmation_says_what_the_classic_one_says_and_deletes_through_the_same_view(self):
         record = ParameterDeadband.objects.get(parameter='ph')
@@ -118,8 +119,9 @@ class RecordFormNextTests(TestCase):
 @override_settings(ISLANDS_MANIFEST=MANIFEST, ALLOWED_HOSTS=['localhost', 'testserver'])
 class EveryDrawableTabTests(TestCase):
     """Review F1: every tab whose form the island draws says, new and editing a record of the test world, everything its
-    classic page says (core.pagesays), as the admin sees it; a tab whose save may ask the withdrawal guard's question
-    (`question_template`) keeps its classic page in the new look, so the question and its box are there."""
+    classic page says (core.pagesays), as the admin sees it, with the panels its own template adds (core/formpanels.py);
+    a tab whose save may ask a question the island does not draw keeps its classic page in the new look, so the question
+    and its box are there (the withdrawal guard's question is drawn: core/tests_formpanels.py)."""
 
     def setUp(self):
         from unittest import mock
@@ -139,12 +141,12 @@ class EveryDrawableTabTests(TestCase):
         from core.crud import Resource
         drawn, checked = [], 0
         for resource in Resource.registry:
-            if resource.form_class is None or resource.form_template != 'crud/form.html':
+            if resource.form_class is None:
                 continue
             urls = []
             if resource.allows('add'):
                 urls.append(('new', reverse(resource.url_name('create'))))
-            record = resource.queryset().order_by('pk').first() if resource.allows('change') else None
+            record = record_of(resource) if resource.allows('change') else None
             if record is not None:
                 urls.append(('edit', reverse(resource.url_name('edit'), args=[record.pk])))
             for what, url in urls:
@@ -156,21 +158,23 @@ class EveryDrawableTabTests(TestCase):
                     if props is None:
                         continue
                     drawn.append(f'{resource.__name__} {what}')
-                    self.assertIsNone(resource.question_template, 'a tab that may ask the guard\'s question is not drawn')
                     # the old page says a tab's label on its tab and again as its panel's heading: the island, on its tab
-                    labels = {tab['label'] for tab in props['form']['tabs']}
+                    labels = {tab['label'] for tab in props['form']['tabs']} | {
+                        each['label'] for each in props['panels'] if each['label']}
                     self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode(), once=labels), [])
                     checked += 1
         self.assertGreater(checked, 20, drawn)
 
-    def test_a_tab_whose_save_may_ask_the_guards_question_keeps_the_classic_page(self):
+    def test_a_tab_whose_save_may_ask_a_question_the_island_does_not_draw_keeps_the_classic_page(self):
+        from unittest import mock
+
         from core.crud import Resource
         asking = [resource for resource in Resource.registry if resource.question_template and resource.allows('change')]
         self.assertTrue(asking)
         for resource in asking:
-            record = resource.queryset().order_by('pk').first()
+            record = record_of(resource)
             if record is None:
                 continue
-            with self.subTest(tab=resource.__name__):
+            with self.subTest(tab=resource.__name__), mock.patch('core.formpanels.QUESTIONS', set()):
                 new = self.client.get(reverse(resource.url_name('edit'), args=[record.pk]), {'ui': 'next'}).content.decode()
                 self.assertIsNone(props_of(new, 'record-form'))

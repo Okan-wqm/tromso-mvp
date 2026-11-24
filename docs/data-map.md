@@ -260,7 +260,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_company_overview.py`, `sensors/tests/test_alarms.py` and 10 more
+- **tests that mention it**: `core/tests_ui_look.py`, `core/tests_workspaces.py`, `farm/tests/test_company_overview.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1365,7 +1365,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_deletepayload.py` and 63 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 64 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1488,7 +1488,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 85 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 86 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1789,7 +1789,7 @@ A production system of a site: a RAS, a pond, a cage line, a hatchery.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › systems
 - **forms**: `SystemForm`
 - **constraints**: uq_systems_site_code_live (unique: site, code); chk_systems_total_volume (check); chk_systems_max_biomass (check); chk_systems_not_its_own_parent (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_deletepayload.py`, `core/tests_formpayload.py` and 32 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 33 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1978,7 +1978,7 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_limits
 - **forms**: `WaterLimitForm`
 - **constraints**: uq_water_limits_live (unique: species, parameter, water_type); chk_water_limits_parameter (check); chk_water_limits_water_type (check); chk_water_limits_any_bound (check); chk_water_limits_critical_low (check); chk_water_limits_warning_low (check); chk_water_limits_warning_high (check); chk_water_limits_critical_high (check); chk_water_limits_order (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 13 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2140,7 +2140,7 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › attendance_records (never shown: note)
 - **forms**: `AttendanceRecordForm`
 - **constraints**: chk_attendance_records_order (check); chk_attendance_records_via (check); chk_attendance_records_note (check); excl_attendance_employee_span (exclusion: employee, clock_in, clock_out)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 9 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2172,7 +2172,7 @@ The people of the company for HR: number, name (or the account that names them),
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 21 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 22 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2205,7 +2205,7 @@ Days that are not working days, for every site or for one.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › holidays
 - **forms**: `HolidayForm`
 - **constraints**: uq_holidays_day_site_live (unique: day, site)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_boundary.py`, `hr/tests/test_leave.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_boundary.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2235,7 +2235,7 @@ A person’s request to be away from a first to a last day, and how it was decid
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_requests (never shown: decision_note, reason)
 - **forms**: `LeaveRequestForm`
 - **constraints**: chk_leave_requests_days (check); chk_leave_requests_status (check); chk_leave_requests_decided (check); chk_leave_requests_pending_undecided (check); excl_leave_requests_employee_days (exclusion: employee, first_day, last_day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_after_create.py`, `hr/tests/test_attendance.py` and 16 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_after_create.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2270,7 +2270,7 @@ The kinds of leave the company grants (annual, sick, parental), with the days a 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_types
 - **forms**: `LeaveTypeForm`
 - **constraints**: uq_leave_types_code_live (unique: code); chk_leave_types_code (check); chk_leave_types_days (check); chk_leave_types_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 15 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2301,7 +2301,7 @@ The company’s office departments (finance, administration), nested under one a
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › office_departments
 - **forms**: `OfficeDepartmentForm`
 - **constraints**: uq_office_departments_code_live (unique: code); uq_office_departments_parent_name_live (unique: parent, name); chk_office_departments_parent_not_self (check); chk_office_departments_code (check); chk_office_departments_status (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/helpers_people.py`, `hr/tests/test_boundary.py` and 6 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2432,7 +2432,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 19 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 20 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2689,7 +2689,7 @@ An article, report, book, guideline or regulation in the library: its reference 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Knowledge › documents
 - **forms**: `DocumentForm`
 - **constraints**: uq_documents_doi_live (unique: doi); chk_documents_title (check); chk_documents_authors (check); chk_documents_year (check); chk_documents_doi (check); chk_documents_url (check); chk_documents_language (check); chk_documents_topics (check); chk_documents_text_status (check); chk_documents_file (check); chk_documents_text_error (check); chk_documents_page_count (check)
-- **tests that mention it**: `core/tests_escaping.py`, `core/tests_workspaces.py`, `knowledge/tests/test_documents.py` and 4 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_escaping.py`, `core/tests_workspaces.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3792,7 +3792,7 @@ One stored value of a channel at the device's time: the hypertable `sensors_read
 - **how it works**: A TimescaleDB hypertable; left out of the database viewer (billions of rows).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: left out on purpose (config/database.py)
 - **constraints**: chk_sensors_reading_value (check); chk_sensors_reading_quality (check); chk_sensors_reading_run (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_workspaces.py` and 9 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_ui_look.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

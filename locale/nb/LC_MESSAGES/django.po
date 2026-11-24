@@ -8989,6 +8989,9 @@ msgstr "Laster bekreftelsen …"
 msgid "Loading the form…"
 msgstr "Laster skjemaet …"
 
+msgid "Loading the list…"
+msgstr "Laster listen …"
+
 msgid "Loading the overview…"
 msgstr "Laster oversikten …"
 

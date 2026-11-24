@@ -13718,6 +13718,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_deletepayload.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
@@ -15425,6 +15426,7 @@
         "core/test_database.py",
         "core/test_datamap.py",
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
         "core/tests_deletepayload.py",
@@ -19003,6 +19005,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_deletepayload.py",
         "core/tests_formpayload.py",
         "core/tests_rev.py",
@@ -21474,6 +21477,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
@@ -23482,6 +23486,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -23848,6 +23853,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
@@ -24137,6 +24143,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_leave.py",
@@ -24547,6 +24554,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_after_create.py",
         "hr/tests/test_attendance.py",
@@ -24875,6 +24883,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -25251,6 +25260,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_boundary.py",
@@ -26657,6 +26667,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
@@ -29606,6 +29617,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_escaping.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",

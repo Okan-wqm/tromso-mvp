@@ -5428,8 +5428,11 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   Water page's own rows, alarms, the office board and muster, reports due, unread messages, feed on hand and cover, the
   latest log and knowledge entries), split per site from the same rows; `config/company_props.py` words it in the
   request's language. A block is left out for a person who may not read its area. The water chip per site says the
-  sampling points' worst judgement (critical, warning, OK, or "Not measured"); the open alarms are the alarms app's
-  records, so a critical water value shows as the site's water chip even while no alarm is open. Held to the classic page
+  sampling points' worst judgement (critical, warning, OK, or "Not measured"). The Open alarms tile and each site's
+  Open alarms are the one reader of the status strip (`alarms.read.attention`, `attention_by_site`): the figure counts
+  open alarms, its line under it counts units ("2 units critical", "1 unit without recent data", or "Live values cannot
+  be read"), the units' water as the alarm engine judges it now, so a critical unit shows before its alarm is raised; the
+  water chip says a value of a sampling point, never a count. Held to the classic page
   by `core.pagesays` in three languages (`farm/tests/test_company_overview.py`); its island is checked in a browser in
   every theme and language for CSP, axe and contrast (`frontend/test/company.browser.test.ts`).
 - **Every tab's create, edit and delete page** (`core.crud.FormView.page`, `DeleteView`; `templates/crud/form_next.html`,
@@ -5448,11 +5451,27 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   state, CSP and axe in a browser (`frontend/test/recordform.browser.test.ts`). A help built with links travels as its
   words and its links to the application's own pages (`segments`, never markup); a stored file links to its own
   permission-checked view (a widget's `current_url`).
+- **Every tab's list page** (`core.crud.ListView`; `templates/crud/list_next.html`, island `list-page`,
+  `frontend/islands/ui/ListPage.tsx`, built once for every list): the same view reads the same rows; `core/listprops.py`
+  words them: the search and the filters as one GET form (the server reads the address and is the only source of what is
+  listed; a view or tab in the address is kept), the link tabs of the list's views with their counts, notices, the table
+  (a cell's text, its link, sub-lines, chips) with each row's actions (a link, or a small POST with the page's CSRF
+  token), the empty state (no records yet, or none matching with the way back), the pager keeping the search and the
+  filters. Every word is the classic page's msgid. A tab opts in with `Resource.list_rows` (its columns and rows, built
+  with `core.listprops` helpers; `listprops.title` and `edit_delete` give the usual name link and Edit and Delete) and
+  `list_filters` (selects and day boxes from the values `filter_list` returns); a tab without `list_rows` keeps its
+  classic list in the new look. A row's title and its actions open the record's own page (the record form island), never
+  the classic dialog. Drawn now: the HR lists (Team, Departments, Attendance, Leave requests, Shifts, Holidays, Leave
+  types), under both mounts. Held: `hr/tests/test_list_next.py` (each list against its classic page on the test world in
+  three languages; the search, the filters and the pager are the address's); `frontend/islands/ui/ui.test.tsx` (the
+  markup); `frontend/test/listpage.browser.test.ts` (the GET form sends what the server reads; CSP and axe in every theme
+  at 1440 and 390) and `listpages.browser.test.ts` (every recorded list in three languages at both widths).
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture
-  names "Test …", addresses @example.com) in a transaction it rolls back, and writes `form-oracle.json` and
-  `company-props-<language>.json`. `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
+  names "Test …", addresses @example.com; `core/test_world.py`, one function per part: `company_world`, `hr_world`) in a
+  transaction it rolls back, and writes `form-oracle.json`, `company-props-<language>.json` and
+  `list-props-<language>.json`. `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
   `frontend/islands` and `core/testdata` outside example.com and the `.example` domains.
 
 ## One format for every tab

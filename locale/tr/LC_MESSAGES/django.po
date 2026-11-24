@@ -9018,6 +9018,9 @@ msgstr "Onay yükleniyor…"
 msgid "Loading the form…"
 msgstr "Form yükleniyor…"
 
+msgid "Loading the list…"
+msgstr "Liste yükleniyor…"
+
 msgid "Loading the overview…"
 msgstr "Genel bakış yükleniyor…"
 

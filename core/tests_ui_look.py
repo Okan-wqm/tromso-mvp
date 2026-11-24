@@ -182,8 +182,8 @@ class StripAlarmsTests(AlarmsCase):
         response = self.client.get(reverse('core:ui_strip'))
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        start = html.index('data-strip="alarms"')
-        return html[start:html.index('data-strip="on_site"', start)]
+        start = html.rindex('<', 0, html.index('data-strip="alarms"'))
+        return html[start:html.rindex('<', 0, html.index('data-strip="on_site"', start))]
 
     def agree(self):
         """{unit id: rung} of the strip, checked against the cards' state of the same units (a card's note is OK to the
@@ -316,8 +316,8 @@ class StripAlarmsTests(AlarmsCase):
         self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)
         self.loop()
         self.loop(minutes=1)
-        html = self.fragment()
-        self.assertRegex(html, r'\d open alarms? · 1 unit critical')
+        html = self.fragment()                                   # both, each a link to its own page
+        self.assertRegex(html, r'>\d open alarms?</a><span aria-hidden="true"> · </span><a [^>]*>1 unit critical</a>')
 
     def test_a_unit_that_cannot_be_read_is_counted_and_the_others_still_are(self):
         """Review M1: one unit whose water read fails made the whole strip answer 500; it is read on its own, as the
@@ -366,7 +366,14 @@ class StripAlarmsTests(AlarmsCase):
         from farm.models import Tank
         self.limits()
         self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)
-        Tank.objects.filter(pk=self.t1.pk).update(max_biomass_kg=D(10))      # 1,000 fish of 50 g: 50 kg
+        from monitoring import read as monitoring_read
+        from monitoring.cards import resolve
+        # (max_biomass_kg is generated from the volume and the max density: 1,000 fish of 50 g are 50 kg)
+        Tank.objects.filter(pk=self.t1.pk).update(max_density_kg_m3=D('0.01'))
+        unit = Tank.objects.get(pk=self.t1.pk)
+        card, = monitoring_read.cards([unit], self.boss, resolve.Choice())
+        self.assertTrue(card.stock.over_capacity, unit.max_biomass_kg)
+        self.assertEqual((card.state.key, card.state.reasons), ('warning', ('Over capacity',)))
         self.assertEqual(self.agree(), {self.t1.pk: 'warning'})
         self.assertIn('1 unit with a warning', self.fragment())
 

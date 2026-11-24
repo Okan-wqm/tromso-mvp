@@ -159,8 +159,9 @@ function lowContrast(tab: Page, within = '.monitor-grid *, .monitor-dock *'): Pr
   }, within);
 }
 
-/** On the desk page's cards: what is cut that must never be (a code, a state's word, a figure, "old", a figure running
- *  out of its cell), and cards of one kind that are not one size. [] when none is. */
+/** On the desk page's cards: what is cut that must never be (a code, a state's word, a figure, "old", the saturation
+ *  beside a label, a reason's figure and bound, the fish line, a figure running out of its cell), and cards of one kind
+ *  that are not one size. [] when none is. */
 function uncut(tab: Page): Promise<string[]> {
   return tab.evaluate(() => {
     const wrong: string[] = [];
@@ -172,10 +173,19 @@ function uncut(tab: Page): Promise<string[]> {
       if (!sizes.has(kind)) sizes.set(kind, new Set());
       sizes.get(kind)?.add(`${Math.round(box.width)}x${Math.round(box.height)}`);
       const code = card.querySelector('h3')?.textContent?.trim() ?? '?';
-      for (const node of Array.from(card.querySelectorAll<HTMLElement>('h3, .monitor-state-word, dd b, [data-old]'))) {
+      // (review round 2, B2: the oxygen's saturation beside its label, the reason's figure and the bound it is past,
+      // the fish line's figures; a label that says a second figure has it in a slot of its own)
+      for (const label of Array.from(card.querySelectorAll<HTMLElement>('dt'))) {
+        if ((label.textContent ?? '').includes(' · ') && !label.querySelector('.monitor-beside')) {
+          wrong.push(`${code}: "${(label.textContent ?? '').trim()}" has no slot for its second figure`);
+        }
+      }
+      for (const node of Array.from(card.querySelectorAll<HTMLElement>(
+        'h3, .monitor-state-word, dd b, [data-old], dt .monitor-beside, .monitor-figure, .monitor-bound, .monitor-card-fish'))) {
         if (!node.offsetParent) continue;
         const own = node.getBoundingClientRect();
-        const cut = node.scrollWidth > node.clientWidth + 1 && getComputedStyle(node).overflowX !== 'visible';
+        const cut = (node.scrollWidth > node.clientWidth + 1 && getComputedStyle(node).overflowX !== 'visible')
+          || (node.scrollHeight > node.clientHeight + 1 && getComputedStyle(node).overflowY !== 'visible');
         let clipped = false;
         for (let up = node.parentElement; up && up !== card.parentElement; up = up.parentElement) {
           const style = getComputedStyle(up);
@@ -280,7 +290,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
                 Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail-w'))]);
               assert.ok(Math.abs((rail[0] ?? 0) - (rail[1] ?? 0)) < 0.5, `the rail is ${rail[0]} px, not ${rail[1]}`);
             }
-            assert.deepEqual(await uncut(tab), [], 'a code, a state word, a figure, "old" is never cut; the cards are one size');
+            assert.deepEqual(await uncut(tab), [], 'a code, a state word, a figure, the saturation, "old", the figure and bound of a reason are never cut; the cards are one size');
             assert.ok(seen.glyphs > 0, 'the state glyphs are drawn');
             assert.equal(seen.bare, 0, 'no glyph is a speck');
             assert.deepEqual(seen.sideways ? await sideways(tab) : [], [], `nothing scrolls sideways (${seen.sideways} px)`);

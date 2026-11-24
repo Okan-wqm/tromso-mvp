@@ -14,8 +14,12 @@
      recent data hatched in its head (the design's sign of "not known": never the plate of an OK card).
    - the type: the unit's code in the text face, bold; the figures in the display face (Barlow); the state word in the
      state's colour (OK in its green: the design's check), never paler than the text it stands in.
-   Nothing here hides, cuts or fades a word, a figure, its source and age, or "old": the fitted cards keep their unit
-   (--u) and their measure, so the wall's slot rule, its pages and its browser tests hold as they are. */
+   Nothing here cuts or fades a state word, a figure (the saturation and a reason's bound among them) or "old": the fitted
+   cards keep their unit (--u) and their measure, so the wall's slot rule, its pages and its browser tests hold as they
+   are. The desk's Small card is the design's, and so does NOT show what the design leaves out (owner, 2026-11-24): the
+   flip link and the pH window (display: none: for a screen reader too), the second and later reasons but for "+N", and
+   the end of a long name, source line or reason sentence (whole in their titles). All of it is on the pane's Big card
+   and on the wall. */
 
 /* ---- the state's glyph ------------------------------------------------------------------------------------------- */
 /* Which icon each state's shape is drawn as. The drawing itself (the mask, its paint) is in static/css/glyphs.css, beside
@@ -99,15 +103,18 @@ html[data-ui="next"] .monitor-card:not(.is-fit) .monitor-card-foot { padding-top
 
 /* ---- the Small card on the desk page: the design's card, one size for every card (owner, 2026-11-24) ------------
    A regular grid of equal cards: four to a row at 1440 px, the same width and height whatever the card says (a
-   warning, a second reason, an empty unit). Fixed slots: the head (code, name, the state's glyph and word), ONE line of
-   reason (the first in short and "+N"; every reason in full is the line's title and a screen reader's text, the band's
-   chips and the card in the pane), then the row of cells (label, figure, where it came from and how old). What gives
-   way when the card is narrow: the unit's name (whole in its title), a reason past its figure, a cell's source line
-   (whole in its title). Never: the code, the state's glyph and word, a figure, "old". The pH window is not in the
+   warning, a second reason, an empty unit). Fixed slots: the head (code, name, the state's glyph and word), TWO lines
+   of reason (the first in short and "+N"; every reason in full is the line's title and a screen reader's text, the
+   band's chips and the card in the pane; a card with no reason says its fish there), then the row of cells: a label
+   of two lines (its name and "old", then the oxygen's saturation), the figure, where it came from and how old. What
+   gives way when the card is narrow: the unit's name (whole in its title), a reason's own words past two lines (whole
+   in its title), a cell's name and its source line (whole in their titles). Never: the code, the state's glyph and
+   word, a figure, the saturation, "old", the reason's figure and the bound it is past (review round 2, B2: the
+   saturation and the bound's "no recent data" were cut; the page test holds each of them). The pH window is not in the
    design's Small card: it stays in the markup (the parity of facts) and is shown on the wall, in the pane's Big card
    (the Deffeyes chart it is a slice of) and on the Big screen. On a wall the card is the fitted one (its cell's size). */
 html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit:not([data-fill])) {
-  --card-min: 22em; grid-template-rows: auto; grid-auto-rows: 10.5em; align-items: stretch;
+  --card-min: 22em; grid-template-rows: auto; grid-auto-rows: 11.5em; align-items: stretch;
 }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit:not([data-fill]) {
   display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-width: 0; overflow: hidden;
@@ -117,12 +124,25 @@ html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) >
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) h3 { font-size: 1.75em; line-height: 1.1; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-state .monitor-state { font-size: 1.05em; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-flip { display: none; }
-/* the reason: one line, the figure first; the "+N" and the link to the water at its end */
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line .monitor-reasons { flex-wrap: nowrap; overflow: hidden; }
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line .monitor-reasons > li:first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-fish { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line .monitor-water-link { align-self: center; margin-left: auto; }
+/* the reason: two lines whatever it says, the figure first; the "+N" and the link to the water at its end. A reason
+   (or the fish) longer than two lines ends in an ellipsis: what it says is whole in its title. */
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line { flex-wrap: nowrap; align-items: flex-start; height: 2lh; overflow: hidden; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line .monitor-reasons { flex-wrap: nowrap; align-items: flex-start; overflow: hidden; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line .monitor-reasons > li:first-child,
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-fish {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; flex: 0 1 auto; min-width: 0; overflow: hidden;
+  white-space: normal;
+}
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line .monitor-water-link { align-self: flex-start; margin-left: auto; }
+/* a value's label: its name and "old" on the first line, the oxygen's saturation on the second (its dot is the line's
+   break), two lines in every cell, so every card keeps its one size */
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 1lh 1lh; column-gap: .3em; align-items: baseline;
+}
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt > .monitor-label { grid-area: 1 / 1; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt > [data-old] { grid-area: 1 / 2; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt > .monitor-beside { grid-area: 2 / 1 / 3 / 3; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt .monitor-beside-dot { display: none; }
 /* the cells: four in a row under one hairline, whatever the card's width (a card narrower than 30 rem would stack them) */
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) :is(.card-grid, .monitor-cells) { align-self: stretch; margin-top: .3em; padding-top: .3em; border-top: 1px solid var(--line-hair); }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .card-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); grid-auto-rows: 0; gap: 0; }

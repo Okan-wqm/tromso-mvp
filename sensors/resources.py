@@ -329,6 +329,7 @@ class AlarmRuleResource(Resource):
 
     # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
     list_rows = staticmethod(lists.alarm_rules)
+    list_above_next = 'sensors/_alarm_watch.html'     # the classic list's {% alarm_watch %}, drawn by the server
     search_placeholder = _('Search by channel or quantity')
     empty_text = _('A rule says when a channel needs a look: no fresh value, its device offline, a value above or below '
                    'a threshold, or a change too fast.')

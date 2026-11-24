@@ -1,10 +1,11 @@
 {% extends "app_base.html" %}
-{% load i18n assets %}
+{% load alarm_watch i18n assets %}
 {% comment %} Sensors › Overview in the new look (sensors.views.home behind ?ui=next): the island draws the ingest's state and
    the configuration counted, as sensors/pages.py `home_props` words them. The classic page is sensors/home.html. {% endcomment %}
 {% block title %}{% trans "Sensors overview" %}{% endblock %}
 {% block eyebrow %}{% trans "Sensors" %}{% endblock %}
 {% block heading %}{% trans "Overview" %}{% endblock %}
 {% block content %}
+{% alarm_watch sent_note=True %}
 {% trans "Loading the overview…" as loading %}{% island "sensors-home" props label=loading %}
 {% endblock %}

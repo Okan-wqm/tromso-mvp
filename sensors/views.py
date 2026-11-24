@@ -47,10 +47,11 @@ def _context(url_name, **extra):
     return {'title': place.entry.label, 'eyebrow': f'{place.workspace.label} · {place.entry.label}', **extra}
 
 
-def _next_list(request, url_name, props):
-    """A Sensors page drawn by the shared list page in the new look (sensors/pages.py, templates/crud/list_next.html)."""
+def _next_list(request, url_name, props, above=''):
+    """A Sensors page drawn by the shared list page in the new look (sensors/pages.py, templates/crud/list_next.html),
+    with `above` a template the server draws above it (a safety notice of the classic page)."""
     context = _context(url_name, props=props)
-    return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow']})
+    return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow'], 'list_above': above})
 
 
 def home(request):
@@ -506,9 +507,10 @@ def alarm_events(request):
         'alarm__acknowledgements__user').order_by(F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
     if ui.is_next(request):
-        return _next_list(request, 'sensors:alarm_events', pages.alarm_events_props(
-            request, page.object_list, page=page, connected=alarms_read.connected(),
-            can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))
+        props = pages.alarm_events_props(request, page.object_list, page=page, connected=alarms_read.connected(),
+                                         can_acknowledge=request.user.has_perm('sensors.change_alarmevent'))
+        # the classic page's {% alarm_watch %} above it, drawn by the server
+        return _next_list(request, 'sensors:alarm_events', props, above='sensors/_alarm_watch.html')
     return render_page(request, 'sensors/alarm_events.html', _context(
         'sensors:alarm_events', page=page, events=page.object_list, connected=alarms_read.connected(),
         can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))

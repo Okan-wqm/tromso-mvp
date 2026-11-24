@@ -2710,6 +2710,7 @@
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bench.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_ph_scale.py",
@@ -16615,6 +16616,7 @@
         "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
+        "farm/tests/test_withdrawal_whatif.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "reports/tests/test_cleaner.py",
@@ -38357,6 +38359,7 @@
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_demo.py",
+        "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_schema.py"
       ]

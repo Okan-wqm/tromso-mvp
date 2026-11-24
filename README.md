@@ -2381,7 +2381,9 @@ plan it fulfilled and a badge when a handling warning was acknowledged. Filters 
 production department, unit, batch, species, facility, from and to, and "Show voided" (struck through with
 the reason, counted nowhere); 50 a page; the count line ("2 harvests · 510 kg round weight, 490 kg in the
 book") and **totals per batch and per site** of the filtered rows (harvests, fish, round weight, average, book,
-difference). Everything is computed on read (`farm/harvest/read.py`).
+difference). Everything is computed on read (`farm/harvest/read.py`): the totals from one fold of the live harvests the
+filters choose (`summary`), the page cut in the database and only its 50 rows built with their records, plans and
+acknowledgements (`harvests`; the data-layering audit, L-12).
 
 **Harvest plan** (`/operations/harvest-plan/`): planned harvests (to a slaughter facility) and planned
 transports (to another unit) of one batch's fish in one unit on a day, with the fish and round kilos meant, the
@@ -2912,7 +2914,8 @@ Over the limit is a warning on the page; nobody is alerted yet, and the weekly r
 built (§ 10).
 
 **The unit's drawer** on Production units has a **Health** section: the withdrawal of each batch with why, the
-open health events that concern the unit, its treatments of the last 90 days, its latest lice count, and Record
+open health events that concern the unit (of its site, naming it or no unit: one rule, `farm.health.read.concerns` and
+`concerning`, which the mortality, cull and treatment choices read too), its treatments of the last 90 days, its latest lice count, and Record
 treatment, Record sea-lice count and Record health event with the unit chosen.
 
 **Who may do what**: the areas Medicines (Production · Setup · Reference data: read, create, edit, delete),

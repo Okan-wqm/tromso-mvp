@@ -317,7 +317,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 118 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 119 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1600,7 +1600,7 @@ A species the farm grows or stocks, with its names, codes and the water it lives
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › species
 - **forms**: `SpeciesForm`
 - **constraints**: uq_species_code_live (unique: code); uq_species_scientific_name_live (unique: scientific_name); chk_species_scientific_name (check); chk_species_code (check); chk_species_official_code (check); chk_species_category (check); chk_species_status (check); chk_species_cleaner_fish_type (check); chk_species_withdrawal_temperature (check); chk_species_max_weight_ratio (check); chk_species_water (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_rev.py`, `core/tests_scope.py` and 25 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_rev.py`, `core/tests_scope.py` and 26 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3533,7 +3533,7 @@ An MQTT broker the ingest service listens to: where it is, how the service signs
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_connection (never shown: secret_file)
 - **forms**: `ConnectionForm`
 - **constraints**: uq_sensors_connection_name_live (unique: name); uq_sensors_connection_client_live (unique: client_id); chk_sensors_connection_name (check); chk_sensors_connection_host (check); chk_sensors_connection_client_id (check); chk_sensors_connection_port (check); chk_sensors_connection_keepalive (check); chk_sensors_connection_secret_file (check); chk_sensors_connection_secret_dots (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_demo.py` and 2 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_demo.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

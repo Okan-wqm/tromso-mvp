@@ -190,3 +190,30 @@ test('a server form is busy while it posts: its submit is switched off and says 
   assert.match(form, /<form[^>]*noValidate=""/i);
   assert.doesNotMatch(form, /aria-busy/);                           // ready until it posts (the browser test presses it)
 });
+
+test('a list page: one GET form for the search and the filters, the table with its row actions, the pager; empty, its words', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const page = html(<ListPage {...LIST_PROPS} />);
+  const forms = [...page.matchAll(/<form [^>]*>/g)].map((match) => match[0]);
+  assert.equal(forms.filter((form) => /method="get"/.test(form)).length, 1, 'the search and the filters are one GET form');
+  assert.match(page, /<input type="hidden" name="tab" value="pending"\/>/);
+  assert.match(page, /<input type="search" placeholder="Search by name or number" name="q" value="Alfa"\/>/);
+  assert.match(page, /<optgroup label="Production departments"><option value="p:1">Hatchery A<\/option><\/optgroup>/);
+  assert.match(page, /<option value="current" selected="">Working here<\/option>/);
+  assert.match(page, /<a class="ui-tab" href="\?tab=pending" aria-current="page">Pending<span class="ui-count">2<\/span><\/a>/);
+  assert.match(page, /<a class="ui-btn" data-variant="primary" href="\/hr\/team\/new\/">/);
+  assert.doesNotMatch(page, /data-modal/, 'a list link opens the record\'s page, never the classic dialog');
+  assert.match(page, /<a href="\/hr\/team\/1\/">Ann Alfa<\/a><span class="ui-cell-sub">E-1<\/span>/);
+  assert.match(page, /<tr data-status="warning">/);
+  assert.match(page, /<td class="num">0\.5<\/td>/);
+  assert.match(page, /<form action="\/hr\/leave\/1\/cancel\/" method="post"><input type="hidden" name="csrfmiddlewaretoken" value="test-token"\/><input type="hidden" name="next" value="\/hr\/leave\/"\/><button type="submit" class="icon-button icon-button-danger" aria-label="Cancel the request"/);
+  assert.match(page, /<a class="icon-button" href="\/hr\/team\/1\/view\/" aria-label="Show Ann Alfa"/);
+  assert.match(page, /<nav class="pager list-pager" aria-label="Pages"><span>51–100 of 120<\/span>/);
+  assert.match(page, /href="\?q=Alfa&amp;page=3"/);
+  assert.match(page, /role="status"[^>]*>.*Two people have no department\./);
+  assert.doesNotMatch(page, /style=/);
+  const empty = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows: [] }} />);
+  assert.match(empty, /<div class="ui-empty"><p class="ui-empty-title">No employees match “Zed”<\/p><p class="ui-empty-text">Try another search\. <a href="\/hr\/team\/">Show all employees<\/a><\/p><\/div>/);
+  assert.doesNotMatch(empty, /ui-table|list-pager|Showing 2 of 3/, 'no table, pager or line over an empty list');
+});

@@ -99,7 +99,8 @@ def _next_parts(user, stock_part):
         'holds': stock_part['holds'] if stock_part else [],
         'team': team,
         'team_stack': stack(_('Planned today'), [part(tile['key'], tile['label'], tile['count'], TEAM_TONES[tile['key']])
-                                                 for tile in team['tiles']]) if team else None,
+                                                 for tile in team['tiles']],
+                            empty=_('Nobody is planned today.')) if team else None,
     }
 
 

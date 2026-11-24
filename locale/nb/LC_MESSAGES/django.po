@@ -527,6 +527,10 @@ msgstr[0] "%(count)s av dem for hele anlegget"
 msgstr[1] "%(count)s av dem for hele anlegget"
 
 #, python-format
+msgid "%(count)s offline"
+msgstr "%(count)s frakoblet"
+
+#, python-format
 msgid "%(count)s overdue"
 msgid_plural "%(count)s overdue"
 msgstr[0] "%(count)s forsinket"
@@ -1223,6 +1227,10 @@ msgid "%(people)s notification"
 msgid_plural "%(people)s notifications"
 msgstr[0] "%(people)s varsel"
 msgstr[1] "%(people)s varsler"
+
+#, python-format
+msgid "%(percent)s of capacity"
+msgstr "%(percent)s av kapasiteten"
 
 #, python-format
 msgid "%(person)s (can no longer be chosen)"
@@ -7981,6 +7989,10 @@ msgstr "Frisk, skal ikke brukes mer"
 msgid "Heart and skeletal muscle inflammation (HSMI)"
 msgstr "Hjerte- og skjelettmuskelbetennelse (HSMB)"
 
+#, python-format
+msgid "Heartbeat %(age)s ago"
+msgstr "Livstegn for %(age)s siden"
+
 msgid "Heartbeat (s)"
 msgstr "Hjerteslag (s)"
 
@@ -10452,6 +10464,9 @@ msgid ""
 msgstr ""
 "Ingen varsles om en alarm før en regel sier hvem: en rolle eller en person, på én lokalitet eller"
 " alle, fra en alvorlighetsgrad, på et nivå."
+
+msgid "Nobody is planned today."
+msgstr "Ingen er planlagt i dag."
 
 msgid "Nobody to notify"
 msgstr "Ingen å varsle"

@@ -123,4 +123,9 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
         figures = {tile['label']: tile['figure'] for tile in props['state']['tiles']}
         self.assertEqual(figures['Ingest'], 'Alive')
         self.assertEqual(figures['Open alarms'], '1')
+        statuses = {tile['key']: tile['status'] for tile in props['state']['tiles']}
+        self.assertEqual((statuses['ingest'], statuses['alarms']), (None, 'critical'))     # alive; an open alarm
+        self.assertEqual(statuses['stale'], 'warning')                                     # the silent pH
+        self.assertEqual(props['state']['tiles'][0]['sub'], 'Heartbeat 4 s ago')
+        self.assertEqual([tile['key'] for tile in props['state']['tiles']][:3], ['ingest', 'online', 'stale'])
         self.assertTrue(props['setup']['tiles'])

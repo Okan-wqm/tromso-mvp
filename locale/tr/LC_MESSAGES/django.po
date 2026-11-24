@@ -526,6 +526,10 @@ msgstr[0] "%(count)s tanesi tüm çiftlik için"
 msgstr[1] "%(count)s tanesi tüm çiftlik için"
 
 #, python-format
+msgid "%(count)s offline"
+msgstr "%(count)s çevrim dışı"
+
+#, python-format
 msgid "%(count)s overdue"
 msgid_plural "%(count)s overdue"
 msgstr[0] "%(count)s tane gecikmiş"
@@ -1226,6 +1230,10 @@ msgid "%(people)s notification"
 msgid_plural "%(people)s notifications"
 msgstr[0] "%(people)s bildirim"
 msgstr[1] "%(people)s bildirim"
+
+#, python-format
+msgid "%(percent)s of capacity"
+msgstr "kapasitenin %(percent)s kadarı"
 
 #, python-format
 msgid "%(person)s (can no longer be chosen)"
@@ -8005,6 +8013,10 @@ msgstr "Sağlıklı, artık kullanılmayacak"
 msgid "Heart and skeletal muscle inflammation (HSMI)"
 msgstr "Kalp ve iskelet kası iltihabı (HSMI)"
 
+#, python-format
+msgid "Heartbeat %(age)s ago"
+msgstr "Son sinyal %(age)s önce"
+
 msgid "Heartbeat (s)"
 msgstr "Nabız (sn)"
 
@@ -10472,6 +10484,9 @@ msgid ""
 msgstr ""
 "Bir kural kimi söyleyene kadar bir alarmdan kimse haberdar edilmez: bir rol ya da bir kişi, bir "
 "sahada ya da her sahada, bir önem derecesinden itibaren, bir seviyede."
+
+msgid "Nobody is planned today."
+msgstr "Bugün kimse planlanmadı."
 
 msgid "Nobody to notify"
 msgstr "Bildirilecek kimse yok"

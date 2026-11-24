@@ -62,6 +62,10 @@ def home(request):
     now = timezone.now()
     state = state_tiles(request.user, now)
     if ui.is_next(request):
+        # the design's setup row: the bindings and the credentials counted too
+        tiles += [{'label': resource.title(), 'count': resource.model.objects.count(),
+                   'url': reverse(resource.url_name('list'))}
+                  for resource in (BindingResource, CredentialResource) if request.user.has_perm(resource.perm('view'))]
         return render_page(request, 'sensors/home_next.html', {'props': pages.home_props(tiles, state, now)})
     return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles, state_tiles=state))
 
@@ -454,33 +458,38 @@ def state_tiles(user, now):
             text = _('Alive')
         else:
             text = _('Down')
-        tiles.append({'label': _('Ingest'), 'text': text, 'count': text,
+        tiles.append({'key': 'ingest', 'label': _('Ingest'), 'text': text, 'count': text,
+                      'heartbeat': max((status.heartbeat_at for status in statuses), default=None),
                       'url': reverse('sensors:connection_list')})
         # What the ingest could not keep: QoS 0 messages it dropped on a full queue, messages the database refused (they
         # are dead letters too). Counted since the service started.
-        tiles.append({'label': _('QoS 0 messages dropped on a full queue'), 'url': reverse('sensors:connection_list'),
+        tiles.append({'key': 'qos0', 'label': _('QoS 0 messages dropped on a full queue'),
+                      'url': reverse('sensors:connection_list'),
                       'count': sum(status.qos0_dropped for status in statuses)})
-        tiles.append({'label': _('Messages the database refused'), 'url': reverse('sensors:connection_list'),
+        tiles.append({'key': 'refused', 'label': _('Messages the database refused'),
+                      'url': reverse('sensors:connection_list'),
                       'count': sum(status.poison_total for status in statuses)})
     if user.has_perm('sensors.view_device'):
         devices = list(Device.objects.filter(is_active=True))
         online = sum(1 for status in read.device_status(devices, now).values() if status.online)
-        tiles.append({'label': _('Devices online'), 'count': f'{online} / {len(devices)}',
+        tiles.append({'key': 'online', 'label': _('Devices online'), 'count': f'{online} / {len(devices)}',
+                      'offline': len(devices) - online,
                       'url': reverse('sensors:device_list')})
         # Out of the water (storage, calibration): its readings are stored and belong to no place.
-        tiles.append({'label': _('Devices not placed'), 'url': f'{reverse("sensors:device_list")}?placed=no',
+        tiles.append({'key': 'unplaced', 'label': _('Devices not placed'),
+                      'url': f'{reverse("sensors:device_list")}?placed=no',
                       'count': Device.objects.filter(is_active=True).exclude(bindings.placed()).count()})
     if user.has_perm('sensors.view_channel'):
         listened = Channel.objects.filter(state=ChannelStatus.ACTIVE, device__is_active=True, device__is_deleted=False)
         stale = sum(1 for state in read.latest(listened.values_list('channel_no', flat=True), now).values()
                     if not state.fresh)
-        tiles.append({'label': _('Channels without a fresh value'), 'count': stale,
+        tiles.append({'key': 'stale', 'label': _('Channels without a fresh value'), 'count': stale,
                       'url': reverse('sensors:channel_list')})
     if user.has_perm('sensors.view_alarmevent'):
-        tiles.append({'label': _('Open alarms'), 'url': reverse('sensors:alarm_events'),
+        tiles.append({'key': 'alarms', 'label': _('Open alarms'), 'url': reverse('sensors:alarm_events'),
                       'count': AlarmEvent.objects.filter(closed_at__isnull=True).count()})
     if user.has_perm('sensors.view_deadletter'):
-        tiles.append({'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
+        tiles.append({'key': 'dead', 'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
                       'count': DeadLetter.objects.filter(last_at__gte=now - timedelta(days=1)).count()})
     return tiles
 

@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _
 from core import listprops as L
 from core.dates import company_zone
 from core.formprops import when
-from farm.templatetags.water import age
+from farm.templatetags.water import age, short_age
 
 from .lists import DASH, moment
 from .templatetags.sensors import measured
@@ -68,7 +68,8 @@ def live_props(request, rows):
                L.column('state', _('State')), L.column('bound', _('Bound to'))]
     table = [L.row(row['channel'].pk, {
         'channel': L.cell(row['channel'].code, strong=True,
-                          sub=[f"{row['channel'].device.code} · #{row['channel'].channel_no}"]),
+                          sub=[f"{row['channel'].device.code} · #{row['channel'].channel_no}"],
+                          chips=[L.chip('hold', _('Simulated'))] if row['channel'].device.is_simulated else ()),
         'quantity': quantity(row['channel']),
         'value': L.cell(measured(row['state'].value, row['channel'].quantity)),
         'measured': measured_at(row),
@@ -157,17 +158,43 @@ def alarm_events_props(request, events, *, page, connected, can_acknowledge):
                       empty=_('No alarm events.'), page=page)
 
 
+# The design's order of the state tiles (the ingest, then what needs a look, then what the ingest could not keep).
+STATE_ORDER = ('ingest', 'online', 'stale', 'alarms', 'dead', 'qos0', 'refused', 'unplaced')
+
+
+def _state_tile(each, now):
+    """One state tile in the design's words: its figure, a sub-line from the same read (the ingest's last heartbeat, how
+    many devices are offline) and its status: critical for an ingest that is down or never heard, or an open alarm;
+    warning for an offline device, a channel without a fresh value, a dead letter, a message lost. Never OK by default:
+    a tile without a status is plain grey, as the classic page's."""
+    key, count = each['key'], each['count']
+    sub = status = None
+    if key == 'ingest':
+        status = None if each['text'] == _('Alive') else 'critical'
+        if each.get('heartbeat'):
+            sub = _('Heartbeat %(age)s ago') % {'age': short_age(each['heartbeat'], now)}
+    elif key == 'online':
+        status = 'warning' if each['offline'] else None
+        sub = _('%(count)s offline') % {'count': each['offline']} if each['offline'] else None
+    elif key == 'alarms':
+        status = 'critical' if count else None
+    elif key in ('stale', 'dead', 'qos0', 'refused', 'unplaced'):
+        status = 'warning' if count and key != 'unplaced' else None
+    return {'key': key, 'label': str(each['label']), 'figure': str(count), 'href': each['url'], 'sub': sub,
+            'status': status, 'statusLabel': {'critical': _('Critical'), 'warning': _('Warning')}.get(status)}
+
+
 def home_props(setup_tiles, state_tiles, now):
     """Overview: the ingest's state and the configuration counted (sensors.views.state_tiles and the setup counts, as the
-    classic page reads them), worked out at `now` on the company's clock."""
-    def tile(each):
-        return {'key': each['url'] + str(each['label']), 'label': str(each['label']), 'figure': str(each['count']),
-                'href': each['url']}
+    classic page reads them), in the design's order and words, worked out at `now` on the company's clock."""
+    ordered = sorted(state_tiles, key=lambda each: STATE_ORDER.index(each['key']))
     return {
-        'state': {'title': _('Ingest and devices'), 'tiles': [tile(each) for each in state_tiles],
+        'state': {'title': _('Ingest and devices'), 'tiles': [_state_tile(each, now) for each in ordered],
                   'meta': _('Worked out %(when)s · %(zone)s') % {'when': when(now), 'zone': company_zone().key}}
         if state_tiles else None,
-        'setup': {'title': _('Setup'), 'tiles': [tile(each) for each in setup_tiles]} if setup_tiles else None,
+        'setup': {'title': _('Setup'), 'tiles': [
+            {'key': each['url'], 'label': str(each['label']), 'figure': str(each['count']), 'href': each['url'], 'sub': None,
+             'status': None, 'statusLabel': None} for each in setup_tiles]} if setup_tiles else None,
         'empty': None if setup_tiles or state_tiles else _(
             'Nothing of the sensors is open to you yet: ask for a right on the Roles page.'),
     }

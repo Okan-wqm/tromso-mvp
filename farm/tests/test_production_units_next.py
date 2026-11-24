@@ -2,8 +2,8 @@
 list page (farm/stock/units_next.py) and the unit's drawer as the server draws it. On THE test world (core/test_world.py,
 clock at MOMENT) the page says everything the classic page says in three languages (core.pagesays), with and without a
 drawer open; two things it says another way, each named: the classic filter buttons' links are the toolbar's selects
-(the same values, the server reads the same address), and a water value's title (its status, moment and age) is its
-status chip and its origin-and-age line. A row opens its drawer, Edit opens the unit's form; the props and the page are
+(the same values, the server reads the same address), a water value's title (its status, moment and age) is its
+status chip and its origin-and-age line, and the density with its share of capacity are two lines (the design's). A row opens its drawer, Edit opens the unit's form; the props and the page are
 kept for the browser test (frontend/test/prodrest.pages.ts)."""
 import html as htmllib
 import re
@@ -23,12 +23,15 @@ from ..models import Tank
 MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
 BUTTON = re.compile(r'<a href="([^"]+)" aria-pressed="(?:true|false)">')
 VALUE_TITLE = re.compile(r'class="(?:num )?wq wq-[^"]*" title="([^"]*)"')
+DENSITY = re.compile(r'<span class="ui-gauge-text">([^<]*)</span>')
 
 
 def said_another_way(old):
-    """The classic page's filter buttons' addresses and its water values' titles (see the module's docstring)."""
+    """The classic page's filter buttons' addresses and its water values' titles and densities (see the
+    module's docstring)."""
     return {htmllib.unescape(each) for each in BUTTON.findall(old)} | \
-        {' '.join(htmllib.unescape(each).split()) for each in VALUE_TITLE.findall(old)}
+        {' '.join(htmllib.unescape(each).split()) for each in VALUE_TITLE.findall(old)} | \
+        {' '.join(htmllib.unescape(each).split()) for each in DENSITY.findall(old)}
 
 
 @override_settings(ISLANDS_MANIFEST=MANIFEST)

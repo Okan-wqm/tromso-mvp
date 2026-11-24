@@ -47,7 +47,8 @@ def value_cell(reading):
 def unit_cell(row):
     unit, stock = row['unit'], row['stock']
     department = unit.production_department
-    sub = [department.name + (f', {department.site.name}' if department.site else '')]
+    # the design's "name · department"; the classic page's "department, site" kept whole in it
+    sub = [f'{unit.name} · ' + department.name + (f', {department.site.name}' if department.site else '')]
     chips = []
     if row['water']:
         water = row['water']
@@ -90,7 +91,8 @@ def batch_cell(row):
 def density_cell(stock):
     if stock is None:
         return L.cell('—')
-    return L.cell(f'{density(stock.density)}, {percent(stock.capacity)}',
+    # the design's: the density, and under it the share of the unit's capacity
+    return L.cell(density(stock.density), sub=[_('%(percent)s of capacity') % {'percent': percent(stock.capacity)}],
                   chips=[L.chip('critical', _('Over'))] if stock.over_capacity else ())
 
 
@@ -142,7 +144,7 @@ def units_props(request, context):
             readings = water.readings if water else {}
             cells['temperature'] = value_cell(readings.get('temperature_c'))
             cells['oxygen'] = value_cell(readings.get('oxygen_mg_l'))
-        actions = [L.link(row['href'], _('Open %(unit)s') % {'unit': unit.code}, 'more')]
+        actions = [L.link(row['href'], _('Open %(unit)s') % {'unit': unit.code}, 'search')]
         if can_edit:
             actions.append(L.link(reverse('farm:tank_edit', args=[unit.pk]), _('Edit %(name)s') % {'name': unit.code},
                                   'pencil'))

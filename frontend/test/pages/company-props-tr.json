@@ -33,7 +33,7 @@
    {
     "key": "on_site",
     "label": "Şu an sahada",
-    "figure": "1",
+    "figure": "3",
     "href": "/hr/",
     "sub": "Giriş yapan herkes, tüm ekipler",
     "sub2": null,
@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "f8c08b71-1d36-491a-9a9f-cefaf9a0a3f8",
+    "key": "c20b86a9-be45-4825-9178-0726e8d5b6ca",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/f8c08b71-1d36-491a-9a9f-cefaf9a0a3f8/",
+    "href": "/sites/c20b86a9-be45-4825-9178-0726e8d5b6ca/",
     "type": "Kara tesisi",
     "status": "critical",
     "units": "1",
@@ -90,15 +90,15 @@
     },
     "alarms": {
      "figure": "0",
-     "sub": null
+     "sub": "1 birim kritik"
     },
     "onSite": null
    },
    {
-    "key": "4dfaaf22-76d0-4d3c-8992-6d3d7b296608",
+    "key": "bf77f4b3-b9e2-485a-b7f4-27d0121779db",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/4dfaaf22-76d0-4d3c-8992-6d3d7b296608/",
+    "href": "/sites/bf77f4b3-b9e2-485a-b7f4-27d0121779db/",
     "type": "Deniz kafesi",
     "status": "warning",
     "units": "1",
@@ -109,7 +109,7 @@
     },
     "alarms": {
      "figure": "0",
-     "sub": null
+     "sub": "1 birimde güncel veri yok"
     },
     "onSite": null
    }
@@ -248,7 +248,7 @@
   "critical": "Kritik",
   "entries": [
    {
-    "key": "111bf347-d80d-471a-931e-f6cd78b16b1f",
+    "key": "fa766943-1e36-4d9d-a023-89f18d1c79cb",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Bilgi kaydı · A test statement.",
@@ -260,7 +260,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "7fcf3a20-4773-4793-99d6-b58dec52ffb2",
+    "key": "fffbf3e2-7cb1-4788-8936-53cb36d40548",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Belge · Test document",
@@ -272,7 +272,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "c9bc7f02-0f50-470f-8af9-31007df6b8a2",
+    "key": "51cebb53-5dad-4b4d-962d-561af4d067c9",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Depolama yeri · Test Store (TS-01)",
@@ -284,7 +284,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "24819d20-771f-482a-99d0-7e58a60a4d7f",
+    "key": "30ba1d5c-a02b-4333-b2d3-2375fa9dcb61",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Su numunesi · Water sample · TT-01 › Middle · 2026-11-23 12:42",
@@ -296,7 +296,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "6370746a-ac6f-4cd8-ba05-fe2e8f998001",
+    "key": "cdd8ecde-181f-4f1a-ac4d-306ef2451638",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Birim · Unit TM-01 (TM-01)",
@@ -318,10 +318,10 @@
   },
   "rows": [
    {
-    "key": "ab19bb62-1b39-4b3f-b589-030479ed5ec0",
+    "key": "df3c21be-3fc4-4ede-b78b-531a0fc38eeb",
     "text": "A test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/ab19bb62-1b39-4b3f-b589-030479ed5ec0/view/",
+    "href": "/knowledge/entries/df3c21be-3fc4-4ede-b78b-531a0fc38eeb/view/",
     "kind": "neutral",
     "chip": "Taslak"
    }

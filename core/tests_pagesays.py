@@ -74,3 +74,10 @@ class SaysTests(SimpleTestCase):
         self.assertEqual(unsaid(old, {'tabs': ['Who']}), [('text', 'Who')])            # counted: said twice, carried once
         self.assertEqual(unsaid(old, {'tabs': ['Who']}, once={'Who'}), [])
         self.assertEqual(unsaid(old, {'tabs': ['When']}, once={'Who'}), [('text', 'Who'), ('text', 'Who')])
+
+    def test_a_control_is_carried_by_a_widgets_name_never_by_a_key_of_the_json(self):
+        """Review recheck: a control named like a key of the payload ("name", "kind") is not carried by that key."""
+        old = '<main><input name="name"><input name="kind"></main>'
+        self.assertEqual(unsaid(old, {'widget': {'name': 'title', 'kind': 'text'}}), [('control', 'name'), ('control', 'kind')])
+        self.assertEqual(unsaid(old, {'fields': [{'widget': {'name': 'name'}}, {'widget': {'name': 'kind'}}]}), [])
+        self.assertEqual(unsaid(old, {}, new_html='<main><input name="name"><input name="kind"></main>'), [])

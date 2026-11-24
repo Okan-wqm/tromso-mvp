@@ -1298,6 +1298,10 @@ msgid "%(section)s: not shown to you"
 msgstr "%(section)s: size gösterilmiyor"
 
 #, python-format
+msgid "%(severity)s: %(summary)s"
+msgstr "%(severity)s: %(summary)s"
+
+#, python-format
 msgid ""
 "%(severity)s: escalated after %(minutes)d min without an acknowledgement; usually at most "
 "%(usual)d min."
@@ -5620,6 +5624,10 @@ msgstr "İletilemeyen kritik bildirimler"
 
 msgid "Critical water points"
 msgstr "Kritik numune noktaları"
+
+#, python-format
+msgid "Critical, now cleared: %(summary)s. Opened %(opened)s, cleared %(cleared)s."
+msgstr "Kritikti, şimdi kapandı: %(summary)s. Açılış %(opened)s, kapanış %(cleared)s."
 
 msgid "Criticality"
 msgstr "Kritiklik"
@@ -13624,6 +13632,10 @@ msgstr "Şu zamana kadar ertelendi"
 msgid "Snoozed until %(until)s"
 msgstr "%(until)s saatine kadar ertelendi"
 
+#, python-format
+msgid "Snoozed: %(summary)s"
+msgstr "Ertelendi: %(summary)s"
+
 msgid "Sodium bicarbonate"
 msgstr "Sodyum bikarbonat"
 
@@ -13882,6 +13894,10 @@ msgstr "Adım"
 
 msgid "Still loading? Open the full page"
 msgstr "Hâlâ yükleniyor mu? Tam sayfayı açın"
+
+#, python-format
+msgid "Still open after its snooze: %(summary)s"
+msgstr "Ertelemesinden sonra hâlâ açık: %(summary)s"
 
 msgid "Stock"
 msgstr "Stok"

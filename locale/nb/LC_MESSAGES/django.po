@@ -1295,6 +1295,10 @@ msgid "%(section)s: not shown to you"
 msgstr "%(section)s: vises ikke for deg"
 
 #, python-format
+msgid "%(severity)s: %(summary)s"
+msgstr "%(severity)s: %(summary)s"
+
+#, python-format
 msgid ""
 "%(severity)s: escalated after %(minutes)d min without an acknowledgement; usually at most "
 "%(usual)d min."
@@ -5602,6 +5606,10 @@ msgstr "Kritiske varsler som ikke kan leveres"
 
 msgid "Critical water points"
 msgstr "Kritiske prøvepunkter"
+
+#, python-format
+msgid "Critical, now cleared: %(summary)s. Opened %(opened)s, cleared %(cleared)s."
+msgstr "Kritisk, nå avsluttet: %(summary)s. Åpnet %(opened)s, avsluttet %(cleared)s."
 
 msgid "Criticality"
 msgstr "Kritikalitet"
@@ -13594,6 +13602,10 @@ msgstr "Slumret til"
 msgid "Snoozed until %(until)s"
 msgstr "Slumret til %(until)s"
 
+#, python-format
+msgid "Snoozed: %(summary)s"
+msgstr "Slumret: %(summary)s"
+
 msgid "Sodium bicarbonate"
 msgstr "Natriumbikarbonat"
 
@@ -13850,6 +13862,10 @@ msgstr "Trinn"
 
 msgid "Still loading? Open the full page"
 msgstr "Laster fortsatt? Åpne hele siden"
+
+#, python-format
+msgid "Still open after its snooze: %(summary)s"
+msgstr "Fortsatt åpen etter slumringen: %(summary)s"
 
 msgid "Stock"
 msgstr "Beholdning"

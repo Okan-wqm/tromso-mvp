@@ -4496,9 +4496,13 @@ from which device, how late) is logged. The server side is built; the push trans
   health check too. **A critical is never behind a round of warnings** (F5): a round ends at `ALARM_WORKER_SEND_ROUND`
   (5 s), and before a warning's group when a critical was queued since it began; the next round, a tick later, starts
   with it (a critical that joins the queue during the round, whatever time it is stamped with). Each send gets
-  `send_timeout` seconds (no answer or a raise is a failed attempt). A notification whose alarm cleared before it was
-  ever tried is given up, its attempt saying so, so a backlog of cleared alarms never goes out when a transport is first
-  connected; a channel without a transport is left out of a round in the database. One notification that cannot be
+  `send_timeout` seconds (no answer or a raise is a failed attempt). Each notification goes with its text in the
+  person's language (`outbox.text`). A critical alarm that opened and cleared before it could be sent (the transport
+  down through an oxygen crash or a power cut) is still sent, never dropped (the coordinator's decision of 2026-11-24):
+  one message saying it was critical and has cleared, when it opened and when it cleared, through the same grouping and
+  flood rules (cleared criticals of one kind go as one flood message). A warning, or a word about a snooze, whose alarm
+  cleared before it was ever tried is given up, its attempt saying so, so a backlog of cleared warnings never goes out
+  when a transport is first connected (20,000 of them given up in one round, a few statements); a channel without a transport is left out of a round in the database. One notification that cannot be
   handled is logged and left for the next round, never stopping the others. The attempt, the queue's entry and the log
   are written in one transaction, and a round drops an entry that already went. Never lost: a restart sends
   what was not sent; a sender that died after the transport took one and before its attempt was written sends it again

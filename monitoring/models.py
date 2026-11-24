@@ -18,13 +18,14 @@ from django.db.models import Case, F, Q, Value, When
 from django.db.models.fields.json import KeyTransform
 from django.db.models.functions import Cast, Coalesce, Lower
 from django.db.models.lookups import Exact, LessThanOrEqual
+from django.utils.formats import number_format
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel
 from farm.models import Species, System, Tank
 from farm.models.tank import WaterType
 
-from .cards import builtin, catalogue
+from .cards import builtin, catalogue, slots
 
 BUILTIN_IDS = tuple(builtin.BUILTINS)
 
@@ -47,6 +48,15 @@ class WallScreen(models.TextChoices):
     TV55 = '55', _('55″ TV, 3840 × 2160')
     TV65 = '65', _('65″ TV, 3840 × 2160')
     OTHER = 'other', _('Another screen: type its diagonal')
+
+
+# The size in px of each standard screen, for the board's form (monitoring/cards/slots.py reach: whether its distance can
+# be met at all); the wall itself reads the screen's own size. Another screen's resolution is not known: it is taken as
+# 16:9 Full HD, the commonest, and the answer depends on its shape far more than on its px (the legible unit and the
+# room grow together with the px). A screen of another shape still gets the most legible wall it can (slots.py).
+SCREEN_PX = {WallScreen.IN24: (1920, 1080), WallScreen.IN27: (2560, 1440), WallScreen.IN32: (3840, 2160),
+             WallScreen.IN34: (3440, 1440), WallScreen.IN49: (5120, 1440), WallScreen.TV55: (3840, 2160),
+             WallScreen.TV65: (3840, 2160), WallScreen.OTHER: (1920, 1080)}
 
 
 class CardWidth(models.IntegerChoices):
@@ -121,7 +131,8 @@ class MonitorBoard(AuditedModel):
         return self.name
 
     def clean(self):
-        """A preset is its own diagonal; another screen needs one; no screen has none."""
+        """A preset is its own diagonal; another screen needs one; no screen has none. A screen and a distance at which
+        not even one card a page can be read are refused, with the farthest distance that works (review round 2, B3)."""
         super().clean()
         if self.screen and self.screen != WallScreen.OTHER:
             self.screen_inches = Decimal(self.screen)
@@ -129,6 +140,20 @@ class MonitorBoard(AuditedModel):
             self.screen_inches = None
         elif self.screen_inches is None:
             raise ValidationError({'screen_inches': _('Type the diagonal of the screen, in inches.')})
+        found = self.reach()
+        if found is not None and found.per_page == 0:
+            raise ValidationError({'distance_m': _('Not one card a page can be read from %(distance)s m on this screen: '
+                                                   'read it from %(farthest)s m or nearer, or choose a larger screen.') % {
+                'distance': number_format(self.distance_m, 1), 'farthest': number_format(found.farthest, 1)}})
+
+    def reach(self):
+        """What its wall can be on its screen at its distance (monitoring/cards/slots.py Reach), for the cards its own
+        template draws (a fitted one's measure; the Small card's otherwise, the densest wall); None unless it says both."""
+        if not self.legible or self.screen not in SCREEN_PX:
+            return None
+        template = self.default_template if self.default_template_id else None
+        measure = (template.measure if template is not None else None) or builtin.SMALL_MEASURE
+        return slots.reach(float(self.screen_inches), float(self.distance_m), *SCREEN_PX[self.screen], *measure)
 
     @property
     def legible(self):

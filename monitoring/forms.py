@@ -45,8 +45,9 @@ class MonitorBoardForm(TabbedForm):
                             'read from a distance.'),
             'refresh_seconds': _('Between 10 and 600. Empty uses the system’s 15 seconds.'),
             'screen': _('The screen this board is shown on. With the distance below, a wall of small or big cards never sets '
-                        'its type smaller than can be read from there (20 arcmin for a state, 15 for every other text): it '
-                        'turns pages instead. The screen’s resolution is read from the screen itself.'),
+                        'its type smaller than can be read from there (20 arcmin for a state, 16 for every other text): it '
+                        'turns pages instead. The screen’s resolution is read from the screen itself. A screen and a '
+                        'distance at which not one card a page can be read are refused (another screen is taken as 16:9).'),
             'screen_inches': _('Only for another screen: its diagonal, between 10 and 150 inches.'),
             'distance_m': _('How far the people who read the wall stand from it: for example 1, 2, 3 or 5 m. Empty: the '
                             'cards are as large as the screen allows, never under the type a desk reads.'),

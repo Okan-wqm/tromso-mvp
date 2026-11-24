@@ -7,7 +7,7 @@ from decimal import Decimal
 from django.core.management import call_command
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TransactionTestCase
+from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 
 from core import access, database, navigation, softdelete
@@ -133,7 +133,7 @@ class WallScreenTests(BoardCase):
         self.assertEqual((board.screen, board.screen_inches, board.distance_m, board.legible),
                          ('55', Decimal('55.0'), Decimal('3.0'), True))
         # a preset wins over a diagonal typed beside it: the preset is a known screen
-        self.client.post(self.edit(board), self.posted(board, screen='24', screen_inches='40'))
+        self.client.post(self.edit(board), self.posted(board, screen='24', screen_inches='40', distance_m='1'))
         board.refresh_from_db()
         self.assertEqual((board.screen, board.screen_inches), ('24', Decimal('24.0')))
         self.client.post(self.edit(board), self.posted(board, screen='other', screen_inches='43'))
@@ -157,6 +157,29 @@ class WallScreenTests(BoardCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, text)
         self.assertFalse(MonitorBoard.objects.exists())
+
+    def test_a_screen_and_distance_no_card_can_be_read_at_are_refused_with_the_farthest_that_works(self):
+        """Review round 2, B3: a 24 inch monitor read from 3 m was accepted, and its wall drew 4 px type."""
+        for screen, inches, metres, farthest in (('24', '', '3', '1.9'), ('24', '', '5', '1.9'), ('55', '', '5', '4.4'),
+                                                 ('other', '24', '3', '1.9')):
+            # (the distance said as a number of the person's language, to one decimal, as the form shows it)
+            with self.subTest(screen=screen, metres=metres):
+                response = self.client.post(CREATE, {'name': 'x', 'card_width': '2', 'screen': screen,
+                                                     'screen_inches': inches, 'distance_m': metres})
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, f'Not one card a page can be read from {metres}.0 m on this screen: '
+                                              f'read it from {farthest} m or nearer, or choose a larger screen.')
+        self.assertFalse(MonitorBoard.objects.exists())
+        # met, but one card a page: saved, and the person is told what the wall will do
+        response = self.client.post(CREATE, {'name': 'Hall A wall', 'card_width': '2', 'screen': '55',
+                                             'screen_inches': '', 'distance_m': '3'}, follow=True)
+        self.assertContains(response, 'From 3.0 m this screen shows 1 card a page: the wall turns its pages. '
+                                      'A nearer distance or a larger screen shows more.')
+        board = MonitorBoard.objects.get()
+        # many a page: nothing to warn of
+        response = self.client.post(self.edit(board), self.posted(board, distance_m='1'), follow=True)
+        self.assertNotContains(response, 'the wall turns its pages')
+        self.assertEqual(MonitorBoard.objects.get().distance_m, Decimal('1.0'))
 
     def test_the_database_holds_the_screens_rules(self):
         def refused(**fields):
@@ -332,6 +355,34 @@ class MigrationTests(TransactionTestCase):
 
     def test_the_models_and_the_migration_agree(self):
         call_command('makemigrations', 'monitoring', check=True, dry_run=True, verbosity=0)
+
+
+class ScreenMigrationTests(TestCase):
+    """0008: a board that existed at 0007 says no screen and no distance (its wall is as it was), which the new
+    constraints accept; back, the row stays and its columns go."""
+
+    def migrate(self, target):
+        # (the rows this test made have their deferred checks still pending in its transaction: run them now)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate([('monitoring', target)])
+        return executor.loader.project_state([('monitoring', target)]).apps
+
+    def test_a_board_of_0007_reads_no_screen_and_no_distance(self):
+        leaf = MigrationExecutor(connection).loader.graph.leaf_nodes('monitoring')
+        old = self.migrate('0007_ph_window_scales')
+        Board = old.get_model('monitoring', 'MonitorBoard')
+        board = Board.objects.create(name='Hall A wall', default_mode='simple', card_width=3, refresh_seconds=30)
+        Board = self.migrate('0008_board_screen').get_model('monitoring', 'MonitorBoard')
+        self.assertEqual(list(Board.objects.filter(pk=board.pk).values_list('name', 'card_width', 'refresh_seconds',
+                                                                             'screen', 'screen_inches', 'distance_m')),
+                         [('Hall A wall', 3, 30, '', None, None)])
+        Board = self.migrate('0007_ph_window_scales').get_model('monitoring', 'MonitorBoard')
+        self.assertEqual(list(Board.objects.values_list('name', 'card_width', 'refresh_seconds')), [('Hall A wall', 3, 30)])
+        self.migrate(leaf[0][1])
+        self.assertFalse(MonitorBoard.objects.get(pk=board.pk).legible)
 
 
 class OnThePageTests(BoardCase):

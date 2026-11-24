@@ -1,0 +1,181 @@
+"""Operations › Monitoring in the new look (`?ui=next`), on THE test world (core/test_world.py: `world` and
+`monitoring_world`, a unit in every state a card can be in) with the clock at its MOMENT, through the real views:
+
+- the cards SAY in the new look what they say in the classic look, card for card and state for state (the golden
+  extractor, monitoring/tests/golden.py: the state word, the reasons, every labelled figure and every link the same;
+  every text and title of the classic card still there), on the Small, Simple, Detailed and Big cards and in the pane;
+- every card of the new look links its tank's water history (Tank › Water), and no classic card does;
+- the classic page loads none of the new look's sheets, the new one both; the change token holds the look;
+- the pages are kept for the browser test (frontend/test/monitoring.pages.ts, `npm run test:pages`) under
+  .build/monitor-pages/ (never committed: the repository is public, and nothing here comes from a real database):
+  the shell of each screen as the server prints it, the fragments its polls are answered with, the pane, the strip, and
+  the cards again after a unit got worse (for the announcer), in English, Norwegian and Turkish."""
+import json
+import re
+from decimal import Decimal
+from pathlib import Path
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.test import Client, TestCase
+from django.urls import reverse
+
+from core import ui
+from core.language import save_account_language
+from core.test_world import MOMENT, MONITORING_UNITS, monitoring_world, world
+from core.testing import FrozenClock
+from farm.models import Tank
+from farm.tests.helpers import point_of
+from farm.water import services as water
+
+from .. import read
+from .golden import Normaliser, Tree, cards_say, multiset_missing
+
+OUT = Path(settings.BASE_DIR) / '.build' / 'monitor-pages'
+PAGE, CARDS, PANE = reverse('monitoring:monitor'), reverse('monitoring:cards'), reverse('monitoring:pane')
+# The screens the browser test lays out: {name: the page's query}
+SCREENS = {'small': {'mode': 'small', 'occupancy': 'all'}, 'simple': {'occupancy': 'all'},
+           'detailed': {'mode': 'detailed', 'occupancy': 'all'}, 'big': {'mode': 'big', 'occupancy': 'all'},
+           'wall': {'mode': 'small', 'occupancy': 'all', 'wall': '1'}}
+STATES = {'Critical', 'Warning', 'No recent data', 'No limit', 'Note', 'OK', 'Empty'}
+
+
+class NextPagesTests(FrozenClock, TestCase):
+    NOW = MOMENT
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
+        made = world(cls.admin, Client())
+        refused = [each for each in made if not each.endswith(': 302')]
+        if refused:
+            raise AssertionError(f'the test world was not built: {refused}')
+        monitoring_world(cls.admin)
+        cls.units = {unit.code: unit for unit in Tank.objects.all()}
+
+    def setUp(self):
+        self.client.force_login(self.admin)
+        self.norm = Normaliser(self.units.values(), [], MOMENT.date())
+
+    def ask(self, url, query=None, look=ui.NEXT, language='en'):
+        """The answer of `url` in a look and a language (the account's language wins over the cookie: both are set)."""
+        save_account_language(self.admin, language)
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+        if look == ui.NEXT:
+            self.client.cookies[ui.COOKIE] = ui.NEXT
+        elif ui.COOKIE in self.client.cookies:
+            del self.client.cookies[ui.COOKIE]
+        response = self.client.get(url, query or {})
+        self.assertIn(response.status_code, (200, 204), f'{url} {query} {look} {language}')
+        return response
+
+    def fragment(self, query, look=ui.NEXT, language='en'):
+        return self.ask(CARDS, query, look, language).content.decode()
+
+    def test_the_world_has_a_card_in_every_state(self):
+        said = cards_say(self.fragment(SCREENS['small']), self.norm)
+        self.assertEqual({card['state'] for card in said.values()}, STATES)
+        expected = {'TW-01': 'OK', 'TW-02': 'Critical', 'TW-03': 'Warning', 'TW-04': 'No recent data',
+                    'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty'}
+        self.assertEqual({code: said[code]['state'] for code in expected}, expected)
+        self.assertEqual(len(MONITORING_UNITS), len(expected))
+
+    def test_every_card_says_in_the_new_look_what_it_says_in_the_classic_one(self):
+        for name, query in SCREENS.items():
+            for language in ('en', 'nb', 'tr'):
+                classic = cards_say(self.fragment(query, look='', language=language), self.norm)
+                new = cards_say(self.fragment(query, language=language), self.norm)
+                self.assertEqual(list(new), list(classic), f'{name} {language}: the cards and their order')
+                for code, was in classic.items():
+                    now = new[code]
+                    with self.subTest(screen=name, language=language, card=code):
+                        for part in ('state', 'reasons', 'pairs', 'links'):
+                            self.assertEqual(now[part], was[part], f'{name} {language} {code}: {part}')
+                        self.assertEqual(multiset_missing(was['texts'], now['texts']), [], 'texts that are gone')
+                        self.assertEqual(multiset_missing(was['titles'], now['titles']), [], 'titles that are gone')
+
+    def test_the_pane_says_in_the_new_look_what_it_says_in_the_classic_one(self):
+        for code in ('TW-02', 'TW-04', 'TW-07'):
+            query = {**SCREENS['small'], 'focus': str(self.units[code].pk)}
+            classic = cards_say(self.ask(PANE, query, look='').content.decode(), self.norm)
+            new = cards_say(self.ask(PANE, query).content.decode(), self.norm)
+            self.assertEqual(list(new), [code])
+            for part in ('state', 'reasons', 'pairs', 'links'):
+                self.assertEqual(new[code][part], classic[code][part], f'{code}: {part}')
+            self.assertEqual(multiset_missing(classic[code]['texts'], new[code]['texts']), [])
+
+    def links_of(self, html):
+        """{unit code: the hrefs of its card's links to Tank › Water}."""
+        found = {}
+        for node in Tree(html).root.walk():
+            if node.tag == 'article' and node.attrs.get('data-key', '').startswith('card:'):
+                code = self.norm(node.attrs['data-key'][len('card:'):])
+                found[code] = [each.attrs['href'] for each in node.walk()
+                               if each.tag == 'a' and '/water/' in each.attrs.get('href', '')]
+        return found
+
+    def test_every_card_of_the_new_look_links_its_tanks_water_and_no_classic_card_does(self):
+        for name, query in SCREENS.items():
+            new = self.links_of(self.fragment(query))
+            self.assertTrue(new, name)
+            for code, hrefs in new.items():
+                self.assertEqual(hrefs, [reverse('farm:tank_water', args=[self.units[code].pk])], f'{name} {code}')
+            self.assertEqual(set(map(tuple, self.links_of(self.fragment(query, look='')).values())), {()}, name)
+        pane = self.ask(PANE, {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}).content.decode()
+        self.assertIn(f'href="{reverse("farm:tank_water", args=[self.units["TW-02"].pk])}"', pane)
+        self.assertIn('id="pane-water-', pane)                  # a second card of its unit on the page: its own id
+        # the link is where it leads: Tank › Water in the new look
+        self.assertEqual(self.ask(reverse('farm:tank_water', args=[self.units['TW-02'].pk])).status_code, 200)
+
+    def test_the_classic_page_loads_none_of_the_new_looks_sheets(self):
+        for look, expected in (('', False), (ui.NEXT, True)):
+            html = self.ask(PAGE, SCREENS['small'], look=look).content.decode()
+            for sheet in ('css/glyphs.css', 'css/monitor-next.css'):
+                self.assertEqual(sheet in html, expected, f'{look or "classic"} {sheet}')
+
+    def test_the_token_holds_the_look_and_the_classic_token_is_what_it_was(self):
+        query = 'mode=small&occupancy=all'
+        classic = read.change_token(self.admin, query)
+        self.assertEqual(read.change_token(self.admin, query, look=''), classic)
+        self.assertNotEqual(read.change_token(self.admin, query, look=ui.NEXT), classic)
+        # a screen whose look changed never gets 204 for the other look's cards
+        response = self.ask(CARDS, {**SCREENS['small'], 'after': self.ask(CARDS, SCREENS['small'], look='')['X-Poll-Next']
+                                    .rpartition('after=')[2]})
+        self.assertEqual(response.status_code, 200)
+
+    def keep(self, name, response):
+        """Writes an answer for the browser test: its body, and its next address."""
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / f'{name}.html').write_text(response.content.decode(), encoding='utf-8', newline='\n')
+        return {'status': response.status_code, 'next': response.get('X-Poll-Next', '')}
+
+    def test_the_pages_are_kept_for_the_browser_test(self):
+        index = {}
+        for language in ('en', 'nb', 'tr'):
+            for name, query in SCREENS.items():
+                page = self.ask(PAGE, query, language=language)
+                html = page.content.decode()
+                self.assertIn('data-poll-state="loading"', html)                  # the shell: no card yet
+                self.assertNotIn('data-key="card:', html)
+                key = f'{name}-{language}'
+                index[key] = {'page': self.keep(f'page-{key}', page), 'lang': language,
+                              'cards': self.keep(f'cards-{key}', self.ask(CARDS, query, language=language)),
+                              'nonce': re.search(r'nonce="([^"]+)"', html).group(1)}
+            focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
+            page = self.ask(PAGE, focus, language=language)
+            index[f'pane-{language}'] = {
+                'page': self.keep(f'page-pane-{language}', page), 'lang': language,
+                'cards': self.keep(f'cards-pane-{language}', self.ask(CARDS, focus, language=language)),
+                'pane': self.keep(f'pane-pane-{language}', self.ask(PANE, focus, language=language)),
+                'nonce': re.search(r'nonce="([^"]+)"', page.content.decode()).group(1)}
+            index[f'strip-{language}'] = self.keep(f'strip-{language}',
+                                                   self.ask(reverse('core:ui_strip'), language=language))
+        # the same screen after TW-01 got worse: its oxygen now past the critical limit (the announcer's case)
+        water.record(self.admin, point=point_of(self.units['TW-01']), measured_at=MOMENT, source='manual',
+                     values={'oxygen_mg_l': Decimal('4.5')})
+        for language in ('en', 'nb', 'tr'):
+            worse = self.ask(CARDS, SCREENS['small'], language=language)
+            self.assertEqual(cards_say(worse.content.decode(), self.norm)['TW-01']['state'],
+                             {'en': 'Critical', 'nb': 'Kritisk', 'tr': 'Kritik'}[language])
+            index[f'small-{language}']['worse'] = self.keep(f'cards-small-{language}-worse', worse)
+        (OUT / 'index.json').write_text(json.dumps(index, indent=1), encoding='utf-8')

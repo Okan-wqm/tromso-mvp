@@ -16,7 +16,10 @@ built and read.
                                       temperature and oxygen fresh, the pH not (no recent data)
       harvest_world(admin, tank)      a harvest from TT-01 six days back
       treatment_world(admin, tank)    a thermal delousing of TT-01 five days back
-      feeding_world(admin, tank)      a feeding of TT-01 the day before"""
+      feeding_world(admin, tank)      a feeding of TT-01 the day before
+    monitoring_world(admin)           seven more units of Test Hall A, one in each state a monitoring card can be in
+                                      (OK, critical, warning, no recent data, no limit, note, empty); not part of world():
+                                      the monitoring pages' test builds it after it (monitoring/tests/test_next_pages.py)"""
 import math
 from datetime import datetime, time, timedelta
 from decimal import Decimal as D
@@ -205,3 +208,54 @@ def feeding_world(admin, tank):
 
     feed = Feed.objects.create(name='Test Feed 3 mm', code='TF-3', feed_type='grower', pellet_size_mm=D(3))
     record_feeding(admin, unit=tank, day=_days_back(tank, 1), feed=feed, amount_kg=D('0.8'), time=time(8, 0))
+
+
+# The cards of Operations › Monitoring in every state a card can be in (monitoring.read STATES), each a unit of its own in
+# Test Hall A: (code, name, fish, protocol, hours back of its sample, the sample's values). The salmon's limits are the
+# company and water worlds' (oxygen, temperature, pH); the nitrite has none.
+MONITORING_UNITS = (
+    ('TW-01', 'Test tank OK', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2'}),
+    ('TW-02', 'Test tank critical', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2'}),
+    ('TW-03', 'Test tank warning', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '6.5', 'ph': '7.2'}),
+    ('TW-04', 'Test tank old values', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2'}),
+    ('TW-05', 'Test tank no limit', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2',
+                                                   'nitrite_n_mg_l': '0.05'}),
+    ('TW-06', 'Test tank no protocol', True, False, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2'}),
+    ('TW-07', 'Test tank empty', False, False, 0, {}),
+)
+
+
+def monitoring_world(admin):
+    """Seven more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
+    OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
+    and its warning limit), no recent data (its water 30 hours old), no limit (a nitrite no limit row judges), a note (no
+    feeding protocol: no ration, and why) and empty (no fish). 1,000 salmon of 50 g each, stocked ten days back; the
+    protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed. Through the services where
+    the record has one (stocking, the samples), straight into the tables otherwise (the protocol), as the tests do."""
+    from farm.models import (Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate,
+                             ProductionDepartment, WaterLimit)
+    from farm.tests.helpers import point_of, stock_fish
+    from farm.tests.test_stock import make_unit
+    from farm.water import services as water
+
+    hall = ProductionDepartment.objects.get(code='THA')
+    salmon = WaterLimit.objects.filter(parameter='oxygen_mg_l').first().species
+    feed, _ = Feed.objects.get_or_create(code='TF-3', defaults={'name': 'Test Feed 3 mm', 'feed_type': 'grower',
+                                                                'pellet_size_mm': D(3)})
+    protocol = FeedingProtocol.objects.create(name='Test salmon table', species=salmon, expected_fcr=D('1.00'),
+                                              status='active')
+    band = ProtocolBand.objects.create(protocol=protocol, min_weight_g=D(0), max_weight_g=None, feed=feed,
+                                       meals_per_day=4, expected_fcr=None)
+    for column, sfr in (('12', '1.10'), ('14', '1.30')):
+        ProtocolRate.objects.create(band=band, temperature_c=D(column), sfr_pct=D(sfr))
+    for code, name, fish, fed, hours, values in MONITORING_UNITS:
+        unit = make_unit(code, hall)
+        unit.name = name
+        unit.save(update_fields=['name'])
+        if fish:
+            stock_fish(admin, unit, 1000, '50', 10, species=salmon)
+        if fed:
+            ProtocolAssignment.objects.create(protocol=protocol, unit=unit, valid_from=_days_back(unit, 10))
+        if values:
+            water.record(admin, point=point_of(unit), measured_at=MOMENT - timedelta(hours=hours), source='manual',
+                         values={key: D(value) for key, value in values.items()})

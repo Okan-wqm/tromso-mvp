@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models
@@ -181,6 +182,15 @@ class AuditSeverity(models.TextChoices):
     CRITICAL = 'critical', _('Critical')
 
 
+class AuditLogManager(models.Manager):
+    def bulk_create(self, objs, *args, **kwargs):
+        """The entries stamped with their works first (core.audit.stamp), as `save` does for one."""
+        from .audit import stamp
+        objs = list(objs)
+        stamp(objs)
+        return super().bulk_create(objs, *args, **kwargs)
+
+
 class AuditLog(models.Model):
     """Who did what to which record, with old and new values. Rows are append-only: a database
     trigger (migration 0003) refuses UPDATE and DELETE, so history cannot be edited, not even by
@@ -222,6 +232,13 @@ class AuditLog(models.Model):
     # contact list: the parts of each contact) (see core.audit).
     changes = models.JSONField(default=dict, blank=True)
     severity = models.CharField(max_length=10, choices=Severity.choices, default=Severity.NORMAL)
+    # The confidential works the record lay in when the entry was written (core.sealing.works_of; '*' when that could
+    # not be read): stamped by `save` and the log's bulk_create (core.audit.stamp), for the change token alone, which
+    # leaves out a change to a record of work hidden from the person looking (core.audit.revision). Who may read an
+    # entry is decided when it is read, from the seals (core.audit.readable), never from this.
+    works = ArrayField(models.CharField(max_length=64), default=list, blank=True, editable=False)
+
+    objects = AuditLogManager()
 
     class Meta:
         db_table = 'audit_log'
@@ -242,6 +259,12 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f'{self.user_name} {self.get_action_display().lower()} {self.entity_type} {self.entity_label}'
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            from .audit import stamp
+            stamp([self])
+        super().save(*args, **kwargs)
 
     def shown_type(self):
         """The record type in the active language."""

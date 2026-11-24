@@ -39,7 +39,7 @@ from farm.stock import read as stock_read
 from farm.stock.dates import local_today, site_today
 
 from . import sealing as experiments_sealing
-from .models import ExperimentGroup, FactorKind, GroupLevel, Replicate, ReplicateSystem, ReplicateUnit, Status
+from .models import ExperimentGroup, FactorKind, GroupLevel, Member, Replicate, ReplicateSystem, ReplicateUnit, Status
 
 
 @dataclass(frozen=True)
@@ -538,11 +538,16 @@ def cards(unit_ids, day):
                                              replicate__is_deleted=False, replicate__group__is_deleted=False,
                                              replicate__group__experiment__is_deleted=False)
                 .select_related('replicate__group__experiment'))
+        rows = list(rows)
+        # The leads of all the experiments at once (a wall of cards costs the same whatever its tanks).
+        leads = {}
+        for member in (Member.objects.filter(experiment__in={row.replicate.group.experiment_id for row in rows},
+                                             role='lead').select_related('user').order_by('experiment_id', 'pk')):
+            leads.setdefault(member.experiment_id, member.user)
         lines = {}
         for row in rows:
             experiment = row.replicate.group.experiment
-            lead = experiment.members.filter(role='lead').select_related('user').first()
-            lines[row.unit_id] = (experiment, lead.user if lead else None, row.from_on, row.until_on)
+            lines[row.unit_id] = (experiment, leads.get(experiment.pk), row.from_on, row.until_on)
     for unit_id, (experiment, lead, first, last) in lines.items():
         parts = [_('Lead: %(name)s') % {'name': person_name(lead)}] if lead else []
         if experiment.approval_ref:
@@ -553,6 +558,7 @@ def cards(unit_ids, day):
             parts.append(_('on call %(phone)s') % {'phone': experiment.on_call_phone})
         parts.append(_('%(first)s to %(last)s') % {'first': date_format(first), 'last': date_format(last)})
         found[unit_id] = farm_placements.Placement(label=_('Research trial'), title=' · '.join(parts), url='')
-        # Logged against the experiment, so its lead reads it on Who looked (review F8).
-        sealing.log_access('oversee', 'experiment', experiment.pk, part='systems', route='experiments.read.cards')
+    # Logged against each experiment shown, once, so its lead reads it on Who looked (review F8): one statement.
+    sealing.log_accesses('oversee', 'experiment', [experiment.pk for experiment, *_rest in lines.values()],
+                         part='systems', route='experiments.read.cards')
     return found

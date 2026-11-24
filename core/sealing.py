@@ -278,6 +278,31 @@ class Sealed(models.ExpressionWrapper):
         return super().as_sql(compiler, connection)
 
 
+@dataclass(frozen=True)
+class Reach:
+    """What the change token needs of the person looking (core.audit.revision, monitoring's change_token), read in one
+    statement: `hidden`, per part, the ids of the work whose part they may not read; `oversee`, they hold Oversee;
+    `digest`, a short text that changes when what they read changes (a grant, a share's end, a team, an audience) and
+    names nothing they may not read ('' when they read no confidential work)."""
+    hidden: dict = field(default_factory=dict)
+    oversee: bool = False
+    digest: str = ''
+
+
+SEES_ALL = Reach()
+
+
+def reach():
+    """The Reach of the person looking, once per request (`memo`); SEES_ALL for the system, which hides nothing."""
+    current = _current.get()
+    if not isinstance(current, _Lazy):
+        if who() is None:
+            return SEES_ALL
+    if _provider is None or not hasattr(_provider, 'reach'):
+        return SEES_ALL
+    return memo(('reach',), lambda: _provider.reach(current.user))
+
+
 def memo(key, compute):
     """`compute()`, kept for the rest of the request (or `as_viewer` block) under `key`: for a page that asks the
     same question of the seal for many rows (which unit codes the person may see), once."""
@@ -575,6 +600,98 @@ def _child(spec):
     return apps.get_model(label), link
 
 
+# ---- the works a record lies in (the change token's stamp) ------------------------------------------------------
+# A record whose works could not be read (its row or a parent's is gone, or the chain is deeper than the stamp
+# follows): hidden from whoever has any work hidden (core.audit.revision).
+UNKNOWN = '*'
+# How many parents and children deep the stamp follows (a task's note, its task, the task's batch, the batch's
+# movements: three).
+WORKS_DEPTH = 4
+
+
+def _seals_reached(model, depth=WORKS_DEPTH):
+    """The seals of `model` and of every parent and child its seal follows (via, any_of, hidden_with)."""
+    seal = seal_of(model)
+    if seal is None or not seal.filters or depth < 0:
+        return []
+    found = [seal]
+    for link in seal.via:
+        found += _seals_reached(model._meta.get_field(link).related_model, depth - 1)
+    for spec in (seal.any_of, seal.hidden_with):
+        if spec:
+            found += _seals_reached(_child(spec)[0], depth - 1)
+    return found
+
+
+def stamp_parts(model):
+    """The parts a record of `model` is sealed with, its own and those of the parents and children its seal follows:
+    the change token leaves out an entry about it when one of its works is hidden from the person for any of them."""
+    return sorted({seal.part for seal in _seals_reached(model)})
+
+
+def stamp_shows_overseer(model):
+    """Whether a holder of Oversee reads every record of `model` (a farm fact all the way down its parents and
+    children, core.sealing.hidden): the change token then never leaves an entry about it out for them."""
+    return all(seal.cls == FACT and seal.work is None for seal in _seals_reached(model))
+
+
+def works_of(model, pks, depth=WORKS_DEPTH):
+    """{pk as text: set of work ids as text} for the rows `pks` of `model`, read as the system (base managers, no
+    viewer): every piece of confidential work whose seal reaches the row now, whatever its audience: its own work, each
+    cell it lies in (on its day; a master record today), and those of the parents (`via`) and children (`any_of`,
+    `hidden_with`) its seal follows. It is the seal read the other way round, from the row to the works, along the same
+    paths (`_correlated`, `_day_filter`): a superset of the works for which a viewer's seal hides the row, never less
+    (core/tests_sealing.py holds the two together). A row that is not there, or a chain deeper than WORKS_DEPTH, gives
+    UNKNOWN.
+
+    The activity log stamps each entry with it when the entry is written (core.audit.stamp), so the change token leaves
+    out a change to a record of work hidden from the person looking without reading the seal on every poll."""
+    found = {str(pk): set() for pk in pks}
+    seal = seal_of(model)
+    if not found or seal is None or not seal.filters:
+        return found
+    if depth < 0:
+        return {pk: {UNKNOWN} for pk in found}
+    from django.contrib.postgres.expressions import ArraySubquery
+    columns = {}
+    if _provider is not None and seal.work is not None:
+        columns['_work'] = models.F(f'{seal.work}__pk' if seal.work else 'pk')
+    if _provider is not None and (seal.unit or seal.system):
+        days = _day_filter(model, seal.day)
+        for target, paths in (('unit', _paths(seal.unit)), ('system', _paths(seal.system))):
+            for path in paths:
+                lookup, ref = _correlated(model, path, target)
+                columns[f'_cells{len(columns)}'] = ArraySubquery(
+                    _provider.cells().filter(days, **{lookup: ref}).values('work'))
+    rows = model._base_manager.filter(pk__in=list(found)).annotate(**columns).values('pk', *columns, *seal.via)
+    parents = {link: {} for link in seal.via}
+    present = set()
+    for row in rows:
+        key = str(row['pk'])
+        present.add(key)
+        for name in columns:
+            value = row[name]
+            found[key].update(str(each) for each in (value if isinstance(value, list) else [value]) if each is not None)
+        for link in seal.via:
+            if row[link] is not None:
+                parents[link].setdefault(str(row[link]), []).append(key)
+    for key in set(found) - present:
+        found[key].add(UNKNOWN)
+    for link, children in parents.items():
+        theirs = works_of(model._meta.get_field(link).related_model, list(children), depth - 1)
+        for parent, keys in children.items():
+            for key in keys:
+                found[key].update(theirs[parent])
+    for spec in (seal.any_of, seal.hidden_with):
+        if spec:
+            child, link = _child(spec)
+            pairs = list(child._base_manager.filter(**{f'{link}__in': list(present)}).values_list('pk', link))
+            theirs = works_of(child, [pk for pk, _parent in pairs], depth - 1)
+            for pk, parent in pairs:
+                found[str(parent)].update(theirs[str(pk)])
+    return found
+
+
 def narrow(queryset, part=None):
     """`queryset` without the rows hidden from the viewer of the moment."""
     seal = seal_of(queryset.model)
@@ -646,3 +763,16 @@ def log_access(kind, entity_type, entity_id, part='', route='', reason=''):
     return AccessEvent.objects.create(user_id=current.user_id, user_name=current.username, kind=kind,
                                       entity_type=entity_type, entity_id=str(entity_id), part=part, route=route[:120],
                                       reason=reason[:300])
+
+
+def log_accesses(kind, entity_type, entity_ids, part='', route='', reason=''):
+    """`log_access` for several records at once, one row each (in the order given, once per record), in one statement:
+    a page that shows many (the Oversee cards of a wall) logs them without a write per card."""
+    from .models import AccessEvent
+    current = viewer()
+    entity_ids = list(dict.fromkeys(str(each) for each in entity_ids))
+    if current is None or current.user_id is None or not entity_ids:
+        return []
+    return AccessEvent.objects.bulk_create([
+        AccessEvent(user_id=current.user_id, user_name=current.username, kind=kind, entity_type=entity_type,
+                    entity_id=each, part=part, route=route[:120], reason=reason[:300]) for each in entity_ids])

@@ -2534,6 +2534,17 @@
           "on_form": [],
           "how": "system",
           "why": "written by core.audit when the change is saved"
+        },
+        {
+          "name": "works",
+          "field": "works",
+          "type": "varchar(64)[]",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
         }
       ],
       "constraints": [

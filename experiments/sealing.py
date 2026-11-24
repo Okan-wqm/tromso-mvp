@@ -6,10 +6,11 @@ come with the data, the design and the systems; the data with the design and the
 The seal's predicate reads them as subqueries inside the statement that reads the rows (`hidden_work`), with the person
 read when the statement is compiled (core.sealing.Viewing), so narrowing costs no query of its own and a queryset built
 earlier is never bound to anyone; Python's decisions on an experiment's own pages load them once per request (`load`)."""
+import hashlib
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import BooleanField, ExpressionWrapper, Q
 from django.db.models.functions import Now
 from django.utils import timezone
 
@@ -83,6 +84,38 @@ def oversees():
     people = get_user_model()._base_manager.filter(pk=sealing.Viewing('user'), is_active=True)
     return people.filter(Q(**{f'user_permissions__{key}': value for key, value in right.items()})
                          | Q(**{f'groups__permissions__{key}': value for key, value in right.items()})).values('pk')
+
+
+REACH_PARTS = (*sealing.PARTS, SHELL)
+
+
+def reach(user):
+    """What the change token needs of a signed-in `user` (core.sealing.Reach), in one statement over the experiments,
+    from the seal's own definition of a grant (`_seen`): per part, the experiments whose part they may not read
+    (hidden_work's rule: not open and not theirs; for the platform admin only the private ones), whether they hold
+    Oversee, and a digest of what they read (each experiment they read some part of, with those parts). The
+    digest names nothing they may not read, so a sealed experiment made, changed or ended elsewhere never moves it;
+    a grant, a share's end, a team change or an audience change that opens or closes one to them does."""
+    flags = {f'_{part}': ExpressionWrapper(_seen(user.pk, part), output_field=BooleanField()) for part in REACH_PARTS}
+    rows = Experiment._base_manager.annotate(**flags).values_list('pk', 'audience', *flags).order_by('pk')
+    # Oversee as `load` reads it (the platform admin is not an overseer: what the seal shows them is the audience's
+    # rule), from the rights Django has already read for the request.
+    oversee = user.is_active and not user.is_superuser and user.has_perm('.'.join(OVERSEE))
+    hidden, seen = {part: set() for part in REACH_PARTS}, ['oversee'] if oversee else []
+    for pk, audience, *reads in rows:
+        parts = []
+        for part, read in zip(REACH_PARTS, reads):
+            barred = (audience == Experiment.Audience.PRIVATE if user.is_superuser
+                      else audience != Experiment.Audience.OPEN)
+            if barred and not read:
+                hidden[part].add(str(pk))
+            else:
+                parts.append(part)
+        if parts:
+            seen.append(f'{pk}:{",".join(parts)}')
+    digest = hashlib.sha256(' '.join(seen).encode()).hexdigest()[:16] if seen else ''
+    return sealing.Reach(hidden={part: frozenset(ids) for part, ids in hidden.items() if ids}, oversee=oversee,
+                         digest=digest)
 
 
 def load(user):
@@ -179,6 +212,7 @@ class Provider:
     cells = staticmethod(cells)
     hidden_work = staticmethod(hidden_work)
     oversees = staticmethod(oversees)
+    reach = staticmethod(reach)
     note_reads = staticmethod(note_reads)
     keepers = staticmethod(keepers)
 

@@ -331,6 +331,7 @@ Who did what to which record, with old and new values.
 | entity_label | varchar(255) |  |  | system: written by core.audit when the change is saved |
 | changes | jsonb |  |  | system: written by core.audit when the change is saved |
 | severity | varchar(10) |  |  | system: written by core.audit when the change is saved |
+| works | varchar(64)[] |  |  | system: not editable: set by the code |
 
 <a id="coreaccessevent"></a>
 ### core.AccessEvent (`core_access_events`)

@@ -874,7 +874,8 @@ updated), an optional one says "Could not be read: Tasks" on the frame, where no
 
 **Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The
 fragment `cards/?...&after=<token>` computes the **change token** first (`core.audit.revision()`: the newest audit entry and
-how many lie in the five minutes up to it, two indexed queries, read before any data; the minute, the language, what the person
+how many lie in the five minutes up to it, two indexed queries, read before any data, without the entries about work
+hidden from the person (Research › Experiments, confidentiality); the minute, the language, what the person
 may read, the board and the canonical address), answers **204** with the same `X-Poll-Next` while it is equal, else 200 with the
 cards and the next address; the minute re-draws the figures that run on the clock at most once a minute. A writer that does not
 write its audit entry would leave a card up to a minute old: the token test enumerates the writers. The fragment is rendered
@@ -3361,8 +3362,15 @@ sealed cell goes to the people of the rules who may see it; when none may, to th
 holders. Regulatory reports and their due list, the medicine withdrawal's reader, the stock fold and the store's feed
 book count every unit whoever asks; what a page prints of them is read as the person (a unit or batch they may not see
 is "a restricted unit"). Every read of a sealed experiment by someone outside its team (its pages, the list, the
-activity log, the database viewer, the admin, the Oversee card) is in the read log; the monitoring screens' change
-token moves only with what the person may read; the delete plan says that records the person may not see are
+activity log, the database viewer, the admin, the Oversee card) is in the read log (the Oversee cards of a wall in one
+statement, one row per experiment); the monitoring screens' change token moves only with what the person may read,
+at the cost it had before: each activity-log entry is stamped when it is written with the works its record lies in
+(`core.audit.stamp`, `core.sealing.works_of`: the seal read from the row to the works, its parents and children
+included; `*` when the row is gone), and the token leaves out the entries stamped with a work hidden from the person,
+read from one statement a request (`core.sealing.reach`: per part the experiments hidden from them, Oversee, and a
+digest of what they read, added to the token so a grant, a share's end or an audience change moves it). The seal
+itself is never read on a poll; the activity log's own pages still decide what a person may read from the seals at
+read time. A person who reads no confidential work gets the token as before. The delete plan says that records the person may not see are
 reached, never how many. The seal reads the person when the SQL is compiled, so a queryset built at import is never
 bound to anyone (`core.sealing.Viewing`; `core/tests_boot.py` starts the server as a server).
 

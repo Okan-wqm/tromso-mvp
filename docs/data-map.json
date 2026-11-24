@@ -30862,6 +30862,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_panel_next.py",
         "messaging/tests/test_models.py",
         "messaging/tests/test_pages.py",
         "messaging/tests/test_services.py"
@@ -41630,6 +41631,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_panel_next.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/test_models.py",

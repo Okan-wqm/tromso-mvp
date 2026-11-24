@@ -2822,7 +2822,7 @@ A member of a conversation: a person or an assistant, exactly one of them.
 - **delete kind**: soft delete through the delete plan; not restored: adding the person again brings the same row back; **database viewer**: Messages › conversation_participants
 - **forms**: `RoleForm`, `DirectForm`, `ChannelForm`, `AddMembersForm`
 - **constraints**: participant_person_or_assistant (check); participant_role_valid (check); participant_person_once (unique: conversation, user); participant_assistant_once (unique: conversation, assistant); participant_in_conversation (unique: id, conversation)
-- **tests that mention it**: `messaging/tests/test_models.py`, `messaging/tests/test_pages.py`, `messaging/tests/test_services.py`
+- **tests that mention it**: `core/tests_panel_next.py`, `messaging/tests/test_models.py`, `messaging/tests/test_pages.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3885,7 +3885,7 @@ A recurring task: the rule that plans a task at one place for its people, every 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › task_series
 - **forms**: `TaskSeriesForm`
 - **constraints**: chk_task_series_one_place (check); chk_task_series_title (check); chk_task_series_category (check); chk_task_series_priority (check); chk_task_series_frequency (check); chk_task_series_interval (check); chk_task_series_weekdays (check); chk_task_series_weekly (check); chk_task_series_monthly (check); chk_task_series_ends_after_start (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 4 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_panel_next.py`, `core/tests_private_log.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

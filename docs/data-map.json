@@ -20121,6 +20121,7 @@
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_next_pages.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_chart_data.py",
         "sensors/tests/test_pages.py",

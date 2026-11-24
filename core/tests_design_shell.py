@@ -277,8 +277,9 @@ class DisplayWeightTests(SimpleTestCase):
                 display = 'var(--font-display)' in body or 'Bricolage' in body or any(
                     re.search(r'(^|[\s>+~,])h[12]\b', selector.strip()) for selector in selectors.split(','))
                 weight = re.search(r'font-weight:\s*(\d+)', body)
-                next_look = 'Bricolage' not in body and all(
-                    '[data-ui="next"]' in selector for selector in selectors.split(','))
+                # (the selector list split at its own commas, not at those inside :is() or :not())
+                listed = re.split(r',(?![^()]*\))', selectors)
+                next_look = 'Bricolage' not in body and all('[data-ui="next"]' in selector for selector in listed)
                 served = barlow if next_look else {'600'}
                 if display and weight and weight.group(1) not in served:
                     found.append(f'{path.name}: {selectors.strip()} {weight.group(1)}')

@@ -184,7 +184,7 @@ def harvest_world(admin, tank):
     day, batch = _days_back(tank, 6), _batch_of(tank)
     seen = check.assess('harvest', tank, day, batch, with_earliest=False, operation='harvest').fingerprint
     services.record_harvest(admin, unit=tank, batch=batch, day=day, count=100, measured_weight_kg=D('5.2'),
-                            facility=make_facility(name='Test Slaughterhouse', approval_number='T-0001'),
+                            facility=make_facility(name='Test Slaughterhouse', approval_number='T0001'),
                             handling_ack=seen or None)
 
 

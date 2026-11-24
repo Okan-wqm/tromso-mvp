@@ -113,7 +113,10 @@ class TodayNextTests(TestCase):
         response = self.client.get(reverse('hr:today'), {'ui': 'next'})
         board, bar = response.context['board'], response.context['planned_stack']
         self.assertEqual(bar['total'], board.planned)
-        self.assertEqual({part['key']: part['value'] for part in bar['parts']}, {tile.key: tile.count for tile in board.tiles})
+        # the bar's parts are the board's own tiles: the four always said, any other when someone is in it
+        self.assertEqual({part['key']: part['value'] for part in bar['parts']},
+                         {tile.key: tile.count for tile in board.tiles
+                          if tile.count or tile.key in ('here', 'not_in', 'absent', 'on_leave')})
 
 
 class StackTests(TestCase):
@@ -151,7 +154,8 @@ class TodayRosterTests(TestCase):
         self.assertGreaterEqual(board.planned, 7)
         self.assertEqual(bar['total'], board.planned)
         parts = {part['key']: part['value'] for part in bar['parts']}
-        self.assertEqual(parts, {tile.key: tile.count for tile in board.tiles})
+        self.assertEqual(parts, {tile.key: tile.count for tile in board.tiles
+                                 if tile.count or tile.key in ('here', 'not_in', 'absent', 'on_leave')})
         self.assertEqual((parts['upcoming'], parts['here'], parts['not_in'], parts['on_leave'], parts['done']), (1, 2, 1, 1, 1))
         self.assertGreaterEqual(parts['absent'], 1)
 

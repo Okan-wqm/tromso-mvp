@@ -238,7 +238,7 @@ test('a stacked bar: each part a segment as long as its share on the whole, ever
   ]} />);
   assert.match(bar, /<svg class="ui-stack-bar" viewBox="0 0 6 1" preserveAspectRatio="none" role="img" aria-label="Planned today: 6\. Here now 3, Absent 0, On leave 3">/);
   assert.match(bar, /<rect class="ui-stack-seg" data-tone="ok" x="0" y="0" width="3" height="1"><\/rect><rect class="ui-stack-seg" data-tone="note" x="3" y="0" width="3" height="1"><\/rect><\/svg>/);
-  assert.match(bar, /<li data-tone="critical"><span class="ui-stack-swatch" aria-hidden="true"><\/span><span>Absent<\/span><strong>0<\/strong><\/li>/);
+  assert.match(bar, /<li data-tone="critical"><span class="ui-stack-swatch" aria-hidden="true"><\/span><strong class="ui-stack-figure">0<\/strong><span>Absent<\/span><\/li>/);
   assert.doesNotMatch(bar, /style=/);
   const empty = html(<StackedBar label="Planned today: 0" empty="Nobody is expected today" parts={[{ key: 'here', label: 'Here now', value: 0, figure: '0', tone: 'ok' }]} />);
   assert.doesNotMatch(empty, /<svg/);
@@ -268,9 +268,9 @@ test('a roster: a week of people, a cell its plan as a link, an empty day "+", f
   const page = html(<RosterGrid {...ROSTER_PROPS} />);
   assert.match(page, /<form class="ui-roster-paint" action="\/hr\/schedule\/plan\/" method="post"><input type="hidden" name="csrfmiddlewaretoken" value="test-token"\/><input type="hidden" name="next" value="\/hr\/schedule\/\?week=2026-11-23"\/><input type="hidden" name="shift" value=""\/>/);
   assert.match(page, /<div role="group" aria-label="Paint" class="ui-roster-choices">/);
-  assert.match(page, /<button type="button" class="ui-roster-choice" aria-pressed="false" title="Test day shift">TD<\/button>/);
+  assert.match(page, /<button type="button" class="ui-roster-choice" aria-pressed="false" data-kind="shift" data-tone="1" title="Test day shift">TD<\/button>/);
   assert.match(page, /<th scope="col">Mon<span class="ui-cell-sub">23\.11<\/span><\/th>/);
-  assert.match(page, /<a class="ui-roster-link" href="\/hr\/schedule\/7\/" title="Test day shift 07:00–15:00"><span class="ui-chip" data-status="note">/);
+  assert.match(page, /<a class="ui-roster-link" href="\/hr\/schedule\/7\/" title="Test day shift 07:00–15:00"><span class="ui-roster-plan" data-kind="shift" data-tone="1">TD<\/span>/);
   assert.match(page, /<a class="ui-roster-add" href="\/hr\/schedule\/new\/\?employee=1&amp;day=2026-11-24" aria-label="Plan this day" title="Plan this day">/);
   assert.match(page, /<td data-roster-cell="" data-finding="block">.*Less than 11 h of rest before this shift\./);
   assert.match(page, /<span class="ui-cell-sub">Test holiday<\/span>/);

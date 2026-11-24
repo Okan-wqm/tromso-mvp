@@ -13,20 +13,21 @@ export const ROSTER_PROPS = {
   ],
   rows: [
     { key: '1', name: 'Test Person', sub: 'Test Hall A', hours: '15', hoursFinding: null, cells: [
-      cell('1:2026-11-23', { chip: { kind: 'note' as const, text: 'TD', title: 'Test day shift 07:00–15:00' }, href: '/hr/schedule/7/' }),
+      cell('1:2026-11-23', { chip: { kind: 'shift' as const, text: 'TD', title: 'Test day shift 07:00–15:00', tone: 1 }, href: '/hr/schedule/7/' }),
       cell('1:2026-11-24', { add: { href: '/hr/schedule/new/?employee=1&day=2026-11-24', label: 'Plan this day' } }),
-      cell('1:2026-11-25', { chip: { kind: 'neutral' as const, text: 'Off', title: null }, href: '/hr/schedule/8/', holiday: 'Test holiday' }),
+      cell('1:2026-11-25', { chip: { kind: 'off' as const, text: 'Off', title: null }, href: '/hr/schedule/8/', holiday: 'Test holiday' }),
     ] },
     { key: '2', name: 'Test Second', sub: 'Not placed', hours: '45', hoursFinding: 'More than the standard week', cells: [
       cell(null),
-      cell('2:2026-11-24', { chip: { kind: 'note' as const, text: 'TN', title: 'Test night shift 22:00–06:00' }, href: '/hr/schedule/9/',
+      cell('2:2026-11-24', { chip: { kind: 'shift' as const, text: 'TN', title: 'Test night shift 22:00–06:00', tone: 4 }, href: '/hr/schedule/9/',
         finding: 'Less than 11 h of rest before this shift.', blocks: true }),
-      cell('2:2026-11-25', { chip: { kind: 'note' as const, text: 'On leave', title: 'TD planned: to be covered' } }),
+      cell('2:2026-11-25', { chip: { kind: 'leave' as const, text: 'On leave', title: 'TD planned: to be covered' } }),
     ] },
   ],
   paint: {
     action: '/hr/schedule/plan/', csrfToken: 'test-token', next: '/hr/schedule/?week=2026-11-23', label: 'Paint',
-    choices: [{ value: '5', label: 'TD', title: 'Test day shift' }, { value: 'off', label: 'Off', title: null }, { value: 'clear', label: 'Clear', title: null }],
+    choices: [{ value: '5', label: 'TD', title: 'Test day shift', kind: 'shift' as const, tone: 1 }, { value: 'off', label: 'Off', title: null, kind: 'off' as const },
+      { value: 'clear', label: 'Clear', title: null, kind: 'clear' as const }],
     clearSelection: 'Clear selection', apply: 'Apply to the selected days',
   },
 };

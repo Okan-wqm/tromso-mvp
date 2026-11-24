@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "c20b86a9-be45-4825-9178-0726e8d5b6ca",
+    "key": "4c85a9c5-4d43-4aa1-a1d2-47b5f8c1670d",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/c20b86a9-be45-4825-9178-0726e8d5b6ca/",
+    "href": "/sites/4c85a9c5-4d43-4aa1-a1d2-47b5f8c1670d/",
     "type": "Land-based facility",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "bf77f4b3-b9e2-485a-b7f4-27d0121779db",
+    "key": "91944f2e-db63-42c7-b559-95230d5e186c",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/bf77f4b3-b9e2-485a-b7f4-27d0121779db/",
+    "href": "/sites/91944f2e-db63-42c7-b559-95230d5e186c/",
     "type": "Sea cage",
     "status": "warning",
     "units": "1",
@@ -248,7 +248,7 @@
   "critical": "Critical",
   "entries": [
    {
-    "key": "fa766943-1e36-4d9d-a023-89f18d1c79cb",
+    "key": "d561ef08-b556-4b74-87ad-054f4421ea0a",
     "action": "Created",
     "critical": false,
     "record": "Knowledge entry · A test statement.",
@@ -260,7 +260,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "fffbf3e2-7cb1-4788-8936-53cb36d40548",
+    "key": "e72bc53a-caa0-4f80-a7c7-820ac9f770fb",
     "action": "Created",
     "critical": false,
     "record": "Document · Test document",
@@ -272,7 +272,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "51cebb53-5dad-4b4d-962d-561af4d067c9",
+    "key": "797d2cfa-6984-4ac6-856b-e809cd4a470b",
     "action": "Created",
     "critical": false,
     "record": "Storage location · Test Store (TS-01)",
@@ -284,7 +284,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "30ba1d5c-a02b-4333-b2d3-2375fa9dcb61",
+    "key": "7bfae189-4f4a-46c3-9526-319496919651",
     "action": "Created",
     "critical": false,
     "record": "Water sample · Water sample · TT-01 › Middle · 2026-11-23 12:42",
@@ -296,7 +296,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "cdd8ecde-181f-4f1a-ac4d-306ef2451638",
+    "key": "0d441c48-c5e0-4409-bacb-5af780ee8f4b",
     "action": "Changed",
     "critical": false,
     "record": "Unit · Unit TM-01 (TM-01)",
@@ -318,10 +318,10 @@
   },
   "rows": [
    {
-    "key": "df3c21be-3fc4-4ede-b78b-531a0fc38eeb",
+    "key": "ce957a82-d0df-4dc5-af8c-6d50b15bc8bd",
     "text": "A test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/df3c21be-3fc4-4ede-b78b-531a0fc38eeb/view/",
+    "href": "/knowledge/entries/ce957a82-d0df-4dc5-af8c-6d50b15bc8bd/view/",
     "kind": "neutral",
     "chip": "Draft"
    }

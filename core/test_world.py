@@ -137,11 +137,13 @@ def roster_world(admin, client):
     def at(hour, minute=0):
         return datetime(today.year, today.month, today.day, hour, minute, tzinfo=oslo)
 
-    def shift(code, name, start, end):
-        return Shift.objects.create(name=name, code=code, starts_at=start, ends_at=end, break_minutes=0, grace_minutes=0)
-    early, day = shift('TE1', 'Test early shift', time(6), time(10)), shift('TD1', 'Test morning shift', time(7), time(15))
-    midday, later = shift('TM1', 'Test midday shift', time(12), time(20)), shift('TL1', 'Test later shift', time(13, 30), time(21))
-    evening = shift('TV1', 'Test evening shift', time(18), time(23))
+    def shift(code, name, start, end, tone):
+        return Shift.objects.create(name=name, code=code, starts_at=start, ends_at=end, break_minutes=0, grace_minutes=0,
+                                    tone=tone)
+    early, day = shift('TE1', 'Test early shift', time(6), time(10), 2), shift('TD1', 'Test morning shift', time(7), time(15), 3)
+    midday = shift('TM1', 'Test midday shift', time(12), time(20), 4)
+    later = shift('TL1', 'Test later shift', time(13, 30), time(21), 5)
+    evening = shift('TV1', 'Test evening shift', time(18), time(23), 6)
     annual = LeaveType.objects.filter(code='TAL').first() or LeaveType.objects.create(name='Test annual leave', code='TAL')
     made = {}
     for number, last, plan in (('E-9101', 'Upcoming', evening), ('E-9102', 'Present', day), ('E-9103', 'Late', midday),

@@ -5425,7 +5425,8 @@ look".
 
 The status strip: what needs a look, the people on site (`hr.read.muster`) and the company's clock, each only for who may
 see it.
-- **What needs a look** is `alarms.read.attention(now=None, site=None)` (and `attention_by_site()`): the open alarms and every
+- **What needs a look** is `alarms.read.attention(now=None, site=None)`, with `attention_all()` (the farm and every site from
+  one reading, for a page that shows both) and `attention_by_site()`: the open alarms and every
   stocked unit on the monitoring cards' own ladder, rungs 1 to 4 (`monitoring.read.water_rungs`, which `_ladder` calls
   too): critical, warning, blind (an old or missing temperature or oxygen, no point at all, live values not read),
   unjudged (no limit for the fish). The strip says every count, none hidden behind another ("1 open alarm · 3 units

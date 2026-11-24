@@ -223,20 +223,27 @@ def _count(alarms, rungs, site=None, every=True):
                      unjudged=keys.count('unjudged'), unreadable=keys.count(UNREADABLE), units=tuple(mine))
 
 
+def attention_all(now=None):
+    """(the farm's Attention, {site id: Attention}) from ONE reading of the water (`snapshot`, kept for every viewer): what
+    a page that shows the farm and its sites (the company overview) asks once. Each site's count holds the farm-wide
+    alarms too (`farm_wide` says how many of its alarms they are); a site with no stocked unit and no alarm of its own is
+    not listed (`attention(site=...)` gives it, the farm-wide alarms only). A unit or an alarm on no site is in the farm's
+    figure only."""
+    alarms, rungs = snapshot(now)
+    sites = {each for _unit, each, _rung in rungs if each is not None} | {each for each, _severity in alarms if each is not None}
+    return _count(alarms, rungs), {each: _count(alarms, rungs, each, every=False) for each in sites}
+
+
 def attention(now=None, site=None):
     """What needs a look now (Attention), on every site, or on `site` (a Site or its id): the open alarms there, the
     farm-wide ones with them, and its stocked units on the cards' ladder. The one reader of the open alarms for the new
     look's strip, a page's open-alarms figure and a site's count."""
-    alarms, rungs = snapshot(now)
     if site is None:
-        return _count(alarms, rungs)
+        return attention_all(now)[0]
+    alarms, rungs = snapshot(now)
     return _count(alarms, rungs, getattr(site, 'pk', site), every=False)
 
 
 def attention_by_site(now=None):
-    """{site id: Attention} of every site with a stocked unit or an open alarm, from one read: each with the farm-wide
-    alarms too (`farm_wide` says how many of its alarms they are). A unit or an alarm on no site is in none but
-    `attention()`."""
-    alarms, rungs = snapshot(now)
-    sites = {each for _unit, each, _rung in rungs if each is not None} | {each for each, _severity in alarms if each is not None}
-    return {each: _count(alarms, rungs, each, every=False) for each in sites}
+    """{site id: Attention} of every site with a stocked unit or an open alarm (`attention_all`'s second half)."""
+    return attention_all(now)[1]

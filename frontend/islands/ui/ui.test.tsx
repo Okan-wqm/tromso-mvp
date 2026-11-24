@@ -198,7 +198,7 @@ test('a list page: one GET form for the search and the filters, the table with i
   const forms = [...page.matchAll(/<form [^>]*>/g)].map((match) => match[0]);
   assert.equal(forms.filter((form) => /method="get"/.test(form)).length, 1, 'the search and the filters are one GET form');
   assert.match(page, /<input type="hidden" name="tab" value="pending"\/>/);
-  assert.match(page, /<input type="search" placeholder="Search by name or number" name="q" value="Alfa"\/>/);
+  assert.match(page, /<div class="ui-search"><svg[^]*?<\/svg><label class="sr-only" for="([^"]+)">Search employees<\/label><input id="\1" type="search" placeholder="Search by name or number" name="q" value="Alfa"\/><\/div>/);
   assert.match(page, /<optgroup label="Production departments"><option value="p:1">Hatchery A<\/option><\/optgroup>/);
   assert.match(page, /<option value="current" selected="">Working here<\/option>/);
   assert.match(page, /<a class="ui-tab" href="\?tab=pending" aria-current="page">Pending<span class="ui-count">2<\/span><\/a>/);

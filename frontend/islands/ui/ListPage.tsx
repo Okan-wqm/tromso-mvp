@@ -4,6 +4,8 @@
 // the server words every label, every cell and every address, and this component only draws them with the library.
 // A row's title opens the record's own page (the new record form), never the classic dialog. A row action is a link or a
 // small POST form with the page's CSRF token (cancelling a request): the server checks it like the classic page's.
+import { useId } from 'react';
+
 import { Button, LinkButton } from './Button.js';
 import { CellLines, Table } from './Table.js';
 import { Chip, type ChipKind } from './Chip.js';
@@ -102,17 +104,19 @@ function Action({ action, csrfToken }: { action: ListAction; csrfToken: string }
 
 function Toolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) {
   const { search, filters, keep } = toolbar;
+  const searchId = useId();
   if (!search && !filters.length) return toolbar.add ? <div className="ui-toolbar"><LinkButton href={toolbar.add.href} variant="primary" icon="plus">{toolbar.add.label}</LinkButton></div> : null;
   return (
     <div className="ui-toolbar">
       <form method="get" role="search" aria-label={toolbar.label} className="ui-list-filters">
         {keep.map((each) => <input key={each.name} type="hidden" name={each.name} value={each.value} />)}
         {search ? (
-          <label className="ui-search">
+          // the frame is a div (ds.css draws a label holding its control as a labelled filter, label above it)
+          <div className="ui-search">
             <Icon name="search" />
-            <span className="sr-only">{search.label}</span>
-            <input type="search" name={search.name} defaultValue={search.value} placeholder={search.placeholder} />
-          </label>
+            <label className="sr-only" htmlFor={searchId}>{search.label}</label>
+            <input id={searchId} type="search" name={search.name} defaultValue={search.value} placeholder={search.placeholder} />
+          </div>
         ) : null}
         {filters.map((filter) => (
           <label key={filter.name}>

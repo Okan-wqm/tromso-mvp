@@ -2,7 +2,7 @@
 audit; the loop writes as 'system'). A pass writes set-based: its alarms, clearances, notifications and escalations, and
 their log entries, each in one statement however many there are (alarm plan, defect 7). Nothing here decides whether a
 condition holds (alarms/sources.py), who is notified (alarms/routing.py) or when (alarms/engine.py)."""
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import connection, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -11,7 +11,8 @@ from core import audit
 from core.models import AuditLog
 from sensors.models.alarm import Severity
 
-from .models import Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification, Outcome
+from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmSubjectState, DeliveryAttempt, Escalation, Notification,
+                     Outcome)
 
 
 def _fit(model, field, text):
@@ -44,6 +45,13 @@ def open_alarms(specs):
 def open_alarm(**spec):
     """One new alarm, logged (`open_alarms`)."""
     return open_alarms([spec])[0]
+
+
+def save_states(states, fields):
+    """The subjects' timers as one pass left them (unsaved or changed AlarmSubjectState rows, `fields` written), one
+    upsert: with `_set_open`, the one writer of the subjects' rows (the data-layering audit, L-4). Inside the pass's step
+    transaction, under its lock (alarms/engine.py); `_set_open` is the compare-and-set of the open alarm, this the rest."""
+    AlarmSubjectState.objects.bulk_create(states, update_conflicts=True, unique_fields=['key'], update_fields=fields)
 
 
 class AlreadyOpen(Exception):
@@ -161,12 +169,19 @@ def attempt(notification, result, now):
 
 
 def acknowledge(alarm, user, *, at=None, device='', app='console', notification=None):
-    """`user` saw the alarm: once per person; `notification`, the one they answered, must be theirs. The first one stops
-    the escalation (alarms/engine.py). Who may is asked by the caller (read.may_acknowledge)."""
+    """`user` saw the alarm: once per person; `notification`, the one they answered, must be theirs (without one, the
+    person's own latest, as the console's button means). The first one stops the escalation (alarms/engine.py). Who may
+    is asked here, by the one rule (read.may_acknowledge: Alarms: Edit, or a person it was sent to), whoever calls: the
+    alarm pages, the sensor events page, the mobile app (the data-layering audit, L-5). PermissionDenied otherwise."""
+    from . import read
+    if not read.may_acknowledge(user, alarm):
+        raise PermissionDenied
     at = at or timezone.now()
     with transaction.atomic():
         alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)
-        if notification is not None and (notification.alarm_id != alarm.pk or notification.recipient_id != user.pk):
+        if notification is None:
+            notification = alarm.notifications.filter(recipient=user).order_by('-level', '-queued_at').first()
+        elif notification and (notification.alarm_id != alarm.pk or notification.recipient_id != user.pk):
             raise ValidationError(_('This notification is not yours.'))
         if Acknowledgement.objects.filter(alarm=alarm, user=user).exists():
             raise ValidationError(_('You have already acknowledged this alarm.'))

@@ -129,10 +129,11 @@ AREAS = [
     Area(_('Sensor readings'), 'sensors.Reading', actions=('view',)),
     # Dead letters: Read is their page, Edit marks one resolved (logged). The ingest writes them; nobody deletes one.
     Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
-    # The sensors' alarm rules: read, create, edit, delete. Events: Read is their page, Edit acknowledges one (written as the
-    # alarms' acknowledgement, alarms/services.py; who is notified is Company › Alarms).
+    # The sensors' alarm rules: read, create, edit, delete. Events: Read is their page. Acknowledging one is the alarms'
+    # acknowledgement of its alarm, by the alarms' one rule (alarms.read.may_acknowledge, asked by alarms.services: Alarms:
+    # Edit, or a person it was sent to), not a right of the events of its own (the data-layering audit, L-5).
     Area(_('Alarm rules'), 'sensors.AlarmRule'),
-    Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view', 'change')),
+    Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view',)),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),
     # The alarms (Company › Alarms): Read is the page with every alarm's history, Edit acknowledges one (a person an alarm was

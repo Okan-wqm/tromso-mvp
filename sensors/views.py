@@ -21,16 +21,15 @@ from django.utils.translation import gettext as _, gettext_lazy
 from django.views.decorators.http import require_POST
 
 from alarms import read as alarms_read, services as alarm_services, sources as alarm_sources
-from core import audit, navigation
-from core.crud import DRAFT, done, refusal_text, render_page
+from core import navigation
+from core.crud import DRAFT, Crossed, done, refusal_text, render_page
 from core.dates import read_moment
-from core.models import AuditLog
 from farm.models import System, Tank
 from farm.models.site import zone_of
 from farm.water import deffeyes
 from core.widgets import MomentInput
 
-from . import bindings, chart, credentials, quantities, read, trail
+from . import bindings, chart, credentials, quantities, read, services, trail
 from .forms import DeviceMoveForm, on_site_clock, place_choices, place_of
 from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason,
                      Device, IngestStatus)
@@ -38,8 +37,6 @@ from .resources import (BindingResource, ChannelResource, ConnectionResource, Cr
                         PayloadFormatResource, secret_page)
 
 DATETIME = MomentInput()
-# How the activity log says a secret changed: never its value or its hash.
-SECRET_LABEL, REPLACED = 'Secret', '(replaced)'
 
 
 def _context(url_name, **extra):
@@ -60,22 +57,16 @@ def home(request):
 @require_POST
 @permission_required(CredentialResource.perm('change'), raise_exception=True)
 def credential_rotate(request, pk):
-    """Replaces a credential's secret: refused when the credential changed since the page was opened (its version), logged
-    without any value, the new secret shown once. The broker takes it when its files are written again
-    (`manage.py sensor_broker_sync`)."""
-    with transaction.atomic():
-        credential = get_object_or_404(Credential.objects.select_for_update(), pk=pk)
-        if request.POST.get('version') != str(credential.version):
-            messages.error(request, _('Someone else changed this %(name)s while you were editing it. The form now shows '
-                                      'their version; make your changes again.') % {'name': CredentialResource.name})
-            return done(request, reverse(CredentialResource.url_name('edit'), args=[pk]))
-        secret = credentials.give_secret(credential)
-        credential.version += 1
-        credential.updated_by = request.user
-        credential.save(update_fields=['version', 'updated_by', 'updated_at'])
-        with audit.source_language():
-            audit.record(request.user, AuditLog.Action.UPDATE, credential, {SECRET_LABEL: [REPLACED, REPLACED]},
-                         entity_type=CredentialResource.entity_type())
+    """Replaces a credential's secret (sensors.credentials.rotate: refused when it changed since the page was opened,
+    logged without any value); the new secret shown once."""
+    try:
+        credential, secret = credentials.rotate(request.user, pk, request.POST.get('version'))
+    except Credential.DoesNotExist:
+        raise Http404 from None
+    except Crossed:
+        messages.error(request, _('Someone else changed this %(name)s while you were editing it. The form now shows '
+                                  'their version; make your changes again.') % {'name': CredentialResource.name})
+        return done(request, reverse(CredentialResource.url_name('edit'), args=[pk]))
     return secret_page(request, CredentialResource, credential, secret, rotated=True)
 
 
@@ -290,16 +281,13 @@ def dead_letters(request):
 
 
 @require_POST
-@permission_required('sensors.change_deadletter', raise_exception=True)
+@permission_required(services.RESOLVE, raise_exception=True)
 def dead_letter_resolve(request, pk):
-    """Marks a dead letter resolved (the cause is dealt with), logged; the message itself stays as it came."""
-    with transaction.atomic():
-        letter = get_object_or_404(DeadLetter.objects.select_for_update(), pk=pk)
-        if letter.resolved_at is None:
-            letter.resolved_at, letter.resolved_by = timezone.now(), request.user
-            letter.save(update_fields=['resolved_at', 'resolved_by'])
-            with audit.source_language():
-                audit.record(request.user, AuditLog.Action.UPDATE, letter, {'Resolved': [None, 'yes']})
+    """Marks a dead letter resolved (sensors.services.resolve_dead_letter: logged; the message stays as it came)."""
+    try:
+        services.resolve_dead_letter(request.user, pk)
+    except DeadLetter.DoesNotExist:
+        raise Http404 from None
     messages.success(request, _('Dead letter resolved.'))
     return redirect(reverse('sensors:dead_letters'))
 
@@ -365,14 +353,23 @@ def alarm_events(request):
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
     return render_page(request, 'sensors/alarm_events.html', _context(
         'sensors:alarm_events', page=page, events=page.object_list, connected=alarms_read.connected(),
-        can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))
+        acknowledgeable={event.pk for event in page.object_list if _may_acknowledge(request.user, event)}))
+
+
+def _may_acknowledge(user, event):
+    """Whether the Acknowledge button is shown: the alarms' one rule (alarms.read.may_acknowledge) on the event's alarm;
+    an event the alarm loop has not mirrored yet has notified nobody, so only Alarms: Edit may (the rule's first part)."""
+    alarm = getattr(event, 'alarm', None)
+    return alarms_read.may_acknowledge(user, alarm) if alarm is not None else user.has_perm(alarms_read.ACKNOWLEDGE)
 
 
 @require_POST
-@permission_required('sensors.change_alarmevent', raise_exception=True)
+@permission_required('sensors.view_alarmevent', raise_exception=True)
 def alarm_event_acknowledge(request, pk):
     """A person says they saw an alarm event: the alarms' acknowledgement of its alarm (alarms.services.acknowledge, logged;
-    app 'console'), once per person; the event stays open until its rule no longer holds."""
+    app 'console', the person's own notification): who may is the service's one rule (alarms.read.may_acknowledge), as on
+    the alarm's own page (the data-layering audit, L-5). Once per person; the event stays open until its rule no longer
+    holds."""
     with transaction.atomic():
         event = get_object_or_404(AlarmEvent.objects.select_for_update(), pk=pk)
         alarm = getattr(event, 'alarm', None) or alarm_sources.mirror(event)

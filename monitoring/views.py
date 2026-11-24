@@ -16,7 +16,6 @@ from uuid import UUID
 
 from django.conf import settings
 from django.contrib.auth.decorators import permission_required
-from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
@@ -27,11 +26,11 @@ from django.views.decorators.http import require_POST
 
 from core import audit, navigation
 from core.dates import company_today, company_zone
-from core.crud import render_page
+from core.crud import ENTRY_KEY, render_page
 from farm.models import ProductionDepartment, Site, System, Tank
 from farm.stock.views import VIEW
 
-from . import read
+from . import read, services
 from .cards import builtin, catalogue, resolve, validate
 from .models import CardTemplate, CardWidth, MonitorBoard
 
@@ -307,32 +306,17 @@ def pane(request):
 
 
 # ---- Reference data › Card templates --------------------------------------------------------------------------------
-def _copy_name(source):
-    """'<name> (copy)', or '(copy 2)', '(copy 3)' … while the name is taken by a live template (any case)."""
-    base = source.shown_name
-    names = {name.lower() for name in CardTemplate.objects.values_list('name', flat=True)}
-    candidate, number = _('%(name)s (copy)') % {'name': base}, 2
-    while candidate.lower() in names:
-        candidate = _('%(name)s (copy %(number)d)') % {'name': base, 'number': number}
-        number += 1
-    return candidate
-
-
 @require_POST
-@permission_required('monitoring.add_cardtemplate', raise_exception=True)
+@permission_required(services.ADD, raise_exception=True)
 def copy_template(request, pk):
-    """A copy of a template (the way to change a built-in): its description, layout, measure and flip target, a name of
-    its own; logged as a new record, then its form opens."""
-    from .resources import CardTemplateResource
+    """A copy of a template (monitoring.services.copy_template: one per sending of the button, a name of its own,
+    logged), then its form opens."""
     source = get_object_or_404(CardTemplate, pk=pk)
-    with transaction.atomic():
-        copy = CardTemplate.objects.create(
-            name=_copy_name(source), description=source.description, layout=source.layout,
-            schema_version=source.schema_version, expanded=source.expanded, measure_w=source.measure_w,
-            measure_h=source.measure_h, created_by=request.user,
-            updated_by=request.user)
-        audit.record_create(request.user, copy, CardTemplateResource.recorded(copy),
-                            entity_type=CardTemplateResource.entity_type())
+    try:
+        key = UUID(request.POST.get(ENTRY_KEY, ''))
+    except ValueError:
+        key = None
+    copy = services.copy_template(request.user, source, key)
     return redirect('monitoring:cardtemplate_edit', pk=copy.pk)
 
 

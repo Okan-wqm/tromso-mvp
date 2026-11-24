@@ -24,15 +24,16 @@
     "label": "Åpne alarmer",
     "figure": "0",
     "href": "/alarms/",
-    "status": null,
-    "statusLabel": null,
+    "status": "critical",
+    "statusLabel": "Kritisk",
     "sub": null,
+    "sub2": "1 enhet kritisk",
     "source": "Alarmer · 13:42"
    },
    {
     "key": "on_site",
     "label": "På lokaliteten nå",
-    "figure": "0",
+    "figure": "1",
     "href": "/hr/",
     "sub": "Alle innstemplet, alle team",
     "sub2": null,
@@ -75,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "3b5b124e-ab33-4c3c-8303-757c86fe1cdf",
+    "key": "7c8c0a0e-5523-42d0-95f6-20edd045e92b",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/3b5b124e-ab33-4c3c-8303-757c86fe1cdf/",
+    "href": "/sites/7c8c0a0e-5523-42d0-95f6-20edd045e92b/",
     "type": "Landbasert anlegg",
     "status": "critical",
     "units": "1",
@@ -87,14 +88,17 @@
      "kind": "critical",
      "text": "O₂ (mg/L) 5,00"
     },
-    "alarms": "0",
+    "alarms": {
+     "figure": "0",
+     "sub": "1 enhet kritisk"
+    },
     "onSite": null
    },
    {
-    "key": "b45567f8-be31-49fa-bf00-038a05c64bb4",
+    "key": "11d712dc-f092-4c77-b9d8-76031080013b",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/b45567f8-be31-49fa-bf00-038a05c64bb4/",
+    "href": "/sites/11d712dc-f092-4c77-b9d8-76031080013b/",
     "type": "Merd",
     "status": null,
     "units": "1",
@@ -103,7 +107,10 @@
      "kind": "nodata",
      "text": "Ikke målt"
     },
-    "alarms": "0",
+    "alarms": {
+     "figure": "0",
+     "sub": null
+    },
     "onSite": null
    }
   ],
@@ -237,7 +244,7 @@
   "critical": "Kritisk",
   "entries": [
    {
-    "key": "b539439f-bd5b-45c5-9212-01a52e2afab8",
+    "key": "1703064b-e330-475f-b472-b752ec9cb65d",
     "action": "Opprettet",
     "critical": false,
     "record": "Kunnskapsoppføring · A test statement.",
@@ -249,7 +256,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "4a0be420-48a7-41c6-b953-11e77356fad4",
+    "key": "1cd73f8f-5833-4dde-80a7-4205e8030be8",
     "action": "Opprettet",
     "critical": false,
     "record": "Dokument · Test document",
@@ -261,7 +268,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "b3116ead-fd19-4026-aa61-9e77f7a0bb84",
+    "key": "bf8c890c-dff3-4c2b-8f3f-e65886ead0a5",
     "action": "Opprettet",
     "critical": false,
     "record": "Lagerplass · Test Store (TS-01)",
@@ -273,7 +280,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "1e0de785-0457-43fd-8205-b7e4dea3bcc3",
+    "key": "bfacee2d-7047-4e46-aba5-4f762b5d0deb",
     "action": "Opprettet",
     "critical": false,
     "record": "Vannprøve · Water sample · TT-01 › Middle · 2026-11-23 12:42",
@@ -285,7 +292,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "b5d30824-8b00-4ae7-bf7a-589cbb0703b6",
+    "key": "e794db26-b486-48e8-9f65-db4cdcd9d8c4",
     "action": "Endret",
     "critical": false,
     "record": "Enhet · Unit TM-01 (TM-01)",
@@ -307,10 +314,10 @@
   },
   "rows": [
    {
-    "key": "b1689863-79f4-4884-ba44-6fdb4dd1bd4c",
+    "key": "548e50c2-6b65-4dd2-9e98-523d64ea1435",
     "text": "A test statement.",
     "source": "Test document (u.å.)",
-    "href": "/knowledge/entries/b1689863-79f4-4884-ba44-6fdb4dd1bd4c/view/",
+    "href": "/knowledge/entries/548e50c2-6b65-4dd2-9e98-523d64ea1435/view/",
     "kind": "neutral",
     "chip": "Utkast"
    }

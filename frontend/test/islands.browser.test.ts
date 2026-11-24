@@ -121,6 +121,19 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
       // the series is drawn by uPlot on a canvas; a frame without values says so in words
       await tab.waitForSelector('.ui-series canvas');
       assert.equal(await tab.locator('.ui-chart-empty').first().textContent(), 'No values in this range.');
+      // the full series: its marks over the canvas, a link with a Tab stop and a named one; listed marks take no Tab stop;
+      // a mark's label shows on hover of its handle, and the plot under the marks is free for the cursor
+      await tab.waitForSelector('#series-full .ui-chart-mark');
+      assert.equal(await tab.locator('#series-full a.ui-chart-mark[href="#calibrated"]').count(), 1);
+      assert.equal(await tab.locator('#series-full g.ui-chart-mark[tabindex="0"][aria-label="04:30 · O₂ 6.2 mg/L"]').count(), 1);
+      await tab.waitForSelector('#series-listed .ui-chart-mark');
+      assert.equal(await tab.locator('#series-listed .ui-chart-mark[aria-hidden="true"]:not([tabindex])').count(), 1);
+      assert.equal(await tab.locator('#series-listed a').count(), 0);
+      const handle = tab.locator('#series-full g.ui-chart-mark .ui-chart-mark-handle');
+      await handle.hover();
+      assert.equal(await tab.locator('#series-full g.ui-chart-mark .ui-chart-mark-label').evaluate((label) => getComputedStyle(label).visibility), 'visible');
+      assert.equal(await tab.locator('#series-full .ui-chart-mark-hit').first().evaluate((line) => getComputedStyle(line).pointerEvents), 'none');
+      await tab.mouse.move(0, 0);
       for (const selector of ['#b-primary', '#b-secondary', '#b-ghost', '#b-danger', 'input[name="name"]', 'select[name="site"]']) {
         await tab.focus(selector);
         await tab.keyboard.press('Shift+Tab');
@@ -171,7 +184,7 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
       await tab.keyboard.press('Tab');
       assert.equal(await tab.evaluate(() => document.activeElement?.textContent), 'Every alarm');
       await tab.keyboard.press('Enter');
-      assert.match(tab.url(), /#all$/);
+      await tab.waitForURL(/#all$/);          // a same-document navigation: its URL arrives after the press (review of batch 1)
       await tab.close();
     });
 

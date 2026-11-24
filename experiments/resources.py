@@ -12,7 +12,7 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
 from django.utils import formats
-from django.utils.translation import gettext, gettext_lazy as _, ngettext, ngettext_lazy, pgettext_lazy
+from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy, pgettext_lazy
 
 from core import listprops as L
 from core.crud import DRAFT, Resource, ResourceView, RowList, UpdateView, done, filter_by, render_page
@@ -132,19 +132,6 @@ class ExperimentResource(Resource):
                      [('', _('All species')), *((species.pk, species.common_name) for species in context['species_list'])]),
         ]
 
-    @staticmethod
-    def phase_text(phase):
-        """Where an experiment is in its days, as its read page says it (experiments.read.progress)."""
-        if phase is None:
-            return ''
-        name, day, total, days = phase
-        if name == 'during':
-            return gettext('Day %(day)s of %(total)s') % {'day': day, 'total': total}
-        if name == 'before':
-            return ngettext('Day 0 is in %(days)s day', 'Day 0 is in %(days)s days', days) % {'days': days}
-        return ngettext('The final weighing was %(days)s day ago', 'The final weighing was %(days)s days ago',
-                        days) % {'days': days}
-
     @classmethod
     def list_rows(cls, view, objects, context):
         rows = []
@@ -157,14 +144,12 @@ class ExperimentResource(Resource):
                 actions.append(L.link(view.url('delete', experiment.pk),
                                       gettext('Delete %(name)s') % {'name': experiment.name}, 'trash', danger=True))
             chips = [L.chip('note', gettext('Template'))] if experiment.is_template else []
-            phase = None if experiment.is_template else read.progress(experiment, site_today(experiment.site))
             rows.append(L.row(experiment.pk, {
                 'experiment': L.cell(experiment.name, href=view.url('detail', experiment.pk), strong=True,
                                      sub=[f'{experiment.code} · {experiment.get_primary_endpoint_display()}'
                                           if experiment.primary_endpoint else experiment.code]),
                 'status': L.cell(chip=L.chip(cls.STATUS_CHIPS.get(experiment.status, 'neutral'),
-                                             experiment.get_status_display()), chips=chips,
-                                 sub=[cls.phase_text(phase)]),
+                                             experiment.get_status_display()), chips=chips),
                 'site': L.cell(experiment.site.name),
                 'species': L.cell(experiment.species.common_name),
                 'day0': L.cell(formats.date_format(experiment.starts_on, 'DATE_FORMAT') if experiment.starts_on else '—'),

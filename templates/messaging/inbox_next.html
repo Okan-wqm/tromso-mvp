@@ -14,7 +14,7 @@
   <a class="ui-btn" data-variant="primary" href="{% url 'messaging:start' %}">{% include "icons/_icon.html" with name="plus" %}{% trans "New message" %}</a>
   {% if may_create_channel %}<a class="ui-btn" href="{% url 'messaging:create_channel' %}">{% include "icons/_icon.html" with name="hash" %}{% trans "New channel" %}</a>{% endif %}
 </div>
-<div class="ui-plates">
+<div class="ui-plates"{% if conversation %} data-chat-open{% endif %}>
   <section class="ui-plate" data-span="4" aria-labelledby="conversations-title">
     <div class="ui-plate-head"><h2 class="ui-plate-title" id="conversations-title">{% trans "Conversations" %}</h2></div>
     <div class="chat-list" data-poll="{{ list_url }}" data-poll-every="{{ poll_list }}">{% include "messaging/_conversation_list.html" %}</div>

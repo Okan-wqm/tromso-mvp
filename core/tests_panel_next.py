@@ -14,7 +14,7 @@ from django.contrib.auth.models import Group, Permission
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from core.pagesays import unsaid
+from core.pagesays import says, unsaid
 
 MANIFEST = str(Path(__file__).resolve().parent / 'testdata' / 'islands-company-manifest.json')
 LANGUAGES = ('en', 'nb', 'tr')
@@ -105,9 +105,10 @@ class ListPagesTests(WorldTestCase):
 
     @staticmethod
     def said_otherwise(route, language):
-        """The classic Recurring tasks list names its delete button with the bare word ("Delete", in Turkish "Sil"); the
-        new page names it with the record ("Delete <title>"), where a word of three letters is not looked for."""
-        if route != 'tasks:taskseries_list':
+        """The classic Recurring tasks list names its delete button with the bare word, in Turkish "Sil"; the new page names
+        it with the record ("Sil: <title>"), where a word of three letters is not looked for (in English and
+        Norwegian the bare word is found inside the longer label). The button's address is still compared exactly."""
+        if route != 'tasks:taskseries_list' or language != 'tr':
             return ()
         from django.utils import translation
         with translation.override(language):
@@ -123,6 +124,9 @@ class ListPagesTests(WorldTestCase):
         self.assertEqual(rows['Test filter wash']['cells']['status']['chip'], {'kind': 'neutral', 'text': 'Paused'})
         self.assertEqual(rows['Test filter wash']['cells']['assignees']['chip']['kind'], 'warning')
         self.assertEqual(rows['Test filter wash']['cells']['next']['text'], '—')
+        # a high priority is marked as the classic list marks it in colour: a warning chip; a medium one is a sub-line
+        self.assertEqual(rows['Test oxygen round']['cells']['title']['chips'], [{'kind': 'warning', 'text': 'High'}])
+        self.assertEqual(rows['Test filter wash']['cells']['title']['sub'], ['Cleaning', 'Medium'])
         from tasks.models import TaskSeries
         oxygen = TaskSeries.objects.get(title='Test oxygen round')
         self.assertEqual(rows['Test oxygen round']['cells']['title']['href'], reverse('tasks:taskseries_edit', args=[oxygen.pk]))
@@ -149,11 +153,23 @@ class ListPagesTests(WorldTestCase):
         self.client.force_login(reader)
         self.assertEqual(props_of(self.pages('experiments:experiment_list', {'view': 'mine'})[1])['table']['rows'], [])
 
-    def test_an_experiment_says_where_it_is_in_its_days_as_its_read_page(self):
-        props = props_of(self.pages('experiments:experiment_list')[1])
-        rows = {row['cells']['experiment']['text']: row for row in props['table']['rows']}
-        self.assertEqual(rows['Test diet trial']['cells']['status']['sub'], ['Day 0 is in 10 days'])
-        self.assertEqual(rows['Test light trial']['cells']['status']['sub'], [])
+    def test_an_experiment_row_says_nothing_the_classic_list_does_not(self):
+        """The other way round: every word of a row (its cells, sub-lines, chips and actions) is on the classic list, in
+        every view and language; an experiment's place in its days is on its read page, not on the list."""
+        for view in ('', 'mine', 'templates'):
+            for language in LANGUAGES:
+                with self.subTest(view=view, language=language):
+                    old, new = self.pages('experiments:experiment_list', {'view': view} if view else {}, language)
+                    classic = [value for kind, value in says(old) if kind == 'text']
+                    for row in props_of(new)['table']['rows']:
+                        words = [action['label'] for action in row['actions']]
+                        for cell in row['cells'].values():
+                            words += [cell['text'] or '', *cell['sub'], *(chip['text'] for chip in cell['chips'])]
+                            words += [cell['chip']['text']] if cell['chip'] else []
+                        self.assertEqual([word for word in words if word and not any(word in each for each in classic)],
+                                         [])
+        rows = {row['cells']['experiment']['text']: row for row in props_of(self.pages('experiments:experiment_list')[1])
+                ['table']['rows']}
         self.assertEqual([action['icon'] for action in rows['Test diet trial']['actions']], ['pencil', 'trash'])
 
     def test_a_question_says_its_status_asked_and_answer(self):
@@ -189,9 +205,12 @@ class TasksPageTests(WorldTestCase):
         line = late.checklist.first()
         self.assertIn(f'action="{reverse("tasks:task_tick", args=[late.pk, line.pk])}"', new)
         self.assertIn(f'href="{reverse("tasks:task_complete", args=[late.pk])}?next=', new)
+        # its high priority is marked, as the classic page marks it in colour
+        self.assertRegex(new, r'(?s)<span class="ui-chip" data-status="warning">.{0,800}?<span>High</span></span>')
         # the overdue task is marked on its row (warning) and counted above the table
         self.assertRegex(new, r'<tr data-status="warning"[^>]*>\s*<th scope="row"><span class="ui-row-status">')
-        self.assertRegex(new, r'<strong>\d+ overdue tasks?</strong>')
+        self.assertRegex(new, r'(?s)<p class="ui-head-status" role="status"><span class="ui-chip" data-status="warning">'
+                              r'.{0,800}?<span>\d+ overdue tasks?</span>')
 
 
 class ReportsPageTests(WorldTestCase):
@@ -263,3 +282,44 @@ class MessagesPageTests(WorldTestCase):
         listed = self.client.get(reverse('messaging:inbox_list'), {'open': direct.pk}).content.decode()
         self.assertNotIn('data-modal', listed)
         self.assertIn('href="/messages/', new)
+
+
+class OpenedPagesTests(WorldTestCase):
+    """Every page the seven pages open in the new look (each link of their <main> and of their island's props) opens as a
+    page of its own and opens no classic dialog in its turn. Still classic, by name: an experiment's read page and its
+    edit page (Start, Release, Replace and Copy open dialogs there), outside this batch."""
+
+    STILL_CLASSIC = re.compile(r'^/research/experiments/[0-9a-f-]{36}/(view/)?$')
+
+    def addresses(self):
+        from messaging.models import Conversation
+        from tasks.models import Task
+        late = Task.objects.get(title='Test net check')
+        storage = reverse('inventory:storage')
+        return [reverse('tasks:task_list'), f"{reverse('tasks:task_list')}?task={late.pk}",
+                reverse('tasks:taskseries_list'), reverse('reports:openquestion_list'), reverse('reports:report_list'),
+                reverse('experiments:experiment_list'), storage, *(f'{storage}?tab={tab}' for tab in
+                                                                    ('stock', 'movements', 'counts')),
+                reverse('messaging:inbox'), *(reverse('messaging:conversation', args=[conversation.pk])
+                                              for conversation in Conversation.objects.all())]
+
+    def test_no_page_the_seven_pages_open_opens_the_classic_dialog(self):
+        self.client.cookies['ui'] = 'next'
+        opened = set()
+        for address in self.addresses():
+            html = self.client.get(address).content.decode()
+            opened |= set(re.findall(r'href="(/[^"#]*)"', main_of(html)))
+            for block in re.findall(r'<script id="island-[^"]+" type="application/json">(.*?)</script>', html, re.S):
+                opened |= set(re.findall(r'"(/[^"]*)"', block))
+        opened = {address.replace('&amp;', '&') for address in opened if not address.startswith('/static/')}
+        self.assertGreater(len(opened), 50)
+        dialogs = []
+        for address in sorted(opened):
+            if self.STILL_CLASSIC.match(address.split('?')[0]):
+                continue
+            answer = self.client.get(address)
+            if answer.status_code != 200 or 'html' not in answer.get('Content-Type', ''):
+                continue
+            if re.search(r'\sdata-modal[\s>=]', main_of(answer.content.decode())):
+                dialogs.append(address)
+        self.assertEqual(dialogs, [])

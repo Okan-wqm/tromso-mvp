@@ -253,7 +253,7 @@ def storage_world(admin, client):
 
 def messages_world(admin, client):
     """Messages: a person who may use them, a direct conversation with the test admin (two of its messages unread, one of
-    the admin's deleted) and a channel of the two."""
+    the admin's deleted), a channel of the two and a long one (60 messages)."""
     from messaging import services
     from messaging.models import Conversation
     writer = get_user_model().objects.create_user('test.writer', 'test.writer@example.com', first_name='Test',
@@ -269,6 +269,9 @@ def messages_world(admin, client):
     services.post_as(writer, direct.pk, 'A second test answer,\non two lines.')
     channel = services.create_channel(admin, 'Test channel', [writer])
     services.post_as(writer, channel.pk, 'A test message to the channel.')
+    long = services.create_channel(admin, 'Test long channel', [writer])
+    for number in range(1, 61):      # a conversation longer than its plate: it opens at its newest message
+        services.post_as(writer if number % 2 else admin, long.pk, f'Test message {number} of 60.')
     return [f'conversations: {Conversation.objects.count()}']
 
 

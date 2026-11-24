@@ -604,7 +604,9 @@ def range_deffeyes(user, owner, start, end):
                 'are those of the newest water. A moment without every value is left out, never joined.') % {
         'drawn': len(drawn), 'total': len(found.frames), 'step': _step_text(found.step),
         'first': shown(first.at), 'last': shown(newest.at)}
-    return {'chart': as_props(render(found.figures[newest.figure])), 'path': [' '.join(each) for each in runs],
+    # a page's figure is shared by the frames of the same equilibria, its point left out: the newest frame's own is drawn
+    figure = {**found.figures[newest.figure], 'point': [newest.point.dic, newest.point.alkalinity_meq]}
+    return {'chart': as_props(render(figure)), 'path': [' '.join(each) for each in runs],
             'first': {'x': f'{fx:.2f}', 'y': f'{fy:.2f}', 'at': int(first.at.timestamp())},
             'at': int(newest.at.timestamp()), 'caption': str(caption), 'reason': '',
             'words': {key: str(value) for key, value in words.items()}}

@@ -14,16 +14,12 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { extname, join, resolve } from 'node:path';
 
-import type { Page } from 'playwright-core';
-
 import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
 import { linksOf } from './sheets.js';
+import { CSP, lowContrast, watchCsp } from './checks.js';
 
 const THEMES = ['industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks'];
 const GALLERY = resolve('.build/gallery');
-// The product's policy (config/settings.py, SECURE_CSP), without the nonce: a page of islands needs none.
-export const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
-  + "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 // The gallery's entry in the build's manifest, as {% island %} reads it: its module and its stylesheets (uPlot's).
@@ -75,47 +71,6 @@ function serve(): Promise<Server> {
     }
   });
   return new Promise((done) => server.listen(0, '127.0.0.1', () => done(server)));
-}
-
-async function watchCsp(tab: Page): Promise<string[]> {
-  const violations: string[] = [];
-  tab.on('console', (message) => { if (/Content.Security.Policy|Refused to/i.test(message.text())) violations.push(message.text()); });
-  await tab.exposeFunction('__cspViolation', (text: string) => { violations.push(text); });
-  await tab.addInitScript(() => {
-    document.addEventListener('securitypolicyviolation', (event) => {
-      (window as unknown as { __cspViolation: (text: string) => void }).__cspViolation(`${event.violatedDirective} ${event.blockedURI} ${event.sample}`);
-    });
-  });
-  return violations;
-}
-
-// [selector of a text element, its text colour, the colour of the ground it stands on, contrast] for every low pair
-async function lowContrast(tab: Page): Promise<string[]> {
-  return tab.evaluate(() => {
-    const parse = (value: string): number[] => (value.match(/[\d.]+/g) ?? []).map(Number);
-    const lum = ([r = 0, g = 0, b = 0]: number[]): number => {
-      const c = [r, g, b].map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
-      return 0.2126 * (c[0] ?? 0) + 0.7152 * (c[1] ?? 0) + 0.0722 * (c[2] ?? 0);
-    };
-    const ground = (element: Element): number[] => {
-      for (let at: Element | null = element; at; at = at.parentElement) {
-        const value = parse(getComputedStyle(at).backgroundColor);
-        if (value.length === 3 || (value[3] ?? 0) > 0.5) return value.slice(0, 3);
-      }
-      return parse(getComputedStyle(document.body).backgroundColor).slice(0, 3);
-    };
-    const low: string[] = [];
-    const selector = '.ui-btn:not(:disabled):not([aria-disabled="true"]), .ui-chip > span, .ui-tile-label, .ui-tile-figure, .ui-tile-sub, .ui-tile-source, .ui-notice-body, .ui-plate-head h2, .ui-plate-meta, .ui-plate-link, .help, .errorlist li, .ui-table th, .ui-table td, .ui-tab, .ui-empty-text, .ui-chart-caption, .field label';
-    for (const element of document.querySelectorAll(selector)) {
-      if (!element.textContent?.trim()) continue;
-      const fore = parse(getComputedStyle(element).color).slice(0, 3);
-      const back = ground(element);
-      const [high, lower] = [lum(fore), lum(back)].sort((a, b) => b - a);
-      const ratio = ((high ?? 0) + 0.05) / ((lower ?? 0) + 0.05);
-      if (ratio < 4.5) low.push(`${element.className || element.tagName} "${element.textContent.trim().slice(0, 30)}" ${ratio.toFixed(2)}`);
-    }
-    return low;
-  });
 }
 
 test('the islands\' component library in a browser', { skip: skipWithout(BROWSERS) }, async (t) => {

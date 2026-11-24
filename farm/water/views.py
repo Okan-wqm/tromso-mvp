@@ -541,7 +541,7 @@ def _history_of(user, place, start, end, now, title):
         drawn = sensor_chart.data(each, title, found.bands)
         if not sensors:
             drawn['buckets'] = {name: [] for name in drawn['buckets']}
-            drawn['gaps'], drawn['markers'] = [], []
+            drawn['gaps'], drawn['markers'], drawn['simulated'], drawn['simulated_text'] = [], [], False, ''
             drawn['notes'] = [str(_('Sensor values are not shown: they need the right to read sensor readings.'))]
             drawn['empty'] = not drawn['samples']
         charts.append(drawn)

@@ -13,15 +13,16 @@ from farm.models import WaterLimit
 from farm.tests.helpers import make_species, role, stock_fish
 from farm.water import services as water_services
 
-from sensors import chart, read
-from sensors.models import ChannelState
+from sensors import chart, demo as sensor_demo, read
+from sensors.models import ChannelState, Device
 
+from . import make_connection
 from .test_read import READER, ReadCase, insert
 
 URL = reverse('sensors:chart_data')
 
 
-class ChartDataTests(ReadCase):
+class ChartDataCase(ReadCase):
     def setUp(self):
         insert(self.temp.channel_no, [(self.start + timedelta(minutes=minute), 9 + minute / 100) for minute in range(30)]
                + [(self.start + timedelta(minutes=90 + minute), 9.5) for minute in range(10)])
@@ -33,6 +34,8 @@ class ChartDataTests(ReadCase):
         return {'target': f'unit:{self.t1.pk}', 'quantity': 'temperature_c', 'start': '2026-10-01T00:00',
                 'end': '2026-10-01T02:00', **extra}
 
+
+class ChartDataTests(ChartDataCase):
     def test_the_data_is_what_the_svg_draws(self):
         found = read.series(self.t1, 'temperature_c', self.start, self.start + timedelta(hours=2))
         drawn = chart.data(found, 'T-01')
@@ -93,3 +96,31 @@ class ChartDataTests(ReadCase):
     def test_reading_needs_its_right(self):
         self.client.force_login(get_user_model().objects.create_user('other', 'other@example.com', 'x'))
         self.assertEqual(self.client.get(URL, self.query()).status_code, 403)
+
+
+class SimulatedAndCompareTests(ChartDataCase):
+    def test_a_chart_from_the_demos_channels_says_its_values_are_simulated(self):
+        found = read.series(self.t1, 'temperature_c', self.start, self.start + timedelta(hours=2))
+        self.assertFalse(chart.data(found, 'T-01')['simulated'])
+        demo = make_connection('Demo', client_id=sensor_demo.CLIENT_ID)
+        Device.objects.filter(pk=self.device.pk).update(connection=demo)
+        drawn = chart.data(found, 'T-01')
+        self.assertTrue(drawn['simulated'])
+        self.assertEqual(drawn['simulated_text'], 'Simulated values')
+        self.assertTrue(all(drawn['buckets']['simulated']))
+
+    def test_compare_reads_a_second_place_on_exactly_the_same_window(self):
+        insert(self.temp.channel_no, [(self.start + timedelta(minutes=5), 9.0)])
+        body = self.client.get(URL, self.query(compare=f'unit:{self.t2.pk}')).json()
+        first, second = body['chart'], body['compare']['chart']
+        self.assertEqual((second['start'], second['end'], second['width_s']),
+                         (first['start'], first['end'], first['width_s']))
+        self.assertTrue(second['empty'])                                 # nothing bound at T-02: said, not hidden
+        self.assertIsNone(body['compare']['now'])
+        other = self.client.get(URL, self.query(compare=f'unit:{self.t1.pk}', compare_quantity='ph')).json()
+        self.assertEqual(other['compare']['chart']['quantity']['code'], 'ph')
+
+    def test_a_compare_that_is_not_one_is_refused(self):
+        for extra in ({'compare': 'unit:nothing'}, {'compare': f'unit:{self.t2.pk}', 'compare_quantity': 'colour'}):
+            with self.subTest(extra=extra):
+                self.assertEqual(self.client.get(URL, self.query(**extra)).status_code, 400)

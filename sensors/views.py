@@ -185,17 +185,31 @@ def chart_data(request):
     """The Charts page's chart as data (the query of the page and of its CSV: a place, a quantity, a preset or from and
     to), for the page behind `?ui=next`: what `charts` draws as SVG (sensors/chart.py `data`), the fish's limit bands for
     a person who may read the water, the newest value of the channel, and the CSV's address. A query the form refuses
-    is answered 400 with the form's reasons, never an empty chart."""
+    is answered 400 with the form's reasons, never an empty chart.
+
+    Compare: `compare` names a second place ("kind:pk", as `target`) and `compare_quantity` its quantity (the first's when
+    not given); its chart is read by the same `series` on EXACTLY the first one's window (one now, the same instants),
+    so the two share one time axis, with its own bands and newest value. A second place or quantity that is not one is
+    a 400, never a chart left out silently."""
     form = ChartForm(request.GET or None)
     if not form.is_bound or not form.is_valid():
         return JsonResponse({'errors': {name: [str(error) for error in errors] for name, errors in form.errors.items()}},
                             status=400)
     data = form.cleaned_data
+    now = timezone.now()
     found = _chart_of(form)
-    return JsonResponse({
-        'chart': chart.data(found, str(data['place']), chart_bands(request.user, data['place'])),
-        'now': chart_now(found, timezone.now()),
-        'csv': f'{reverse("sensors:chart_csv")}?{request.GET.urlencode()}'})
+    answer = {'chart': chart.data(found, str(data['place']), chart_bands(request.user, data['place'])),
+              'now': chart_now(found, now), 'compare': None}
+    if request.GET.get('compare'):
+        other = place_of(request.GET['compare'])
+        code = request.GET.get('compare_quantity') or data['quantity']
+        if other is None or code not in quantities.CODES:
+            return JsonResponse({'errors': {'compare': [str(_('Choose a place and a quantity from the lists to compare '
+                                                              'with.'))]}}, status=400)
+        second = read.series(other, code, data['from'], data['to'])
+        answer['compare'] = {'chart': chart.data(second, str(other), chart_bands(request.user, other)),
+                             'now': chart_now(second, now)}
+    return JsonResponse({**answer, 'csv': f'{reverse("sensors:chart_csv")}?{request.GET.urlencode()}'})
 
 
 @permission_required(READ, raise_exception=True)

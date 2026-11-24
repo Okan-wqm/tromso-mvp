@@ -148,9 +148,13 @@ def data(chart, title, bands=None):
     the buckets with their mean, lowest and highest, messages, channel, role and source; the gaps (never bridged); the
     manual and lab samples; the moves, calibrations and pH-scale changes; the notes; and the fish's limit bands of the
     quantity when it has any (`bands`: sensors.read.bands_of). Numbers are as stored: the page rounds them to the
-    quantity's decimals. Every word is translated here; nothing is worked out in the browser."""
+    quantity's decimals. Every word is translated here; nothing is worked out in the browser. `simulated`: the drawn
+    buckets that come from the live demo's channels (sensors/demo.py `demo_channels`), and `simulated_text` to say so."""
+    from .demo import demo_channels
+
     quantity = chart.quantity
     buckets = chart.buckets
+    demo = demo_channels({b.channel_no for b in buckets})
     return {
         'head': head_text(chart, title), 'title': str(title),
         'quantity': {'code': quantity.code, 'label': str(quantity.label), 'unit': quantity.unit,
@@ -163,7 +167,9 @@ def data(chart, title, bands=None):
                     'avg': [b.avg for b in buckets], 'min': [b.vmin for b in buckets], 'max': [b.vmax for b in buckets],
                     'n': [b.n for b in buckets], 'channel': [b.channel_no for b in buckets],
                     'role': [b.role for b in buckets], 'origin': [b.origin for b in buckets],
-                    'other': [b.role == 'backup' or b.origin == read.SYSTEM_SENSOR for b in buckets]},
+                    'other': [b.role == 'backup' or b.origin == read.SYSTEM_SENSOR for b in buckets],
+                    'simulated': [b.channel_no in demo for b in buckets]},
+        'simulated': bool(demo), 'simulated_text': str(_('Simulated values')) if demo else '',
         'gaps': [[_epoch(start), _epoch(end)] for start, end in chart.gaps],
         'samples': [{'at': _epoch(at), 'value': float(value), 'source': source} for at, value, source in chart.samples],
         'markers': [{'at': _epoch(marker.at), 'kind': marker.kind, 'channel': marker.channel_no,

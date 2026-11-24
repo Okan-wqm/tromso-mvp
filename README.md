@@ -5409,6 +5409,14 @@ validation and every chemistry judgement; the island draws the finished values i
   policy in all six themes: 0 CSP violations, no critical or serious axe finding, every text at 4.5:1, visible focus, the
   busy and invalid states, no sideways scroll at 390 px (`SHOTS=<folder>` writes screenshots). `core/tests_islands.py`
   holds the tag, the build check and the new look's shell.
+- **Real pages in a browser.** An island page's props are made in the TEST database, through its real view, by a Django
+  test (`core/island_props.py`: `render_island` asks the view in the new look and the language given, `keep` writes the
+  props to `.build/island-props/`, never committed: the repository is public, so nothing recorded from a real database
+  is kept). `farm/tests/test_island_pages.py` makes those of Tank › Water and Sensors › Charts on an invented farm;
+  `npm run test:pages` (`frontend/test/*.pages.ts`) then mounts the built islands on them under the product's policy
+  (CSP, axe, 4.5:1, no sideways scroll at 1440 and 390 px). CI runs it in the Django job right after the suite (a run
+  with labels makes the props too) and keeps its screenshots as the artifact `island-pages-shots`; missing props fail
+  it, never skip it.
 
 ### The new look (`?ui=next`)
 

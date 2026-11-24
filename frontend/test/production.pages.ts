@@ -1,12 +1,14 @@
 // The Production and Sensors islands in a real browser (Playwright on the machine's own Chrome or Edge, as the gallery's
 // test): each page mounted as Django mounts it (`{% island %}`: its root, its props as a JSON block, the built module of
-// static/islands), with props the pages gave on the dev database (frontend/test/pages/props, captured by
-// F:\dev\balik-notes\ui-production\capture_props.py: real readings, never made up), on the product's style sheets in the
-// new look and under the product's Content-Security-Policy. It holds, at 1440 and 390 px:
+// static/islands), with the props the real views gave in the test database on an invented farm
+// (farm/tests/test_island_pages.py, kept in .build/island-props by core/island_props.py: never a recording of a real
+// database, the repository is public), on the product's style sheets in the new look and under the product's
+// Content-Security-Policy. Run by `npm run test:pages` after the Django tests (CI's Django job); a missing build or
+// missing props fail it, never skip it. It holds, at 1440 and 390 px:
 //   - every chart drawn (a canvas per chart with values, words for one without), the window's controls there;
 //   - no CSP violation, no critical or serious axe finding, every text at 4.5:1;
 //   - nothing scrolls sideways.
-// With SHOTS=<folder> it writes the screenshots. It needs `npm run build` (static/islands); without it, it is skipped.
+// With SHOTS=<folder> it writes the screenshots.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
@@ -18,13 +20,13 @@ import { axeFindings, CSP, lowContrast, watchCsp } from './checks.js';
 import { linksOf } from './sheets.js';
 
 const ISLANDS = resolve('static/islands');
-const PROPS = resolve('frontend/test/pages/props');
+const PROPS = resolve('.build/island-props');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 const PAGES = [
-  { key: 'water-en', island: 'water', props: 'water-props-en.json', lang: 'en', title: 'HA-K01 · Water' },
-  { key: 'water-nb', island: 'water', props: 'water-props-nb.json', lang: 'nb', title: 'HA-K01 · Vann' },
-  { key: 'sensor-charts-en', island: 'sensor-charts', props: 'sensor-charts-props-en.json', lang: 'en', title: 'Charts' },
+  { key: 'water-en', island: 'water', props: 'water-en.json', lang: 'en', title: 'T-01 · Water' },
+  { key: 'water-nb', island: 'water', props: 'water-nb.json', lang: 'nb', title: 'T-01 · Vann' },
+  { key: 'sensor-charts-en', island: 'sensor-charts', props: 'sensor-charts-en.json', lang: 'en', title: 'Charts' },
 ];
 
 interface Chunk { file: string; css?: string[]; imports?: string[]; name?: string; isEntry?: boolean }
@@ -72,9 +74,11 @@ function serve(): Promise<Server> {
   return new Promise((done) => server.listen(0, '127.0.0.1', () => done(server)));
 }
 
-const built = existsSync(join(ISLANDS, '.vite', 'manifest.json'));
-
-test('the Production and Sensors islands in a browser', { skip: skipWithout(BROWSERS) || (!built && 'no static/islands build') }, async (t) => {
+test('the Production and Sensors islands in a browser', { skip: skipWithout(BROWSERS) }, async (t) => {
+  assert.ok(existsSync(join(ISLANDS, '.vite', 'manifest.json')), 'static/islands has no build: run npm run build');
+  for (const spec of PAGES) {
+    assert.ok(existsSync(join(PROPS, spec.props)), `${spec.props} is missing: the Django tests write it (farm.tests.test_island_pages)`);
+  }
   const server = await serve();
   const address = server.address();
   const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;

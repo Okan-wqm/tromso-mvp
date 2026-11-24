@@ -28,6 +28,8 @@ class Flood:
     example: str
     cleared: bool = False
     last_cleared: object = None
+    # the summary of critical alarms that cleared long before they could be sent (alarms/outbox.py SUMMARY_AFTER)
+    summary: bool = False
 
 
 class Transport:

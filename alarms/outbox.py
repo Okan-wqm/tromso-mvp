@@ -44,11 +44,11 @@ import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.db import connection
-from django.db.models import Count, Exists, Max, Min, OuterRef, Q
+from django.db.models import Count, Exists, Max, Min, OuterRef, Q, Subquery
 from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 
@@ -57,13 +57,19 @@ from sensors.models.alarm import Severity
 from . import floods, read, rules as alarm_rules, services
 from .models import (RANK, Acknowledgement, AlarmClearance, Channel, DeliveryAttempt, Notification, NotificationKind,
                      Outcome, OutboxEntry)
-from .transports import Failed, Flood, transport_for
+from .transports import Failed, Flood, Sent, transport_for
 
 logger = logging.getLogger(__name__)
 CLAIM = 426_160_720           # the advisory lock class of a notification being sent (with its id): an identity
 # How many cleared warnings a round gives up, after its sending, each chunk one transaction: about 100 ms of work, so a
 # backlog of them never delays a critical (the next round, a tick later, takes what is left).
 GIVE_UP_CHUNK = 100
+# A critical alarm that cleared this long before a transport could first send it (the first connection of a channel, or
+# a long outage) is not told on its own: all of them go to the person as one summary, "see the alarm log" (the
+# coordinator's decision on the recheck, 2026-11-24).
+SUMMARY_AFTER = timedelta(hours=24)
+FIRST_TRY = 'not sent: its alarm had cleared before the first attempt'
+STALE_WORD = 'not sent: its alarm has cleared, so the word about its snooze is no longer true'
 
 
 @dataclass
@@ -112,11 +118,23 @@ def _queued(channels=None):
     return rows if channels is None else rows.filter(channel__in=channels)
 
 
-def _late():
-    """The queue's non-critical notifications whose alarm cleared before they were ever tried: given up, said why, a
-    chunk a round after the round's sending (a critical one is still sent, saying it cleared: `text`)."""
-    return _queued().filter(Exists(AlarmClearance.objects.filter(alarm=OuterRef('alarm')))).exclude(
+def _late_warnings():
+    """The queue's non-critical alarm notifications whose alarm cleared before they were ever tried (a critical one is
+    still sent, saying it cleared: `text`)."""
+    return _queued().filter(Exists(AlarmClearance.objects.filter(alarm=OuterRef('alarm'))),
+                            kind=NotificationKind.ALARM).exclude(
         Exists(DeliveryAttempt.objects.filter(notification=OuterRef('pk')))).exclude(alarm__severity=Severity.CRITICAL)
+
+
+def _stale_words():
+    """The queue's words about a snooze whose alarm has cleared since: "snoozed" or "still open" is no longer true (N4)."""
+    return _queued().filter(Exists(AlarmClearance.objects.filter(alarm=OuterRef('alarm')))).exclude(
+        kind=NotificationKind.ALARM)
+
+
+def _late():
+    """Both: given up, said why, a chunk a round after the round's sending."""
+    return _queued().filter(Q(pk__in=_late_warnings().values('pk')) | Q(pk__in=_stale_words().values('pk')))
 
 
 def _annotated(rows):
@@ -124,6 +142,7 @@ def _annotated(rows):
         failures=Count('attempts', filter=Q(attempts__outcome=Outcome.FAILED)),
         last_failed_at=Max('attempts__attempted_at', filter=Q(attempts__outcome=Outcome.FAILED)),
         cleared=Exists(AlarmClearance.objects.filter(alarm=OuterRef('alarm'))),
+        cleared_at=Subquery(AlarmClearance.objects.filter(alarm=OuterRef('alarm')).values('cleared_at')[:1]),
         acknowledged=Exists(Acknowledgement.objects.filter(alarm=OuterRef('alarm'))))
         .select_related('alarm', 'alarm__sensor_event', 'recipient'))
 
@@ -131,11 +150,14 @@ def _annotated(rows):
 def backlog(channels=None):
     """The notifications in the outbox's queue (of `channels`, if given: a channel without a transport is left out in the
     database, so a queue that grows while nothing is connected costs a round nothing), the critical ones first, then the
-    oldest queued. Each carries `failures`, `last_failed_at`, `cleared` and `alarm_closed` (acknowledged or cleared)."""
+    oldest queued: the criticals of open, unacknowledged alarms first, then the other criticals (cleared or acknowledged),
+    then the rest by severity (N3: a fresh open critical is never behind a backlog of cleared ones). Each carries
+    `failures`, `last_failed_at`, `cleared`, `cleared_at` and `alarm_closed` (acknowledged or cleared)."""
     rows = _annotated(_queued(channels).exclude(pk__in=_late().values('pk')))
     for row in rows:
         row.alarm_closed = row.cleared or row.acknowledged
-    return sorted(rows, key=lambda row: (-RANK[row.alarm.severity], row.queued_at, row.pk))
+    return sorted(rows, key=lambda row: (0 if _persists(row) else 1 if row.alarm.severity == Severity.CRITICAL else 2,
+                                         -RANK[row.alarm.severity], row.queued_at, row.pk))
 
 
 def _persists(notification):
@@ -197,6 +219,12 @@ def _release(notification):
         cursor.execute('SELECT pg_advisory_unlock(%s, hashtext(%s))', [CLAIM, str(notification.pk)])
 
 
+def _summary_due(row, began):
+    """A critical alarm's own notification never tried, its alarm cleared more than SUMMARY_AFTER before the round."""
+    return (row.alarm.severity == Severity.CRITICAL and row.kind == NotificationKind.ALARM and row.cleared_at is not None
+            and not row.failures and began - row.cleared_at > SUMMARY_AFTER)
+
+
 def text(notification, flood=None):
     """What the person is told, in their language (their profile's, else the platform's), on the site's clock: the
     alarm's severity and summary; a critical alarm that has cleared by the time it is sent says it was critical and has
@@ -210,6 +238,10 @@ def text(notification, flood=None):
     clearance = AlarmClearance.objects.filter(alarm=alarm).first()
     moment = (lambda at: on(at, zone_for(alarm.site)).strftime('%d.%m.%Y %H:%M'))
     with translation.override(language):
+        if flood is not None and flood.summary:
+            return _('%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log. '
+                     'The first opened %(opened)s, the last cleared %(cleared)s.') % {
+                'count': flood.size, 'opened': moment(flood.since), 'cleared': moment(flood.last_cleared)}
         if flood is not None and flood.cleared and alarm.severity == Severity.CRITICAL:
             return _('%(count)d critical alarms, all now cleared: first opened %(opened)s, last cleared %(cleared)s. '
                      'For example: %(summary)s') % {'count': flood.size, 'opened': moment(flood.since),
@@ -232,7 +264,11 @@ def _call(transport, notification, timeout, flood=None):
     """The transport's answer, within `timeout` seconds (None: as long as it takes); a raise is a Failed. `flood`: the
     notification is the first of a flood message (alarms/floods.py). The notification carries its `text`."""
     answer = {}
-    notification.text = text(notification, flood)
+    try:
+        notification.text = text(notification, flood)
+    except Exception as error:                    # its own handling failed: a failed attempt, retried and counted (N5)
+        logger.exception('The text of notification %s could not be made.', notification.pk)
+        return Failed(f'not sent: {type(error).__name__}: {error}')
 
     def send():
         try:
@@ -313,6 +349,10 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
         services.give_up(spent)
     snoozed = read.snoozes({row.alarm_id for row in live}, began)
     stuck_rows = undeliverable(live, rules, began, snoozed)
+    summaries = defaultdict(list)
+    for row in [row for row in live if _summary_due(row, began)]:
+        summaries[(row.recipient_id, row.channel)].append(row)
+    live = [row for row in live if not _summary_due(row, began)]
     delivery = Delivery(backlog=len(live) + elsewhere['count'], waiting=elsewhere['count'],
                         oldest=min([row.queued_at for row in live] + ([elsewhere['oldest']] if elsewhere['oldest'] else []),
                                    default=None),
@@ -331,11 +371,18 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
                 apart = notification.kind != NotificationKind.ALARM
                 groups[(notification.recipient_id, notification.channel, kind, notification.pk if apart else 0)].append(
                     notification)
-        except Exception:
-            logger.exception('Notification %s could not be judged in this round; it waits for the next.',
-                             notification.pk)
+        except Exception as error:
+            logger.exception('Notification %s could not be judged in this round; it is tried again.', notification.pk)
+            _failed(notification, error, moment())
     found = floods.recent({_person_kind(group): members for group, members in groups.items() if not group[-1]},
                           moment(), rules)
+    for members in summaries.values():
+        try:
+            _send_summary(delivery, members, transports.setdefault(members[0].channel,
+                                                                   transport_for(members[0].channel)), moment, timeout)
+        except Exception:
+            logger.exception('The summary of cleared criticals %s could not be sent; it is tried again.',
+                             [notification.pk for notification in members])
     for index, (group, members) in enumerate(groups.items()):
         warning = members[0].alarm.severity != Severity.CRITICAL
         if ((stop is not None and stop()) or (round_seconds is not None and clock() - started >= round_seconds)
@@ -344,17 +391,56 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
             break
         try:
             _send_group(delivery, group, members, transports, found, rules, moment, timeout)
-        except Exception:
-            logger.exception('The notifications %s could not be sent in this round; they wait for the next.',
+        except Exception as error:
+            logger.exception('The notifications %s could not be sent in this round; they are tried again.',
                              [notification.pk for notification in members])
+            for notification in members:
+                _failed(notification, error, moment())
     if stop is None or not stop():
         # After the sending, never before it: one chunk of the warnings whose alarm cleared before they were ever
         # tried (R4), so a backlog of them never delays a critical; the next round takes the next chunk.
-        late = list(_late().select_related('alarm', 'recipient').order_by('pk')[:GIVE_UP_CHUNK])
-        if late:
-            services.give_up_said(late, 'not sent: its alarm had cleared before the first attempt', moment())
-            delivery.given_up += len(late)
+        for rows, why in ((_late_warnings(), FIRST_TRY), (_stale_words(), STALE_WORD)):
+            late = list(rows.select_related('alarm', 'recipient').order_by('pk')[:GIVE_UP_CHUNK])
+            if late:
+                services.give_up_said(late, why, moment())
+                delivery.given_up += len(late)
     return delivery
+
+
+def _failed(notification, error, now):
+    """A failed attempt for a notification whose own handling raised (N5), so its retry, its attempts and the
+    undeliverable count apply as to any failure; a database that cannot write it leaves it for the next round."""
+    try:
+        if not DeliveryAttempt.objects.filter(notification=notification, attempted_at=now).exists():
+            services.attempt(notification, Failed(f'not sent: {type(error).__name__}: {error}'), now)
+    except Exception:
+        logger.exception('The failure of notification %s could not be written.', notification.pk)
+
+
+def _send_summary(delivery, members, transport, moment, timeout):
+    """One message to a person for their critical alarms that cleared more than SUMMARY_AFTER before they could be
+    sent: how many, the first opening and the last clearing, "see the alarm log"; each one's own notification is
+    covered by it (grouped, said why), or each fails with it and is tried again."""
+    mine = [notification for notification in members if _sendable(notification)]
+    delivery.busy += len(members) - len(mine)
+    if not mine:
+        return
+    try:
+        flood = Flood(len(mine), min(row.alarm.opened_at for row in mine), mine[0].alarm.summary, cleared=True,
+                      last_cleared=max(row.cleared_at for row in mine), summary=True)
+        result = _call(transport, mine[0], timeout, flood)
+        delivery.floods += 1
+        if isinstance(result, Sent):
+            note = Failed(f'covered by the summary of {len(mine)} critical alarms that cleared while no message could be '
+                          f'sent')
+            _count(delivery, [services.attempt(row, note, moment(), flood_key=floods.key(row.alarm), grouped=True)
+                              for row in mine])
+        else:
+            _count(delivery, [services.attempt(row, result, moment(), flood_key=floods.key(row.alarm))
+                              for row in mine])
+    finally:
+        for row in mine:
+            _release(row)
 
 
 def _send_group(delivery, group, members, transports, found, rules, moment, timeout):
@@ -368,12 +454,14 @@ def _send_group(delivery, group, members, transports, found, rules, moment, time
             _count(delivery, [services.attempt(notification, note, moment(), flood_key=kind, grouped=True)
                               for notification in mine])
         elif how == floods.FLOOD and mine:
-            size = found[_person_kind(group)].count + len(mine)
             cleared = dict(AlarmClearance.objects.filter(alarm__in=[notification.alarm_id for notification in mine])
                            .values_list('alarm', 'cleared_at'))
+            all_cleared = len(cleared) == len({notification.alarm_id for notification in mine})
+            # A message that says "all now cleared" counts only its own alarms, every one known cleared (N2); any other
+            # counts the earlier ones of its kind too.
+            size = len(mine) if all_cleared else found[_person_kind(group)].count + len(mine)
             flood = Flood(size, min(notification.alarm.opened_at for notification in mine), mine[0].alarm.summary,
-                          cleared=len(cleared) == len({notification.alarm_id for notification in mine}),
-                          last_cleared=max(cleared.values(), default=None))
+                          cleared=all_cleared, last_cleared=max(cleared.values(), default=None))
             result = _call(transport, mine[0], timeout, flood)
             delivery.floods += 1
             _count(delivery, [services.attempt(notification, result, moment(), flood_key=kind, flood_size=size)

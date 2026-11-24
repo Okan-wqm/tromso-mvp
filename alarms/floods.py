@@ -10,8 +10,9 @@ whether or when an alarm opens.
   of that kind already sent to that person within the severity's flood window, are at least the severity's flood count
   (Alarm severity rules: 3 within 120 s by default), they go out as ONE flood message (the transport is given the
   first with `flood`: how many alarms, since when, an example) and each is written sent or failed as part of it
-  (`flood_size`). Within the window after a flood message, the next of that kind for that person is covered by it:
-  written "grouped", never sent on its own nor again. After the window the count starts again.
+  (`flood_size`). Within the window after a flood message of open alarms, the next of that kind for that person is
+  covered by it: written "grouped", never sent on its own nor again. A flood message that said its alarms had cleared
+  covers nothing: the next real alarm of the kind is sent. After the window the count starts again.
 - **The pages** show a flood of open alarms above the list (`open_floods`): at least the flood count of one kind, each
   opened within the flood window of the one before."""
 import hashlib
@@ -60,16 +61,18 @@ def recent(groups, now, rules):
     earliest = now - max(windows.values())
     counted = defaultdict(set)
     last = {}
-    for recipient, channel, kind, notification, at, size, outcome in DeliveryAttempt.objects.filter(
+    for recipient, channel, kind, notification, at, size, outcome, cleared_at in DeliveryAttempt.objects.filter(
             outcome__in=[Outcome.SENT, Outcome.GROUPED], attempted_at__gte=earliest, attempted_at__lte=now,
             notification__recipient__in={group[0] for group in groups}).values_list(
             'notification__recipient', 'notification__channel', 'flood_key', 'notification', 'attempted_at',
-            'flood_size', 'outcome'):
+            'flood_size', 'outcome', 'notification__alarm__clearance__cleared_at'):
         group = (recipient, channel, kind)
         if group not in windows or now - at > windows[group]:
             continue
         counted[group].add(notification)
-        if size is not None and outcome == Outcome.SENT:
+        # Only a flood message about open alarms covers the next ones: one that said "cleared" (its alarm cleared by
+        # then) never does, so the next real alarm of the kind is sent (N1, probe T17).
+        if size is not None and outcome == Outcome.SENT and (cleared_at is None or cleared_at > at):
             last[group] = max(at, last.get(group, at))
     return {group: Recent(len(counted[group]), last.get(group)) for group in groups}
 

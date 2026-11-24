@@ -116,6 +116,8 @@ NAMED = {
     ('alarms/models.py', 'FLOOD_WINDOW_BOUNDS'): 'the refusal of nonsense of a flood window, never the window in force',
     ('alarms/outbox.py', 'GIVE_UP_CHUNK'): "how many cleared warnings a round gives up after its sending (about 100 "
                                            "ms of work): a bound on a round's time, not a farm rule",
+    ('alarms/outbox.py', 'SUMMARY_AFTER'): "the coordinator's 24 h after which cleared criticals not yet sent go as one "
+                                           'summary: a bound on what is told one by one, not a farm rule',
     ('alarms/outbox.py', 'CLAIM'): "the advisory lock class of a notification being sent: an identity, not a threshold",
     ('alarms/models.py', 'CLOCK_SKEW_BOUNDS'): "the refusal of nonsense of a device clock limit: at most the ingest "
                                                "contract's hour",

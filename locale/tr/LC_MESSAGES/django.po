@@ -227,6 +227,14 @@ msgstr[1] "%(count)d sayım"
 
 #, python-format
 msgid ""
+"%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log."
+" The first opened %(opened)s, the last cleared %(cleared)s."
+msgstr ""
+"Hiçbir mesaj gönderilemezken %(count)d kritik alarm oluştu ve kapandı; alarm kaydına bakın. İlki "
+"%(opened)s açıldı, sonuncusu %(cleared)s kapandı."
+
+#, python-format
+msgid ""
 "%(count)d critical alarms, all now cleared: first opened %(opened)s, last cleared %(cleared)s. "
 "For example: %(summary)s"
 msgstr ""

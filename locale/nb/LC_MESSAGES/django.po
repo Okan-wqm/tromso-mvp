@@ -224,6 +224,14 @@ msgstr[1] "%(count)d tellinger"
 
 #, python-format
 msgid ""
+"%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log."
+" The first opened %(opened)s, the last cleared %(cleared)s."
+msgstr ""
+"%(count)d kritiske alarmer oppstod og ble avsluttet mens ingen melding kunne sendes; se "
+"alarmloggen. Den første åpnet %(opened)s, den siste avsluttet %(cleared)s."
+
+#, python-format
+msgid ""
 "%(count)d critical alarms, all now cleared: first opened %(opened)s, last cleared %(cleared)s. "
 "For example: %(summary)s"
 msgstr ""

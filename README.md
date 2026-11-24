@@ -4503,10 +4503,18 @@ from which device, how late) is logged. The server side is built; the push trans
   one message saying it was critical and has cleared, when it opened and when it cleared, through the same grouping and
   flood rules (cleared criticals of one kind go as one flood message). A warning, or a word about a snooze, whose alarm
   cleared before it was ever tried is given up, its attempt saying so, so a backlog of cleared warnings never goes out
-  when a transport is first connected. They are given up after the round's sending, never before it, a chunk of 400 a
+  when a transport is first connected. They are given up after the round's sending, never before it, a chunk a
   round (`outbox.GIVE_UP_CHUNK`, 100, each chunk one transaction): 20,000 of them never delay a critical, and drain
-  over a few hundred rounds, a few minutes at a round a tick. A flood of cleared criticals says so too: how many, all cleared, the first opening and the last
-  clearing; a channel without a transport is left out of a round in the database. One notification that cannot be
+  over a few hundred rounds, a few minutes at a round a tick. So is a word about a snooze whose alarm has cleared since
+  (it would no longer be true). A round sends the criticals of open, unacknowledged alarms first, then the other
+  criticals, then the rest. A flood of cleared criticals says so: how many (only its own alarms, every one cleared),
+  the first opening and the last clearing; such a message covers nothing, so the next real alarm of its kind is sent.
+  **Connecting a transport** (the go-live runbook's step): criticals that cleared more than 24 h before they could
+  first be sent (`outbox.SUMMARY_AFTER`: a channel's first connection, a long outage) are not told one by one: each
+  person gets ONE summary, "N critical alarms happened and cleared while no message could be sent; see the alarm log",
+  with the first opening and the last clearing, and each one's own notification is covered by it (grouped, said why).
+  Open criticals and those cleared within 24 h go out as usual. Before connecting the first transport, look at the
+  Alarms page: what is open there will be told at once; a channel without a transport is left out of a round in the database. One notification that cannot be
   handled is logged and left for the next round, never stopping the others. The attempt, the queue's entry and the log
   are written in one transaction, and a round drops an entry that already went. Never lost: a restart sends
   what was not sent; a sender that died after the transport took one and before its attempt was written sends it again
@@ -4518,8 +4526,9 @@ from which device, how late) is logged. The server side is built; the push trans
 - **Snooze** (ISA-18.2 shelving; owner decision Q5): who holds Alarm snoozes: Create snoozes an open alarm from its page
   for 1 to its severity's longest snooze, saying why; one at a time, all the snoozes of one alarm together at most that
   longest (so a snooze is never renewed past it), never an alarm about the alarm system's own health (`alarms/health.py`:
-  not checked for a while, a step failing, notifications undeliverable, rules incomplete; its alarms about the farm, an
-  oxygen with no fresh value or the sensors unreadable, are snoozed like any); ended early from the
+  not checked for a while, a step failing, notifications undeliverable, rules incomplete, and the sensors that cannot
+  be read, the farm being blind then; its alarms about one place, an oxygen with no fresh value, a unit or a value that
+  cannot be evaluated, are snoozed like any); ended early from the
   same page. The people notified of the alarm are told who snoozed it, until when and why. While it lasts the alarm is
   still raised, kept, listed and cleared; nobody new is notified, what was queued waits, and it is not escalated. Once
   it ends (its time out, also while the worker was down, or ended early) notification goes on, the escalation time
@@ -4530,7 +4539,8 @@ from which device, how late) is logged. The server side is built; the push trans
   severity and what it is about (a water quantity, the oxygen in mg/L and % one; a sensor rule; a check of the alarm
   system, each failed step its own). In a round of the outbox, the due notifications of one person, channel and kind go out as one flood message
   when, with the ones of that kind sent to them within the severity's flood window, they reach its flood count; the
-  ones within the window after a flood message are covered by it (outcome "grouped", never sent on their own). Grouping
+  ones within the window after a flood message of open alarms are covered by it (outcome "grouped", never sent on
+  their own); a flood message that said its alarms had cleared covers nothing. Grouping
   is the outbox's only: every alarm is raised in its own pass, kept, acknowledged and escalated on its own. The Alarms
   page names a flood of open alarms above the list; an alarm's history says "in a flood message of N alarms".
 - **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the

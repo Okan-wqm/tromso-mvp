@@ -124,12 +124,21 @@ class IngestRoleTests(TransactionTestCase):
 
     def test_a_privileged_role_is_never_opened(self):
         """--role names the role to open; a superuser, a role that may create roles or databases, or one that owns
-        tables is refused (L-15): the command opens a least-privilege service role, never the database's owner."""
-        current = connection.get_connection_params()['user']
+        tables is refused (L-15): the command opens a least-privilege service role, never the database's owner. Tried on
+        probe roles of the test's own (never the connection's role: were the refusal ever gone, the command would give
+        that role a new password and cut the run's own connections)."""
         secret = Path(tempfile.mkdtemp()) / 'pw'
         secret.write_text('x\n')
-        with self.assertRaisesMessage(CommandError, 'least-privilege'):
-            call_command('sensors_ingest_role', '--role', current, '--password-file', str(secret), stdout=StringIO())
+        for grant in ('SUPERUSER', 'CREATEDB', 'CREATEROLE'):
+            with self.subTest(grant=grant):
+                with connection.cursor() as cursor:
+                    cursor.execute(f'ALTER ROLE {self.ROLE} NOLOGIN {grant}')
+                with self.assertRaisesMessage(CommandError, 'least-privilege'):
+                    call_command('sensors_ingest_role', '--role', self.ROLE, '--password-file', str(secret),
+                                 stdout=StringIO())
+                self.assertFalse(self.can_login())
+                with connection.cursor() as cursor:
+                    cursor.execute(f'ALTER ROLE {self.ROLE} NO{grant}')
 
     def test_an_empty_password_file_is_refused(self):
         secret = Path(tempfile.mkdtemp()) / 'pw'

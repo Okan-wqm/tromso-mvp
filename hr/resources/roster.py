@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 from core import audit, listprops, query
 from core.crud import Mount, Resource
-from core.dates import read_day
+from core.dates import read_day, weekday_day
 from farm.stock.dates import site_today
 
 from .. import read, rules, scope, services, units
@@ -123,8 +123,8 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
             return date_format(moment, 'TIME_FORMAT')
 
         def day_head(day):
-            # one line, as the design writes it ("Mon 23 Nov"), the weekday and month in the page's language
-            return {'key': day.isoformat(), 'head': date_format(day, 'D j M'), 'sub': ''}
+            # one line: the weekday and dd.mm.yyyy, the one shape of a week's day header (core.dates.weekday_day)
+            return {'key': day.isoformat(), 'head': weekday_day(day), 'sub': ''}
 
         chosen = context['chosen_department']
         tail = '&' + urlencode({'department': chosen}) if chosen else ''

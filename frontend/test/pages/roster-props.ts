@@ -7,8 +7,8 @@ export const ROSTER_PROPS = {
   employeeHead: 'Employee',
   hoursHead: 'Planned (h)',
   days: [
-    { key: '2026-11-23', head: 'Mon 23 Nov', sub: '' },
-    { key: '2026-11-24', head: 'Tue 24 Nov', sub: '' },
+    { key: '2026-11-23', head: 'Mon 23.11.2026', sub: '' },
+    { key: '2026-11-24', head: 'Tue 24.11.2026', sub: '' },
     { key: '2026-11-25', head: 'Wed 25 Nov', sub: '' },
   ],
   rows: [

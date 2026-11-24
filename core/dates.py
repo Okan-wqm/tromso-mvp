@@ -151,6 +151,12 @@ def show_day(day):
     return formats.localize_input(day) if day else ''
 
 
+def weekday_day(day):
+    """A day with its weekday, as a week's day header says it: the language's short weekday and dd.mm.yyyy
+    ("Mon 23.11.2026", "man 23.11.2026", "Pzt 23.11.2026"). The one shape for a day in a week's columns, the server's and the islands'."""
+    return f"{formats.date_format(day, 'D')} {formats.date_format(day, 'DATE_FORMAT')}" if day else ''
+
+
 def _in_window(value):
     day = value.date() if isinstance(value, datetime) else value
     if day is not None and not inside(day):

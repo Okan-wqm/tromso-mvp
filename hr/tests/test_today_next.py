@@ -21,11 +21,14 @@ MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'isla
 
 def week_days_said(days):
     """A week's days, said by the classic page as "Mon" and "23.11." (or "Mon 23.11.") and by the new look on one line as
-    the design writes them, "Mon 23 Nov" (declared to core.pagesays.unsaid, the same day said another way)."""
+    the weekday and dd.mm.yyyy, "Mon 23.11.2026" (core.dates.weekday_day; declared to core.pagesays.unsaid, the same day
+    said another way)."""
     from django.template.defaultfilters import date
+
+    from core.dates import weekday_day
     found = {}
     for day in days:
-        new = date(day, 'D j M')
+        new = weekday_day(day)
         found.update({date(day, 'D'): new, date(day, 'MONTH_DAY_FORMAT'): new, f"{date(day, 'D')} {date(day, 'MONTH_DAY_FORMAT')}": new})
     return found
 
@@ -90,10 +93,13 @@ class TodayNextTests(TestCase):
                 with self.subTest(page=name, language=language):
                     self.client.cookies['django_language'] = language
                     old = self.client.get(reverse(name), {'ui': 'classic'}).content.decode()
-                    new = self.client.get(reverse(name), {'ui': 'next'}).content.decode()
+                    response = self.client.get(reverse(name), {'ui': 'next'})
+                    new = response.content.decode()
                     self.assertIn('class="ui-plates"', new)
+                    # the declaration is worked out in the page's language after the request: a request made inside
+                    # translation.override leaves the test's language behind it, and the words came out in English
                     with translation.override(language):
-                        declared = said_another_way(name, response=self.client.get(reverse(name), {'ui': 'next'}))
+                        declared = said_another_way(name, response=response)
                     self.assertEqual(unsaid(old, {}, new_html=new, said_as=declared), [])
                     main = new[new.index('<main'):new.index('</main>')]
                     self.assertIsNone(re.search(r'\sstyle=', main))
@@ -117,12 +123,13 @@ class TodayNextTests(TestCase):
                 with self.subTest(page=name, language=language):
                     self.client.cookies['django_language'] = language
                     old = self.client.get(reverse(name), {'ui': 'classic'}).content.decode()
-                    new = self.client.get(reverse(name), {'ui': 'next'}).content.decode()
+                    response = self.client.get(reverse(name), {'ui': 'next'})
+                    new = response.content.decode()
                     props = props_of(new, 'roster')
                     self.assertIsNotNone(props)
                     self.assertTrue(props['grid']['rows'])
                     with translation.override(language):
-                        declared = week_days_said(self.client.get(reverse(name), {'ui': 'next'}).context['week'].days)
+                        declared = week_days_said(response.context['week'].days)
                     self.assertEqual(unsaid(old, props, new_html=new, said_as=declared), [])
 
     def test_the_paint_posts_what_the_servers_batch_route_takes(self):
@@ -223,6 +230,19 @@ class DurationsSaidTests(TestCase):
             self.assertEqual(hours_said(-450, signed=True), '−' + _('%(hours)s h') % {'hours': '7,5'})   # its comma, its unit
         with translation.override('tr'):
             self.assertEqual(minutes_said(2250), _tr_said())
+
+    def test_a_weeks_day_header_is_the_weekday_and_the_date_in_each_language(self):
+        from datetime import date
+
+        from django.template import Context, Template
+
+        from core.dates import weekday_day
+        monday = date(2026, 11, 23)
+        for language, said in (('en', 'Mon 23.11.2026'), ('nb', 'man 23.11.2026'), ('tr', 'Pzt 23.11.2026')):
+            with translation.override(language):
+                self.assertEqual(weekday_day(monday), said)
+                self.assertEqual(Template('{% load dates %}{{ day|weekday_day }}').render(Context({'day': monday})), said)
+        self.assertEqual(weekday_day(None), '')
 
 
 def _tr_said():

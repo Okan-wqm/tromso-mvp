@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n durations %}
+{% load i18n dates durations %}
 {% comment %} Team overview in the new look (hr.views.team_overview behind ?ui=next): the classic page's figures and words
    (hr/overview.html, hr.read.overview), drawn by the server with the design system's classes. The search and the
    department are one GET form that keeps the week. {% endcomment %}
@@ -51,7 +51,7 @@
   <div class="ui-plate-head"><h2 class="ui-plate-title" id="each-day">{% trans "Each day" %}</h2></div>
   <div class="ui-table-wrap" tabindex="0" role="region" aria-labelledby="each-day">
     <table class="ui-table">
-      <thead><tr><th scope="col">{% trans "Day" %}</th>{% for day in week.days %}<th scope="col" class="num">{{ day|date:"D j M" }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th scope="col">{% trans "Day" %}</th>{% for day in week.days %}<th scope="col" class="num">{{ day|weekday_day }}</th>{% endfor %}</tr></thead>
       <tbody>
         <tr><th scope="row">{% trans "Working" %}</th>{% for item in overview.footer %}<td class="num">{{ item.working }}</td>{% endfor %}</tr>
         <tr><th scope="row">{% trans "Off" %}</th>{% for item in overview.footer %}<td class="num">{{ item.off }}</td>{% endfor %}</tr>

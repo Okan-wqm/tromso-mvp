@@ -162,6 +162,8 @@ def reading_at(card, code, point_kind):
     for water in card.water:
         if water.point is not None and water.point.kind == point_kind:
             return water.get(code)
+        if water.point is None and water.for_unit and point_kind == water_read.MIDDLE:
+            return water.get(code)          # a unit without a point: its water read at its system stands for it
     return None
 
 

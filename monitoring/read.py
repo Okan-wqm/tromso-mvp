@@ -528,10 +528,11 @@ def clock_notes(water, now):
 
 # ---- the state ---------------------------------------------------------------------------------------------------------
 def _middle(card):
-    """The PointWater of the card's middle point (always the first, when there is one), else None."""
+    """The PointWater of the card's middle point (always the first, when there is one), or, for a unit with no point of
+    its own, its water read at its system (farm.water.read.latest `units`: for_unit, no point), else None."""
     first = card.water[0] if card.water else None
-    return first if first is not None and first.point is not None and (
-        first.for_unit or first.point.kind == water_read.MIDDLE) else None
+    return first if first is not None and (first.for_unit or (
+        first.point is not None and first.point.kind == water_read.MIDDLE)) else None
 
 
 def _key_readings(card):
@@ -693,9 +694,8 @@ def _ladder(card):
     # A status the unit's own stale value keeps while its system's value stands in (read.last_own, F3-9): said beside it.
     unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
     # The oxygen of a unit with fish that has no fresh value (owner decision of 2026-11-23): critical, said as missing or
-    # old data, from the water's one judgement (farm.water.read.PointWater.silent_oxygen): the middle point's, or the
-    # water of a unit with no point to read it at (it holds no reading: read.pointless_water).
-    silent = _silent(card.water[0] if card.water else None)
+    # old data, from the water's one judgement (farm.water.read.PointWater.silent_oxygen).
+    silent = _silent(middle)
     if critical or silent:
         return State(CRITICAL, (*critical, *silent, *unevaluated), basis,
                      (*(text for text in old if text in critical), *silent))

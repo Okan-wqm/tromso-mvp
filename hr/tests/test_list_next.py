@@ -163,3 +163,52 @@ class EveryListOnTheTestWorldTests(TestCase):
         self.assertEqual([action['kind'] for action in pending['actions']], ['link', 'link', 'post'])
         self.assertEqual(pending['actions'][2]['href'], reverse('hr:production_leaverequest_cancel', args=[pending['key']]))
         self.assertTrue(props['csrfToken'])
+
+
+@override_settings(ISLANDS_MANIFEST=MANIFEST)
+class AttendanceActionsTests(PeopleTestCase):
+    """A deliberate difference from the classic page (FIELD-MAP.md, Attendance): the new list offers Correct and Void on a
+    row only to a person who may do them there (Resource.allowed: a lead does not correct or void their own attendance).
+    The classic page draws them on one's own row too, and the server refuses them; the new page leaves them out."""
+
+    def setUp(self):
+        super().setUp()
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from ..models import AttendanceRecord, Employee
+        from .helpers import user
+        from .helpers_people import place
+        self.lead = user('attlead', 'view_attendancerecord', 'change_attendancerecord', 'delete_attendancerecord',
+                         group='Attendance lead role')
+        self.dept_a.manager = self.lead
+        self.dept_a.save()
+        own = Employee.objects.create(employee_number='E-8', user=self.lead, joined_on=self.in_a.joined_on)
+        place(own, self.dept_a, title='Lead')
+        start = timezone.now() - timedelta(days=1)
+        self.theirs = AttendanceRecord.objects.create(employee=self.in_a, clock_in=start,
+                                                      clock_out=start + timedelta(hours=8), note='Entered by the lead')
+        self.mine = AttendanceRecord.objects.create(employee=own, clock_in=start, clock_out=start + timedelta(hours=8),
+                                                    note='Entered for the lead')
+        self.client.force_login(self.lead)
+
+    def test_correct_and_void_only_where_the_person_may_do_them(self):
+        url = reverse('hr:production_attendancerecord_list')
+        new = self.client.get(url, {'ui': 'next'}).content.decode()
+        rows = {row['key']: row for row in props_of(new)['table']['rows']}
+        theirs, mine = rows[str(self.theirs.pk)], rows[str(self.mine.pk)]
+        edit = reverse('hr:production_attendancerecord_edit', args=[self.theirs.pk])
+        void = reverse('hr:production_attendancerecord_delete', args=[self.theirs.pk])
+        self.assertEqual([(action['label'], action['href']) for action in theirs['actions']], [('Correct', edit), ('Void', void)])
+        self.assertEqual(theirs['cells']['employee']['href'], edit)
+        self.assertEqual(mine['actions'], [])
+        self.assertIsNone(mine['cells']['employee']['href'])
+        # the server refuses them on one's own row: what the classic page offers there and the new page leaves out
+        own_edit = reverse('hr:production_attendancerecord_edit', args=[self.mine.pk])
+        own_void = reverse('hr:production_attendancerecord_delete', args=[self.mine.pk])
+        self.assertEqual(self.client.get(own_edit).status_code, 403)
+        self.assertEqual(self.client.get(own_void).status_code, 403)
+        old = self.client.get(url, {'ui': 'classic'}).content.decode()
+        self.assertEqual(sorted(unsaid(old, props_of(new), new_html=new)),
+                         sorted([('href', own_edit), ('href', own_edit), ('href', own_void)]))

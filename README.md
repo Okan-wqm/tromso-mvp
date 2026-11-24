@@ -3792,7 +3792,7 @@ What works:
   own, as the water pages say it: `sensors/templatetags/sensors.py` `measured`, also the alarm thresholds and peaks; its
   age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
-  person, logged), Alarm rules and Alarm events (each event is an alarm of Company › Alarms, which notifies its recipients and keeps
+  person, logged; the same message received after it was resolved opens it again, since its cause is not dealt with), Alarm rules and Alarm events (each event is an alarm of Company › Alarms, which notifies its recipients and keeps
   who acknowledged it; the Acknowledge button here writes that record, for who may acknowledge the alarm: Alarms: Edit,
   or a person it was sent to).
 - **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once

@@ -247,6 +247,9 @@ impl Writer {
             let c = db::connect(&s.conninfo, s.password.as_deref(), s.role.as_deref(), Duration::from_secs(10))
                 .await
                 .map_err(|e| format!("connect: {e}"))?;
+            if let Some(why) = db::refused_role(&c).await.map_err(|e| format!("role: {e}"))? {
+                return Err(format!("refused to write: {why}"));
+            }
             self.client = Some(c);
         }
         let client = self.client.as_mut().ok_or("no client")?;

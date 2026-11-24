@@ -248,3 +248,47 @@ def formset_payload(formset):
                   'hidden': [{'name': bound.html_name, 'value': plain(widget_payload(bound)['value'])}
                              for bound in formset.empty_form.hidden_fields()]},
     }
+
+
+def delete_payload(obj, plan, name, *, action, cancel):
+    """The delete confirmation (crud/confirm_delete.html) as the native dialog draws it: the question, what is in the way,
+    what goes with the record, what loses its link, what is kept and what stays linked, and what deleting does. Every
+    sentence is the old page's own msgid, said here in the request's language: the dialog adds no text of its own.
+    `plan` is core.softdelete.plan_delete's (None for a record erased outright)."""
+    from django.utils.translation import gettext as _
+
+    def records(items):
+        return [str(item) for item in items]
+
+    found = {'action': action, 'cancel': cancel, 'object': str(obj),
+             'question': _('Delete “%(object)s”?') % {'object': obj},
+             'heading': _('Delete %(name)s') % {'name': name},
+             'submit': _('Delete %(name)s') % {'name': name},
+             'cancelLabel': _('Cancel'),
+             'blocked': None, 'groups': [], 'canDelete': plan is None or plan.can_delete}
+    if plan is None:
+        found['outcome'] = _('This removes it permanently. The activity log keeps a record that it was deleted.')
+        return found
+    if plan.blockers:
+        found['blocked'] = {'title': _('This %(name)s cannot be deleted yet.') % {'name': name},
+                            'reasons': [str(blocker) for blocker in plan.blockers]}
+    for group in plan.deleted_groups():
+        found['groups'].append({'kind': 'deleted', 'count': len(group['records']), 'records': records(group['records']),
+                                'title': _('%(label)s deleted with it') % {'label': group['label']}, 'note': None})
+    for group in plan.detached_groups():
+        found['groups'].append({'kind': 'detached', 'count': len(group['records']), 'records': records(group['records']),
+                                'title': _('%(label)s that lose their %(link)s') % {'label': group['label'],
+                                                                                     'link': group['link']},
+                                'note': None})
+    for group in plan.kept_groups():
+        found['groups'].append({'kind': 'kept', 'count': group['count'], 'records': [],
+                                'title': _('%(label)s kept with it') % {'label': group['label']},
+                                'note': str(group['note'])})
+    for group in plan.unlinked_groups():
+        found['groups'].append({'kind': 'unlinked', 'count': len(group['records']), 'records': records(group['records']),
+                                'title': _('%(label)s linked to it') % {'label': group['label']},
+                                'note': _('They keep the link, but it does not count while this is deleted; restoring '
+                                          'it brings the link back.')})
+    found['outcome'] = _('It disappears from every list but is not erased: the record stays in the database, the '
+                         'activity log keeps its history, and it can be restored from the admin.')
+    return found

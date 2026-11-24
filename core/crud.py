@@ -27,6 +27,7 @@ import copy
 import uuid
 from dataclasses import dataclass, field as dataclass_field
 from functools import wraps
+from urllib.parse import quote
 
 from django import forms
 from django.contrib import messages
@@ -41,9 +42,10 @@ from django.urls import path, reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
-from . import audit, navigation, softdelete
+from . import audit, formprops, listprops, navigation, softdelete
 from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
+from .ui import is_next
 from .widgets import NONE
 
 
@@ -432,6 +434,14 @@ class Resource:
     private_fields = ()   # form fields holding a person's own text (a leave reason): the activity log says
                           # "Private text" for a filled one and never stores the words
     mounts = ()           # Mount: the other places the tab is served, its rows there narrowed by `scoped`
+    # The list in the new look (core/listprops.py): `list_rows(view, objects, context)` gives its table (a classmethod;
+    # None keeps the classic list in the new look too). The search box's placeholder and the empty list's sentence when
+    # the tab's list template has its own (its blocks `search_placeholder` and `empty_text`): the same msgid.
+    list_rows = None
+    list_template_next = ''   # the new look's page of a tab whose list is not a table (Scheduling settings), drawn by
+                              # the server from the same context; '' for none
+    search_placeholder = ''
+    empty_text = ''
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -570,6 +580,11 @@ class Resource:
         return objects, {}
 
     @classmethod
+    def list_filters(cls, view, context):
+        """The list's filters in the new look (core.listprops.choice), from the values `filter_list` put in `context`."""
+        return []
+
+    @classmethod
     def detail_extras(cls, request, obj):
         """Extra context for the read page (detail_template)."""
         return {}
@@ -703,8 +718,14 @@ class ListView(ResourceView):
             objects = page.object_list
         kept = request.GET.copy()
         kept.pop('page', None)
-        return render_page(request, self.resource.list_template, self.context(
-            objects=objects, query=query, page=page, pager_query=kept.urlencode(), **filters))
+        context = self.context(objects=objects, query=query, page=page, pager_query=kept.urlencode(), **filters)
+        if self.resource.list_rows is not None and is_next(request):
+            # The new look's list page (core/listprops.py): the same rows, read by the same view, drawn by the island.
+            return render_page(request, 'crud/list_next.html',
+                               {**context, 'props': listprops.list_props(self, objects, context)})
+        if self.resource.list_template_next and is_next(request):
+            return render_page(request, self.resource.list_template_next, context)
+        return render_page(request, self.resource.list_template, context)
 
 
 class FormView(ResourceView):
@@ -723,6 +744,16 @@ class FormView(ResourceView):
             action = self.url('edit', obj.pk)
         else:
             action = self.url('create') if obj is None and r.allows('add') else self.request.path
+        if not is_modal(self.request) and is_next(self.request) and formprops.drawable(r, form, extra):
+            # The new look's record form (core/formprops.py): the same form, view and address, drawn by the island.
+            return render_page(self.request, 'crud/form_next.html', self.context(
+                form=form, object=obj, props=formprops.record_form_props(
+                    self.request, form, action=action, name=r.name, obj=obj, list_url=self.url('list'),
+                    delete_url=self.url('delete', obj.pk) if obj is not None and obj.pk is not None and r.allows('delete')
+                    and self.request.user.has_perm(r.perm('delete')) and r.allowed(self.request, obj, 'delete') else '',
+                    history=history,
+                    history_url=f"{reverse('core:activity_log')}?type={quote(r.entity_type(), safe='/')}&q={quote(str(obj), safe='/')}"
+                    if obj is not None else '', open_tab=extra.get('open_tab', ''))))
         return render_page(self.request, r.form_template, self.context(
             form=form, object=obj, history=history, form_action=action, **extra))
 
@@ -907,6 +938,10 @@ class DeleteView(ResourceView):
     def get(self, request, pk):
         obj = self.get_object(pk)
         plan = plan_delete(obj) if isinstance(obj, AuditedModel) else None
+        if not is_modal(request) and is_next(request):
+            return render_page(request, 'crud/confirm_delete_next.html', self.context(
+                object=obj, props=formprops.confirm_delete_props(request, obj, plan, name=self.resource.name,
+                                                                 action=request.path, cancel=self.url('list'))))
         return render_page(request, 'crud/confirm_delete.html', self.context(object=obj, plan=plan))
 
     def post(self, request, pk):

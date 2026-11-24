@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
-  Button, CellLines, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
-  LinkTabs, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
+  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
+  LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
 interface Row { code: string; name: string; site: string; capacity: string; status: 'ok' | 'warning' | 'neutral'; word: string }
@@ -109,6 +109,35 @@ function Gallery({ rows, errors }: GalleryProps) {
           </ServerForm>
         </div>
       </Plate>
+      <Plate title="Lists" span={4} link={{ href: '#reports', label: 'All reports' }}>
+        <List label="Upcoming reports">
+          <ListItem main="Planned slaughter · Test Facility (N0000) · Week 45 of 2026" sub="29.10.2026 · Overdue" status="critical" />
+          <ListItem main="Test Person" sub="Could the new colleague get an account?" meta="13:40" />
+          <ListItem main="CO₂ above 15 mg/L leads to nephrocalcinosis." sub="Fivelstad & Olsen (2003)" chip={<Chip kind="ok">Reviewed</Chip>} />
+        </List>
+        <List ordered label="Recent activity">
+          <AuditItem action="Changed" record="Task · Clean the settling pond" who={<>by <strong>test.person</strong> · 23.11.2026 09:05</>} />
+          <AuditItem action="Acknowledged a warning" status="critical" critical={<Chip kind="critical">Critical</Chip>} record="Harvest · TT-01" who={<>by <strong>test.admin</strong> · 23.11.2026 08:41</>} />
+        </List>
+      </Plate>
+      <Plate title="Form parts" span={12}>
+        <div className="ui-plate-body">
+          <ServerForm action="#parts" csrfToken="test-token" label="Form parts" actions={<Button variant="primary" type="submit" id="parts-submit">Save role</Button>}>
+            <Checkbox name="only_on_shift" label="Only while on shift" mark="optional" defaultChecked />
+            <RadioGroup name="placement" label="Placement" options={[{ value: 'random', label: 'Randomise' }, { value: 'hand', label: 'By hand' }]} defaultValue="random" />
+            <FileField name="file" label="PDF" help="One PDF, up to 50 MB." current={{ name: 'fivelstad-2003.pdf', href: '#file', intro: 'Currently:', clearName: 'file-clear', clearLabel: 'Remove the file', changeLabel: 'Change:' }} />
+            <Acknowledge name="ack" title="Before handling" label="I have read this and go on" value="f00d">TT-01 is on withdrawal to 24.11.2026.</Acknowledge>
+            <PermissionMatrix name="permissions" label="Rights" areaLabel="Area" columns={['Read', 'Create']}
+              sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: [], cells: [{ action: 'Read', said: 'Sites: Read', value: '1', checked: true, id: 'p-1' }, { action: 'Create', said: 'Sites: Create', value: '2', checked: false, id: 'p-2', requires: 'p-1' }] }] }]} />
+            <LinkList name="systems" label="Systems" columns={['Role']} primary primaryLabel="Primary" primaryWords="%(record)s is the primary one" emptyText="No system on this site."
+              rows={[{ pk: '7', label: 'RAS-1', checked: true, primary: true, details: <input name="systems-7-role" aria-label="Role" defaultValue="Filtration" /> }]} />
+            <RowList prefix="contacts" management={[{ name: 'contacts-TOTAL_FORMS', value: '1' }, { name: 'contacts-INITIAL_FORMS', value: '1' }]}
+              rows={[{ key: '1', content: <input name="contacts-0-name" aria-label="Name" defaultValue="Test Person" /> }]}
+              newRow={(index) => <input name={`contacts-${index}-name`} aria-label="Name" />} columns={['Name']} legend="Contact"
+              addLabel="Add contact" removeLabel="Remove this contact" emptyText="No contacts yet." />
+          </ServerForm>
+        </div>
+      </Plate>
       <Plate title="Chart frame" span={4}>
         <ChartFrame title="Dissolved oxygen" now="6.50 mg/L" nowStatus="warning" label="Dissolved oxygen, last 24 hours"
           values={[['Latest', '6.50 mg/L at 13:42'], ['Lowest', '6.50 mg/L at 13:42'], ['Highest', '9.10 mg/L at 00:00']]}
@@ -147,6 +176,20 @@ function Gallery({ rows, errors }: GalleryProps) {
               series={[{ label: 'Sensor', series: 1, values: [9.1, 8.8, 8.5] }]} markers={[{ at: 3600, label: '01:00 · Fed 0.8 kg', href: '#fed' }]} />
           </div>
         </ChartFrame>
+      </Plate>
+      <Plate title="Planned today" span={6}>
+        <div className="ui-plate-body" id="stack">
+          <StackedBar label="Planned today: 12" parts={[
+            { key: 'here', label: 'Here now', value: 7, figure: '7', tone: 'ok' },
+            { key: 'not_in', label: 'Not in yet', value: 2, figure: '2', tone: 'warning' },
+            { key: 'absent', label: 'Absent', value: 1, figure: '1', tone: 'critical' },
+            { key: 'on_leave', label: 'On leave', value: 2, figure: '2', tone: 'note' },
+            { key: 'done', label: 'Done', value: 0, figure: '0', tone: 'neutral' },
+          ]} />
+          <StackedBar label="Planned today: 0" empty="Nobody is expected today" parts={[
+            { key: 'here', label: 'Here now', value: 0, figure: '0', tone: 'ok' },
+          ]} />
+        </div>
       </Plate>
     </Plates>
   );

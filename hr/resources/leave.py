@@ -3,6 +3,9 @@ from datetime import timedelta
 from django.db.models import Case, Q, Value, When
 from django.utils.translation import gettext_lazy as _
 
+from django.template.defaultfilters import floatformat
+
+from core import listprops as L
 from core.crud import Mount, Resource
 from farm.stock.dates import site_today
 
@@ -24,6 +27,19 @@ class LeaveTypeResource(Resource):
     search_fields = ['name', 'code']
     list_template = 'hr/leave_type_list.html'
     icon = 'calendar-off'
+    search_placeholder = _('Search by name or code')
+    empty_text = _('A leave type is a kind of leave, such as annual or parental leave. Add the types the company uses.')
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        return {'columns': [L.column('type', _('Leave type')), L.column('days', _('Days a year'), numeric=True),
+                            L.column('approval', _('Needs approval')), L.column('status', _('Status'))],
+                'rows': [L.row(kind.pk, {
+                    'type': L.title(view, context, kind, kind.name, sub=[kind.code]),
+                    'days': L.cell(floatformat(kind.annual_days, '-2') if kind.annual_days is not None else _('No limit')),
+                    'approval': L.cell(_('Yes') if kind.needs_approval else _('No')),
+                    'status': L.cell(chip=L.chip(L.STATUS_CHIP.get(kind.status, 'neutral'), kind.get_status_display())),
+                }, L.edit_delete(view, context, kind, kind.name)) for kind in objects]}
 
 
 class LeaveRequestResource(services.PersonFirst, Resource):
@@ -129,3 +145,49 @@ class LeaveRequestResource(services.PersonFirst, Resource):
     @classmethod
     def detail_extras(cls, request, item):
         return {'row': cls.shown(request, [item])[0]}
+
+    # --- the list in the new look (core/listprops.py), the words of hr/leave_list.html ------------------------------
+    search_placeholder = _('Search by name or type')
+    empty_text = _('Requests for leave of your team appear here, with who may approve them.')
+    STATUS_CHIPS = {LeaveStatus.PENDING: 'hold', LeaveStatus.APPROVED: 'ok', LeaveStatus.REJECTED: 'critical'}
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        from django.urls import reverse
+        from django.utils import formats
+        from django.utils.text import Truncator
+
+        from core.crud import mount_of, mounted_name
+        request = view.request
+        route = lambda name, pk: reverse(mounted_name(f'hr:leaverequest_{name}', mount_of(request)), args=[pk])  # noqa: E731
+        day = lambda value: formats.date_format(value, 'DATE_FORMAT')     # noqa: E731
+        counts = {**context['counts'], 'all': context['all_count']}
+        rows = []
+        for row in objects:
+            item = row['request']
+            decided = (item.decided_by.get_full_name() or item.decided_by.get_username()) if item.decided_by                 else _('Granted at once') if item.decided_at else '–'
+            actions = []
+            if row['can_decide']:
+                actions += [L.link(route('approve', item.pk), _('Approve'), 'user-check'),
+                            L.link(route('reject', item.pk), _('Reject'), 'x', danger=True)]
+            if row['can_cancel']:
+                actions.append(L.post(route('cancel', item.pk), _('Cancel the request'), 'calendar-off',
+                                      [('next', request.get_full_path())], danger=True))
+            rows.append(L.row(item.pk, {
+                'employee': L.cell(item.employee.full_name, href=route('detail', item.pk), strong=True,
+                                   sub=[Truncator(item.reason).chars(80)] if row['show_reason'] and item.reason else []),
+                'type': L.cell(item.leave_type.name if row['show_type'] else '–'),
+                'days': L.cell(f'{day(item.first_day)} – {day(item.last_day)}'),
+                'charged': L.cell(floatformat(row['days'], '-2')),
+                'status': L.cell(chip=L.chip(cls.STATUS_CHIPS.get(item.status, 'neutral'), item.get_status_display())),
+                'decided': L.cell(decided),
+            }, actions))
+        return {
+            'tabs': L.tabs(_('Status'), [(f'?tab={key}', label, counts[key], context['tab'] == key)
+                                         for key, label in context['tabs']]),
+            'lines': [_('Showing %(limit)s of %(total)s requests.') % {'limit': context['limit'], 'total': context['total']}]
+            if context['total'] > context['limit'] else [],
+            'columns': [L.column('employee', _('Employee')), L.column('type', _('Leave type')), L.column('days', _('Days')),
+                        L.column('charged', _('Charged'), numeric=True), L.column('status', _('Status')),
+                        L.column('decided', _('Decided by'))],
+            'rows': rows}

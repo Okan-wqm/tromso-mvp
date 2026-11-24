@@ -3,11 +3,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { skipWithout } from './browsers.js';
+import { inCi, skipWithout } from './browsers.js';
 
 test('a browser test is skipped only where there is no browser and this is not CI', () => {
   assert.equal(skipWithout(['C:/chrome.exe'], {}), false);
   assert.equal(skipWithout([], {}), 'no Chrome or Edge on this machine');
   assert.equal(skipWithout([], { CI: '1' }), false);                    // CI: run, and fail for want of a browser
   assert.equal(skipWithout([], { CI: '0' }), 'no Chrome or Edge on this machine');
+});
+
+test('CI=true, as GitHub Actions sets it, is CI too: a missing browser fails there, never skips (review, F-127)', () => {
+  for (const value of ['true', 'TRUE', '1', 'yes']) assert.equal(skipWithout([], { CI: value }), false, value);
+  for (const value of ['', '0', 'false', 'False']) assert.equal(skipWithout([], { CI: value }), 'no Chrome or Edge on this machine', value);
+  assert.equal(inCi({ CI: 'true' }), true);
+  assert.equal(inCi({}), false);
 });

@@ -5635,7 +5635,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   and freshness, a task's and a recurring task's checklist, a device's channels and placement, a credential's Replace the
   secret, a knowledge entry's review, a draft report's answer lists, a feeding protocol's table, an experiment's design,
   places and team) words what its template adds in `Resource.next_panels` (`core/formpanels.py`, the
-  template's own msgids; a list's words are its `RowList`'s): a panel is a tab of its own before History, or more on one
+  template's own msgids; a list's words are its `RowList`'s, `RowList.words`, the one source both looks read: the classic
+  templates get them as `row_words`, and `scripts/classic_snapshot.py` shows the classic pages byte-identical before and
+  after such a change; every list of rows is the library's `RowGrid`): a panel is a tab of its own before History, or more on one
   of the record's tabs after the record's form (a site's contacts on Contact); its blocks are help, notices, read-only
   tables (`core.listprops` cells), a started checklist, one-button forms with their hidden fields, links, forms of their
   own saved as a whole (`formpanels.form`: fields, formsets as tables with a heading row and rows added from the empty

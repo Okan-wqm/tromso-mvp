@@ -23,12 +23,17 @@ export interface RosterPageProps {
 export function Roster({ toolbar, line, grid, empty, crew }: RosterPageProps) {
   return (
     <>
-      <ListToolbar toolbar={toolbar} />
-      {empty ? <EmptyState title={empty.title}>{empty.text}</EmptyState> : (
+      {empty ? (
         <>
-          <p className="ui-cell-sub">{line.text}{line.links.map((link) => <span key={link.href}> <a href={link.href}>{link.label}</a></span>)}</p>
-          <RosterGrid {...grid} />
+          <ListToolbar toolbar={toolbar} />
+          <EmptyState title={empty.title}>{empty.text}</EmptyState>
         </>
+      ) : (
+        // the paint bar first, then the search and the count, then the week (the design's order)
+        <RosterGrid {...grid}>
+          <ListToolbar toolbar={toolbar} />
+          <p className="ui-cell-sub">{line.text}{line.links.map((link) => <span key={link.href}> <a href={link.href}>{link.label}</a></span>)}</p>
+        </RosterGrid>
       )}
       {crew ? (
         <Plate title={crew.title} span={12}>
@@ -40,7 +45,7 @@ export function Roster({ toolbar, line, grid, empty, crew }: RosterPageProps) {
               columns={[
                 { key: 'name', label: crew.head, rowHeader: true, render: (row) => <CellLines strong main={row.name} sub={row.sub} /> },
                 ...crew.days.map((day, index) => ({
-                  key: day.key, label: <>{day.head}<span className="ui-cell-sub">{day.sub}</span></>,
+                  key: day.key, label: <>{day.head}{day.sub ? <span className="ui-cell-sub">{day.sub}</span> : null}</>,
                   render: (row: CrewRow) => {
                     const cell = row.cells[index];
                     return cell ? <CellLines main={<Chip kind={cell.kind}>{cell.text}</Chip>} sub={cell.sub} /> : null;

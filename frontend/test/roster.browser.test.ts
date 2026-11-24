@@ -49,14 +49,14 @@ test('the roster grid in a browser', { skip: skipWithout(BROWSERS) }, async (t) 
       await tab.focus('button.ui-roster-choice:has-text("TD")');
       await tab.keyboard.press('Enter');
       assert.equal(await tab.getAttribute('button.ui-roster-choice:has-text("TD")', 'aria-pressed'), 'true');
-      await tab.focus('button.ui-roster-pick[aria-label="Test Person, Mon 23.11: TD"]');
+      await tab.focus('button.ui-roster-pick[aria-label="Test Person, Mon 23 Nov: TD"]');
       await tab.keyboard.press('Space');
       await tab.keyboard.press('ArrowDown');                 // (Test Second's Monday has no control) next: none; stays
       await tab.keyboard.press('ArrowRight');
-      assert.equal(await focused(tab), 'Test Person, Tue 24.11');
+      assert.equal(await focused(tab), 'Test Person, Tue 24 Nov');
       await tab.keyboard.press('Enter');
-      assert.equal(await tab.getAttribute('button[aria-label="Test Person, Mon 23.11: TD"]', 'aria-pressed'), 'true');
-      assert.equal(await tab.getAttribute('button[aria-label="Test Person, Tue 24.11"]', 'aria-pressed'), 'true');
+      assert.equal(await tab.getAttribute('button[aria-label="Test Person, Mon 23 Nov: TD"]', 'aria-pressed'), 'true');
+      assert.equal(await tab.getAttribute('button[aria-label="Test Person, Tue 24 Nov"]', 'aria-pressed'), 'true');
       await tab.evaluate(() => { document.querySelector('form')?.addEventListener('submit', (event) => event.preventDefault()); });
       await tab.focus('button[type="submit"]');
       await tab.keyboard.press('Enter');

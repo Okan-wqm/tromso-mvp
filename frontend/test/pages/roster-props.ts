@@ -7,9 +7,9 @@ export const ROSTER_PROPS = {
   employeeHead: 'Employee',
   hoursHead: 'Planned (h)',
   days: [
-    { key: '2026-11-23', head: 'Mon', sub: '23.11' },
-    { key: '2026-11-24', head: 'Tue', sub: '24.11' },
-    { key: '2026-11-25', head: 'Wed', sub: '25.11' },
+    { key: '2026-11-23', head: 'Mon 23 Nov', sub: '' },
+    { key: '2026-11-24', head: 'Tue 24 Nov', sub: '' },
+    { key: '2026-11-25', head: 'Wed 25 Nov', sub: '' },
   ],
   rows: [
     { key: '1', name: 'Test Person', sub: 'Test Hall A', hours: '15', hoursFinding: null, cells: [

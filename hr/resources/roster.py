@@ -123,7 +123,8 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
             return date_format(moment, 'TIME_FORMAT')
 
         def day_head(day):
-            return {'key': day.isoformat(), 'head': date_format(day, 'D'), 'sub': date_format(day, 'MONTH_DAY_FORMAT')}
+            # one line, as the design writes it ("Mon 23 Nov"), the weekday and month in the page's language
+            return {'key': day.isoformat(), 'head': date_format(day, 'D j M'), 'sub': ''}
 
         chosen = context['chosen_department']
         tail = '&' + urlencode({'department': chosen}) if chosen else ''

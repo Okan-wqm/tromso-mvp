@@ -269,7 +269,7 @@ test('a roster: a week of people, a cell its plan as a link, an empty day "+", f
   assert.match(page, /<form class="ui-roster-paint" action="\/hr\/schedule\/plan\/" method="post"><input type="hidden" name="csrfmiddlewaretoken" value="test-token"\/><input type="hidden" name="next" value="\/hr\/schedule\/\?week=2026-11-23"\/><input type="hidden" name="shift" value=""\/>/);
   assert.match(page, /<div role="group" aria-label="Paint" class="ui-roster-choices">/);
   assert.match(page, /<button type="button" class="ui-roster-choice" aria-pressed="false" data-kind="shift" data-tone="1" title="Test day shift">TD<\/button>/);
-  assert.match(page, /<th scope="col">Mon<span class="ui-cell-sub">23\.11<\/span><\/th>/);
+  assert.match(page, /<th scope="col">Mon 23 Nov<\/th>/);
   assert.match(page, /<a class="ui-roster-link" href="\/hr\/schedule\/7\/" title="Test day shift 07:00–15:00"><span class="ui-roster-plan" data-kind="shift" data-tone="1">TD<\/span>/);
   assert.match(page, /<a class="ui-roster-add" href="\/hr\/schedule\/new\/\?employee=1&amp;day=2026-11-24" aria-label="Plan this day" title="Plan this day">/);
   assert.match(page, /<td data-roster-cell="" data-finding="block">.*Less than 11 h of rest before this shift\./);

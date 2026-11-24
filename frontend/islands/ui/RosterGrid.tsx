@@ -8,7 +8,7 @@
 // click) selects; "Apply to the selected days" posts the choice and the selected cells to the server's batch route
 // (`paint.action`, with the page's CSRF token), which checks and writes all of them or none. Choosing the same paint
 // again, or "Clear selection", empties the selection.
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 import { Button } from './Button.js';
 import { Icon } from './Icon.js';
@@ -58,11 +58,13 @@ export interface RosterGridProps {
   days: RosterDay[];
   rows: RosterRow[];
   paint?: RosterPaint | null;
+  /** what stands between the paint bar and the week (the page's search and filters, its count), as the design orders it */
+  children?: ReactNode;
 }
 
 const MOVES: Record<string, [number, number]> = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] };
 
-export function RosterGrid({ label, employeeHead, hoursHead, days, rows, paint }: RosterGridProps) {
+export function RosterGrid({ label, employeeHead, hoursHead, days, rows, paint, children }: RosterGridProps) {
   const [chosen, setChosen] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const table = useRef<HTMLTableElement>(null);
@@ -110,7 +112,7 @@ export function RosterGrid({ label, employeeHead, hoursHead, days, rows, paint }
       const on = selected.includes(cell.key);
       return (
         <button type="button" className="ui-roster-pick" aria-pressed={on}
-          aria-label={`${row.name}, ${day.head} ${day.sub}${cell.chip ? `: ${cell.chip.text}` : ''}`}
+          aria-label={`${row.name}, ${[day.head, day.sub].filter(Boolean).join(' ')}${cell.chip ? `: ${cell.chip.text}` : ''}`}
           onClick={() => toggle(cell.key as string)}>
           {chip ?? <span aria-hidden="true">·</span>}
         </button>
@@ -142,12 +144,13 @@ export function RosterGrid({ label, employeeHead, hoursHead, days, rows, paint }
           <Button type="submit" variant="primary" isDisabled={!chosen || !selected.length}>{paint.apply}</Button>
         </form>
       ) : null}
+      {children}
       <div className="ui-table-wrap" tabIndex={0} role="region" aria-label={label}>
         <table className="ui-table ui-roster-table" ref={table} onKeyDown={move}>
           <thead>
             <tr>
               <th scope="col">{employeeHead}</th>
-              {days.map((day) => <th key={day.key} scope="col">{day.head}<span className="ui-cell-sub">{day.sub}</span></th>)}
+              {days.map((day) => <th key={day.key} scope="col">{day.head}{day.sub ? <span className="ui-cell-sub">{day.sub}</span> : null}</th>)}
               <th scope="col" className="num">{hoursHead}</th>
             </tr>
           </thead>

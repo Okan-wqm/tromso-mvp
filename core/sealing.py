@@ -22,6 +22,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from django.core import checks
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Exists, ExpressionWrapper, OuterRef, Q, Value
 from django.db.models.functions import Coalesce, Now, TruncDate
@@ -652,6 +653,13 @@ def works_of(model, pks, depth=WORKS_DEPTH):
         return found
     if depth < 0:
         return {pk: {UNKNOWN} for pk in found}
+    # An id that is not one of the model's (a log entry written by hand, a record type shared by name) names no row.
+    keys = {}
+    for pk in found:
+        try:
+            keys[str(model._meta.pk.to_python(pk))] = pk
+        except (ValueError, TypeError, ValidationError):
+            found[pk].add(UNKNOWN)
     from django.contrib.postgres.expressions import ArraySubquery
     columns = {}
     if _provider is not None and seal.work is not None:
@@ -663,11 +671,11 @@ def works_of(model, pks, depth=WORKS_DEPTH):
                 lookup, ref = _correlated(model, path, target)
                 columns[f'_cells{len(columns)}'] = ArraySubquery(
                     _provider.cells().filter(days, **{lookup: ref}).values('work'))
-    rows = model._base_manager.filter(pk__in=list(found)).annotate(**columns).values('pk', *columns, *seal.via)
+    rows = model._base_manager.filter(pk__in=list(keys)).annotate(**columns).values('pk', *columns, *seal.via)
     parents = {link: {} for link in seal.via}
     present = set()
     for row in rows:
-        key = str(row['pk'])
+        key = keys.get(str(row['pk']), str(row['pk']))
         present.add(key)
         for name in columns:
             value = row[name]
@@ -675,12 +683,12 @@ def works_of(model, pks, depth=WORKS_DEPTH):
         for link in seal.via:
             if row[link] is not None:
                 parents[link].setdefault(str(row[link]), []).append(key)
-    for key in set(found) - present:
+    for key in set(keys.values()) - present:
         found[key].add(UNKNOWN)
     for link, children in parents.items():
         theirs = works_of(model._meta.get_field(link).related_model, list(children), depth - 1)
-        for parent, keys in children.items():
-            for key in keys:
+        for parent, rows_of in children.items():
+            for key in rows_of:
                 found[key].update(theirs[parent])
     for spec in (seal.any_of, seal.hidden_with):
         if spec:

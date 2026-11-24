@@ -230,9 +230,9 @@ def sealed_ids(cls):
             cls.treatment, cls.task, cls.system_task, cls.sealed_channel, cls.binding, cls.task_note, cls.checklist,
             cls.alarm, cls.notification, cls.second_batch, cls.escape.escape_record, cls.harvest.harvest_record,
             *cls.sealed_batch.movements.values_list('operation', flat=True).distinct(),
-            *cls.second_batch.movements.values_list('operation', flat=True).distinct(),
-            # the mixed batch's line into X's tank (its operation and batch stay visible with the open line)
-            *(cls.mixed_transfer.movements.filter(unit=cls.sealed_tanks[2]) if cls.mixed_transfer else [])]
+            *cls.second_batch.movements.values_list('operation', flat=True).distinct()]
+    # (The mixed batch's line into X's tank is not tried as a route's argument: a stock line's id is a short number,
+    # which the walk cannot take out of a page; no route names a stock line. Its log entry is in the walk's lists.)
     found = {}
     from farm.models import StockOperation
     for row in rows:

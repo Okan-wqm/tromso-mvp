@@ -63,7 +63,8 @@ def _filtered(params, request):
         'unit': Tank.all_objects.filter(movements__in=harvested).distinct().order_by('code'),
         'batch': Batch.all_objects.filter(movements__in=harvested).distinct().order_by('-input_date', '-code'),
         'species': Species.all_objects.filter(batches__movements__in=harvested).distinct().order_by('common_name'),
-        'facility': SlaughterFacility.all_objects.filter(harvests__isnull=False).distinct().order_by('name'),
+        'facility': SlaughterFacility.all_objects.filter(harvests__operation__movements__in=harvested).distinct()
+        .order_by('name'),
     }
     lookups = {'site': 'unit__production_department__site', 'department': 'unit__production_department',
                'unit': 'unit', 'batch': 'batch', 'species': 'batch__species',

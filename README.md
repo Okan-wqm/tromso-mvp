@@ -984,14 +984,22 @@ when the unit has none of its own); the chart refused and
 says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind
 (for the oxygen superseded on 2026-11-23, below).
 
+**A unit with no sampling point of its own** is read at its system (review 4 of the branch, L1): `read.latest(points,
+units=...)` reads it in the same pass as every point, keyed by the unit, its system's tier as a unit point's (A9: the
+loop point's samples and probes, or the system's probes where there is no loop point), each value judged for the unit's
+own fish and saying "From its system, RAS 1 › Middle: the unit has no sampling point of its own." (nb, tr). Every
+reader takes it there: the card (its middle water, its values, its state), the water page's row, Production units and
+the overview, and the alarms (its water-limit levels at the loop point, "N-05, from R5 · Middle: …"; with no loop point
+no level can be placed, so the "no active sampling point" warning stays while its system's probes give its oxygen).
+A unit with a point is read exactly as before.
+
 **A unit with fish whose oxygen has no fresh value is critical** (owner decisions of 2026-11-23; they replace, for the
 dissolved oxygen alone, the grey "no recent data … never red" of 2026-11-04). Where the unit holds fish NOW (after its
 day's operations, `SpeciesBook.holds`: a unit harvested or emptied earlier today holds none; review 2, R1) and neither
 its oxygen in mg/L nor in % has a fresh value for the place (its own, else its system's: A9), never measured included,
-and also a unit with fish and no point at all to read its water at (`read.pointless_water`, review 2 R2: it was grey,
-with the alarm system's "no active sampling point" warning, which no longer holds beside the critical) unless its
-system measures the oxygen for it (its loop point's samples and probes, else the system's probes: A9's second tier, read
-by the one resolver, `read._standing`), the water's one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
+and also a unit with fish and no point of its own whose system does not measure its oxygen either (review 2 R2: it was
+grey, with the alarm system's "no active sampling point" warning, which no longer holds beside the critical), the water's
+one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
 in `status` and `point_status`) makes it critical: the Small and Big cards, the wall, the pane and the band's chip say
 "Dissolved oxygen (mg/L O₂): no recent data, 3 hours old" (the chip "O₂ (mg/L): no recent data", one chip for every unit
 it holds), the water page's row, Production units and the production overview say "Critical, no recent data" with that

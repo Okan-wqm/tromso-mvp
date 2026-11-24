@@ -6,24 +6,35 @@ whether or when an alarm opens.
 - **The kind of an alarm** (`key`): its site, its severity, and what it is about: a water quantity (the dissolved oxygen
   in mg/L and in % one), a sensor alarm rule, or a check of the alarm system (each failed step a check of its own). 24 tanks of one site losing oxygen at
   once are one kind; a pH alarm beside them is another.
-- **For one person, one channel** (`plan`), per kind in a round of the outbox: when its due notifications, with the ones
-  of that kind already sent to that person within the severity's flood window, are at least the severity's flood count
-  (Alarm severity rules: 3 within 120 s by default), they go out as ONE flood message (the transport is given the
-  first with `flood`: how many alarms, since when, an example) and each is written sent or failed as part of it
-  (`flood_size`). Within the window after a flood message of open alarms, the next of that kind for that person is
-  covered by it: written "grouped", never sent on its own nor again. A flood message that said its alarms had cleared
-  covers nothing: the next real alarm of the kind is sent. After the window the count starts again.
+- **A warning, for one person, one channel** (`plan`), per kind in a round of the outbox: when its due notifications,
+  with the ones of that kind already sent to that person within the warning's flood window, are at least the flood count
+  (Alarm severity rules: 3 within 120 s by default), they go out as ONE flood message (the transport is given the first
+  with `flood`: how many alarms, since when, an example) and each is written sent or failed as part of it
+  (`flood_size`). Within the window after a flood message of open alarms, the next warning of that kind for that person
+  is covered by it: written "grouped", never sent on its own nor again. A flood message that said its alarms had cleared
+  covers nothing. After the window the count starts again.
+- **A critical is batched, never covered** (the coordinator's bar on the last recheck, 2026-11-24: no known way to drop or
+  delay an open or newly cleared critical). The first critical of a kind for a person goes at once, on its own. The
+  next ones of that kind for that person are collected while a message of the kind went to them less than
+  FOLLOW_UP_AFTER ago, and then go as ONE follow-up message that names every one of them (its summary names the unit)
+  and says how many of them are open now (`Flood.listed`); one alone goes with its own text. So each reaches the person
+  at most FOLLOW_UP_AFTER after it was queued, and a person gets at most one message of a kind in that time. Ones
+  that are due in the same round as the first go with it: the first on its own, the rest as one follow-up message.
 - **The pages** show a flood of open alarms above the list (`open_floods`): at least the flood count of one kind, each
   opened within the flood window of the one before."""
 import hashlib
 from collections import defaultdict
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+
+from sensors.models.alarm import Severity
 
 from .models import Alarm, AlarmClearance, DeliveryAttempt, Outcome, Source
 from .sources import STEP_FAILED, slot_of
 
-EACH, FLOOD, COVERED = 'each', 'flood', 'covered'
+# How long the next criticals of a kind wait for a follow-up message after a message of that kind went to the person: the
+# coordinator set at most 30 s from the first of them; 15 s leaves the rest for a round's tick and a send under way.
+FOLLOW_UP_AFTER = timedelta(seconds=15)
 
 
 def _digest(text):
@@ -45,47 +56,71 @@ def key(alarm):
 
 @dataclass(frozen=True)
 class Recent:
-    """What a person got of one kind within its window: how many notifications, and the last flood message's time."""
+    """What a person got of one kind lately: how many notifications within its severity's window, the last flood
+    message's time (a warning's covers the next ones), and the last time a message of the kind was sent to them (a
+    critical's next ones wait FOLLOW_UP_AFTER after it)."""
 
     count: int = 0
     last_flood_at: datetime | None = None
+    last_sent_at: datetime | None = None
 
 
 def recent(groups, now, rules):
     """{(recipient id, channel, key): Recent} for the groups of a round ({(recipient id, channel, key): [notifications]}):
-    one query, the attempts of those people sent or covered within the longest window, each group counted in its own
-    severity's window."""
+    one query, the attempts of those people sent or covered within the longest window (or FOLLOW_UP_AFTER, if longer),
+    each group counted in its own severity's window."""
     if not groups:
         return {}
     windows = {group: rules.flood_window(members[0].alarm.severity) for group, members in groups.items()}
-    earliest = now - max(windows.values())
+    earliest = now - max(max(windows.values()), FOLLOW_UP_AFTER)
     counted = defaultdict(set)
-    last = {}
+    last, sent = {}, {}
     for recipient, channel, kind, notification, at, size, outcome, cleared_at in DeliveryAttempt.objects.filter(
             outcome__in=[Outcome.SENT, Outcome.GROUPED], attempted_at__gte=earliest, attempted_at__lte=now,
             notification__recipient__in={group[0] for group in groups}).values_list(
             'notification__recipient', 'notification__channel', 'flood_key', 'notification', 'attempted_at',
             'flood_size', 'outcome', 'notification__alarm__clearance__cleared_at'):
         group = (recipient, channel, kind)
-        if group not in windows or now - at > windows[group]:
+        if group not in windows:
+            continue
+        if outcome == Outcome.SENT:
+            sent[group] = max(at, sent.get(group, at))
+        if now - at > windows[group]:
             continue
         counted[group].add(notification)
         # Only a flood message about open alarms covers the next ones: one that said "cleared" (its alarm cleared by
         # then) never does, so the next real alarm of the kind is sent (N1, probe T17).
         if size is not None and outcome == Outcome.SENT and (cleared_at is None or cleared_at > at):
             last[group] = max(at, last.get(group, at))
-    return {group: Recent(len(counted[group]), last.get(group)) for group in groups}
+    return {group: Recent(len(counted[group]), last.get(group), sent.get(group)) for group in groups}
+
+
+@dataclass(frozen=True)
+class Plan:
+    """How a group's due notifications go out this round: `each` on its own, `flood` as one message (a warnings' flood
+    message, or a criticals' follow-up naming each), `covered` by the flood message sent within the window (warnings
+    only), `held` for the follow-up (criticals only: never longer than FOLLOW_UP_AFTER after the last message)."""
+
+    each: list = field(default_factory=list)
+    flood: list = field(default_factory=list)
+    covered: list = field(default_factory=list)
+    held: list = field(default_factory=list)
 
 
 def plan(members, found, now, rules):
-    """How a group's due notifications go out this round: EACH on its own, as one FLOOD message, or COVERED by the
-    flood message sent to that person within the window."""
+    """The Plan of a group's due notifications (in the backlog's order: an open critical first), given what the person
+    got of that kind lately (`found`, a Recent)."""
     severity = members[0].alarm.severity
+    if severity == Severity.CRITICAL:
+        if found.last_sent_at is not None and now - found.last_sent_at < FOLLOW_UP_AFTER:
+            return Plan(held=list(members))
+        first, rest = ([], list(members)) if found.count else (list(members[:1]), list(members[1:]))
+        return Plan(each=first + rest) if len(rest) < 2 else Plan(each=first, flood=rest)
     if found.last_flood_at is not None and now - found.last_flood_at < rules.flood_window(severity):
-        return COVERED
+        return Plan(covered=list(members))
     if found.count + len(members) >= rules.flood_count(severity):
-        return FLOOD
-    return EACH
+        return Plan(flood=list(members))
+    return Plan(each=list(members))
 
 
 @dataclass(frozen=True)

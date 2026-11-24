@@ -69,10 +69,13 @@ class SeverityPolicyForm(TabbedForm):
                                     'is notified.'),
             'delivery_attempts': _('How many times a failing transport is tried with one notification.'),
             'retry_seconds': _('How long after a failed attempt the notification is tried again. 1 to 3600.'),
-            'flood_count': _('From this many alarms of one kind (one site, this severity, one quantity, rule or check) '
-                             'within the flood window, a person gets one flood message for them. 2 to 1000.'),
-            'flood_window_seconds': _('How long the alarms of a flood are counted together, and how long a flood message '
-                                      'covers the ones that come after it. 10 to 3600.'),
+            'flood_count': _('From this many warnings of one kind (one site, one quantity, rule or check) within the '
+                             'flood window, a person gets one flood message for them. Criticals are never grouped this '
+                             'way: the first of a kind goes at once, the next ones within 15 s as one message naming '
+                             'each; for them it marks a flood on the Alarms page. 2 to 1000.'),
+            'flood_window_seconds': _('How long the alarms of a flood are counted together, and how long a flood '
+                                      'message of warnings covers the warnings that come after it (a critical is never '
+                                      'covered). 10 to 3600.'),
             'shelve_max_minutes': _('The longest an alarm of this severity may be snoozed: nobody is notified of it and '
                                     'it is not escalated meanwhile. Critical 1 to 480, warning 1 to 1440.'),
             'clock_skew_seconds': _('A device whose clock is further ahead of or behind the platform’s than this, '

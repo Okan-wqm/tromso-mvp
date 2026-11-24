@@ -20,9 +20,10 @@ class Failed:
 
 @dataclass(frozen=True)
 class Flood:
-    """A flood message (alarms/floods.py): `size` alarms of one kind for the person, the oldest opened at `since`, one
-    of them `example` (an alarm's summary); `cleared`: all of them have cleared, the last at `last_cleared`. The
-    notification handed with it is the first of them, its `text` the flood's (alarms/outbox.py text)."""
+    """A message for several notifications (alarms/floods.py): `size` alarms of one kind for the person, the oldest
+    opened at `since`, one of them `example` (an alarm's summary); `cleared`: all of them have cleared, the last at
+    `last_cleared`. The notification handed with it is the first of them, its `text` the message's (alarms/outbox.py
+    text)."""
     size: int
     since: object
     example: str
@@ -30,6 +31,9 @@ class Flood:
     last_cleared: object = None
     # the summary of critical alarms that cleared long before they could be sent (alarms/outbox.py SUMMARY_AFTER)
     summary: bool = False
+    # a follow-up message of criticals: each one's (summary, cleared at or None), and how many of them are open
+    listed: tuple = ()
+    open: int = 0
 
 
 class Transport:

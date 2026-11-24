@@ -35,7 +35,7 @@ class RetryOverflowTests(Case):
         SeverityPolicy.objects.filter(severity='critical').update(retry_seconds=5, escalation_minutes=30)
         rules = outbox.alarm_rules.current()
         row = self.system(1, 'critical')[0]
-        row.alarm_closed = False
+        row.acknowledged = False
         for failures in (60, 200, 10_000):
             row.failures = failures
             self.assertEqual(outbox.retry_wait(row, rules), timedelta(minutes=30))

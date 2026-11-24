@@ -186,7 +186,7 @@ class AlarmWorkerStatus(models.Model):
     last_send_at = models.DateTimeField(_('Outbox last gone through at'), null=True, blank=True)
     outbox_waiting = models.PositiveIntegerField(_('Notifications waiting'), default=0)
     outbox_oldest_at = models.DateTimeField(_('Oldest waiting since'), null=True, blank=True)
-    # Critical notifications of open, unacknowledged alarms that have failed longer than the escalation time
+    # Critical notifications of unacknowledged alarms (open or cleared) that have failed longer than the escalation time
     # (alarms/outbox.py undeliverable), and since when the oldest of them waits.
     undeliverable = models.PositiveIntegerField(_('Critical notifications undeliverable'), default=0)
     undeliverable_since = models.DateTimeField(_('Undeliverable since'), null=True, blank=True)

@@ -10,8 +10,8 @@ pages' notice ({% alarm_watch %}), the dead man (alarms/worker.py) and the worke
   alarms is not checked;
 - `sender`: the alarms are checked, but the outbox's sender has not gone through the outbox for that long (its thread
   died or hangs): nobody is told;
-- `undeliverable`: critical notifications of open, unacknowledged alarms have failed longer than the escalation time
-  (alarms/outbox.py): their people are not reached;
+- `undeliverable`: critical notifications of unacknowledged alarms (open or cleared) have failed longer than the
+  escalation time (alarms/outbox.py): their people are not reached;
 - otherwise the alarms are checked and sent, the last pass `age` seconds ago."""
 from dataclasses import dataclass
 from datetime import datetime, timedelta

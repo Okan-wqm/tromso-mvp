@@ -3,7 +3,7 @@ each held by a test that fails without its fix:
 
 - N1 (probe T17): a flood message about cleared alarms opens no coverage window: a new open critical of the kind 35 s
   later is sent, never covered by a message that said "cleared";
-- N2 (T1): "all now cleared" only when every alarm counted is cleared, the times of exactly those;
+- N2 (T1): a message about cleared criticals counts only its own alarms (now the follow-up names each: test_review_final);
 - N3 (T4): open, unacknowledged criticals go before cleared criticals, then the rest;
 - N4 (T2): a word about a snooze of an alarm that cleared since is given up, never "still open";
 - N5 (T3): an error in a notification's own handling before the transport is a failed attempt, counted as any;
@@ -51,16 +51,15 @@ class FloodCoverageTests(RecheckCase):
         self.assertEqual((found.sent, found.grouped), (1, 0))
         self.assertEqual(RecordingTransport.sent[-1].pk, fresh.pk)
 
-    def test_all_now_cleared_only_when_every_alarm_counted_is(self):                          # probe T1
+    def test_a_message_about_cleared_criticals_counts_only_its_own(self):                      # probe T1
         self.system(2, 'critical')                                                      # two open, sent one by one
         outbox.send_due(self.at(0, seconds=1))
         self.cleared(3, minutes=1, seconds=10)
         outbox.send_due(self.at(2))
-        for first, flood in RecordingTransport.floods:
-            self.assertFalse('all now cleared' in first.text and not flood.cleared, first.text)
-            if 'all now cleared' in first.text:
-                self.assertTrue(first.text.startswith(f'{flood.size} critical alarms'))
-                self.assertEqual(flood.size, 3)
+        ((first, flood),) = RecordingTransport.floods
+        self.assertEqual(flood.size, 3)
+        self.assertTrue(first.text.startswith('3 more critical alarms'), first.text)
+        self.assertIn('0 open now', first.text)
 
 
 @override_settings(ALARM_TRANSPORTS=RECORDING)

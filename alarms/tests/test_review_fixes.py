@@ -2,8 +2,8 @@
 test that fails without its fix:
 
 - F1: a critical notification is never given up silently: it is tried again, the wait doubling up to the escalation
-  time, until its alarm is acknowledged or cleared; one that cannot be delivered past the escalation time is a critical
-  alarm of the alarm system and is said on the pages; warnings keep their attempts.
+  time, until its alarm is acknowledged (N7: clearing does not end it); one that cannot be delivered past the escalation
+  time is a critical alarm of the alarm system and is said on the pages; warnings keep their attempts.
 - F2, F3: the notice is live on the monitoring wall, on every alarm page, says when nothing is sent, when the sender is
   silent and when criticals cannot be delivered; the worker's figures and timings are shown read-only.
 - F4: a worker on a new database session takes the lock again with its session's settings; a lost database clears its
@@ -114,13 +114,13 @@ class CriticalNeverGivenUpTests(Case):
     def test_the_wait_doubles_up_to_the_escalation_time(self):
         rules = outbox.alarm_rules.current()
         row = self.system(1, 'critical')[0]
-        row.alarm_closed = False
+        row.acknowledged = False
         waits = []
         for failures in range(1, 9):
             row.failures = failures
             waits.append(outbox.retry_wait(row, rules).total_seconds())
         self.assertEqual(waits, [30, 60, 120, 240, 300, 300, 300, 300])
-        row.alarm_closed = True
+        row.acknowledged = True
         self.assertEqual(outbox.retry_wait(row, rules).total_seconds(), 30)
 
 

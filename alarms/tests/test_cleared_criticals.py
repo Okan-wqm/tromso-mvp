@@ -4,7 +4,8 @@ oxygen crash, a power cut) is exactly what the people on call must hear afterwar
 was critical and has cleared, when it opened and when it cleared, in the person's language, through the same outbox,
 grouping and flood rules as any notification. A warning (or another notification) that cleared before its first attempt
 is still given up, its attempt saying why, after the due criticals and in bounded chunks, so 20,000 of them never delay a critical;
-a flood of cleared criticals says so."""
+cleared criticals of one kind go as the first on its own and one follow-up naming each, when it cleared and how many are
+open now."""
 import sys
 import time
 
@@ -50,13 +51,13 @@ class ClearedCriticalTests(Case):
         self.assertNotIn('Critical, now cleared', sent.text)
         self.assertIn('avsluttet', sent.text)
 
-    def test_cleared_criticals_of_one_kind_go_out_as_one_flood_message(self):
+    def test_cleared_criticals_of_one_kind_go_out_as_the_first_and_one_follow_up(self):
         made = self.system(4, 'critical')
         for row in made:
             services.clear(row.alarm, self.at(1), 'restored')
         with override_settings(ALARM_TRANSPORTS=RECORDING):
             found = outbox.send_due(self.at(2))
-        self.assertEqual((found.floods, found.sent, len(RecordingTransport.sent)), (1, 4, 1))
+        self.assertEqual((found.floods, found.sent, len(RecordingTransport.sent)), (1, 4, 2))
 
     def test_a_warning_that_came_and_went_is_given_up_and_said(self):
         (notification,) = self.system(1, 'warning')
@@ -74,15 +75,18 @@ class FloodTextTests(Case):
         RecordingTransport.floods.clear()
         self.addCleanup(RecordingTransport.floods.clear)
 
-    def test_a_flood_of_cleared_criticals_says_so_with_the_count_and_the_first_and_last_times(self):
+    def test_the_follow_up_of_cleared_criticals_names_each_with_when_it_cleared_and_none_open(self):
         made = self.system(4, 'critical')
         for minute, row in enumerate(made, start=1):
             services.clear(row.alarm, self.at(minute), 'restored')
         outbox.send_due(self.at(10))
         ((first, flood),) = RecordingTransport.floods
         clock = (lambda at: on(at, zone_for(self.bergen)).strftime('%d.%m.%Y %H:%M'))
-        self.assertIn('4 critical alarms, all now cleared', first.text)
-        self.assertIn(f'first opened {clock(self.now)}, last cleared {clock(self.at(4))}', first.text)
+        self.assertTrue(first.text.startswith(f'3 more critical alarms of one kind since {clock(self.now)}, 0 open now'))
+        for minute, row in enumerate(made[1:], start=2):
+            self.assertIn(f'{row.alarm.summary} (cleared {clock(self.at(minute))})', first.text)
+        self.assertNotIn(made[0].alarm.summary, first.text)                  # told on its own just before
+        self.assertIn('Critical, now cleared', RecordingTransport.sent[0].text)
 
     def test_it_is_said_in_the_persons_language(self):
         Profile.objects.update_or_create(user=self.operator, defaults={'language': 'tr'})
@@ -90,7 +94,7 @@ class FloodTextTests(Case):
             services.clear(row.alarm, self.at(1), 'restored')
         outbox.send_due(self.at(2))
         ((first, _flood),) = RecordingTransport.floods
-        self.assertNotIn('all now cleared', first.text)
+        self.assertNotIn('more critical alarms', first.text)
         self.assertIn('kapandı', first.text)
 
 

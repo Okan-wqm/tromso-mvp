@@ -1,6 +1,7 @@
-"""Alarm floods (alarms/floods.py; the owner's burst requirement): many alarms of one kind for one person become one flood
-message, and the ones within the flood window after it are covered by it; every alarm is still raised, kept, listed and
-escalated on its own. The kind of an alarm is its site, its severity and what it is about; different people, kinds and
+"""Alarm floods (alarms/floods.py; the owner's burst requirement): many warnings of one kind for one person become one flood
+message, and the ones within the flood window after it are covered by it; a burst of criticals is the first on its own
+and one follow-up message naming the rest, none ever covered (test_review_final); every alarm is still raised, kept,
+listed and escalated on its own. The kind of an alarm is its site, its severity and what it is about; different people, kinds and
 windows are never mixed. The pages show a flood of open alarms."""
 from datetime import timedelta
 
@@ -78,7 +79,7 @@ class KindTests(FloodCase):
 @override_settings(ALARM_TRANSPORTS=RECORDING)
 class BurstTests(FloodCase):
     def test_a_burst_is_one_message_per_person_and_every_notification_is_written_with_it(self):
-        made = self.alarms(24)
+        made = self.alarms(24, severity='warning')
         found = self.send()
         self.assertEqual((found.floods, found.sent, found.grouped), (1, 24, 0))
         ((first, flood),) = RecordingTransport.floods
@@ -89,38 +90,50 @@ class BurstTests(FloodCase):
         self.assertEqual(Alarm.objects.count(), 24)                            # every alarm kept on its own
         self.assertEqual(self.send(1).backlog, 0)
 
+    def test_a_burst_of_criticals_is_the_first_on_its_own_and_one_follow_up_naming_the_rest(self):
+        made = self.alarms(24)
+        found = self.send()
+        self.assertEqual((found.floods, found.sent, found.grouped), (1, 24, 0))
+        first, follow_up = RecordingTransport.sent
+        self.assertEqual(first.pk, made[0].pk)
+        self.assertEqual(RecordingTransport.floods[0][1].size, 23)
+        for row in made[1:]:
+            self.assertIn(row.alarm.summary, follow_up.text)
+        self.assertIn('23 open now', follow_up.text)
+        self.assertEqual(self.send(1).backlog, 0)
+
     def test_the_ones_after_a_flood_message_are_covered_within_the_window_and_counted_again_after_it(self):
-        self.alarms(5)
+        self.alarms(5, severity='warning')
         self.send()
-        self.alarms(2, seconds=30)
+        self.alarms(2, seconds=30, severity='warning')
         found = self.send(30)
         self.assertEqual((found.grouped, found.sent, len(RecordingTransport.sent)), (2, 0, 1))
         covered = DeliveryAttempt.objects.filter(outcome='grouped')
         self.assertEqual(covered.count(), 2)
         self.assertIn('covered by the flood message', covered.first().detail)
-        later = self.alarms(1, seconds=200)                                    # past the 120 s window
+        later = self.alarms(1, seconds=200, severity='warning')                # past the 120 s window
         found = self.send(200)
         self.assertEqual((found.sent, found.grouped, found.floods), (1, 0, 0))
         self.assertEqual(RecordingTransport.sent[-1].pk, later[0].pk)
 
     def test_a_trickle_becomes_a_flood_once_the_window_holds_enough(self):
-        self.alarms(1)
+        self.alarms(1, severity='warning')
         self.send()
-        self.alarms(1, seconds=10)
+        self.alarms(1, seconds=10, severity='warning')
         self.send(10)
         self.assertEqual(len(RecordingTransport.floods), 0)                    # two sent on their own
-        self.alarms(1, seconds=20)
+        self.alarms(1, seconds=20, severity='warning')
         found = self.send(20)
         self.assertEqual((found.floods, RecordingTransport.floods[0][1].size), (1, 3))
-        self.alarms(1, seconds=25)
+        self.alarms(1, seconds=25, severity='warning')
         self.assertEqual(self.send(25).grouped, 1)
 
     def test_people_and_kinds_are_never_mixed(self):
-        self.alarms(3)
-        self.alarms(3, to=self.manager)
-        self.alarms(1, kind='step_failed')
-        self.alarms(1, site=self.oslo)
-        self.alarms(1, severity='warning')
+        self.alarms(3, severity='warning')
+        self.alarms(3, severity='warning', to=self.manager)
+        self.alarms(1, kind='step_failed', severity='warning')
+        self.alarms(1, site=self.oslo, severity='warning')
+        self.alarms(1)
         found = self.send()
         self.assertEqual((found.floods, found.sent), (2, 9))
         self.assertEqual(sorted(flood.size for _first, flood in RecordingTransport.floods), [3, 3])
@@ -137,14 +150,14 @@ class BurstTests(FloodCase):
 
 class FailingFloodTests(FloodCase):
     def test_a_flood_message_that_fails_is_tried_again_as_one(self):
-        self.alarms(4)
+        self.alarms(4, severity='warning')
         with override_settings(ALARM_TRANSPORTS=FAILING):
             found = self.send()
         self.assertEqual((found.floods, found.failed), (1, 4))
         self.assertEqual(set(DeliveryAttempt.objects.values_list('outcome', 'flood_size')), {('failed', 4)})
         with override_settings(ALARM_TRANSPORTS=RECORDING):
-            self.assertEqual(self.send(10).retrying, 4)                        # its retry time (30 s) first
-            found = self.send(30)
+            self.assertEqual(self.send(10).retrying, 4)                        # its retry time (120 s) first
+            found = self.send(120)
         self.assertEqual((found.floods, found.sent, len(RecordingTransport.sent)), (1, 4, 1))
 
     def test_a_grouped_attempt_is_written_once(self):
@@ -165,5 +178,5 @@ class PageTests(FloodCase):
         self.alarms(2, seconds=600)                                            # far apart: not the same flood
         self.assertContains(self.client.get(reverse('alarms:alarm_list')), 'Alarm flood: 4 open Critical alarms')
         self.assertContains(self.client.get(reverse('alarms:alarm_detail', args=[made[1].alarm_id])),
-                            'in a flood message of 4 alarms')
+                            'in a flood message of 3 alarms')                 # the follow-up after the first
         self.assertEqual([flood.size for flood in floods.open_floods(alarm_rules.current())], [4])

@@ -30,7 +30,7 @@ from farm.models.site import zone_of
 from farm.water import deffeyes
 from core.widgets import EXAMPLE, MomentInput
 
-from . import bindings, chart, credentials, quantities, read, trail
+from . import bindings, chart, credentials, pages, quantities, read, trail
 from .forms import DeviceMoveForm, on_site_clock, place_choices, place_of
 from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason,
                      Device, IngestStatus)
@@ -47,14 +47,23 @@ def _context(url_name, **extra):
     return {'title': place.entry.label, 'eyebrow': f'{place.workspace.label} · {place.entry.label}', **extra}
 
 
+def _next_list(request, url_name, props):
+    """A Sensors page drawn by the shared list page in the new look (sensors/pages.py, templates/crud/list_next.html)."""
+    context = _context(url_name, props=props)
+    return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow']})
+
+
 def home(request):
     """The Sensors overview: the configuration counted, for the parts the person may read (every signed-in person may
     open it; the panel is offered to those who can use something in it)."""
     tiles = [{'label': resource.title(), 'count': resource.model.objects.count(), 'url': reverse(resource.url_name('list'))}
              for resource in (ConnectionResource, DeviceResource, ChannelResource, PayloadFormatResource)
              if request.user.has_perm(resource.perm('view'))]
-    return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles,
-                                                               state_tiles=state_tiles(request.user, timezone.now())))
+    now = timezone.now()
+    state = state_tiles(request.user, now)
+    if ui.is_next(request):
+        return render_page(request, 'sensors/home_next.html', {'props': pages.home_props(tiles, state, now)})
+    return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles, state_tiles=state))
 
 
 @require_POST
@@ -302,6 +311,8 @@ def live(request):
               .select_related('point__unit', 'point__system', 'point__equipment', 'system', 'equipment')}
     rows = [{'channel': channel, 'state': states[channel.channel_no], 'binding': places.get(channel.pk)}
             for channel in channels]
+    if ui.is_next(request):
+        return _next_list(request, 'sensors:live', pages.live_props(request, rows))
     return render_page(request, 'sensors/live.html', _context('sensors:live', rows=rows, now=now))
 
 
@@ -396,6 +407,10 @@ def dead_letters(request):
             for letter in page.object_list]
     kept = request.GET.copy()
     kept.pop('page', None)
+    if ui.is_next(request):
+        return _next_list(request, 'sensors:dead_letters', pages.dead_letters_props(
+            request, rows, page=page, reasons=DeadReason.choices, reason=reason, show=request.GET.get('show', ''),
+            pager_query=kept.urlencode(), can_resolve=request.user.has_perm('sensors.change_deadletter')))
     return render_page(request, 'sensors/dead_letters.html', _context(
         'sensors:dead_letters', rows=rows, page=page, reasons=DeadReason.choices, reason=reason,
         show=request.GET.get('show', ''), pager_query=kept.urlencode(),
@@ -476,6 +491,10 @@ def alarm_events(request):
         'binding__system', 'binding__equipment').prefetch_related(
         'alarm__acknowledgements__user').order_by(F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
+    if ui.is_next(request):
+        return _next_list(request, 'sensors:alarm_events', pages.alarm_events_props(
+            request, page.object_list, page=page, connected=alarms_read.connected(),
+            can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))
     return render_page(request, 'sensors/alarm_events.html', _context(
         'sensors:alarm_events', page=page, events=page.object_list, connected=alarms_read.connected(),
         can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))

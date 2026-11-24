@@ -5517,6 +5517,19 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   three languages; the search, the filters and the pager are the address's); `frontend/islands/ui/ui.test.tsx` (the
   markup); `frontend/test/listpage.browser.test.ts` (the GET form sends what the server reads; CSP and axe in every theme
   at 1440 and 390) and `listpages.browser.test.ts` (every recorded list in three languages at both widths).
+- **The Sensors pages** (Charts aside): every Sensors tab's list on the shared list page (Connections, Payload formats,
+  Devices, Channels, Credentials, Bindings, Alarm rules; their rows in `sensors/lists.py`, each tab's `list_rows`), and
+  Live values, Dead letters and Alarm events on the same island, their props made by `sensors/pages.py` from the rows
+  their own views read (the same page and filters as the classic page; the tabs' pager wording). A device marked
+  simulated says "Simulated" (the design's mark; its values are stored marked and used nowhere). A stale live value keeps
+  its "Stale" chip and its row the warning edge, never "Fresh". Resolve (a dead letter) and Acknowledge (an alarm event
+  nobody acknowledged) are the row's POST action with the page's token, for a person who may. "Nothing is sent yet" stays
+  on Alarm events while no push transport is connected. A place's bindings (`?place=`) say whose they are and lead back
+  to every binding. Overview is island `sensors-home` (`frontend/islands/pages/SensorsHome.tsx`): the classic page's own
+  state and setup counts (`sensors.views.state_tiles`), with the moment they were worked out. Held:
+  `sensors/tests/test_pages_next.py` (every page against its classic page on the test world plus `sensors_world`, in
+  three languages; nothing opens the classic dialog; the world's facts) and `frontend/test/prodrest.pages.ts` (each page
+  at 1440 and 390: CSP, axe, 4.5:1, no sideways scroll, the screenshots).
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

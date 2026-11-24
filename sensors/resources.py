@@ -17,7 +17,7 @@ from core.crud import CreateView, Resource, RowList, done, refusal_text, render_
 from farm.models import Equipment, System, Tank
 from farm.models.site import zone_of
 
-from . import bindings, credentials
+from . import bindings, credentials, lists
 from .forms import (AlarmRuleForm, BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm,
                     CredentialForm, DeviceForm, PayloadFormatForm, place_of)
 from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat
@@ -40,6 +40,11 @@ class ConnectionResource(Resource):
     icon = 'plug'
     page_size = 50
 
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.connections)
+    search_placeholder = _('Search by name, host or client id')
+    empty_text = _('A connection is an MQTT broker the ingest service listens to. Its devices say which topics.')
+
     @classmethod
     def queryset(cls):
         return super().queryset().annotate(device_count=_count(Device, 'connection'))
@@ -54,6 +59,12 @@ class PayloadFormatResource(Resource):
     list_template = 'sensors/payloadformat_list.html'
     icon = 'braces'
     page_size = 50
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.payload_formats)
+    search_placeholder = _('Search by name')
+    empty_text = _('A payload format says how a kind of device writes its messages: where the time is, and where each '
+                   'value is.')
 
     @classmethod
     def queryset(cls):
@@ -70,6 +81,13 @@ class DeviceResource(Resource):
     form_template = 'sensors/device_form.html'
     icon = 'cpu'
     page_size = 50
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.devices)
+    list_filters = staticmethod(lists.device_filters)
+    search_placeholder = _('Search by code, name, topic or model')
+    empty_text = _('A device publishes on one topic of a connection: a probe, a PLC, a gateway. Its channels are the '
+                   'values it sends.')
 
     @classmethod
     def queryset(cls):
@@ -117,6 +135,13 @@ class ChannelResource(Resource):
     icon = 'activity'
     row_lists = (ChannelCalibrations,)
     page_size = 100
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.channels)
+    list_filters = staticmethod(lists.channel_filters)
+    search_placeholder = _('Search by code, name or device')
+    empty_text = _('A channel is one value a device sends: what it measures, where it is in the message and how it is '
+                   'stored.')
 
     @classmethod
     def queryset(cls):
@@ -172,6 +197,12 @@ class CredentialResource(Resource):
     icon = 'key-round'
     page_size = 50
     create_view = CredentialCreateView
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.credentials)
+    search_placeholder = _('Search by user name')
+    empty_text = _('A credential is the name and secret a device or gateway signs in to the broker with. The secret is '
+                   'shown once, when it is made.')
 
     @classmethod
     def queryset(cls):
@@ -247,6 +278,12 @@ class BindingResource(Resource):
     create_view = BindView
     page_size = 100
 
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.bindings)
+    search_placeholder = _('Search by channel, device or place')
+    empty_text = _("A binding says where a channel's values belong from a moment on: a sampling point or a system for a "
+                   'water value, a piece of equipment or a system for a process value.')
+
     @classmethod
     def queryset(cls):
         return (Binding.objects.visible()
@@ -276,6 +313,12 @@ class AlarmRuleResource(Resource):
     list_template = 'sensors/alarmrule_list.html'
     icon = 'bell'
     page_size = 100
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.alarm_rules)
+    search_placeholder = _('Search by channel or quantity')
+    empty_text = _('A rule says when a channel needs a look: no fresh value, its device offline, a value above or below '
+                   'a threshold, or a change too fast.')
 
     @classmethod
     def queryset(cls):

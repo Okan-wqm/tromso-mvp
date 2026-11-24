@@ -8416,6 +8416,9 @@ msgstr "Enfeksiyöz somon anemisi (ISA)"
 msgid "Ingest"
 msgstr "Veri alımı"
 
+msgid "Ingest and devices"
+msgstr "Veri alımı ve cihazlar"
+
 msgid "Injection"
 msgstr "Enjeksiyon"
 

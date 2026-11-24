@@ -8389,6 +8389,9 @@ msgstr "Infeksiøs lakseanemi (ILA)"
 msgid "Ingest"
 msgstr "Innhenting"
 
+msgid "Ingest and devices"
+msgstr "Innhenting og enheter"
+
 msgid "Injection"
 msgstr "Injeksjon"
 

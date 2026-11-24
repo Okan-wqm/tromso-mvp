@@ -49,10 +49,26 @@ def module_map(context):
 # (vite.config.mjs). The build's manifest maps an island's name to its hashed file and the chunks it imports; it is read
 # once per server start (and again whenever the file changes, so a build during development is seen without a restart).
 
+MANIFEST = 'islands/manifest.json'
+
+
 def manifest_path():
+    """Where the islands' manifest is read: settings.ISLANDS_MANIFEST when set (the tests' fixture); else the collected
+    static files' (STATIC_ROOT/islands/manifest.json, a production server that serves STATIC_ROOT only), when there is
+    one; else the build's, static/islands/manifest.json (npm run build, found by the static finders). It is a plain file
+    name, no dot-folder: collectstatic copies it with the islands."""
     from django.conf import settings
-    return getattr(settings, 'ISLANDS_MANIFEST', None) or os.path.join(settings.BASE_DIR, 'static', 'islands', '.vite',
-                                                                       'manifest.json')
+    from django.contrib.staticfiles import finders
+    if getattr(settings, 'ISLANDS_MANIFEST', None):
+        return settings.ISLANDS_MANIFEST
+    root = getattr(settings, 'STATIC_ROOT', None)
+    if root and os.path.exists(os.path.join(root, *MANIFEST.split('/'))):
+        return os.path.join(root, *MANIFEST.split('/'))
+    return finders.find(MANIFEST) or os.path.join(settings.BASE_DIR, 'static', *MANIFEST.split('/'))
+
+
+class ManifestUnreadable(Exception):
+    """The manifest is there but is not a manifest (cut short, not JSON, not Vite's shape)."""
 
 
 _manifest_cache = {}
@@ -60,7 +76,8 @@ _manifest_cache = {}
 
 def islands_manifest():
     """{island name: {'file': path under static/islands, 'imports': [...], 'css': [...]}} of the build's manifest ({} for
-    a build without islands); None when there is no build (core.W001 says so)."""
+    a build without islands); None when there is no build (core.W001, and core.E006 for a deployment, say so). A
+    manifest that cannot be read raises ManifestUnreadable (the checks report it; a page with an island fails loudly)."""
     path = manifest_path()
     try:
         stamp = os.path.getmtime(path)
@@ -69,26 +86,39 @@ def islands_manifest():
     cached = _manifest_cache.get(path)
     if cached and cached[0] == stamp:
         return cached[1]
-    with open(path, encoding='utf-8') as handle:
-        raw = json.load(handle)
-
-    def chunk_files(key, seen):
-        """The files `key` imports, depth first, each once (the browser preloads them beside the island)."""
-        found = []
-        for child in raw.get(key, {}).get('imports', []):
-            if child not in seen:
-                seen.add(child)
-                found += [raw[child]['file'], *chunk_files(child, seen)]
-        return found
-
-    islands = {}
-    for key, chunk in raw.items():
-        if chunk.get('isEntry'):
-            name = chunk.get('name') or os.path.splitext(os.path.basename(key))[0]
-            css = [*chunk.get('css', []), *(c for child in raw.get(key, {}).get('imports', []) for c in raw.get(child, {}).get('css', []))]
-            islands[name] = {'file': chunk['file'], 'imports': chunk_files(key, set()), 'css': list(dict.fromkeys(css))}
+    try:
+        with open(path, encoding='utf-8') as handle:
+            raw = json.load(handle)
+        if not isinstance(raw, dict):
+            raise ValueError('not an object')
+        islands = {}
+        for key, chunk in raw.items():
+            if chunk.get('isEntry'):
+                name = chunk.get('name') or os.path.splitext(os.path.basename(key))[0]
+                files, css = _imports(raw, key)
+                islands[name] = {'file': chunk['file'], 'imports': files, 'css': list(dict.fromkeys([*chunk.get('css', []), *css]))}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+        raise ManifestUnreadable(f'{path}: {error}') from error
     _manifest_cache[path] = (stamp, islands)
     return islands
+
+
+def _imports(raw, key):
+    """([the files `key` imports], [their stylesheets]), at any depth, depth first, each once: the browser preloads the
+    files beside the island and the page links every stylesheet one of them brings (uPlot's, two chunks deep)."""
+    files, css, seen = [], [], set()
+
+    def walk(at):
+        for child in raw[at].get('imports', []):
+            if child in seen:
+                continue
+            seen.add(child)
+            files.append(raw[child]['file'])
+            css.extend(raw[child].get('css', []))
+            walk(child)
+
+    walk(key)
+    return files, css
 
 
 class UnknownIsland(Exception):

@@ -8,7 +8,7 @@
    the hairline at its right and its foot; the grid stands 1 px out at the right and the foot, under the sheet's own
    border (tw:-mr-px tw:-mb-px), so a row that is not full ends in the sheet's own ground. {% endcomment %}{% if small %}<a class="tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:px-4 tw:py-2 tw:coarse:min-h-12 tw:border-r tw:border-b tw:border-hair tw:bg-sheet tw:text-ink-1 tw:no-underline tw:hover:bg-sunken" href="{{ url }}" data-metric="{{ key }}"><span class="tw:text-figure tw:font-semibold" data-figure>{{ figure }}</span><span class="tw:text-small tw:text-ink-2">{{ label }}</span></a>{% else %}<a class="ui-tile" href="{{ url }}" data-metric="{{ key }}"{% if status %} data-status="{{ status }}"{% endif %}>
   <span class="ui-tile-label">{% if icon %}{% include "icons/_icon.html" with name=icon %}{% endif %}<span class="tw:min-w-0">{{ label }}</span></span>
-  <span class="ui-tile-figure" data-figure>{{ figure }}</span>
+  <span class="ui-tile-figure" data-figure title="{{ figure }}">{{ figure }}</span>
   {% if chip %}<span class="tw:flex"><span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{{ chip }}</span></span>{% elif sub %}<span class="ui-tile-sub">{{ sub }}</span>{% endif %}
   {% if source %}<span class="ui-tile-source" data-source>{{ source }}</span>{% endif %}
 </a>{% endif %}

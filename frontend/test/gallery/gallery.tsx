@@ -20,6 +20,7 @@ export interface GalleryProps {
 
 function Gallery({ rows, errors }: GalleryProps) {
   const [busy, setBusy] = useState(false);
+  const [presses, setPresses] = useState(0);
   const [flash, setFlash] = useState(true);
   return (
     <Plates>
@@ -31,7 +32,8 @@ function Gallery({ rows, errors }: GalleryProps) {
           <Button variant="danger" id="b-danger">Delete the site</Button>
           <Button variant="danger-text" id="b-danger-text">Delete</Button>
           <Button variant="primary" isDisabled id="b-disabled">Start</Button>
-          <Button variant="primary" busy={busy} onPress={() => setBusy(true)} id="b-busy">Save</Button>
+          <Button variant="primary" busy={busy} onPress={() => { setPresses((count) => count + 1); setBusy(true); }} id="b-busy">Save</Button>
+          <output id="b-busy-presses" className="sr-only">{presses}</output>
           <Button size="coarse" variant="primary" id="b-coarse">Record meal</Button>
           <LinkButton href="#here" icon="pencil">Edit</LinkButton>
           <IconButton icon="pencil" label="Edit Test Site North" />
@@ -69,6 +71,7 @@ function Gallery({ rows, errors }: GalleryProps) {
           rows={rows}
           rowKey={(row) => row.code}
           rowStatus={(row) => (row.status === 'warning' ? 'warning' : undefined)}
+          statusLabels={{ critical: 'Critical', warning: 'Warning' }}
           actions={(row) => <><IconButton icon="pencil" label={`Edit ${row.name}`} /><IconButton icon="trash" tone="danger" label={`Delete ${row.name}`} /></>}
           actionsLabel="Actions"
         />
@@ -137,6 +140,7 @@ function Gallery({ rows, errors }: GalleryProps) {
       </Plate>
       <Plate title="Chart frame" span={4}>
         <ChartFrame title="Dissolved oxygen" now="6.50 mg/L" nowStatus="warning" label="Dissolved oxygen, last 24 hours"
+          values={[['Latest', '6.50 mg/L at 13:42'], ['Lowest', '6.50 mg/L at 13:42'], ['Highest', '9.10 mg/L at 00:00']]}
           keys={[{ label: 'Sensor', series: 1 }, { label: 'Manual', series: 2 }]} caption="Stored values, 5 min means">
           <svg viewBox="0 0 200 80" aria-hidden="true"><polyline points="0,60 50,40 100,50 150,30 200,35" fill="none" stroke="currentColor" /></svg>
         </ChartFrame>

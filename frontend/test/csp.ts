@@ -1,4 +1,27 @@
-// The product's Content-Security-Policy (config/settings.py, SECURE_CSP) as the browser tests serve their pages with it,
-// without the nonce: a page of islands needs none. One copy for every browser test. Test code only.
-export const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
-  + "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+// The product's Content-Security-Policy for the browser tests, read from the one place it is written (config/settings.py,
+// SECURE_CSP), so a test never serves a hand-copied policy that drifts from the server's. `nonce` stands in for the
+// response's nonce (Django's CSP.NONCE); without one the policy allows no inline script at all. Test code only.
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const WORDS: Record<string, string> = { 'CSP.SELF': "'self'", 'CSP.NONE': "'none'", 'CSP.UNSAFE_INLINE': "'unsafe-inline'" };
+
+/** [directive, [source, …]] of SECURE_CSP as config/settings.py writes it. */
+export function directives(settings = readFileSync(resolve('config/settings.py'), 'utf8')): [string, string[]][] {
+  const block = /^SECURE_CSP = \{([\s\S]*?)^\}/m.exec(settings)?.[1];
+  if (!block) throw new Error('config/settings.py has no SECURE_CSP block');
+  return [...block.matchAll(/'([a-z-]+)':\s*\[([^\]]*)\]/g)].map(([, name, list]) => [name as string, (list as string)
+    .split(',').map((item) => item.trim()).filter(Boolean)
+    .map((item) => (item.startsWith("'") ? item.slice(1, -1) : item))]);
+}
+
+/** The header value: Django's words turned into the browser's, CSP.NONCE into `'nonce-<nonce>'` (or dropped). */
+export function policy(nonce = ''): string {
+  return directives().map(([name, sources]) => `${name} ${sources.flatMap((source) => {
+    if (source === 'CSP.NONCE') return nonce ? [`'nonce-${nonce}'`] : [];
+    return [WORDS[source] ?? source];
+  }).join(' ')}`).join('; ');
+}
+
+/** The policy without a nonce, for a page of islands (it runs no inline script): frontend/test/island-page.ts serves it. */
+export const CSP = policy();

@@ -33,6 +33,7 @@ SIGNED_IN = {
     'sensors:home': 'the Sensors overview: a tile for each part the roles allow (sensors/views.py home, state_tiles)',
     'password_change': "the person's own password",
     'password_change_done': "the person's own password",
+    'core:ui_strip': "the new look's status strip: each item only for who may see it (core/ui.py strip; core.tests_ui_look)",
 }
 
 # Routes whose argument is one of a few words, not a record: the sample word is no page at all (404), and the real pages

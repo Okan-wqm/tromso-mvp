@@ -426,6 +426,12 @@ msgstr[0] "%(count)d birim"
 msgstr[1] "%(count)d birim"
 
 #, python-format
+msgid "%(count)d unit cannot be read"
+msgid_plural "%(count)d units cannot be read"
+msgstr[0] "%(count)d birim okunamıyor"
+msgstr[1] "%(count)d birim okunamıyor"
+
+#, python-format
 msgid "%(count)d unit critical"
 msgid_plural "%(count)d units critical"
 msgstr[0] "%(count)d birim kritik"
@@ -438,8 +444,14 @@ msgstr[0] "%(count)d birimde uyarı"
 msgstr[1] "%(count)d birimde uyarı"
 
 #, python-format
-msgid "%(count)d unit without recent data"
-msgid_plural "%(count)d units without recent data"
+msgid "%(count)d unit with no limit"
+msgid_plural "%(count)d units with no limit"
+msgstr[0] "%(count)d birimde sınır yok"
+msgstr[1] "%(count)d birimde sınır yok"
+
+#, python-format
+msgid "%(count)d unit with no recent data"
+msgid_plural "%(count)d units with no recent data"
 msgstr[0] "%(count)d birimde güncel veri yok"
 msgstr[1] "%(count)d birimde güncel veri yok"
 
@@ -4120,6 +4132,9 @@ msgstr "Genel bakışa dön"
 
 msgid "Back to sign in"
 msgstr "Girişe dön"
+
+msgid "Back to the classic look"
+msgstr "Klasik görünüme dön"
 
 msgid "Back to the document"
 msgstr "Belgeye dön"
@@ -9006,9 +9021,6 @@ msgstr "Canlı sensör değerleri okunamadı: yalnızca numuneler."
 msgid "Live values"
 msgstr "Canlı değerler"
 
-msgid "Live values cannot be read"
-msgstr "Canlı değerler okunamıyor"
-
 msgid "Loading the cards…"
 msgstr "Kartlar yükleniyor…"
 
@@ -10578,6 +10590,9 @@ msgstr ""
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s."
 msgstr "Hasada uygun değil — %(batch)s için ilaç bekleme süresi: %(end)s."
+
+msgid "Not updated: the alarms cannot be read"
+msgstr "Güncellenmedi: alarmlar okunamıyor"
 
 msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
 msgstr "Güncellenmedi: sunucuya ulaşılamıyor ya da yanıt veremiyor. Bu bilgi eski olabilir."
@@ -14226,9 +14241,6 @@ msgstr ""
 
 msgid "The alarm system itself"
 msgstr "Alarm sisteminin kendisi"
-
-msgid "The alarms cannot be read"
-msgstr "Alarmlar okunamıyor"
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "

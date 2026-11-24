@@ -74,14 +74,22 @@ test('a table is a named, scrolling region with its figures right, its row statu
     actionsLabel="Actions" />);
   assert.match(table, /^<div class="ui-table-wrap" tabindex="0" role="region" aria-label="Storage"><table class="ui-table">/);
   assert.match(table, /<th scope="col" class="num">On hand \(kg\)<\/th>/);
-  assert.match(table, /<tr data-status="warning"><th scope="row">Silo 2<\/th><td class="num">251\.8<\/td><td class="ui-actions">/);
+  assert.match(table, /<tr data-status="warning"><th scope="row"><span class="ui-row-status"><svg[^>]*>.*?<\/svg><\/span>Silo 2<\/th><td class="num">251\.8<\/td><td class="ui-actions">/);
   assert.match(table, /<th scope="col" class="ui-actions"><span class="sr-only">Actions<\/span><\/th>/);
+  // a row's status is a glyph and a word in its first cell too, never the edge colour alone (WCAG 1.4.1)
+  const marked = html(<Table label="Storage" rows={rows} rowKey={(row) => row.code} columns={[{ key: 'name', label: 'Location', rowHeader: true }]}
+    rowStatus={(row) => (row.code === 'SI-02' ? 'warning' : undefined)} statusLabels={{ critical: 'Critical', warning: 'Warning' }} />);
+  assert.match(marked, /<tr data-status="warning"><th scope="row"><span class="ui-row-status"><svg[^>]*>.*?<\/svg><span class="sr-only">Warning: <\/span><\/span>Silo 2<\/th>/);
+  assert.match(marked, /<tr><th scope="row">Feed store 1<\/th>/);
 });
 
 test('tabs are React Aria\'s, drawn as ui-tabs; link tabs mark the current view', () => {
   const tabs = html(<Tabs label="Leave" items={[{ id: 'a', label: 'Pending', count: '2', content: 'x' }, { id: 'b', label: 'All', content: 'y' }]} />);
   assert.match(tabs, /role="tablist"[^>]*class="ui-tabs"|class="ui-tabs"[^>]*role="tablist"/);
-  assert.match(tabs, /aria-selected="true"[^>]*>Pending<span class="ui-count">2<\/span>|>Pending<span class="ui-count">2<\/span>/);
+  // the selected tab is the first, and only it (review M7: an either-or pattern let the selection go unchecked)
+  const selected = [...tabs.matchAll(/<div[^>]*role="tab"[^>]*>/g)].map(([tag]) => /aria-selected="true"/.test(tag));
+  assert.deepEqual(selected, [true, false]);
+  assert.match(tabs, />Pending<span class="ui-count">2<\/span>/);
   assert.match(html(<LinkTabs label="Views" tabs={[{ href: '?s=open', label: 'Open', current: true }]} />), /aria-current="page"/);
 });
 
@@ -124,6 +132,9 @@ test('the states say in words what is missing, loading or wrong', () => {
   const chart = html(<ChartFrame title="Oxygen" now="6.50 mg/L" nowStatus="warning" label="Oxygen, 24 h" keys={[{ label: 'Sensor', series: 1 }]}>x</ChartFrame>);
   assert.match(chart, /<span class="ui-chart-now" data-status="warning">6\.50 mg\/L<\/span>/);
   assert.match(chart, /role="img" aria-label="Oxygen, 24 h"/);
+  const described = html(<ChartFrame title="Oxygen" label="Oxygen, 24 h" values={[['Latest', '6.50 mg/L at 13:42']]}>x</ChartFrame>);
+  const id = /aria-describedby="([^"]+)"/.exec(described)?.[1] ?? '';
+  assert.match(described, new RegExp(`<dl class="sr-only" id="${id}"><div><dt>Latest<\\/dt><dd>6\\.50 mg\\/L at 13:42<\\/dd><\\/div><\\/dl>`));
 });
 
 test('no component writes a style attribute or a markup string (the islands\' own rule, scripts/check-ds.mjs)', () => {

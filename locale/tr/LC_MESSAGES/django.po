@@ -3094,6 +3094,10 @@ msgstr "API kimliği"
 msgid "Abnormal swimming"
 msgstr "Anormal yüzme"
 
+#, python-format
+msgid "About %(field)s"
+msgstr "%(field)s hakkında"
+
 msgid "Above"
 msgstr "Üstünde"
 

@@ -3085,6 +3085,10 @@ msgstr "API-id"
 msgid "Abnormal swimming"
 msgstr "Unormal svømming"
 
+#, python-format
+msgid "About %(field)s"
+msgstr "Om %(field)s"
+
 msgid "Above"
 msgstr "Over"
 

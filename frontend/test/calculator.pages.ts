@@ -109,10 +109,50 @@ test('the water calculator and its report in the new look, in a browser', { skip
           // under 480 px the chart's labels give way to their words, one rule with Tank › Water's (review C7)
           assert.equal(await tab.locator('.calc-deffeyes .deffeyes-ph').first().isVisible(), width >= 1440, 'the pH labels only where they can be read');
           assert.equal(await tab.locator('.calc-deffeyes .deffeyes-scale').isVisible(), width < 1440, 'their words where they are not drawn');
-          // a help that changes the number typed is never folded (review C6)
-          for (const name of ['ph', 'ph_scale', 'phosphate_p_mg_l', 'phosphate_unit']) {
-            const help = tab.locator(`.calc-fields > .field:has([name="${name}"]) .help`);
-            if (await help.count()) assert.ok(await help.evaluate((each) => each.scrollHeight <= each.clientHeight + 1), `${name}: its help whole`);
+          // a long reference note is a tooltip, the control's description whether shown or not; a short hint stays
+          // under its field (the owner's request: the mouse resting a second, the focus, the ⓘ button; Esc closes)
+          const noted = tab.locator('.calc-fields > .field.has-note');
+          assert.ok(await noted.count() >= 2, 'the long notes are tooltips');
+          const ph = tab.locator('.calc-fields > .field.has-note:has([name="ph"])');
+          const note = ph.locator('.ui-note');
+          const described = await ph.locator('input').getAttribute('aria-describedby');
+          assert.ok(described?.split(' ').includes((await note.getAttribute('id')) ?? '?'), 'the note describes its control');
+          assert.match((await note.textContent()) ?? '', /NBS\/NIST/, 'the note is the whole text of the server');
+          assert.equal(await note.isVisible(), false, 'a note is closed at first');
+          assert.equal(await tab.locator('.calc-fields > .field:has([name="oxygen_mg_l"]) .help').isVisible(), true, 'a short hint stays');
+          if (width >= 1440) {
+            await ph.locator('label').hover();
+            await tab.waitForTimeout(400);
+            assert.equal(await note.isVisible(), false, 'not before a second');
+            await tab.waitForTimeout(900);
+            assert.equal(await note.isVisible(), true, 'the mouse resting a second shows it');
+            const box = await note.boundingBox();
+            assert.ok(box && box.x >= 0 && box.x + box.width <= width && box.y >= 0, 'inside the window');
+            if (process.env.SHOTS) {
+              mkdirSync(process.env.SHOTS, { recursive: true });
+              await tab.screenshot({ path: join(process.env.SHOTS, `calculator-${language}-${width}-note.png`) });
+            }
+            await tab.mouse.move(0, 0);
+            assert.equal(await note.isVisible(), false, 'leaving the field hides it');
+            await ph.locator('input').focus();
+            assert.equal(await note.isVisible(), true, 'the focus shows it');
+            await tab.keyboard.press('Escape');
+            assert.equal(await note.isVisible(), false, 'Esc closes it');
+            await ph.locator('input').blur();
+          } else {
+            const toggle = ph.locator('[data-note-toggle]');
+            assert.ok((await toggle.getAttribute('aria-label'))?.trim(), 'the ⓘ button is named');
+            await toggle.click();
+            assert.equal(await note.isVisible(), true, 'the ⓘ button opens it (no hover on a finger)');
+            assert.equal(await toggle.getAttribute('aria-expanded'), 'true');
+            const box = await note.boundingBox();
+            assert.ok(box && box.x >= 0 && box.x + box.width <= width, 'inside the window');
+            if (process.env.SHOTS) {
+              mkdirSync(process.env.SHOTS, { recursive: true });
+              await tab.screenshot({ path: join(process.env.SHOTS, `calculator-${language}-${width}-note.png`) });
+            }
+            await toggle.click();
+            assert.equal(await note.isVisible(), false, 'and closes it');
           }
           assert.ok(await tab.locator('.calc-simulator:not([hidden]) table.calc-steps tbody tr').count() >= 2, 'the simulator\'s steps');
           assert.equal(await tab.locator('.calc-results .calc-status').count(), 3, 'ammonia, hydrogen sulfide and the CO₂ judged');

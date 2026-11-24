@@ -38,7 +38,7 @@
     {% for tab in form.tabs %}
     <section class="tab-panel calc-panel" role="tabpanel" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>
       <h3 class="panel-title">{{ tab.label }}</h3>
-      <div class="calc-fields">{% for field in tab.fields %}{% include "registration/_field.html" %}{% endfor %}</div>
+      <div class="calc-fields">{% for field in tab.fields %}{% include "registration/_field.html" with notes=UI_NEXT %}{% endfor %}</div>
     </section>
     {% endfor %}
     <div class="calc-actions">

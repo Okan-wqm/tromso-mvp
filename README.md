@@ -1679,14 +1679,21 @@ without values it shows its defaults.
   the recipes across) and the simulator's steps last. Its only additions are the plates' titles "Values" and "Results"
   (`UI_NEXT`) and wrappers that are no box in the classic look (`.calc-values-plate`, display: contents; `.ui-marks`
   draws nothing there). The long texts (a card's method notes, the unit's fish limits, the references) stand under
-  closed `<details>` there, never on paper; a field's help two lines (whole for the pH and phosphate fields, and while
-  a field is filled in); under 440 px the chart's labels give way to their words (`views.deffeyes_scale`, the rule
+  closed `<details>` there, never on paper; a field's help follows the field-note rule (below); under 440 px the chart's labels give way to their words (`views.deffeyes_scale`, the rule
   Tank › Water uses). The printed report takes the look too (`data-ui` on its own page, always on a day theme,
   `PAPER_THEME`; on paper at the classic report's size, every row's value wrapped inside its column, in both looks). `farm/tests/test_calculator_said.py` holds the new look
   to the classic one for every case on the page, the live parts and the report (`says_missing` empty), and
   `farm.tests.test_island_pages` does so for the calculator from the test world's TT-01 and keeps the three pages for
   `frontend/test/calculator.pages.ts` (`npm run test:pages`: the live update in a browser under the server's policy and
   the page's own nonce, CSP, axe, 4.5:1, 1440 and 390 px, the report on A4 across).
+- **Field notes** (the rule): a field's help of more than 80 characters is a long reference note (a scale, a
+  conversion, a source: "As a pH meter or kit calibrated with NBS/NIST buffers reads it, …"); a shorter one is a hint
+  ("At most 20 characters") and stays under the field. Where a page asks for notes (`registration/_field.html` with
+  `notes`: today only the calculator in the new look; `crud.is_noted`, `NOTE_LONGER_THAN`), a note is a tooltip: the
+  mouse resting on the field for a second or the control's focus shows it, Esc closes it, an ⓘ button beside the label
+  opens and closes it (a finger has no hover); it wraps at a reading width, is never cut and stays inside the window
+  (`frontend/field-note.ts`, the pattern in `ds.css`). It is the server's help text, in the page and the control's
+  description (`aria-describedby`) whether open or not; without the script it is text under the field.
 - **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in the latest value
   of each measured field of its water, its middle point's (temperature, pH, salinity, alkalinity, TAN,
   dissolved oxygen: `read.owner_water`, each

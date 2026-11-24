@@ -6,6 +6,10 @@ manage.py run_alarms after its one pass.
 - **What, in which order.** The outbox's queue (alarms.OutboxEntry: what is still to be sent, written with each
   notification and removed once it is sent, covered or given up, so a round reads what waits, never the whole history):
   the critical ones first, then the oldest queued.
+- **What is said.** Each notification goes with its `text`, in the person's language: the severity and the summary; a
+  critical alarm that has cleared by the time it is sent (it came and went while the transport was down: an oxygen crash,
+  a power cut) says it was critical and has cleared, when it opened and when it cleared. A warning whose alarm cleared
+  before it was ever tried is given up instead, its attempt saying why.
 - **A critical is never given up while it matters** (the review of the worker, F1). A critical alarm's notification is
   tried again until it is sent, or its alarm is acknowledged or cleared: the wait doubles from its severity's "Retry
   after" up to its severity's escalation time. Once its alarm is acknowledged or cleared it has its severity's
@@ -42,9 +46,11 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from django.conf import settings
 from django.db import connection
 from django.db.models import Count, Exists, Max, Min, OuterRef, Q
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.translation import gettext as _
 
 from sensors.models.alarm import Severity
 
@@ -181,10 +187,32 @@ def _release(notification):
         cursor.execute('SELECT pg_advisory_unlock(%s, hashtext(%s))', [CLAIM, str(notification.pk)])
 
 
+def text(notification):
+    """What the person is told, in their language (their profile's, else the platform's), on the company's clock: the
+    alarm's severity and summary; a critical alarm that has cleared by the time it is sent says it was critical and has
+    cleared, when it opened and when it cleared (the decision of 2026-11-24: a critical that came and went while the
+    transport was down is still said); a word about a snooze says so."""
+    from core.templatetags.dates import on, zone_for
+    alarm = notification.alarm
+    language = getattr(getattr(notification.recipient, 'profile', None), 'language', '') or settings.LANGUAGE_CODE
+    clearance = AlarmClearance.objects.filter(alarm=alarm).first()
+    moment = (lambda at: on(at, zone_for(alarm.site)).strftime('%d.%m.%Y %H:%M'))
+    with translation.override(language):
+        if notification.kind == NotificationKind.SNOOZED:
+            return _('Snoozed: %(summary)s') % {'summary': alarm.summary}
+        if notification.kind == NotificationKind.RESUMED:
+            return _('Still open after its snooze: %(summary)s') % {'summary': alarm.summary}
+        if alarm.severity == Severity.CRITICAL and clearance is not None:
+            return _('Critical, now cleared: %(summary)s. Opened %(opened)s, cleared %(cleared)s.') % {
+                'summary': alarm.summary, 'opened': moment(alarm.opened_at), 'cleared': moment(clearance.cleared_at)}
+        return _('%(severity)s: %(summary)s') % {'severity': alarm.get_severity_display(), 'summary': alarm.summary}
+
+
 def _call(transport, notification, timeout, flood=None):
     """The transport's answer, within `timeout` seconds (None: as long as it takes); a raise is a Failed. `flood`: the
-    notification is the first of a flood message (alarms/floods.py)."""
+    notification is the first of a flood message (alarms/floods.py). The notification carries its `text`."""
     answer = {}
+    notification.text = text(notification)
 
     def send():
         try:
@@ -249,12 +277,13 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
     moment = (lambda: now) if now is not None else timezone.now
     began, started = moment(), clock()
     OutboxEntry.objects.filter(notification__attempts__outcome__in=[Outcome.SENT, Outcome.GROUPED]).delete()
+    # A warning (or another notification) whose alarm cleared before it was ever tried is given up, said why (R4); a
+    # critical one is still delivered, saying it was critical and has cleared (`text`; the decision of 2026-11-24).
     late = list(_queued().filter(Exists(AlarmClearance.objects.filter(alarm=OuterRef('alarm')))).exclude(
-        Exists(DeliveryAttempt.objects.filter(notification=OuterRef('pk')))).select_related('alarm', 'recipient'))
-    for row in late:                          # its alarm cleared before it was ever tried: given up, said why (R4)
-        services.attempt(row, Failed('not sent: its alarm had cleared before the first attempt'), moment())
+        Exists(DeliveryAttempt.objects.filter(notification=OuterRef('pk')))).exclude(
+        alarm__severity=Severity.CRITICAL).select_related('alarm', 'recipient'))
     if late:
-        services.give_up(late)
+        services.give_up_said(late, 'not sent: its alarm had cleared before the first attempt', moment())
     channels = _connected()
     unsent = _queued()
     elsewhere = unsent.exclude(channel__in=channels).aggregate(count=Count('pk'), oldest=Min('queued_at'))

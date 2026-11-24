@@ -126,6 +126,22 @@ def queue_many(notifications):
     return made
 
 
+def give_up_said(notifications, detail, now):
+    """The notifications leave the outbox's queue unsent, each with a failed attempt saying `detail` and its log entry:
+    one transaction, three statements however many (a backlog of cleared warnings at a first connection)."""
+    with transaction.atomic():
+        made = DeliveryAttempt.objects.bulk_create([
+            DeliveryAttempt(notification=notification, attempted_at=now, outcome=Outcome.FAILED,
+                            detail=_fit(DeliveryAttempt, 'detail', detail)) for notification in notifications])
+        OutboxEntry.objects.filter(notification__in=notifications).delete()
+        with audit.source_language():
+            _log([audit.entry(None, AuditLog.Action.UPDATE, notification,
+                              {str(_('Delivery')): [None, f'{Outcome.FAILED}: {row.detail}']},
+                              label=f'{notification.alarm.summary} → {notification.recipient.get_username()}')
+                  for notification, row in zip(notifications, made)])
+    return made
+
+
 def give_up(notifications):
     """The notifications leave the outbox's queue unsent (their attempts are used up, or their critical alarm was
     acknowledged or cleared and its attempts are used up): their attempts say why (read.status)."""

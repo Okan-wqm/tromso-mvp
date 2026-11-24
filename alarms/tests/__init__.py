@@ -12,7 +12,7 @@ from farm.tests.helpers import make_species, point_of, role, stock_fish
 from farm.tests.test_stock import make_unit
 from farm.water import services as water
 
-from .. import engine
+from .. import engine, outbox
 from ..models import Alarm, RecipientRule
 
 D = Decimal
@@ -51,7 +51,11 @@ class AlarmsCase(TestCase):
         return RecipientRule.objects.create(**values)
 
     def loop(self, minutes=0, seconds=0):
-        return engine.run_once(self.now + timedelta(minutes=minutes, seconds=seconds))
+        """The worker at a moment: its pass, then a round through the outbox (alarms/worker.py); the pass's Summary."""
+        at = self.now + timedelta(minutes=minutes, seconds=seconds)
+        summary = engine.run_once(at)
+        outbox.send_due(at)
+        return summary
 
     def critical(self):
         """The one critical water alarm (a critical value holds the warning level too: its alarm opens beside it)."""

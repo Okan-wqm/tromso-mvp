@@ -156,7 +156,7 @@ class FragmentTests(MonitoringCase):
         inner = re.search(r'<div class="monitor-grid"[^>]*>(.*)</div>\s*<div id="monitor-windows"', page.content.decode(), re.S)
         self.assertIsNotNone(inner)
         self.assertEqual(keys(inner.group(1)), keys(self.ask().content.decode()))
-        self.assertIn(token, re.search(r'data-poll="([^"]+)"', page.content.decode()).group(1))
+        self.assertIn(token, re.search(r'class="monitor-grid"[^>]*data-poll="([^"]+)"', page.content.decode()).group(1))
 
     def test_a_poll_writes_no_row_and_no_audit_entry(self):
         tables = (AuditLog, StockOperation, FeedingRecord, WaterMeasurement)
@@ -224,7 +224,7 @@ class WallTests(MonitoringCase):
         self.assertRegex(html, r'<html lang="en" data-theme="[a-z]+" data-wall>')         # (core/theme.py)
         self.assertIn('data-fullscreen', html)                           # the wall keeps its Full screen button ...
         self.assertIn('Leave the wall', html)                            # ... and a way out
-        self.assertIn('wall=1', re.search(r'data-poll="([^"]+)"', html).group(1))
+        self.assertIn('wall=1', re.search(r'class="monitor-grid"[^>]*data-poll="([^"]+)"', html).group(1))
         self.assertEqual(self.client.session['monitoring_wall_day'], company_today().isoformat())   # the company's day
         key = self.client.session.session_key
         first = Session.objects.get(pk=key).expire_date

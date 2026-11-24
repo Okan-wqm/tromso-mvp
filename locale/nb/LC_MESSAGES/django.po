@@ -27,6 +27,10 @@ msgid "%(age)s ago"
 msgstr "%(age)s siden"
 
 #, python-format
+msgid "%(alarms)s; and %(more)d more, see the alarm list"
+msgstr "%(alarms)s; og %(more)d til, se alarmlisten"
+
+#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s har ingen fisk i %(place)s nå."
 
@@ -177,6 +181,10 @@ msgstr[0] "%(count)d %(name)s tilhører den fortsatt."
 msgstr[1] "%(count)d %(plural)s tilhører den fortsatt."
 
 #, python-format
+msgid "%(count)d %(severity)s alarms of one kind since %(since)s. For example: %(summary)s"
+msgstr "%(count)d alarmer (%(severity)s) av samme slag siden %(since)s. For eksempel: %(summary)s"
+
+#, python-format
 msgid "%(count)d assignment created."
 msgid_plural "%(count)d assignments created."
 msgstr[0] "%(count)d tildeling opprettet."
@@ -217,6 +225,24 @@ msgid "%(count)d count"
 msgid_plural "%(count)d counts"
 msgstr[0] "%(count)d telling"
 msgstr[1] "%(count)d tellinger"
+
+#, python-format
+msgid ""
+"%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log."
+" The first opened %(opened)s, the last cleared %(cleared)s."
+msgstr ""
+"%(count)d kritiske alarmer oppstod og ble avsluttet mens ingen melding kunne sendes; se "
+"alarmloggen. Den første åpnet %(opened)s, den siste avsluttet %(cleared)s."
+
+#, python-format
+msgid ""
+"%(count)d critical notification(s) cannot be delivered, the oldest queued %(since)s: the people "
+"of those alarms are not reached, nor would the next level be. Look at the alarms and tell them "
+"another way."
+msgstr ""
+"%(count)d kritiske varsler kan ikke leveres, det eldste lagt i kø %(since)s: personene for disse "
+"alarmene nås ikke, og det ville heller ikke neste nivå. Se på alarmene og si fra på en annen "
+"måte."
 
 #, python-format
 msgid "%(count)d d"
@@ -325,6 +351,10 @@ msgstr[1] "%(count)d legemidler er laget av den: la «%(category)s» være kryss
 #, python-format
 msgid "%(count)d min"
 msgstr "%(count)d min"
+
+#, python-format
+msgid "%(count)d more critical alarms of one kind since %(since)s, %(open)d open now: %(alarms)s"
+msgstr "%(count)d kritiske alarmer til av samme slag siden %(since)s, %(open)d åpne nå: %(alarms)s"
 
 #, python-format
 msgid "%(count)d on site"
@@ -481,6 +511,20 @@ msgstr[0] "%(count)s kritisk"
 msgstr[1] "%(count)s kritiske"
 
 #, python-format
+msgid ""
+"%(count)s critical notification cannot be delivered, queued %(since)s: its people are NOT "
+"reached. Look at the open alarms and tell them another way."
+msgid_plural ""
+"%(count)s critical notifications cannot be delivered, the oldest queued %(since)s: their people "
+"are NOT reached. Look at the open alarms and tell them another way."
+msgstr[0] ""
+"%(count)s kritisk varsel kan ikke leveres, lagt i kø %(since)s: personene nås IKKE. Se på de åpne"
+" alarmene og si fra på en annen måte."
+msgstr[1] ""
+"%(count)s kritiske varsler kan ikke leveres, det eldste lagt i kø %(since)s: personene nås IKKE. "
+"Se på de åpne alarmene og si fra på en annen måte."
+
+#, python-format
 msgid "%(count)s degree-day"
 msgid_plural "%(count)s degree-days"
 msgstr[0] "%(count)s døgngrad"
@@ -629,6 +673,12 @@ msgid "%(count)s unit stocked"
 msgid_plural "%(count)s units stocked"
 msgstr[0] "%(count)s enhet med fisk"
 msgstr[1] "%(count)s enheter med fisk"
+
+#, python-format
+msgid "%(count)s unit with critical or warning water has no open alarm."
+msgid_plural "%(count)s units with critical or warning water have no open alarm."
+msgstr[0] "%(count)s enhet med kritisk vann eller vann over et varsel har ingen åpen alarm."
+msgstr[1] "%(count)s enheter med kritisk vann eller vann over et varsel har ingen åpen alarm."
 
 #, python-format
 msgid "%(count)s warning"
@@ -1132,6 +1182,10 @@ msgstr[0] "%(more)s til uten plan i dag"
 msgstr[1] "%(more)s til uten plan i dag"
 
 #, python-format
+msgid "%(ms)s ms"
+msgstr "%(ms)s ms"
+
+#, python-format
 msgid "%(name)s (copy %(number)d)"
 msgstr "%(name)s (kopi %(number)d)"
 
@@ -1335,6 +1389,10 @@ msgid "%(section)s: not shown to you"
 msgstr "%(section)s: vises ikke for deg"
 
 #, python-format
+msgid "%(severity)s: %(summary)s"
+msgstr "%(severity)s: %(summary)s"
+
+#, python-format
 msgid ""
 "%(severity)s: escalated after %(minutes)d min without an acknowledgement; usually at most "
 "%(usual)d min."
@@ -1445,6 +1503,10 @@ msgstr "%(start)s – %(end)s"
 #, python-format
 msgid "%(status)s, no recent data"
 msgstr "%(status)s, ingen nye data"
+
+#, python-format
+msgid "%(summary)s (cleared %(cleared)s)"
+msgstr "%(summary)s (avsluttet %(cleared)s)"
 
 #, python-format
 msgid "%(supplier)s is deleted."
@@ -1926,6 +1988,10 @@ msgstr "7. januar"
 msgid "9-digit Norwegian organisation number"
 msgstr "Norsk organisasjonsnummer (9 siffer)"
 
+#, python-format
+msgid "A %(severity)s alarm is snoozed for 1 to %(minutes)d minutes."
+msgstr "En alarm med alvorlighet %(severity)s slumres i 1 til %(minutes)d minutter."
+
 msgid "A DOI starts with 10. and has no spaces, e.g. 10.1016/j.aquaculture.2019.01.001."
 msgstr "En DOI begynner med 10. og har ingen mellomrom, f.eks. 10.1016/j.aquaculture.2019.01.001."
 
@@ -2312,6 +2378,9 @@ msgid "A fitted card’s widgets share its height in at most %(most)d rows; this
 msgstr ""
 "Elementene i et tilpasset kort deler høyden i høyst %(most)d rader; dette oppsettet bruker "
 "%(rows)d."
+
+msgid "A flood from (alarms)"
+msgstr "En flom fra (alarmer)"
 
 msgid "A flow can be stated for an inlet or an outlet only."
 msgstr "En vannføring kan bare oppgis for et innløp eller et utløp."
@@ -2775,6 +2844,13 @@ msgstr ""
 "(lakselusforskriften § 8 og vedlegg 1). Den siste tellingen av hver enhet i uken gjelder."
 
 msgid ""
+"A snoozed alarm is still raised, kept and cleared; nobody is notified of it and it is not "
+"escalated until the snooze ends. Snooze an open alarm on its page."
+msgstr ""
+"En slumret alarm utløses, lagres og avsluttes fortsatt; ingen varsles om den, og den eskaleres "
+"ikke før slumringen er over. Slumre en åpen alarm på siden dens."
+
+msgid ""
 "A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
 " the reports and the water it lives in."
 msgstr ""
@@ -2961,12 +3037,8 @@ msgstr ""
 "En verdi utenfor området lagres, merkes og brukes ingen steder. Tom på en ny kanal: det "
 "parameteren kan være."
 
-msgid ""
-"A warning or a critical value raises an alarm (Company › Alarms); nothing is sent until the push "
-"transport is connected."
-msgstr ""
-"En advarsel eller en kritisk verdi utløser en alarm (Selskap › Alarmer); ingenting sendes før "
-"push-transporten er koblet til."
+msgid "A warning or a critical value raises an alarm (Company › Alarms)."
+msgstr "En advarsel eller en kritisk verdi utløser en alarm (Selskap › Alarmer)."
 
 msgid "A warning’s device clock limit is below the critical one."
 msgstr "Advarselens grense for enhetsklokke er under den kritiske."
@@ -3323,6 +3395,14 @@ msgstr "Alarmhendelsen er kvittert."
 msgid "Alarm events"
 msgstr "Alarmhendelser"
 
+#, python-format
+msgid ""
+"Alarm flood: %(size)s open %(severity)s alarms of one kind since %(since)s, the first: "
+"%(example)s. Each is listed below; a person gets one message for them."
+msgstr ""
+"Alarmflom: %(size)s åpne alarmer (%(severity)s) av samme slag siden %(since)s, den første: "
+"%(example)s. Hver er oppført nedenfor; en person får én melding for dem."
+
 msgid "Alarm recipients"
 msgstr "Alarmmottakere"
 
@@ -3335,8 +3415,20 @@ msgstr "Alarmregler"
 msgid "Alarm severity rules"
 msgstr "Alarmregler per alvorlighet"
 
+msgid "Alarm snoozed."
+msgstr "Alarmen er slumret."
+
+msgid "Alarm snoozes"
+msgstr "Slumrede alarmer"
+
+msgid "Alarm snoozes, scrolls sideways"
+msgstr "Slumrede alarmer, rulles sidelengs"
+
 msgid "Alarms"
 msgstr "Alarmer"
+
+msgid "Alarms in the flood message"
+msgstr "Alarmer i flommeldingen"
 
 msgid "Alive"
 msgstr "I live"
@@ -3588,6 +3680,11 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "En aktiv protokoll har en tabell."
+
+msgid ""
+"An alarm about the alarm system's own health is never snoozed: it says the alarms are not working"
+" as they should."
+msgstr "En alarm om alarmsystemets egen helse slumres aldri: den sier at alarmene ikke virker som de skal."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "En mengde trenger sin enhet, og en enhet sin mengde."
@@ -4050,6 +4147,14 @@ msgstr "Høyst %(decimals)d desimaler."
 #, python-format
 msgid "At most %(max)s."
 msgstr "Høyst %(max)s."
+
+#, python-format
+msgid ""
+"At most %(minutes)s minutes. While it is snoozed nobody is notified of this alarm and it is not "
+"escalated; it is still raised, kept and cleared."
+msgstr ""
+"Høyst %(minutes)s minutter. Mens den slumrer, varsles ingen om denne alarmen, og den eskaleres "
+"ikke; den utløses, lagres og avsluttes fortsatt."
 
 msgid "At most 720 hours (30 days)."
 msgstr "Høyst 720 timer (30 dager)."
@@ -4895,6 +5000,9 @@ msgstr "Sjekk e-posten din"
 msgid "Checked at %(clock)s."
 msgstr "Sjekket kl. %(clock)s."
 
+msgid "Checking the alarms"
+msgstr "Sjekker alarmene"
+
 msgid "Checklist"
 msgstr "Sjekkliste"
 
@@ -5555,6 +5663,9 @@ msgstr "Land"
 msgid "Counts"
 msgstr "Tellinger"
 
+msgid "Covered by a flood message"
+msgstr "Dekket av en flommelding"
+
 msgid "Crab"
 msgstr "Krabbe"
 
@@ -5607,11 +5718,29 @@ msgstr "Kritisk over"
 msgid "Critical below"
 msgstr "Kritisk under"
 
+msgid "Critical notifications undeliverable"
+msgstr "Kritiske varsler som ikke kan leveres"
+
 msgid "Critical water points"
 msgstr "Kritiske prøvepunkter"
 
+#, python-format
+msgid "Critical, now cleared: %(summary)s. Opened %(opened)s, cleared %(cleared)s."
+msgstr "Kritisk, nå avsluttet: %(summary)s. Åpnet %(opened)s, avsluttet %(cleared)s."
+
 msgid "Criticality"
 msgstr "Kritikalitet"
+
+msgid ""
+"Criticals only: after a message about a kind of critical alarm (one site, one quantity, rule or "
+"check), the next ones of that kind for that person are collected this long and go as one message "
+"naming each. 0: each at once. Critical 0 to 8, so a second critical still reaches the person "
+"within 10 s of its value; warning 0 (warnings are grouped by the flood window)."
+msgstr ""
+"Bare kritiske: etter en melding om et slag kritisk alarm (ett anlegg, én størrelse, regel eller "
+"kontroll) samles de neste av samme slag for samme person så lenge og går som én melding som "
+"nevner hver av dem. 0: hver med en gang. Kritisk 0 til 8, så en kritisk alarm til fortsatt når "
+"personen innen 10 s etter verdien; advarsel 0 (advarsler grupperes av flomvinduet)."
 
 msgid "Crude fat (%)"
 msgstr "Råfett (%)"
@@ -6426,11 +6555,24 @@ msgstr "Koding"
 msgid "End"
 msgstr "Slutt"
 
+msgid "End snooze"
+msgstr "Avslutt slumring"
+
 msgid "End the leave earlier"
 msgstr "Avslutt permisjonen tidligere"
 
 msgid "Ended"
 msgstr "Avsluttet"
+
+msgid "Ended at"
+msgstr "Avsluttet"
+
+msgid "Ended by"
+msgstr "Avsluttet av"
+
+#, python-format
+msgid "Ended early by %(person)s, %(at)s"
+msgstr "Avsluttet tidlig av %(person)s, %(at)s"
 
 msgid "Ends at"
 msgstr "Slutter"
@@ -6781,6 +6923,12 @@ msgstr "Faktorer"
 
 msgid "Failed"
 msgstr "Mislyktes"
+
+msgid "Failed steps of the last pass"
+msgstr "Mislykkede trinn i siste gjennomgang"
+
+msgid "Failures in a row"
+msgstr "Feil på rad"
 
 msgid "Fallow"
 msgstr "Brakklagt"
@@ -7265,6 +7413,9 @@ msgstr "Flytende"
 msgid "Floating feed stays at the surface; sinking and slow-sinking feed is for cages and deep tanks."
 msgstr "Flytende fôr blir liggende i overflaten; synkende og saktesynkende fôr er for merder og dype kar."
 
+msgid "Flood window (seconds)"
+msgstr "Flomvindu (sekunder)"
+
 msgid "Flow (m³/h)"
 msgstr "Vannføring (m³/t)"
 
@@ -7290,6 +7441,9 @@ msgstr "Fokus: %(unit)s"
 #, python-brace-format
 msgid "Focus: {unit}"
 msgstr "Fokus: {unit}"
+
+msgid "Follow-up after (seconds)"
+msgstr "Oppfølging etter (sekunder)"
 
 msgid "Food fish (matfisk)"
 msgstr "Matfisk"
@@ -7523,6 +7677,17 @@ msgstr "Fra vannet til siste trinn:"
 
 msgid "From then"
 msgstr "Fra da av"
+
+msgid ""
+"From this many warnings of one kind (one site, one quantity, rule or check) within the flood "
+"window, a person gets one flood message for them. Criticals are never grouped this way: the first"
+" of a kind goes at once, the next ones as one follow-up message naming each; for them it marks a "
+"flood on the Alarms page. 2 to 1000."
+msgstr ""
+"Fra så mange advarsler av samme slag (ett anlegg, én størrelse, regel eller kontroll) innenfor "
+"flomvinduet får en person én flommelding for dem. Kritiske alarmer grupperes aldri slik: den "
+"første av et slag går med en gang, de neste som én oppfølgingsmelding som nevner hver av dem; for"
+" dem markerer den en flom på alarmsiden. 2 til 1000."
 
 msgid "Frozen at"
 msgstr "Frosset"
@@ -8085,6 +8250,9 @@ msgstr "Hvor langt innenfor grensen klokken må komme tilbake før alarmen opphe
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Hvordan det gis; en behandling med det bruker samme metode."
 
+msgid "How long after a failed attempt the notification is tried again. 1 to 3600."
+msgstr "Hvor lenge etter et mislykket forsøk varselet prøves igjen. 1 til 3600."
+
 msgid "How long before a shift starts a clock-in counts for it. Default 2 hours."
 msgstr "Hvor lenge før et skift starter en innstempling teller for det. Standard 2 timer."
 
@@ -8104,6 +8272,13 @@ msgstr ""
 "den lengste av sin regel og transportregelen. For kort sulting er en advarsel, aldri en sperre: å"
 " fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
 "kontrolleres med veterinæren din."
+
+msgid ""
+"How long the alarms of a flood are counted together, and how long a flood message of warnings "
+"covers the warnings that come after it (a critical is never covered). 10 to 3600."
+msgstr ""
+"Hvor lenge alarmene i en flom telles sammen, og hvor lenge en flommelding om advarsler dekker "
+"advarslene som kommer etter den (en kritisk alarm dekkes aldri). 10 til 3600."
 
 msgid ""
 "How long the condition must hold, counted from the first value past the limit, before the alarm "
@@ -8313,6 +8488,9 @@ msgstr "Inn"
 
 msgid "In feed"
 msgstr "I fôr"
+
+msgid "In force"
+msgstr "Gjelder"
 
 msgid "In force today"
 msgstr "Gjelder i dag"
@@ -8722,6 +8900,9 @@ msgstr "Nøkkel"
 msgid "Kind"
 msgstr "Type"
 
+msgid "Kind of alarm"
+msgstr "Alarmslag"
+
 msgid "Kinds of report"
 msgstr "Rapporttyper"
 
@@ -8800,6 +8981,9 @@ msgstr "Siste dag"
 msgid "Last day in the experiment"
 msgstr "Siste dag i forsøket"
 
+msgid "Last error"
+msgstr "Siste feil"
+
 msgid "Last fed"
 msgstr "Sist fôret"
 
@@ -8832,6 +9016,15 @@ msgstr "Siste bevegelse"
 
 msgid "Last name"
 msgstr "Etternavn"
+
+msgid "Last pass at"
+msgstr "Siste gjennomgang"
+
+msgid "Last pass took (ms)"
+msgstr "Siste gjennomgang tok (ms)"
+
+msgid "Last pass without a failed step at"
+msgstr "Siste gjennomgang uten mislykket trinn"
 
 msgid "Last read"
 msgstr "Sist lest"
@@ -9089,6 +9282,9 @@ msgstr "Lokalitetsnummer"
 
 msgid "Long axis (m)"
 msgstr "Lang akse (m)"
+
+msgid "Longest snooze (minutes)"
+msgstr "Lengste slumring (minutter)"
 
 msgid "Longitude"
 msgstr "Lengdegrad"
@@ -9874,6 +10070,9 @@ msgstr "Ingen konto"
 
 msgid "No alarm events."
 msgstr "Ingen alarmhendelser."
+
+msgid "No alarm has been snoozed."
+msgstr "Ingen alarm er slumret."
 
 msgid "No alarm is open."
 msgstr "Ingen alarm er åpen."
@@ -10722,6 +10921,9 @@ msgstr "Ingen beholdning: ta imot et varemottak først."
 msgid "Nothing is owed there: it was filed, closed already or is not due."
 msgstr "Ingenting skal sendes der: det er sendt inn, allerede lukket eller ikke aktuelt."
 
+msgid "Nothing is sent until the push transport is connected."
+msgstr "Ingenting sendes før push-transporten er tilkoblet."
+
 msgid ""
 "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
 "notification waits in the outbox below, with its recipient and level, and is sent once it is."
@@ -10736,6 +10938,13 @@ msgid ""
 msgstr ""
 "Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert "
 "varsel venter i utboksen på Alarmer-siden, med mottaker og nivå, og sendes når den er det."
+
+msgid ""
+"Nothing is sent yet: the push transport is not connected. The alarms are raised and listed "
+"(Company › Alarms); their notifications wait."
+msgstr ""
+"Ingenting sendes ennå: push-transporten er ikke tilkoblet. Alarmene utløses og listes (Selskap › "
+"Alarmer); varslene deres venter."
 
 msgid "Nothing needs attention"
 msgstr "Ingenting trenger oppfølging"
@@ -10775,6 +10984,9 @@ msgstr "Varsel"
 
 msgid "Notification answered"
 msgstr "Besvart varsel"
+
+msgid "Notifications waiting"
+msgstr "Varsler som venter"
 
 msgid "Notified"
 msgstr "Varslet"
@@ -10864,6 +11076,9 @@ msgstr "Eldre enn kanalens nyeste lagrede verdi da den kom."
 msgid "Older than the raw data is kept"
 msgstr "Eldre enn rådata beholdes"
 
+msgid "Oldest waiting since"
+msgstr "Eldste venter siden"
+
 msgid "On"
 msgstr "På"
 
@@ -10888,6 +11103,10 @@ msgstr "På permisjon"
 
 msgid "On site now"
 msgstr "På lokaliteten nå"
+
+#, python-format
+msgid "On the Monitoring screen: %(units)s."
+msgstr "På Overvåking-skjermen: %(units)s."
 
 msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
 msgstr "Etter klokken på stedets lokalitet. Hver kanals tilknytning til nå slutter da."
@@ -11384,6 +11603,9 @@ msgstr "Ute av tjeneste"
 msgid "Out of the water (not placed)"
 msgstr "Ute av vannet (ikke plassert)"
 
+msgid "Outbox last gone through at"
+msgstr "Utboksen sist gått gjennom"
+
 msgid "Outcome"
 msgstr "Utfall"
 
@@ -11536,6 +11758,14 @@ msgstr "Overordnet utstyr"
 
 msgid "Parent system"
 msgstr "Overordnet system"
+
+#, python-format
+msgid ""
+"Part of the alarms is NOT being checked since %(since)s: these steps of the alarm worker fail: "
+"%(steps)s."
+msgstr ""
+"En del av alarmene blir IKKE sjekket siden %(since)s: disse trinnene i alarmtjenesten feiler: "
+"%(steps)s."
 
 msgid "Parts"
 msgstr "Deler"
@@ -11939,6 +12169,9 @@ msgstr "Prioritet"
 msgid "Private text"
 msgstr "Privat tekst"
 
+msgid "Process"
+msgstr "Prosess"
+
 msgid "Processing"
 msgstr "Bearbeiding"
 
@@ -12125,6 +12358,9 @@ msgstr "Regn og overvann"
 
 msgid "Raise after (seconds)"
 msgstr "Utløs etter (sekunder)"
+
+msgid "Ran out"
+msgstr "Utløpt"
 
 msgid "Randomise"
 msgstr "Randomiser"
@@ -12618,6 +12854,9 @@ msgstr "Resultater"
 msgid "Retired"
 msgstr "Utfaset"
 
+msgid "Retry after (seconds)"
+msgstr "Prøv igjen etter (sekunder)"
+
 msgid "Return"
 msgstr "Retur"
 
@@ -12932,6 +13171,9 @@ msgstr "Oppgi hvorfor den er lukket."
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
 
+msgid "Say why the alarm is snoozed."
+msgstr "Oppgi hvorfor alarmen slumres."
+
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
@@ -13160,6 +13402,9 @@ msgstr "Se registeret dag for dag"
 
 msgid "See the feedings"
 msgstr "Se fôringene"
+
+msgid "See them on Monitoring"
+msgstr "Se dem under Overvåking"
 
 msgid "Seed"
 msgstr "Frø"
@@ -13603,6 +13848,48 @@ msgstr "Små fisk"
 msgid "Smolt"
 msgstr "Smolt"
 
+msgid "Snooze"
+msgstr "Slumre"
+
+#, python-format
+msgid "Snooze ended by %(person)s"
+msgstr "Slumring avsluttet av %(person)s"
+
+msgid "Snooze ended: the alarm is notified and escalated again."
+msgstr "Slumringen er avsluttet: alarmen varsles og eskaleres igjen."
+
+msgid "Snooze for (minutes)"
+msgstr "Slumre i (minutter)"
+
+msgid "Snoozed at"
+msgstr "Slumret"
+
+msgid "Snoozed by"
+msgstr "Slumret av"
+
+#, python-format
+msgid "Snoozed by %(person)s until %(until)s: %(reason)s"
+msgstr "Slumret av %(person)s til %(until)s: %(reason)s"
+
+#, python-format
+msgid ""
+"Snoozed by %(person)s until %(until)s: %(reason)s. Nobody is notified of it and it is not "
+"escalated until then; it is still raised and kept."
+msgstr ""
+"Slumret av %(person)s til %(until)s: %(reason)s. Ingen varsles om den, og den eskaleres ikke før "
+"da; den utløses og lagres fortsatt."
+
+msgid "Snoozed until"
+msgstr "Slumret til"
+
+#, python-format
+msgid "Snoozed until %(until)s"
+msgstr "Slumret til %(until)s"
+
+#, python-format
+msgid "Snoozed: %(summary)s"
+msgstr "Slumret: %(summary)s"
+
 msgid "Sodium bicarbonate"
 msgstr "Natriumbikarbonat"
 
@@ -13863,6 +14150,10 @@ msgstr "Trinn"
 msgid "Still loading? Open the full page"
 msgstr "Laster fortsatt? Åpne hele siden"
 
+#, python-format
+msgid "Still open after its snooze: %(summary)s"
+msgstr "Fortsatt åpen etter slumringen: %(summary)s"
+
 msgid "Stock"
 msgstr "Beholdning"
 
@@ -13926,6 +14217,9 @@ msgstr "Utsett"
 
 msgid "Stocking date"
 msgstr "Utsettsdato"
+
+msgid "Stopped"
+msgstr "Stoppet"
 
 msgid "Storage"
 msgstr "Lager"
@@ -14316,6 +14610,17 @@ msgstr "Adressen mangler en nøkkel protokollen trenger."
 msgid "The address of a mis-sent invitation"
 msgstr "Adressen til en feilsendt invitasjon"
 
+msgid "The alarm"
+msgstr "Alarmen"
+
+#, python-format
+msgid ""
+"The alarm notifications are NOT being sent since %(since)s: the alarm worker's sender does not "
+"answer. The alarms are raised and listed, but nobody is told."
+msgstr ""
+"Alarmvarslene blir IKKE sendt siden %(since)s: alarmtjenestens avsender svarer ikke. Alarmene "
+"utløses og listes, men ingen får beskjed."
+
 #, python-format
 msgid ""
 "The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used "
@@ -14334,6 +14639,47 @@ msgstr ""
 
 msgid "The alarm system itself"
 msgstr "Selve alarmsystemet"
+
+msgid "The alarm was snoozed"
+msgstr "Alarmen ble slumret"
+
+msgid "The alarm worker"
+msgstr "Alarmtjenesten"
+
+#, python-format
+msgid ""
+"The alarms are NOT being checked since %(since)s: the alarm worker does not answer. No alarm is "
+"raised and nobody is told until it runs again."
+msgstr ""
+"Alarmene blir IKKE sjekket siden %(since)s: alarmtjenesten svarer ikke. Ingen alarm utløses og "
+"ingen varsles før den kjører igjen."
+
+#, python-format
+msgid ""
+"The alarms are NOT being checked since %(since)s: the alarm worker stopped. No alarm is raised "
+"and nobody is told until it runs again."
+msgstr ""
+"Alarmene blir IKKE sjekket siden %(since)s: alarmtjenesten stoppet. Ingen alarm utløses og ingen "
+"varsles før den kjører igjen."
+
+msgid ""
+"The alarms are NOT being checked: no alarm worker has run here. No alarm is raised and nobody is "
+"told."
+msgstr ""
+"Alarmene blir IKKE sjekket: ingen alarmtjeneste har kjørt her. Ingen alarm utløses og ingen "
+"varsles."
+
+#, python-format
+msgid "The alarms were last checked %(at)s."
+msgstr "Alarmene ble sist sjekket %(at)s."
+
+#, python-format
+msgid ""
+"The alarms were not checked from %(start)s to %(end)s (the alarm worker was not running): no "
+"alarm was raised and nobody was told in that time. Look at the farm's values of that time."
+msgstr ""
+"Alarmene ble ikke sjekket fra %(start)s til %(end)s (alarmtjenesten kjørte ikke): ingen alarm ble"
+" utløst og ingen ble varslet i den tiden. Se på anleggets verdier fra den tiden."
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "
@@ -14621,6 +14967,11 @@ msgstr ""
 
 msgid "The department this one belongs to in the organisation chart; none for a top-level one."
 msgstr "Avdelingen denne hører under i organisasjonskartet; ingen for en på øverste nivå."
+
+msgid ""
+"The deployment's settings (the environment of the alarm worker's service), shown here, changed "
+"there."
+msgstr "Driftsoppsettets innstillinger (miljøet til alarmtjenestens tjeneste), vist her, endret der."
 
 msgid "The depth of the water taken, from the surface."
 msgstr "Dybden vannet tas fra, regnet fra overflaten."
@@ -15100,6 +15451,13 @@ msgid ""
 msgstr ""
 "Levende vekt som veid ved høsting, før bløgging og sløying. Beholdningen tar ut fisken med "
 "beholdningens vekt; differansen vises med høstingen."
+
+msgid ""
+"The longest an alarm of this severity may be snoozed: nobody is notified of it and it is not "
+"escalated meanwhile. Critical 1 to 480, warning 1 to 1440."
+msgstr ""
+"Det lengste en alarm med denne alvorligheten kan slumres: ingen varsles om den, og den eskaleres "
+"ikke imens. Kritisk 1 til 480, advarsel 1 til 1440."
 
 msgid "The longest distance across the ellipse."
 msgstr "Den lengste avstanden over ellipsen."
@@ -15765,6 +16123,9 @@ msgstr ""
 "Slakteriene høstet fisk går til, med godkjenningsnummer fra Mattilsynet: hver høsting oppgir sitt"
 " slakteri."
 
+msgid "The snooze ended; the alarm is still open"
+msgstr "Slumringen er over; alarmen er fortsatt åpen"
+
 msgid "The source as a reference list cites it: authors, year, title, where it was published."
 msgstr "Kilden slik en referanseliste oppgir den: forfattere, år, tittel, hvor den er publisert."
 
@@ -16016,6 +16377,9 @@ msgstr ""
 #, python-format
 msgid "The units take %(placed)s fish, but %(count)s arrive: the split must add up."
 msgstr "Enhetene tar %(placed)s fisk, men %(count)s kommer: fordelingen må gå opp."
+
+msgid "The units that need a look could not be read here."
+msgstr "Enhetene som trenger tilsyn, kunne ikke leses her."
 
 msgid "The units the fish go into and how many each takes; together they take every fish arriving."
 msgstr "Enhetene fisken skal i og hvor mange hver tar; til sammen tar de all fisken som kommer."
@@ -16386,6 +16750,21 @@ msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 msgid "This account already belongs to another employee."
 msgstr "Denne kontoen tilhører allerede en annen ansatt."
 
+#, python-format
+msgid ""
+"This alarm has been snoozed for %(used)d of its %(minutes)d minutes already: at most %(left)d "
+"more."
+msgstr "Denne alarmen har allerede slumret i %(used)d av sine %(minutes)d minutter: høyst %(left)d til."
+
+msgid "This alarm has cleared: there is nothing to snooze."
+msgstr "Denne alarmen er avsluttet: det er ingenting å slumre."
+
+msgid "This alarm is not snoozed."
+msgstr "Denne alarmen slumrer ikke."
+
+msgid "This alarm is snoozed already."
+msgstr "Denne alarmen slumrer allerede."
+
 msgid "This assignment was deleted meanwhile."
 msgstr "Denne tildelingen ble slettet i mellomtiden."
 
@@ -16711,6 +17090,9 @@ msgstr "Tider uten verdi er skravert, aldri fylt."
 msgid "Timezone"
 msgstr "Tidssone"
 
+msgid "Timings"
+msgstr "Tider"
+
 msgid "Title"
 msgstr "Tittel"
 
@@ -16929,6 +17311,12 @@ msgstr "Ukjent"
 
 msgid "Unaccounted loss"
 msgstr "Uforklart svinn"
+
+msgid "Unchecked after (seconds)"
+msgstr "Usjekket etter (sekunder)"
+
+msgid "Undeliverable since"
+msgstr "Kan ikke leveres siden"
 
 msgid "Under maintenance"
 msgstr "Under vedlikehold"
@@ -18228,6 +18616,12 @@ msgstr "alarmvarsel"
 msgid "alarm notifications"
 msgstr "alarmvarsler"
 
+msgid "alarm outbox entries"
+msgstr "oppføringer i alarmutboksen"
+
+msgid "alarm outbox entry"
+msgstr "oppføring i alarmutboksen"
+
 msgid "alarm recipient rule"
 msgstr "alarmmottakerregel"
 
@@ -18246,11 +18640,29 @@ msgstr "alarmregel"
 msgid "alarm severity rules"
 msgstr "alarmregler"
 
+msgid "alarm snooze"
+msgstr "alarmslumring"
+
+msgid "alarm snooze end"
+msgstr "slutt på alarmslumring"
+
+msgid "alarm snooze ends"
+msgstr "slutter på alarmslumring"
+
+msgid "alarm snoozes"
+msgstr "alarmslumringer"
+
 msgid "alarm subject state"
 msgstr "alarmtilstand"
 
 msgid "alarm subject states"
 msgstr "alarmtilstander"
+
+msgid "alarm worker status"
+msgstr "status for alarmtjenesten"
+
+msgid "alarm worker statuses"
+msgstr "statuser for alarmtjenesten"
 
 msgid "alarms"
 msgstr "alarmer"
@@ -19137,6 +19549,12 @@ msgstr "i %(unit)s"
 msgid "in %(unit)s, before the fish were moved here"
 msgstr "i %(unit)s, før fisken ble flyttet hit"
 
+#, python-format
+msgid "in a flood message of %(alarms)s alarm"
+msgid_plural "in a flood message of %(alarms)s alarms"
+msgstr[0] "i en flommelding med %(alarms)s alarm"
+msgstr[1] "i en flommelding med %(alarms)s alarmer"
+
 msgid "ingest contract"
 msgstr "innhentingskontrakt"
 
@@ -19218,6 +19636,14 @@ msgstr "nivå"
 #, python-format
 msgid "level %(level)s"
 msgstr "nivå %(level)s"
+
+#, python-format
+msgid ""
+"looks every %(tick)s s, passes at least every %(sweep)s s, unchecked after %(stale)s s, a send "
+"given %(send)s s"
+msgstr ""
+"ser hvert %(tick)s s, går gjennom minst hvert %(sweep)s s, usjekket etter %(stale)s s, en sending"
+" får %(send)s s"
 
 #, python-format
 msgid "loop %(system)s, %(age)s ago"
@@ -19787,6 +20213,9 @@ msgstr "sjøvannsskalaen (SWS)"
 msgid "seconds"
 msgstr "sekunder"
 
+msgid "see the alarm list"
+msgstr "se alarmlisten"
+
 msgid "sensitivity test"
 msgstr "følsomhetsundersøkelse"
 
@@ -19941,6 +20370,10 @@ msgstr "fisken kan forlate anlegget fra omtrent %(date)s"
 
 msgid "the layout being designed"
 msgstr "oppsettet som utformes"
+
+#, python-format
+msgid "the oldest since %(since)s"
+msgstr "det eldste siden %(since)s"
 
 msgid ""
 "the operating plan, the lice coordination plan and the others the authorities require that are "

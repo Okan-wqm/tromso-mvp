@@ -230,7 +230,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "cause",
@@ -250,7 +250,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -265,7 +265,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -615,7 +615,7 @@
       "app": "alarms",
       "model": "DeliveryAttempt",
       "table": "alarm_delivery_attempts",
-      "description": "A transport took a notification (sent) or failed to (failed, with what it said).",
+      "description": "A transport took a notification (sent) or failed to (failed, with what it said), or a flood message to the same person covered it (grouped: alarms/floods.py).",
       "columns": [
         {
           "name": "id",
@@ -661,7 +661,8 @@
           "null": false,
           "choices": [
             "sent",
-            "failed"
+            "failed",
+            "grouped"
           ],
           "link": null,
           "on_form": [],
@@ -673,6 +674,28 @@
           "field": "detail",
           "type": "varchar(300)",
           "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "flood_key",
+          "field": "flood_key",
+          "type": "varchar(150)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "flood_size",
+          "field": "flood_size",
+          "type": "integer",
+          "null": true,
           "choices": [],
           "link": null,
           "on_form": [],
@@ -743,7 +766,16 @@
         "left_out": false
       },
       "tests": [
-        "alarms/tests/test_alarms.py"
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_cleared_criticals.py",
+        "alarms/tests/test_floods.py",
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_recheck.py",
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py"
       ]
     },
     {
@@ -776,7 +808,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "level",
@@ -787,7 +819,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "escalated_at",
@@ -798,7 +830,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -822,7 +854,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -876,14 +908,15 @@
       },
       "tests": [
         "alarms/tests/test_alarms.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
       "app": "alarms",
       "model": "Notification",
       "table": "alarm_notifications",
-      "description": "The outbox: one alarm for one person through one channel at one level, queued by the alarm loop.",
+      "description": "The outbox: one alarm for one person through one channel at one level, queued by the alarm pass.",
       "columns": [
         {
           "name": "id",
@@ -909,7 +942,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "recipient_id",
@@ -924,7 +957,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "channel",
@@ -937,7 +970,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "level",
@@ -948,7 +981,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "rule_id",
@@ -963,7 +996,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "queued_at",
@@ -974,7 +1007,37 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "alarm",
+            "snoozed",
+            "resumed"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
+        },
+        {
+          "name": "shelve_id",
+          "field": "shelve",
+          "type": "bigint",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "alarm_shelves",
+            "model": "alarms.AlarmShelve",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -987,6 +1050,23 @@
             "channel",
             "level"
           ],
+          "conditional": true
+        },
+        {
+          "name": "uq_alarm_notifications_snooze_once",
+          "kind": "unique",
+          "fields": [
+            "shelve",
+            "recipient",
+            "channel",
+            "kind"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_alarm_notifications_kind",
+          "kind": "check",
+          "fields": [],
           "conditional": false
         },
         {
@@ -1006,7 +1086,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -1052,7 +1132,83 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_deadman.py",
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py",
+        "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "OutboxEntry",
+      "table": "alarm_outbox",
+      "description": "A notification still to be sent: the outbox's queue (alarms/outbox.py), written with the notification (services.queue_many) and removed once it is sent, covered by a flood message, or given up, so a round reads only what is waiting, however long the history.",
+      "columns": [
+        {
+          "name": "notification_id",
+          "field": "notification",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarm_notifications",
+            "model": "alarms.Notification",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written with each notification (alarms/services.py queue_many)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a row is the notification itself, never changed"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "removed by the outbox once the notification is sent, covered by a flood message or given up"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "the outbox's own queue (alarms/outbox.py); the notifications are on their alarm's page"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_cleared_criticals.py",
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_recheck.py",
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py"
       ]
     },
     {
@@ -1437,14 +1593,16 @@
         "core/tests_workspaces.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
-        "alarms/tests/test_pages.py"
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_pages.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
       "app": "alarms",
       "model": "SeverityPolicy",
       "table": "alarm_severity_policies",
-      "description": "How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged): how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified, and how many times a failing transport is tried with one notification.",
+      "description": "How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged): how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified, and how many times a failing transport is tried with one notification, and how long apart.",
       "columns": [
         {
           "name": "id",
@@ -1624,6 +1782,71 @@
           "why": ""
         },
         {
+          "name": "retry_seconds",
+          "field": "retry_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "shelve_max_minutes",
+          "field": "shelve_max_minutes",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "flood_count",
+          "field": "flood_count",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "flood_window_seconds",
+          "field": "flood_window_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "follow_up_seconds",
+          "field": "follow_up_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "clock_skew_seconds",
           "field": "clock_skew_seconds",
           "type": "integer",
@@ -1703,6 +1926,36 @@
           "conditional": false
         },
         {
+          "name": "chk_alarm_severity_policies_retry",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_shelve",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_flood",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_flood_window",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_follow_up",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_alarm_severity_policies_clock",
           "kind": "check",
           "fields": [],
@@ -1775,6 +2028,11 @@
             "off_delay_seconds": "Rule",
             "escalation_minutes": "Rule",
             "delivery_attempts": "Rule",
+            "retry_seconds": "Rule",
+            "shelve_max_minutes": "Rule",
+            "flood_count": "Rule",
+            "flood_window_seconds": "Rule",
+            "follow_up_seconds": "Rule",
             "clock_skew_seconds": "Device clock",
             "clock_skew_deadband_seconds": "Device clock",
             "clock_behind_window_seconds": "Device clock",
@@ -1800,7 +2058,301 @@
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
-        "alarms/tests/test_reference.py"
+        "alarms/tests/test_floods.py",
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_reference.py",
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "AlarmShelveEnd",
+      "table": "alarm_shelve_ends",
+      "description": "A person ended a snooze before its time.",
+      "columns": [
+        {
+          "name": "shelve_id",
+          "field": "shelve",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarm_shelves",
+            "model": "alarms.AlarmShelve",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person and the moment they ended a snooze early"
+        },
+        {
+          "name": "ended_at",
+          "field": "ended_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person and the moment they ended a snooze early"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snooze_end",
+              "url_names": [
+                "alarms:alarm_snooze_end"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/snooze/end/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "AlarmShelve",
+      "table": "alarm_shelves",
+      "description": "A person snoozed an open alarm (ISA-18.2 shelving; owner decision Q5): from `shelved_at` until `until`, for `reason`.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "alarm_id",
+          "field": "alarm",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "shelved_at",
+          "field": "shelved_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "until",
+          "field": "until",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarm_shelves_until",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_shelves_reason",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snooze",
+              "url_names": [
+                "alarms:alarm_snooze"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/snooze/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -1896,7 +2448,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -1935,6 +2487,392 @@
     },
     {
       "app": "alarms",
+      "model": "AlarmWorkerStatus",
+      "table": "alarm_worker_status",
+      "description": "The alarm worker's own row (alarms/worker.py; one per worker name, written only by the worker that holds the lock): whether it runs, when it last looked (`heartbeat_at`), when it last finished a pass and a pass with no failed step, how long that took, what failed, and the age after which the pages and the health check call the alarms unchecked (`stale_after_seconds`, the worker's own setting, so a reader needs no setting of its own).",
+      "columns": [
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(40)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "state",
+          "field": "state",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "running",
+            "stopped"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "host",
+          "field": "host",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "pid",
+          "field": "pid",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "started_at",
+          "field": "started_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "heartbeat_at",
+          "field": "heartbeat_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_pass_at",
+          "field": "last_pass_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_ok_pass_at",
+          "field": "last_ok_pass_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_pass_ms",
+          "field": "last_pass_ms",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "failed_steps",
+          "field": "failed_steps",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "consecutive_failures",
+          "field": "consecutive_failures",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_error",
+          "field": "last_error",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "stale_after_seconds",
+          "field": "stale_after_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_send_at",
+          "field": "last_send_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "outbox_waiting",
+          "field": "outbox_waiting",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "outbox_oldest_at",
+          "field": "outbox_oldest_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "undeliverable",
+          "field": "undeliverable",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "undeliverable_since",
+          "field": "undeliverable_since",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarm_worker_status_state",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_worker_status_stale_after",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "the alarm worker writes its own row when it takes the lock (alarms/worker.py)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "only the worker moves its row: each pass, each look, and when it stops"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "the worker's row is kept: the time of its last pass is what says the alarms went unchecked"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_list",
+              "url_names": [
+                "alarms:alarm_list"
+              ],
+              "routes": [
+                "/alarms/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_watch_notice",
+              "url_names": [
+                "alarms:alarm_watch_notice"
+              ],
+              "routes": [
+                "/alarms/watch/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water",
+              "url_names": [
+                "farm:water"
+              ],
+              "routes": [
+                "/operations/water/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "monitoring:monitor",
+              "url_names": [
+                "monitoring:monitor"
+              ],
+              "routes": [
+                "/operations/monitoring/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:home",
+              "url_names": [
+                "sensors:home"
+              ],
+              "routes": [
+                "/sensors/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:recipientrule_list",
+              "url_names": [
+                "alarms:recipientrule_list"
+              ],
+              "routes": [
+                "/alarms/recipients/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:severitypolicy_list",
+              "url_names": [
+                "alarms:severitypolicy_list"
+              ],
+              "routes": [
+                "/alarms/severity-rules/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:parameterdeadband_list",
+              "url_names": [
+                "alarms:parameterdeadband_list"
+              ],
+              "routes": [
+                "/alarms/deadbands/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:alarmrule_list",
+              "url_names": [
+                "sensors:alarmrule_list"
+              ],
+              "routes": [
+                "/sensors/alarm-rules/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:alarm_events",
+              "url_names": [
+                "sensors:alarm_events"
+              ],
+              "routes": [
+                "/sensors/alarm-events/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Read through alarms/watch.py: {% alarm_watch %} on these pages, and manage.py alarm_worker_health.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_deadman.py",
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_worker.py",
+        "alarms/tests/test_worker_process.py"
+      ]
+    },
+    {
+      "app": "alarms",
       "model": "Alarm",
       "table": "alarms",
       "description": "One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point.",
@@ -1963,7 +2901,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "sensor_event_id",
@@ -1978,7 +2916,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "point_id",
@@ -1993,7 +2931,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "parameter",
@@ -2004,7 +2942,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "device_id",
@@ -2019,7 +2957,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "severity",
@@ -2033,7 +2971,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "site_id",
@@ -2048,7 +2986,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "production_department_id",
@@ -2063,7 +3001,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "opened_at",
@@ -2074,7 +3012,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "summary",
@@ -2085,7 +3023,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -2112,7 +3050,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -2173,12 +3111,22 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_deadman.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
+        "alarms/tests/test_outbox.py",
         "alarms/tests/test_pages.py",
+        "alarms/tests/test_reaction.py",
         "alarms/tests/test_reference.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py",
-        "alarms/tests/test_who_ends_a_level.py"
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_recheck.py",
+        "alarms/tests/test_snooze.py",
+        "alarms/tests/test_who_ends_a_level.py",
+        "alarms/tests/test_worker.py"
       ]
     },
     {
@@ -2714,7 +3662,8 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_pages.py",
-        "alarms/tests/test_reference.py"
+        "alarms/tests/test_reference.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -3415,7 +4364,9 @@
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_shell.py",
         "monitoring/tests/test_template_pages.py",
+        "alarms/tests/test_cleared_criticals.py",
         "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_review_transports.py",
         "alarms/tests/test_who_ends_a_level.py"
       ]
     },
@@ -13783,7 +14734,8 @@
         "sensors/tests/test_portable.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_migration_reverse.py",
-        "alarms/tests/test_migration_subjects.py"
+        "alarms/tests/test_migration_subjects.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -15510,7 +16462,8 @@
         "alarms/tests/__init__.py",
         "alarms/tests/test_migration.py",
         "alarms/tests/test_migration_reverse.py",
-        "alarms/tests/test_migration_subjects.py"
+        "alarms/tests/test_migration_subjects.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -19040,7 +19993,8 @@
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_replay.py",
-        "alarms/tests/__init__.py"
+        "alarms/tests/__init__.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -21494,6 +22448,7 @@
         "monitoring/tests/test_small.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_reaction.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py"
       ]
@@ -35954,6 +36909,7 @@
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_pages.py"
       ]
     },
@@ -36353,6 +37309,7 @@
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_migration.py",
         "alarms/tests/test_migration_reverse.py",
         "alarms/tests/test_pages.py"
@@ -37031,7 +37988,8 @@
       "tests": [
         "sensors/tests/test_contract.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -38349,7 +39307,8 @@
         "sensors/tests/__init__.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "alarms/tests/test_review_fixes.py"
       ]
     },
     {
@@ -39864,7 +40823,8 @@
       "tests": [
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py",
-        "alarms/tests/test_clock.py"
+        "alarms/tests/test_clock.py",
+        "alarms/tests/test_review_fixes.py"
       ]
     },
     {

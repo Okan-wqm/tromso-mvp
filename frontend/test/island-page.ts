@@ -15,11 +15,11 @@ const GALLERY = resolve('.build/gallery');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 function entry(name: string): { file: string; css: string[] } {
-  const manifest = join(GALLERY, '.vite', 'manifest.json');
+  const manifest = join(GALLERY, 'manifest.json');   // vite.config.mjs: not a dot-folder
   if (!existsSync(manifest)) throw new Error('.build/gallery has no build: run `npm run build:gallery` (npm test does)');
   const found = Object.values(JSON.parse(readFileSync(manifest, 'utf8')) as Record<string, { file: string; css?: string[]; name?: string; isEntry?: boolean }>)
     .find((chunk) => chunk.name === name && chunk.isEntry);
-  if (!found) throw new Error(`${name} is not in .build/gallery/.vite/manifest.json`);
+  if (!found) throw new Error(`${name} is not in .build/gallery/manifest.json`);
   return { file: found.file, css: found.css ?? [] };
 }
 

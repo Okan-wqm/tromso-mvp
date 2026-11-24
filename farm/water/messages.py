@@ -388,6 +388,12 @@ def last_own(reading):
         'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}
 
 
+def from_system(place):
+    """What a value of a unit with no sampling point of its own says (farm/water/read.py `latest`, `units`): it is its
+    system's, read at `place` (the loop point, else the system)."""
+    return _('From its system, %(place)s: the unit has no sampling point of its own.') % {'place': place}
+
+
 def no_fresh_oxygen(silence):
     """What a unit with fish whose oxygen has no fresh value says (read.Silence; owner decision of 2026-11-23, critical):
     'Dissolved oxygen (mg/L O₂): no recent data, 3 hours old', or without an age when it has no oxygen value at all.

@@ -743,6 +743,7 @@ class PointWater:
     holds_fish: bool = False    # a point that stands for its unit: the unit holds fish on its own day (`latest`)
     silent_oxygen: object = None    # Silence: the unit holds fish and its oxygen has no fresh value (`latest`)
     targets: frozenset = frozenset()    # the sensor targets its place reads (own, then its system's)
+    system_point: object = None     # a unit without a point of its own: its system's loop point it is read at, if any
 
     @staticmethod
     def _rolled_up(counted):
@@ -874,9 +875,10 @@ class Context:
     """The points' units, the fish in them, their salinity over time and the limits. With `since` None, the fish and the
     limits alone (`limits_of`: no value is read there, so neither the middle points nor the salinity are)."""
 
-    def __init__(self, points, since):
+    def __init__(self, points, since, units=()):
         points = list(points)
         self.served = self._served(points)                # point id -> the live units its water concerns
+        self.served.update({unit.pk: [unit] for unit in units})     # a unit read without a point (`latest`, `units`)
         self.book = SpeciesBook({unit.pk for units in self.served.values() for unit in units})
         species = set(self.book.species.values())
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
@@ -1511,7 +1513,7 @@ def anchors(units, own=None):
     return {unit.pk: own[unit.pk][0] for unit in units if own.get(unit.pk)}
 
 
-def _places(points, own=None):
+def _places(points, own=None, units=()):
     """{point id: Places} of the points given: one query for the other points of their units (none when the caller hands
     in their `own_water`), one for their loops. A point stands for its unit (`for_unit`) when it is the unit's middle
     point, or, for a unit without one, the unit's anchor (`anchors`): it then reads the unit's own-water points and its
@@ -1539,21 +1541,42 @@ def _places(points, own=None):
         elif point.unit.system_id:                  # a system without a loop point: its sensors still stand in
             places.system_targets = [((sources.SYSTEM, point.unit.system_id), Origin.SYSTEM_SENSOR, point)]
         found[point.pk] = places
+    # A unit with no point of its own (`units`): nothing of its own, its system's tier as a unit point's (A9), keyed by
+    # the unit, the system's sensors observed at the unit where the system has no loop point.
+    units = list(units)
+    unit_loops = middle_points([System(pk=system_id) for system_id in {unit.system_id for unit in units}
+                                if system_id]) if units else {}
+    for unit in units:
+        places = found[unit.pk] = Places([], [], for_unit=True)
+        loop = unit_loops.get(unit.system_id)
+        if loop is not None:
+            places.system, places.system_targets = [loop], _observed(loop, Origin.SYSTEM_SENSOR)
+        elif unit.system_id:
+            places.system_targets = [((sources.SYSTEM, unit.system_id), Origin.SYSTEM_SENSOR, unit)]
     return found
 
 
-def latest(points, now=None, at=None, own=None):
+def latest(points, now=None, at=None, own=None, units=()):
     """{point id: PointWater} of every sampling point given: per parameter, its value in the owner's order (`_resolve`,
     from the point's `Places`), judged for the fish of the point's own water that day (a value standing in from the
     system is judged for the unit's fish, as the unit's own value would be); values no longer fresh are stale. One query
     for the samples, one ask of the live sources for every point. With `at` (a past moment, owner amendment A4), the
     water as it was then: the samples taken up to that moment, each sensor's value at it (sources.value_at: the channels
     bound there then), fresh and judged relative to it; nothing from after it. `own`: the `own_water` of the points'
-    units when the caller has read it (not read again)."""
+    units when the caller has read it (not read again).
+
+    `units`: units with no point of their own to read their water at (`unanchored`), each read in the same pass, keyed by
+    its own id: its system's tier (A9: the loop point's samples and probes, or the system's probes) judged for its own
+    fish as a unit point's system tier is, each value saying it is its system's (`messages.from_system`); with no
+    system, nothing (its oxygen then has no fresh value: critical where it holds fish, `_silence`; review 4 of the
+    branch, L1: one water read, the card, the pages and the alarms read it there)."""
     moment = at or now or timezone.now()
     since = moment - WINDOW
     points = list(points)
-    places = _places(points, own)
+    # (their clocks and systems with them, whatever the caller read: one query for all of them)
+    units = list(Tank.objects.filter(pk__in=[unit.pk for unit in units])
+                 .select_related('production_department__site', 'system')) if units else []
+    places = _places(points, own, units)
     everything = {point.pk: point for point in points}
     for each in places.values():
         everything.update({point.pk: point for point in (*each.own, *each.system) if point.pk not in everything})
@@ -1561,7 +1584,7 @@ def latest(points, now=None, at=None, own=None):
     ids = _newest_ids(everything, since, until=at)
     samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(
         {sample_id for slots in ids.values() for sample_id in slots.values()})
-    context = Context(everything, since)
+    context = Context(everything, since, units)
     wanted = [target for each in places.values()
               for target, _origin, _point in (*each.own_targets, *each.system_targets)]
     answer = sources.latest(wanted, moment) if at is None else _values_at(wanted, at)
@@ -1573,11 +1596,14 @@ def latest(points, now=None, at=None, own=None):
         return manuals[point.pk]
 
     water = {}
-    for point in points:
-        where = places[point.pk]
-        point_water = water[point.pk] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit)
+    for point, place in [*((point, point) for point in points), *((None, unit) for unit in units)]:
+        # `place`: the point, or a unit without one (its water's clock and fish; keyed by its id)
+        where = places[place.pk]
+        point_water = water[place.pk] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit,
+                                                   system_point=where.system[0] if point is None and where.system
+                                                   else None)
         own_ids = {each.pk for each in where.own}
-        day = local_time(moment, point).date()
+        day = local_time(moment, place).date()
         resolved, candidates = _resolve(_live(where.own_targets, answer), [manual(each) for each in where.own],
                                         _live(where.system_targets, answer), [manual(each) for each in where.system],
                                         context, moment, partial(_at_moment, where))
@@ -1586,7 +1612,7 @@ def latest(points, now=None, at=None, own=None):
 
         def judged(reading):
             # Each judged on its own copy: a loop's reading stands in for several units, each with its own fish.
-            return context.judge(replace(reading), day, moment, temperature, for_point=point)
+            return context.judge(replace(reading), day, moment, temperature, for_point=place)
 
         for code, reading in resolved.items():
             reading = judged(reading)
@@ -1598,7 +1624,7 @@ def latest(points, now=None, at=None, own=None):
                             if each.fresh(moment) or freshness.tolerance() < each.at - moment <= MAX_AHEAD]
                 # MEASURED AT THE POINT: the point's own newest value of the code, and its fresh others, each judged
                 # before another point's value decides (the point's own old critical stays).
-                here = [each for each in (resolved[code], *found) if each.value is not None
+                here = [each for each in (resolved[code], *found) if each.value is not None and point is not None
                         and each.point is not None and each.point.pk == point.pk and each.at - moment <= MAX_AHEAD]
                 shown_here = choose([here], moment, lambda each: each.fresh(moment))
                 if shown_here is not None:
@@ -1609,27 +1635,39 @@ def latest(points, now=None, at=None, own=None):
                 if where.for_unit and reading.point is not None and reading.point.pk not in own_ids:
                     last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
                                        and each.point.pk in own_ids], moment)
+            if point is None:                       # a unit without a point: every value is its system's
+                said = str(messages.from_system(_system_place(where, place)))
+                reading.note = f'{reading.note} {said}' if reading.note else said
             point_water.readings[code] = reading
         point_water.targets = frozenset(target for target, _origin, _point in (*where.own_targets,
                                                                                  *where.system_targets))
         if where.for_unit:
-            _silence(point_water, context.holds_fish(point, day), moment)
+            _silence(point_water, context.holds_fish(place, day), moment)
     return water
 
 
-def _silence(point_water, holds_fish, moment, readings=None):
+def _system_place(where, unit):
+    """How a unit without a point names the place its water is read at: its system's loop point, else its system."""
+    return where.system[0] if where.system else unit.system
+
+
+def unanchored(units, anchored):
+    """The units of `units` that have no point to read their own water at (none in `anchored`, {unit id: point}):
+    what `latest` reads at their system (`units`)."""
+    return [unit for unit in units if unit.pk not in anchored]
+
+
+def _silence(point_water, holds_fish, moment):
     """Owner decision of 2026-11-23 (it reverses the "never red" of 2026-11-04 for the oxygen alone): a unit that holds
     fish now (`holds_fish`: SpeciesBook.holds, after its day's operations) whose oxygen, in mg/L or in %, has no fresh
-    value for the place (A9: its own, else its system's; a unit with no point to read its water at has none) is
+    value for the place (A9: its own, else its system's; a unit with no point of its own its system's alone) is
     CRITICAL, on every page and in the alarms (`PointWater.silent_oxygen`, counted in its status). A unit without fish
     stays as it was: an old or missing oxygen is "no recent data", never red. Only the point that stands for its unit
-    is asked (`for_unit`), and a unit's PointWater without a point (`pointless_water`), whose oxygen is its system's
-    (`readings`: what stands in for its own values, `_standing`)."""
+    is asked (`for_unit`), a unit without a point of its own included (`latest`, `units`)."""
     point_water.holds_fish = holds_fish
     if not point_water.holds_fish:
         return
-    readings = point_water.readings if readings is None else readings
-    oxygen = [readings.get(code) for code in (OXYGEN_MG_L, OXYGEN_PCT)]
+    oxygen = [point_water.readings.get(code) for code in (OXYGEN_MG_L, OXYGEN_PCT)]
     oxygen = [reading for reading in oxygen if reading is not None and reading.value is not None]
     if any(reading.fresh(moment) for reading in oxygen):
         return
@@ -1837,65 +1875,11 @@ def owner_water(owners, now=None):
     owners = list(owners)
     units = [owner for owner in owners if owner_type_of(owner) == 'unit']
     own = own_water([unit.pk for unit in units])
-    middles = {**middle_points([owner for owner in owners if owner_type_of(owner) != 'unit']), **anchors(units, own)}
-    water = latest(list(middles.values()), now, own=own)
-    pointless = pointless_water([unit for unit in units if unit.pk not in middles], now)
-    return {owner.pk: water[middles[owner.pk].pk] if owner.pk in middles else pointless.get(owner.pk, PointWater(None))
+    anchored = anchors(units, own)
+    middles = {**middle_points([owner for owner in owners if owner_type_of(owner) != 'unit']), **anchored}
+    water = latest(list(middles.values()), now, own=own, units=unanchored(units, anchored))
+    return {owner.pk: water[middles[owner.pk].pk] if owner.pk in middles else water.get(owner.pk, PointWater(None))
             for owner in owners}
-
-
-def pointless_water(units, now=None):
-    """{unit id: PointWater without a point} of units with no point to read their own water at: one that holds fish
-    now has no fresh oxygen, so it is critical as any unit with fish whose oxygen has none (`_silence`; review 2 of the
-    branch, R2: it was a grey "no recent data" and only a warning of the alarm system). Its oxygen is its system's where
-    it is in one (A9's second tier, `_standing`: its loop point's samples and probes, else the system's probes), so a
-    unit in a loop that measures its oxygen is not critical for having no point of its own. Two queries for all of
-    them, a read of their systems' water more where they are in one; none without such a unit."""
-    ids = [unit.pk for unit in units]
-    if not ids:
-        return {}
-    moment = now or timezone.now()
-    presence = Presence.of_units(ids)
-    units = list(Tank.objects.filter(pk__in=ids).select_related('production_department__site', 'system'))   # clocks
-    standing, targets = _standing(units, moment)
-    found = {}
-    for unit in units:
-        found[unit.pk] = water = PointWater(None, for_unit=True, targets=frozenset(
-            target for target, _origin, _point in targets.get(unit.pk, ())))
-        _silence(water, holds(presence, unit.pk, local_time(moment, unit).date()), moment,
-                 standing.get(unit.pk, {}))
-    return found
-
-
-def _standing(units, moment):
-    """({unit id: {code: Reading}}, {unit id: [(target, origin, point)]}) of the oxygen that stands in for units with
-    no point of their own: their system's, A9's second tier, resolved by the one resolver (`_resolve`, as for a unit's
-    point: `_places`): the loop point's latest samples and its probes (`_observed`), or, for a system without a loop
-    point, the system's own probes. The oxygen alone: what `_silence` asks. One read for all of them; none without a
-    unit in a system."""
-    in_systems = [unit for unit in units if unit.system_id]
-    if not in_systems:
-        return {}, {}
-    loops = middle_points([unit.system for unit in in_systems])
-    targets = {unit.pk: (_observed(loops[unit.system_id], Origin.SYSTEM_SENSOR) if unit.system_id in loops
-                         else [((sources.SYSTEM, unit.system_id), Origin.SYSTEM_SENSOR, None)]) for unit in in_systems}
-    points = list({point.pk: point for point in loops.values()}.values())
-    since = moment - WINDOW
-    ids = _newest_ids(points, since)
-    samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(
-        {sample_id for slots in ids.values() for sample_id in slots.values()})
-    context = Context(points, since)
-    oxygen = (OXYGEN_MG_L, OXYGEN_PCT)
-    answer = sources.latest([target for found in targets.values() for target, _origin, _point in found], moment)
-    answer = sources.Answer({target: {code: values for code, values in by_code.items() if code in oxygen}
-                             for target, by_code in answer.values.items()}, answer.failed)
-    found = {}
-    for unit in in_systems:
-        loop = loops.get(unit.system_id)
-        manual = [{code: reading for code, reading in _manual(loop, ids, samples, context).items() if code in oxygen}
-                  ] if loop is not None else []
-        found[unit.pk], _candidates = _resolve({}, [], _live(targets[unit.pk], answer), manual, context, moment)
-    return found, targets
 
 
 def unit_water(units, now=None):
@@ -1929,16 +1913,17 @@ def points_water(units, now=None, middle_only=()):
     The units' own-water points are read once, for both (`own_water`)."""
     units = list(units)
     own = own_water([unit.pk for unit in units])
+    anchored = anchors(units, own)
     chosen = points_of(units, middle_only, own)
-    water = latest([point for points in chosen.values() for point in points], now, own=own)
+    bare = unanchored(units, anchored)
+    water = latest([point for points in chosen.values() for point in points], now, own=own, units=bare)
     found = {unit_id: [water[point.pk] for point in points] for unit_id, points in chosen.items()}
-    # A unit with fish and no point to read its own water at: its water without a point, which says its oxygen is silent
-    # (`pointless_water`); it is no point of the card's (no reading, no name). One query for all of them.
-    pointless = pointless_water(
-        [unit for unit in units if not any(water[point.pk].for_unit for point in chosen[unit.pk])], now)
-    for unit_id, standing in pointless.items():
-        if standing.holds_fish:
-            found[unit_id] = [standing, *found[unit_id]]
+    # A unit with no point to read its own water at: its water read at its system (`latest`, `units`), first, where it
+    # says something (a value, or fish whose oxygen it judges); else none, as before.
+    for unit in bare:
+        standing = water[unit.pk]
+        if standing.readings or standing.holds_fish:
+            found[unit.pk] = [standing, *found[unit.pk]]
     return found
 
 

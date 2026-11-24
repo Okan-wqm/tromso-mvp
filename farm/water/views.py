@@ -869,7 +869,8 @@ def drawer(request, unit):
     point_water = read.unit_water([unit])[unit.pk]
     return {
         'water_point': point_water, 'water_readings': _drawer_order(point_water),
-        'water_history_url': history_url(unit),
+        # the unit's Tank › Water (owner 2026-11-24); in the classic look that address redirects to the old history
+        'water_history_url': reverse('farm:tank_water', args=[unit.pk]),
         'water_record_url': _dialog_url('farm:water_record', request, unit) if request.user.has_perm(RECORD) else '',
         'water_points_url': f'{reverse("farm:samplingpoint_list")}?{urlencode({"unit": unit.pk})}'
         if request.user.has_perm('farm.view_samplingpoint') else '',

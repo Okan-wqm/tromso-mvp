@@ -8,7 +8,9 @@
 // or days, never "00:00"), and the Deffeyes chart of the window (the server's diagram of the newest water drawn, its star
 // named with its time, "No diagram after …" when the window's end has none, and the water's path through the time). The
 // window is the address: the presets and the custom form (the shared date box, dd.mm.yyyy HH:MM) are plain GET forms, so
-// the page works as a link and with the back button. Every word and value comes from the server.
+// the page works as a link and with the back button. Every word and value comes from the server. A page of several
+// points (System › Water: the loop and its tanks' points) heads each point's charts with the point's name, and each
+// chart's accessible name says its point.
 import { ChartFrame, EmptyState, Plate, Plates, Table } from './ui/index.js';
 import { useDateInputs } from './lib/dates.js';
 import { DeffeyesChart, DeffeyesLegend, type DeffeyesDrawing, type DeffeyesWords } from './lib/deffeyes.js';
@@ -131,7 +133,12 @@ function Window({ props }: { props: WaterProps }) {
   );
 }
 
-function ParameterChart({ chart, props, markers }: { chart: ChartData; props: WaterProps; markers: Marker[] }) {
+/** A chart's accessible name: what it shows, its point when the page has several, the unit or system, the window. */
+function named(what: string, point: string | null, props: WaterProps): string {
+  return [what, point, props.unit.code, `${when(props.start, props.zone)} – ${when(props.end, props.zone)}`].filter(Boolean).join(', ');
+}
+
+function ParameterChart({ chart, point, props, markers }: { chart: ChartData; point: string | null; props: WaterProps; markers: Marker[] }) {
   const placed = place(chart, props.words, props.locale);
   const flagged = flaggedText(chart.samples, chart.quantity.decimals, chart.quantity.unit, props.locale,
     (seconds) => when(seconds, props.zone));
@@ -141,7 +148,7 @@ function ParameterChart({ chart, props, markers }: { chart: ChartData; props: Wa
     <Plate span={6} label={chart.quantity.label}>
       <ChartFrame title={chart.quantity.label} keys={keysOf(placed)} caption={caption}
         values={[...chart.said, ...flagged.map((text): [string, string] => [props.words.samples, text])]}
-        label={`${chart.quantity.label}, ${props.unit.code}, ${when(props.start, props.zone)} – ${when(props.end, props.zone)}`}>
+        label={named(chart.quantity.label, point, props)}>
         <SeriesChart {...placed} markers={[...(placed.markers ?? []), ...markers]} marksListed gapLabel={props.words.noValue}
           emptyLabel={chart.empty_text} />
       </ChartFrame>
@@ -149,7 +156,7 @@ function ParameterChart({ chart, props, markers }: { chart: ChartData; props: Wa
   );
 }
 
-function WorkedChart({ code, item, props, markers }: { code: string; item: Place['worked'][string]; props: WaterProps; markers: Marker[] }) {
+function WorkedChart({ code, item, point, props, markers }: { code: string; item: Place['worked'][string]; point: string | null; props: WaterProps; markers: Marker[] }) {
   const shown = item.values.filter((value) => value.value !== null);
   const refused = item.values.filter((value) => value.value === null);
   const times = shown.map((value) => value.at);
@@ -162,7 +169,7 @@ function WorkedChart({ code, item, props, markers }: { code: string; item: Place
         values={[...shown.map((value): [string, string] => [when(value.at, props.zone),
           `${formatNumber(value.value ?? 0, item.decimals, props.locale)} mg/L${value.status_text ? ` (${value.status_text})` : ''}`]),
         ...refusals.map((text): [string, string] => [props.words.notWorked, text])]}
-        label={`${item.label}, ${props.unit.code}, ${when(props.start, props.zone)} – ${when(props.end, props.zone)}`}>
+        label={named(item.label, point, props)}>
         <SeriesChart key={code} times={times} unit="mg/L" decimals={item.decimals} zone={props.zone}
           range={[props.start, props.end]} emptyLabel={props.words.noChart} markers={markers} marksListed
           series={[{ label: props.words.worked, series: 5, points: true, hollow: true, values: shown.map((value) => value.value) }]}
@@ -217,12 +224,16 @@ function Water(props: WaterProps) {
       <Window props={props} />
       {charts.length || worked.length ? (
         <Plates>
-          {props.places.map((each) => [
-            ...each.charts.map((chart) => <ParameterChart key={`${each.point}-${chart.quantity.code}`} chart={chart}
-              props={props} markers={markers} />),
-            ...Object.entries(each.worked).map(([code, item]) => <WorkedChart key={`${each.point}-${code}`} code={code}
-              item={item} props={props} markers={markers} />),
-          ])}
+          {props.places.map((each) => {
+            const point = props.places.length > 1 ? each.point : null;
+            return [
+              ...(point ? [<h2 key={`${each.point}-head`} className="ui-plates-head">{point}</h2>] : []),
+              ...each.charts.map((chart) => <ParameterChart key={`${each.point}-${chart.quantity.code}`} chart={chart}
+                point={point} props={props} markers={markers} />),
+              ...Object.entries(each.worked).map(([code, item]) => <WorkedChart key={`${each.point}-${code}`} code={code}
+                item={item} point={point} props={props} markers={markers} />),
+            ];
+          })}
           {props.range_chart ? <RangeDeffeyes range={props.range_chart} props={props} /> : null}
         </Plates>
       ) : <EmptyState title={props.words.empty} />}

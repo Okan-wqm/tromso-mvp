@@ -459,6 +459,8 @@ tr[data-status="warning"] .ui-row-status { color: var(--warn); }
    stand in ui-plates, a 12-column grid; data-span="4|6|8|12" (the whole width under 1100 px, half from 640 px). */
 .ui-plates { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap, var(--space-5)); align-items: start; }
 .ui-plates > * { grid-column: 1 / -1; min-width: 0; }
+/* a heading over a run of plates in the grid (System › Water: each point's charts), the whole width */
+.ui-plates > .ui-plates-head { margin: var(--space-2) 0 calc(-1 * var(--space-2)); font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.2; color: var(--text-1); }
 @media (min-width: 1100px) {
   .ui-plates > [data-span="4"] { grid-column: span 4; }
   .ui-plates > [data-span="6"] { grid-column: span 6; }

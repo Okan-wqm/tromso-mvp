@@ -8,6 +8,7 @@
 // after the Django tests (CI's Django job); missing props or build fail it, never skip it. It holds, at 1440 and 390 px:
 //   - the page drawn (a table, tiles or the empty state);
 //   - nothing opens the classic dialog;
+//   - a list in groups draws a table per group, a water page of several points a heading per point;
 //   - no CSP violation, no critical or serious axe finding, every text at 4.5:1;
 //   - nothing scrolls sideways.
 // With SHOTS=<folder> it writes the screenshots.
@@ -109,6 +110,10 @@ test('the rest of Production and Sensors in a browser', { skip: skipWithout(BROW
           await tab.waitForSelector(drawn);
           // an island's page opens no classic dialog; a page the server draws keeps the dialogs of forms not redrawn yet
           if (island) assert.equal(await tab.locator('[data-modal]').count(), 0, 'nothing opens the classic dialog');
+          // a list in groups (Live values) is a table per group; a water page of several points a heading per point
+          const given = (kept(key).props ?? {}) as { groups?: unknown[] | null; places?: unknown[] };
+          if (island === 'list-page' && given.groups?.length) assert.equal(await tab.locator('main table').count(), given.groups.length, 'a table per group');
+          if (island === 'water') assert.equal(await tab.locator('.ui-plates-head').count(), (given.places?.length ?? 0) > 1 ? given.places?.length : 0, 'a heading per point');
           assert.deepEqual(violations, [], 'CSP violations');
           assert.deepEqual(await lowContrast(tab), [], 'text under 4.5:1');
           assert.deepEqual(await axeFindings(tab, origin), [], 'axe');

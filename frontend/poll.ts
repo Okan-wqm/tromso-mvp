@@ -419,7 +419,18 @@ document.addEventListener('click', (event) => {
   polled.dispatchEvent(new CustomEvent('poll:now', { detail: { url: link.dataset.pollUrl } }));
   window.history.replaceState(window.history.state, '', link.href);
 });
-document.querySelectorAll<HTMLElement>('[data-scroll-end]').forEach((list) => { list.scrollTop = list.scrollHeight; });
-document.querySelectorAll<HTMLElement>('[data-poll]').forEach((element) => { watch(element); });
-document.querySelectorAll<HTMLTextAreaElement>('textarea[data-submit-on-enter]').forEach(sendOnEnter);
-document.querySelectorAll<HTMLFormElement>('form[data-live]').forEach(live);
+/** The page's polled parts, lists and forms start once every module script of the page has run (DOMContentLoaded
+ *  waits for them), never earlier: a script that listens to them (frontend/announce.ts) is in place before the first
+ *  answer, whatever order the page loads its scripts in. At once for a page that loads this script after it was
+ *  parsed. */
+function begin(): void {
+  document.querySelectorAll<HTMLElement>('[data-scroll-end]').forEach((list) => { list.scrollTop = list.scrollHeight; });
+  document.querySelectorAll<HTMLElement>('[data-poll]').forEach((element) => { watch(element); });
+  document.querySelectorAll<HTMLTextAreaElement>('textarea[data-submit-on-enter]').forEach(sendOnEnter);
+  document.querySelectorAll<HTMLFormElement>('form[data-live]').forEach(live);
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', begin, { once: true });
+} else {
+  begin();
+}

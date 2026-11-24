@@ -42,7 +42,7 @@ interface Answer { status: number; body?: string; next?: string; delay?: number;
 /** What the stub answers the grid's polls (and the pane's), in turn (the last one repeats), and what it was asked. */
 interface Stub { answers: Answer[]; asked: string[]; pane?: Answer[]; paneAsked?: string[]; }
 /** How the page is drawn: the grid's interval, a wall, the scripts, the pane, a sheet of the test's own. */
-interface Look { every?: number; wall?: boolean; scripts?: boolean; dock?: boolean; style?: string; }
+interface Look { every?: number; wall?: boolean; scripts?: boolean; dock?: boolean; style?: string; lateAnnouncer?: number; }
 
 function cards(states: string[]): string {
   return `<div data-key="band">${states.length} shown</div>` + states.map((state, index) =>
@@ -87,6 +87,13 @@ function serve(stub: Stub, look: Look): Promise<Server> {
       answer(response, stub.answers, stub.asked, url);
     } else if (url.startsWith('/pane')) {
       answer(response, stub.pane ?? [{ status: 404 }], stub.paneAsked ??= [], url);
+    } else if (url === '/js/announce.js' && look.lateAnnouncer) {
+      // announce.js arrives after the grid's first answer: poll.js must not have asked before it ran
+      setTimeout(() => {
+        if (!response.destroyed) {
+          response.writeHead(200, { 'Content-Type': 'text/javascript' }).end(readFileSync(join(BUILD, 'announce.js')));
+        }
+      }, look.lateAnnouncer);
     } else if (url === '/css/monitor.css') {
       response.writeHead(200, { 'Content-Type': 'text/css' }).end(readFileSync(CSS));
     } else {
@@ -161,10 +168,7 @@ test('the first fill comes at once, replaces the placeholder and says nothing', 
 test('a 503 first says the cards cannot be read at once, then "Updated again." when they come',
      { skip: skipWithout(BROWSERS) }, async () => {
   const stub: Stub = { answers: [{ status: 503, body: 'The cards cannot be read just now.' },
-                                 // the good answer is held back 8 s, longer than the announcer's 5 s limiter: with
-                                 // a quick one the limiter could go straight to "Updated again." and never say the
-                                 // failure, which made this test fail now and then on a loaded runner
-                                 { status: 200, body: cards(['warning']), next: '/cards?after=2', delay: 8000 },
+                                 { status: 200, body: cards(['warning']), next: '/cards?after=2' },
                                  { status: 204, next: '/cards?after=2' }], asked: [] };
   await run(stub, { every: 1 }, async (tab) => {
     await until(tab, 'unread');                                                // the first failure, not the second
@@ -179,6 +183,21 @@ test('a 503 first says the cards cannot be read at once, then "Updated again." w
     assert.equal(stub.asked[1], '/cards');                                     // the same address: no token yet
     await politely(tab, 'Updated again.', 12000);                              // review F3: the way back is said
     assert.deepEqual(await said(tab), ['', 'Updated again.']);
+  });
+});
+
+test('a 503 first is said even when announce.js comes after the answer: the grid asks once every script has run',
+     { skip: skipWithout(BROWSERS) }, async () => {
+  // The flake behind main's red browser job (2026-11-24): poll.js asked at once, the 503 came back before announce.js
+  // had run, so announce.js started from "unread", saw no change and never said it.
+  const stub: Stub = { answers: [{ status: 503, body: 'The cards cannot be read just now.' },
+                                 { status: 200, body: cards(['ok']), next: '/cards?after=5' },
+                                 { status: 204, next: '/cards?after=5' }], asked: [] };
+  await run(stub, { every: 1, lateAnnouncer: 1500 }, async (tab) => {
+    await until(tab, 'unread');
+    await politely(tab, UNREAD);
+    await until(tab, 'live');
+    await politely(tab, 'Updated again.');
   });
 });
 

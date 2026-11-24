@@ -369,9 +369,10 @@ class ProbeCostTests(SilentOxygenCase):
 
     def probes(self, count, code):
         device = make_device(self.connection, self.format, self.bergen, code=code)
-        for number in range(count):
+        for number in range(count):                     # each at an outlet of T-02 of its own (one primary a place)
+            outlet = SamplingPoint.objects.create(unit=self.t2, name=f'{code} outlet {number}', kind='side_outlet')
             probe = make_channel(device, 'oxygen_mg_l', code=f'O2-{number}')
-            bindings.move(self.user, probe, point=point_of(self.t2), at=self.now - timedelta(hours=2))
+            bindings.move(self.user, probe, point=outlet, at=self.now - timedelta(hours=2))
             self.send(probe, OXYGEN, self.then)
 
     def queries(self, at):

@@ -5412,7 +5412,8 @@ validation and every chemistry judgement; the island draws the finished values i
 - **Real pages in a browser.** An island page's props are made in the TEST database, through its real view, by a Django
   test (`core/island_props.py`: `render_island` asks the view in the new look and the language given, `keep` writes the
   props to `.build/island-props/`, never committed: the repository is public, so nothing recorded from a real database
-  is kept). `farm/tests/test_island_pages.py` makes those of Tank › Water and Sensors › Charts on an invented farm;
+  is kept). `farm/tests/test_island_pages.py` makes those of Tank › Water and Sensors › Charts from THE test world
+  (`core/test_world.py`, shared with `scripts/record_test_world.py`, the clock at its `MOMENT`);
   `npm run test:pages` (`frontend/test/*.pages.ts`) then mounts the built islands on them under the product's policy
   (CSP, axe, 4.5:1, no sideways scroll at 1440 and 390 px). CI runs it in the Django job right after the suite (a run
   with labels makes the props too) and keeps its screenshots as the artifact `island-pages-shots`; missing props fail

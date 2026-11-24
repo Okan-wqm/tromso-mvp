@@ -1,90 +1,45 @@
-"""The props of the Production and Sensors islands, made in the test database for the browser test
-(frontend/test/production.pages.ts): a small invented farm (every name a fixture's), its water through the real views in
-the new look, kept under .build/island-props/ by core/island_props.py. Nothing recorded from a real database is kept
-(the repository is public). The pages say the farm's facts: a chart per parameter measured or sampled there, the gap
-of the sensors' outage, the meter and lab samples, the fish's limits, the alarm of the window, the compared chart on
-the same window.
+"""The props of the Production and Sensors islands, made in the test run's own database from THE test world
+(core/test_world.py: the one builder, shared with scripts/record_test_world.py; every name and address a fixture's) with
+the clock at its MOMENT, through the real views in the new look, kept under .build/island-props/ by core/island_props.py
+for the browser test (frontend/test/production.pages.ts, `npm run test:pages`). Nothing recorded from a real database is
+kept: the repository is public. The pages say the world's facts: a chart per parameter measured or sampled at TT-01,
+the gap of the probe's outage, the meter and lab samples, the fish's limits, the alarm of the window, the compared chart
+on the same window.
 
-    water-en, water-nb          Tank › Water of T-01, 7 days (farm:tank_water)
-    sensor-charts-en            Sensors › Charts, T-01's pH over 7 days compared with its temperature (sensors:charts)"""
-import math
-from datetime import timedelta
-from decimal import Decimal
-
+    water-en, water-nb          Tank › Water of TT-01, 7 days (farm:tank_water)
+    sensor-charts-en            Sensors › Charts, TT-01's pH over 7 days compared with its temperature (sensors:charts)"""
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils import timezone
 
-from alarms.models import Alarm
 from core.island_props import keep, render_island
+from core.testing import FrozenClock
+from core.test_world import MOMENT, world
 from core.tests_islands import FIXTURE
-from farm.models import ProductionDepartment, Site, System, Tank, WaterLimit
-from farm.water import services as water_services
-from sensors import bindings
-from sensors.tests import make_channel, make_connection, make_device, make_format
-from sensors.tests.test_read import insert
-
-from .helpers import make_species, point_of, stock_fish
-from .test_stock import make_unit
-
-STEP = timedelta(minutes=10)
-OUTAGE = (timedelta(days=3, hours=20), timedelta(days=3, hours=8))     # back from now: ten hours without a value
+from farm.models import Tank
 
 
 @override_settings(ISLANDS_MANIFEST=FIXTURE)
-class IslandPagesTests(TestCase):
+class IslandPagesTests(FrozenClock, TestCase):
+    NOW = MOMENT
+
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_superuser('reviewer', 'reviewer@example.com', 'x')
-        site = Site.objects.create(name='Fjordvik Settefisk', code='FV', timezone='Europe/Oslo')
-        hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
-        ras = System.objects.create(name='RAS 1', code='R1', site=site, production_department=hall)
-        cls.unit = make_unit('T-01', hall, system=ras)
-        Tank.objects.filter(pk=cls.unit.pk).update(name='Smolt tank 1')
-        cls.unit.refresh_from_db()
-        salmon = make_species()
-        stock_fish(cls.user, cls.unit, 5000, '60', 20, species=salmon)
-        for parameter, bounds in (('oxygen_mg_l', {'critical_low': 6, 'warning_low': 7}),
-                                  ('temperature_c', {'warning_high': 15, 'critical_high': 18}),
-                                  ('ph', {'critical_low': '6.5', 'warning_low': '6.8', 'warning_high': '7.8',
-                                          'critical_high': '8.2'})):
-            WaterLimit.objects.create(species=salmon, parameter=parameter, water_type='any',
-                                      **{key: Decimal(str(value)) for key, value in bounds.items()})
-        middle = point_of(cls.unit)
-        device = make_device(make_connection(), make_format(), site, code='PROBE-T01')
-        cls.now = timezone.now().replace(second=0, microsecond=0)
-        start = cls.now - timedelta(days=8)
-        for quantity, base, swing in (('temperature_c', 12.0, 1.2), ('oxygen_mg_l', 8.4, 0.9), ('ph', 7.3, 0.15)):
-            channel = make_channel(device, quantity, code=quantity.upper(), heartbeat_s=600)    # a value every 10 min
-            bindings.move(cls.user, channel, point=middle, at=start)
-            rows, moment = [], start + STEP
-            while moment < cls.now:
-                back = cls.now - moment
-                if not OUTAGE[1] <= back <= OUTAGE[0]:
-                    hours = (moment - start).total_seconds() / 3600
-                    rows.append((moment, round(base + swing * math.sin(hours / 24 * 2 * math.pi), 3)))
-                moment += STEP
-            insert(channel.channel_no, rows)
-        for days, source, values in ((2, 'manual', {'oxygen_mg_l': '7.80', 'temperature_c': '12.4', 'ph': '7.25',
-                                                    'tan_mg_l': '0.420'}),
-                                     (4, 'lab', {'tan_mg_l': '0.610', 'ph': '7.40', 'temperature_c': '12.1',
-                                                 'alkalinity_mg_l': '85'})):
-            water_services.record(cls.user, point=middle, measured_at=cls.now - timedelta(days=days), source=source,
-                                  values={key: Decimal(value) for key, value in values.items()})
-        Alarm.objects.create(source='water_limit', point=middle, parameter='oxygen_mg_l', severity='critical', site=site,
-                             opened_at=cls.now - timedelta(days=3), summary='O₂ 5.8 mg/L, below 6.00 (critical)')
+        cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
+        world(cls.admin)
+        cls.unit = Tank.objects.get(code='TT-01')
 
     def setUp(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.admin)
 
-    def test_tank_water_says_the_farms_facts_and_its_props_are_kept(self):
+    def test_tank_water_says_the_worlds_facts_and_its_props_are_kept(self):
         url = reverse('farm:tank_water', args=[self.unit.pk])
         for language in ('en', 'nb'):
             props = render_island(self.client, url, 'water', {'range': '7d'}, language)
             charts = {chart['quantity']['code']: chart for chart in props['places'][0]['charts']}
             self.assertLessEqual({'temperature_c', 'oxygen_mg_l', 'ph', 'tan_mg_l', 'alkalinity_mg_l'}, set(charts))
             self.assertTrue(charts['oxygen_mg_l']['gaps'])                              # the outage, shown
+            self.assertEqual(charts['oxygen_mg_l']['bands'], {'critical_low': 6.0, 'warning_low': 7.0})
             self.assertEqual(charts['ph']['bands'], {'critical_low': 6.5, 'warning_low': 6.8, 'warning_high': 7.8,
                                                      'critical_high': 8.2})
             self.assertEqual(sorted(sample['source'] for sample in charts['tan_mg_l']['samples']), ['lab', 'manual'])

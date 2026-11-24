@@ -7,8 +7,12 @@ built and read.
 
     world(admin)                      every part below, in order, through a client signed in as `admin`
     company_world(admin, client)      the company's: sites, a hall, a loop, units with fish, a storage location, a
-                                      library document, a knowledge entry, a person, a role and an employee"""
-from datetime import datetime
+                                      library document, a knowledge entry, a person, a role and an employee
+    water_world(admin, parts)         TT-01's water over the week before MOMENT: a probe (temperature, oxygen, pH) on
+                                      its middle point with a ten-hour outage, meter and lab samples, the fish's
+                                      temperature and pH limits, one water-limit alarm (Tank › Water, Sensors › Charts)"""
+import math
+from datetime import datetime, timedelta
 from decimal import Decimal as D
 
 from django.contrib.auth import get_user_model
@@ -21,9 +25,12 @@ MOMENT = datetime.fromisoformat('2026-11-23T12:42:00+00:00')
 
 def world(admin):
     """The test world, built through a client signed in as `admin`; [what was made: its answer] of the parts posted."""
+    from farm.models import Tank
     client = Client(HTTP_HOST='localhost')
     client.force_login(admin)
-    return company_world(admin, client)
+    made = company_world(admin, client)
+    water_world(admin, {'tank': Tank.objects.get(code='TT-01')})
+    return made
 
 
 def company_world(admin, client):
@@ -71,3 +78,52 @@ def company_world(admin, client):
     person.groups.add(group)
     employee('E-9001', last='Person', first='Test')
     return made
+
+
+PROBE_STEP = timedelta(minutes=10)                               # the probe's heartbeat: a value every 10 minutes
+OUTAGE = (timedelta(days=3, hours=20), timedelta(days=3, hours=8))     # back from MOMENT: ten hours without a value
+
+
+def water_world(admin, parts):
+    """TT-01's water (`parts['tank']`) over the eight days before MOMENT: a probe (PROBE-TT01: temperature, oxygen, pH,
+    a value every 10 minutes, a daily swing) bound to its middle point, silent for ten hours three and a half days back;
+    a meter sample (TAN, pH, temperature, oxygen) two days back and a lab sample (TAN, pH, temperature, alkalinity) four
+    days back; the salmon's temperature and pH limits (the oxygen's is the company world's); a critical water-limit alarm
+    on its oxygen three days back."""
+    from alarms.models import Alarm
+    from farm.models import WaterLimit
+    from farm.tests.helpers import point_of
+    from farm.water import services as water
+    from sensors import bindings
+    from sensors.tests import make_channel, make_connection, make_device, make_format
+    from sensors.tests.test_read import insert
+
+    tank = parts['tank']
+    site = tank.production_department.site
+    salmon = WaterLimit.objects.filter(parameter='oxygen_mg_l').first().species
+    for parameter, bounds in (('temperature_c', {'warning_high': 15, 'critical_high': 18}),
+                              ('ph', {'critical_low': '6.5', 'warning_low': '6.8', 'warning_high': '7.8',
+                                      'critical_high': '8.2'})):
+        WaterLimit.objects.create(species=salmon, parameter=parameter, water_type='any',
+                                  **{key: D(str(value)) for key, value in bounds.items()})
+    middle = point_of(tank)
+    device = make_device(make_connection('Test broker'), make_format('Test probe JSON'), site, code='PROBE-TT01')
+    start = MOMENT - timedelta(days=8)
+    for quantity, base, swing in (('temperature_c', 12.0, 1.2), ('oxygen_mg_l', 8.4, 0.9), ('ph', 7.3, 0.15)):
+        channel = make_channel(device, quantity, code=quantity.upper(), heartbeat_s=int(PROBE_STEP.total_seconds()))
+        bindings.move(admin, channel, point=middle, at=start)
+        rows, moment = [], start + PROBE_STEP
+        while moment <= MOMENT:
+            if not OUTAGE[1] <= MOMENT - moment <= OUTAGE[0]:
+                hours = (moment - start).total_seconds() / 3600
+                rows.append((moment, round(base + swing * math.sin(hours / 24 * 2 * math.pi), 3)))
+            moment += PROBE_STEP
+        insert(channel.channel_no, rows)
+    for days, source, values in ((2, 'manual', {'oxygen_mg_l': '7.80', 'temperature_c': '12.4', 'ph': '7.25',
+                                                'tan_mg_l': '0.420'}),
+                                 (4, 'lab', {'tan_mg_l': '0.610', 'ph': '7.40', 'temperature_c': '12.1',
+                                             'alkalinity_mg_l': '85'})):
+        water.record(admin, point=middle, measured_at=MOMENT - timedelta(days=days), source=source,
+                     values={key: D(value) for key, value in values.items()})
+    Alarm.objects.create(source='water_limit', point=middle, parameter='oxygen_mg_l', severity='critical', site=site,
+                         opened_at=MOMENT - timedelta(days=3), summary='O₂ 5.8 mg/L, below 6.00 (critical)')

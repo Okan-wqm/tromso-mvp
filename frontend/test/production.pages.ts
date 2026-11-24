@@ -1,8 +1,8 @@
 // The Production and Sensors islands in a real browser (Playwright on the machine's own Chrome or Edge, as the gallery's
 // test): each page mounted as Django mounts it (`{% island %}`: its root, its props as a JSON block, the built module of
-// static/islands), with the props the real views gave in the test database on an invented farm
-// (farm/tests/test_island_pages.py, kept in .build/island-props by core/island_props.py: never a recording of a real
-// database, the repository is public), on the product's style sheets in the new look and under the product's
+// static/islands), with the props the real views gave in the test run's database on THE test world (core/test_world.py,
+// through farm/tests/test_island_pages.py, kept in .build/island-props by core/island_props.py: never a recording of a
+// real database, the repository is public), on the product's style sheets in the new look and under the product's
 // Content-Security-Policy. Run by `npm run test:pages` after the Django tests (CI's Django job); a missing build or
 // missing props fail it, never skip it. It holds, at 1440 and 390 px:
 //   - every chart drawn (a canvas per chart with values, words for one without), the window's controls there;
@@ -24,8 +24,8 @@ const PROPS = resolve('.build/island-props');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 const PAGES = [
-  { key: 'water-en', island: 'water', props: 'water-en.json', lang: 'en', title: 'T-01 · Water' },
-  { key: 'water-nb', island: 'water', props: 'water-nb.json', lang: 'nb', title: 'T-01 · Vann' },
+  { key: 'water-en', island: 'water', props: 'water-en.json', lang: 'en', title: 'TT-01 · Water' },
+  { key: 'water-nb', island: 'water', props: 'water-nb.json', lang: 'nb', title: 'TT-01 · Vann' },
   { key: 'sensor-charts-en', island: 'sensor-charts', props: 'sensor-charts-en.json', lang: 'en', title: 'Charts' },
 ];
 

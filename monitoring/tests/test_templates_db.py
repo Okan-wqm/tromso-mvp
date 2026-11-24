@@ -251,6 +251,10 @@ class BackfillTests(TestCase):
     """0004: a board's default mode and each card's mode become the built-in templates; back, the modes return."""
 
     def migrate(self, target):
+        # (the rows this test made have their deferred checks still pending in its transaction: run them now, or a later
+        # migration that alters their table, 0008 on monitor_boards, is refused on the way back)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
         executor = MigrationExecutor(connection)
         executor.loader.build_graph()
         executor.migrate([('monitoring', target)])
@@ -288,6 +292,10 @@ class SmallTemplateMigrationTests(TestCase):
     this migration) with what pointed at it detached; forward again, it is back as it was."""
 
     def migrate(self, target):
+        # (the rows this test made have their deferred checks still pending in its transaction: run them now, or a later
+        # migration that alters their table, 0008 on monitor_boards, is refused on the way back)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
         executor = MigrationExecutor(connection)
         executor.loader.build_graph()
         executor.migrate([('monitoring', target)])
@@ -362,6 +370,10 @@ class BigTemplateMigrationTests(TestCase):
     again; forward again, it is back as it was."""
 
     def migrate(self, target):
+        # (the rows this test made have their deferred checks still pending in its transaction: run them now, or a later
+        # migration that alters their table, 0008 on monitor_boards, is refused on the way back)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
         executor = MigrationExecutor(connection)
         executor.loader.build_graph()
         executor.migrate([('monitoring', target)])

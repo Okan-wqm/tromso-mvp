@@ -3785,7 +3785,10 @@ What works:
 - **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
   the drawn buckets; `sensors:chart_data` gives the same chart as data for the redesigned page behind `?ui=next`:
   `sensors/chart.py` `data`, exactly what the SVG draws, each manual sample with its source, meter or lab, the fish's
-  limit bands for a person who may read the water, and the channel's newest value with its freshness), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
+  limit bands for a person who may read the water, the channel's newest value with its freshness, whether the drawn
+  values come from the live demo's channels ("Simulated values", `sensors/demo.py` `demo_channels`), and with
+  `compare=<place>` and `compare_quantity` a second chart read on exactly the same window; each bucket's sum adds its
+  rows in time order, so the same chart and CSV are the same on every read), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
   own, as the water pages say it: `sensors/templatetags/sensors.py` `measured`, also the alarm thresholds and peaks; its
   age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a

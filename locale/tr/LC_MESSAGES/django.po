@@ -4874,6 +4874,9 @@ msgstr "Bir pH ölçeği seçin."
 msgid "Choose a person"
 msgstr "Bir kişi seçin"
 
+msgid "Choose a place and a quantity from the lists to compare with."
+msgstr "Karşılaştırmak için listelerden bir yer ve bir miktar seçin."
+
 msgid "Choose a place from the list."
 msgstr "Listeden bir yer seçin."
 
@@ -13322,6 +13325,9 @@ msgstr "Basit"
 
 msgid "Simulated"
 msgstr "Simüle"
+
+msgid "Simulated values"
+msgstr "Simüle değerler"
 
 msgid "Simulator"
 msgstr "Simülatör"

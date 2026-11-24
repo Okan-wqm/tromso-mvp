@@ -1365,7 +1365,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 60 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_design_shell.py` and 61 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2366,7 +2366,7 @@ The one row of scheduling limits and defaults (rest, weekly hours, days in a row
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › scheduling_settings
 - **forms**: `SchedulingSettingsForm`
 - **constraints**: uq_scheduling_settings_singleton (unique: singleton); chk_scheduling_settings_singleton (check); chk_scheduling_week (check); chk_scheduling_rest (check); chk_scheduling_consecutive (check); chk_scheduling_rule (check); chk_scheduling_weekdays (check); chk_scheduling_punch_window (check); chk_scheduling_absent_after (check); chk_scheduling_forgotten_after (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_forgotten.py` and 6 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_forgotten.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2402,7 +2402,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 15 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2432,7 +2432,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 19 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 20 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3652,7 +3652,7 @@ A field device that publishes on one topic of a connection: a probe, a PLC, a ga
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_device
 - **forms**: `DeviceForm`
 - **constraints**: uq_sensors_device_code_live (unique: connection, code); uq_sensors_device_topic_live (unique: connection, topic); chk_sensors_device_code (check); chk_sensors_device_name (check); chk_sensors_device_interval (check); chk_sensors_device_topic_given (check); chk_sensors_device_topic_hash (check); chk_sensors_device_topic_system (check); chk_sensors_device_topic_plus (check); chk_sensors_device_topic_level (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_contract.py` and 7 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_chart_data.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

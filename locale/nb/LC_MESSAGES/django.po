@@ -4864,6 +4864,9 @@ msgstr "Velg en pH-skala."
 msgid "Choose a person"
 msgstr "Velg en person"
 
+msgid "Choose a place and a quantity from the lists to compare with."
+msgstr "Velg et sted og en mengde fra listene å sammenligne med."
+
 msgid "Choose a place from the list."
 msgstr "Velg et sted fra listen."
 
@@ -13295,6 +13298,9 @@ msgstr "Enkel"
 
 msgid "Simulated"
 msgstr "Simulert"
+
+msgid "Simulated values"
+msgstr "Simulerte verdier"
 
 msgid "Simulator"
 msgstr "Simulator"

@@ -13764,6 +13764,7 @@
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
+        "hr/tests/test_team_today.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_places.py",
         "experiments/tests/test_start.py",
@@ -25943,7 +25944,8 @@
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scheduling_settings.py"
+        "hr/tests/test_scheduling_settings.py",
+        "hr/tests/test_team_today.py"
       ]
     },
     {
@@ -26282,7 +26284,8 @@
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roles.py",
-        "hr/tests/test_roster.py"
+        "hr/tests/test_roster.py",
+        "hr/tests/test_team_today.py"
       ]
     },
     {
@@ -26673,7 +26676,8 @@
         "hr/tests/test_review.py",
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scheduling_settings.py"
+        "hr/tests/test_scheduling_settings.py",
+        "hr/tests/test_team_today.py"
       ]
     },
     {
@@ -39553,6 +39557,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",

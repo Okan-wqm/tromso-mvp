@@ -223,7 +223,9 @@ class FormPayloadTests(TestCase):
                     self.assertIn(' '.join(str(field['label']).split()), label, bound.html_name)
                     if field['help'] and 'text' in field['help']:
                         self.assertEqual(' '.join(field['help']['text'].split()), old.said('help'), bound.html_name)
-                    self.assertEqual(' '.join(' '.join(field['errors']).split()), old.said('error'), bound.html_name)
+                    # one <li> per error, no space between them in the old markup: compared without whitespace
+                    self.assertEqual(''.join(''.join(field['errors']).split()), ''.join(old.said('error').split()),
+                                     bound.html_name)
                     checked += 1
                 hidden = {each['name'] for each in payload['hidden']}
                 self.assertEqual(hidden, {bound.html_name for bound in form.hidden_fields()

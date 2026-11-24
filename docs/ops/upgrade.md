@@ -91,43 +91,60 @@ bisect): a conflicting row of a multi-row `INSERT ... ON CONFLICT DO NOTHING` in
 the rest of the statement (the ingest keeps writing one row per statement); a continuous aggregate's jobs are listed
 under the aggregate's own name. The tests pin 2.32.1's behaviour only.
 
-**Moving the shared development database at the landing of `wip/go-live`** (the coordinator, nobody else; the same
-major PostgreSQL, so the data volume stays and only the container and the extension move). From the main checkout
-(`F:\dev\balik-ciftligi`, Git Bash), after `main` holds this branch:
+**Moving the shared development database at the landing of `wip/go-live`** (the coordinator, nobody else). The same
+PostgreSQL major, so the data volume moves as it is: only the container (the new image) and the extension change.
+`deploy/scripts/timescaledb-move.sh` holds the exact steps; the go-live stack workflow runs the same script on a
+synthetic database (a hypertable with compressed chunks, a continuous aggregate, policies and a job, made on 2.17.2;
+step `tsmove`), so the sequence is tested, not only written. From the main checkout (`F:\dev\balik-ciftligi`, Git Bash),
+after `main` holds this branch:
 
 ```
 docker stop balik-dev-web                                     # nothing writes
 docker compose --profile sensors stop sensors-ingest node-red
-docker compose exec -T db pg_dump -U balik -Fc balik > "/j/İCLOUD/iCloudDrive/suderra/Programlar/db-backups/balik-$(date +%Y%m%d-%H%M)-before-timescaledb-2.32.1.dump"
-docker compose up -d db                                       # recreates the container on the new image; the volume stays
-docker compose exec -T db pg_isready -U balik                 # until it answers
-# the extension in every database of the server that holds it, each as the first statement of a new session (-X)
-for d in $(docker compose exec -T db psql -U balik -d postgres -XAtc "SELECT datname FROM pg_database WHERE datallowconn"); do
-  docker compose exec -T db psql -U balik -d "$d" -X -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_extension WHERE extname = 'timescaledb') THEN EXECUTE 'ALTER EXTENSION timescaledb UPDATE'; END IF; END \$\$"
-done
+DB_EXEC="docker compose exec -T db" RECREATE="docker compose up -d db" \
+  sh deploy/scripts/timescaledb-move.sh move "/j/İCLOUD/iCloudDrive/suderra/Programlar/db-backups" balik-timescaledb-2.32.1
 ```
 
-Then, in the database `balik` (`docker compose exec -T db psql -U balik -d balik -X -c "..."`), each must hold:
+What it does, in order, stopping at the first failure:
 
-1. the version: `SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'` is `2.32.1`;
-2. compressed chunks readable: `SELECT count(*) FROM timescaledb_information.chunks WHERE hypertable_name =
-   'sensors_reading' AND is_compressed` is what it was before (the backup's), and `SELECT count(*), min(ts), max(ts)
-   FROM sensors_reading WHERE ts < now() - interval '14 days'` answers;
-3. the continuous aggregate's jobs: `SELECT j.proc_name, j.schedule_interval FROM timescaledb_information.jobs j JOIN
-   timescaledb_information.continuous_aggregates c ON j.hypertable_name = c.view_name WHERE c.view_name =
-   'sensors_rollup_1h'` lists `policy_refresh_continuous_aggregate` (1 hour) and `policy_compression`;
-   `SELECT proc_name FROM timescaledb_information.jobs WHERE proc_name = 'sensors_refresh_late'` one row;
-   `SELECT * FROM timescaledb_information.job_errors ORDER BY start_time DESC LIMIT 5` nothing new;
-4. then the landing's own steps (`migrate`, `compile_catalogs`, `npm run build`, the dev server started again,
-   `manage.py check --database default` quiet), `docker compose --profile sensors up -d`, and **the ingest writing**:
-   after two minutes `SELECT max(ts) FROM sensors_reading` is within the last minutes and the ingest's `/healthz`
-   says ok (`docker compose exec sensors-ingest` has no shell: `docker inspect --format '{{json .State.Health}}'
-   balik-ciftligi-sensors-ingest-1`);
-5. the crawl of the pages (`F:\dev\balik-notes\tools\crawl.py`) in EN, NB and TR.
+1. the facts before: the version, every hypertable's rows, chunks and compressed chunks, the jobs;
+2. `pg_dump` of `balik` on 2.17.2 (`...-before-<time>.dump`);
+3. `docker compose up -d db`: the same volume on the new image;
+4. in every database that holds the extension (`postgres`, `template1` and `balik`: the image makes it in
+   `template1`, so every database has it), the plain statement as the **first command of a new session**:
+   `psql -X -U balik -d <database> -c "ALTER EXTENSION timescaledb UPDATE"`. Not inside a `DO` block and not after
+   any other statement: once the old library is loaded in the session, PostgreSQL refuses the update;
+5. a second `pg_dump`, now on 2.32.1 (`...-after-<time>.dump`): from here on a way back restores on the same release;
+6. the checks:
+   - the version is 2.32.1 in each of those databases;
+   - every hypertable has the rows and chunks it had and at least as many compressed chunks (a compression job may run
+     meanwhile), and every compressed chunk is read;
+   - every job is still there, and every continuous aggregate's refresh job is listed under the aggregate's own name;
+   - **each scheduled job fails once at the update** (`cannot drop portal "" while it is being set up`, SQLSTATE
+     24000, in `timescaledb_information.job_errors`): that is expected. The script then makes every job due now and
+     waits until each has run again with `Success` (`timescaledb_information.job_stats`): that is the recovery.
 
-If the extension update or a check fails: stop the dev server and the sensors services, `docker compose down` (the
-volume stays), restore the backup into a new volume on 2.32.1 (`docs/ops/backup-and-restore.md`, "Restore a dump":
-`timescaledb_pre_restore()`, `pg_restore`, `timescaledb_post_restore()`), and only then delete the old volume.
+Then the landing's own steps (`migrate`, `compile_catalogs`, `npm run build`, the dev server started again,
+`manage.py check --database default` quiet), `docker compose --profile sensors up -d`, and **the ingest writing**:
+after two minutes `SELECT max(ts) FROM sensors_reading` is within the last minutes and the ingest's health is ok
+(`docker inspect --format '{{json .State.Health}}' balik-ciftligi-sensors-ingest-1`); then the crawl of the pages
+(`F:\dev\balik-notes\tools\crawl.py`) in EN, NB and TR.
+
+**The way back**, if the update or a check fails. A dump restores only into its own release (restored into 2.32.1, the
+2.17.2 dump fails on the catalog and leaves the data partial), so: the 2.17.2 dump onto a **new** volume running the
+**old** image, then the new image on that volume and the update, then the same checks:
+
+```
+docker compose stop db
+DB_EXEC=unused sh deploy/scripts/timescaledb-move.sh back <the ...-before-<time>.dump> <the ...-before-<time>.facts> \
+  timescale/timescaledb:2.17.2-pg17@sha256:3324f81ca7f84cdc2dc4497863b3798ababa8ce130c5b59d73f0b40e3a34148e \
+  timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c \
+  balik-ciftligi_pgdata-restored
+```
+
+then point the compose project at the restored volume (`docker-compose.override.yml`, not committed:
+`volumes: {pgdata: {external: true, name: balik-ciftligi_pgdata-restored}}`), `docker compose up -d db`, and keep the
+old volume until the dev server and the crawl are right on the restored one. The stack workflow runs this way back too.
 
 After that, a TimescaleDB release moves like any image: Dependabot, the whole suite with `pg_image`, then every pin
 together in one change.

@@ -375,6 +375,40 @@ rotate() {
   COMPOSE="${DC[*]}" sh deploy/scripts/check-roles.sh
 }
 
+tsmove() {
+  # docs/ops/upgrade.md's move of the shared development database, on a synthetic one: the same script, the same steps
+  local old=timescale/timescaledb:2.17.2-pg17@sha256:3324f81ca7f84cdc2dc4497863b3798ababa8ce130c5b59d73f0b40e3a34148e
+  local new=timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
+  local start_on="docker run -d --name tsmove -e POSTGRES_USER=balik -e POSTGRES_DB=balik -e POSTGRES_PASSWORD=$(openssl rand -hex 16) -v tsmove-data:/var/lib/postgresql/data"
+  say "a database on the old release (2.17.2): a hypertable with compressed chunks, a continuous aggregate, policies, a job"
+  docker volume create tsmove-data > /dev/null
+  $start_on "$old" > /dev/null
+  for _ in $(seq 1 120); do docker logs tsmove 2>&1 | grep -q 'init process complete' && break; sleep 2; done
+  for _ in $(seq 1 60); do docker exec tsmove pg_isready -q -U balik && break; sleep 2; done
+  docker exec -i tsmove psql -X -q -U balik -d balik -v ON_ERROR_STOP=1 <<'SQL'
+CREATE TABLE reading (ts timestamptz NOT NULL, channel int NOT NULL, v double precision, PRIMARY KEY (channel, ts));
+SELECT create_hypertable('reading', by_range('ts', INTERVAL '7 days'));
+INSERT INTO reading SELECT t, 1, random() FROM generate_series(now() - interval '60 days', now(), interval '10 minutes') t;
+ALTER TABLE reading SET (timescaledb.compress, timescaledb.compress_segmentby = 'channel');
+SELECT count(compress_chunk(c)) FROM show_chunks('reading', older_than => interval '14 days') c;
+SELECT add_compression_policy('reading', INTERVAL '14 days');
+SELECT add_retention_policy('reading', INTERVAL '730 days');
+CREATE MATERIALIZED VIEW reading_1h WITH (timescaledb.continuous) AS
+  SELECT time_bucket('1 hour', ts) AS bucket, channel, avg(v) AS v FROM reading GROUP BY 1, 2 WITH NO DATA;
+CALL refresh_continuous_aggregate('reading_1h', NULL, NULL);
+SELECT add_continuous_aggregate_policy('reading_1h', start_offset => INTERVAL '75 days', end_offset => INTERVAL '1 hour',
+  schedule_interval => INTERVAL '1 hour');
+CREATE PROCEDURE farm_noop(job_id int, config jsonb) LANGUAGE plpgsql AS $$ BEGIN PERFORM 1; END $$;
+SELECT add_job('farm_noop', INTERVAL '1 day');
+SQL
+  say "the move, as upgrade.md runs it on the development database (deploy/scripts/timescaledb-move.sh move)"
+  DB_EXEC="docker exec -i tsmove" RECREATE="docker rm -f tsmove > /dev/null && $start_on $new > /dev/null" \
+    sh deploy/scripts/timescaledb-move.sh move "$T/tsmove" synthetic
+  say "the way back, as upgrade.md says: the old release's dump on a new volume running the OLD image, then the update"
+  DB_EXEC=unused sh deploy/scripts/timescaledb-move.sh back "$(ls "$T"/tsmove/synthetic-before-*.dump)" \
+    "$(ls "$T"/tsmove/synthetic-before-*.facts)" "$old" "$new" tsmove-back
+}
+
 logs() {
   "${DC[@]}" ps -a || true
   "${DC[@]}" logs --tail 60 || true
@@ -383,6 +417,8 @@ logs() {
 }
 
 down() {
+  docker rm -f -v tsmove timescaledb-back > /dev/null 2>&1 || true
+  docker volume rm tsmove-data tsmove-back > /dev/null 2>&1 || true
   docker rm -f -v farm-pitr > /dev/null 2>&1 || true
   docker volume rm farm-pitr-data > /dev/null 2>&1 || true
   "${RC[@]}" down -v --remove-orphans || true

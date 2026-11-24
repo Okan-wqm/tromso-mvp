@@ -108,6 +108,8 @@ jobs:
         run: bash deploy/ci/stack.sh pitr
       - name: A database password rotated
         run: bash deploy/ci/stack.sh rotate
+      - name: TimescaleDB 2.17.2 to 2.32.1 as docs/ops/upgrade.md moves the development database, and the way back
+        run: bash deploy/ci/stack.sh tsmove
       - name: Logs of the services
         if: failure()
         run: bash deploy/ci/stack.sh logs

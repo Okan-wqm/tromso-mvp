@@ -883,6 +883,10 @@ msgid "%(hours)s h"
 msgstr "%(hours)s t"
 
 #, python-format
+msgid "%(hours)s h %(minutes)s min"
+msgstr "%(hours)s t %(minutes)s min"
+
+#, python-format
 msgid "%(inviter)s has created an account for you in the farm console of %(company)s."
 msgstr "%(inviter)s har opprettet en konto til deg i driftskonsollen til %(company)s."
 
@@ -2096,6 +2100,9 @@ msgid_plural "A checklist has at most %(num)d lines."
 msgstr[0] "En sjekkliste har høyst %(num)d linje."
 msgstr[1] "En sjekkliste har høyst %(num)d linjer."
 
+msgid "A clock-in counts as forgotten after"
+msgstr "En innstempling regnes som glemt etter"
+
 msgid "A clock-in counts as forgotten after (hours)"
 msgstr "En innstempling regnes som glemt etter (timer)"
 
@@ -3021,6 +3028,9 @@ msgstr "Over, under og en endringsrate trenger en terskel."
 msgid "Absent"
 msgstr "Fraværende"
 
+msgid "Absent after"
+msgstr "Fraværende etter"
+
 msgid "Absent after (minutes)"
 msgstr "Fraværende etter (minutter)"
 
@@ -3268,6 +3278,9 @@ msgstr ""
 
 msgid "Against its limits"
 msgstr "Mot grensene"
+
+msgid "Against the standard week"
+msgstr "Mot standarduken"
 
 msgid "Against the standard week (min)"
 msgstr "Mot standarduken (min)"
@@ -9384,6 +9397,9 @@ msgstr "Millisekunder siden 1970"
 msgid "Mine"
 msgstr "Mine"
 
+msgid "Minimum rest between shifts"
+msgstr "Minste hvile mellom skift"
+
 msgid "Minimum rest between shifts (minutes)"
 msgstr "Minste hvile mellom skift (minutter)"
 
@@ -11944,6 +11960,9 @@ msgstr ""
 "Pumper, filtre, fôrautomater, sensorer og aggregater i en produksjonsavdeling, knyttet til "
 "systemene de betjener."
 
+msgid "Punch window"
+msgstr "Stemplingsvindu"
+
 msgid "Punch window (minutes)"
 msgstr "Stemplingsvindu (minutter)"
 
@@ -13662,6 +13681,9 @@ msgstr "Rustfritt stål"
 
 msgid "Stale"
 msgstr "Utdatert"
+
+msgid "Standard week"
+msgstr "Standarduke"
 
 msgid "Standard week (minutes)"
 msgstr "Standarduke (minutter)"

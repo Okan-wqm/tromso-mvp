@@ -2366,7 +2366,7 @@ The one row of scheduling limits and defaults (rest, weekly hours, days in a row
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › scheduling_settings
 - **forms**: `SchedulingSettingsForm`
 - **constraints**: uq_scheduling_settings_singleton (unique: singleton); chk_scheduling_settings_singleton (check); chk_scheduling_week (check); chk_scheduling_rest (check); chk_scheduling_consecutive (check); chk_scheduling_rule (check); chk_scheduling_weekdays (check); chk_scheduling_punch_window (check); chk_scheduling_absent_after (check); chk_scheduling_forgotten_after (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_forgotten.py` and 6 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_forgotten.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

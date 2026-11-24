@@ -885,6 +885,10 @@ msgid "%(hours)s h"
 msgstr "%(hours)s sa"
 
 #, python-format
+msgid "%(hours)s h %(minutes)s min"
+msgstr "%(hours)s sa %(minutes)s dk"
+
+#, python-format
 msgid "%(inviter)s has created an account for you in the farm console of %(company)s."
 msgstr "%(inviter)s, %(company)s çiftlik konsolunda sizin için bir hesap oluşturdu."
 
@@ -2104,6 +2108,9 @@ msgid_plural "A checklist has at most %(num)d lines."
 msgstr[0] "Bir kontrol listesi en çok %(num)d satırdır."
 msgstr[1] "Bir kontrol listesi en çok %(num)d satırdır."
 
+msgid "A clock-in counts as forgotten after"
+msgstr "Girişin unutulmuş sayılacağı süre"
+
 msgid "A clock-in counts as forgotten after (hours)"
 msgstr "Girişin unutulmuş sayılacağı süre (saat)"
 
@@ -3028,6 +3035,9 @@ msgstr "Üstünde, altında ve hız için bir eşik gerekir."
 msgid "Absent"
 msgstr "Devamsız"
 
+msgid "Absent after"
+msgstr "Devamsız sayılma"
+
 msgid "Absent after (minutes)"
 msgstr "Devamsız sayılma (dakika)"
 
@@ -3275,6 +3285,9 @@ msgstr ""
 
 msgid "Against its limits"
 msgstr "Sınırlara göre"
+
+msgid "Against the standard week"
+msgstr "Standart haftaya göre"
 
 msgid "Against the standard week (min)"
 msgstr "Standart haftaya göre (dk)"
@@ -9413,6 +9426,9 @@ msgstr "1970’ten bu yana milisaniye"
 msgid "Mine"
 msgstr "Benimkiler"
 
+msgid "Minimum rest between shifts"
+msgstr "Vardiyalar arası en az dinlenme"
+
 msgid "Minimum rest between shifts (minutes)"
 msgstr "Vardiyalar arası en az dinlenme (dakika)"
 
@@ -11970,6 +11986,9 @@ msgstr ""
 "Bir üretim departmanının pompaları, filtreleri, yemleme makineleri, sensörleri ve jeneratörleri; "
 "hizmet ettikleri sistemlere bağlı."
 
+msgid "Punch window"
+msgstr "Giriş-çıkış penceresi"
+
 msgid "Punch window (minutes)"
 msgstr "Giriş-çıkış penceresi (dakika)"
 
@@ -13690,6 +13709,9 @@ msgstr "Paslanmaz çelik"
 
 msgid "Stale"
 msgstr "Eski"
+
+msgid "Standard week"
+msgstr "Standart hafta"
 
 msgid "Standard week (minutes)"
 msgstr "Standart hafta (dakika)"

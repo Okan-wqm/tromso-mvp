@@ -25964,7 +25964,8 @@
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scheduling_settings.py"
+        "hr/tests/test_scheduling_settings.py",
+        "hr/tests/test_today_next.py"
       ]
     },
     {

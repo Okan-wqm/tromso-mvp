@@ -104,6 +104,10 @@ NOT_CHEMISTRY = {
                                '_pairs': 'a flat array read as points (the scene)',
                                'render': 'the SVG in pixels (the scene)', '_arrow': 'an arrow head (the scene)',
                                '_star': 'the target star (the scene)',
+                               'pixel': 'a water placed in the SVG's pixels (the scene)',
+                               '_label_box': 'a pH label's turned box (the scene)',
+                               '_overlap': 'whether two label boxes overlap (the scene)',
+                               '_label_place': 'where a pH label stands on its line (the scene)',
                                'shown': 'a number rounded to a few decimals as the language writes it (display)',
                                # A monitoring card's picture (owner decisions 4 and 12): a window on the core's figure,
                                # in per cent of the picture; every border, region and the water are the core's.

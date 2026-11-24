@@ -12,7 +12,9 @@ interface TileData {
 }
 interface SiteRow {
   key: string; name: string; code: string; href: string | null; type: string; status: 'critical' | 'warning' | null;
-  units: string | null; biomass: string | null; water: { kind: ChipKind; text: string } | null; alarms: string | null;
+  units: string | null; biomass: string | null; water: { kind: ChipKind; text: string } | null;
+  /** the site's open alarms (a figure) and, under it, its units' water now (alarms.read.attention, counted in units) */
+  alarms: { figure: string; sub: string | null } | null;
   onSite: string | null;
 }
 interface AlarmRow { key: string; severity: string; kind: 'critical' | 'warning'; what: string; href: string; where: string }
@@ -70,7 +72,8 @@ export function Company({ today, sites, alarms, people, upcoming, feed, messages
                 { key: 'biomass', label: sites.columns.biomass, numeric: true, render: (row) => row.biomass ?? sites.none },
                 { key: 'water', label: sites.columns.water, render: (row) => (row.water
                   ? <Chip kind={row.water.kind}>{row.water.text}</Chip> : sites.none) },
-                { key: 'alarms', label: sites.columns.alarms, numeric: true, render: (row) => row.alarms ?? sites.none },
+                { key: 'alarms', label: sites.columns.alarms, numeric: true, render: (row) => (row.alarms
+                  ? <CellLines main={row.alarms.figure} sub={row.alarms.sub ?? undefined} /> : sites.none) },
                 { key: 'onSite', label: sites.columns.onSite, numeric: true, render: (row) => row.onSite ?? sites.none },
               ]}
             />

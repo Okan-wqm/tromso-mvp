@@ -93,14 +93,14 @@ def _tiles(found, now):
                               'time': formats.time_format(timezone.localtime(now, company_zone()), 'TIME_FORMAT')},
                           'href': reverse('farm:production_units')})
     if alarms is not None:
-        status = 'critical' if alarms['critical'] else 'warning' if alarms['warning'] else None
-        tiles.append({'key': 'alarms', 'label': _('Open alarms'), 'figure': whole(alarms['count']),
-                      'href': reverse('alarms:alarm_list'), 'status': status,
-                      'statusLabel': {'critical': _('Critical'), 'warning': _('Warning'), None: None}[status],
-                      'sub': ' · '.join([
-                          *([count_of(ngettext('%(count)s critical', '%(count)s critical', alarms['critical']), alarms['critical'])] if alarms['critical'] else []),
-                          *([count_of(ngettext('%(count)s warning', '%(count)s warnings', alarms['warning']), alarms['warning'])] if alarms['warning'] else []),
-                      ]) or None})
+        # alarms.read.attention, the one reader: the figure counts open alarms; its second line counts units (their water
+        # as the alarm engine judges it now), and says so, never mixed with the Water chips' sampling points
+        found = alarms['attention']
+        tiles.append({'key': 'alarms', 'label': _('Open alarms'), 'figure': whole(found.alarms),
+                      'href': reverse('alarms:alarm_list'), 'status': found.status or None,
+                      'statusLabel': {'critical': _('Critical'), 'warning': _('Warning')}.get(found.status),
+                      'sub': ' · '.join(_alarm_counts(found)) or None,
+                      'sub2': ' · '.join(units_said(found)) or None})
     if people is not None:
         tiles.append({'key': 'on_site', 'label': _('On site now'), 'figure': whole(people['on_site']),
                       'href': reverse('hr:today'), 'sub': _('Everyone clocked in, all teams'),
@@ -126,6 +126,28 @@ def _tiles(found, now):
     return tiles
 
 
+def _alarm_counts(found):
+    """The open alarms by severity: "1 critical · 2 warnings"."""
+    warnings = found.alarms - found.alarms_critical
+    return [*([count_of(ngettext('%(count)s critical', '%(count)s critical', found.alarms_critical), found.alarms_critical)]
+              if found.alarms_critical else []),
+            *([count_of(ngettext('%(count)s warning', '%(count)s warnings', warnings), warnings)] if warnings else [])]
+
+
+def units_said(found):
+    """What the units' water says now (alarms.read.Attention), in the status strip's words, each figure counting units:
+    critical, with a warning, without recent data; or that the live values cannot be read."""
+    return [
+        *([ngettext('%(count)d unit critical', '%(count)d units critical', found.critical) % {'count': found.critical}]
+          if found.critical else []),
+        *([ngettext('%(count)d unit with a warning', '%(count)d units with a warning', found.warning) % {'count': found.warning}]
+          if found.warning else []),
+        *([ngettext('%(count)d unit without recent data', '%(count)d units without recent data', found.blind)
+           % {'count': found.blind}] if found.blind else []),
+        *([_('Live values cannot be read')] if found.unreadable else []),
+    ]
+
+
 def _sites(user, sites, now):
     return {
         'title': _('Sites'), 'link': {'href': reverse('farm:site_list'), 'label': _('Sites')},
@@ -135,12 +157,14 @@ def _sites(user, sites, now):
             'key': str(row['site'].pk), 'name': row['site'].name, 'code': row['site'].code,
             'href': reverse('farm:site_edit', args=[row['site'].pk]) if user.has_perm('farm.change_site') else None,
             'type': str(row['site'].get_type_display()),
-            'status': 'critical' if (row['water'] or {}).get('critical') else
-                      'warning' if (row['water'] or {}).get('warning') else None,
+            'status': 'critical' if (row['water'] or {}).get('critical') or getattr(row['attention'], 'status', '') == 'critical'
+                      else 'warning' if (row['water'] or {}).get('warning') or getattr(row['attention'], 'status', '')
+                      else None,
             'units': None if row['units_stocked'] is None else whole(row['units_stocked']),
             'biomass': None if row['biomass_kg'] is None else tonnes(row['biomass_kg']),
             'water': _water_chip(row['water'], now),
-            'alarms': None if row['open_alarms'] is None else whole(row['open_alarms']),
+            'alarms': None if row['attention'] is None else {
+                'figure': whole(row['attention'].alarms), 'sub': ' · '.join(units_said(row['attention'])) or None},
             'onSite': None if row['on_site'] is None else whole(row['on_site']),
         } for row in sites['rows']],
         'none': '—',
@@ -161,7 +185,7 @@ def _alarms(alarms):
                                                     alarm.site.name if alarm.site_id else '', when(alarm.opened_at)]))}
                  for alarm in alarms['rows']],
         'more': (_('and %(count)s more: all alarms') % {'count': alarms['more']}) if alarms['more'] else None,
-        'empty': _('No alarm is open.') if not alarms['count'] else None}
+        'empty': _('No alarm is open.') if not alarms['attention'].alarms else None}
 
 
 def _people(people):

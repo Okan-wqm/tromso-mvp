@@ -12,7 +12,9 @@ from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 
 from alarms.models import Alarm, Source
+from alarms.read import attention
 from config.company import overview
+from config.company_props import overview_props, units_said
 from core.pagesays import unsaid
 from farm.stock.views import overview_tiles
 from farm.water.views import overview as water_overview
@@ -71,9 +73,20 @@ class CompanyOverviewTests(CompanyFixture):
         Alarm.objects.create(source=Source.WATER_LIMIT, point=self.mid1, parameter='oxygen_mg_l',
                              severity=Severity.CRITICAL, site=self.bergen, opened_at=timezone.now(),
                              summary='Dissolved oxygen 5 mg/L, below 6')
-        found = overview(self.admin)
-        self.assertEqual((found['alarms']['count'], found['alarms']['critical'], found['alarms']['warning']), (1, 1, 0))
-        self.assertEqual([row['open_alarms'] for row in found['sites']['rows']], [0, 1, 0])   # Alta, Bergen, Tromsø
+        moment = timezone.now()
+        found = overview(self.admin, moment)
+        # the tile and each site are the one reader's (alarms.read.attention), never a count of the overview's own
+        self.assertEqual(found['alarms']['attention'], attention(moment))
+        self.assertEqual((found['alarms']['attention'].alarms, found['alarms']['attention'].alarms_critical), (1, 1))
+        for row in found['sites']['rows']:
+            self.assertEqual(row['attention'], attention(moment, site=row['site']), row['site'].code)
+        self.assertEqual([row['attention'].alarms for row in found['sites']['rows']], [0, 1, 0])   # Alta, Bergen, Tromsø
+        # Bergen's critical oxygen is a critical unit before its alarm is raised: the tile's second line says so, in units
+        self.assertGreaterEqual(found['alarms']['attention'].critical, 1)
+        tile = next(tile for tile in overview_props(self.admin, moment)['today']['tiles'] if tile['key'] == 'alarms')
+        self.assertEqual((tile['figure'], tile['status'], tile['sub']), ('1', 'critical', '1 critical'))
+        self.assertEqual(tile['sub2'], ' · '.join(units_said(found['alarms']['attention'])))
+        self.assertIn('unit', tile['sub2'])
 
     def test_a_person_gets_only_the_blocks_of_the_areas_they_may_read(self):
         person = get_user_model().objects.create_user('sites-only', 'so@example.com')
@@ -82,7 +95,7 @@ class CompanyOverviewTests(CompanyFixture):
         for name in ('alarms', 'people', 'reports', 'messages', 'feed', 'activity', 'knowledge'):
             self.assertIsNone(found[name], name)
         for row in found['sites']['rows']:
-            self.assertEqual((row['units_stocked'], row['biomass_kg'], row['water'], row['open_alarms']),
+            self.assertEqual((row['units_stocked'], row['biomass_kg'], row['water'], row['attention']),
                              (None, None, None, None))
         nobody = get_user_model().objects.create_user('nobody', 'nb@example.com')
         self.assertIsNone(overview(nobody)['sites'])

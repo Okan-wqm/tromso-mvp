@@ -6,7 +6,8 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from core import audit
-from farm.models import Batch
+from farm.models import Batch, Tank
+from farm.stock import read as stock_read
 from farm.models.species import SALMONID_CODES
 from core.models import AuditLog
 
@@ -160,7 +161,8 @@ def record_duty_done(user, *, duty, site, year, done_on, reference=''):
     if done_on > periods.oslo_today():
         raise ValidationError({'done_on': [_('The day cannot be in the future.')]})
     salmonids = any(batch.species.official_code in SALMONID_CODES for batch in Batch.objects.filter(
-        movements__unit__production_department__site=site).select_related('species').distinct())
+        pk__in=stock_read.batches_ever_in(Tank.all_objects.filter(production_department__site=site)
+                                          .values_list('pk', flat=True))).select_related('species'))
     if not duties.applies(found, site, salmonids)[0]:
         _refuse(_('This duty does not bind this site.'))
     with transaction.atomic():

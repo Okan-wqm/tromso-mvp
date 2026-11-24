@@ -4,7 +4,7 @@ into a draft. The assignment dialog writes a row per unit chosen (AssignmentCrea
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Prefetch, Q, Sum
+from django.db.models import Count, Prefetch, Q
 from django.urls import path, reverse
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
@@ -17,9 +17,10 @@ from ..forms.feeding_protocol import (
     AssignmentForm, NewAssignmentForm, ProtocolForm, column_name, table_forms,
 )
 from ..models import (
-    Batch, FeedingProtocol, ProtocolAssignment, ProtocolBand, Site, Species, StockMovement, Tank,
+    Batch, FeedingProtocol, ProtocolAssignment, ProtocolBand, Site, Species, Tank,
 )
 from ..models.feeding_protocol import ProtocolStatus
+from ..stock import read as stock_read
 from ..stock.dates import local_today
 
 
@@ -220,8 +221,7 @@ class ProtocolAssignmentResource(Resource):
 def feeds_now(today):
     """{assignment id: fish it feeds today}: for every batch in a unit now, the row that applies to it (batch in
     unit, then unit, then whole batch; ration.Policy), so a row read past for a more specific one feeds nothing."""
-    present = (StockMovement.objects.filter(operation__is_deleted=False).values('unit_id', 'batch_id')
-               .annotate(fish=Sum('count_delta')).filter(fish__gt=0).values_list('unit_id', 'batch_id', 'fish'))
+    present = stock_read.present('unit_id', 'batch_id').values_list('unit_id', 'batch_id', 'fish')
     rows = list(ProtocolAssignment.objects.filter(valid_from__lte=today)
                 .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=today)))
     species = dict(Batch.all_objects.values_list('pk', 'species_id'))

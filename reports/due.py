@@ -195,8 +195,8 @@ def _site(site, today, existing, found):
     when nothing is due."""
     owed_kinds = dict(owed(site))
     units = list(Tank.all_objects.filter(production_department__site=site))
-    holds = bool(units) and StockMovement.objects.filter(unit__in=units, operation__is_deleted=False).exists()
     presence = Presence.of_units([unit.pk for unit in units])
+    holds = bool(presence.timelines)              # a live line in one of its units, ever (farm.stock.read)
     batches = Batch.all_objects.select_related('species').in_bulk({batch for _unit, batch in presence.timelines})
     uncoded = sorted({str(batch.species) for batch in batches.values() if not batch.species.official_code})
     if (site.reports_from is None or not site.production_form or uncoded) and holds:

@@ -105,10 +105,14 @@ def tabs(label, items):
                                           for href, text, count, current in items]}
 
 
-def notice(key, tone, text):
+def notice(key, tone, text, link=None):
+    """A sentence above the table in its tone; `link` (href, label) ends it with a link ("Show them")."""
     if tone not in TONES:
         raise ValueError(f'no notice tone {tone!r}')
-    return {'key': key, 'tone': tone, 'text': str(text)}
+    said = {'key': key, 'tone': tone, 'text': str(text)}
+    if link is not None:
+        said['link'] = {'href': link[0], 'label': str(link[1])}
+    return said
 
 
 def pager(page, pager_query):

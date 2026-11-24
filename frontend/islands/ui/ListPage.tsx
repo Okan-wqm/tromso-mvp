@@ -89,7 +89,8 @@ export interface ListPageProps {
     submit: string;
     add: ListLink | null;
   };
-  notices: { key: string; tone: NoticeTone; text: string }[];
+  /** sentences above the table; one may end in a link (Systems' "Show them") */
+  notices: { key: string; tone: NoticeTone; text: string; link?: ListLink | null }[];
   /** lines above the table ("Showing 200 of 250 requests.") */
   lines: string[];
   table: { label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string };
@@ -214,7 +215,11 @@ export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, grou
     <>
       {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
       <Toolbar toolbar={toolbar} />
-      {notices.map((notice) => <Notice key={notice.key} tone={notice.tone}>{notice.text}</Notice>)}
+      {notices.map((notice) => (
+        <Notice key={notice.key} tone={notice.tone}>
+          {notice.text}{notice.link ? <> <a href={notice.link.href}>{notice.link.label}</a></> : null}
+        </Notice>
+      ))}
       {table.rows.length ? (
         <>
           {lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}

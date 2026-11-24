@@ -276,6 +276,17 @@ test('a list page with groups draws a plate per group, its head and its own tabl
   assert.equal((html(<ListPage {...LIST_PROPS} table={table} />).match(/<table/g) ?? []).length, 1, 'without groups: one table');
 });
 
+test('a list page notice may end in a link; one without is as before', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const page = html(<ListPage {...LIST_PROPS} notices={[
+    { key: 'none', tone: 'warning', text: '2 systems are not in any production department.', link: { href: '?production_department=none', label: 'Show them' } },
+    { key: 'plain', tone: 'neutral', text: 'A plain line.' },
+  ]} />);
+  assert.match(page, /2 systems are not in any production department\. <a href="\?production_department=none">Show them<\/a><\/div>/);
+  assert.match(page, /A plain line\.<\/div>/);
+});
+
 test('a stacked bar: each part a segment as long as its share on the whole, every part in words, no style', async () => {
   const { StackedBar } = await import('./index.js');
   const bar = html(<StackedBar label="Planned today: 6" parts={[

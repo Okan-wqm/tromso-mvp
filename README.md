@@ -741,6 +741,7 @@ answers for many units at once (the table is `monitoring/read.py`'s docstring):
 | open health events (every card), treatments and the latest sea-lice count (detailed) | `health.read.open_events`, `recent_treatments`, `latest_counts` |
 | open, overdue and due-today tasks (detailed) | `tasks.read.per_unit` |
 | the Deffeyes chart in its window | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
+| a unit's or a system's water history (Tank › Water, System › Water, behind `?ui=next`) | `farm:water_unit_chart` / `farm:water_system_chart` with `?view=history`: `sensors.read.water_history` (every parameter's `series` on one window, the NH₃-N worked out per sample, every live sample judged as the history page judges it, `judged`, sent as each sample's `status` and `status_text`; the limit bands `bands_of`), each chart in words (`sensors.chart.said`: latest, lowest, highest, gaps; `gap_text`) with its buckets from a backup or the system's channel marked (`buckets.other`, drawn as points of their own as the SVG chart's circles), the events each read by its area's reader (`farm.water.read.history_events` over `farm.feeding.read.fed_in`, `farm.health.read.treatments_on`, `farm.stock.read.harvests_on`, `alarms.read.opened_at`) for the person who may read that area, a day-dated one (treatment, harvest) said as its day or days, never 00:00 (`all_day`, `when`), the Deffeyes replay's address and the Deffeyes for the range (`range_deffeyes`: about 120 replay frames of the window, the diagram of the newest frame that has one from `deffeyes.render` with the pH labels the server placed, its star named with its time, "No diagram after <time>: <why>" in the warning's colour when the window's end has none, the water's path through the time broken where a frame has no diagram, a lone frame a dot, else the reason); a system's points side by side. The page's from and to are the shared date box (dd.mm.yyyy HH:MM); `?around=` 12 hours or more after now is refused (400). Its events are marks on every chart for the pointer (a 24 px handle; the plot under it free for the cursor and the zoom) and a list of links, the keyboard's and the screen reader's path; under 480 px the Deffeyes chart's labels give way to their words |
 | the calculated CO₂ and the pH window of a card that shows them (the Small card) | `water.calculation.charts_of`: every such unit's chart at once, from the water the card read already holds and one read of the fish's limits |
 
 **The page** has a toolbar (a GET form that works without script: site, department, system, kind, fish (stocked by default,
@@ -3783,7 +3784,12 @@ What works:
   a move ends one binding and starts the next, so a sensor's earlier values stay with the tank they were taken in; a
   whole device moves at once, between sites too, or is taken out of the water: see Portable sensors).
 - **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
-  the drawn buckets), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
+  the drawn buckets; `sensors:chart_data` gives the same chart as data for the redesigned page behind `?ui=next`:
+  `sensors/chart.py` `data`, exactly what the SVG draws, each manual sample with its source, meter or lab, the fish's
+  limit bands for a person who may read the water, the channel's newest value with its freshness, whether the drawn
+  values come from the live demo's channels ("Simulated values", `sensors/demo.py` `demo_channels`), and with
+  `compare=<place>` and `compare_quantity` a second chart read on exactly the same window; each bucket's sum adds its
+  rows in time order, so the same chart and CSV are the same on every read), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
   own, as the water pages say it: `sensors/templatetags/sensors.py` `measured`, also the alarm thresholds and peaks; its
   age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
@@ -5552,7 +5558,19 @@ validation and every chemistry judgement; the island draws the finished values i
   `frontend/test/page.browser.test.ts` loads a whole server-printed page of the new look (`frontend/test/pages/shell-next.html`,
   `manage.py layout_pages`: the shell, its scripts, the strip and an island) under the server's own policy and nonce;
   `frontend/test/classic.browser.test.ts` holds the classic look as it was. The browser tests read the policy from
-  `config/settings.py` (`frontend/test/csp.ts`). `core/tests_islands.py` holds the tag and the build checks.
+  `config/settings.py` (`frontend/test/csp.ts`). `core/tests_islands.py`
+  holds the tag and the build checks.
+- **Real pages in a browser.** An island page's props are made in the TEST database, through its real view, by a Django
+  test (`core/island_props.py`: `render_island` asks the view in the new look and the language given, `keep` writes the
+  props to `.build/island-props/`, never committed: the repository is public, so nothing recorded from a real database
+  is kept). `farm/tests/test_island_pages.py` makes those of Tank › Water and Sensors › Charts from THE test world
+  (`core/test_world.py`, the one builder, the clock at its `MOMENT`: TT-01's probe with an
+  outage and a pH silent for two hours, the channels' state as the ingest writes it, samples, limits, an alarm, a harvest,
+  a treatment and a feeding, the fish's NH₃-N and CO₂ limits, each part a function of its own);
+  `npm run test:pages` (`frontend/test/*.pages.ts`) then mounts the built islands on them under the product's policy
+  (CSP, axe, 4.5:1, no sideways scroll at 1440 and 390 px). CI runs it in the Django job right after the suite (a run
+  with labels makes the props too) and keeps its screenshots as the artifact `island-pages-shots`; missing props fail
+  it, never skip it.
 - **Notices.** `npm run build` writes `static/islands/THIRD_PARTY_NOTICES.txt` beside the bundles: the licence text of every
   package they may ship (package-lock.json, not dev), served with them.
 

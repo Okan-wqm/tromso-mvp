@@ -333,3 +333,13 @@ def attention(now=None, site=None):
 def attention_by_site(now=None):
     """{site id: Attention} of every site with a stocked unit or an open alarm (`attention_all`'s second half)."""
     return attention_all(now)[1]
+
+
+def opened_at(points, start, end, system=None):
+    """The alarms opened from `start` to before `end` at these sampling points: a water limit's at the point, a sensor
+    rule's on a channel bound there, and with `system` a rule's on a channel bound to the system itself; oldest first.
+    The alarms a unit's or a system's water history marks (Tank › Water, System › Water)."""
+    here = Q(point__in=points) | Q(sensor_event__binding__point__in=points)
+    if system is not None:
+        here |= Q(sensor_event__binding__system=system)
+    return Alarm.objects.filter(here, opened_at__gte=start, opened_at__lt=end).order_by('opened_at')

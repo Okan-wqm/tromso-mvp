@@ -1,0 +1,11 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Sensors › Operations › Charts in the new look (sensors.views.charts with ?ui=next): the same query as the
+   classic page, the chart of a place's quantity (and of the place it is compared with) drawn by the island from the
+   series reader's data (sensors/chart.py `data`); the query is the address, so a chart can be linked to. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+{% island "sensor-charts" props label=_("Loading the chart…") %}
+{% endblock %}

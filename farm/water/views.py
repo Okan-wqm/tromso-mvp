@@ -24,16 +24,17 @@ from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import NON_FIELD_ERRORS, BadRequest, ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, ngettext
 
 from core import navigation
 from core.crud import done, render_page
 from core.dates import on_clock, read_day, read_moment
+from core.widgets import EXAMPLE
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
                            find_owner, find_point, point_order)
@@ -439,6 +440,255 @@ def _owner_chart(request, owner, here):
     })
 
 
+# ---- a unit's or a system's water history (Tank › Water, System › Water) ----------------------------------------
+HISTORY_RANGES = {'24h': timedelta(hours=24), '7d': timedelta(days=7), '30d': timedelta(days=30)}
+HISTORY_LONGEST = timedelta(days=731)          # a custom window: the sensors keep two years (README, Sensors)
+SENSOR_READ = 'sensors.view_reading'
+
+
+def history_window(request, owner, now):
+    """(key, start, end) of the window the address names: `range` one of HISTORY_RANGES ending now (24 h by default),
+    or `start` and `end` on the site's clock ('custom'); `around` a moment on the site's clock, the 12 hours each side of
+    it (an alarm's detail links here so). A time that is not one, an end before the start or a window longer than
+    HISTORY_LONGEST is refused (400), never read as another window."""
+    from sensors.forms import on_site_clock
+
+    zone = zone_of(site_of(owner))
+
+    def moment(name):
+        wall = read_moment(request.GET.get(name, ''))
+        if wall is None:
+            raise BadRequest(name)
+        try:
+            return on_site_clock(wall, zone)
+        except ValidationError:
+            raise BadRequest(name)
+
+    if request.GET.get('around'):
+        middle = moment('around')
+        start, end = middle - timedelta(hours=12), min(middle + timedelta(hours=12), now)
+        if end <= start:                        # 12 h or more after now: no window at all, refused (never a 500)
+            raise BadRequest('around')
+        return 'custom', start, end
+    if request.GET.get('start') or request.GET.get('end'):
+        start, end = moment('start'), moment('end')
+        if end <= start or end - start > HISTORY_LONGEST:
+            raise BadRequest('end')
+        return 'custom', start, end
+    key = request.GET.get('range') if request.GET.get('range') in HISTORY_RANGES else '24h'
+    return key, now - HISTORY_RANGES[key], now
+
+
+def _history_of(user, place, start, end, now, title):
+    """One place's water over the window, as data (sensors.read.water_history, sensors.chart.data): every parameter's
+    chart with its limit band, each sample with its status as the history page judges it (`status`, and `status_text`
+    in words), the NH₃-N worked out per sample with its status. The sensors' values only for a person who may read them
+    (otherwise the samples alone, and the chart says why)."""
+    from sensors import chart as sensor_chart, read as sensor_read
+
+    found = sensor_read.water_history(place, start, end, now=now)
+    sensors = user.has_perm(SENSOR_READ)
+    charts = []
+    for each in found.charts:
+        drawn = sensor_chart.data(each, title, found.bands)
+        judged = {int(at.timestamp()): status for at, status in found.judged.get(each.quantity.code, {}).items()}
+        for sample in drawn['samples']:
+            sample['status'] = judged.get(sample['at'], '')
+            sample['status_text'] = str(Status(sample['status']).label) if sample['status'] else ''
+        if not sensors:
+            drawn['buckets'] = {name: [] for name in drawn['buckets']}
+            drawn['gaps'], drawn['markers'], drawn['simulated'], drawn['simulated_text'] = [], [], False, ''
+            drawn['notes'] = [str(_('Sensor values are not shown: they need the right to read sensor readings.'))]
+            drawn['empty'] = not drawn['samples']
+        charts.append(drawn)
+    worked = {code: {'label': str(parameters.get(code).short), 'decimals': parameters.get(code).decimals,
+                     'band': found.bands.get(code, {}),
+                     'values': [{'at': int(item.at.timestamp()), 'value': item.value, 'status': item.status,
+                                 'status_text': str(Status(item.status).label) if item.status else '',
+                                 'note': item.note} for item in items]}
+              for code, items in found.worked.items()}
+    return {'charts': charts, 'worked': worked}
+
+
+RANGE_FRAMES = 120     # about this many Deffeyes frames over a window (the step snapped up the replay's ladder)
+
+
+def range_deffeyes(user, owner, start, end):
+    """Deffeyes for the range (Tank › Water, owner-approved): the replay's frames of the window
+    (`sensors.read.deffeyes_frames`, about RANGE_FRAMES of them, so one page) drawn as one chart: the diagram of the
+    newest frame that has one (its regions, the fish's limits and the pH isolines of that water; the server's figure, its
+    pH labels placed by the server) and the path of the water's point through the window, broken where a frame has no
+    diagram (never bridged; a run of one frame is a dot). The star is that newest water's, named with its time; when the
+    window's last frame has no diagram the chart says so in words ("No diagram after <time>: <why>"), so a water of
+    yesterday is never read as now (review of batch 1, F2). None for a person who may not read the sensors (the frames
+    join them with the samples). Without any frame with a diagram, the newest frame's reason: the inputs it lacks, or why
+    its pH and alkalinity cannot go together."""
+    from sensors import read as sensor_read
+
+    from .deffeyes import Box, as_props, pixel, render
+    if not user.has_perm(SENSOR_READ):
+        return None
+    step = sensor_read.replay_step((end - start) / RANGE_FRAMES)
+    # At a step of an hour or more the replay reads the hourly tier: a frame sees the last value of the newest hour that
+    # has ended by it, so a frame at :42 would see a probe's value 42 minutes old, never fresh. The frames start on the
+    # top of the hour then, whatever the minute the page was opened at (review recheck N1).
+    frames_from = start.replace(minute=0, second=0, microsecond=0) if step >= timedelta(hours=1) else start
+    found = sensor_read.deffeyes_frames(owner, frames_from, end, step, size=sensor_read.PAGE)
+    drawn = [frame for frame in found.frames if frame.figure is not None]
+    zone = zone_of(site_of(owner))
+    words = {'title': _('Deffeyes chart of the time'), 'water': _('The water'), 'path': _('The water through the time'),
+             'first': _('First drawn'), 'dic': _('DIC (mmol/L)'), 'alkalinity': _('Alkalinity (meq/L)'),
+             'isolines': _('pH isolines')}
+
+    def lacks(frame):
+        missing = ', '.join(str(parameters.get(code).label) for code in frame.missing)
+        return frame.impossible or (_('no fresh value of %(missing)s') % {'missing': missing} if missing
+                                    else _('a value the chart needs is missing'))
+
+    def shown(at):
+        return formats.date_format(timezone.localtime(at, zone), 'DATETIME_FORMAT')
+
+    last = found.frames[-1]
+    if not drawn:
+        missing = ', '.join(str(parameters.get(code).label) for code in last.missing)
+        reason = last.impossible or (_('No frame of this time has every value the chart needs: %(missing)s.') % {
+            'missing': missing} if missing else _('No frame of this time has every value the chart needs.'))
+        return {'chart': None, 'reason': str(reason), 'words': {key: str(value) for key, value in words.items()}}
+    newest = drawn[-1]
+    box = Box(*found.figures[newest.figure]['box'])
+    runs, run = [], []
+    for frame in found.frames:
+        if frame.point is None:
+            if run:
+                runs.append(run)
+            run = []
+            continue
+        x, y = pixel(box, frame.point.dic, frame.point.alkalinity_meq)
+        run.append((f'{x:.2f}', f'{y:.2f}', int(frame.at.timestamp())))
+    if run:
+        runs.append(run)
+    first = drawn[0]
+    fx, fy = pixel(box, first.point.dic, first.point.alkalinity_meq)
+    words['water'] = _('The water at %(time)s') % {'time': shown(newest.at)}
+    # the window's end without a diagram: said, never a star read as now
+    stale = '' if last.figure is not None else _('No diagram after %(time)s: %(why)s') % {
+        'time': shown(newest.at), 'why': lacks(last)}
+    caption = _('%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions, the limits '
+                'and the pH isolines are those of the newest water drawn. A moment without every value is left out, '
+                'never joined.') % {
+        'drawn': len(drawn), 'total': len(found.frames), 'step': _step_text(found.step),
+        'first': shown(first.at), 'last': shown(newest.at)}
+    # a page's figure is shared by the frames of the same equilibria, its point left out: the newest frame's own is drawn
+    figure = {**found.figures[newest.figure], 'point': [newest.point.dic, newest.point.alkalinity_meq]}
+    chart = as_props(render(figure))
+    return {'chart': chart, 'path': [' '.join(f'{x},{y}' for x, y, _at in each) for each in runs if len(each) > 1],
+            'dots': [{'x': each[0][0], 'y': each[0][1], 'at': each[0][2]} for each in runs if len(each) == 1],
+            'first': {'x': f'{fx:.2f}', 'y': f'{fy:.2f}', 'at': int(first.at.timestamp())},
+            'at': int(newest.at.timestamp()), 'now': str(stale or words['water']), 'now_status': 'warning' if stale else '',
+            'stale': str(stale), 'caption': str(caption), 'reason': '',
+            # what the chart's labels say, in words: shown in their place where the chart is too narrow for them
+            'scale': str(_('Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, '
+                           'up to %(alkalinity)s meq/L') % {
+                'low': next((line['label']['text'] for line in chart['isolines'] if line['label']), ''),
+                'high': next((line['label']['text'] for line in reversed(chart['isolines']) if line['label']), ''),
+                'dic': formats.number_format(box.dic), 'alkalinity': formats.number_format(box.alkalinity)}),
+            'said': [[str(words['water']), str(_('pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ '
+                                                  '%(co2)s mg/L') % {
+                'ph': formats.number_format(newest.point.ph, 2), 'dic': formats.number_format(newest.point.dic, 3),
+                'alkalinity': formats.number_format(newest.point.alkalinity_meq, 3),
+                'co2': formats.number_format(newest.point.co2_mg_l, 1)})]]
+                    + ([[str(_('No diagram')), str(stale)]] if stale else []),
+            'words': {key: str(value) for key, value in words.items()}}
+
+
+def _step_text(step):
+    """A replay step in words: 15 min, 3 h, 1 day, 7 days."""
+    minutes = int(step.total_seconds() // 60)
+    if minutes < 60:
+        return _('%(count)d min') % {'count': minutes}
+    if minutes < 24 * 60:
+        return _('%(count)d h') % {'count': minutes // 60}
+    days = minutes // (24 * 60)
+    return ngettext('%(count)d day', '%(count)d days', days) % {'count': days}
+
+
+def history_data(request, owner, now=None):
+    """A unit's water history (Tank › Water) or a system's (System › Water: each of its points side by side), as data:
+    the window, the charts, the values worked out, the events and the address of the Deffeyes replay of the window."""
+    now = now or timezone.now()
+    key, start, end = history_window(request, owner, now)
+    user = request.user
+    if isinstance(owner, System):
+        places = [{'point': str(point), 'kind': point.kind, **_history_of(user, point, start, end, now, str(point))}
+                  for point in calculation.points_for(owner)]
+    else:
+        places = [{'point': str(owner), 'kind': 'unit', **_history_of(user, owner, start, end, now, str(owner))}]
+    query = urlencode({'target': f'{owner_type_of(owner)}:{owner.pk}',
+                       'start': timezone.localtime(start, zone_of(site_of(owner))).strftime('%Y-%m-%dT%H:%M'),
+                       'end': timezone.localtime(end, zone_of(site_of(owner))).strftime('%Y-%m-%dT%H:%M')})
+    return {
+        'range': key, 'start': int(start.timestamp()), 'end': int(end.timestamp()),
+        'zone': zone_of(site_of(owner)).key, 'places': places, 'events': read.history_events(user, owner, start, end),
+        'range_chart': range_deffeyes(user, owner, start, end),
+        'deffeyes': f'{reverse("sensors:deffeyes_frames")}?{query}' if user.has_perm(SENSOR_READ) else '',
+        'record': _dialog_url('farm:water_record', request, owner) if user.has_perm(RECORD) else '',
+        'samples': history_url(owner)}
+
+
+def _owner_history(request, owner):
+    """`history_data` as JSON (`?view=history` of unit_chart and system_chart)."""
+    return JsonResponse(history_data(request, owner))
+
+
+# ---- Tank › Water: the one home of a tank's water history (behind ?ui=next) ---------------------------------------
+def _history_words():
+    """Every word Tank › Water and System › Water draw (the island words nothing of its own)."""
+    return {
+        'sensor': _('Sensor'), 'manual': _('Meter or test kit'), 'lab': _('Laboratory'), 'worked': _('Worked out'),
+        'warning': _('Warning'), 'critical': _('Critical'), 'noValue': _('No value'), 'time': _('Time'),
+        'custom': _('From and to'), 'from': _('From'), 'to': _('To'), 'draw': _('Draw'),
+        'empty': _('No water value in this time: nothing was measured or sampled here.'),
+        'noChart': _('No sensor values in this time.'),
+        'events': _('Events'), 'noEvents': _('No feeding, treatment, harvest or alarm in this time.'),
+        'notWorked': _('Not worked out'), 'record': _('Record water sample'), 'samples': _('Samples'),
+        'deffeyes': _('Deffeyes chart'), 'calculated': _('worked out from each sample, not measured'),
+        'zoneNote': _('Times on the site’s clock (%(zone)s).'),
+        'bandsToday': _('The limit bands are the limits of the fish today, over the whole time.'),
+    }
+
+
+@permission_required(VIEW, raise_exception=True)
+def tank_water(request, pk):
+    """Tank › Water (owner-approved home of a tank's water history), in the new look only: every parameter on one time
+    axis, the sensors' lines and the samples on the same chart, the fish's limits as bands, the NH₃-N worked out per
+    sample, gaps shown, the events of the window (`history_data`). Without the new look the address is the unit's
+    history on Water chemistry, today's page for it."""
+    from core import ui
+
+    unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+    if not ui.is_next(request):
+        return redirect(history_url(unit))
+    data = history_data(request, unit)
+    here = reverse('farm:tank_water', args=[unit.pk])
+    zone = zone_of(site_of(unit))
+    data.update({
+        'unit': {'code': unit.code, 'name': unit.name, 'place': str(unit.production_department)},
+        'ranges': [{'key': key, 'label': key, 'href': f'{here}?{urlencode({"range": key})}',
+                    'current': data['range'] == key} for key in HISTORY_RANGES],
+        # the window's ends as the date box shows them (core.widgets.MomentInput): dd.mm.yyyy HH:MM in every language
+        'custom': {'action': here, 'current': data['range'] == 'custom',
+                   'start': formats.localize_input(datetime.fromtimestamp(data['start'], tz=zone).replace(tzinfo=None)),
+                   'end': formats.localize_input(datetime.fromtimestamp(data['end'], tz=zone).replace(tzinfo=None)),
+                   'example': formats.localize_input(EXAMPLE)},
+        'words': {**_history_words(), 'zoneNote': _history_words()['zoneNote'] % {'zone': zone.key}},
+        'locale': request.LANGUAGE_CODE,
+    })
+    place = navigation.place('farm.view_stockoperation')
+    return render_page(request, 'farm/tank_water.html', {
+        'title': f'{unit.code} · {_("Water")}', 'eyebrow': f'{place.section.label} · {place.entry.label}', 'props': data,
+        'units_url': reverse('farm:production_units') + f'?{urlencode({"unit": unit.pk})}'})
+
+
 @permission_required(VIEW, raise_exception=True)
 def unit_chart(request, pk):
     """The Deffeyes chart of one unit's water, as the body of the monitoring cards' window (the fragment is polled):
@@ -446,8 +696,11 @@ def unit_chart(request, pk):
     fish, and the unit's points as links to the same fragment for another one. `?point=` is one of the unit's own active
     points (404 for any other); without it, the middle point. `?at=` draws the water as it was at a past moment (on the
     site's clock). A water that cannot be drawn is refused with what it lacks (farm/water/calculation.chart_of). Gated
-    by the right to read water samples alone: it shows nothing else of the unit's records."""
+    by the right to read water samples alone: it shows nothing else of the unit's records. `?view=history`: the unit's
+    water history as JSON instead (`_owner_history`: Tank › Water), each part of it for the person who may read it."""
     unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
+    if request.GET.get('view') == HISTORY:
+        return _owner_history(request, unit)
     return _owner_chart(request, unit, reverse('farm:water_unit_chart', args=[unit.pk]))
 
 
@@ -455,6 +708,8 @@ def unit_chart(request, pk):
 def system_chart(request, pk):
     """A system's own Deffeyes chart (A4): its loop's water and the system's sensors, as a unit's (`unit_chart`)."""
     system = get_object_or_404(System.objects.select_related('site'), pk=pk)
+    if request.GET.get('view') == HISTORY:
+        return _owner_history(request, system)
     return _owner_chart(request, system, reverse('farm:water_system_chart', args=[system.pk]))
 
 

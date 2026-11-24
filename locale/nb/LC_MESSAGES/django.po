@@ -781,6 +781,16 @@ msgid "%(dose)s g/m³"
 msgstr "%(dose)s g/m³"
 
 #, python-format
+msgid ""
+"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions, the"
+" limits and the pH isolines are those of the newest water drawn. A moment without every value is "
+"left out, never joined."
+msgstr ""
+"%(drawn)s av %(total)s tidspunkter hvert %(step)s tegnet, fra %(first)s til %(last)s; områdene, "
+"grensene og pH-isolinjene er de for det nyeste vannet som er tegnet. Et tidspunkt uten alle "
+"verdier er utelatt, aldri koblet sammen."
+
+#, python-format
 msgid "%(duty)s · %(site)s · %(year)s: record that it was done."
 msgstr "%(duty)s · %(site)s · %(year)s: registrer at det er gjort."
 
@@ -1791,6 +1801,10 @@ msgstr "%(value)s %(unit)s"
 #, python-format
 msgid "%(value)s assumed"
 msgstr "%(value)s antatt"
+
+#, python-format
+msgid "%(value)s at %(time)s"
+msgstr "%(value)s kl. %(time)s"
 
 #. Translators: days of cover, e.g. 12.5 days.
 #, python-format
@@ -5033,8 +5047,14 @@ msgstr "Velg en pH-skala."
 msgid "Choose a person"
 msgstr "Velg en person"
 
+msgid "Choose a place and a quantity from the lists to compare with."
+msgstr "Velg et sted og en mengde fra listene å sammenligne med."
+
 msgid "Choose a place from the list."
 msgstr "Velg et sted fra listen."
+
+msgid "Choose a place, a quantity and a time, then Draw."
+msgstr "Velg et sted, en mengde og en tid, og trykk Tegn."
 
 msgid "Choose a role or a person."
 msgstr "Velg en rolle eller en person."
@@ -5372,6 +5392,9 @@ msgstr "Selskapsoversikt"
 
 msgid "Company today"
 msgstr "Selskapet i dag"
+
+msgid "Compare with"
+msgstr "Sammenlign med"
 
 msgid "Complete"
 msgstr "Fullfør"
@@ -5911,6 +5934,9 @@ msgstr "Standardverdier"
 
 msgid "Deffeyes chart"
 msgstr "Deffeyes-diagram"
+
+msgid "Deffeyes chart of the time"
+msgstr "Deffeyes-diagram for tidsrommet"
 
 #, python-format
 msgid "Deffeyes chart · %(unit)s"
@@ -6656,6 +6682,9 @@ msgstr "Estimert: den målte vekten og fôret siden, delt på forventet FCR"
 msgid "Event"
 msgstr "Hendelse"
 
+msgid "Events"
+msgstr "Hendelser"
+
 msgid "Every"
 msgstr "Hver"
 
@@ -6957,6 +6986,10 @@ msgstr "Sulting før transporten %(date)s: fra %(start)s (%(asks)s)."
 msgid "Fed"
 msgstr "Fôret"
 
+#, python-format
+msgid "Fed %(kg)s kg of %(feed)s"
+msgstr "Foret %(kg)s kg %(feed)s"
+
 msgid "Fed beyond the book"
 msgstr "Fôret ut over registeret"
 
@@ -7194,6 +7227,9 @@ msgstr "Første dag"
 
 msgid "First day of the new tank"
 msgstr "Det nye karets første dag"
+
+msgid "First drawn"
+msgstr "Først tegnet"
 
 msgid "First name"
 msgstr "Fornavn"
@@ -8152,6 +8188,9 @@ msgstr "Skjul slettede rader"
 
 msgid "High"
 msgstr "Høy"
+
+msgid "Highest"
+msgstr "Høyest"
 
 msgid "Highest of the open run"
 msgstr "Høyeste i den åpne serien"
@@ -9164,6 +9203,14 @@ msgstr "Duktykkelse (mm)"
 msgid "Lines"
 msgstr "Linjer"
 
+#, python-format
+msgid ""
+"Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, up to "
+"%(alkalinity)s meq/L"
+msgstr ""
+"Linjer med lik pH: %(low)s til %(high)s; DIC bortover, opp til %(dic)s mmol/L; alkalitet oppover,"
+" opp til %(alkalinity)s meq/L"
+
 msgid "Link sent to"
 msgstr "Lenke sendt til"
 
@@ -9194,6 +9241,9 @@ msgstr "Sanntidsverdier"
 msgid "Loading the cards…"
 msgstr "Laster kortene …"
 
+msgid "Loading the chart…"
+msgstr "Laster diagrammet…"
+
 msgid "Loading the confirmation…"
 msgstr "Laster bekreftelsen …"
 
@@ -9205,6 +9255,9 @@ msgstr "Laster listen …"
 
 msgid "Loading the overview…"
 msgstr "Laster oversikten …"
+
+msgid "Loading the water history…"
+msgstr "Laster vannhistorikken…"
 
 msgid "Loading…"
 msgstr "Laster …"
@@ -9275,6 +9328,9 @@ msgstr "Lavtrykk"
 
 msgid "Low stock"
 msgstr "Lav beholdning"
+
+msgid "Lowest"
+msgstr "Lavest"
 
 msgid "Lowest of the open run"
 msgstr "Laveste i den åpne serien"
@@ -10087,6 +10143,13 @@ msgstr "Ingen apparater publiserer på dette emnet"
 msgid "No diagnosis"
 msgstr "Ingen diagnose"
 
+msgid "No diagram"
+msgstr "Ikke noe diagram"
+
+#, python-format
+msgid "No diagram after %(time)s: %(why)s"
+msgstr "Ikke noe diagram etter %(time)s: %(why)s"
+
 #, python-format
 msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
 msgstr "Ingen diagram: sensorens pH kan ikke regnes om til NBS-skalaen (%(why)s)."
@@ -10135,6 +10198,9 @@ msgstr "Ingen fôring registrert i denne enheten ennå."
 
 msgid "No feeding recorded yet"
 msgstr "Ingen fôring registrert ennå"
+
+msgid "No feeding, treatment, harvest or alarm in this time."
+msgstr "Ingen fôring, behandling, slakting eller alarm i denne tiden."
 
 msgid "No file"
 msgstr "Ingen fil"
@@ -10185,6 +10251,13 @@ msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
 
 msgid "No flip link"
 msgstr "Ingen byttelenke"
+
+msgid "No frame of this time has every value the chart needs."
+msgstr "Ingen tidspunkt i dette tidsrommet har alle verdiene diagrammet trenger."
+
+#, python-format
+msgid "No frame of this time has every value the chart needs: %(missing)s."
+msgstr "Ingen tidspunkt i dette tidsrommet har alle verdiene diagrammet trenger: %(missing)s."
 
 msgid "No fresh value"
 msgstr "Ingen fersk verdi"
@@ -10534,6 +10607,9 @@ msgstr "Ingen vanngrense er satt for fisken i enheten."
 msgid "No water sample in the last 30 days."
 msgstr "Ingen vannprøve de siste 30 dagene."
 
+msgid "No water value in this time: nothing was measured or sampled here."
+msgstr "Ingen vannverdi i denne tiden: ingenting ble målt eller prøvetatt her."
+
 msgid "No widget shows the oxygen."
 msgstr "Ingen elementer viser oksygenet."
 
@@ -10789,6 +10865,9 @@ msgstr "Ikke bekreftet"
 msgid "Not weighed since the fish came in."
 msgstr "Ikke veid siden fisken kom inn."
 
+msgid "Not worked out"
+msgstr "Ikke beregnet"
+
 #, python-format
 msgid "Not worked out: %(why)s."
 msgstr "Ikke beregnet: %(why)s."
@@ -10823,6 +10902,9 @@ msgstr "Ingenting på lager ennå"
 
 msgid "Nothing is assumed for a missing value."
 msgstr "Ingenting antas for en manglende verdi."
+
+msgid "Nothing is bound here now."
+msgstr "Ingenting er koblet hit nå."
 
 msgid "Nothing is filled in for a missing value."
 msgstr "Ingenting fylles inn for en manglende verdi."
@@ -10875,6 +10957,9 @@ msgstr "Ingenting registrert i denne enheten ennå."
 
 msgid "Nothing recorded yet."
 msgstr "Ingenting registrert ennå."
+
+msgid "Nothing to compare"
+msgstr "Ingenting å sammenligne"
 
 msgid "Nothing to show yet"
 msgstr "Ingenting å vise ennå"
@@ -12231,6 +12316,9 @@ msgstr "Mengde (kg)"
 msgid "Quantity and unit"
 msgstr "Parameter og enhet"
 
+msgid "Quantity to compare"
+msgstr "Mengde å sammenligne"
+
 msgid "Quarantine"
 msgstr "Karantene"
 
@@ -13439,6 +13527,9 @@ msgstr "Følsom"
 msgid "Sensitivity tests"
 msgstr "Følsomhetsundersøkelser"
 
+msgid "Sensor"
+msgstr "Sensor"
+
 msgid "Sensor alarm event"
 msgstr "Sensoralarmhendelse"
 
@@ -13459,6 +13550,9 @@ msgstr "Sensoren flyttet hit"
 
 msgid "Sensor readings"
 msgstr "Sensoravlesninger"
+
+msgid "Sensor values are not shown: they need the right to read sensor readings."
+msgstr "Sensorverdier vises ikke: de krever retten til å lese sensoravlesninger."
 
 msgid "Sensors"
 msgstr "Sensorer"
@@ -13653,6 +13747,9 @@ msgstr "Enkel"
 
 msgid "Simulated"
 msgstr "Simulert"
+
+msgid "Simulated values"
+msgstr "Simulerte verdier"
 
 msgid "Simulator"
 msgstr "Simulator"
@@ -15315,6 +15412,9 @@ msgstr ""
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "Nivået %(label)s av %(factor)s har to ulike verdier."
 
+msgid "The limit bands are the limits of the fish today, over the whole time."
+msgstr "Grensefeltene er fiskens grenser i dag, over hele tiden."
+
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Lenken er allerede brukt eller har utløpt. Be om en ny."
 
@@ -15838,6 +15938,9 @@ msgstr "Saltholdigheten er antatt: ferskvann."
 msgid "The salinity is fresh water’s."
 msgstr "Saliniteten er ferskvannets."
 
+msgid "The same quantity"
+msgstr "Samme mengde"
+
 msgid "The scale must span at least half a pH unit, from the lower end to the higher."
 msgstr "Skalaen må spenne over minst en halv pH-enhet, fra den nedre enden til den øvre."
 
@@ -16339,6 +16442,10 @@ msgid ""
 "then."
 msgstr "Vannet slik det var %(moment)s: hver verdi slik kilden ga den da, med alder regnet fra da."
 
+#, python-format
+msgid "The water at %(time)s"
+msgstr "Vannet %(time)s"
+
 msgid "The water cannot stand higher than the depth."
 msgstr "Vannet kan ikke stå høyere enn dybden."
 
@@ -16374,6 +16481,9 @@ msgstr "Vannflaten når dammen er full."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Vannet mengdene gjelder: et kar eller et kretsløp. Tomt: bare dosene per m³."
+
+msgid "The water through the time"
+msgstr "Vannet gjennom tidsrommet"
 
 msgid "The week is longer than the standard week."
 msgstr "Uken er lengre enn standarduken."
@@ -16955,6 +17065,13 @@ msgstr ""
 "Tider i hele sekunder kan ikke skille meldinger som sendes hvert sekund: send hvert %(seconds)d. "
 "sekund eller sjeldnere, eller bruk et format med millisekunder."
 
+#, python-format
+msgid "Times on the site’s clock (%(zone)s)."
+msgstr "Tider etter anleggets klokke (%(zone)s)."
+
+msgid "Times without a value are shaded, never filled."
+msgstr "Tider uten verdi er skravert, aldri fylt."
+
 msgid "Timezone"
 msgstr "Tidssone"
 
@@ -17087,6 +17204,10 @@ msgstr "Behandlingen %(date)s er annullert."
 #, python-format
 msgid "Treatment recorded: %(what)s in %(units)s from %(start)s to %(end)s."
 msgstr "Behandling registrert: %(what)s i %(units)s fra %(start)s til %(end)s."
+
+#, python-format
+msgid "Treatment: %(method)s"
+msgstr "Behandling: %(method)s"
 
 msgid "Treatments"
 msgstr "Behandlinger"
@@ -18172,6 +18293,9 @@ msgstr "Uten produksjonsavdeling"
 msgid "Without a site"
 msgstr "Uten lokalitet"
 
+msgid "Worked out"
+msgstr "Beregnet"
+
 #, python-format
 msgid "Worked out %(when)s · %(zone)s"
 msgstr "Beregnet %(when)s · %(zone)s"
@@ -18422,6 +18546,9 @@ msgstr "en lokalitet med rensefiskstamfisk"
 
 msgid "a unit or a loop"
 msgstr "en enhet eller en sløyfe"
+
+msgid "a value the chart needs is missing"
+msgstr "en verdi diagrammet trenger, mangler"
 
 msgid "activity log"
 msgstr "aktivitetslogg"
@@ -19642,6 +19769,10 @@ msgstr "ingen fisk på %(site)s siden %(date)s"
 msgid "no fish now"
 msgstr "ingen fisk nå"
 
+#, python-format
+msgid "no fresh value of %(missing)s"
+msgstr "ingen fersk verdi for %(missing)s"
+
 msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
@@ -19844,6 +19975,10 @@ msgstr ""
 "pH %(ph)s er verdien som ble hentet fra %(point)s: den er allerede på NBS-skalaen (en lagret pH "
 "er alltid det) og regnes ikke om igjen. La skalaen stå på NBS, eller skriv inn pH-en slik den ble"
 " målt, med skalaen sin."
+
+#, python-format
+msgid "pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
+msgstr "pH %(ph)s, DIC %(dic)s mmol/L, alkalitet %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
 
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"
@@ -20422,6 +20557,9 @@ msgstr "kvittering for tilbakeholdelsestid"
 
 msgid "withdrawal acknowledgements"
 msgstr "kvitteringer for tilbakeholdelsestid"
+
+msgid "worked out from each sample, not measured"
+msgstr "beregnet fra hver prøve, ikke målt"
 
 msgid "worked out from the sample"
 msgstr "regnet ut fra prøven"

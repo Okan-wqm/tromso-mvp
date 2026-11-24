@@ -3103,9 +3103,11 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_company_overview.py",
+        "farm/tests/test_water_history_page.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
@@ -7385,6 +7387,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/test_world.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
@@ -14729,6 +14732,7 @@
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
+        "hr/tests/test_team_today.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_places.py",
         "experiments/tests/test_start.py",
@@ -19984,6 +19988,7 @@
         "farm/tests/test_systems.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_history_page.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
@@ -20000,6 +20005,7 @@
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_replay.py",
+        "sensors/tests/test_water_history.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_reaction.py"
       ]
@@ -21033,6 +21039,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/test_lean_endpoints.py",
         "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_ui_look.py",
@@ -21048,6 +21055,7 @@
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_island_pages.py",
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
@@ -21055,13 +21063,16 @@
         "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_range_deffeyes.py",
         "farm/tests/test_rederive_ph.py",
         "farm/tests/test_sensor_ph_scale.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_tank_water_page.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_history_page.py",
         "farm/tests/test_water_origin.py",
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
@@ -21079,10 +21090,12 @@
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_token.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
+        "sensors/tests/test_water_history.py",
         "alarms/tests/test_cross_review.py"
       ]
     },
@@ -22454,6 +22467,8 @@
         "monitoring/tests/test_extras.py",
         "monitoring/tests/test_going_in.py",
         "monitoring/tests/test_small.py",
+        "sensors/tests/test_chart_data.py",
+        "sensors/tests/test_water_history.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_reaction.py",
@@ -26926,7 +26941,8 @@
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scheduling_settings.py"
+        "hr/tests/test_scheduling_settings.py",
+        "hr/tests/test_team_today.py"
       ]
     },
     {
@@ -27266,7 +27282,8 @@
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roles.py",
-        "hr/tests/test_roster.py"
+        "hr/tests/test_roster.py",
+        "hr/tests/test_team_today.py"
       ]
     },
     {
@@ -27658,7 +27675,8 @@
         "hr/tests/test_review.py",
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scheduling_settings.py"
+        "hr/tests/test_scheduling_settings.py",
+        "hr/tests/test_team_today.py"
       ]
     },
     {
@@ -38915,8 +38933,10 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
@@ -40553,6 +40573,7 @@
       "tests": [
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",

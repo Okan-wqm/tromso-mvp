@@ -360,7 +360,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/tests_ui_look.py`, `core/tests_workspaces.py`, `farm/tests/test_company_overview.py` and 21 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_ui_look.py`, `core/tests_workspaces.py` and 23 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -782,7 +782,7 @@ A group of fish that came in together: its identity and origin, no counts.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › batches
 - **forms**: `BatchDetailsForm`, `BatchInputForm`, `OpeningBalanceForm`
 - **constraints**: uq_batches_code (unique: code); chk_batches_code (check); chk_batches_stage (check); chk_batches_origin (check); chk_batches_supplier (check); chk_batches_provenance (check); chk_batches_origin_provenance (check); chk_batches_year_class (check); chk_batches_harvest_after_input (check)
-- **tests that mention it**: `core/test_datamap.py`, `farm/tests/test_batch_details.py`, `farm/tests/test_cleaner_fish.py` and 21 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_world.py`, `farm/tests/test_batch_details.py` and 22 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1465,7 +1465,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 66 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 67 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1889,7 +1889,7 @@ A production system of a site: a RAS, a pond, a cage line, a hatchery.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › systems
 - **forms**: `SystemForm`
 - **constraints**: uq_systems_site_code_live (unique: site, code); chk_systems_total_volume (check); chk_systems_max_biomass (check); chk_systems_not_its_own_parent (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 34 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 36 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1925,7 +1925,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 50 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 57 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2078,7 +2078,7 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_limits
 - **forms**: `WaterLimitForm`
 - **constraints**: uq_water_limits_live (unique: species, parameter, water_type); chk_water_limits_parameter (check); chk_water_limits_water_type (check); chk_water_limits_any_bound (check); chk_water_limits_critical_low (check); chk_water_limits_warning_low (check); chk_water_limits_warning_high (check); chk_water_limits_critical_high (check); chk_water_limits_order (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 16 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 18 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2466,7 +2466,7 @@ The one row of scheduling limits and defaults (rest, weekly hours, days in a row
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › scheduling_settings
 - **forms**: `SchedulingSettingsForm`
 - **constraints**: uq_scheduling_settings_singleton (unique: singleton); chk_scheduling_settings_singleton (check); chk_scheduling_week (check); chk_scheduling_rest (check); chk_scheduling_consecutive (check); chk_scheduling_rule (check); chk_scheduling_weekdays (check); chk_scheduling_punch_window (check); chk_scheduling_absent_after (check); chk_scheduling_forgotten_after (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_forgotten.py` and 6 more
+- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_forgotten.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2502,7 +2502,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 16 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2532,7 +2532,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 20 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 21 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3602,7 +3602,7 @@ What the ingest service remembers of each sensor channel: its last value, the la
 - **read**: none, by design: read by the latest values (sensors/read.py)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_channel_state
 - **constraints**: chk_sensors_channel_state_run_n (check)
-- **tests that mention it**: `sensors/tests/test_alarms.py`, `sensors/tests/test_bindings.py`, `sensors/tests/test_contract.py` and 8 more
+- **tests that mention it**: `core/test_world.py`, `sensors/tests/test_alarms.py`, `sensors/tests/test_bindings.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3752,7 +3752,7 @@ A field device that publishes on one topic of a connection: a probe, a PLC, a ga
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_device
 - **forms**: `DeviceForm`
 - **constraints**: uq_sensors_device_code_live (unique: connection, code); uq_sensors_device_topic_live (unique: connection, topic); chk_sensors_device_code (check); chk_sensors_device_name (check); chk_sensors_device_interval (check); chk_sensors_device_topic_given (check); chk_sensors_device_topic_hash (check); chk_sensors_device_topic_system (check); chk_sensors_device_topic_plus (check); chk_sensors_device_topic_level (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_contract.py` and 7 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_chart_data.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -1,0 +1,12 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Tank › Water (farm.water.views.tank_water), the one home of a tank's water history, in the new look: the
+   island draws every parameter on one time axis from the server's finished values (props); the range is the address
+   (?range=, ?start=&end=, ?around=), so a view can be linked to and works with the back button.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block head_actions %}<div class="ui-head-actions"><a class="ui-btn" href="{{ units_url }}">{% trans "Production units" %}</a>{% if props.record %}<a class="ui-btn" data-variant="primary" href="{{ props.record }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record water sample" %}</a>{% endif %}</div>{% endblock %}
+{% block content %}
+{% island "water" props label=_("Loading the water history…") %}
+{% endblock %}

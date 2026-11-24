@@ -122,6 +122,10 @@ jobs:
             echo "::error::labels may hold letters, digits, _ . and spaces"
             exit 1
           fi
+          # The islands' props for the page test below are made by these tests (core/island_props.py): a run with labels
+          # makes them too.
+          if [[ -n "$LABELS" ]]; then LABELS="$LABELS farm.tests.test_island_pages"; fi
+          mkdir -p .build/island-props        # the runner's own: the container (root) writes into it, npm reads after
           # shellcheck disable=SC2086 # the labels are words, split on purpose
           bash scripts/test.sh $LABELS
 
@@ -131,6 +135,26 @@ jobs:
             echo "::error::locale/*/django.po are stale: run manage.py update_catalogs and commit the result"
             exit 1
           fi
+
+      # The Production and Sensors islands in a browser (frontend/test/production.pages.ts), on the props the suite just
+      # made in its throwaway test database (.build/island-props, never committed: the repository is public), with the
+      # islands the browser build above made. Only after the suite (SUITE=1); the screenshots are kept 7 days.
+      - name: Allow Chrome's sandbox
+        if: env.SUITE == '1'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Island pages in a browser (npm run test:pages)
+        if: env.SUITE == '1'
+        env:
+          SHOTS: .build/shots
+        run: npm run test:pages
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && env.SUITE == '1'
+        continue-on-error: true
+        with:
+          name: island-pages-shots
+          path: .build/shots
+          retention-days: 7
+          if-no-files-found: ignore
 
   frontend:
     name: Browser code (tsc build and TypeScript tests)

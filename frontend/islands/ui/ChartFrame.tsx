@@ -21,10 +21,13 @@ export interface ChartFrameProps {
   /** the drawing in words, for a screen reader and for whoever cannot see it (WCAG 1.1.1): the figures it shows, as the
    *  server words them ([["Latest", "6.50 mg/L at 13:42"], ["Lowest", "5.92 mg/L at 04:12"], ["Gaps", "03:00 to 05:00"]]) */
   values?: [string, string][];
+  /** the drawing holds marks of its own to reach (a series chart's markers): it is a named group, not one image, whose
+   *  children a screen reader would never be given (an image's children are presentational) */
+  interactive?: boolean;
   children: ReactNode;
 }
 
-export function ChartFrame({ title, now, nowStatus, keys, caption, label, values, children }: ChartFrameProps) {
+export function ChartFrame({ title, now, nowStatus, keys, caption, label, values, interactive, children }: ChartFrameProps) {
   const id = useId();
   return (
     <figure className="ui-chart">
@@ -32,7 +35,7 @@ export function ChartFrame({ title, now, nowStatus, keys, caption, label, values
         <h3>{title}</h3>
         {now ? <span className="ui-chart-now" data-status={nowStatus}>{now}</span> : null}
       </div>
-      <div className="ui-chart-draw" role="img" aria-label={label} aria-describedby={values && values.length ? id : undefined}>{children}</div>
+      <div className="ui-chart-draw" role={interactive ? 'group' : 'img'} aria-label={label} aria-describedby={values && values.length ? id : undefined}>{children}</div>
       {values && values.length ? (
         <dl className="sr-only" id={id}>{values.map(([term, value]) => <div key={term}><dt>{term}</dt><dd>{value}</dd></div>)}</dl>
       ) : null}

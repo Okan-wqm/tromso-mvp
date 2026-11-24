@@ -780,6 +780,16 @@ msgid "%(dose)s g/m³"
 msgstr "%(dose)s g/m³"
 
 #, python-format
+msgid ""
+"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions, the"
+" limits and the pH isolines are those of the newest water drawn. A moment without every value is "
+"left out, never joined."
+msgstr ""
+"%(total)s andan %(drawn)s tanesi her %(step)s bir çizildi, %(first)s ile %(last)s arası; "
+"bölgeler, sınırlar ve pH eş çizgileri çizilen en yeni suyunkilerdir. Her değeri olmayan bir an "
+"dışarıda bırakılır, asla birleştirilmez."
+
+#, python-format
 msgid "%(duty)s · %(site)s · %(year)s: record that it was done."
 msgstr "%(duty)s · %(site)s · %(year)s: yapıldığını kaydedin."
 
@@ -1802,6 +1812,10 @@ msgstr "%(value)s %(unit)s"
 #, python-format
 msgid "%(value)s assumed"
 msgstr "%(value)s varsayıldı"
+
+#, python-format
+msgid "%(value)s at %(time)s"
+msgstr "%(time)s anında %(value)s"
 
 #. Translators: days of cover, e.g. 12.5 days.
 #, python-format
@@ -5047,8 +5061,14 @@ msgstr "Bir pH ölçeği seçin."
 msgid "Choose a person"
 msgstr "Bir kişi seçin"
 
+msgid "Choose a place and a quantity from the lists to compare with."
+msgstr "Karşılaştırmak için listelerden bir yer ve bir miktar seçin."
+
 msgid "Choose a place from the list."
 msgstr "Listeden bir yer seçin."
+
+msgid "Choose a place, a quantity and a time, then Draw."
+msgstr "Bir yer, bir miktar ve bir zaman seçin, sonra Çiz'e basın."
 
 msgid "Choose a role or a person."
 msgstr "Bir rol ya da bir kişi seçin."
@@ -5392,6 +5412,9 @@ msgstr "Şirket genel bakışı"
 
 msgid "Company today"
 msgstr "Bugün şirket"
+
+msgid "Compare with"
+msgstr "Karşılaştır"
 
 msgid "Complete"
 msgstr "Tamamla"
@@ -5930,6 +5953,9 @@ msgstr "Varsayılanlar"
 
 msgid "Deffeyes chart"
 msgstr "Deffeyes grafiği"
+
+msgid "Deffeyes chart of the time"
+msgstr "Zaman aralığının Deffeyes grafiği"
 
 #, python-format
 msgid "Deffeyes chart · %(unit)s"
@@ -6676,6 +6702,9 @@ msgstr "Tahmini: ölçülen ağırlık ile o zamandan beri verilen yemin beklene
 msgid "Event"
 msgstr "Olay"
 
+msgid "Events"
+msgstr "Olaylar"
+
 msgid "Every"
 msgstr "Her"
 
@@ -6981,6 +7010,10 @@ msgstr "%(date)s taşıması öncesi aç bırakma: %(start)s itibarıyla (%(asks
 msgid "Fed"
 msgstr "Yemlenen"
 
+#, python-format
+msgid "Fed %(kg)s kg of %(feed)s"
+msgstr "%(kg)s kg %(feed)s verildi"
+
 msgid "Fed beyond the book"
 msgstr "Kaydın ötesinde yemlenen"
 
@@ -7218,6 +7251,9 @@ msgstr "İlk gün"
 
 msgid "First day of the new tank"
 msgstr "Yeni tankın ilk günü"
+
+msgid "First drawn"
+msgstr "İlk çizilen"
 
 msgid "First name"
 msgstr "Ad"
@@ -8181,6 +8217,9 @@ msgstr "Silinmiş satırları gizle"
 
 msgid "High"
 msgstr "Yüksek"
+
+msgid "Highest"
+msgstr "En yüksek"
 
 msgid "Highest of the open run"
 msgstr "Açık serinin en yükseği"
@@ -9199,6 +9238,14 @@ msgstr "Kaplama kalınlığı (mm)"
 msgid "Lines"
 msgstr "Satırlar"
 
+#, python-format
+msgid ""
+"Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, up to "
+"%(alkalinity)s meq/L"
+msgstr ""
+"Eşit pH çizgileri: %(low)s ile %(high)s arası; DIC yatay eksende, en çok %(dic)s mmol/L; "
+"alkalinite dikey eksende, en çok %(alkalinity)s meq/L"
+
 msgid "Link sent to"
 msgstr "Bağlantının gönderildiği adres"
 
@@ -9229,6 +9276,9 @@ msgstr "Canlı değerler"
 msgid "Loading the cards…"
 msgstr "Kartlar yükleniyor…"
 
+msgid "Loading the chart…"
+msgstr "Grafik yükleniyor…"
+
 msgid "Loading the confirmation…"
 msgstr "Onay yükleniyor…"
 
@@ -9240,6 +9290,9 @@ msgstr "Liste yükleniyor…"
 
 msgid "Loading the overview…"
 msgstr "Genel bakış yükleniyor…"
+
+msgid "Loading the water history…"
+msgstr "Su geçmişi yükleniyor…"
 
 msgid "Loading…"
 msgstr "Yükleniyor…"
@@ -9310,6 +9363,9 @@ msgstr "Düşük basınç"
 
 msgid "Low stock"
 msgstr "Azalan stok"
+
+msgid "Lowest"
+msgstr "En düşük"
 
 msgid "Lowest of the open run"
 msgstr "Açık serinin en düşüğü"
@@ -10121,6 +10177,13 @@ msgstr "Bu konuda yayın yapan cihaz yok"
 msgid "No diagnosis"
 msgstr "Tanı yok"
 
+msgid "No diagram"
+msgstr "Diyagram yok"
+
+#, python-format
+msgid "No diagram after %(time)s: %(why)s"
+msgstr "%(time)s sonrasında diyagram yok: %(why)s"
+
 #, python-format
 msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
 msgstr "Diyagram yok: sensörün pH’ı NBS ölçeğine dönüştürülemiyor (%(why)s)."
@@ -10168,6 +10231,9 @@ msgstr "Bu birimde henüz yemleme kaydedilmedi."
 msgid "No feeding recorded yet"
 msgstr "Henüz yemleme kaydedilmedi"
 
+msgid "No feeding, treatment, harvest or alarm in this time."
+msgstr "Bu sürede yemleme, tedavi, hasat veya alarm yok."
+
 msgid "No file"
 msgstr "Dosya yok"
 
@@ -10213,6 +10279,13 @@ msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
 
 msgid "No flip link"
 msgstr "Geçiş bağlantısı yok"
+
+msgid "No frame of this time has every value the chart needs."
+msgstr "Bu zaman aralığında grafiğin gerektirdiği her değere sahip bir an yok."
+
+#, python-format
+msgid "No frame of this time has every value the chart needs: %(missing)s."
+msgstr "Bu zaman aralığında grafiğin gerektirdiği her değere sahip bir an yok: %(missing)s."
 
 msgid "No fresh value"
 msgstr "Güncel değer yok"
@@ -10560,6 +10633,9 @@ msgstr "Ünitedeki balıklar için su sınırı tanımlanmamış."
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
 
+msgid "No water value in this time: nothing was measured or sampled here."
+msgstr "Bu sürede su değeri yok: burada hiçbir şey ölçülmedi veya numune alınmadı."
+
 msgid "No widget shows the oxygen."
 msgstr "Oksijeni gösteren bir bileşen yok."
 
@@ -10817,6 +10893,9 @@ msgstr "Doğrulanmadı"
 msgid "Not weighed since the fish came in."
 msgstr "Balıklar geldiğinden beri tartılmadı."
 
+msgid "Not worked out"
+msgstr "Hesaplanmadı"
+
 #, python-format
 msgid "Not worked out: %(why)s."
 msgstr "Hesaplanmadı: %(why)s."
@@ -10851,6 +10930,9 @@ msgstr "Depoda henüz hiçbir şey yok"
 
 msgid "Nothing is assumed for a missing value."
 msgstr "Eksik değer için hiçbir şey varsayılmaz."
+
+msgid "Nothing is bound here now."
+msgstr "Şu anda buraya bağlı bir şey yok."
 
 msgid "Nothing is filled in for a missing value."
 msgstr "Eksik bir değer için hiçbir şey doldurulmaz."
@@ -10905,6 +10987,9 @@ msgstr "Bu birimde henüz bir şey kaydedilmedi."
 
 msgid "Nothing recorded yet."
 msgstr "Henüz kayıt yok."
+
+msgid "Nothing to compare"
+msgstr "Karşılaştırılacak bir şey yok"
 
 msgid "Nothing to show yet"
 msgstr "Henüz gösterilecek bir şey yok"
@@ -12263,6 +12348,9 @@ msgstr "Miktar (kg)"
 msgid "Quantity and unit"
 msgstr "Parametre ve birim"
 
+msgid "Quantity to compare"
+msgstr "Karşılaştırılacak miktar"
+
 msgid "Quarantine"
 msgstr "Karantina"
 
@@ -13473,6 +13561,9 @@ msgstr "Duyarlı"
 msgid "Sensitivity tests"
 msgstr "Duyarlılık testleri"
 
+msgid "Sensor"
+msgstr "Sensör"
+
 msgid "Sensor alarm event"
 msgstr "Sensör alarm olayı"
 
@@ -13493,6 +13584,9 @@ msgstr "Sensör buraya taşındı"
 
 msgid "Sensor readings"
 msgstr "Sensör okumaları"
+
+msgid "Sensor values are not shown: they need the right to read sensor readings."
+msgstr "Sensör değerleri gösterilmiyor: sensör okumalarını görme yetkisi gerekir."
 
 msgid "Sensors"
 msgstr "Sensörler"
@@ -13687,6 +13781,9 @@ msgstr "Basit"
 
 msgid "Simulated"
 msgstr "Simüle"
+
+msgid "Simulated values"
+msgstr "Simüle değerler"
 
 msgid "Simulator"
 msgstr "Simülatör"
@@ -15350,6 +15447,9 @@ msgstr ""
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
 
+msgid "The limit bands are the limits of the fish today, over the whole time."
+msgstr "Sınır bantları, balıkların bugünkü sınırlarıdır; tüm süre boyunca gösterilir."
+
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
 
@@ -15875,6 +15975,9 @@ msgstr "Tuzluluk varsayıldı: tatlı su."
 msgid "The salinity is fresh water’s."
 msgstr "Tuzluluk tatlı suyunkidir."
 
+msgid "The same quantity"
+msgstr "Aynı miktar"
+
 msgid "The scale must span at least half a pH unit, from the lower end to the higher."
 msgstr "Ölçek, alt uçtan üst uca en az yarım pH birimi kapsamalıdır."
 
@@ -16379,6 +16482,10 @@ msgstr ""
 "%(moment)s anındaki su: her değer, kaynağının o zaman verdiği gibi, yaşı o andan itibaren "
 "hesaplanarak."
 
+#, python-format
+msgid "The water at %(time)s"
+msgstr "%(time)s anındaki su"
+
 msgid "The water cannot stand higher than the depth."
 msgstr "Su, derinlikten yüksek olamaz."
 
@@ -16416,6 +16523,9 @@ msgstr "Havuz doluyken su yüzeyi."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
+
+msgid "The water through the time"
+msgstr "Zaman boyunca su"
 
 msgid "The week is longer than the standard week."
 msgstr "Hafta, standart haftadan uzun."
@@ -17001,6 +17111,13 @@ msgstr ""
 "Tam saniye cinsinden zamanlar, her saniye gönderilen mesajları ayırt edemez: en az %(seconds)d "
 "saniyede bir gönderin ya da milisaniyeli bir biçim kullanın."
 
+#, python-format
+msgid "Times on the site’s clock (%(zone)s)."
+msgstr "Saatler tesisin saatine göre (%(zone)s)."
+
+msgid "Times without a value are shaded, never filled."
+msgstr "Değeri olmayan süreler taranır, asla doldurulmaz."
+
 msgid "Timezone"
 msgstr "Saat dilimi"
 
@@ -17133,6 +17250,10 @@ msgstr "%(date)s tarihli tedavi iptal edildi."
 #, python-format
 msgid "Treatment recorded: %(what)s in %(units)s from %(start)s to %(end)s."
 msgstr "Tedavi kaydedildi: %(what)s, %(units)s, %(start)s – %(end)s."
+
+#, python-format
+msgid "Treatment: %(method)s"
+msgstr "Tedavi: %(method)s"
 
 msgid "Treatments"
 msgstr "Tedaviler"
@@ -18217,6 +18338,9 @@ msgstr "Üretim departmanı olmayanlar"
 msgid "Without a site"
 msgstr "Sahasız"
 
+msgid "Worked out"
+msgstr "Hesaplandı"
+
 #, python-format
 msgid "Worked out %(when)s · %(zone)s"
 msgstr "Hesaplandı %(when)s · %(zone)s"
@@ -18467,6 +18591,9 @@ msgstr "temizleyici balık damızlığı olan bir lokasyon"
 
 msgid "a unit or a loop"
 msgstr "bir birim veya döngü"
+
+msgid "a value the chart needs is missing"
+msgstr "grafiğin gerektirdiği bir değer eksik"
 
 msgid "activity log"
 msgstr "etkinlik günlüğü"
@@ -19689,6 +19816,10 @@ msgstr "%(date)s tarihinden beri %(site)s lokasyonunda balık yok"
 msgid "no fish now"
 msgstr "şu anda balık yok"
 
+#, python-format
+msgid "no fresh value of %(missing)s"
+msgstr "%(missing)s için güncel değer yok"
+
 msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
@@ -19891,6 +20022,10 @@ msgstr ""
 "pH %(ph)s, %(point)s kaynağından yüklenen değerdir: zaten NBS ölçeğinde (saklanan pH her zaman "
 "öyledir) ve yeniden dönüştürülmez. Ölçeği NBS olarak bırakın veya pH’ı ölçüldüğü haliyle, "
 "ölçeğiyle birlikte yazın."
+
+#, python-format
+msgid "pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
+msgstr "pH %(ph)s, DIC %(dic)s mmol/L, alkalinite %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
 
 msgid "pH (NBS scale)"
 msgstr "pH (NBS ölçeği)"
@@ -20469,6 +20604,9 @@ msgstr "arınma süresi onayı"
 
 msgid "withdrawal acknowledgements"
 msgstr "arınma süresi onayları"
+
+msgid "worked out from each sample, not measured"
+msgstr "her numuneden hesaplandı, ölçülmedi"
 
 msgid "worked out from the sample"
 msgstr "numuneden hesaplandı"

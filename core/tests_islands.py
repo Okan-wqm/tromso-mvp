@@ -25,7 +25,7 @@ def render(text, context=None):
 class IslandTagTests(SimpleTestCase):
     def test_the_manifest_names_each_island_with_its_chunks_once_each(self):
         found = islands_manifest()
-        self.assertEqual(set(found), {'units', 'water', 'gallery'})     # gallery: core/layout_pages.py's shell-next
+        self.assertEqual(set(found), {'units', 'water', 'sensor-charts', 'gallery'})     # gallery: core/layout_pages.py's shell-next
         self.assertEqual(found['units'], {'file': 'units-Ab12Cd34.js', 'imports': ['chunks/ui-Ef56Gh78.js', 'chunks/react-Qr78St90.js'],
                                           'css': ['assets/units-Zz99Yy88.css', 'assets/deep-Ee88Ff99.css']})
         self.assertEqual(found['water']['imports'], ['chunks/ui-Ef56Gh78.js', 'chunks/react-Qr78St90.js', 'chunks/uplot-Mn34Op56.js'])

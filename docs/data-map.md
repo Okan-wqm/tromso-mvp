@@ -105,7 +105,7 @@ A transport took a notification (sent) or failed to (failed, with what it said),
 - **read**: alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_delivery_attempts
 - **constraints**: chk_alarm_delivery_attempts_outcome (check); uq_alarm_delivery_attempts_sent_once (unique: notification)
-- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_floods.py`, `alarms/tests/test_outbox.py` and 2 more
+- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_floods.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -172,7 +172,7 @@ A notification still to be sent: the outbox's queue (alarms/outbox.py), written 
 - **delete**: none, by design: removed by the outbox once the notification is sent, covered by a flood message or given up
 - **read**: none, by design: the outbox's own queue (alarms/outbox.py); the notifications are on their alarm's page
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_outbox
-- **tests that mention it**: `alarms/tests/test_review_fixes.py`, `alarms/tests/test_review_followup.py`
+- **tests that mention it**: `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_review_fixes.py`, `alarms/tests/test_review_followup.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -515,7 +515,7 @@ What the platform keeps about a person beyond Django's account.
 - **how it works**: Today the profile holds the language only: chosen with the language switcher, or on the Users tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › profiles
 - **forms**: `UserForm`
-- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 45 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_account_mail.py`, `core/tests_matrix_notes.py` and 46 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

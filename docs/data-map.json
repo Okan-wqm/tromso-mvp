@@ -766,6 +766,7 @@
       },
       "tests": [
         "alarms/tests/test_alarms.py",
+        "alarms/tests/test_cleared_criticals.py",
         "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_review_fixes.py",
@@ -1193,6 +1194,7 @@
         "left_out": false
       },
       "tests": [
+        "alarms/tests/test_cleared_criticals.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py"
       ]
@@ -4323,6 +4325,7 @@
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_shell.py",
         "monitoring/tests/test_template_pages.py",
+        "alarms/tests/test_cleared_criticals.py",
         "alarms/tests/test_refused_water.py",
         "alarms/tests/test_who_ends_a_level.py"
       ]

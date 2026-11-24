@@ -40,9 +40,12 @@ function loading(grid: boolean): string {
 
 interface Answer { status: number; body?: string; next?: string; delay?: number; }
 /** What the stub answers the grid's polls (and the pane's), in turn (the last one repeats), and what it was asked. */
-interface Stub { answers: Answer[]; asked: string[]; pane?: Answer[]; paneAsked?: string[]; }
-/** How the page is drawn: the grid's interval, a wall, the scripts, the pane, a sheet of the test's own. */
-interface Look { every?: number; wall?: boolean; scripts?: boolean; dock?: boolean; style?: string; }
+interface Stub { answers: Answer[]; asked: string[]; pane?: Answer[]; paneAsked?: string[]; served?: string[]; }
+/** How the page is drawn: the grid's interval, a wall, the scripts, the pane, a sheet of the test's own, announce.js
+ *  served that many ms late, the monitoring page's own scripts in its own order (windows.js, which imports poll.js,
+ *  before announce.js: templates/monitoring/monitor.html and app_base.html). */
+interface Look { every?: number; wall?: boolean; scripts?: boolean; dock?: boolean; style?: string; lateAnnouncer?: number;
+                 windows?: boolean; inline?: string; link?: boolean; flip?: boolean; }
 
 function cards(states: string[]): string {
   return `<div data-key="band">${states.length} shown</div>` + states.map((state, index) =>
@@ -51,21 +54,25 @@ function cards(states: string[]): string {
 }
 
 function page(look: Look): string {
-  const dock = look.dock ? `<aside id="monitor-dock"><section class="monitor-window monitor-pane" data-dock-unit="1">
+  const dock = look.dock ? `<aside id="monitor-dock"${look.windows ? ' data-pane-url="/pane" data-grid-url="/cards" data-every="60"' : ''}><section class="monitor-window monitor-pane" data-dock-unit="1">
 <div class="monitor-window-body" data-window-body data-poll="/pane" data-poll-every="60" data-poll-merge="data-key"
  data-poll-state="loading" data-stale-text="Not updated." data-gone-text="Gone.">${loading(false)}</div></section></aside>` : '';
+  const template = look.windows ? `<template id="monitor-dock-template"><section class="monitor-window monitor-pane" tabindex="-1">
+<h2 data-dock-title></h2><a data-dock-close href="/">Close</a><div class="monitor-window-body" data-window-body></div></section></template>` : '';
   const scripts = look.scripts === false ? ''
+    : look.windows ? `${template}<script type="module" src="/js/windows.js"></script>` +
+                     '<script type="module" src="/js/announce.js"></script><script type="module" src="/js/poll.js"></script>'
     : '<script type="module" src="/js/poll.js"></script><script type="module" src="/js/announce.js"></script>';
   return `<!doctype html><html lang="en"${look.wall ? ' data-wall' : ''}><head><meta charset="utf-8"><title>shell</title>
-<link rel="stylesheet" href="/css/monitor.css">${look.style ? `<style>${look.style}</style>` : ''}</head><body>${dock}
+<link rel="stylesheet" href="/css/monitor.css">${look.style ? `<style>${look.style}</style>` : ''}</head><body>${dock}${look.link ? '<a data-dock="2" data-dock-code="T-02" id="open-2" href="/?focus=2">open</a>' : ''}
 <div class="monitor-grid" data-poll="/cards" data-poll-every="${look.every ?? 60}" data-poll-merge="data-key" data-poll-state="loading"
- data-stale-text="Not updated." data-gone-text="Gone." data-updated-text="Updated again.">${loading(true)}</div>
+ data-stale-text="Not updated." data-gone-text="Gone." data-updated-text="Updated again.">${loading(true)}${look.flip ? '<a data-poll-url="/cards?flip=1" id="flip" href="/?flip=1">flip</a>' : ''}</div>
 <div id="monitor-announce" data-announce-worse="{unit} is now {state}." data-announce-more="{count} more."
  data-states="critical warning blind unjudged note ok empty" data-stale-word="no recent data"
  data-state-critical="Critical" data-state-warning="Warning" data-state-blind="Blind" data-state-unjudged="No limit"
  data-state-note="Note">
  <p data-announcer aria-live="assertive"></p><p data-announcer aria-live="polite"></p></div>
-${scripts}</body></html>`;
+${scripts}${look.inline ? `<script type="module">${look.inline}</script>` : ''}</body></html>`;
 }
 
 function answer(response: import('node:http').ServerResponse, list: Answer[], asked: string[], url: string): void {
@@ -84,9 +91,19 @@ function serve(stub: Stub, look: Look): Promise<Server> {
     if (url === '/') {
       response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(page(look));
     } else if (url.startsWith('/cards')) {
+      (stub.served ??= []).push('cards');
       answer(response, stub.answers, stub.asked, url);
     } else if (url.startsWith('/pane')) {
+      (stub.served ??= []).push('pane');
       answer(response, stub.pane ?? [{ status: 404 }], stub.paneAsked ??= [], url);
+    } else if (url === '/js/announce.js' && look.lateAnnouncer) {
+      // announce.js arrives after the grid's first answer: poll.js must not have asked before it ran
+      setTimeout(() => {
+        if (!response.destroyed) {
+          (stub.served ??= []).push('announce.js');
+          response.writeHead(200, { 'Content-Type': 'text/javascript' }).end(readFileSync(join(BUILD, 'announce.js')));
+        }
+      }, look.lateAnnouncer);
     } else if (url === '/css/monitor.css') {
       response.writeHead(200, { 'Content-Type': 'text/css' }).end(readFileSync(CSS));
     } else {
@@ -161,10 +178,7 @@ test('the first fill comes at once, replaces the placeholder and says nothing', 
 test('a 503 first says the cards cannot be read at once, then "Updated again." when they come',
      { skip: skipWithout(BROWSERS) }, async () => {
   const stub: Stub = { answers: [{ status: 503, body: 'The cards cannot be read just now.' },
-                                 // the good answer is held back 8 s, longer than the announcer's 5 s limiter: with
-                                 // a quick one the limiter could go straight to "Updated again." and never say the
-                                 // failure, which made this test fail now and then on a loaded runner
-                                 { status: 200, body: cards(['warning']), next: '/cards?after=2', delay: 8000 },
+                                 { status: 200, body: cards(['warning']), next: '/cards?after=2' },
                                  { status: 204, next: '/cards?after=2' }], asked: [] };
   await run(stub, { every: 1 }, async (tab) => {
     await until(tab, 'unread');                                                // the first failure, not the second
@@ -179,6 +193,36 @@ test('a 503 first says the cards cannot be read at once, then "Updated again." w
     assert.equal(stub.asked[1], '/cards');                                     // the same address: no token yet
     await politely(tab, 'Updated again.', 12000);                              // review F3: the way back is said
     assert.deepEqual(await said(tab), ['', 'Updated again.']);
+  });
+});
+
+test('a 503 first is said even when announce.js comes after the answer: the grid asks once every script has run',
+     { skip: skipWithout(BROWSERS) }, async () => {
+  // The flake behind main's red browser job (2026-11-24): poll.js asked at once, the 503 came back before announce.js
+  // had run, so announce.js started from "unread", saw no change and never said it.
+  const stub: Stub = { answers: [{ status: 503, body: 'The cards cannot be read just now.' },
+                                 { status: 200, body: cards(['ok']), next: '/cards?after=5' },
+                                 { status: 204, next: '/cards?after=5' }], asked: [] };
+  await run(stub, { every: 1, lateAnnouncer: 1500 }, async (tab) => {
+    await until(tab, 'unread');
+    assert.deepEqual(stub.served?.slice(0, 2), ['announce.js', 'cards']);    // the grid waited for announce.js
+    await politely(tab, UNREAD);
+    await until(tab, 'live');
+    await politely(tab, 'Updated again.');
+  });
+});
+
+test('the pane the server drew, adopted by windows.js, waits for announce.js too: its 503 is said',
+     { skip: skipWithout(BROWSERS) }, async () => {
+  // review F1: windows.js (which imports poll.js) watches the pane as it runs, before announce.js has; the pane waits at
+  // poll.ts's gate, so its first failure is still said. The monitoring page's own script order.
+  const stub: Stub = { answers: [{ status: 200, body: cards(['ok']), next: '/cards?after=9' }, { status: 204, next: '/cards?after=9' }],
+                       asked: [], pane: [{ status: 503 }] };
+  await run(stub, { dock: true, windows: true, lateAnnouncer: 1500, every: 1 }, async (tab) => {
+    await tab.waitForFunction(() => document.querySelector('.monitor-window-body')?.getAttribute('data-poll-state') === 'unread',
+                              undefined, { timeout: 12000 });
+    assert.equal(stub.served?.[0], 'announce.js');                             // nothing was asked before it ran
+    await politely(tab, UNREAD);
   });
 });
 
@@ -287,5 +331,90 @@ test('without poll.js the watchdog shows the full page\'s link after half a minu
   await run({ answers: [{ status: 200, body: cards(['ok']), delay: 3000 }], asked: [] }, { wall: true }, async (tab) => {
     const size = await tab.locator('[data-loading]').evaluate((node) => Number.parseFloat(getComputedStyle(node).fontSize));
     assert.ok(size >= 20, `the wall's loading line is ${size}px`);            // the notices' size, not 16 px grey
+  });
+});
+
+// ---- the start-up gate (frontend/poll.ts `watch` and `begin`): what happens before every script of the page has run ----
+async function early(stub: Stub, look: Look, check: (tab: Page) => Promise<void>): Promise<void> {
+  const server = await serve(stub, look);
+  const address = server.address();
+  const browser = await launch();
+  try {
+    const tab = await browser.newPage();
+    const errors: string[] = [];
+    tab.on('pageerror', (error) => errors.push(error.message));
+    await tab.goto(`http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}/`, { waitUntil: 'commit' });
+    await check(tab);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    server.closeAllConnections();
+    server.close();
+  }
+}
+const okCards = (): Stub => ({ answers: [{ status: 200, body: cards(['ok']), next: '/cards?after=9' }, { status: 204, next: '/cards?after=9' }],
+                               asked: [] });
+
+test('a dock link clicked before the page is ready reaches the grid', { skip: skipWithout(BROWSERS) }, async () => {
+  const stub = okCards();
+  stub.pane = [{ status: 200, body: cards(['ok']), next: '/pane?after=1' }, { status: 204, next: '/pane?after=1' }];
+  await early(stub, { dock: true, windows: true, link: true, lateAnnouncer: 3000, every: 60 }, async (tab) => {
+    await tab.waitForFunction(() => document.readyState !== 'loading');
+    await tab.waitForTimeout(700);
+    assert.equal(stub.served?.includes('announce.js') ?? false, false, 'the page must still be loading');
+    await tab.evaluate(() => (document.getElementById('open-2') as HTMLElement).click());
+    await tab.waitForLoadState('load');
+    await tab.waitForTimeout(2500);
+    assert.ok(stub.asked.some((url) => url.includes('focus=2')), `the grid never asked with the focus: ${JSON.stringify(stub.asked)}`);
+  });
+});
+
+test('a data-poll-url link clicked before the page is ready reaches the grid', { skip: skipWithout(BROWSERS) }, async () => {
+  const stub = okCards();
+  await early(stub, { flip: true, lateAnnouncer: 3000, every: 60 }, async (tab) => {
+    await tab.waitForFunction(() => document.readyState !== 'loading');
+    await tab.waitForTimeout(700);
+    assert.equal(stub.served?.includes('announce.js') ?? false, false, 'the page must still be loading');
+    await tab.click('#flip');
+    await tab.waitForLoadState('load');
+    await tab.waitForTimeout(2500);
+    assert.ok(stub.asked.some((url) => url.includes('flip=1')), `the grid never asked for the flip: ${JSON.stringify(stub.asked)}`);
+  });
+});
+
+const GRID = "const g = document.querySelector('.monitor-grid');";
+const IMPORT = "import { watch } from '/js/poll.js';";
+const gateTest = (name: string, inline: string, check: (stub: Stub, tab: Page) => Promise<void>): void => {
+  test(name, { skip: skipWithout(BROWSERS) }, async () => {
+    const stub = okCards();
+    await run(stub, { inline: IMPORT + GRID + inline, lateAnnouncer: 1500, every: 60 }, async (tab) => {
+      await tab.waitForTimeout(2500);
+      await check(stub, tab);
+    });
+  });
+};
+gateTest('the gate: an element removed before the start is never asked', "watch(g); g.remove();",
+         async (stub) => { assert.deepEqual(stub.asked, []); });
+gateTest('the gate: an element stopped before the start (still in the page) is never asked', 'watch(g)();',
+         async (stub) => { assert.deepEqual(stub.asked, [], 'the scan of [data-poll] started it again'); });
+gateTest('the gate: a placeholder asked before the start is asked once, at the address it was given',
+         "watch(g); g.dispatchEvent(new CustomEvent('poll:now', { detail: { url: '/cards?x=1' } }));",
+         async (stub) => { assert.deepEqual(stub.asked, ['/cards?x=1']); });
+gateTest('the gate: a filled element asked before the start is asked once, at the address it was given',
+         "g.dataset.pollState = 'live'; watch(g); g.dispatchEvent(new CustomEvent('poll:now', { detail: { url: '/cards?y=1' } }));",
+         async (stub) => { assert.deepEqual(stub.asked, ['/cards?y=1']); });
+test('the gate: the stop got before the start still stops the poll after it', { skip: skipWithout(BROWSERS) }, async () => {
+  const stub = okCards();
+  stub.pane = [{ status: 200, body: cards(['ok']), next: '/pane?after=1' }, { status: 204, next: '/pane?after=1' }];
+  const inline = IMPORT + "const p = document.querySelector('.monitor-window-body'); p.dataset.pollEvery = '1'; window.__stop = watch(p);";
+  await run(stub, { dock: true, inline, lateAnnouncer: 1200, every: 60 }, async (tab) => {
+    await tab.waitForTimeout(3500);
+    const before = stub.paneAsked?.length ?? 0;
+    assert.ok(before >= 2, `the pane was asked ${before} times`);
+    await tab.evaluate(() => (window as unknown as { __stop: () => void }).__stop());
+    await tab.waitForTimeout(400);
+    const settled = stub.paneAsked?.length ?? 0;
+    await tab.waitForTimeout(3500);
+    assert.equal(stub.paneAsked?.length ?? 0, settled);
   });
 });

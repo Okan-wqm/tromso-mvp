@@ -419,18 +419,23 @@ document.addEventListener('click', (event) => {
   polled.dispatchEvent(new CustomEvent('poll:now', { detail: { url: link.dataset.pollUrl } }));
   window.history.replaceState(window.history.state, '', link.href);
 });
-/** The page's polled parts, lists and forms start once every module script of the page has run (DOMContentLoaded
- *  waits for them), never earlier: a script that listens to them (frontend/announce.ts) is in place before the first
- *  answer, whatever order the page loads its scripts in. At once for a page that loads this script after it was
- *  parsed. */
+/** The page's polled parts, lists and forms start once every module script of the page has run, never earlier: a
+ *  script that listens to them (frontend/announce.ts) is in place before the first answer, whatever order the page
+ *  loads its scripts in. A module script the page names runs after parsing (readyState is already "interactive") and
+ *  before DOMContentLoaded, which waits for all of them; so this waits for DOMContentLoaded, with `load` as the
+ *  fallback for a script added after it, and starts at once on a page that has finished loading. */
+let begun = false;
 function begin(): void {
+  if (begun) return;
+  begun = true;
   document.querySelectorAll<HTMLElement>('[data-scroll-end]').forEach((list) => { list.scrollTop = list.scrollHeight; });
   document.querySelectorAll<HTMLElement>('[data-poll]').forEach((element) => { watch(element); });
   document.querySelectorAll<HTMLTextAreaElement>('textarea[data-submit-on-enter]').forEach(sendOnEnter);
   document.querySelectorAll<HTMLFormElement>('form[data-live]').forEach(live);
 }
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', begin, { once: true });
-} else {
+if (document.readyState === 'complete') {
   begin();
+} else {
+  document.addEventListener('DOMContentLoaded', begin, { once: true });
+  window.addEventListener('load', begin, { once: true });
 }

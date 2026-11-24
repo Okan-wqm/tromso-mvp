@@ -17311,6 +17311,10 @@ msgstr "Vanngrense"
 msgid "Water limits"
 msgstr "Vanngrenser"
 
+#, python-format
+msgid "Water of %(name)s"
+msgstr "Vannet i %(name)s"
+
 msgid "Water origin"
 msgstr "Vannopprinnelse"
 

@@ -5556,7 +5556,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `farm:water_system_chart?view=history`), drawn by Tank › Water's island; with more than one point the island heads each
   point's charts with the point's name (and each chart's accessible name says it). Its window and words are Tank ›
   Water's (`farm.water.views.window_props`, one helper for both pages). Without the new look the address is the system's
-  history on Water chemistry. Held: `farm/tests/test_system_water_next.py`.
+  history on Water chemistry. Its way in: Setup › Systems in the new look (`SystemResource.list_rows`, the classic
+  list's words and filters, its "Show them" notice; the classic template unchanged) gives each row a "Water of …" action
+  for a person who may read the water. Held: `farm/tests/test_system_water_next.py`, `farm/tests/test_systems_next.py`.
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

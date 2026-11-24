@@ -17349,6 +17349,10 @@ msgstr "Su limiti"
 msgid "Water limits"
 msgstr "Su sınırları"
 
+#, python-format
+msgid "Water of %(name)s"
+msgstr "%(name)s suyu"
+
 msgid "Water origin"
 msgstr "Su kökeni"
 

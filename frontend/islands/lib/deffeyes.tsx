@@ -1,6 +1,6 @@
 // The Water Quality Management Chart (a Deffeyes diagram) as a typed SVG of the server's geometry: farm/water/deffeyes.py
-// `render` places every part in pixels (the isolines and their pH labels, the regions and their borders, the Ω lines, the
-// water's star, the ticks) and `as_props` hands them over; the island only draws them, with the classes the server's own
+// the server places every part in pixels (the isolines and their pH labels, the regions and their borders, the Ω lines, the
+// water's star, the ticks) and hands them over in the props; the island only draws them, with the classes the server's own
 // SVG uses (templates/farm/_deffeyes_chart.html, static/css/components.css), so both look alike. No chemistry, no
 // placing, no markup string: what is not in the props is not drawn. `children` draws over the plot in the same pixels (a
 // path through a time, on Tank › Water).

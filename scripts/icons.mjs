@@ -63,6 +63,18 @@ export function glyphs() {
       return `  --glyph-${name}: url("data:image/svg+xml,${encode(svg)}");`;
     }),
     '}',
+    '/* A shape drawn as an icon: an element of the new look that names its icon in --glyph (static/css/monitor-next.css,',
+    "   the monitoring cards' state shapes), painted in its own colour under the mask. Here, beside the icons it reads, and",
+    "   only where masks are drawn: a page that lacks this sheet, or a browser without masks, keeps the element's own shape",
+    "   (the classic look's), never seven identical squares. */",
+    '@supports (mask-image: url("")) or (-webkit-mask-image: url("")) {',
+    '  html[data-ui="next"] .monitor-shape {',
+    '    width: 1em; height: 1em; flex: none; border: 0; border-radius: 0; clip-path: none; background: currentColor;',
+    '    -webkit-mask: var(--glyph) center / contain no-repeat; mask: var(--glyph) center / contain no-repeat;',
+    '    vertical-align: -.14em;',
+    '  }',
+    '  @media (forced-colors: active) { html[data-ui="next"] .monitor-shape { forced-color-adjust: none; background: CanvasText; } }',
+    '}',
   ];
   return `${lines.join('\n')}\n`;
 }

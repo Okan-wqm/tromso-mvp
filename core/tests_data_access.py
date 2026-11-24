@@ -325,3 +325,23 @@ class HealthEventsOfAUnitTests(SimpleTestCase):
             if lines:
                 spelled[module] = lines
         self.assertEqual(set(spelled), {'farm/health/read.py'})
+
+
+class ReadersImportNoViewTests(SimpleTestCase):
+    """The data-layering audit, L-10: a reader (`read.py`, `fold.py`) never imports a views module: what it needs from
+    another area is that area's reader (the in-force withdrawals: farm.handling.check.in_force_now)."""
+
+    def test_no_reader_imports_a_views_module(self):
+        found = {}
+        for module, tree in production_modules():
+            if not module.endswith(('/read.py', '/fold.py')):
+                continue
+            for node in ast.walk(tree):
+                names = []
+                if isinstance(node, ast.ImportFrom):
+                    names = [f'{node.module or ""}.{alias.name}' for alias in node.names]
+                elif isinstance(node, ast.Import):
+                    names = [alias.name for alias in node.names]
+                if any(name.split('.')[-1] == 'views' or '.views.' in f'{name}.' for name in names):
+                    found.setdefault(module, []).append(node.lineno)
+        self.assertEqual(found, {})

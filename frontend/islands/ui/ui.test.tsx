@@ -105,6 +105,14 @@ test('kept mounted, every panel is in the page and an unselected one is inert (h
   assert.match(css, /\.ui-tab-panel\[data-inert\] \{ display: none; \}/);
 });
 
+test('a layout puts the panels where the page wants them: a form round some, others after it, each still a tab', () => {
+  const items = [{ id: 'a', label: 'General', content: <input name="title" /> }, { id: 'b', label: 'Contacts', content: <input name="contacts-0-name" /> }];
+  const laid = html(<Tabs label="Site" items={items} keepMounted layout={(panel) => <><form id="record">{panel('a')}</form><form id="rows">{panel('b')}</form></>} />);
+  assert.match(laid, /<form id="record"><div[^>]*role="tabpanel"[^>]*>.*name="title".*<\/div><\/form><form id="rows"><div[^>]*role="tabpanel"/);
+  assert.equal((laid.match(/role="tabpanel"/g) ?? []).length, 2);
+  assert.equal(html(<Tabs label="Site" items={items} layout={(panel) => panel('missing')} />).includes('tabpanel'), false);
+});
+
 test('a field with the server\'s errors is invalid, says them in words and is described by them', () => {
   const field = html(<TextField name="org" label="Organisation number" help="Nine digits." errors={['Enter nine digits.']} />);
   assert.match(field, /^<div class="field has-error">/);

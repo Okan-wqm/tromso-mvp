@@ -19,6 +19,8 @@ interface FieldBase {
   disabled?: boolean | undefined;
   /** the required or optional mark after the label, in the page's words ("optional"): every field may carry one */
   mark?: ReactNode | undefined;
+  /** the label for a screen reader only: a row of a list whose heading row names its fields */
+  labelHidden?: boolean | undefined;
 }
 
 /** The label's mark (required or optional), in words from the server. */
@@ -64,7 +66,7 @@ export interface TextFieldProps extends FieldBase {
 }
 
 export function TextField({ name, label, help, errors, required, wide, disabled, defaultValue, type = 'text', numeric,
-  unit, placeholder, multiline, min, max, step, autoComplete, mark, maxLength, dateInput, uppercase }: TextFieldProps) {
+  unit, placeholder, multiline, min, max, step, autoComplete, mark, maxLength, dateInput, uppercase, labelHidden }: TextFieldProps) {
   const id = useId();
   const invalid = Boolean(errors && errors.length);
   const control = multiline ? (
@@ -83,7 +85,7 @@ export function TextField({ name, label, help, errors, required, wide, disabled,
   );
   return (
     <div className={invalid ? 'field has-error' : 'field'} data-wide={wide ? '' : undefined}>
-      <label htmlFor={id}>{label}<FieldMark mark={mark} /></label>
+      <label htmlFor={id} className={labelHidden ? 'sr-only' : undefined}>{label}<FieldMark mark={mark} /></label>
       {unit ? <span className="ui-unit">{control}<span className="ui-unit-label">{unit}</span></span> : control}
       <Described id={id} help={help} errors={errors} />
     </div>
@@ -103,12 +105,12 @@ export interface SelectFieldProps extends FieldBase {
 /** A native select (the design's, with its chevron): the platform's own list on a phone, no popover to manage. */
 const optionOf = (option: SelectOption) => <option key={option.value} value={option.value} disabled={option.disabled || undefined}>{option.label}</option>;
 
-export function SelectField({ name, label, help, errors, required, wide, disabled, options, groups, defaultValue, mark }: SelectFieldProps) {
+export function SelectField({ name, label, help, errors, required, wide, disabled, options, groups, defaultValue, mark, labelHidden }: SelectFieldProps) {
   const id = useId();
   const invalid = Boolean(errors && errors.length);
   return (
     <div className={invalid ? 'field has-error' : 'field'} data-wide={wide ? '' : undefined}>
-      <label htmlFor={id}>{label}<FieldMark mark={mark} /></label>
+      <label htmlFor={id} className={labelHidden ? 'sr-only' : undefined}>{label}<FieldMark mark={mark} /></label>
       <select id={id} name={name} defaultValue={defaultValue} required={required} disabled={disabled}
         aria-invalid={invalid || undefined} aria-describedby={describedBy(id, help, errors)}>
         {options.map(optionOf)}
@@ -122,7 +124,8 @@ export function SelectField({ name, label, help, errors, required, wide, disable
 }
 
 export interface CheckboxGroupProps extends FieldBase {
-  options: { value: string; label: string }[];
+  /** an option switched off by the server (a tank another experiment has booked) cannot be ticked */
+  options: { value: string; label: string; disabled?: boolean | undefined }[];
   defaultValues?: string[] | undefined;
 }
 
@@ -137,7 +140,8 @@ export function CheckboxGroup({ name, label, help, errors, wide, disabled, optio
       <div className="ui-checks">
         {options.map((option) => (
           <label key={option.value} className="ui-check">
-            <input type="checkbox" name={name} value={option.value} defaultChecked={defaultValues.includes(option.value)} />
+            <input type="checkbox" name={name} value={option.value} defaultChecked={defaultValues.includes(option.value)}
+              disabled={option.disabled || undefined} />
             {option.label}
           </label>
         ))}

@@ -82,7 +82,8 @@ export interface ListPageProps {
   pager: { label: string; range: string; page: string; previous: ListLink | null; next: ListLink | null } | null;
 }
 
-function Cell({ cell }: { cell: ListCell }) {
+/** One cell of a list's table, as the server worded it: also a read-only table of a record's page (core/formpanels.py). */
+export function Cell({ cell }: { cell: ListCell }) {
   const main = cell.chip ? <Chip kind={cell.chip.kind}>{cell.chip.text}</Chip>
     : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.text;
   const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);

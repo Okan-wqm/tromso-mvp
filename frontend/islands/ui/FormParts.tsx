@@ -4,7 +4,7 @@
 // .file-current), so the same style sheets dress it in both looks, and each posts the same names and values as the old
 // page (core/tests_formpayload.py is the oracle: the payload's controls equal the old markup's). Every word comes from
 // the server; nothing is validated here.
-import { type ReactNode, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { FieldMark } from './Field.js';
 import { Icon } from './Icon.js';
@@ -326,15 +326,26 @@ export interface RowListProps {
   removeLabel: string;
   emptyText: ReactNode;
   errors?: string[] | undefined;
+  /** the class giving the heading row and the rows their columns (components.css: calibration-row, team-row) */
+  kind?: string | undefined;
 }
 
 /** A list of rows saved as a whole (core.crud.RowList: a site's contacts, a task's checklist): the formset's table, a
  * row added from its empty form, a new row taken away again before it is saved, and the management form kept true (the
  * count of rows is what is drawn). A saved row is removed by its own DELETE box, as the server's formset asks. */
-export function RowList({ prefix, management, rows, newRow, columns, legend, addLabel, removeLabel, emptyText, errors }: RowListProps) {
+export function RowList({ prefix, management, rows, newRow, columns, legend, addLabel, removeLabel, emptyText, errors, kind }: RowListProps) {
+  const row = (base: string) => (kind ? `${base} ${kind}` : base);
   const [added, setAdded] = useState<number[]>([]);
   const [next, setNext] = useState(0);
   const total = rows.length + added.length;
+  // A row just added takes the focus on its first box, as on the old page.
+  const list = useRef<HTMLDivElement>(null);
+  const grown = useRef(false);
+  useEffect(() => {
+    if (!grown.current) return;
+    grown.current = false;
+    list.current?.lastElementChild?.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea')?.focus();
+  }, [added]);
   const field = (suffix: string) => management.find((each) => each.name === `${prefix}-${suffix}`);
   return (
     <div className="row-list">
@@ -349,11 +360,11 @@ export function RowList({ prefix, management, rows, newRow, columns, legend, add
           value={each.name === `${prefix}-TOTAL_FORMS` ? String(total) : each.value} />
       ))}
       {field('TOTAL_FORMS') ? null : <input type="hidden" name={`${prefix}-TOTAL_FORMS`} value={String(total)} />}
-      <div className="row-list-head" aria-hidden="true">{columns.map((column) => <span key={column}>{column}</span>)}</div>
-      <div className="contact-rows">
-        {rows.map((row) => <fieldset key={row.key} className="contact-row"><legend className="sr-only">{legend}</legend>{row.content}</fieldset>)}
+      {columns.length ? <div className={row("row-list-head")} aria-hidden="true">{columns.map((column) => <span key={column}>{column}</span>)}</div> : null}
+      <div className="contact-rows" ref={list}>
+        {rows.map((each) => <fieldset key={each.key} className={row("contact-row")}><legend className="sr-only">{legend}</legend>{each.content}</fieldset>)}
         {added.map((key, position) => (
-          <fieldset key={`new-${key}`} className="contact-row">
+          <fieldset key={`new-${key}`} className={row("contact-row")}>
             <legend className="sr-only">{legend}</legend>
             {newRow(rows.length + position)}
             <button type="button" className="icon-button icon-button-danger" aria-label={removeLabel}
@@ -363,7 +374,7 @@ export function RowList({ prefix, management, rows, newRow, columns, legend, add
       </div>
       {total ? null : <p className="contact-empty">{emptyText}</p>}
       <div className="ui-form-actions">
-        <button type="button" className="ui-btn" onClick={() => { setAdded((was) => [...was, next]); setNext(next + 1); }}>
+        <button type="button" className="ui-btn" onClick={() => { grown.current = true; setAdded((was) => [...was, next]); setNext(next + 1); }}>
           <Icon name="plus" />{addLabel}
         </button>
       </div>

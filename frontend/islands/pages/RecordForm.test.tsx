@@ -11,7 +11,7 @@ import { resolve } from 'node:path';
 
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { type Field, FieldOf } from './RecordForm.js';
+import { type Field, FieldOf, QuestionBox } from './RecordForm.js';
 
 interface Control { name: string | null; value: string; on: boolean; type: string; disabled: boolean; label?: string; off?: boolean; group?: string }
 interface Case { case: string; field: Field; controls: Control[] }
@@ -123,4 +123,31 @@ test('a field\'s label, help, errors and its required or optional mark are drawn
   const optional = ORACLE.cases.find((each) => !each.field.required && each.field.widget.kind === 'text')?.field;
   assert.ok(optional);
   assert.match(renderToStaticMarkup(<FieldOf field={optional} optional="optional" source={() => undefined} />), /<span class="ui-field-mark">optional<\/span>/);
+});
+
+test('a field in a row of a list posts what it posts alone, its label for a screen reader only, without help or mark', () => {
+  const rows = ORACLE.cases.filter((each) => / rows /.test(each.case));
+  assert.ok(rows.length > 30, 'the oracle has the rows of the lists, refused ones too');
+  assert.ok(rows.some((each) => each.case.includes(' refused ') && each.field.errors.length), 'a refused row with its errors');
+  const failures: string[] = [];
+  for (const { case: name, field, controls } of rows) {
+    const html = renderToStaticMarkup(<FieldOf field={field} optional="optional" source={() => undefined} inRow />);
+    if (JSON.stringify(posted(controlsOf(html))) !== JSON.stringify(posted(controls))) failures.push(`${name}: posts differently in a row`);
+    if (html.includes('ui-field-mark')) failures.push(`${name}: a mark in a row`);
+    if (field.widget.kind !== 'checkbox' && !/<label[^>]*class="sr-only"/.test(html)) failures.push(`${name}: a visible label in a row`);
+    for (const error of field.errors) if (!squash(html).includes(squash(error))) failures.push(`${name}: error not said`);
+  }
+  assert.deepEqual(failures.slice(0, 20), [], `${failures.length} row fields differ`);
+});
+
+test('the withdrawal guard\'s question: the warnings, the box with their fingerprint, or why a second person must approve', () => {
+  const question = { title: 'Medicine withdrawal', messages: ['Test harvest lies inside this withdrawal.'], secondPerson: null,
+    box: { name: 'withdrawal_ack', value: 'f00dfeed', label: 'Go on despite these warnings', help: 'Fish under a medicine withdrawal must not go to food.' } };
+  const html = renderToStaticMarkup(<QuestionBox question={question} />);
+  assert.deepEqual(posted(controlsOf(html.replace('type="checkbox"', 'type="checkbox" checked=""'))), ['withdrawal_ack=f00dfeed']);
+  for (const words of [question.title, ...question.messages, question.box.label, question.box.help]) assert.ok(squash(html).includes(words), words);
+  const second = renderToStaticMarkup(<QuestionBox question={{ ...question, box: null, secondPerson: 'A second person must approve this.' }} />);
+  assert.equal(controlsOf(second).length, 0, 'no box to tick past it');
+  assert.ok(squash(second).includes('A second person must approve this.'));
+  assert.ok(squash(second).includes(question.messages[0] ?? ''));
 });

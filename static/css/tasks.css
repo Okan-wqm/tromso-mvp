@@ -26,4 +26,3 @@
 .task-note-form .button { justify-self: start; }
 .drawer-actions form { display: contents; }
 .button-danger-text { color: var(--crit-text); }
-.checklist-row { grid-template-columns: minmax(0, 1fr) 5.5rem; }

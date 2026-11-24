@@ -42,7 +42,7 @@ from django.urls import path, reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
-from . import audit, formprops, listprops, navigation, softdelete
+from . import audit, formpanels, formprops, listprops, navigation, softdelete
 from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
 from .ui import is_next
@@ -357,6 +357,28 @@ class RowList:
     formset = None    # an inline formset over the row model (RowFormSet); the rows have `created_by`
     saved = ''        # the flash message: ngettext_lazy('%(count)d ... saved.', '...', 'count')
     question_field = None   # the box that answers what its save may ask first (`save`'s `seen`), when it may
+    # Its panel on the record's page in the new look (core/formpanels.py), in the words its classic template says
+    # (crud/_row_list.html's): the heading and tab, the help, the sentence of no rows, the two buttons, the sentence said
+    # instead of the list while the record cannot have one ('' says nothing), one row's name for a screen reader (the
+    # heading when ''), the class giving the rows their columns, whether a heading row names the fields, whether the panel
+    # stands on the record's own tab `tab` (a site's contacts on Contact), and a field's words in a row besides its label.
+    title = help_text = empty_text = add_label = save_label = pending_text = legend = ''
+    row_kind = ''
+    headed = True
+    on_record_tab = False
+    field_labels = {}
+
+    @classmethod
+    def words(cls, obj):
+        """The panel's words for `obj` (None: a new record): a list may say another `pending` for a record it does not
+        apply to yet (a piece of equipment whose type takes no calibrations)."""
+        return {'title': cls.title, 'help': cls.help_text, 'empty': cls.empty_text, 'add': cls.add_label,
+                'save': cls.save_label, 'pending': cls.pending_text, 'legend': cls.legend or cls.title}
+
+    @classmethod
+    def field_words(cls):
+        """The words of a row's fields that the template says in place of their labels: Remove for the DELETE box."""
+        return {'DELETE': _('Remove'), **cls.field_labels}
 
     @classmethod
     def applies_to(cls, obj):
@@ -524,6 +546,16 @@ class Resource:
     def edit_extras(cls, request, obj):
         """Extra context for the edit page: the formsets of its row lists, and whatever a tab adds."""
         return {rows.key: rows.formset(instance=obj, prefix=rows.key) for rows in cls.row_lists if rows.applies_to(obj)}
+
+    # The context of the edit page (edit_extras) that `next_panels` draws, besides the formsets of its row lists.
+    next_extras = frozenset()
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """The new look of what the tab's own form template (form_template) adds to crud/form.html: its panels as
+        core/formpanels.py words them, from the page's context `extra` (edit_extras, a refused list's formset). None keeps
+        the classic page in the new look (a template not ported); the shared template adds nothing."""
+        return [] if cls.form_template == 'crud/form.html' else None
 
     @classmethod
     def snapshot(cls, obj):
@@ -744,8 +776,10 @@ class FormView(ResourceView):
             action = self.url('edit', obj.pk)
         else:
             action = self.url('create') if obj is None and r.allows('add') else self.request.path
-        if not is_modal(self.request) and is_next(self.request) and formprops.drawable(r, form, extra):
-            # The new look's record form (core/formprops.py): the same form, view and address, drawn by the island.
+        panels = r.next_panels(self, form, obj, extra) if not is_modal(self.request) and is_next(self.request) else None
+        if formprops.drawable(r, form, extra, panels):
+            # The new look's record form (core/formprops.py): the same form, view and address, drawn by the island, with
+            # the panels the tab's own template adds (core/formpanels.py) and the question a refused save asks.
             return render_page(self.request, 'crud/form_next.html', self.context(
                 form=form, object=obj, props=formprops.record_form_props(
                     self.request, form, action=action, name=r.name, obj=obj, list_url=self.url('list'),
@@ -753,7 +787,8 @@ class FormView(ResourceView):
                     and self.request.user.has_perm(r.perm('delete')) and r.allowed(self.request, obj, 'delete') else '',
                     history=history,
                     history_url=f"{reverse('core:activity_log')}?type={quote(r.entity_type(), safe='/')}&q={quote(str(obj), safe='/')}"
-                    if obj is not None else '', open_tab=extra.get('open_tab', ''))))
+                    if obj is not None else '', open_tab=extra.get('open_tab', ''), panels=panels,
+                    question=formpanels.question(extra.get('withdrawal_change')) if extra.get('question_template') else None)))
         return render_page(self.request, r.form_template, self.context(
             form=form, object=obj, history=history, form_action=action, **extra))
 

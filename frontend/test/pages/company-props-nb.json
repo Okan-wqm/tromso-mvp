@@ -1,0 +1,320 @@
+{
+ "today": {
+  "title": "Selskapet i dag",
+  "meta": "Beregnet 23.11.2026 13:42 · Europe/Oslo",
+  "tiles": [
+   {
+    "key": "sites",
+    "label": "Lokaliteter",
+    "figure": "2",
+    "href": "/sites/",
+    "sub": "2 aktiv",
+    "source": "Lokaliteter"
+   },
+   {
+    "key": "biomass",
+    "label": "Biomasse",
+    "figure": "500 kg",
+    "sub": "2 enheter med fisk",
+    "source": "Beholdningsboken · 13:42",
+    "href": "/operations/units/"
+   },
+   {
+    "key": "alarms",
+    "label": "Åpne alarmer",
+    "figure": "0",
+    "href": "/alarms/",
+    "status": null,
+    "statusLabel": null,
+    "sub": null,
+    "source": "Alarmer · 13:42"
+   },
+   {
+    "key": "on_site",
+    "label": "På lokaliteten nå",
+    "figure": "0",
+    "href": "/hr/",
+    "sub": "Alle innstemplet, alle team",
+    "sub2": null,
+    "source": "I dag og oppmøte · 13:42"
+   },
+   {
+    "key": "reports",
+    "label": "Rapporter som skal sendes",
+    "figure": "0",
+    "href": "/reports/",
+    "status": null,
+    "statusLabel": null,
+    "sub": null,
+    "source": "Lovpålagte rapporter · 13:42"
+   },
+   {
+    "key": "messages",
+    "label": "Uleste meldinger",
+    "figure": "0",
+    "href": "/messages/",
+    "sub": null,
+    "source": "Meldinger · 13:42"
+   }
+  ]
+ },
+ "sites": {
+  "title": "Lokaliteter",
+  "link": {
+   "href": "/sites/",
+   "label": "Lokaliteter"
+  },
+  "columns": {
+   "site": "Lokalitet",
+   "type": "Type",
+   "units": "Enheter med fisk",
+   "biomass": "Biomasse",
+   "water": "Vann",
+   "alarms": "Åpne alarmer",
+   "onSite": "På lokaliteten nå"
+  },
+  "rows": [
+   {
+    "key": "3b5b124e-ab33-4c3c-8303-757c86fe1cdf",
+    "name": "Test Site North",
+    "code": "TSN",
+    "href": "/sites/3b5b124e-ab33-4c3c-8303-757c86fe1cdf/",
+    "type": "Landbasert anlegg",
+    "status": "critical",
+    "units": "1",
+    "biomass": "50 kg",
+    "water": {
+     "kind": "critical",
+     "text": "O₂ (mg/L) 5,00"
+    },
+    "alarms": "0",
+    "onSite": null
+   },
+   {
+    "key": "b45567f8-be31-49fa-bf00-038a05c64bb4",
+    "name": "Test Site South",
+    "code": "TSS",
+    "href": "/sites/b45567f8-be31-49fa-bf00-038a05c64bb4/",
+    "type": "Merd",
+    "status": null,
+    "units": "1",
+    "biomass": "450 kg",
+    "water": {
+     "kind": "nodata",
+     "text": "Ikke målt"
+    },
+    "alarms": "0",
+    "onSite": null
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "alarms": {
+  "title": "Åpne alarmer",
+  "link": {
+   "href": "/alarms/",
+   "label": "Alarmer"
+  },
+  "safety": "Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert varsel venter i utboksen nedenfor, med mottaker og nivå, og sendes når den er det.",
+  "columns": {
+   "severity": "Alvorlighet",
+   "what": "Hva"
+  },
+  "rows": [],
+  "more": null,
+  "empty": "Ingen alarm er åpen."
+ },
+ "people": {
+  "title": "Kontorfolk i dag",
+  "link": {
+   "href": "/hr/",
+   "label": "I dag og oppmøte"
+  },
+  "tiles": [
+   {
+    "key": "planned",
+    "label": "Planlagt i dag",
+    "figure": "0"
+   },
+   {
+    "key": "upcoming",
+    "label": "Kommende",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "here",
+    "label": "Her nå",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "not_in",
+    "label": "Ikke kommet ennå",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "absent",
+    "label": "Fraværende",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "on_leave",
+    "label": "På permisjon",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "done",
+    "label": "Utført",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "to_decide",
+    "label": "Permisjon til avgjørelse",
+    "figure": "0",
+    "href": "/hr/leave/"
+   }
+  ]
+ },
+ "upcoming": {
+  "title": "Kommende rapporter",
+  "items": [],
+  "empty": null,
+  "badge": null,
+  "link": {
+   "href": "/reports/",
+   "label": "Alle rapporter"
+  },
+  "notSetUp": "2 lokaliteter med fisk er ikke satt opp for rapporter: hva de skylder er ikke kjent, så ingenting er oppført som forfalt for dem."
+ },
+ "feed": {
+  "title": "Fôr på lager",
+  "link": {
+   "href": "/operations/storage/",
+   "label": "Lager"
+  },
+  "columns": {
+   "item": "Lokalitet · vare",
+   "onHand": "På lager",
+   "cover": "Dager dekning"
+  },
+  "rows": [],
+  "none": "—",
+  "empty": "Ingenting på lager"
+ },
+ "messages": {
+  "title": "Uleste meldinger",
+  "link": {
+   "href": "/messages/",
+   "label": "Meldinger"
+  },
+  "rows": [],
+  "empty": "Ingen uleste meldinger"
+ },
+ "activity": {
+  "title": "Siste aktivitet",
+  "link": {
+   "href": "/activity/",
+   "label": "Aktivitetslogg"
+  },
+  "critical": "Kritisk",
+  "entries": [
+   {
+    "key": "b539439f-bd5b-45c5-9212-01a52e2afab8",
+    "action": "Opprettet",
+    "critical": false,
+    "record": "Kunnskapsoppføring · A test statement.",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "4a0be420-48a7-41c6-b953-11e77356fad4",
+    "action": "Opprettet",
+    "critical": false,
+    "record": "Dokument · Test document",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "b3116ead-fd19-4026-aa61-9e77f7a0bb84",
+    "action": "Opprettet",
+    "critical": false,
+    "record": "Lagerplass · Test Store (TS-01)",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "1e0de785-0457-43fd-8205-b7e4dea3bcc3",
+    "action": "Opprettet",
+    "critical": false,
+    "record": "Vannprøve · Water sample · TT-01 › Middle · 2026-11-23 12:42",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "b5d30824-8b00-4ae7-bf7a-589cbb0703b6",
+    "action": "Endret",
+    "critical": false,
+    "record": "Enhet · Unit TM-01 (TM-01)",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   }
+  ],
+  "empty": null
+ },
+ "knowledge": {
+  "title": "Nyeste kunnskapsoppføringer",
+  "link": {
+   "href": "/knowledge/entries/",
+   "label": "Kunnskapsoppføringer"
+  },
+  "rows": [
+   {
+    "key": "b1689863-79f4-4884-ba44-6fdb4dd1bd4c",
+    "text": "A test statement.",
+    "source": "Test document (u.å.)",
+    "href": "/knowledge/entries/b1689863-79f4-4884-ba44-6fdb4dd1bd4c/view/",
+    "kind": "neutral",
+    "chip": "Utkast"
+   }
+  ],
+  "empty": null
+ }
+}

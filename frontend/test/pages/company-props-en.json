@@ -1,0 +1,320 @@
+{
+ "today": {
+  "title": "Company today",
+  "meta": "Worked out 23.11.2026 13:42 · Europe/Oslo",
+  "tiles": [
+   {
+    "key": "sites",
+    "label": "Sites",
+    "figure": "2",
+    "href": "/sites/",
+    "sub": "2 active",
+    "source": "Sites"
+   },
+   {
+    "key": "biomass",
+    "label": "Biomass",
+    "figure": "500 kg",
+    "sub": "2 units stocked",
+    "source": "Stock ledger · 13:42",
+    "href": "/operations/units/"
+   },
+   {
+    "key": "alarms",
+    "label": "Open alarms",
+    "figure": "0",
+    "href": "/alarms/",
+    "status": null,
+    "statusLabel": null,
+    "sub": null,
+    "source": "Alarms · 13:42"
+   },
+   {
+    "key": "on_site",
+    "label": "On site now",
+    "figure": "0",
+    "href": "/hr/",
+    "sub": "Everyone clocked in, all teams",
+    "sub2": null,
+    "source": "Today & attendance · 13:42"
+   },
+   {
+    "key": "reports",
+    "label": "Reports due",
+    "figure": "0",
+    "href": "/reports/",
+    "status": null,
+    "statusLabel": null,
+    "sub": null,
+    "source": "Regulatory reports · 13:42"
+   },
+   {
+    "key": "messages",
+    "label": "Unread messages",
+    "figure": "0",
+    "href": "/messages/",
+    "sub": null,
+    "source": "Messages · 13:42"
+   }
+  ]
+ },
+ "sites": {
+  "title": "Sites",
+  "link": {
+   "href": "/sites/",
+   "label": "Sites"
+  },
+  "columns": {
+   "site": "Site",
+   "type": "Type",
+   "units": "Units stocked",
+   "biomass": "Biomass",
+   "water": "Water",
+   "alarms": "Open alarms",
+   "onSite": "On site now"
+  },
+  "rows": [
+   {
+    "key": "3b5b124e-ab33-4c3c-8303-757c86fe1cdf",
+    "name": "Test Site North",
+    "code": "TSN",
+    "href": "/sites/3b5b124e-ab33-4c3c-8303-757c86fe1cdf/",
+    "type": "Land-based facility",
+    "status": "critical",
+    "units": "1",
+    "biomass": "50 kg",
+    "water": {
+     "kind": "critical",
+     "text": "O₂ (mg/L) 5.00"
+    },
+    "alarms": "0",
+    "onSite": null
+   },
+   {
+    "key": "b45567f8-be31-49fa-bf00-038a05c64bb4",
+    "name": "Test Site South",
+    "code": "TSS",
+    "href": "/sites/b45567f8-be31-49fa-bf00-038a05c64bb4/",
+    "type": "Sea cage",
+    "status": null,
+    "units": "1",
+    "biomass": "450 kg",
+    "water": {
+     "kind": "nodata",
+     "text": "Not measured"
+    },
+    "alarms": "0",
+    "onSite": null
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "alarms": {
+  "title": "Open alarms",
+  "link": {
+   "href": "/alarms/",
+   "label": "Alarms"
+  },
+  "safety": "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every notification waits in the outbox below, with its recipient and level, and is sent once it is.",
+  "columns": {
+   "severity": "Severity",
+   "what": "What"
+  },
+  "rows": [],
+  "more": null,
+  "empty": "No alarm is open."
+ },
+ "people": {
+  "title": "Office people today",
+  "link": {
+   "href": "/hr/",
+   "label": "Today & attendance"
+  },
+  "tiles": [
+   {
+    "key": "planned",
+    "label": "Planned today",
+    "figure": "0"
+   },
+   {
+    "key": "upcoming",
+    "label": "Upcoming",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "here",
+    "label": "Here now",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "not_in",
+    "label": "Not in yet",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "absent",
+    "label": "Absent",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "on_leave",
+    "label": "On leave",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "done",
+    "label": "Done",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "to_decide",
+    "label": "Leave to decide",
+    "figure": "0",
+    "href": "/hr/leave/"
+   }
+  ]
+ },
+ "upcoming": {
+  "title": "Upcoming reports",
+  "items": [],
+  "empty": null,
+  "badge": null,
+  "link": {
+   "href": "/reports/",
+   "label": "All reports"
+  },
+  "notSetUp": "2 sites with fish are not set up for reports: what they owe is not known, so nothing is listed as due for them."
+ },
+ "feed": {
+  "title": "Feed on hand",
+  "link": {
+   "href": "/operations/storage/",
+   "label": "Storage"
+  },
+  "columns": {
+   "item": "Site · item",
+   "onHand": "On hand",
+   "cover": "Days of cover"
+  },
+  "rows": [],
+  "none": "—",
+  "empty": "Nothing on hand"
+ },
+ "messages": {
+  "title": "Unread messages",
+  "link": {
+   "href": "/messages/",
+   "label": "Messages"
+  },
+  "rows": [],
+  "empty": "No unread messages"
+ },
+ "activity": {
+  "title": "Recent activity",
+  "link": {
+   "href": "/activity/",
+   "label": "Activity log"
+  },
+  "critical": "Critical",
+  "entries": [
+   {
+    "key": "b539439f-bd5b-45c5-9212-01a52e2afab8",
+    "action": "Created",
+    "critical": false,
+    "record": "Knowledge entry · A test statement.",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "4a0be420-48a7-41c6-b953-11e77356fad4",
+    "action": "Created",
+    "critical": false,
+    "record": "Document · Test document",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "b3116ead-fd19-4026-aa61-9e77f7a0bb84",
+    "action": "Created",
+    "critical": false,
+    "record": "Storage location · Test Store (TS-01)",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "1e0de785-0457-43fd-8205-b7e4dea3bcc3",
+    "action": "Created",
+    "critical": false,
+    "record": "Water sample · Water sample · TT-01 › Middle · 2026-11-23 12:42",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "b5d30824-8b00-4ae7-bf7a-589cbb0703b6",
+    "action": "Changed",
+    "critical": false,
+    "record": "Unit · Unit TM-01 (TM-01)",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   }
+  ],
+  "empty": null
+ },
+ "knowledge": {
+  "title": "Latest knowledge entries",
+  "link": {
+   "href": "/knowledge/entries/",
+   "label": "Knowledge entries"
+  },
+  "rows": [
+   {
+    "key": "b1689863-79f4-4884-ba44-6fdb4dd1bd4c",
+    "text": "A test statement.",
+    "source": "Test document (n.d.)",
+    "href": "/knowledge/entries/b1689863-79f4-4884-ba44-6fdb4dd1bd4c/view/",
+    "kind": "neutral",
+    "chip": "Draft"
+   }
+  ],
+  "empty": null
+ }
+}

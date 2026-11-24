@@ -589,6 +589,12 @@ msgstr[0] "%(count)s enhet"
 msgstr[1] "%(count)s enheter"
 
 #, python-format
+msgid "%(count)s unit stocked"
+msgid_plural "%(count)s units stocked"
+msgstr[0] "%(count)s enhet med fisk"
+msgstr[1] "%(count)s enheter med fisk"
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s advarsel"
@@ -992,6 +998,10 @@ msgstr "%(location)s · %(item)s · parti %(lot)s — %(quantity)s %(unit)s"
 #, python-format
 msgid "%(location)s · %(item)s · lot %(lot)s, expires %(date)s — %(quantity)s %(unit)s"
 msgstr "%(location)s · %(item)s · parti %(lot)s, utløper %(date)s — %(quantity)s %(unit)s"
+
+#, python-format
+msgid "%(location)s, below the reorder level of %(level)s"
+msgstr "%(location)s, under bestillingsnivået på %(level)s"
 
 #, python-format
 msgid "%(lots)s lot"
@@ -5213,6 +5223,9 @@ msgstr "Selskap"
 msgid "Company overview"
 msgstr "Selskapsoversikt"
 
+msgid "Company today"
+msgstr "Selskapet i dag"
+
 msgid "Complete"
 msgstr "Fullfør"
 
@@ -6812,6 +6825,9 @@ msgstr ""
 
 msgid "Feed in use"
 msgstr "Fôr i bruk"
+
+msgid "Feed on hand"
+msgstr "Fôr på lager"
 
 msgid "Feed per shot (g)"
 msgstr "Fôr per skudd (g)"
@@ -8770,6 +8786,9 @@ msgstr "Grense for sen ankomst (dager)"
 msgid "Latest"
 msgstr "Siste"
 
+msgid "Latest knowledge entries"
+msgstr "Nyeste kunnskapsoppføringer"
+
 #, python-format
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Siste lusetelling %(date)s, %(fish)s fisk undersøkt"
@@ -8822,6 +8841,9 @@ msgstr "Forlat veggskjermen"
 
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "La vanndybden stå tom, eller oppgi en over 0."
+
+msgid "Leave to decide"
+msgstr "Permisjon til avgjørelse"
 
 msgid "Leave type"
 msgstr "Permisjonstype"
@@ -8939,6 +8961,9 @@ msgstr "Sanntidsverdier"
 
 msgid "Loading the cards…"
 msgstr "Laster kortene …"
+
+msgid "Loading the overview…"
+msgstr "Laster oversikten …"
 
 msgid "Loading…"
 msgstr "Laster …"
@@ -9968,6 +9993,9 @@ msgstr ""
 msgid "No item name: the device’s payload format is one object."
 msgstr "Ingen elementnavn: apparatets meldingsformat er ett objekt."
 
+msgid "No knowledge entries yet"
+msgstr "Ingen kunnskapsoppføringer ennå"
+
 msgid "No knowledge entry cites it yet."
 msgstr "Ingen kunnskapsoppføring viser til det ennå."
 
@@ -10118,6 +10146,9 @@ msgstr "Ingen lokalitet er bundet av en årlig plikt utenfor dette systemet."
 msgid "No site or facility to report for."
 msgstr "Ingen lokalitet eller anlegg å rapportere for."
 
+msgid "No sites yet"
+msgstr "Ingen lokaliteter ennå"
+
 msgid ""
 "No size check was set: a cleaner fish is topped up with fish of other sizes. Give it a limit on "
 "the Stocking tab if this farm wants one."
@@ -10234,6 +10265,9 @@ msgstr "Ingen enheter passer til disse filtrene."
 
 msgid "No units yet"
 msgstr "Ingen enheter ennå"
+
+msgid "No unread messages"
+msgstr "Ingen uleste meldinger"
 
 msgid "No value"
 msgstr "Ingen verdi"
@@ -10562,6 +10596,9 @@ msgstr "Ingenting trenger oppfølging"
 msgid "Nothing of the sensors is open to you yet: ask for a right on the Roles page."
 msgstr "Du har ikke tilgang til noe av sensorene ennå: be om en rettighet på Roller-siden."
 
+msgid "Nothing on hand"
+msgstr "Ingenting på lager"
+
 msgid "Nothing recorded for this item yet"
 msgstr "Ingenting registrert for denne varen ennå"
 
@@ -10652,6 +10689,9 @@ msgstr "Kontoravdeling"
 
 msgid "Office departments"
 msgstr "Kontoravdelinger"
+
+msgid "Office people today"
+msgstr "Kontorfolk i dag"
 
 msgid "Official code"
 msgstr "Artskode"
@@ -12035,6 +12075,9 @@ msgstr "Ta imot varer"
 msgid "Receiving site’s lokalitetsnummer"
 msgstr "Mottakslokalitetens lokalitetsnummer"
 
+msgid "Recent activity"
+msgstr "Siste aktivitet"
+
 msgid "Recent feedings"
 msgstr "Siste fôringer"
 
@@ -13341,6 +13384,9 @@ msgstr "Lokalitet tatt i bruk"
 msgid "Site type"
 msgstr "Lokalitetstype"
 
+msgid "Site · item"
+msgstr "Lokalitet · vare"
+
 msgid "Sites"
 msgstr "Lokaliteter"
 
@@ -13660,6 +13706,10 @@ msgstr "Beholdning ved månedsslutt"
 
 msgid "Stock in one line"
 msgstr "Bestand på én linje"
+
+#, python-format
+msgid "Stock ledger · %(time)s"
+msgstr "Beholdningsboken · %(time)s"
 
 msgid "Stock lines"
 msgstr "Beholdningslinjer"
@@ -16774,11 +16824,17 @@ msgstr ""
 "Bare enheter: protokollen fôrer alt som er i dem. Med en fiskegruppe: bare den fiskegruppen i "
 "disse enhetene."
 
+msgid "Units stocked"
+msgstr "Enheter med fisk"
+
 msgid "Unknown"
 msgstr "Ukjent"
 
 msgid "Unpaid: it is taken off the planned hours. At most 240, shorter than the shift."
 msgstr "Ubetalt: den trekkes fra de planlagte timene. Høyst 240, kortere enn skiftet."
+
+msgid "Unread messages"
+msgstr "Uleste meldinger"
 
 msgid "Unresolved old courses"
 msgstr "Uavklarte gamle behandlinger"
@@ -17667,6 +17723,10 @@ msgid "Without a site"
 msgstr "Uten lokalitet"
 
 #, python-format
+msgid "Worked out %(when)s · %(zone)s"
+msgstr "Beregnet %(when)s · %(zone)s"
+
+#, python-format
 msgid "Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm."
 msgstr "Regnet ut fra %(temperature)s °C, %(salinity)s ‰ og %(pressure)s atm."
 
@@ -18002,6 +18062,10 @@ msgstr "en ukjent mottaker"
 
 msgid "and"
 msgstr "og"
+
+#, python-format
+msgid "and %(count)s more: all alarms"
+msgstr "og %(count)s til: alle alarmer"
 
 #, python-format
 msgid "and %(count)s more: all reports"
@@ -18842,6 +18906,12 @@ msgstr "timer"
 
 msgid "https:// is added when it is left out."
 msgstr "https:// legges til når det mangler."
+
+#, python-format
+msgid "in %(count)s conversation"
+msgid_plural "in %(count)s conversations"
+msgstr[0] "i %(count)s samtale"
+msgstr[1] "i %(count)s samtaler"
 
 #, python-format
 msgid "in %(location)s: %(held)s, expired on %(date)s."

@@ -1,12 +1,19 @@
 """Company › Overview's figures (config.company.overview): each block read by its area's own function, split per site from
 the same rows, so the split adds up to the area's own totals; a block only for a person who may read its area."""
+import json
+import re
 from decimal import Decimal as D
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
-from django.utils import timezone
+from django.test import override_settings
+from django.urls import reverse
+from django.utils import timezone, translation
+from django.utils.translation import gettext as _
 
 from alarms.models import Alarm, Source
 from config.company import overview
+from core.pagesays import unsaid
 from farm.stock.views import overview_tiles
 from farm.water.views import overview as water_overview
 from sensors.models.alarm import Severity
@@ -17,7 +24,9 @@ from .test_stock import make_unit
 from .test_water import WaterTestCase
 
 
-class CompanyOverviewTests(WaterTestCase):
+class CompanyFixture(WaterTestCase):
+    """Bergen (two stocked units, a critical and a warning oxygen), Tromsø (one stocked cage), Alta (inactive, empty)."""
+
     def setUp(self):
         super().setUp()
         self.admin = get_user_model().objects.create_superuser('boss', 'boss@example.com', 'x')
@@ -36,6 +45,8 @@ class CompanyOverviewTests(WaterTestCase):
     def rows(self, found):
         return {row['site'].code: row for row in found['sites']['rows']}
 
+
+class CompanyOverviewTests(CompanyFixture):
     def test_the_split_per_site_adds_up_to_the_areas_own_totals(self):
         found = overview(self.admin)
         rows = self.rows(found)
@@ -74,3 +85,55 @@ class CompanyOverviewTests(WaterTestCase):
                              (None, None, None, None))
         nobody = get_user_model().objects.create_user('nobody', 'nb@example.com')
         self.assertIsNone(overview(nobody)['sites'])
+
+
+MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-company-manifest.json')
+
+
+def props_of(html, name):
+    """The props block of the page's island `name` (json_script), as data."""
+    found = re.search(r'<script id="island-' + name + r'-1" type="application/json">(.*?)</script>', html, re.S)
+    return json.loads(found.group(1)) if found else None
+
+
+@override_settings(ISLANDS_MANIFEST=MANIFEST)
+class CompanyOverviewPageTests(CompanyFixture):
+    """The page: the classic look as it was, and the new look (?ui=next) an island whose props say all the classic page
+    said (core.pagesays) and the design's blocks besides."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.admin)
+
+    def test_the_classic_page_is_the_classic_template_and_the_new_look_the_island(self):
+        classic = self.client.get(reverse('home'), {'ui': 'classic'}).content.decode()
+        self.assertNotIn('data-island="company"', classic)
+        self.assertIn('class="tiles"', classic)
+        page = self.client.get(reverse('home'), {'ui': 'next'}).content.decode()
+        self.assertIn('data-island="company"', page)
+        self.assertIsNotNone(props_of(page, 'company'))
+
+    def test_the_new_look_says_everything_the_classic_page_says(self):
+        for language in ('en', 'nb', 'tr'):
+            with self.subTest(language=language):
+                self.client.cookies['django_language'] = language
+                old = self.client.get(reverse('home'), {'ui': 'classic'}).content.decode()
+                props = props_of(self.client.get(reverse('home'), {'ui': 'next'}).content.decode(), 'company')
+                with translation.override(language):
+                    # The classic page's line promising "the company's figures will appear here": the new page shows them.
+                    placeholder = _('Welcome, %(name)s. The company’s figures will appear here.') % {'name': 'boss'}
+                self.assertEqual(unsaid(old, props, ignore={placeholder}), [])
+
+    def test_every_block_is_there_for_who_may_read_it(self):
+        props = props_of(self.client.get(reverse('home'), {'ui': 'next'}).content.decode(), 'company')
+        for name in ('sites', 'alarms', 'people', 'upcoming', 'feed', 'messages', 'activity', 'knowledge'):
+            self.assertIsNotNone(props[name], name)
+        rows = {row['code']: row for row in props['sites']['rows']}
+        self.assertEqual((rows['BG']['units'], rows['BG']['water']['kind'], rows['AL']['units']), ('2', 'critical', '0'))
+        person = get_user_model().objects.create_user('sites-only-page', 'sop@example.com')
+        person.groups.add(role('Sites only page', 'view_site'))
+        self.client.force_login(person)
+        props = props_of(self.client.get(reverse('home'), {'ui': 'next'}).content.decode(), 'company')
+        for name in ('alarms', 'people', 'upcoming', 'feed', 'messages', 'activity', 'knowledge'):
+            self.assertIsNone(props[name], name)
+        self.assertEqual([tile['key'] for tile in props['today']['tiles']], ['sites'])

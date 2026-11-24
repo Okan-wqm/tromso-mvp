@@ -1,0 +1,13 @@
+{
+  "frontend/islands/company.tsx": {
+    "file": "company-Co12Mp34.js",
+    "name": "company",
+    "src": "frontend/islands/company.tsx",
+    "isEntry": true,
+    "imports": ["_ui-Ef56Gh78.js"]
+  },
+  "_ui-Ef56Gh78.js": {
+    "file": "chunks/ui-Ef56Gh78.js",
+    "name": "ui"
+  }
+}

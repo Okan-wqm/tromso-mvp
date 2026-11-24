@@ -5411,6 +5411,18 @@ top bar (the open alarms, the people on site, the company's clock: each only for
 `alarms.read.listing`, `hr.read.muster` and the company's zone) and the menu group over the page title. The classic look
 stays the default until the owner switches.
 
+Pages drawn by an island in the new look (the classic page is unchanged behind `?ui=classic`):
+
+- **Company › Overview** (`/`, `templates/home_next.html`, island `company`, `frontend/islands/pages/Company.tsx`): the
+  design's board. `config/company.py` reads each block by its area's own function (stock from the ledger, water from the
+  Water page's own rows, alarms, the office board and muster, reports due, unread messages, feed on hand and cover, the
+  latest log and knowledge entries), split per site from the same rows; `config/company_props.py` words it in the
+  request's language. A block is left out for a person who may not read its area. The water chip per site says the
+  sampling points' worst judgement (critical, warning, OK, or "Not measured"); the open alarms are the alarms app's
+  records, so a critical water value shows as the site's water chip even while no alarm is open. Held to the classic page
+  by `core.pagesays` in three languages (`farm/tests/test_company_overview.py`); its island is checked in a browser in
+  every theme and language for CSP, axe and contrast (`frontend/test/company.browser.test.ts`).
+
 ## One format for every tab
 
 `core/crud.py` turns a `Resource` (model, form, labels, list template) into list, create, edit and

@@ -79,7 +79,7 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
     }
 
     await t.test('a list saved apart: its own form, a row added, the record\'s Save out of sight on its tab', async () => {
-      const name = pageOf('EquipmentResource edit', 'calibrations-TOTAL_FORMS');
+      const name = pageOf('EquipmentResource edit', 'calibrations-0-feed_size_mm');
       assert.ok(name, 'the feeder of the test world is recorded');
       const { tab } = await open(name);
       await tab.click('[role="tab"]:has-text("Feed calibration")');
@@ -131,7 +131,7 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
     }
 
     await t.test('a list saved apart, the record\'s form and a one-button form each post their own fields', async () => {
-      const name = pageOf('SiteResource edit', 'contacts-TOTAL_FORMS');
+      const name = pageOf('SiteResource edit', 'contacts-0-name');
       assert.ok(name);
       const { tab } = await open(name);
       const sent = await caught(tab);
@@ -189,7 +189,7 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
     });
 
     await t.test('contacts on the record\'s own tab, after its form: one primary at a time', async () => {
-      const name = pageOf('SiteResource edit', 'contacts-TOTAL_FORMS');
+      const name = pageOf('SiteResource edit', 'contacts-0-name');
       assert.ok(name);
       const { tab } = await open(name);
       await tab.click('[role="tab"]:has-text("Contact")');

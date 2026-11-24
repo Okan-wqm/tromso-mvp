@@ -618,6 +618,12 @@ msgstr[0] "%(count)s birim"
 msgstr[1] "%(count)s birim"
 
 #, python-format
+msgid "%(count)s unit with critical or warning water has no open alarm."
+msgid_plural "%(count)s units with critical or warning water have no open alarm."
+msgstr[0] "Suyu kritik veya uyarı düzeyinde olan %(count)s birimin açık alarmı yok."
+msgstr[1] "Suyu kritik veya uyarı düzeyinde olan %(count)s birimin açık alarmı yok."
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s uyarı"
@@ -9800,9 +9806,6 @@ msgstr "Hesap yok"
 
 msgid "No alarm events."
 msgstr "Alarm olayı yok."
-
-msgid "No alarm is open for them yet."
-msgstr "Bunlar için henüz açık alarm yok."
 
 msgid "No alarm is open."
 msgstr "Açık alarm yok."

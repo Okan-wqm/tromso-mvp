@@ -33,9 +33,10 @@ def _context(**extra):
 def units_note(user):
     """What the Alarms page says of the units that need a look on the Monitoring screen, from the strip's own reading
     (alarms.read.attention, in core.ui.attention_words: no second judgement), so a person who comes from a red strip
-    never finds an empty page: {'text', 'status', 'url' (Monitoring, '' for a person who may not open it), 'none_open'
-    (no alarm is open at all, so none is open for them yet)}; {'failed': True} when the reading fails (logged); None
-    when no unit needs a look."""
+    never finds an empty page: {'text', 'status', 'url' (Monitoring, '' for a person who may not open it), 'unalarmed'
+    (how many of them have critical or warning water and no open water alarm at their own points: Attention.unalarmed;
+    nothing is said of the rungs the engine never raises an alarm for)}; {'failed': True} when the reading fails
+    (logged); None when no unit needs a look."""
     from core import ui
     try:
         found = read.attention()
@@ -45,7 +46,7 @@ def units_note(user):
     words = [text for what, text in ui.attention_words(found) if what == ui.UNITS]
     if not words:
         return None
-    return {'text': ' · '.join(words), 'status': 'critical' if found.critical else 'warning', 'none_open': not found.alarms,
+    return {'text': ' · '.join(words), 'status': 'critical' if found.critical else 'warning', 'unalarmed': found.unalarmed,
             'url': reverse(ui.MONITORING) if ui.may_open(user, ui.MONITORING) else ''}
 
 

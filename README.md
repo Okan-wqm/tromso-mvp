@@ -4492,7 +4492,9 @@ from which device, how late) is logged. The server side is built; the push trans
   or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
   a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
   Above them it names the units that need a look on the Monitoring screen, from the new look's strip's own reading
-  (`alarms.views.units_note`, README › The new look), with "No alarm is open for them yet." while none is open.
+  (`alarms.views.units_note`, README › The new look), with how many of them have critical or warning water and no open
+  water alarm at their own points (`Attention.unalarmed`); nothing is said of the rungs the engine never raises an alarm
+  for (blind, no limit, over capacity, weigh now), and nothing is promised.
 - **The loop**: `manage.py run_alarms [--loop SECONDS]` (`alarms/engine.py`) checks the sensor rules and the water limits,
   queues, escalates and hands what is queued to the connected transports. Each step (sensor rules, sensor events, water,
   device clocks, notify, send, and the supervision last) runs in its own transaction under one advisory lock, so two loops never queue or send twice and a failing
@@ -5447,8 +5449,11 @@ see it.
 - **Where it leads**: each count to the page that lists what it counts. The open alarms to the Alarms page; the units to
   Operations › Monitoring (every stocked unit, the ones that need a look in its band first; it has no filter by state),
   as plain words for a person who may not open Monitoring. With both, one link each in the same item ("1 open alarm" ·
-  "1 unit critical"). The Alarms page says, from the same reading, "On the Monitoring screen: 1 unit critical. No alarm
-  is open for them yet." with a link to Monitoring (`alarms.views.units_note`), so a red strip never leads to an empty
+  "1 unit critical"). The Alarms page says, from the same reading, "On the Monitoring screen: 1 unit critical." and, for the units whose
+  water is critical or past a warning (what the engine raises a water alarm for) with no open water alarm at their own
+  points, "1 unit with critical or warning water has no open alarm." (never a promise that one will open; nothing for
+  blind, no limit, over capacity or weigh now), with a link to Monitoring (`alarms.views.units_note`), so a red strip
+  never leads to an empty
   page (on a server where the alarm engine is not running, the cards' state is there before any alarm).
 - **Polled whole** (`core:ui_strip`, every 30 s): the clock and the muster count never stand still beside a live alarm
   count. The page draws it with "Reading the alarms…" (the reader looks at every unit's water, so the page never waits

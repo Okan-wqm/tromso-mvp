@@ -117,7 +117,9 @@ class Attention:
     incomplete); a site's count holds them too, as they are about every site. `unreadable`: units whose water could not
     be read at all (each read on its own, as the engine does), whose feeding could not be read (unless their water is
     critical), or whose state could not be worked out: never counted as fine. `units`: (unit id, rung) of each
-    stocked unit, for a caller (and the tests) to compare with the cards."""
+    stocked unit, for a caller (and the tests) to compare with the cards. `unalarmed`: the stocked units whose water is
+    critical or past a warning (the rungs the engine raises a water alarm for) with no open water alarm at their own
+    points; nothing is said of a rung the engine never raises an alarm for (blind, no limit, over capacity, weigh now)."""
     alarms: int = 0
     alarms_critical: int = 0
     farm_wide: int = 0
@@ -127,6 +129,7 @@ class Attention:
     unjudged: int = 0
     unreadable: int = 0
     units: tuple = ()
+    unalarmed: int = 0
 
     @property
     def status(self):
@@ -147,9 +150,11 @@ CACHE_KEY = 'alarms.read.attention'
 
 
 def open_alarms():
-    """[(site id or None, severity)] of the open alarms (not cleared: listing('open')'s rule, without its annotations)."""
+    """[(site id or None, severity, unit id of its point or None)] of the open alarms (not cleared: listing('open')'s rule,
+    without its annotations). A water alarm's point is the unit's own middle point (alarms/sources.py), so its unit is
+    the unit it is about."""
     return list(Alarm.objects.filter(~Exists(AlarmClearance.objects.filter(alarm=OuterRef('pk'))))
-                .values_list('site_id', 'severity'))
+                .values_list('site_id', 'severity', 'point__unit_id'))
 
 
 def _each(what, units, read):
@@ -190,7 +195,7 @@ def _unit_feeding(units, held):
 
 
 def snapshot(now=None):
-    """(open alarms, [(unit id, site id, rung)] of every stocked unit): what `attention` counts, read once. Without `now`
+    """(open alarms, [(unit id, site id, rung, whether its water is critical or past a warning)] of every stocked unit): what `attention` counts, read once. Without `now`
     it is kept for settings.ATTENTION_CACHE_SECONDS (the same for every viewer: it depends on no one's rights), so a
     farm's open pages ask the database once in that time, not once each."""
     from django.conf import settings
@@ -222,38 +227,43 @@ def _snapshot(now):
     rungs = []
     for unit in stocked:
         site = unit.production_department.site_id if unit.production_department_id else None
-        rungs.append((unit.pk, site, _rung(unit, held[unit.pk], water, feeding, failed, unfed, now)))
+        rungs.append((unit.pk, site, *_rung(unit, held[unit.pk], water, feeding, failed, unfed, now)))
     return open_alarms(), rungs
 
 
 def _rung(unit, own, water, feeding, failed, unfed, now):
-    """The rung of one stocked unit (monitoring.read.upper_state, OK below it), or UNREADABLE: its water could not be read,
-    its feeding could not be read and its water is not critical, or working it out raised (logged). Each unit on its own,
-    so one never hides the others and the strip never answers 500 for one."""
+    """(the rung of one stocked unit, whether its water is critical or past a warning: what the engine raises a water alarm
+    for). The rung is monitoring.read.upper_state's, OK below it, or UNREADABLE: its water could not be read, its feeding
+    could not be read and its water is not critical, or working it out raised (logged). Each unit on its own, so one never
+    hides the others and the strip never answers 500 for one."""
     from farm.stock.dates import local_today
     from monitoring import read as monitoring_read
 
     if unit.pk in failed:
-        return UNREADABLE
+        return UNREADABLE, False
     try:
         rungs = monitoring_read.water_rungs(monitoring_read.middle_of(water.get(unit.pk, ())), now)
+        watered = bool(rungs.critical or rungs.warning)
         if unit.pk in unfed and not rungs.critical:
-            return UNREADABLE
+            return UNREADABLE, watered
         drift = monitoring_read.weigh(monitoring_read.lines_of(own, feeding.get(unit.pk), local_today(unit)))
         state = monitoring_read.upper_state(rungs, own.over_capacity, drift)
     except Exception:
         logger.exception('The state of unit %s could not be worked out.', unit)
-        return UNREADABLE
-    return state.key if state is not None else monitoring_read.OK
+        return UNREADABLE, False
+    return (state.key if state is not None else monitoring_read.OK), watered
 
 
 def _count(alarms, rungs, site=None, every=True):
     keep = (lambda each: True) if every else (lambda each: each == site)
-    here = [severity for each, severity in alarms if keep(each) or each is None]
-    mine = [(unit, rung) for unit, each, rung in rungs if keep(each)]
+    here = [severity for each, severity, _unit in alarms if keep(each) or each is None]
+    mine = [(unit, rung) for unit, each, rung, _watered in rungs if keep(each)]
     keys = [rung for _unit, rung in mine]
+    alarmed = {unit for _each, _severity, unit in alarms if unit is not None}
     return Attention(alarms=len(here), alarms_critical=here.count('critical'),
-                     farm_wide=sum(1 for each, _severity in alarms if each is None),
+                     farm_wide=sum(1 for each, _severity, _unit in alarms if each is None),
+                     unalarmed=sum(1 for unit, each, _rung, watered in rungs
+                                   if keep(each) and watered and unit not in alarmed),
                      critical=keys.count('critical'), warning=keys.count('warning'), blind=keys.count('blind'),
                      unjudged=keys.count('unjudged'), unreadable=keys.count(UNREADABLE), units=tuple(mine))
 
@@ -265,7 +275,8 @@ def attention_all(now=None):
     not listed (`attention(site=...)` gives it, the farm-wide alarms only). A unit or an alarm on no site is in the farm's
     figure only."""
     alarms, rungs = snapshot(now)
-    sites = {each for _unit, each, _rung in rungs if each is not None} | {each for each, _severity in alarms if each is not None}
+    sites = ({each for _unit, each, _rung, _watered in rungs if each is not None}
+             | {each for each, _severity, _unit in alarms if each is not None})
     return _count(alarms, rungs), {each: _count(alarms, rungs, each, every=False) for each in sites}
 
 

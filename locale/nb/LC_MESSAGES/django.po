@@ -619,6 +619,12 @@ msgstr[0] "%(count)s enhet"
 msgstr[1] "%(count)s enheter"
 
 #, python-format
+msgid "%(count)s unit with critical or warning water has no open alarm."
+msgid_plural "%(count)s units with critical or warning water have no open alarm."
+msgstr[0] "%(count)s enhet med kritisk vann eller vann over et varsel har ingen åpen alarm."
+msgstr[1] "%(count)s enheter med kritisk vann eller vann over et varsel har ingen åpen alarm."
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s advarsel"
@@ -9772,9 +9778,6 @@ msgstr "Ingen konto"
 
 msgid "No alarm events."
 msgstr "Ingen alarmhendelser."
-
-msgid "No alarm is open for them yet."
-msgstr "Ingen alarm er åpen for dem ennå."
 
 msgid "No alarm is open."
 msgstr "Ingen alarm er åpen."

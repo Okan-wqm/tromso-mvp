@@ -101,7 +101,7 @@ test('the Production and Sensors islands in a browser', { skip: skipWithout(BROW
             const drawn = places.flatMap((each) => each.charts).filter((chart) => !chart.empty).length;
             if (drawn) await tab.waitForSelector('.ui-series canvas');
             assert.equal(await tab.locator('.ui-series canvas').count() >= drawn, true, 'a canvas per chart with values');
-            assert.equal(await tab.locator('.ui-seg button[aria-pressed="true"]').count(), 1, 'the window in force is pressed');
+            assert.equal(await tab.locator('.ui-segmented button[aria-pressed="true"]').count(), 1, 'the window in force is pressed');
             const events = props.events as { label: string }[];
             if (drawn && events.length) {
               await tab.waitForSelector('.ui-chart-mark');

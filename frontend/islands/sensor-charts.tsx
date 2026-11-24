@@ -81,7 +81,7 @@ function SensorCharts(props: SensorChartsProps) {
         <label>{words.place}<select name="target" defaultValue={values.target} required><Options groups={props.places} empty={words.choose} /></select></label>
         <label>{words.quantity}<select name="quantity" defaultValue={values.quantity} required><Options groups={props.quantities} /></select></label>
         <input type="hidden" name="range" value={range} />
-        <span className="ui-seg" role="group" aria-label={words.time}>
+        <span className="ui-segmented" role="group" aria-label={words.time}>
           {props.ranges.map((range) => (
             <button key={range} type="submit" name="range" value={range} className="ui-btn" aria-pressed={values.range === range}>{range}</button>
           ))}

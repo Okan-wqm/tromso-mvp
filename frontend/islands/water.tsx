@@ -95,7 +95,7 @@ function Window({ props }: { props: WaterProps }) {
     <div className="ui-toolbar">
       <form method="get" action={props.custom.action}>
         <span className="ui-tile-label">{words.time}</span>
-        <span className="ui-seg" role="group" aria-label={words.time}>
+        <span className="ui-segmented" role="group" aria-label={words.time}>
           {props.ranges.map((range) => (
             <button key={range.key} type="submit" name="range" value={range.key} className="ui-btn"
               aria-pressed={range.current}>{range.label}</button>

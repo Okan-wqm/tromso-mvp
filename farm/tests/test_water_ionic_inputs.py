@@ -78,6 +78,7 @@ class FreshnessMigrationTests(WaterTestCase):
         from django.db import connection
         migration = importlib.import_module('farm.migrations.0042_water_freshness_ionic_inputs')
         with connection.cursor() as cursor:        # the database as it was before farm 0051 kept the rows
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')     # no pending trigger event, or the table cannot be altered
             cursor.execute('ALTER TABLE water_freshness DISABLE TRIGGER trg_water_freshness_kept')
         WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS]).delete()
         migration.seed(global_apps, None)

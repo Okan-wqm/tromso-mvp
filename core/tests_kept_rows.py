@@ -23,10 +23,13 @@ KEPT = {PlatformSettings: 'platform_settings', SchedulingSettings: 'scheduling_s
 
 def lose(table, where='true'):
     """Deletes rows of a kept table as only its owner could: the trigger set aside for the statement, inside the test's
-    transaction (rolled back with it)."""
+    transaction (rolled back with it). The revisions' deferred triggers fire first each time, since a table with pending
+    trigger events cannot be altered (README, the stored water)."""
     with connection.cursor() as cursor:
+        cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
         cursor.execute(f'ALTER TABLE {table} DISABLE TRIGGER trg_{table}_kept')
         cursor.execute(f'DELETE FROM {table} WHERE {where}')
+        cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
         cursor.execute(f'ALTER TABLE {table} ENABLE TRIGGER trg_{table}_kept')
 
 

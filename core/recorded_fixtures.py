@@ -287,11 +287,17 @@ _UUID = re.compile(r'[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f
 
 
 def normalised(text):
-    """`text` with what varies put in a fixed form: each record id the n-th one it names, in order of appearance."""
+    """`text` with what varies put in a fixed form: each record id the n-th one it names, in order of appearance; a list of
+    ids in one value (a select's `data-group`: a set, in no order) in their order."""
     for pattern, replacement in _VARIES:
         text = pattern.sub(replacement, text)
     seen = {}
-    return _UUID.sub(lambda match: seen.setdefault(match.group(0), f'<id {len(seen) + 1}>'), text)
+    text = _UUID.sub(lambda match: seen.setdefault(match.group(0), f'<id {len(seen) + 1}>'), text)
+    return _IDS.sub(lambda match: ' '.join(sorted(re.findall(r'<id \d+>', match.group(0)),
+                                                  key=lambda each: int(each[4:-1]))), text)
+
+
+_IDS = re.compile(r'<id \d+>(?: <id \d+>)+')
 
 
 def _lines(path, text):

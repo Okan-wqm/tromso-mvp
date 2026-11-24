@@ -6429,6 +6429,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/test_world.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
@@ -10016,6 +10017,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_erasure.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
@@ -37930,6 +37932,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_chart_data.py",

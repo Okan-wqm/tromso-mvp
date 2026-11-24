@@ -741,7 +741,7 @@ answers for many units at once (the table is `monitoring/read.py`'s docstring):
 | open health events (every card), treatments and the latest sea-lice count (detailed) | `health.read.open_events`, `recent_treatments`, `latest_counts` |
 | open, overdue and due-today tasks (detailed) | `tasks.read.per_unit` |
 | the Deffeyes chart in its window | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
-| a unit's or a system's water history (Tank › Water, System › Water, behind `?ui=next`) | `farm:water_unit_chart` / `farm:water_system_chart` with `?view=history`: `sensors.read.water_history` (every parameter's `series` on one window, the NH₃-N worked out per sample, the limit bands `bands_of`), the events each for the person who may read them, the Deffeyes replay's address; a system's points side by side |
+| a unit's or a system's water history (Tank › Water, System › Water, behind `?ui=next`) | `farm:water_unit_chart` / `farm:water_system_chart` with `?view=history`: `sensors.read.water_history` (every parameter's `series` on one window, the NH₃-N worked out per sample, the limit bands `bands_of`), the events each for the person who may read them, the Deffeyes replay's address and the Deffeyes for the range (`range_deffeyes`: about 120 replay frames of the window, the newest frame's diagram from `deffeyes.render` with the pH labels the server placed, the water's path through the time broken where a frame has no diagram, else the reason); a system's points side by side. The page's from and to are the shared date box (dd.mm.yyyy HH:MM), its events marks on every chart (named, reached by Tab, a link to the record) |
 | the calculated CO₂ and the pH window of a card that shows them (the Small card) | `water.calculation.charts_of`: every such unit's chart at once, from the water the card read already holds and one read of the fish's limits |
 
 **The page** has a toolbar (a GET form that works without script: site, department, system, kind, fish (stocked by default,
@@ -5413,7 +5413,9 @@ validation and every chemistry judgement; the island draws the finished values i
   test (`core/island_props.py`: `render_island` asks the view in the new look and the language given, `keep` writes the
   props to `.build/island-props/`, never committed: the repository is public, so nothing recorded from a real database
   is kept). `farm/tests/test_island_pages.py` makes those of Tank › Water and Sensors › Charts from THE test world
-  (`core/test_world.py`, shared with `scripts/record_test_world.py`, the clock at its `MOMENT`);
+  (`core/test_world.py`, shared with `scripts/record_test_world.py`, the clock at its `MOMENT`: TT-01's probe with an
+  outage and a pH silent for two hours, the channels' state as the ingest writes it, samples, limits, an alarm, a harvest,
+  a treatment and a feeding, each part a function of its own);
   `npm run test:pages` (`frontend/test/*.pages.ts`) then mounts the built islands on them under the product's policy
   (CSP, axe, 4.5:1, no sideways scroll at 1440 and 390 px). CI runs it in the Django job right after the suite (a run
   with labels makes the props too) and keeps its screenshots as the artifact `island-pages-shots`; missing props fail

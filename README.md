@@ -5438,7 +5438,7 @@ see it.
   all, live values not read), unjudged (no limit for the fish). The strip and the cards never disagree: a card that says
   Over capacity or Weigh now is a unit with a warning on the strip too. The strip says every count, none hidden behind
   another ("1 open alarm · 3 units critical · 2 units with no recent data"; the words are `core.ui.attention_words`, the
-  one wording of an Attention), and "No open alarms" only when nothing is open and every stocked unit is OK or a note. A
+  one wording of an Attention, with `core.ui.attention_said` its text-only form for the Overview), and "No open alarms" only when nothing is open and every stocked unit is OK or a note. A
   unit whose water or feeding cannot be read is read on its own, as the engine reads it, and a unit whose state cannot be
   worked out is caught on its own: either is counted ("1 unit cannot be read"; its water critical still says critical),
   the others still are, and the strip never answers 500 for one unit. A farm-wide alarm (on no site) counts on every

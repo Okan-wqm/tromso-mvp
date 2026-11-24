@@ -315,3 +315,15 @@ class RollupRefreshTests(TransactionTestCase):
             cursor.execute('UPDATE sensors_contract SET late_limit_days = 1, retention_days = 3')
         self.run_job('sensors_refresh_late')
         self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])
+
+    def test_a_refresh_over_a_dropped_raw_region_empties_the_rollup_there(self):
+        # Why no job may reach back into dropped raw data (README, Sensors), held on the release everything runs on.
+        early = one("SELECT date_trunc('hour', now()) - INTERVAL '400 days'")
+        insert([(23, early, 1.0, 1, 0, None, None, None)])
+        self.refresh('sensors_rollup_1h')
+        self.assertEqual(len(self.hour(23)), 1)
+        one("SELECT count(*) FROM drop_chunks('sensors_reading', older_than => %s)", [early + timedelta(days=30)])
+        with connection.cursor() as cursor:
+            cursor.execute("CALL refresh_continuous_aggregate('sensors_rollup_1h', %s, %s)",
+                           [early - timedelta(days=1), early + timedelta(days=1)])
+        self.assertEqual(self.hour(23), [])

@@ -14,7 +14,7 @@ from io import StringIO
 import psycopg
 from django.apps import apps
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
@@ -634,6 +634,67 @@ class RepairTests(Gate, TestCase):
         out = StringIO()
         call_command('core_rev_repair', stdout=out)
         self.assertIn('nothing was changed', out.getvalue())
+
+
+def hypertables():
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT hypertable_name FROM timescaledb_information.hypertables WHERE hypertable_schema = 'public'")
+        return {name for (name,) in cursor.fetchall()}
+
+
+def constraint_triggers_on_hypertables():
+    """(relation, constraint) of every constraint trigger on a hypertable or one of its chunks: a TimescaleDB update
+    renames the chunks' constraints and cannot rename one of these (deploy/scripts/timescaledb-move.sh)."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "WITH h AS (SELECT format('%I.%I', hypertable_schema, hypertable_name)::regclass AS rel "
+            "           FROM timescaledb_information.hypertables) "
+            "SELECT c.conrelid::regclass::text, c.conname FROM pg_constraint c WHERE c.contype = 't' "
+            "AND (c.conrelid IN (SELECT rel FROM h) "
+            "     OR c.conrelid IN (SELECT i.inhrelid FROM pg_inherits i JOIN h ON i.inhparent = h.rel)) ORDER BY 1, 2")
+        return cursor.fetchall()
+
+
+class HypertableTriggerTests(Gate, TestCase):
+    """manage.py core_rev_drop_hypertable_triggers, before `ALTER EXTENSION timescaledb UPDATE`: the update renames a
+    hypertable chunk's constraints and stops on a constraint trigger ("constraint ... does not exist"), so the revision
+    triggers of every tracked hypertable are dropped first (found from TRACKED, never a list of their own), and
+    core_rev_repair makes them again afterwards (deploy/scripts/timescaledb-move.sh)."""
+
+    def setUp(self):
+        super().setUp()
+        user = get_user_model().objects.create_user('rev', 'rev@example.com', 'x')
+        site = Site.objects.create(name='Bergen', code='BG')
+        hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
+        point = point_of(make_unit('T-01', hall))
+        for days in (1, 20):                                       # a chunk with the revision triggers
+            water.record(user, point=point, measured_at=timezone.now() - timedelta(days=days), source='manual',
+                         values={'temperature_c': D('12.0')})
+        rev.settle()
+
+    def test_the_triggers_of_every_tracked_hypertable_are_dropped_and_repair_makes_them_again(self):
+        tracked = [(table, scope) for table, scope in rev.TRACKED if table in hypertables()]
+        self.assertIn(('water_measurements', 'water_point'), tracked)
+        self.assertNotEqual(constraint_triggers_on_hypertables(), [])
+        out = StringIO()
+        call_command('core_rev_drop_hypertable_triggers', stdout=out)
+        self.assertEqual(constraint_triggers_on_hypertables(), [])
+        dropped = {name.split(' on ')[0] for name in rev.missing()}
+        self.assertEqual(dropped, {name for table, scope in tracked for name in rev.trigger_names(table, scope)})
+        self.assertIn('water_measurements (water_point)', out.getvalue())
+        out = StringIO()
+        call_command('core_rev_drop_hypertable_triggers', stdout=out)  # again: nothing left to drop, no error
+        self.assertIn('none', out.getvalue())
+        call_command('core_rev_repair', stdout=StringIO())
+        self.assertEqual(rev.missing(), [])
+        self.assertNotEqual(constraint_triggers_on_hypertables(), [])
+
+    def test_a_constraint_trigger_not_of_the_revisions_on_a_hypertable_is_refused_by_name(self):
+        sql('CREATE FUNCTION test_noop() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$')
+        sql('CREATE CONSTRAINT TRIGGER test_foreign AFTER INSERT ON water_measurements DEFERRABLE INITIALLY DEFERRED '
+            'FOR EACH ROW EXECUTE FUNCTION test_noop()')
+        with self.assertRaisesMessage(CommandError, 'test_foreign'):
+            call_command('core_rev_drop_hypertable_triggers', stdout=StringIO())
 
 
 def rev_keys():

@@ -17,6 +17,10 @@
 #   restore  a second, empty installation (project farm-restore): the latest snapshot fetched from the repository,
 #            the dump restored, every table's row count equal to the backup's, the application's migrations all applied
 #   pitr     the base backup and the archived WAL of that snapshot replayed into a third server: the marker row is there
+#   network  who reaches whom, outside names, the way out of every service, and no packet out of the proxy's and the
+#            broker's networks (a capture on the runner's uplink)
+#   rotate   the app role's password rotated
+#   tsmove, tsback, tshalf   the TimescaleDB move of docs/ops/upgrade.md on the project's real schema (below)
 #   logs     every service's last lines (on a failure)
 #   down     everything removed: containers, volumes, networks (both projects and the PITR server)
 set -euo pipefail
@@ -109,13 +113,16 @@ network() {
   say "who reaches whom: a probe in each service's own network namespace (a throwaway container sharing it)"
   say "open: answered; closed: the host is reached, nothing listens; unreachable: no route, no name, no answer"
   local failures=0
-  probe() {  # probe SERVICE tcp|udp|tcp6 HOST PORT open|closed|unreachable
+  probe() {  # probe SERVICE tcp|udp|tcp6|name HOST PORT open|closed|unreachable
     local got
     got=$(docker run --rm --network "container:farm-ci-$1-1" --entrypoint python balik-web:ci -c '
 import socket, sys
 kind, host, port = sys.argv[1], sys.argv[2], int(sys.argv[3])
 try:
-    if kind == "udp":                                     # a DNS question: an answer is the way out
+    if kind == "name":                                    # a name, answered by the resolver of the service
+        socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
+        print("open")
+    elif kind == "udp":                                   # a DNS question: an answer is the way out
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(4)
         s.sendto(bytes.fromhex("abcd01000001000000000000076578616d706c6503636f6d0000010001"), (host, port))
@@ -154,8 +161,22 @@ except OSError as error:                                  # no name, no route, n
   probe backup tcp db 5432 open
   probe backup tcp mosquitto 1883 unreachable
   probe backup tcp web 8000 closed
+  # outside names: answered for the two with a way out; for the others, not even a name (DNS is a way out too)
+  probe proxy name web 8000 open
+  for service in web backup; do probe "$service" name example.com 443 open; done
+  for service in db jobs proxy mosquitto ingest; do probe "$service" name example.com 443 unreachable; done
   # the way out, TCP, UDP and IPv6, for every running service: only the web server (mail) and the backup agent
-  # (the repository) have one
+  # (the repository) have one. "unreachable" says no answer came back; that no packet even LEFT the runner is shown
+  # by a capture on the runner's own uplink of everything sent from the proxy's and the broker's networks (they are
+  # not masqueraded, so their packets would leave with their own source address)
+  local uplink front edge capture=$T/egress.pcap
+  uplink=$(ip -4 route show default | awk '{print $5; exit}')
+  front=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_front)
+  edge=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_mqtt-edge)
+  sudo tcpdump -i "$uplink" -n -U -w "$capture" "src net $front or src net $edge" > "$T/tcpdump.log" 2>&1 &
+  local capturing=$!
+  for _ in $(seq 1 20); do grep -q 'listening on' "$T/tcpdump.log" && break; sleep 0.5; done
+  cat "$T/tcpdump.log"
   for service in web backup; do
     probe "$service" tcp 1.1.1.1 443 open
     probe "$service" udp 1.1.1.1 53 open
@@ -166,6 +187,14 @@ except OSError as error:                                  # no name, no route, n
     probe "$service" udp 1.1.1.1 53 unreachable
     probe "$service" tcp6 2606:4700:4700::1111 443 unreachable
   done
+  sleep 2
+  sudo kill -INT "$capturing"
+  wait "$capturing" || true
+  local left
+  left=$(sudo tcpdump -r "$capture" -n 2>/dev/null | wc -l)
+  sudo tcpdump -r "$capture" -n 2>/dev/null | head -n 10
+  if [ "$left" = 0 ]; then echo "ok    no packet from $front (proxy) or $edge (broker) left by $uplink"
+  else echo "FAIL  $left packet(s) from $front (proxy) or $edge (broker) left by $uplink"; failures=$((failures + 1)); fi
   [ "$failures" = 0 ] || { echo "network: $failures probe(s) failed"; exit 1; }
   echo "network: every probe as expected"
 }
@@ -375,38 +404,166 @@ rotate() {
   COMPOSE="${DC[*]}" sh deploy/scripts/check-roles.sh
 }
 
+# docs/ops/upgrade.md's move of the shared development database, on a copy of it made the way it was made: the old
+# image as docker-compose.yml starts it (role, database and password balik), every migration of the project run on it
+# by the project's own image, as the development server ran them, and real data: readings with compressed chunks, the
+# hour rollup refreshed, water samples (a hypertable whose chunks carry the revision triggers, core/rev.py). Steps:
+#   tsmove  the move exactly as upgrade.md runs it; a second move refused, nothing written
+#   tsback  the way back: a failing one cleans up after itself; the real one restores the roles first and leaves a
+#           cluster the development stack signs in to with its own password
+#   tshalf  a move stopped half-way (on a copy taken before the move): the next move refuses and says how to go on,
+#           `resume` finishes it
+TS_OLD=timescale/timescaledb:2.17.2-pg17@sha256:3324f81ca7f84cdc2dc4497863b3798ababa8ce130c5b59d73f0b40e3a34148e
+TS_NEW=timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
+TS_MOVE=deploy/scripts/timescaledb-move.sh
+ts_run() {  # ts_run NAME VOLUME IMAGE: the command that starts a database container as docker-compose.yml does
+  echo "docker run -d --name $1 --network tsmove-net -e POSTGRES_USER=balik -e POSTGRES_DB=balik" \
+    "-e POSTGRES_PASSWORD=balik -v $2:/var/lib/postgresql/data $3 postgres -c timescaledb.telemetry_level=off > /dev/null"
+}
+ts_manage() {  # ts_manage HOST: manage.py of the project's image against the database container HOST, as balik
+  echo "docker run --rm -i --network tsmove-net -e DB_HOST=$1 -e DB_PORT=5432 -e DJANGO_DEBUG=1 balik-web:ci python manage.py"
+}
+ts_wait() {  # ts_wait NAME [first]: the server answers (a first start makes the database on a server of its own first)
+  if [ "${2:-}" = first ]; then
+    for _ in $(seq 1 120); do docker logs "$1" 2>&1 | grep -q 'init process complete' && break; sleep 2; done
+  fi
+  for _ in $(seq 1 60); do docker exec "$1" pg_isready -q -U balik && return 0; sleep 2; done
+  echo "FAIL: $1 did not start"; docker logs --tail 30 "$1"; exit 1
+}
+ts_sql() { docker exec -i "$1" psql -X -q -U balik -d balik -v ON_ERROR_STOP=1 -At "${@:2}"; }
+ts_files() { (cd "$1" && sha256sum -- * | sort); }
+
 tsmove() {
-  # docs/ops/upgrade.md's move of the shared development database, on a synthetic one: the same script, the same steps
-  local old=timescale/timescaledb:2.17.2-pg17@sha256:3324f81ca7f84cdc2dc4497863b3798ababa8ce130c5b59d73f0b40e3a34148e
-  local new=timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
-  local start_on="docker run -d --name tsmove -e POSTGRES_USER=balik -e POSTGRES_DB=balik -e POSTGRES_PASSWORD=$(openssl rand -hex 16) -v tsmove-data:/var/lib/postgresql/data"
-  say "a database on the old release (2.17.2): a hypertable with compressed chunks, a continuous aggregate, policies, a job"
+  say "the development database as it is: the old image (2.17.2), every migration of the project, real data"
+  docker network create tsmove-net > /dev/null
   docker volume create tsmove-data > /dev/null
-  $start_on "$old" > /dev/null
-  for _ in $(seq 1 120); do docker logs tsmove 2>&1 | grep -q 'init process complete' && break; sleep 2; done
-  for _ in $(seq 1 60); do docker exec tsmove pg_isready -q -U balik && break; sleep 2; done
-  docker exec -i tsmove psql -X -q -U balik -d balik -v ON_ERROR_STOP=1 <<'SQL'
-CREATE TABLE reading (ts timestamptz NOT NULL, channel int NOT NULL, v double precision, PRIMARY KEY (channel, ts));
-SELECT create_hypertable('reading', by_range('ts', INTERVAL '7 days'));
-INSERT INTO reading SELECT t, 1, random() FROM generate_series(now() - interval '60 days', now(), interval '10 minutes') t;
-ALTER TABLE reading SET (timescaledb.compress, timescaledb.compress_segmentby = 'channel');
-SELECT count(compress_chunk(c)) FROM show_chunks('reading', older_than => interval '14 days') c;
-SELECT add_compression_policy('reading', INTERVAL '14 days');
-SELECT add_retention_policy('reading', INTERVAL '730 days');
-CREATE MATERIALIZED VIEW reading_1h WITH (timescaledb.continuous) AS
-  SELECT time_bucket('1 hour', ts) AS bucket, channel, avg(v) AS v FROM reading GROUP BY 1, 2 WITH NO DATA;
-CALL refresh_continuous_aggregate('reading_1h', NULL, NULL);
-SELECT add_continuous_aggregate_policy('reading_1h', start_offset => INTERVAL '75 days', end_offset => INTERVAL '1 hour',
-  schedule_interval => INTERVAL '1 hour');
-CREATE PROCEDURE farm_noop(job_id int, config jsonb) LANGUAGE plpgsql AS $$ BEGIN PERFORM 1; END $$;
-SELECT add_job('farm_noop', INTERVAL '1 day');
+  sh -c "$(ts_run tsmove tsmove-data "$TS_OLD")"
+  ts_wait tsmove first
+  sh -c "$(ts_manage tsmove) \"\$@\"" manage migrate --no-input -v 0
+  say "water samples on two days (a chunk of a hypertable with the revision triggers), by the write path"
+  sh -c "$(ts_manage tsmove) \"\$@\"" manage shell -c '
+from datetime import timedelta
+from decimal import Decimal as D
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from farm.models import ProductionDepartment, Site
+from farm.tests.helpers import point_of
+from farm.tests.test_stock import make_unit
+from farm.water import services
+user = get_user_model().objects.create_user("tsmove", "tsmove@farm.ci.invalid", None)
+hall = ProductionDepartment.objects.create(site=Site.objects.create(name="Move", code="MV"), name="Hall A", code="HA")
+point = point_of(make_unit("T-01", hall))
+for days in (1, 20):
+    services.record(user, point=point, measured_at=timezone.now() - timedelta(days=days), source="manual",
+                    values={"temperature_c": D("12.0")})
+'
+  say "readings for 60 days, the chunks older than 14 days compressed, every continuous aggregate refreshed"
+  ts_sql tsmove <<'SQL'
+INSERT INTO sensors_reading (channel_no, ts, value)
+  SELECT 1, ts, 7 + random() FROM generate_series(now() - interval '60 days', now(), interval '10 minutes') AS ts;
+SELECT count(compress_chunk(c, if_not_compressed => true)) FROM show_chunks('sensors_reading', older_than => interval '14 days') AS c;
+SELECT format('CALL refresh_continuous_aggregate(%L, NULL, NULL)', format('%I.%I', view_schema, view_name))
+  FROM timescaledb_information.continuous_aggregates
+\gexec
 SQL
-  say "the move, as upgrade.md runs it on the development database (deploy/scripts/timescaledb-move.sh move)"
-  DB_EXEC="docker exec -i tsmove" RECREATE="docker rm -f tsmove > /dev/null && $start_on $new > /dev/null" \
-    sh deploy/scripts/timescaledb-move.sh move "$T/tsmove" synthetic
-  say "the way back, as upgrade.md says: the old release's dump on a new volume running the OLD image, then the update"
-  DB_EXEC=unused sh deploy/scripts/timescaledb-move.sh back "$(ls "$T"/tsmove/synthetic-before-*.dump)" \
-    "$(ls "$T"/tsmove/synthetic-before-*.facts)" "$old" "$new" tsmove-back
+  ts_sql tsmove -c "SELECT 'chunk triggers', count(*) FROM pg_trigger t JOIN pg_inherits i ON i.inhrelid = t.tgrelid
+    WHERE i.inhparent = 'water_measurements'::regclass AND t.tgname LIKE 'core\_rev\_%'"
+  say "a copy of it, taken before the move, for the stopped move (tshalf)"
+  docker stop tsmove > /dev/null
+  docker volume create tsmove-half > /dev/null
+  docker run --rm -v tsmove-data:/from:ro -v tsmove-half:/to --entrypoint sh "$TS_OLD" -c 'cp -a /from/. /to/'
+  docker start tsmove > /dev/null
+  ts_wait tsmove
+
+  say "the move, exactly as docs/ops/upgrade.md runs it (with this runner's container names)"
+  mkdir -p "$T/tsmove"
+  DB_EXEC="docker exec -i tsmove" RECREATE="docker rm -f tsmove > /dev/null && $(ts_run tsmove tsmove-data "$TS_NEW")" \
+    MANAGE="$(ts_manage tsmove)" sh "$TS_MOVE" move "$T/tsmove" dev
+  ls -l "$T/tsmove"
+  [ "$(ts_sql tsmove -c "SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'")" = 2.32.1 ] \
+    || { echo "FAIL: not on 2.32.1"; exit 1; }
+  ls "$T"/tsmove | grep -Eq '^dev-before-[0-9]{8}-[0-9]{6}\.dump$' || { echo "FAIL: the dump is not named to the second"; exit 1; }
+  for kind in facts roles.sql; do
+    ls "$T"/tsmove | grep -Eq "^dev-before-[0-9]{8}-[0-9]{6}\.$kind\$" || { echo "FAIL: no $kind beside the dump"; exit 1; }
+  done
+  if ls "$T"/tsmove | grep -q unfinished; then echo "FAIL: a finished move left its record"; exit 1; fi
+  say "the move again, on the moved database: refused, nothing written"
+  local before
+  before=$(ts_files "$T/tsmove")
+  if DB_EXEC="docker exec -i tsmove" RECREATE=false MANAGE="$(ts_manage tsmove)" \
+      sh "$TS_MOVE" move "$T/tsmove" dev > "$T/tsmove-again.out" 2>&1; then
+    cat "$T/tsmove-again.out"; echo "FAIL: a second move ran"; exit 1
+  fi
+  cat "$T/tsmove-again.out"
+  grep -q 'already' "$T/tsmove-again.out" || { echo "FAIL: the refusal does not say why"; exit 1; }
+  [ "$before" = "$(ts_files "$T/tsmove")" ] || { echo "FAIL: the refused move wrote or changed a file"; exit 1; }
+}
+
+tsback() {
+  local dump facts
+  dump=$(ls "$T"/tsmove/dev-before-*.dump)
+  facts=$(ls "$T"/tsmove/dev-before-*.facts)
+  say "the way back, as upgrade.md says: the database stopped first"
+  docker stop tsmove > /dev/null
+  say "a way back that fails (a dump cut short) removes its container and says how to remove the new volume"
+  mkdir -p "$T/tsback-bad"
+  head -c 200000 "$dump" > "$T/tsback-bad/cut.dump"
+  cp "${dump%.dump}.roles.sql" "$T/tsback-bad/cut.roles.sql" 2>/dev/null || true
+  cp "$facts" "$T/tsback-bad/cut.facts"
+  if DB_EXEC=unused MANAGE="$(ts_manage tsmove)" BACK_NETWORK=tsmove-net BACK_ALIAS=tsmove \
+      sh "$TS_MOVE" back "$T/tsback-bad/cut.dump" "$T/tsback-bad/cut.facts" "$TS_OLD" "$TS_NEW" tsmove-back-bad \
+      > "$T/tsback-bad.out" 2>&1; then
+    cat "$T/tsback-bad.out"; echo "FAIL: a cut dump was restored"; exit 1
+  fi
+  tail -n 15 "$T/tsback-bad.out"
+  [ -z "$(docker ps -aq --filter name='^timescaledb-back$')" ] || { echo "FAIL: timescaledb-back was left"; exit 1; }
+  grep -q 'docker volume rm tsmove-back-bad' "$T/tsback-bad.out" || { echo "FAIL: no word on the new volume"; exit 1; }
+  docker volume rm tsmove-back-bad > /dev/null
+  say "the way back from the old release's dump: the roles first, the restore, the new image, the update, the checks"
+  DB_EXEC=unused MANAGE="$(ts_manage tsmove)" BACK_NETWORK=tsmove-net BACK_ALIAS=tsmove \
+    sh "$TS_MOVE" back "$dump" "$facts" "$TS_OLD" "$TS_NEW" tsmove-back
+  say "the restored volume under the development stack's own settings: balik signs in with its own password"
+  sh -c "$(ts_run tsmove-restored tsmove-back "$TS_NEW")"
+  ts_wait tsmove-restored
+  sh -c "$(ts_manage tsmove-restored) \"\$@\"" manage migrate --check
+  sh -c "$(ts_manage tsmove-restored) \"\$@\"" manage check --database default --fail-level WARNING
+  [ "$(ts_sql tsmove-restored -c "SELECT count(*) FROM pg_roles WHERE rolname = 'sensors_ingest'")" = 1 ] \
+    || { echo "FAIL: sensors_ingest is not there"; exit 1; }
+  echo "water samples: $(ts_sql tsmove-restored -c 'SELECT count(*) FROM water_measurements')"
+  [ "$(ts_sql tsmove-restored -c 'SELECT count(*) FROM water_measurements')" = 2 ] || { echo "FAIL: samples lost"; exit 1; }
+}
+
+tshalf() {
+  local manage broken before
+  sh -c "$(ts_run tsmove-half tsmove-half "$TS_OLD")"
+  ts_wait tsmove-half
+  manage=$(ts_manage tsmove-half)
+  broken="case \"\$1\" in core_rev_repair) echo 'injected: the repair stops here' >&2; exit 1;; esac; $manage"
+  export DB_EXEC="docker exec -i tsmove-half"
+  export RECREATE="docker rm -f tsmove-half > /dev/null && $(ts_run tsmove-half tsmove-half "$TS_NEW")"
+  say "a move that stops half-way (after the update, at the repair of the revision triggers)"
+  mkdir -p "$T/tshalf"
+  if MANAGE="$broken" sh "$TS_MOVE" move "$T/tshalf" half > "$T/tshalf-1.out" 2>&1; then
+    cat "$T/tshalf-1.out"; echo "FAIL: the injected stop did not stop the move"; exit 1
+  fi
+  tail -n 12 "$T/tshalf-1.out"
+  grep -q "resume $T/tshalf half" "$T/tshalf-1.out" || { echo "FAIL: the stop does not say how to go on"; exit 1; }
+  say "the next move sees the half-moved database, says how to go on, and writes nothing"
+  before=$(ts_files "$T/tshalf")
+  if MANAGE="$manage" sh "$TS_MOVE" move "$T/tshalf" half > "$T/tshalf-2.out" 2>&1; then
+    cat "$T/tshalf-2.out"; echo "FAIL: a move ran over a half-moved database"; exit 1
+  fi
+  cat "$T/tshalf-2.out"
+  grep -q "resume $T/tshalf half" "$T/tshalf-2.out" || { echo "FAIL: the refusal does not say how to go on"; exit 1; }
+  [ "$before" = "$(ts_files "$T/tshalf")" ] || { echo "FAIL: the refused move wrote or changed a file"; exit 1; }
+  say "resume: the move finished, its checks passed"
+  MANAGE="$manage" sh "$TS_MOVE" resume "$T/tshalf" half
+  if ls "$T"/tshalf | grep -q unfinished; then echo "FAIL: a finished move left its record"; exit 1; fi
+  sh -c "$manage \"\$@\"" manage check --database default --fail-level WARNING
+  if MANAGE="$manage" sh "$TS_MOVE" resume "$T/tshalf" half > "$T/tshalf-3.out" 2>&1; then
+    cat "$T/tshalf-3.out"; echo "FAIL: a second resume ran"; exit 1
+  fi
+  cat "$T/tshalf-3.out"
 }
 
 logs() {
@@ -417,8 +574,9 @@ logs() {
 }
 
 down() {
-  docker rm -f -v tsmove timescaledb-back > /dev/null 2>&1 || true
-  docker volume rm tsmove-data tsmove-back > /dev/null 2>&1 || true
+  docker rm -f -v tsmove tsmove-half tsmove-restored timescaledb-back > /dev/null 2>&1 || true
+  docker volume rm tsmove-data tsmove-half tsmove-back tsmove-back-bad > /dev/null 2>&1 || true
+  docker network rm tsmove-net > /dev/null 2>&1 || true
   docker rm -f -v farm-pitr > /dev/null 2>&1 || true
   docker volume rm farm-pitr-data > /dev/null 2>&1 || true
   "${RC[@]}" down -v --remove-orphans || true

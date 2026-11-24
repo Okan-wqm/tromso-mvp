@@ -8,8 +8,11 @@
 //   - every chart drawn (a canvas per chart with values, words for one without), the window's controls there;
 //   - the window's from and to in the shared date box (a text box, dd.mm.yyyy HH:MM, tidied when left), never the
 //     browser's own date box;
-//   - Tank › Water: every event a mark on the charts, named, reached by Tab, its label shown on focus; the Deffeyes
-//     chart of the window drawn from the server's figure (its pH labels, the water's path);
+//   - Tank › Water: every event a mark on the charts for the pointer (its label shown on hover of its 24 px handle, no
+//     Tab stop: the events list is the keyboard's path, each a link); the Deffeyes chart of the window drawn from the
+//     server's figure (its pH labels, the water's path), its end without a diagram said as such in the warning's
+//     colour (the test world's alkalinity is four days old), and under 480 px its labels left out for their words;
+//   - each chart in words for a screen reader (its latest, lowest and highest; its gaps);
 //   - no CSP violation, no critical or serious axe finding, every text at 4.5:1;
 //   - nothing scrolls sideways.
 // With SHOTS=<folder> it writes the screenshots.
@@ -102,20 +105,30 @@ test('the Production and Sensors islands in a browser', { skip: skipWithout(BROW
             if (drawn) await tab.waitForSelector('.ui-series canvas');
             assert.equal(await tab.locator('.ui-series canvas').count() >= drawn, true, 'a canvas per chart with values');
             assert.equal(await tab.locator('.ui-segmented button[aria-pressed="true"]').count(), 1, 'the window in force is pressed');
-            const events = props.events as { label: string }[];
+            const events = props.events as { label: string; when: string; url: string }[];
             if (drawn && events.length) {
               await tab.waitForSelector('.ui-chart-mark');
-              const mark = tab.locator('.ui-chart-mark').first();
-              assert.ok((await mark.getAttribute('aria-label'))?.trim(), 'a mark is named');
-              await mark.focus();
-              assert.equal(await mark.locator('.ui-chart-mark-label').evaluate((label) => getComputedStyle(label).visibility),
-                'visible', 'a focused mark shows its label');
-              await tab.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+              const marks = tab.locator('.ui-chart-mark');
+              assert.equal(await tab.locator('.ui-chart-mark[tabindex], a.ui-chart-mark').count(), 0, 'no Tab stop per event per chart');
+              assert.equal(await marks.first().getAttribute('aria-hidden'), 'true', 'the marks are for the pointer');
+              await marks.first().locator('.ui-chart-mark-handle').hover();
+              assert.equal(await marks.first().locator('.ui-chart-mark-label').evaluate((label) => getComputedStyle(label).visibility),
+                'visible', 'a hovered mark shows its label');
+              assert.equal(await tab.locator('.ui-table tbody a').count(), events.length, 'the events list: a link each');
+              await tab.mouse.move(0, 0);
             }
-            const ranged = props.range_chart as { chart: unknown; path?: string[] } | null;
+            assert.ok(await tab.locator('.ui-chart dl.sr-only dt').count(), 'the charts in words');
+            const ranged = props.range_chart as { chart: unknown; path?: string[]; stale?: string } | null;
             if (ranged?.chart) {
-              assert.ok(await tab.locator('svg.deffeyes-chart .deffeyes-ph').count(), 'the pH labels the server placed');
               assert.equal(await tab.locator('svg.deffeyes-chart .deffeyes-track').count(), ranged.path?.length ?? 0, 'the path, one line a run');
+              if (ranged.stale) {
+                assert.equal(await tab.locator('.ui-chart-now[data-status="warning"]', { hasText: ranged.stale }).count(), 1,
+                  'the window end without a diagram, said in the warning colour');
+              }
+              const label = tab.locator('svg.deffeyes-chart .deffeyes-ph').first();
+              assert.ok(await tab.locator('svg.deffeyes-chart .deffeyes-ph').count(), 'the pH labels the server placed');
+              assert.equal(await label.isVisible(), width >= 1440, 'the pH labels only where they can be read');
+              assert.equal(await tab.locator('.deffeyes-scale').isVisible(), width < 1440, 'their words where they are not drawn');
             }
           } else {
             assert.ok(await tab.locator('select[name="target"]').count());

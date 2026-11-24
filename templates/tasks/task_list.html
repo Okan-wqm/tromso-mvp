@@ -10,6 +10,7 @@
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
 <div class="units-main">
+  {% include "tasks/_unplanned.html" %}
   <nav class="ui-tabs" aria-label="{% trans "Tasks" %}">
     {% for item in views %}
     <a class="ui-tab" href="{{ item.href }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}{% if item.count is not None %} <span class="ui-count">{{ item.count }}</span>{% endif %}</a>

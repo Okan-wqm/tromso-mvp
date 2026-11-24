@@ -16,7 +16,7 @@ from django.db.models.functions import Coalesce
 from core import people
 from farm.clocks import clocks
 
-from .models import CLOSED_STATUSES, OPEN_STATUSES, PRIORITY_RANK, Status, Task, TaskChecklistItem
+from .models import CLOSED_STATUSES, OPEN_STATUSES, PRIORITY_RANK, Status, Task, TaskChecklistItem, TaskSeries
 
 TODAY, OPEN, COMPLETED = 'today', 'open', 'completed'
 VIEWS = (TODAY, OPEN, COMPLETED)
@@ -115,6 +115,29 @@ def per_unit(unit_ids, moment=None):
             .annotate(total=Count('pk'), late=Count('pk', filter=overdue(now)),
                       today=Count('pk', filter=due_today(now))))
     return {row['unit_id']: UnitTasks(row['total'], row['late'], row['today']) for row in rows}
+
+
+# The places a recurring task's site is read through (TaskSeries.place_site), joined in one query.
+SERIES_PLACES = ('site', 'production_department__site', 'system__site', 'unit__production_department__site',
+                 'equipment__production_department__site')
+
+
+def unplanned():
+    """The active recurring tasks whose planned tasks do not reach their place's today: the task job (`manage.py
+    generate_tasks`, run every hour by the server's jobs) has not made them, so today's tasks of each are missing from
+    every count and list. Pages never make them (the data-layering audit, M-3: a read writes nothing, and the landing
+    page must not fail on the planning): they say how many are behind, and the job makes them. A recurring task that
+    starts after today is not behind. Two queries at most, whatever the number of tasks."""
+    from farm.stock.dates import site_today
+    latest = max(clock.today for clock in clocks())
+    candidates = (TaskSeries.objects.filter(is_active=True)
+                  .filter(Q(generated_until__lt=latest) | Q(generated_until__isnull=True, starts_on__lte=latest))
+                  .select_related(*SERIES_PLACES))
+
+    def behind(series):
+        today = site_today(series.place_site)         # the day tasks.services.materialise plans to
+        return series.generated_until < today if series.generated_until else series.starts_on <= today
+    return [series for series in candidates if behind(series)]
 
 
 def readers():

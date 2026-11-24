@@ -10,7 +10,7 @@ from farm.stock.views import overview_tiles
 from farm.water.views import RECORD as WATER_RECORD, overview as water_overview
 from reports import duties
 from reports.views import overview_upcoming
-from tasks.views import overview_tiles as task_tiles
+from tasks.views import overview_tiles as task_tiles, unplanned_count
 
 
 def _counts(user, *tiles):
@@ -74,6 +74,8 @@ def production_home(request):
         'record_url': f"{reverse('farm:water_record')}?{urlencode({'next': request.get_full_path()})}"
         if user.has_perm(WATER_RECORD) else '',
         'late_tasks': tasks_named['overdue']['count'] if tasks_named else 0,
+        # The task job behind: the task counts above miss today's tasks of these recurring tasks (tasks.read.unplanned).
+        'tasks_unplanned': unplanned_count(user),
         'late_reports': len(upcoming['late']) + len(upcoming['late_duties']) if upcoming else 0,
         # What else is not "nothing needs attention" (flow faults M-06, M-20), each counted by the read of its own page:
         # the notices to file at once, the sites with fish that are not set up for reports, the stocked units with no

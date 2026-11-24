@@ -1,6 +1,7 @@
 """The two tabs of Operations › Tasks, declared on core.crud: the tasks (a list with three views and a drawer,
-create, edit, delete) and the recurring tasks. Their list pages make the recurring tasks' planned tasks first
-(tasks.services.materialise_due), then read."""
+create, edit, delete) and the recurring tasks. Their list pages only read: the recurring tasks' planned tasks are made
+by the task job (tasks.services.materialise_due, `manage.py generate_tasks`), and a page says when it is behind
+(tasks.read.unplanned)."""
 import uuid
 from datetime import timedelta
 from urllib.parse import urlencode
@@ -83,7 +84,6 @@ class TaskResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        services.materialise_due()
         params = {key: request.GET.get(key, '').strip() for key in (*FILTERS, 'task')}
         chosen = params['view'] if params['view'] in read.VIEWS else read.TODAY
         live = places.live()
@@ -150,6 +150,7 @@ class TaskResource(Resource):
             'hidden_for_search': [(key, params[key]) for key in FILTERS if key != 'q' and params[key]],
             'row_query': query(task=''),
             'series_url': reverse('tasks:taskseries_list') if request.user.has_perm('tasks.view_taskseries') else '',
+            'unplanned': len(read.unplanned()),
         }
         drawer = None
         try:
@@ -217,7 +218,6 @@ class TaskSeriesResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        services.materialise_due()
         state = request.GET.get('state', '')
         if state == 'active':
             objects = objects.filter(is_active=True)
@@ -229,4 +229,4 @@ class TaskSeriesResource(Resource):
         for series in objects:
             today = site_today(series.place_site)
             series.next_on = series.next_date(today - timedelta(days=1)) if series.is_active else None
-        return objects, {'state': state, 'tasks_url': reverse('tasks:task_list')}
+        return objects, {'state': state, 'tasks_url': reverse('tasks:task_list'), 'unplanned': len(read.unplanned())}

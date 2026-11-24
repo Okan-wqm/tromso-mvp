@@ -269,8 +269,9 @@ def materialise(series):
 
 
 def materialise_due():
-    """Makes the planned tasks of every active recurring task that is behind (called before the task pages and
-    the overview read, and by `manage.py generate_tasks`)."""
+    """Makes the planned tasks of every active recurring task that is behind: the task job's work (`manage.py
+    generate_tasks`, scheduled on the server). Never called by a page: a page reads (read.unplanned says when the job
+    is behind)."""
     latest = max(clock.today for clock in clocks()) + timedelta(days=settings.TASK_HORIZON_DAYS)
     behind = TaskSeries.objects.filter(is_active=True).exclude(generated_until__gte=latest)
     return [task for series in behind for task in materialise(series)]

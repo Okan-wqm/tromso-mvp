@@ -24,7 +24,7 @@ from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, Severity, Source
+from .models import Acknowledgement, Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification, Severity, Source
 from .transports import transport_for
 
 logger = logging.getLogger(__name__)
@@ -101,11 +101,18 @@ def _unsuppressed(alarms):
     unit's quantity, a device's clock)
     (ISA-18.2: the low level under the low-low one); it is still raised and recorded, and notified once the critical
     clears with the warning still open."""
+    # A water level's unit is its subject's (`water:unit:<unit>:...`), never its point's: a unit read at its system has
+    # its levels at the loop point or at none (review 5 of fresh-rule, M1). One query.
+    units = {alarm_id: key.split(':')[2] for alarm_id, key in AlarmSubjectState.objects.filter(
+        open_alarm__in=[alarm.pk for alarm in alarms if alarm.source == Source.WATER_LIMIT],
+        key__startswith='water:unit:').values_list('open_alarm_id', 'key')}
+
     def subject(alarm):
         """The subject of a level, or None for an alarm that has no levels: a unit's quantity (cross review F7: the
         unit, never the point that stood for it), or a device's clock."""
         if alarm.source == Source.WATER_LIMIT:
-            return 'water', alarm.point.unit_id, sources.slot_of(alarm.parameter)
+            unit = units.get(alarm.pk) or (str(alarm.point.unit_id) if alarm.point_id else None)
+            return 'water', unit, sources.slot_of(alarm.parameter)
         if alarm.parameter == sources.DEVICE_CLOCK:
             return 'clock', alarm.device_id
         return None

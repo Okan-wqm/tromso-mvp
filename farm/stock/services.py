@@ -238,8 +238,6 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
                 batches[batch.pk] = batch
                 for entry in entries:
                     entry.batch = batch
-                with audit.source_language():
-                    audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
             operation = StockOperation.objects.create(kind=kind, date=day, notes=notes, health_event=health_event,
                                                       created_by=user, updated_by=user)
             if token is not None:
@@ -251,6 +249,11 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
                               size_class=entry.size_class, sample_count=entry.sample_count,
                               sample_weight_kg=entry.sample_weight_kg)
                 for entry in entries])
+            if new_batch is not None:
+                # Logged once its lines exist: the entry is stamped with the works its lines lie in (core.audit.stamp; a
+                # batch is sealed with its lines), so a batch stocked into a sealed tank never moves an outsider's token.
+                with audit.source_language():
+                    audit.record_create(user, batch, audit.snapshot(batch, BATCH_FIELDS))
             over, mixed = _check_timeline(operation, batches, units, kind)
             asked = {name: messages for name, messages, ticked in (('over_capacity_ack', over, ack),
                                                                    ('size_mix_ack', mixed, size_mix_ack))

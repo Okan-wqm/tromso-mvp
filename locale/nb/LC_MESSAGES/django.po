@@ -13315,6 +13315,9 @@ msgstr "Sensor"
 msgid "Sensor alarm event"
 msgstr "Sensoralarmhendelse"
 
+msgid "Sensor alarm events"
+msgstr "Alarmhendelser fra sensorer"
+
 msgid "Sensor alarm rule"
 msgstr "Sensoralarmregel"
 

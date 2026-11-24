@@ -99,16 +99,19 @@ def _by_device(rows):
 
 
 def dead_letters_props(request, rows, *, page, reasons, reason, show, pager_query, can_resolve):
-    """Dead letters: what the ingest could not store, the payload as text (cut, then whole) and as hex, its size; the
-    payload is whatever a device sent, drawn as text only (React escapes it, as the classic template does)."""
+    """Dead letters: what the ingest could not store, the payload as text (cut, and whole with its hex and size in a
+    closed disclosure, as the classic page's); the payload is whatever a device sent, drawn as text only (React escapes
+    it, as the classic template does). Resolve says its word beside its icon."""
     def payload(row):
-        return L.cell(truncatechars(row['text'], 60), sub=[row['text'], row['hex'], _('%(size)s bytes') % {
-            'size': row['letter'].payload_len}])
+        # closed, as the classic page's <details>: a payload may be 4 KB of text and 8 KB of hex
+        return L.cell(details=L.details(truncatechars(row['text'], 60), [row['text'], row['hex'], _('%(size)s bytes') % {
+            'size': row['letter'].payload_len}]))
 
     def actions(letter):
         if letter.resolved_at or not can_resolve:
             return []
-        return [L.post(reverse('sensors:dead_letter_resolve', args=[letter.pk]), _('Resolve'), 'check-circle')]
+        return [L.post(reverse('sensors:dead_letter_resolve', args=[letter.pk]), _('Resolve'), 'check-circle',
+                       labelled=True)]
 
     columns = [L.column('topic', _('Topic')), L.column('reason', _('Reason')), L.column('times', _('Times'), numeric=True),
                L.column('last', _('Last')), L.column('payload', _('Payload'))]
@@ -147,7 +150,8 @@ def alarm_events_props(request, events, *, page, connected, can_acknowledge):
         alarm = getattr(event, 'alarm', None)
         if not can_acknowledge or (alarm is not None and alarm.acknowledgements.all()):
             return []
-        return [L.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]), _('Acknowledge'), 'check-circle')]
+        return [L.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]), _('Acknowledge'), 'check-circle',
+                       labelled=True)]
 
     columns = [L.column('rule', _('Rule')), L.column('channel', _('Channel')), L.column('place', _('Place')),
                L.column('severity', _('Severity')), L.column('opened', _('Opened')), L.column('closed', _('Closed')),
@@ -191,7 +195,10 @@ def _state_tile(each, now):
         status = 'warning' if each['offline'] else None
         sub = _('%(count)s offline') % {'count': each['offline']} if each['offline'] else None
     elif key == 'alarms':
-        status = 'critical' if count else None
+        # the classic page's count of open SENSOR alarm events (not the strip's open alarms, alarms.read.attention_all),
+        # said so under it; red while one of them is critical, a warning while only warnings are open
+        sub = _('Sensor alarm events')
+        status = 'critical' if each.get('critical') else ('warning' if count else None)
     elif key in ('stale', 'dead', 'qos0', 'refused', 'unplaced'):
         status = 'warning' if count and key != 'unplaced' else None
     return {'key': key, 'label': str(each['label']), 'figure': str(count), 'href': each['url'], 'sub': sub,
@@ -201,7 +208,9 @@ def _state_tile(each, now):
 def home_props(setup_tiles, state_tiles, now):
     """Overview: the ingest's state and the configuration counted (sensors.views.state_tiles and the setup counts, as the
     classic page reads them), in the design's order and words, worked out at `now` on the company's clock."""
-    ordered = sorted(state_tiles, key=lambda each: STATE_ORDER.index(each['key']))
+    # a tile the design's order does not name yet goes last, never an error
+    ordered = sorted(state_tiles, key=lambda each: STATE_ORDER.index(each['key']) if each['key'] in STATE_ORDER
+                     else len(STATE_ORDER))
     return {
         'state': {'title': _('Ingest and devices'), 'tiles': [_state_tile(each, now) for each in ordered],
                   'meta': _('Worked out %(when)s · %(zone)s') % {'when': when(now), 'zone': company_zone().key}}

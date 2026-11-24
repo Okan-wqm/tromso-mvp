@@ -63,7 +63,7 @@ def home(request):
     state = state_tiles(request.user, now)
     if ui.is_next(request):
         # the design's setup row: the bindings and the credentials counted too
-        tiles += [{'label': resource.title(), 'count': resource.model.objects.count(),
+        tiles += [{'label': resource.title(), 'count': resource.queryset().count(),     # what the list shows (visible)
                    'url': reverse(resource.url_name('list'))}
                   for resource in (BindingResource, CredentialResource) if request.user.has_perm(resource.perm('view'))]
         return render_page(request, 'sensors/home_next.html', {'props': pages.home_props(tiles, state, now)})
@@ -459,7 +459,8 @@ def state_tiles(user, now):
         else:
             text = _('Down')
         tiles.append({'key': 'ingest', 'label': _('Ingest'), 'text': text, 'count': text,
-                      'heartbeat': max((status.heartbeat_at for status in statuses), default=None),
+                      # the oldest heartbeat: the one that decides Down, so the line never says fresh over a Down
+                      'heartbeat': min((status.heartbeat_at for status in statuses), default=None),
                       'url': reverse('sensors:connection_list')})
         # What the ingest could not keep: QoS 0 messages it dropped on a full queue, messages the database refused (they
         # are dead letters too). Counted since the service started.
@@ -486,8 +487,9 @@ def state_tiles(user, now):
         tiles.append({'key': 'stale', 'label': _('Channels without a fresh value'), 'count': stale,
                       'url': reverse('sensors:channel_list')})
     if user.has_perm('sensors.view_alarmevent'):
+        open_events = AlarmEvent.objects.filter(closed_at__isnull=True)
         tiles.append({'key': 'alarms', 'label': _('Open alarms'), 'url': reverse('sensors:alarm_events'),
-                      'count': AlarmEvent.objects.filter(closed_at__isnull=True).count()})
+                      'count': open_events.count(), 'critical': open_events.filter(rule__severity='critical').count()})
     if user.has_perm('sensors.view_deadletter'):
         tiles.append({'key': 'dead', 'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
                       'count': DeadLetter.objects.filter(last_at__gte=now - timedelta(days=1)).count()})

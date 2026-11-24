@@ -119,6 +119,15 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
         self.assertIn('test.admin', closed['cells']['acknowledged']['text'])
         dead = props_of(self.pages('sensors:dead_letters', {'show': 'all'}, 'en')[1], 'list-page')
         self.assertEqual(len(dead['table']['rows']), 2)
+        # the payload closed, as the classic page's <details>: its start the summary, whole text, hex and size inside
+        payload = dead['table']['rows'][0]['cells']['payload']
+        self.assertIsNone(payload['text'])
+        self.assertEqual(payload['sub'], [])
+        self.assertEqual(len(payload['details']['lines']), 3)
+        self.assertTrue(payload['details']['lines'][2].endswith('bytes'))
+        # an action that changes a safety state says its word, not its icon alone (F6)
+        self.assertTrue(open_event['actions'][0]['labelled'])
+        self.assertTrue(all(action.get('labelled') for row in dead['table']['rows'] for action in row['actions']))
         self.assertEqual({each['name'] for each in dead['toolbar']['filters']}, {'reason', 'show'})
 
     def test_a_place_s_bindings_lead_back_to_every_binding(self):
@@ -141,3 +150,40 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
         self.assertEqual(props['state']['tiles'][0]['sub'], 'Heartbeat 4 s ago')
         self.assertEqual([tile['key'] for tile in props['state']['tiles']][:3], ['ingest', 'online', 'stale'])
         self.assertTrue(props['setup']['tiles'])
+        # the open-alarms tile is the classic count of open SENSOR alarm events, and says so (not the strip's figure)
+        alarms = next(tile for tile in props['state']['tiles'] if tile['key'] == 'alarms')
+        self.assertEqual(alarms['sub'], 'Sensor alarm events')
+
+    def test_the_open_alarms_tile_is_red_for_a_critical_event_and_a_warning_for_warnings_only(self):
+        from sensors.pages import home_props
+        tile = {'key': 'alarms', 'label': 'Open alarms', 'url': '/x/'}
+        for count, critical, status in ((0, 0, None), (2, 0, 'warning'), (2, 1, 'critical')):
+            with self.subTest(count=count, critical=critical):
+                [said] = home_props([], [{**tile, 'count': count, 'critical': critical}], MOMENT)['state']['tiles']
+                self.assertEqual(said['status'], status)
+                self.assertEqual(said['sub'], 'Sensor alarm events')
+        # a key the design's order does not name goes last, never an error
+        tiles = home_props([], [{'key': 'new', 'label': 'New', 'url': '/y/', 'count': 1},
+                                {**tile, 'count': 0, 'critical': 0}], MOMENT)['state']['tiles']
+        self.assertEqual([each['key'] for each in tiles], ['alarms', 'new'])
+
+    def test_the_ingest_line_says_the_oldest_heartbeat_the_one_that_decides_down(self):
+        from datetime import timedelta
+
+        from sensors.models import IngestStatus
+        from sensors.tests import make_connection
+        quiet = make_connection('Test quiet broker')
+        IngestStatus.objects.create(connection_id=quiet.pk, heartbeat_at=MOMENT - timedelta(minutes=5), connected=False,
+                                    version='test')
+        props = props_of(self.pages('sensors:home', {}, 'en')[1], 'sensors-home')
+        ingest = props['state']['tiles'][0]
+        self.assertEqual((ingest['figure'], ingest['status']), ('Down', 'critical'))
+        self.assertRegex(ingest['sub'], r'^Heartbeat 5\s?min')            # the quiet broker's, not the 4 s one
+
+    def test_the_setup_tiles_count_what_their_lists_show(self):
+        from sensors.models import Binding
+        from sensors.resources import BindingResource
+        props = props_of(self.pages('sensors:home', {}, 'en')[1], 'sensors-home')
+        figures = {tile['href']: tile['figure'] for tile in props['setup']['tiles']}
+        self.assertEqual(figures[reverse('sensors:binding_list')], str(Binding.objects.visible().count()))
+        self.assertEqual(BindingResource.queryset().count(), Binding.objects.visible().count())

@@ -5526,12 +5526,16 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   its number of channels; a channel's line is its "#number". A stale live value keeps
   its "Stale" chip and its row the warning edge, never "Fresh". Resolve (a dead letter) and Acknowledge (an alarm event
   nobody acknowledged) are the row's POST action with the page's token, for a person who may. "Nothing is sent yet" stays
-  on Alarm events while no push transport is connected. A place's bindings (`?place=`) say whose they are and lead back
+  on Alarm events while no push transport is connected. Acknowledge and Resolve show their word beside the icon (the
+  list page's `labelled` action: a safety state changes); a dead letter's payload, its hex and size are a closed
+  disclosure (`listprops.details`), as the classic page's `<details>`. A place's bindings (`?place=`) say whose they are and lead back
   to every binding. Overview is island `sensors-home` (`frontend/islands/pages/SensorsHome.tsx`): the classic page's own
   state and setup counts (`sensors.views.state_tiles`, each with its key) in the design's order, with the moment they were
-  worked out, the ingest's last heartbeat and the offline devices; a status edge only for what needs a look (an ingest
-  down or never heard and an open alarm critical; an offline device, a stale channel, a dead letter, a lost message a
-  warning); bindings and credentials counted too. Held:
+  worked out, the ingest's oldest heartbeat (the one that decides Down) and the offline devices; a status edge only for
+  what needs a look (an ingest down or never heard critical; an offline device, a stale channel, a dead letter, a lost
+  message a warning). "Open alarms" is the classic page's count of open sensor alarm events, said so under it ("Sensor
+  alarm events": not the strip's open alarms), critical while one of them is critical, a warning while only warnings are
+  open. Bindings and credentials are counted as their lists show them (`Resource.queryset`: a hidden binding is not). Held:
   `sensors/tests/test_pages_next.py` (every page against its classic page on the test world plus `sensors_world`, in
   three languages; nothing opens the classic dialog; the world's facts) and `frontend/test/prodrest.pages.ts` (each page
   at 1440 and 390: CSP, axe, 4.5:1, no sideways scroll, the screenshots).

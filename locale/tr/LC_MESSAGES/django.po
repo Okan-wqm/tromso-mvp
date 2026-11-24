@@ -13343,6 +13343,9 @@ msgstr "Sensör"
 msgid "Sensor alarm event"
 msgstr "Sensör alarm olayı"
 
+msgid "Sensor alarm events"
+msgstr "Sensör alarm olayları"
+
 msgid "Sensor alarm rule"
 msgstr "Sensör alarm kuralı"
 

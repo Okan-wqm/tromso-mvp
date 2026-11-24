@@ -5392,8 +5392,9 @@ validation and every chemistry judgement; the island draws the finished values i
   module, its chunks as `modulepreload` and every stylesheet they bring (at any depth), read from the build's manifest,
   `static/islands/manifest.json` (no dot-folder, so `collectstatic` copies it). **In production** it must be beside the
   islands it names: `STATIC_ROOT/islands/manifest.json` after `collectstatic` (read first when it is there), else the
-  build's own; `manage.py check --deploy` fails (core.E007) when it is missing or cannot be read, and the plain check
-  warns (core.W001). `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
+  build's own; `manage.py check --deploy` fails (core.E007) when it or an entry script of `static/js` is missing or
+  cannot be read, and the plain check warns (core.W001); both look where the server serves them, STATIC_ROOT first
+  (`assets.built`), so a server that serves STATIC_ROOT only passes with what it has. `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
   raises; a missing build is core.W001. Props carry finished, translated values only; a form posts back to Django
   (`ServerForm` with the CSRF token from the props), whose errors come back as props and land on the fields.
 - **Rules** (`npm run check:ds`): an island writes no colour, no `style=` or style object, no markup string

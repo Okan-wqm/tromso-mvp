@@ -47,7 +47,7 @@ class NewLookTests(TestCase):
         strip = strip[:strip.index('</div>')]
         # the alarms come as a fragment: until it is there they are being read, never "no alarms"
         self.assertIn(f'<span class="ui-strip-poll" data-poll="{reverse("core:ui_strip_alarms")}" data-poll-every="30" '
-                      f'data-poll-state="loading"><a class="ui-strip-item" href="{reverse("alarms:alarm_list")}" '
+                      f'data-poll-state="loading" data-unread-text="The alarms cannot be read"><a class="ui-strip-item" href="{reverse("alarms:alarm_list")}" '
                       'data-strip="alarms">Reading the alarms…</a></span>', strip)
         self.assertNotIn('No open alarms', strip)
         fragment = self.client.get(reverse('core:ui_strip_alarms')).content.decode()

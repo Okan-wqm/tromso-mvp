@@ -83,7 +83,7 @@
           <p class="eyebrow">{% if UI_NEXT and page_label %}{{ page_panel }}<span aria-hidden="true"> › </span>{% if page_group != page_panel %}{{ page_group }}<span aria-hidden="true"> › </span>{% endif %}<span class="ui-crumb-here">{{ page_label }}</span>{% else %}{% block eyebrow %}{% trans "Panel" %}{% endblock %}{% endif %}</p>
         </nav>
         {% if UI_NEXT and ui_strip %}<div class="ui-strip" role="group" aria-label="{% trans "Status" %}">
-          {% for item in ui_strip %}{% if item.poll %}<span class="ui-strip-poll" data-poll="{{ item.poll }}" data-poll-every="30" data-poll-state="loading">{% include "core/_strip_item.html" %}</span>{% else %}{% include "core/_strip_item.html" %}{% endif %}{% endfor %}
+          {% for item in ui_strip %}{% if item.poll %}<span class="ui-strip-poll" data-poll="{{ item.poll }}" data-poll-every="30" data-poll-state="loading" data-unread-text="{% trans "The alarms cannot be read" %}">{% include "core/_strip_item.html" %}</span>{% else %}{% include "core/_strip_item.html" %}{% endif %}{% endfor %}
         </div>{% endif %}
         <div class="topbar-language">{% include "_language_switcher.html" %}</div>
 

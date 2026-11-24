@@ -574,6 +574,13 @@
 }
 [data-ui="next"] .ui-strip > * + * { border-left: 1px solid var(--line-hair); }
 [data-ui="next"] .ui-strip-poll { display: flex; }
+/* the polled alarms item (frontend/poll.ts sets data-poll-state): never read (unread), no recent answer (stale) or no
+   longer allowed (gone) is said in words, never left as "Reading the alarms…" or as an old count without a word */
+[data-ui="next"] .ui-strip-poll:is([data-poll-state="unread"], [data-poll-state="stale"], [data-poll-state="gone"])::after {
+  content: attr(data-unread-text); display: flex; align-items: center; padding: 0 var(--space-3);
+  background: var(--warn-tint); color: var(--warn-text); font-size: var(--fs-small); font-weight: 600; white-space: nowrap;
+}
+[data-ui="next"] .ui-strip-poll:is([data-poll-state="unread"], [data-poll-state="gone"]) > .ui-strip-item { display: none; }
 [data-ui="next"] a.ui-strip-item { color: var(--text-1); font-family: var(--font-display); font-size: var(--fs-cell); font-weight: 600; letter-spacing: .02em; }
 [data-ui="next"] a.ui-strip-item:hover { background: var(--surface-sunken); }
 [data-ui="next"] .ui-strip-item .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 1.75; }

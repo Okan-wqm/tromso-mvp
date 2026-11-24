@@ -1175,9 +1175,12 @@
   --fs-wordmark: 24px;
   --fs-readout: 28px;
   --fs-figure: 18px;
+  --fs-tile: 32px;
   --fs-body: 15px;
   --fs-body-coarse: 16px;
+  --fs-cell: 15px;
   --fs-label: 15px;
+  --fs-tab: 15px;
   --fs-head: 13px;
   --fs-small: 13px;
   --fs-caption: 12px;
@@ -1237,4 +1240,28 @@
   --gradient-skeleton: linear-gradient(90deg, #e6eaee 0%, #f2f4f6 50%, #e6eaee 100%);
   --font-text: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
   --font-display: "Bricolage Grotesque", "Atkinson Hyperlegible Next", system-ui, sans-serif;
+}
+[data-ui="next"] {
+  --radius-chip: 0;
+  --radius-control: 0;
+  --radius-object: 0;
+  --font-display: "Barlow", "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --fs-h1: calc(30px * var(--k, 1));
+  --fs-h2: calc(19px * var(--k, 1));
+  --fs-wordmark: calc(20px * var(--k, 1));
+  --fs-readout: calc(34px * var(--k, 1));
+  --fs-tile: calc(38px * var(--k, 1));
+  --fs-body: calc(15px * var(--k, 1));
+  --fs-body-coarse: calc(16px * var(--k, 1));
+  --fs-label: calc(13px * var(--k, 1));
+  --fs-tab: calc(16px * var(--k, 1));
+  --fs-cell: calc(14px * var(--k, 1));
+  --fs-head: calc(12px * var(--k, 1));
+  --fs-small: calc(13px * var(--k, 1));
+  --fs-caption: calc(12px * var(--k, 1));
+  --row-1: 44px;
+  --row-2: 56px;
+  --row-coarse: 64px;
+  --rail-w: 248px;
+  --control-h: var(--h, 40px);
 }

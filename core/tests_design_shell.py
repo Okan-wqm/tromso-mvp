@@ -104,14 +104,15 @@ class SelfHostedFontsTests(SimpleTestCase):
     def test_every_font_the_stylesheet_names_is_served_here_with_its_licence(self):
         fonts = (ROOT / 'static' / 'css' / 'fonts.css').read_text(encoding='utf-8')
         files = re.findall(r'url\("\.\./fonts/([^"]+)"\)', fonts)
-        self.assertEqual(len(files), 4)
+        self.assertEqual(len(files), 8)
         for name in files:
             self.assertTrue((ROOT / 'static' / 'fonts' / name).is_file(), name)
-        for licence in ('OFL-atkinson-hyperlegible-next.txt', 'OFL-bricolage-grotesque.txt'):
+        for licence in ('OFL-atkinson-hyperlegible-next.txt', 'OFL-bricolage-grotesque.txt', 'OFL-barlow.txt'):
             self.assertIn('SIL Open Font License', (ROOT / 'static' / 'fonts' / licence).read_text(encoding='utf-8'))
         third_party = (ROOT / 'THIRD_PARTY.md').read_text(encoding='utf-8')
         self.assertIn('Atkinson Hyperlegible Next', third_party)
         self.assertIn('Bricolage Grotesque', third_party)
+        self.assertIn('Barlow', third_party)
 
 
 class TokenSourceTests(SimpleTestCase):

@@ -63,7 +63,6 @@ class TeamList(RowList):
     empty_text = _('No one in the team yet. Use “Add person” to add a row.')
     add_label, save_label = _('Add person'), _('Save team')
     pending_text = _('The team can be set once the experiment is created: its creator is the lead.')
-    row_kind = 'team-row'
     saved = ngettext_lazy('%(count)d person saved.', '%(count)d people saved.', 'count')
 
     @classmethod

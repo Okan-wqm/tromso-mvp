@@ -42,7 +42,6 @@ class TreatmentAnswers(ReportRows):
                   'and which were given together (the same combination number). Saved separately from the report.')
     empty_text = _('No treatment of the week is answered. Use “Add treatment” to add a row.')
     add_label, save_label = _('Add treatment'), _('Save treatments')
-    row_kind = 'treatment-answer-row'
     formset = TreatmentAnswerFormSet
     kinds = (ReportKind.SEA_LICE,)
 
@@ -63,7 +62,6 @@ class ResistanceSuspicions(ReportRows):
                   'substance and why it is suspected. Saved separately from the report.')
     empty_text = _('No suspicion. Use “Add suspicion” to add a row.')
     add_label, save_label = _('Add suspicion'), _('Save suspicions')
-    row_kind = 'resistance-row'
     formset = ResistanceSuspicionFormSet
     kinds = (ReportKind.SEA_LICE,)
 
@@ -82,7 +80,6 @@ class SensitivityTests(ReportRows):
                   'substance and the result. Saved separately from the report.')
     empty_text = _('No test. Use “Add test” to add a row.')
     add_label, save_label = _('Add test'), _('Save tests')
-    row_kind = 'sensitivity-row'
     formset = SensitivityTestFormSet
     kinds = (ReportKind.SEA_LICE,)
 
@@ -98,7 +95,6 @@ class UnitAnswers(ReportRows):
                   'paragraph j): tick each that was. Saved separately from the report.')
     empty_text = _('No unit. Use “Add unit” to add a row.')
     add_label, save_label = _('Add unit'), _('Save units')
-    row_kind = 'unit-answer-row'
     formset = UnitAnswerFormSet
     kinds = (ReportKind.BIOMASS,)
 

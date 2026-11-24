@@ -27,7 +27,6 @@ class FeedSuitabilityList(RowList):
     empty_text = _('No species yet. Use “Add species” to add a row.')
     add_label, save_label = _('Add species'), _('Save suitability')
     pending_text = _('Species and fish weights can be added once the feed is created.')
-    row_kind = 'suitability-row'
     saved = ngettext_lazy('%(count)d row saved.', '%(count)d rows saved.', 'count')
 
     @classmethod

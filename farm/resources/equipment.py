@@ -26,7 +26,6 @@ class FeederCalibrations(RowList):
                   'are saved separately from the equipment details.')
     empty_text = _('No calibrations yet. Use “Add calibration” to add a row.')
     add_label, save_label = _('Add calibration'), _('Save calibrations')
-    row_kind = 'calibration-row'
 
     @classmethod
     def words(cls, equipment):

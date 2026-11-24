@@ -13,7 +13,7 @@ import { tidy } from '../../date-input.js';
 import {
   Acknowledge, AuditItem, Button, Checkbox, CheckboxGroup, Chip, type ChipKind, EmptyState, FileField, FixedField, type IconName,
   LinkButton, LinkList, List, ListCellView, type ListColumn, ListItem, type ListRow, Notice, PermissionMatrix, RadioGroup,
-  RowList, SelectField, ServerForm, Table, Tabs, TextField, Icon,
+  SelectField, ServerForm, Table, Tabs, TextField, Icon,
 } from '../ui/index.js';
 
 type Value = string | number | boolean | null | string[];
@@ -66,7 +66,7 @@ export interface Question {
 interface RowOf { fields: Field[]; hidden: { name: string; value: Value }[]; errors?: string[] }
 /** A list of rows saved as a whole (core.crud.RowList), its own form posted to its own address. */
 export interface RowsBlock {
-  kind: 'rows'; action: string; version: Value; rowKind: string; columns: string[]; legend: string; empty: string;
+  kind: 'rows'; action: string; version: Value; columns: string[]; legend: string; empty: string;
   add: string; save: string; remove: string; question: Question | null;
   formset: { prefix: string; management: { name: string; value: Value }[]; errors: string[]; rows: RowOf[]; empty: RowOf };
 }
@@ -232,20 +232,9 @@ export function QuestionBox({ question }: { question: Question }) {
   );
 }
 
-/** A row of a list as the server drew it: its hidden fields, what is wrong with the row, its fields named by the heading
- * row. An empty row (`index` given) is the formset's empty form at that position (`__prefix__` put to it). */
-function RowFields({ row, optional, index }: { row: RowOf; optional: string; index?: number }) {
-  const at = index === undefined ? row : JSON.parse(JSON.stringify(row).replace(/__prefix__/g, String(index))) as RowOf;
-  // a row added here is taken away by its own button before it is saved: its Remove box would stand in that column
-  const fields = index === undefined ? at.fields : at.fields.filter((field) => !field.widget.name.endsWith('-DELETE'));
-  return (
-    <>
-      {at.hidden.map((hidden) => <input key={hidden.name} type="hidden" name={hidden.name} value={str(hidden.value)} />)}
-      {at.errors && at.errors.length ? <ul className="errorlist row-error">{at.errors.map((error) => <li key={error}>{error}</li>)}</ul> : null}
-      {fields.map((field) => <FieldOf key={field.name} field={field} optional={optional} source={() => undefined} inRow />)}
-    </>
-  );
-}
+/** A row of a list as a row of the one grid of rows (the design's drawer rows): a field a cell. */
+const asGridRow = (row: RowOf): GridRow => ({ head: null, hidden: row.hidden, errors: row.errors ?? [],
+  cells: row.fields.map((field) => [field]) });
 
 /** A list of rows saved as a whole, its own form (crud/_row_list.html): the record's version travels with it, so a save
  * based on an outdated record is refused; one row of a list may be its primary one (a contact), ticking it unticks the
@@ -268,11 +257,9 @@ function RowsForm({ block, label, csrfToken, optional }: { block: RowsBlock; lab
       <div className="ui-form-rows" data-wide="" onChange={ticked} onBlur={tidied}>
         {block.version !== null ? <input type="hidden" name="version" value={str(block.version)} /> : null}
         {block.question ? <QuestionBox question={block.question} /> : null}
-        <RowList prefix={formset.prefix} management={formset.management.map((each) => ({ name: each.name, value: str(each.value) }))}
-          rows={formset.rows.map((row, index) => ({ key: `row-${index}`, content: <RowFields row={row} optional={optional} /> }))}
-          newRow={(index) => <RowFields row={formset.empty} optional={optional} index={index} />}
-          columns={block.columns} legend={block.legend} addLabel={block.add} removeLabel={block.remove} emptyText={block.empty}
-          errors={formset.errors} kind={block.rowKind || undefined} />
+        <GridOf optional={optional} part={{ kind: 'grid', prefix: formset.prefix, legend: block.legend, columns: block.columns,
+          management: formset.management, errors: formset.errors, emptyText: block.empty, add: block.add, addDisabled: false,
+          rows: formset.rows.map(asGridRow), empty: asGridRow(formset.empty) }} />
       </div>
     </ServerForm>
   );
@@ -282,6 +269,17 @@ const buttonOf = (part: ButtonPart) => (
   <Button key={`${part.name}-${part.value}-${part.label}`} variant={part.primary ? 'primary' : 'secondary'} type="submit"
     {...(part.name ? { name: part.name, value: part.value } : {})} isDisabled={part.disabled}>{part.label}</Button>
 );
+
+/** A row's Remove box drawn as the design's remove button (an x in the row's last column): still the formset's DELETE box,
+ * so the row goes when the list is saved, and the row fades while it is ticked; its name ("Remove") for a screen reader. */
+function RemoveBox({ field }: { field: Field }) {
+  return (
+    <label className="icon-button icon-button-danger ui-row-remove" title={field.label}>
+      <input type="checkbox" className="sr-only" name={field.widget.name} defaultChecked={Boolean(field.widget.attrs.checked)} />
+      <Icon name="x" /><span className="sr-only">{field.label}</span>
+    </label>
+  );
+}
 
 /** A formset as a table (farm/_band_row.html, experiments/_group_row.html): its management form kept true (the rows
  * drawn are counted), each row's hidden fields and errors, a cell a column, a row's own heading where it has one, and a
@@ -317,7 +315,8 @@ function GridOf({ part, optional }: { part: GridPart; optional: string }) {
                     <td key={cell.map((field) => field.name).join(' ') || at}>
                       {at === 0 && row.head === null ? row.hidden.map((hidden) => <input key={hidden.name} type="hidden" name={hidden.name} value={str(hidden.value)} />) : null}
                       {at === 0 && row.errors.length ? <ul className="errorlist row-error">{row.errors.map((each) => <li key={each}>{each}</li>)}</ul> : null}
-                      {cell.map((field) => <FieldOf key={field.name} field={field} optional={optional} source={() => undefined} inRow />)}
+                      {cell.map((field) => (field.widget.name.endsWith('-DELETE') ? <RemoveBox key={field.name} field={field} />
+                        : <FieldOf key={field.name} field={field} optional={optional} source={() => undefined} inRow />))}
                     </td>
                   ))}
                 </tr>

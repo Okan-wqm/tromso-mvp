@@ -23,7 +23,6 @@ class ReorderLevels(RowList):
     empty_text = _('No reorder levels yet. Use “Add feed” to add a row.')
     add_label, save_label = _('Add feed'), _('Save reorder levels')
     pending_text = _('Reorder levels can be set once the location is created.')
-    row_kind = 'reorder-row'
     formset = ReorderLevelFormSet
     saved = ngettext_lazy('%(count)d reorder level saved.', '%(count)d reorder levels saved.', 'count')
 

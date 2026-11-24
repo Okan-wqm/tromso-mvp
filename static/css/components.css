@@ -146,9 +146,6 @@ td.invitation form { margin-top: .375rem; }
 .contact-row .field { margin: 0; }
 .contact-row.is-removed { opacity: .5; }
 .contact-row.is-removed input:not([type="checkbox"]) { text-decoration: line-through; }
-/* the same for a row whose Remove box is ticked where no script marks it (the new look's row lists) */
-.contact-row:has(input[name$="-DELETE"]:checked) { opacity: .5; }
-.contact-row:has(input[name$="-DELETE"]:checked) input:not([type="checkbox"]) { text-decoration: line-through; }
 
 /* A value the form shows but nobody types (core.widgets.Output), e.g. a tank's volume */
 .field .output { display: block; padding: .75rem 0; border-bottom: 1.5px dotted var(--line-control); font-weight: 600;
@@ -1086,8 +1083,6 @@ mark { padding: 0 .125rem; border-radius: var(--radius-chip); background: var(--
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, .9fr) minmax(0, .9fr) 4.5rem;
 }
 .reorder-row, .monitor-board-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 5.5rem; }
-/* A task's and a recurring task's checklist (also drawn by the new look's record form, which loads no tasks.css) */
-.checklist-row { grid-template-columns: minmax(0, 1fr) 5.5rem; }
 @media (max-width: 767px) {
   .receipt-row, .reorder-row, .monitor-board-row { grid-template-columns: minmax(0, 1fr); }
 }

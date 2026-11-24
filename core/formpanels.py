@@ -182,7 +182,7 @@ def rows(view, obj, row_list, formset, extra):
     heads = [str(named.get(bound.name, bound.label)) for bound in formset.empty_form.visible_fields()
              if bound.name != 'DELETE']
     return {'kind': 'rows', 'action': view.url(row_list.key, obj.pk), 'version': plain(getattr(obj, 'version', None)),
-            'rowKind': row_list.row_kind, 'columns': heads if row_list.headed else [],
+            'columns': heads,
             'legend': said(words['legend']), 'empty': said(words['empty']), 'add': said(words['add']),
             'save': said(words['save']), 'remove': _('Remove'), 'formset': payload,
             'question': question(extra.get('withdrawal_change')) if row_list.question_field else None}

@@ -148,7 +148,6 @@ class ChannelCalibrations(RowList):
     empty_text = _('No calibrations: values are stored as the device sends them (after the unit conversion).')
     add_label, save_label = _('Add calibration'), _('Save calibrations')
     pending_text = _('Calibrations can be added once the channel is created.')
-    row_kind = 'calibration-row'
     formset = CalibrationFormSet
     saved = ngettext_lazy('%(count)d calibration saved.', '%(count)d calibrations saved.', 'count')
 

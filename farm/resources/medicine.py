@@ -31,7 +31,6 @@ class MedicineWithdrawalList(RowList):
     empty_text = _('No withdrawal yet. Use “Add species” to add a row.')
     add_label, save_label = _('Add species'), _('Save withdrawal')
     pending_text = _('The withdrawal can be added once the medicine is created.')
-    row_kind = 'withdrawal-row'
     saved = ngettext_lazy('%(count)d withdrawal row saved.', '%(count)d withdrawal rows saved.', 'count')
 
     @classmethod

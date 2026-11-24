@@ -27,7 +27,6 @@ class BoardUnits(RowList):
     empty_text = _('No cards yet. Use “Add unit” to add a row.')
     add_label, save_label = _('Add unit'), _('Save cards')
     pending_text = _('Cards can be added once the board is created.')
-    row_kind = 'monitor-board-row'
     formset = BoardUnitFormSet
     saved = ngettext_lazy('%(count)d card saved.', '%(count)d cards saved.', 'count')
 

@@ -35,7 +35,6 @@ class TaskChecklist(RowList):
     empty_text = _('No lines yet. Use “Add line” to add one.')
     add_label, save_label = _('Add line'), _('Save checklist')
     pending_text = _('A checklist can be added once the task is created.')
-    row_kind = 'checklist-row'
     saved = ngettext_lazy('%(count)d line saved.', '%(count)d lines saved.', 'count')
 
     @classmethod
@@ -56,7 +55,6 @@ class SeriesChecklist(RowList):
     empty_text = _('No lines yet. Use “Add line” to add one.')
     add_label, save_label = _('Add line'), _('Save checklist')
     pending_text = _('A checklist can be added once the recurring task is created.')
-    row_kind = 'checklist-row'
     saved = TaskChecklist.saved
 
     @classmethod

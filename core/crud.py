@@ -360,11 +360,9 @@ class RowList:
     # Its panel on the record's page in the new look (core/formpanels.py), in the words its classic template says
     # (crud/_row_list.html's): the heading and tab, the help, the sentence of no rows, the two buttons, the sentence said
     # instead of the list while the record cannot have one ('' says nothing), one row's name for a screen reader (the
-    # heading when ''), the class giving the rows their columns, whether a heading row names the fields, whether the panel
-    # stands on the record's own tab `tab` (a site's contacts on Contact), and a field's words in a row besides its label.
+    # heading when ''), whether the panel stands on the record's own tab `tab` (a site's contacts on Contact), and a
+    # field's words in a row besides its label.
     title = help_text = empty_text = add_label = save_label = pending_text = legend = ''
-    row_kind = ''
-    headed = True
     on_record_tab = False
     field_labels = {}
 

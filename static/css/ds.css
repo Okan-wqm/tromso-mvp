@@ -452,6 +452,22 @@ tr[data-status="warning"] .ui-row-status { color: var(--warn); }
 .ui-table thead th.ui-actions { background: var(--surface-sunken); }
 .ui-table .ui-actions { width: 1%; white-space: nowrap; }
 .ui-table-foot { padding: 6px var(--cell-px, var(--space-3)); border-top: 1px solid var(--line-hair); color: var(--text-3); font-size: var(--fs-caption); }
+/* A list of rows in a form (the design's drawer rows: a record's row list, a feeding table, a design's groups): one size for
+   every such list. The table's head, a cell a space-1 round, every field --control-h-row high, a box --icon-inline, the add
+   button under the table at the left; a row whose Remove box is ticked fades (it goes when the list is saved). */
+.ui-form-grid-rows .ui-table :is(th, td) { padding: var(--space-1); vertical-align: top; }
+.ui-form-grid-rows .ui-table thead th { padding: var(--space-1) var(--space-2); }
+.ui-form-grid-rows .field { margin: 0; gap: 0; }
+.ui-form-grid-rows :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select) { width: 100%; min-width: 6rem; height: var(--control-h-row); min-height: 0; padding: 0 var(--space-2); }
+.ui-form-grid-rows input:is([type="checkbox"], [type="radio"]) { width: var(--icon-inline); height: var(--icon-inline); }
+.ui-form-grid-rows .check { min-height: var(--control-h-row); white-space: nowrap; }
+.ui-form-grid-rows .ui-checks { gap: 0 var(--space-3); }
+.ui-form-grid-rows tr:has(input[name$="-DELETE"]:checked) > td { opacity: .5; }
+.ui-form-grid-rows .ui-form-actions { justify-content: flex-start; margin-top: var(--space-2); }
+.ui-form-grid-rows .ui-btn { min-height: var(--control-h-row); }
+.ui-form-grid-rows .ui-row-remove { width: var(--control-h-row); height: var(--control-h-row); cursor: pointer; }
+.ui-form-grid-rows .ui-row-remove:has(input:focus-visible) { box-shadow: var(--ring-focus); }
+.ui-form-grid-rows .ui-row-remove:has(input:checked) { background: var(--crit-tint); }
 
 /* ======================================================================================================= Plate ===
    ui-plate: the design's top-level panel, a hairline-framed sheet (with the marks in the new look) and a head: title

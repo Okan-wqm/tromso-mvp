@@ -48,11 +48,6 @@ class SchedulingSettingsResource(Resource):
     icon = 'settings'
 
     @classmethod
-    def list_queryset(cls, request):
-        SchedulingSettings.get()          # the row exists even if a restore left none
-        return super().list_queryset(request)
-
-    @classmethod
     def filter_list(cls, request, objects):
         return objects, {'shifts': Shift.objects.all(), 'holidays': Holiday.objects.select_related('site')[:10],
                          'leave_types': LeaveType.objects.all()}

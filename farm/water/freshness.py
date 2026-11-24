@@ -9,30 +9,32 @@ A live value's freshness is its channel's (sensors.Channel `fresh_s`: its heartb
 
 The rows are read once and kept in the process until one of them is saved (a signal, farm/apps.py), a request starts
 (Django's request_started) or the alarm loop starts a pass (alarms/engine.py): a change takes effect on the next page and
-the next pass, and a page asks the database once, not once per value. A parameter whose row is missing (a restore) gets
-it made again from SEEDS, as the platform settings' row is (core.models.PlatformSettings.get): the values in force are
-the rows; SEEDS are the defaults the migration wrote (farm 0037). When the rows cannot be read at all (the database
-is not there, a code path that may not query it), the defaults stand in for that call only, said once in the log, and
-the rows are asked again the next time."""
-import logging
+the next pass, and a page asks the database once, not once per value.
+
+Reading them is a read and nothing else (the data-layering audit, M-1): the values in force are the rows, seeded by the
+migrations (farm 0037, 0042, 0044: one per water parameter) and kept by the database (farm 0051: a row is changed,
+never deleted). There is no default in the code to stand in for them. A parameter without its row cannot be said fresh
+or stale, so `hours` refuses it (Missing): the page fails and the alarm pass's water step fails, and a failed step is
+itself a critical alarm (alarms/sources.py supervise), never a value judged by a rule the farm did not set. When the
+rows cannot be read at all, the database's error goes to the caller the same way."""
 import threading
 from datetime import timedelta
 
-logger = logging.getLogger(__name__)
-
 # How long a freshness may be, in hours: at least an hour, at most a year. The refusal of nonsense, never a value in force.
 FRESH_HOURS_BOUNDS = (1, 8760)
-# The defaults a missing row is made again with (farm 0037 and 0042 seeded the same): the owner's, as they stood in the code.
-SEEDS = {'temperature_c': 24, 'oxygen_mg_l': 24, 'oxygen_saturation_pct': 24, 'ph': 72, 'alkalinity_mg_l': 336,
-         'co2_mg_l': 72, 'tan_mg_l': 168, 'nitrite_n_mg_l': 168, 'nitrate_n_mg_l': 336, 'tgp_pct': 168,
-         'salinity_ppt': 168, 'turbidity_ntu': 168, 'nh3_n_mg_l': 168, 'nh4_n_mg_l': 168,
-         # formula 3's ionic-strength inputs (farm 0042): the conductivity at 25 °C 7 days, the hardness 14
-         'conductivity_25_us_cm': 168, 'hardness_mg_l': 336,
-         # the optional phosphate (farm 0044): 7 days, as the TAN and the other nutrients
-         'phosphate_p_mg_l': 168}
 
 _held = {}
 _lock = threading.Lock()
+
+
+class Missing(LookupError):
+    """A water parameter has no freshness row: its values can be judged neither fresh nor stale."""
+
+    def __init__(self, code):
+        super().__init__(f'The water parameter {code!r} has no freshness row (Setup › Reference data › Water freshness): '
+                         f'its values cannot be judged fresh or stale. The rows are seeded by the migrations and never '
+                         f'deleted; restore the database from its backup.')
+        self.code = code
 
 
 def forget(*args, **kwargs):
@@ -43,19 +45,8 @@ def forget(*args, **kwargs):
 def _load():
     from core.models import PlatformSettings
     from farm.models import WaterFreshness
-    hours = dict(WaterFreshness.objects.values_list('parameter', 'fresh_hours'))
-    missing = [code for code in SEEDS if code not in hours]
-    if missing:
-        WaterFreshness.objects.bulk_create([WaterFreshness(parameter=code, fresh_hours=SEEDS[code]) for code in missing],
-                                           ignore_conflicts=True)
-        hours = dict(WaterFreshness.objects.values_list('parameter', 'fresh_hours'))
-    return {'hours': hours, 'tolerance': timedelta(seconds=PlatformSettings.get().clock_tolerance_seconds)}
-
-
-def _defaults():
-    from core.models import PlatformSettings
-    return {'hours': dict(SEEDS), 'tolerance': timedelta(
-        seconds=PlatformSettings._meta.get_field('clock_tolerance_seconds').default)}
+    return {'hours': dict(WaterFreshness.objects.values_list('parameter', 'fresh_hours')),
+            'tolerance': timedelta(seconds=PlatformSettings.get().clock_tolerance_seconds)}
 
 
 def _rules():
@@ -64,21 +55,16 @@ def _rules():
         with _lock:
             held = _held.get('rules')
             if held is None:
-                try:
-                    held = _held['rules'] = _load()
-                    _held.pop('warned', None)
-                except Exception:
-                    if 'warned' not in _held:
-                        _held['warned'] = True
-                        logger.warning('The water freshness rows could not be read; their defaults stand in.',
-                                       exc_info=True)
-                    return _defaults()
+                held = _held['rules'] = _load()
     return held
 
 
 def hours(code):
-    """How many hours a value of the parameter says something about the water now."""
-    return _rules()['hours'][code]
+    """How many hours a value of the parameter says something about the water now (Missing without its row)."""
+    try:
+        return _rules()['hours'][code]
+    except KeyError:
+        raise Missing(code) from None
 
 
 def fresh_for(code):

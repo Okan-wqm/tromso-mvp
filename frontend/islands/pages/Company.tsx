@@ -31,7 +31,9 @@ export interface CompanyProps {
   today: { title: string; meta: string; tiles: TileData[] };
   sites: { title: string; link: Link; columns: Record<string, string>; rows: SiteRow[]; none: string; empty: string | null } | null;
   alarms: { title: string; link: Link; safety: string | null; columns: Record<string, string>; rows: AlarmRow[];
-    more: string | null; empty: string | null } | null;
+    more: string | null; empty: string | null;
+    /** the stocked units' line (core.ui.attention_said) when one is flagged: said even when no alarm row is open */
+    units: { tone: 'critical' | 'warning'; text: string } | null } | null;
   people: { title: string; link: Link; tiles: TileData[] } | null;
   upcoming: { title: string; items: UpcomingItem[]; empty: string | null; badge: string | null; link: Link;
     notSetUp: string | null } | null;
@@ -84,7 +86,8 @@ export function Company({ today, sites, alarms, people, upcoming, feed, messages
       {alarms ? (
         <Plate title={alarms.title} link={alarms.link} safety={alarms.safety ?? undefined} span={4}
           foot={alarms.more ? <a href={alarms.link.href}>{alarms.more}</a> : undefined}>
-          {alarms.empty ? <EmptyState title={alarms.empty} /> : (
+          {alarms.units ? <Notice tone={alarms.units.tone}>{alarms.units.text}</Notice> : null}
+          {alarms.empty ? <EmptyState title={alarms.empty} /> : !alarms.rows.length ? null : (
             <Table<AlarmRow>
               label={alarms.title}
               rows={alarms.rows}

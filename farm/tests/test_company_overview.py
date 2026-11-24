@@ -14,7 +14,8 @@ from django.utils.translation import gettext as _
 from alarms.models import Alarm, Source
 from alarms.read import attention, attention_all
 from config.company import overview
-from config.company_props import overview_props, units_said
+from config.company_props import overview_props
+from core.ui import alarms_item, attention_said
 from core.pagesays import unsaid
 from farm.stock.views import overview_tiles
 from farm.water.views import overview as water_overview
@@ -89,8 +90,51 @@ class CompanyOverviewTests(CompanyFixture):
         self.assertGreaterEqual(found['alarms']['attention'].critical, 1)
         tile = next(tile for tile in overview_props(self.admin, moment)['today']['tiles'] if tile['key'] == 'alarms')
         self.assertEqual((tile['figure'], tile['status'], tile['sub']), ('1', 'critical', '1 critical'))
-        self.assertEqual(tile['sub2'], ' · '.join(units_said(found['alarms']['attention'])))
+        # one wording of an Attention (core.ui.attention_said): the strip says the alarms and the units' line, the tile
+        # the same units' line under the alarms' figure
+        farm = found['alarms']['attention']
+        self.assertEqual(alarms_item(farm)['text'], ' · '.join(attention_said(farm)))
+        self.assertEqual(tile['sub2'], ' · '.join(attention_said(farm, alarms=False)))
+        self.assertEqual(alarms_item(farm)['text'], f"1 open alarm · {tile['sub2']}")
         self.assertIn('unit', tile['sub2'])
+
+    def test_a_critical_unit_with_no_alarm_raised_is_never_said_as_no_alarm_open(self):
+        """Review F2: Bergen's oxygen is critical before its alarm is raised: the Open alarms plate says the units' line,
+        never "No alarm is open." (Attention.quiet, the strip's rule)."""
+        moment = timezone.now()
+        props = overview_props(self.admin, moment)
+        plate, farm = props['alarms'], overview(self.admin, moment)['alarms']['attention']
+        self.assertEqual(farm.alarms, 0)
+        self.assertFalse(farm.quiet)
+        self.assertIsNone(plate['empty'])
+        self.assertEqual(plate['units'], {'tone': 'critical', 'text': ' · '.join(attention_said(farm, alarms=False))})
+        self.assertNotIn(str(_('No alarm is open.')), json.dumps(props, ensure_ascii=False))
+
+    def test_a_site_row_says_one_judgement_of_its_water(self):
+        """Review F5: the points' chip would say OK while the site's stocked units are flagged: the row says the units' line
+        in the worst status instead, never "OK" beside a critical unit."""
+        from alarms.read import Attention
+        from config.company_props import _site_water
+        fine = {'critical': 0, 'warning': 0, 'points': 1, 'measured': 1, 'worst': None, 'stale_since': None}
+        moment = timezone.now()
+        self.assertEqual(_site_water({'water': fine, 'attention': Attention()}, moment), {'kind': 'ok', 'text': 'OK'})
+        flagged = Attention(critical=1, blind=1)
+        self.assertEqual(_site_water({'water': fine, 'attention': flagged}, moment),
+                         {'kind': 'critical', 'text': ' · '.join(attention_said(flagged, alarms=False))})
+        self.assertEqual(_site_water({'water': fine, 'attention': Attention(blind=2)}, moment)['kind'], 'warning')
+
+    def test_the_not_sent_line_is_the_classic_pages_test_without_a_place_that_is_not_here(self):
+        from unittest import mock
+        with mock.patch('alarms.read.connected', return_value={'push': False}):
+            safety = overview_props(self.admin)['alarms']['safety']
+        self.assertIn('Nothing is sent yet', safety)
+        self.assertNotIn('below', safety)
+        with mock.patch('alarms.read.connected', return_value={'push': True}):
+            self.assertIsNone(overview_props(self.admin)['alarms']['safety'])
+
+    def test_the_open_alarms_by_severity_hold_while_there_are_two_severities(self):
+        """_alarm_counts says warnings as "alarms - critical": true only while an alarm is critical or a warning."""
+        self.assertEqual({value for value, _label in Severity.choices}, {'critical', 'warning'})
 
     def test_a_farm_wide_alarm_counts_on_every_site_and_each_says_so(self):
         Alarm.objects.create(source=Source.SYSTEM, parameter='sensors_failed', severity=Severity.CRITICAL, site=None,

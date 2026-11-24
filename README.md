@@ -5489,6 +5489,20 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   three languages; the search, the filters and the pager are the address's); `frontend/islands/ui/ui.test.tsx` (the
   markup); `frontend/test/listpage.browser.test.ts` (the GET form sends what the server reads; CSP and axe in every theme
   at 1440 and 390) and `listpages.browser.test.ts` (every recorded list in three languages at both widths).
+- **HR's own pages** (behind `?ui=next`; the classic pages stay as they are). Today & attendance, Team overview and
+  Scheduling settings are drawn by the server with the design system's classes (`hr/today_next.html`,
+  `_board_next.html`, `overview_next.html`, `settings_next.html`; a tab whose list is not a table names its page in
+  `Resource.list_template_next`), so the one poll (`frontend/poll.ts`) draws Today's board again in the look the page
+  is in. The people planned today are a stacked bar of the board's own tiles (`core/stack.py`, `templates/ui/_stack.html`
+  and the library's `StackedBar` draw the same bar: an SVG whose viewBox is the whole, no style attribute). The
+  Organisation chart is the island `org-chart` with the library's `OrgTree` (nested lists in a named, scrolling frame;
+  the people behind a native disclosure). The Shift schedule is the island `roster` with the library's `RosterGrid`
+  (`Resource.list_next_props`): the arrow keys, Home and End move between the cells' controls; the paint works by
+  keyboard (toggle buttons choose the paint and select the cells) and posts to the same batch route with the CSRF
+  token, which plans all of them or none. A plan's link and "Plan this day" open the record's own page. Held:
+  `hr/tests/test_today_next.py` (each page against its classic page on the test world, three languages, both mounts;
+  the paint's post), `frontend/islands/ui/ui.test.tsx`, `frontend/test/roster.browser.test.ts` (keyboard, paint, CSP and
+  axe in every theme at 1440 and 390) and the gallery's browser test.
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

@@ -1,0 +1,11 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} The Shift schedule in the new look (hr.resources.ShiftAssignmentResource.list_next_props behind ?ui=next): the island
+   draws the week the server reads and words with the library's RosterGrid and its paint. The classic page is
+   hr/roster.html. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ group }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+{% trans "Loading the schedule…" as loading %}{% island "roster" props label=loading %}
+{% endblock %}

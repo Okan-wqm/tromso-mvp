@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
-from core import audit, query
+from core import audit, listprops, query
 from core.crud import Mount, Resource
 from core.dates import read_day
 from farm.stock.dates import site_today
@@ -97,3 +97,106 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
         services.lock_employed(assignment.employee, assignment.day)       # the employment rule under the person's lock
         for finding in getattr(assignment, 'warnings', []):
             messages.warning(request, rules.text(finding))
+
+    # --- the new look (core.crud.ListView: list_template_next, list_next_props), the words of hr/roster.html ----------
+    list_template_next = 'hr/roster_next.html'
+    search_placeholder = _('Search by name or number')
+    empty_text = _('The people of your team appear here with their plan for the week.')
+
+    @classmethod
+    def list_next_props(cls, view, objects, context):
+        """The Shift schedule's island props (frontend/islands/pages/Roster.tsx): the week the classic page reads, its cells
+        and words; a cell's plan and the empty day's "Plan this day" open the record's own page, not a dialog."""
+        from django.middleware.csrf import get_token
+        from django.template.defaultfilters import date as date_format, floatformat
+        from django.urls import reverse
+        from django.utils.http import urlencode
+        from django.utils.translation import gettext as words
+
+        from core.crud import mount_of, mounted_name
+        request, week, L = view.request, context['week'], listprops
+
+        def mounted(name, *args):
+            return reverse(mounted_name(name, mount_of(request)), args=args)
+
+        def hour(moment):
+            return date_format(moment, 'TIME_FORMAT')
+
+        def day_head(day):
+            return {'key': day.isoformat(), 'head': date_format(day, 'D'), 'sub': date_format(day, 'MONTH_DAY_FORMAT')}
+
+        chosen = context['chosen_department']
+        tail = '&' + urlencode({'department': chosen}) if chosen else ''
+
+        def cell(row, item):
+            if not item.visible:
+                return {'key': None}
+            chip = None
+            if item.state == 'leave':
+                chip = {'kind': 'note', 'text': words('On leave'), 'title': (
+                    words('%(shift)s planned: to be covered') % {'shift': item.shift.code}) if item.shift else None}
+            elif item.state == 'shift':
+                chip = {'kind': 'note', 'text': item.shift.code,
+                        'title': f'{item.shift.name} {hour(item.shift.starts_at)}–{hour(item.shift.ends_at)}'}
+            elif item.state == 'off':
+                chip = {'kind': 'neutral', 'text': words('Off'), 'title': None}
+            found = {'key': f'{row.employee.pk}:{item.day.isoformat()}', 'chip': chip, 'href': None, 'add': None,
+                     'holiday': item.holiday.name if item.holiday else None,
+                     'finding': item.finding_text or None, 'blocks': bool(item.blocks)}
+            if item.assignment is not None and context['can_change'] and cls.allowed(request, item.assignment, 'change'):
+                found['href'] = mounted('hr:shiftassignment_edit', item.assignment.pk)
+            elif chip is None and context['can_add']:
+                found['add'] = {'href': f"{mounted('hr:shiftassignment_create')}?employee={row.employee.pk}"
+                                        f"&day={item.day.isoformat()}", 'label': words('Plan this day')}
+            return found
+
+        rows = [{'key': str(row.employee.pk), 'name': row.employee.full_name,
+                 'sub': row.department.name if row.department else words('Not placed'),
+                 'hours': floatformat(row.planned_hours, '-1'),
+                 'hoursFinding': words('More than the standard week') if row.week_findings else None,
+                 'cells': [cell(row, item) for item in row.cells]} for row in objects]
+        paint = None
+        if context['can_add'] or context['can_change'] or context['can_delete']:
+            choices = [{'value': str(shift.pk), 'label': shift.code, 'title': shift.name} for shift in context['shifts']]
+            choices.append({'value': 'off', 'label': words('Off'), 'title': None})
+            if context['can_delete']:
+                choices.append({'value': 'clear', 'label': words('Clear'), 'title': None})
+            paint = {'action': mounted('hr:roster_plan'), 'csrfToken': get_token(request), 'next': request.get_full_path(),
+                     'label': words('Paint'), 'choices': choices, 'clearSelection': words('Clear selection'),
+                     'apply': words('Apply to the selected days')}
+        text = words('%(shown)s of %(total)s people') % {'shown': week.shown, 'total': week.total}
+        links = []
+        if week.pages > 1:
+            text = f"{text} · {words('Page')} {week.page}/{week.pages}"
+            here = f'?week={week.start.isoformat()}'
+            if week.page > 1:
+                links.append({'href': f'{here}&page={week.page - 1}{tail}', 'label': words('Previous')})
+            if week.page < week.pages:
+                links.append({'href': f'{here}&page={week.page + 1}{tail}', 'label': words('Next')})
+        crew = context.get('crew')
+        crew_props = None
+        if crew is not None:
+            crew_props = {
+                'title': words('Crew this week'), 'head': words('Colleague'), 'days': [day_head(day) for day in crew.days],
+                'rows': [{'key': str(index), 'name': each.name, 'sub': str(each.department),
+                          'cells': [{'kind': 'note', 'text': item.shift_code, 'sub': f'{hour(item.starts_at)}–{hour(item.ends_at)}'}
+                                    if item else None for item in each.cells]} for index, each in enumerate(crew.rows)],
+                'text': None if crew.rows else (words('Nobody else is placed in your department this week.') if crew.placed
+                                                else words('You are not placed in a production department this week, '
+                                                           'so you have no crew.'))}
+        nothing = L.empty(view, context)
+        return {
+            'week': {'label': words('Week'),
+                     'title': f"{date_format(week.start, 'DATE_FORMAT')} – {date_format(week.end, 'DATE_FORMAT')}",
+                     'previous': {'href': f'?week={week.previous.isoformat()}{tail}', 'label': words('Previous week')},
+                     'next': {'href': f'?week={week.next.isoformat()}{tail}', 'label': words('Next week')},
+                     'print': words('Print')},
+            'toolbar': L.toolbar(view, context, [L.choice('department', words('Department'), chosen,
+                                                          [('', words('All departments'))], groups=context['departments'])],
+                                 keep=[('week', week.start.isoformat())]),
+            'line': {'text': text, 'links': links},
+            'grid': {'label': str(cls.title(view.mount)), 'employeeHead': words('Employee'), 'hoursHead': words('Planned (h)'),
+                     'days': [day_head(day) for day in week.days], 'rows': rows, 'paint': paint},
+            'empty': None if rows else {'title': nothing['title'], 'text': nothing['text']},
+            'crew': crew_props,
+        }

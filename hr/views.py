@@ -268,7 +268,48 @@ def organisation_chart(request):
     place = navigation.page(mounted_name('hr:orgchart', mount_of(request)))
     if not request.user.has_perm(place.entry.perm):
         raise PermissionDenied
-    return render(request, 'hr/orgchart.html', {
-        'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html',
-        'root': read.org_tree(request.user, scope.realm_for(request)),
-        'production_chart': request.user.has_perm(navigation.page('hr:production_orgchart').entry.perm)})
+    root = read.org_tree(request.user, scope.realm_for(request))
+    production_chart = request.user.has_perm(navigation.page('hr:production_orgchart').entry.perm)
+    context = {'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'root': root,
+               'production_chart': production_chart}
+    if is_next(request):
+        return render(request, 'hr/orgchart_next.html', {**context, 'props': _org_props(root, production_chart)})
+    return render(request, 'hr/orgchart.html', context)
+
+
+def _org_node(node, production_chart, path):
+    """One box of the organisation chart in words (hr/_org_node.html's), for the island's OrgTree."""
+    kinds = {'site': _('Site'), 'production': _('Production'), 'production_root': _('Production'), 'office': _('Office')}
+    if node.kind in ('site', 'production_root'):
+        count = ngettext('%(total)s person', '%(total)s people', node.total) % {'total': node.total}
+    else:
+        count = ngettext('%(direct)s person', '%(direct)s people', node.direct) % {'direct': node.direct}
+        if node.children:
+            count = f"{count} · {_('%(total)s in all') % {'total': node.total}}"
+    manager = None
+    if node.manager is not None:
+        manager = {'label': f"{_('Manager')}:", 'name': node.manager.get_full_name() or node.manager.get_username(),
+                   'title': node.manager_title or None}
+    key = f'{path}.{node.kind}:{getattr(node.obj, "pk", "") or node.label}'
+    return {
+        'key': key, 'kind': node.kind, 'kindLabel': str(kinds.get(node.kind, _('Office'))),
+        'name': _('No site') if node.kind == 'site' and not node.label else str(node.label),
+        'href': reverse('hr:production_orgchart') if node.kind == 'production_root' and production_chart else None,
+        'manager': manager, 'count': count,
+        'people': {'summary': ngettext('Show %(people)s person', 'Show %(people)s people', len(node.people))
+                   % {'people': len(node.people)},
+                   'list': [{'key': f'{key}.{index}', 'name': person.name, 'title': person.title or None}
+                            for index, person in enumerate(node.people)]} if node.people else None,
+        'children': [_org_node(child, production_chart, key) for child in node.children],
+    }
+
+
+def _org_props(root, production_chart):
+    """The organisation chart's island props (frontend/islands/pages/OrgChart.tsx): the classic page's words."""
+    return {
+        'summary': _('%(total)s people you may see in the company.') % {'total': root.total},
+        'print': _('Print'), 'cue': _('A wide chart scrolls sideways inside its frame.'), 'label': _('Organization chart'),
+        'nodes': [_org_node(node, production_chart, '') for node in root.children],
+        'empty': None if root.children else {'title': _('Nothing to show yet'),
+                                             'text': _('Sites, production departments and office departments appear here.')},
+    }

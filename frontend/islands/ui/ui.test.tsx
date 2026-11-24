@@ -244,3 +244,37 @@ test('a stacked bar: each part a segment as long as its share on the whole, ever
   assert.doesNotMatch(empty, /<svg/);
   assert.match(empty, /<p class="ui-stack-empty">Nobody is expected today<\/p>/);
 });
+
+test('an organisation tree: nested lists in a named frame, the people behind a native disclosure, words from props', async () => {
+  const { OrgTree } = await import('./index.js');
+  const tree = html(<OrgTree label="Organization chart" describedBy="s c" nodes={[
+    { key: 'a', kind: 'office', name: 'Test Office', kindLabel: 'Office', count: '1 person · 3 in all',
+      manager: { label: 'Manager:', name: 'Test Lead', title: 'Test coordinator' },
+      people: { summary: 'Show 1 person', list: [{ key: 'p', name: 'Test Person', title: null }] },
+      children: [{ key: 'b', kind: 'office', name: 'Test Accounts', kindLabel: 'Office', count: '2 people', children: [] }] },
+    { key: 'c', kind: 'production_root', name: 'Production', href: '/production/team/org/', kindLabel: 'Production', count: '4 people', children: [] },
+  ]} />);
+  assert.match(tree, /^<div class="ui-org-frame" role="region" tabindex="0" aria-label="Organization chart" aria-describedby="s c"><ul class="ui-org-tree" role="list">/);
+  assert.match(tree, /<span class="sr-only">Manager: <\/span>Test Lead<span class="ui-cell-sub">Test coordinator<\/span>/);
+  assert.match(tree, /<details class="ui-org-people"><summary>Show 1 person<\/summary>/);
+  assert.match(tree, /<ul class="ui-org-level" role="list"><li class="ui-org-node" data-kind="office">.*Test Accounts/);
+  assert.match(tree, /<a href="\/production\/team\/org\/">Production<\/a>/);
+  assert.doesNotMatch(tree, /style=/);
+});
+
+test('a roster: a week of people, a cell its plan as a link, an empty day "+", findings in words; the paint bar first', async () => {
+  const { RosterGrid } = await import('./index.js');
+  const { ROSTER_PROPS } = await import('../../test/pages/roster-props.js');
+  const page = html(<RosterGrid {...ROSTER_PROPS} />);
+  assert.match(page, /<form class="ui-roster-paint" action="\/hr\/schedule\/plan\/" method="post"><input type="hidden" name="csrfmiddlewaretoken" value="test-token"\/><input type="hidden" name="next" value="\/hr\/schedule\/\?week=2026-11-23"\/><input type="hidden" name="shift" value=""\/>/);
+  assert.match(page, /<div role="group" aria-label="Paint" class="ui-roster-choices">/);
+  assert.match(page, /<button type="button" class="ui-roster-choice" aria-pressed="false" title="Test day shift">TD<\/button>/);
+  assert.match(page, /<th scope="col">Mon<span class="ui-cell-sub">23\.11<\/span><\/th>/);
+  assert.match(page, /<a class="ui-roster-link" href="\/hr\/schedule\/7\/" title="Test day shift 07:00–15:00"><span class="ui-chip" data-status="note">/);
+  assert.match(page, /<a class="ui-roster-add" href="\/hr\/schedule\/new\/\?employee=1&amp;day=2026-11-24" aria-label="Plan this day" title="Plan this day">/);
+  assert.match(page, /<td data-roster-cell="" data-finding="block">.*Less than 11 h of rest before this shift\./);
+  assert.match(page, /<span class="ui-cell-sub">Test holiday<\/span>/);
+  assert.match(page, /<td class="num">45<span class="ui-roster-finding">.*More than the standard week/);
+  assert.doesNotMatch(page, /ui-roster-pick/, 'cells are links until a paint is chosen');
+  assert.doesNotMatch(page, /style=/);
+});

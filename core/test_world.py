@@ -9,7 +9,7 @@ built and read.
     company_world(admin, client)      the company's: sites, a hall, a loop, units with fish, a storage location, a
                                       library document, a knowledge entry, a person, a role and an employee
     hr_world(admin, client)           the people's: office departments, employees placed and one who left, shifts, a
-                                      holiday, a leave type, leave requests and attendance"""
+                                      holiday, a leave type, leave requests, attendance and a week's plan"""
 from datetime import datetime
 from decimal import Decimal as D
 
@@ -83,7 +83,8 @@ def hr_world(admin, client):
     from datetime import date, time, timedelta
 
     from farm.models import ProductionDepartment, Site
-    from hr.models import (AttendanceRecord, Employee, Holiday, LeaveRequest, LeaveType, OfficeDepartment, Shift)
+    from hr.models import (AttendanceRecord, Employee, Holiday, LeaveRequest, LeaveType, OfficeDepartment, Shift,
+                           ShiftAssignment)
     from hr.models.leave import LeaveStatus
     from hr.tests.helpers_people import employee, place
     north = Site.objects.get(code='TSN')
@@ -95,10 +96,13 @@ def hr_world(admin, client):
     second = employee('E-9002', last='Second', first='Test')
     place(second, hall, title='Test technician')
     employee('E-9003', last='Former', first='Test', left_on=date(2026, 6, 30))
-    Shift.objects.create(name='Test day shift', code='TD', starts_at=time(7), ends_at=time(15), break_minutes=30,
-                         grace_minutes=10)
+    day_shift = Shift.objects.create(name='Test day shift', code='TD', starts_at=time(7), ends_at=time(15),
+                                     break_minutes=30, grace_minutes=10)
     Shift.objects.create(name='Test night shift', code='TN', starts_at=time(22), ends_at=time(6), break_minutes=30)
     Holiday.objects.create(day=date(2026, 12, 25), name='Test holiday', site=None)
+    # the week's plan of the production technician: today's day shift, tomorrow off (the Shift schedule, Today)
+    ShiftAssignment.objects.create(employee=second, day=MOMENT.date(), shift=day_shift)
+    ShiftAssignment.objects.create(employee=second, day=MOMENT.date() + timedelta(days=1), shift=None, note='Test day off')
     annual = LeaveType.objects.create(name='Test annual leave', code='TAL', annual_days=25)
     today = MOMENT.date()
     LeaveRequest.objects.create(employee=second, leave_type=annual, first_day=today + timedelta(days=7),

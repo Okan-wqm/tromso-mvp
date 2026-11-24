@@ -23882,7 +23882,8 @@
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
-        "hr/tests/test_services.py"
+        "hr/tests/test_services.py",
+        "hr/tests/test_today_next.py"
       ]
     },
     {
@@ -26285,6 +26286,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -26302,7 +26304,8 @@
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roles.py",
-        "hr/tests/test_roster.py"
+        "hr/tests/test_roster.py",
+        "hr/tests/test_today_next.py"
       ]
     },
     {
@@ -26694,7 +26697,8 @@
         "hr/tests/test_review.py",
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scheduling_settings.py"
+        "hr/tests/test_scheduling_settings.py",
+        "hr/tests/test_today_next.py"
       ]
     },
     {

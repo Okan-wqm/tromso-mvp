@@ -626,3 +626,43 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-stack-legend > li { display: inline-flex; align-items: center; gap: var(--space-2); }
 .ui-stack-swatch { width: var(--space-3); height: var(--space-3); background: var(--stack-tone, var(--stale)); }
 .ui-stack-empty { margin: 0; color: var(--text-2); font-size: var(--fs-small); }
+
+/* Organisation tree (frontend/islands/ui/OrgTree.tsx): nested lists, each level indented under its box with a hairline
+   from the parent down its children and a tick to each child; a box is a square sheet on a hairline, its kind in the
+   caption type, a site or the Production box on the sunken ground. A wide tree scrolls inside its frame. */
+.ui-org-frame { overflow-x: auto; padding: var(--space-2) 0; }
+.ui-org-frame:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.ui-org-tree, .ui-org-level { margin: 0; padding: 0; list-style: none; }
+.ui-org-level { margin-left: var(--space-5); padding-left: var(--space-4); border-left: 1px solid var(--line-control); }
+.ui-org-node { position: relative; padding-top: var(--space-2); }
+.ui-org-level > .ui-org-node::before { content: ""; position: absolute; top: calc(var(--space-2) + var(--space-4)); left: calc(-1 * var(--space-4)); width: var(--space-4); border-top: 1px solid var(--line-control); }
+.ui-org-box { display: inline-grid; gap: 2px; min-width: min(16rem, 100%); max-width: 28rem; padding: var(--space-2) var(--space-3); border: 1px solid var(--line-hair); background: var(--surface-sheet); }
+.ui-org-node:is([data-kind="site"], [data-kind="production_root"]) > .ui-org-box { background: var(--surface-sunken); }
+.ui-org-name { font-weight: 600; overflow-wrap: anywhere; }
+.ui-org-kind { color: var(--text-3); font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: .04em; }
+.ui-org-manager, .ui-org-count { color: var(--text-2); font-size: var(--fs-small); }
+.ui-org-people { margin: var(--space-1) 0 0; font-size: var(--fs-small); }
+.ui-org-people > summary { cursor: pointer; color: var(--action); }
+.ui-org-people > summary:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.ui-org-people > ul { margin: var(--space-1) 0 0; padding-left: var(--space-4); }
+@media print { .ui-org-frame { overflow: visible; } .ui-org-people:not([open]) > ul { display: block; } }
+
+/* Roster (frontend/islands/ui/RosterGrid.tsx): a week of people on a ui-table; a day's cell holds its plan's chip (a link
+   to the plan), a "+" for an empty day, a holiday's name and the rules' findings in words (a warning or a blocking
+   finding: the cell's 4 px inner edge). Paint: toggle buttons choose what to paint; the plannable cells become toggle
+   buttons, a selected one in the action tint with the action outline. */
+.ui-roster { display: grid; gap: var(--space-3); }
+.ui-roster-paint { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.ui-roster-choices { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.ui-roster-choice, .ui-roster-pick { min-height: var(--control-h); min-width: var(--control-h); padding: 0 var(--space-2); border: 1px solid var(--line-control); background: var(--surface-sheet); color: var(--text-1); font: inherit; font-weight: 600; cursor: pointer; }
+.ui-roster-choice[aria-pressed="true"], .ui-roster-pick[aria-pressed="true"] { border-color: var(--action); background: var(--action-tint); box-shadow: inset 0 0 0 1px var(--action); }
+:is(.ui-roster-choice, .ui-roster-pick, .ui-roster-link, .ui-roster-add):focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.ui-roster-pick { width: 100%; text-align: left; }
+.ui-roster-table td[data-roster-cell] { min-width: 6.5rem; vertical-align: top; }
+.ui-roster-table td[data-finding="warning"] { box-shadow: inset 4px 0 0 var(--warn); }
+.ui-roster-table td[data-finding="block"] { box-shadow: inset 4px 0 0 var(--crit); }
+.ui-roster-table td[data-selected] { background: var(--action-tint); }
+.ui-roster-link, .ui-roster-add { display: inline-flex; align-items: center; min-height: var(--control-h); color: var(--action); text-decoration: none; }
+.ui-roster-add { justify-content: center; width: var(--control-h); border: 1px dashed var(--line-control); }
+.ui-roster-finding { display: flex; align-items: flex-start; gap: var(--space-1); color: var(--warn-text); }
+.ui-roster-table td[data-finding="block"] .ui-roster-finding { color: var(--crit-text); }

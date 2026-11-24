@@ -9001,6 +9001,9 @@ msgstr "Sanntidsverdier"
 msgid "Loading the cards…"
 msgstr "Laster kortene …"
 
+msgid "Loading the chart…"
+msgstr "Laster organisasjonskartet …"
+
 msgid "Loading the confirmation…"
 msgstr "Laster bekreftelsen …"
 
@@ -9012,6 +9015,9 @@ msgstr "Laster listen …"
 
 msgid "Loading the overview…"
 msgstr "Laster oversikten …"
+
+msgid "Loading the schedule…"
+msgstr "Laster vaktplanen …"
 
 msgid "Loading…"
 msgstr "Laster …"

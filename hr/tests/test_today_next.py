@@ -2,7 +2,9 @@
 so the one poll draws its board again (hr.views.today_board answers in the look the page is in). Held to the classic page
 (core.pagesays) on the test world (core/test_world.py), its clock pinned, in three languages and under both mounts; the
 stacked bar's parts are the board's own tiles and add up to Planned today; no style attribute and no dialog link."""
+import json
 import re
+from pathlib import Path
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -13,9 +15,15 @@ from core import stack
 from core.pagesays import unsaid
 
 PAGES = ('hr:today', 'hr:production_today')
+MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-company-manifest.json')
 
 
-@override_settings(ALLOWED_HOSTS=['localhost', 'testserver'])
+def props_of(html, name):
+    found = re.search(r'<script id="island-' + name + r'-1" type="application/json">(.*?)</script>', html, re.S)
+    return json.loads(found.group(1)) if found else None
+
+
+@override_settings(ALLOWED_HOSTS=['localhost', 'testserver'], ISLANDS_MANIFEST=MANIFEST)
 class TodayNextTests(TestCase):
     def setUp(self):
         from core.test_world import MOMENT, world
@@ -52,6 +60,45 @@ class TodayNextTests(TestCase):
                     main = new[new.index('<main'):new.index('</main>')]
                     self.assertIsNone(re.search(r'\sstyle=', main))
                     self.assertIsNone(re.search(r'\sdata-modal[\s>=]', main))
+
+    def test_the_organisation_chart_island_says_all_the_classic_chart_says(self):
+        for name in ('hr:orgchart', 'hr:production_orgchart'):
+            for language in ('en', 'nb', 'tr'):
+                with self.subTest(page=name, language=language):
+                    self.client.cookies['django_language'] = language
+                    old = self.client.get(reverse(name), {'ui': 'classic'}).content.decode()
+                    new = self.client.get(reverse(name), {'ui': 'next'}).content.decode()
+                    props = props_of(new, 'org-chart')
+                    self.assertIsNotNone(props)
+                    self.assertTrue(props['nodes'])
+                    self.assertEqual(unsaid(old, props, new_html=new), [])
+
+    def test_the_shift_schedule_island_says_all_the_classic_schedule_says(self):
+        for name in ('hr:shiftassignment_list', 'hr:production_shiftassignment_list'):
+            for language in ('en', 'nb', 'tr'):
+                with self.subTest(page=name, language=language):
+                    self.client.cookies['django_language'] = language
+                    old = self.client.get(reverse(name), {'ui': 'classic'}).content.decode()
+                    new = self.client.get(reverse(name), {'ui': 'next'}).content.decode()
+                    props = props_of(new, 'roster')
+                    self.assertIsNotNone(props)
+                    self.assertTrue(props['grid']['rows'])
+                    self.assertEqual(unsaid(old, props, new_html=new), [])
+
+    def test_the_paint_posts_what_the_servers_batch_route_takes(self):
+        from hr.models import Employee, Shift, ShiftAssignment
+        props = props_of(self.client.get(reverse('hr:production_shiftassignment_list'), {'ui': 'next'}).content.decode(), 'roster')
+        paint = props['grid']['paint']
+        second = Employee.objects.get(employee_number='E-9002')
+        row = next(row for row in props['grid']['rows'] if row['key'] == str(second.pk))
+        empty = next(cell['key'] for cell in row['cells'] if cell['key'] and cell['add'])
+        shift = Shift.objects.get(code='TD')
+        self.assertIn({'value': str(shift.pk), 'label': 'TD', 'title': 'Test day shift'}, paint['choices'])
+        response = self.client.post(paint['action'], {'csrfmiddlewaretoken': paint['csrfToken'], 'next': paint['next'],
+                                                      'shift': str(shift.pk), 'cells': [empty]})
+        self.assertEqual(response.status_code, 302)
+        day = empty.split(':', 1)[1]
+        self.assertEqual(ShiftAssignment.objects.get(employee=second, day=day).shift, shift)
 
     def test_the_polled_board_answers_in_the_look_of_the_page(self):
         self.client.get(reverse('hr:today'), {'ui': 'next'})                  # the cookie keeps the look

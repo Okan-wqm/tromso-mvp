@@ -109,7 +109,8 @@ function tidied(input: EventTarget | null) {
   if (input instanceof HTMLInputElement && input.dataset.dateInput) input.value = tidy(input.value, input.dataset.dateInput === 'moment');
 }
 
-function Toolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) {
+/** The list's toolbar: the search and the filters as one GET form, and the Add link (also the Shift schedule's). */
+export function ListToolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) {
   const { search, filters, keep } = toolbar;
   const searchId = useId();
   if (!search && !filters.length) return toolbar.add ? <div className="ui-toolbar"><LinkButton href={toolbar.add.href} variant="primary" icon="plus">{toolbar.add.label}</LinkButton></div> : null;
@@ -155,7 +156,7 @@ export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, empt
   return (
     <>
       {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
-      <Toolbar toolbar={toolbar} />
+      <ListToolbar toolbar={toolbar} />
       {notices.map((notice) => <Notice key={notice.key} tone={notice.tone}>{notice.text}</Notice>)}
       {table.rows.length ? (
         <>

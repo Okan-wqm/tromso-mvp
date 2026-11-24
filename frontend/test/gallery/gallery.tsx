@@ -6,9 +6,10 @@ import { useState } from 'react';
 
 import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
+import { ROSTER_PROPS } from '../pages/roster-props.js';
 import {
   Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
-  LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
+  LinkTabs, List, ListItem, LoadingState, Notice, OrgTree, Plate, Plates, RosterGrid, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
 interface Row { code: string; name: string; site: string; capacity: string; status: 'ok' | 'warning' | 'neutral'; word: string }
@@ -155,6 +156,24 @@ function Gallery({ rows, errors }: GalleryProps) {
         <ChartFrame title="Temperature" label="Temperature, no values" caption="Sensor">
           <SeriesChart unit="°C" emptyLabel="No values in this range." times={[]} series={[]} />
         </ChartFrame>
+      </Plate>
+      <Plate title="Organization chart" span={6}>
+        <div className="ui-plate-body" id="org">
+          <OrgTree label="Organization chart" nodes={[
+            { key: 'a', kind: 'office', name: 'Test Office', kindLabel: 'Office', count: '1 person · 3 in all',
+              manager: { label: 'Manager:', name: 'Test Lead', title: 'Test coordinator' },
+              people: { summary: 'Show 1 person', list: [{ key: 'p1', name: 'Test Person', title: 'Test coordinator' }] },
+              children: [
+                { key: 'b', kind: 'office', name: 'Test Accounts', kindLabel: 'Office', count: '2 people', children: [] },
+              ] },
+            { key: 'c', kind: 'production_root', name: 'Production', href: '#production', kindLabel: 'Production', count: '4 people', children: [] },
+          ]} />
+        </div>
+      </Plate>
+      <Plate title="Shift schedule" span={12}>
+        <div className="ui-plate-body" id="roster">
+          <RosterGrid {...ROSTER_PROPS} />
+        </div>
       </Plate>
       <Plate title="Planned today" span={6}>
         <div className="ui-plate-body" id="stack">

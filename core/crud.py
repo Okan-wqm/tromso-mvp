@@ -440,6 +440,7 @@ class Resource:
     list_rows = None
     list_template_next = ''   # the new look's page of a tab whose list is not a table (Scheduling settings), drawn by
                               # the server from the same context; '' for none
+    list_next_props = None    # its island's props, when the page is an island: (view, objects, context) -> dict
     search_placeholder = ''
     empty_text = ''
 
@@ -724,7 +725,8 @@ class ListView(ResourceView):
             return render_page(request, 'crud/list_next.html',
                                {**context, 'props': listprops.list_props(self, objects, context)})
         if self.resource.list_template_next and is_next(request):
-            return render_page(request, self.resource.list_template_next, context)
+            props = self.resource.list_next_props(self, objects, context) if self.resource.list_next_props else None
+            return render_page(request, self.resource.list_template_next, {**context, 'props': props})
         return render_page(request, self.resource.list_template, context)
 
 

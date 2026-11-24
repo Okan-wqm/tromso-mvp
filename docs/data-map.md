@@ -2172,7 +2172,7 @@ The people of the company for HR: number, name (or the account that names them),
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 23 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 24 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2402,7 +2402,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 15 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2432,7 +2432,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 20 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 21 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

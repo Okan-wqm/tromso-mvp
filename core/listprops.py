@@ -105,39 +105,52 @@ def _pager(page, pager_query):
     }
 
 
+def toolbar(view, context, filters, keep=()):
+    """A list's toolbar (ListPage's ListToolbar): the search, `filters` (choice, day) and what the address holds besides
+    them sent again (a view, a tab; `keep`: (name, value) the form must send whatever the address says, a week), and the
+    Add link. The classic list's words (crud/list.html)."""
+    r, request = view.resource, view.request
+    plural, name = r.plural, r.name
+    shown = {'q', 'page', ui.PARAM, *(each['name'] for each in filters), *(key for key, _value in keep)}
+    search = _('Search %(plural)s') % {'plural': plural}
+    return {
+        'label': search,
+        'search': {'name': 'q', 'value': context.get('query', ''), 'label': search,
+                   'placeholder': str(r.search_placeholder) if r.search_placeholder else search},
+        'keep': [*({'name': key, 'value': str(value)} for key, value in keep),
+                 *({'name': key, 'value': value} for key, value in request.GET.items() if key not in shown)],
+        'filters': filters, 'submit': _('Filter'),
+        'add': {'href': context['create_url'], 'label': _('Add %(name)s') % {'name': name}} if context.get('can_add') else None,
+    }
+
+
+def empty(view, context):
+    """What an empty list says (crud/list.html): none matching the search with the way back, or none yet with what to do."""
+    r, query = view.resource, context.get('query', '')
+    if query:
+        return {'title': _('No %(plural)s match “%(query)s”') % {'plural': r.plural, 'query': query},
+                'text': _('Try another search.'),
+                'link': {'href': context['list_url'], 'label': _('Show all %(plural)s') % {'plural': r.plural}}, 'add': None}
+    return {'title': _('No %(plural)s yet') % {'plural': r.plural},
+            'text': str(r.empty_text) if r.empty_text else _('Add the first %(name)s.') % {'name': r.name},
+            'link': None,
+            'add': {'href': context['create_url'], 'label': _('Add %(name)s') % {'name': r.name}} if context.get('can_add') else None}
+
+
 def list_props(view, objects, context):
     """Everything the list-page island draws for `view` (a core.crud.ListView) over the rows it read (`objects`, this
     page's) and the context the classic page gets (`context`: query, page, pager_query and the tab's filter values)."""
     r, request = view.resource, view.request
-    name, plural, query = r.name, r.plural, context.get('query', '')
-    filters = r.list_filters(view, context)
-    shown = {'q', 'page', ui.PARAM, *(each['name'] for each in filters)}     # the look's switch is the cookie's
     table = r.list_rows(view, objects, context)
-    add = {'href': context['create_url'], 'label': _('Add %(name)s') % {'name': name}} if context.get('can_add') else None
-    if query:
-        empty = {'title': _('No %(plural)s match “%(query)s”') % {'plural': plural, 'query': query},
-                 'text': _('Try another search.'),
-                 'link': {'href': context['list_url'], 'label': _('Show all %(plural)s') % {'plural': plural}}, 'add': None}
-    else:
-        empty = {'title': _('No %(plural)s yet') % {'plural': plural},
-                 'text': str(r.empty_text) if r.empty_text else _('Add the first %(name)s.') % {'name': name},
-                 'link': None, 'add': add}
-    search = _('Search %(plural)s') % {'plural': plural}
     return {
         'csrfToken': get_token(request),
         'tabs': table.get('tabs'),
-        'toolbar': {
-            'label': search,
-            'search': {'name': 'q', 'value': query, 'label': search,
-                       'placeholder': str(r.search_placeholder) if r.search_placeholder else search},
-            'keep': [{'name': key, 'value': value} for key, value in request.GET.items() if key not in shown],
-            'filters': filters, 'submit': _('Filter'), 'add': add,
-        },
+        'toolbar': toolbar(view, context, r.list_filters(view, context)),
         'notices': table.get('notices', []),
         'lines': [str(line) for line in table.get('lines', ())],
         'table': {'label': str(r.title(view.mount)), 'columns': table['columns'], 'rows': table['rows'],
                   'actionsLabel': _('Actions')},
-        'empty': empty,
+        'empty': empty(view, context),
         'pager': _pager(context.get('page'), context.get('pager_query', '')),
     }
 

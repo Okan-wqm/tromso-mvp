@@ -38,5 +38,23 @@
     "imports": [
       "_ui-Ef56Gh78.js"
     ]
+  },
+  "frontend/islands/org-chart.tsx": {
+    "file": "org-chart-Oc12Ab34.js",
+    "name": "org-chart",
+    "src": "frontend/islands/org-chart.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
+  },
+  "frontend/islands/roster.tsx": {
+    "file": "roster-Ro12Ab34.js",
+    "name": "roster",
+    "src": "frontend/islands/roster.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
   }
 }

@@ -33,6 +33,7 @@ case "${1:-}" in
   *) echo "usage: rotate-db-password.sh balik_app|balik_owner|sensors_ingest|balik_backup|postgres" >&2; exit 2 ;;
 esac
 role=$1
+if [ -n "$services" ]; then recreate=", then recreate: dc up -d --no-deps --force-recreate $services"; else recreate=" (no service signs in as $role: nothing to recreate)"; fi
 [ -f "$DIR/$secret" ] || { echo "$DIR/$secret does not exist: is SECRETS_DIR right ($DIR)?" >&2; exit 1; }
 [ -w "$DIR" ] || { echo "$DIR is not writable: run as the user who owns the secrets" >&2; exit 1; }
 umask 077
@@ -45,13 +46,13 @@ printf '%s\n' "$new" > "$pending" && [ "$(head -n 1 "$pending")" = "$new" ] \
 before() { echo "$1. The database was NOT changed: the old password still works; remove $pending." >&2; exit 1; }
 unsure() {
   echo "$1. The database MAY have the new password, which is kept in $pending: sign in with it (psql -h db -U $role)." \
-       "If it works, finish by hand: chmod 0444 $pending && mv $pending $DIR/$secret, then recreate: $services." \
+       "If it works, finish by hand: chmod 0444 $pending && mv $pending $DIR/$secret$recreate." \
        "If not, remove $pending." >&2
   exit 1
 }
 after() {
   echo "$1. The database HAS the new password, kept in $pending: finish by hand:" \
-       "chmod 0444 $pending && mv $pending $DIR/$secret, then recreate: $services." >&2
+       "chmod 0444 $pending && mv $pending $DIR/$secret$recreate." >&2
   exit 1
 }
 

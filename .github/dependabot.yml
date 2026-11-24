@@ -86,10 +86,12 @@ updates:
       - dependency-name: "rust"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
-  # The images the production stack pulls (deploy/compose.yml: nginx, Mosquitto, cloudflared), each pinned by digest;
-  # the patch cadence is docs/ops/upgrade.md's.
+  # The images the compose files pull, each pinned by digest: the production stack's (deploy/compose.yml: nginx,
+  # Mosquitto, cloudflared) and the development stack's (docker-compose.yml: TimescaleDB, Mosquitto, Node-RED). A
+  # TimescaleDB bump must move every pin together (sensors.tests.test_timescale fails otherwise); the patch cadence is
+  # docs/ops/upgrade.md's.
   - package-ecosystem: docker-compose
-    directory: "/deploy"
+    directories: ["/", "/deploy"]
     schedule:
       interval: weekly
       day: monday

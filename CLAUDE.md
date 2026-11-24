@@ -7,7 +7,7 @@ say in one place: the owner's standing rules, how work lands, and this machine's
 ## What this is
 
 A fish-farm management MVP (land-based and sea sites) for a university pilot: server-rendered Django 6.1 on
-PostgreSQL 17 + TimescaleDB 2.17, browser code in TypeScript, two Rust parts (`chemcore/`, the water-chemistry
+PostgreSQL 17 + TimescaleDB 2.32, browser code in TypeScript, two Rust parts (`chemcore/`, the water-chemistry
 core called through PyO3, and `sensors-ingest/`, the MQTT ingest). It started as a port of the farm module of
 Suderra's aquaculture platform and has grown its own apps: `farm`, `inventory`, `tasks`, `reports`, `messaging`,
 `knowledge`, `experiments`, `hr`, `monitoring`, `sensors`, `alarms`. The code map is README › Layout of the code.

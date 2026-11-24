@@ -1,7 +1,7 @@
 # Fish farm prototype
 
 A small Django prototype of the farm module of Suderra's aquaculture platform: Django 6.1 on
-PostgreSQL 17 with TimescaleDB 2.17 (Docker). The farm module's tabs are ported one at a time.
+PostgreSQL 17 with TimescaleDB 2.32 (Docker). The farm module's tabs are ported one at a time.
 
 What works today:
 

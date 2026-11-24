@@ -112,12 +112,15 @@ class HypertableTests(TestCase):
         # Compression, continuous aggregates and policies are TSL features: the -oss build lacks them.
         self.assertEqual(one('SHOW timescaledb.license'), 'timescale')
         self.assertEqual(one("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'"), '2.32.1')
-        # one image everywhere a database starts: development, the tests, CI, production
+        # one image everywhere a database starts: development, the tests, CI, production, the ingest's own scripts
         from pathlib import Path
 
         from django.conf import settings
         base = Path(settings.BASE_DIR)
-        for path in ('docker-compose.yml', 'scripts/test.sh', '.github/workflows/ci.yml', 'deploy/db/Dockerfile'):
+        for path in ('docker-compose.yml', 'scripts/test.sh', '.github/workflows/ci.yml', 'deploy/db/Dockerfile',
+                     'sensors-ingest/tests/run.sh', 'sensors-ingest/e2e/run.sh', 'sensors-ingest/bench/run.sh',
+                     'sensors-ingest/bench/multisource.sh', 'sensors-ingest/simulator/farm-check.sh',
+                     'sensors-ingest/simulator/farm-config.sh'):
             with self.subTest(path=path):
                 text = (base / path).read_text(encoding='utf-8')
                 self.assertIn(PINNED, text)

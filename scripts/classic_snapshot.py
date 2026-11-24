@@ -69,6 +69,11 @@ try:
                                 pages.append((f'edit-{index}-{rows.key}-refused', 'post',
                                               f"{reverse(resource.url_name(rows.key), args=[record.pk])}?ui=classic",
                                               refused_rows_data(rows, record)))
+                        # the read pages that include the same partials (a design's table, an entry's review)
+                        if resource.detail_template:
+                            pages += [(f'detail-{index}-{tab}', 'get', f"{reverse(resource.url_name('detail'), args=[record.pk])}"
+                                       f"{'?tab=' + tab if tab else ''}", None)
+                                      for tab in ('', 'data', 'team')]
                 for what, method, url, data in pages:
                     answer = client.get(url, {'ui': 'classic'}) if method == 'get' else client.post(url, data)
                     html = answer.content.decode()

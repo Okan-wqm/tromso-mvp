@@ -7,7 +7,10 @@
     frontend/test/pages/list-props-<language>.json      the list pages' props (core/listprops.py) in en, nb, tr;
     frontend/test/pages/panel-props-<language>.json     the same of the production panel's list pages;
     frontend/test/pages/panel/<page>-<language>.html    the production panel's pages drawn by the server (Tasks with its
-                                               drawer, Regulatory reports, Storage, Messages), whole, in the new look.
+                                               drawer, Regulatory reports, Storage, Messages), whole, in the new look;
+    frontend/test/pages/recorded-from.json      the hash of every source they were made from (core/recorded.py), which
+                                               core/tests_recorded_fixtures.py holds them to: a changed source fails
+                                               until they are recorded again.
 
 Every person, address and name in them is a fixture value (names "Test …", addresses @example.com); the guard
 core/tests_fixture_privacy.py fails on any other e-mail domain under frontend/test and core/testdata.
@@ -197,6 +200,10 @@ try:
                 json.dump(pages, out, ensure_ascii=False, indent=1)
                 out.write(chr(10))
         record_panel_pages(admin)
+        from core import recorded
+        with open(recorded.RECORD, 'w', encoding='utf-8') as out:      # what they were made from (core/recorded.py)
+            json.dump(recorded.digest(), out, indent=1, sort_keys=True)
+            out.write(chr(10))
         raise Rollback
 except Rollback:
     pass

@@ -108,13 +108,13 @@
    ],
    "rows": [
     {
-     "key": "928f472a-2f4c-4bef-820b-971517b90038",
+     "key": "d8b3733c-3f58-4b22-90e0-f311ec02b38a",
      "status": null,
      "voided": false,
      "cells": {
       "title": {
        "text": "Test filter wash",
-       "href": "/operations/tasks/recurring/928f472a-2f4c-4bef-820b-971517b90038/",
+       "href": "/operations/tasks/recurring/d8b3733c-3f58-4b22-90e0-f311ec02b38a/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -177,7 +177,7 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/operations/tasks/recurring/928f472a-2f4c-4bef-820b-971517b90038/delete/",
+       "href": "/operations/tasks/recurring/d8b3733c-3f58-4b22-90e0-f311ec02b38a/delete/",
        "label": "Slett Test filter wash",
        "icon": "trash",
        "danger": true
@@ -185,13 +185,13 @@
      ]
     },
     {
-     "key": "3fd543ec-2540-4905-ab8e-fbfe06a303c9",
+     "key": "fa19bb48-3651-4212-a42f-043acd217de9",
      "status": null,
      "voided": false,
      "cells": {
       "title": {
        "text": "Test oxygen round",
-       "href": "/operations/tasks/recurring/3fd543ec-2540-4905-ab8e-fbfe06a303c9/",
+       "href": "/operations/tasks/recurring/fa19bb48-3651-4212-a42f-043acd217de9/",
        "strong": true,
        "chip": null,
        "chips": [
@@ -255,7 +255,7 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/operations/tasks/recurring/3fd543ec-2540-4905-ab8e-fbfe06a303c9/delete/",
+       "href": "/operations/tasks/recurring/fa19bb48-3651-4212-a42f-043acd217de9/delete/",
        "label": "Slett Test oxygen round",
        "icon": "trash",
        "danger": true
@@ -366,13 +366,13 @@
    ],
    "rows": [
     {
-     "key": "903f347a-753c-47e6-9197-3cc9ab1f3053",
+     "key": "6a207706-45bb-43c0-8aa3-f1893f1ec039",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q1",
-       "href": "/authority-questions/903f347a-753c-47e6-9197-3cc9ab1f3053/",
+       "href": "/authority-questions/6a207706-45bb-43c0-8aa3-f1893f1ec039/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -433,14 +433,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/903f347a-753c-47e6-9197-3cc9ab1f3053/",
+       "href": "/authority-questions/6a207706-45bb-43c0-8aa3-f1893f1ec039/",
        "label": "Rediger Q1",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/903f347a-753c-47e6-9197-3cc9ab1f3053/delete/",
+       "href": "/authority-questions/6a207706-45bb-43c0-8aa3-f1893f1ec039/delete/",
        "label": "Slett Q1",
        "icon": "trash",
        "danger": true
@@ -448,13 +448,13 @@
      ]
     },
     {
-     "key": "83bee669-c91d-4bbe-98dd-dd98e3fa50e7",
+     "key": "616d76be-8ade-4716-9abd-d7bb8184abf6",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q10",
-       "href": "/authority-questions/83bee669-c91d-4bbe-98dd-dd98e3fa50e7/",
+       "href": "/authority-questions/616d76be-8ade-4716-9abd-d7bb8184abf6/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -515,14 +515,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/83bee669-c91d-4bbe-98dd-dd98e3fa50e7/",
+       "href": "/authority-questions/616d76be-8ade-4716-9abd-d7bb8184abf6/",
        "label": "Rediger Q10",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/83bee669-c91d-4bbe-98dd-dd98e3fa50e7/delete/",
+       "href": "/authority-questions/616d76be-8ade-4716-9abd-d7bb8184abf6/delete/",
        "label": "Slett Q10",
        "icon": "trash",
        "danger": true
@@ -530,13 +530,13 @@
      ]
     },
     {
-     "key": "aeca9829-b864-45e2-8bf5-030df5ef528e",
+     "key": "c5be456e-99b2-4668-b0db-36537b650b52",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q11",
-       "href": "/authority-questions/aeca9829-b864-45e2-8bf5-030df5ef528e/",
+       "href": "/authority-questions/c5be456e-99b2-4668-b0db-36537b650b52/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -597,14 +597,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/aeca9829-b864-45e2-8bf5-030df5ef528e/",
+       "href": "/authority-questions/c5be456e-99b2-4668-b0db-36537b650b52/",
        "label": "Rediger Q11",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/aeca9829-b864-45e2-8bf5-030df5ef528e/delete/",
+       "href": "/authority-questions/c5be456e-99b2-4668-b0db-36537b650b52/delete/",
        "label": "Slett Q11",
        "icon": "trash",
        "danger": true
@@ -612,13 +612,13 @@
      ]
     },
     {
-     "key": "d28f504f-3cac-42f8-a2a0-270ba2660bcc",
+     "key": "157e3aef-b587-4eb4-abea-488abcbbb84c",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q12",
-       "href": "/authority-questions/d28f504f-3cac-42f8-a2a0-270ba2660bcc/",
+       "href": "/authority-questions/157e3aef-b587-4eb4-abea-488abcbbb84c/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -679,14 +679,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/d28f504f-3cac-42f8-a2a0-270ba2660bcc/",
+       "href": "/authority-questions/157e3aef-b587-4eb4-abea-488abcbbb84c/",
        "label": "Rediger Q12",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/d28f504f-3cac-42f8-a2a0-270ba2660bcc/delete/",
+       "href": "/authority-questions/157e3aef-b587-4eb4-abea-488abcbbb84c/delete/",
        "label": "Slett Q12",
        "icon": "trash",
        "danger": true
@@ -694,13 +694,13 @@
      ]
     },
     {
-     "key": "32624033-5021-460c-bd28-35a26bf3cf21",
+     "key": "09545d24-2fe0-4437-a46e-86f98776dbd2",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q2",
-       "href": "/authority-questions/32624033-5021-460c-bd28-35a26bf3cf21/",
+       "href": "/authority-questions/09545d24-2fe0-4437-a46e-86f98776dbd2/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -761,14 +761,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/32624033-5021-460c-bd28-35a26bf3cf21/",
+       "href": "/authority-questions/09545d24-2fe0-4437-a46e-86f98776dbd2/",
        "label": "Rediger Q2",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/32624033-5021-460c-bd28-35a26bf3cf21/delete/",
+       "href": "/authority-questions/09545d24-2fe0-4437-a46e-86f98776dbd2/delete/",
        "label": "Slett Q2",
        "icon": "trash",
        "danger": true
@@ -776,13 +776,13 @@
      ]
     },
     {
-     "key": "7f46b77f-8d52-4ba9-bc06-278c28fc1299",
+     "key": "70dc8dee-8ddc-453c-b9d0-a13eb46fb8a4",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q3",
-       "href": "/authority-questions/7f46b77f-8d52-4ba9-bc06-278c28fc1299/",
+       "href": "/authority-questions/70dc8dee-8ddc-453c-b9d0-a13eb46fb8a4/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -843,14 +843,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/7f46b77f-8d52-4ba9-bc06-278c28fc1299/",
+       "href": "/authority-questions/70dc8dee-8ddc-453c-b9d0-a13eb46fb8a4/",
        "label": "Rediger Q3",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/7f46b77f-8d52-4ba9-bc06-278c28fc1299/delete/",
+       "href": "/authority-questions/70dc8dee-8ddc-453c-b9d0-a13eb46fb8a4/delete/",
        "label": "Slett Q3",
        "icon": "trash",
        "danger": true
@@ -858,13 +858,13 @@
      ]
     },
     {
-     "key": "a63664e1-0242-48b1-a715-e1c313691366",
+     "key": "04fa45b8-52bb-4eeb-9601-9971c9d87ee2",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q4",
-       "href": "/authority-questions/a63664e1-0242-48b1-a715-e1c313691366/",
+       "href": "/authority-questions/04fa45b8-52bb-4eeb-9601-9971c9d87ee2/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -925,14 +925,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/a63664e1-0242-48b1-a715-e1c313691366/",
+       "href": "/authority-questions/04fa45b8-52bb-4eeb-9601-9971c9d87ee2/",
        "label": "Rediger Q4",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/a63664e1-0242-48b1-a715-e1c313691366/delete/",
+       "href": "/authority-questions/04fa45b8-52bb-4eeb-9601-9971c9d87ee2/delete/",
        "label": "Slett Q4",
        "icon": "trash",
        "danger": true
@@ -940,13 +940,13 @@
      ]
     },
     {
-     "key": "39ce58a0-d03e-4c3b-8a4f-5a2d6ed0b98c",
+     "key": "17359e4b-9e34-45c5-9519-47bcd22d4032",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q5",
-       "href": "/authority-questions/39ce58a0-d03e-4c3b-8a4f-5a2d6ed0b98c/",
+       "href": "/authority-questions/17359e4b-9e34-45c5-9519-47bcd22d4032/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1007,14 +1007,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/39ce58a0-d03e-4c3b-8a4f-5a2d6ed0b98c/",
+       "href": "/authority-questions/17359e4b-9e34-45c5-9519-47bcd22d4032/",
        "label": "Rediger Q5",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/39ce58a0-d03e-4c3b-8a4f-5a2d6ed0b98c/delete/",
+       "href": "/authority-questions/17359e4b-9e34-45c5-9519-47bcd22d4032/delete/",
        "label": "Slett Q5",
        "icon": "trash",
        "danger": true
@@ -1022,13 +1022,13 @@
      ]
     },
     {
-     "key": "587bc670-eabc-42ee-a412-50a1aedada59",
+     "key": "9a03536d-80cf-4af8-86d7-4fc2ca7afd92",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q6",
-       "href": "/authority-questions/587bc670-eabc-42ee-a412-50a1aedada59/",
+       "href": "/authority-questions/9a03536d-80cf-4af8-86d7-4fc2ca7afd92/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1089,14 +1089,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/587bc670-eabc-42ee-a412-50a1aedada59/",
+       "href": "/authority-questions/9a03536d-80cf-4af8-86d7-4fc2ca7afd92/",
        "label": "Rediger Q6",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/587bc670-eabc-42ee-a412-50a1aedada59/delete/",
+       "href": "/authority-questions/9a03536d-80cf-4af8-86d7-4fc2ca7afd92/delete/",
        "label": "Slett Q6",
        "icon": "trash",
        "danger": true
@@ -1104,13 +1104,13 @@
      ]
     },
     {
-     "key": "83812585-d9b8-4ab4-884b-6f010de32f07",
+     "key": "aa21d5aa-c884-4030-ba8f-c5a3bfe296be",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q7",
-       "href": "/authority-questions/83812585-d9b8-4ab4-884b-6f010de32f07/",
+       "href": "/authority-questions/aa21d5aa-c884-4030-ba8f-c5a3bfe296be/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1171,14 +1171,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/83812585-d9b8-4ab4-884b-6f010de32f07/",
+       "href": "/authority-questions/aa21d5aa-c884-4030-ba8f-c5a3bfe296be/",
        "label": "Rediger Q7",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/83812585-d9b8-4ab4-884b-6f010de32f07/delete/",
+       "href": "/authority-questions/aa21d5aa-c884-4030-ba8f-c5a3bfe296be/delete/",
        "label": "Slett Q7",
        "icon": "trash",
        "danger": true
@@ -1186,13 +1186,13 @@
      ]
     },
     {
-     "key": "af4eae18-160e-43dc-bf30-d50271dce352",
+     "key": "932a5913-cbe1-417d-89aa-8c24beb84c02",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q8",
-       "href": "/authority-questions/af4eae18-160e-43dc-bf30-d50271dce352/",
+       "href": "/authority-questions/932a5913-cbe1-417d-89aa-8c24beb84c02/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1253,14 +1253,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/af4eae18-160e-43dc-bf30-d50271dce352/",
+       "href": "/authority-questions/932a5913-cbe1-417d-89aa-8c24beb84c02/",
        "label": "Rediger Q8",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/af4eae18-160e-43dc-bf30-d50271dce352/delete/",
+       "href": "/authority-questions/932a5913-cbe1-417d-89aa-8c24beb84c02/delete/",
        "label": "Slett Q8",
        "icon": "trash",
        "danger": true
@@ -1268,13 +1268,13 @@
      ]
     },
     {
-     "key": "ccd7ee02-97dd-4529-9ac0-c3cc5170785a",
+     "key": "1e3728fc-37e8-46ac-b498-adad68a8cb2e",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q9",
-       "href": "/authority-questions/ccd7ee02-97dd-4529-9ac0-c3cc5170785a/",
+       "href": "/authority-questions/1e3728fc-37e8-46ac-b498-adad68a8cb2e/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1335,14 +1335,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/ccd7ee02-97dd-4529-9ac0-c3cc5170785a/",
+       "href": "/authority-questions/1e3728fc-37e8-46ac-b498-adad68a8cb2e/",
        "label": "Rediger Q9",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/ccd7ee02-97dd-4529-9ac0-c3cc5170785a/delete/",
+       "href": "/authority-questions/1e3728fc-37e8-46ac-b498-adad68a8cb2e/delete/",
        "label": "Slett Q9",
        "icon": "trash",
        "danger": true
@@ -1350,13 +1350,13 @@
      ]
     },
     {
-     "key": "c524a776-88fe-4d8e-8430-1f458ef9bf08",
+     "key": "08f1c77e-8686-4cd8-a319-83e9886c7b6b",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "TQ1",
-       "href": "/authority-questions/c524a776-88fe-4d8e-8430-1f458ef9bf08/",
+       "href": "/authority-questions/08f1c77e-8686-4cd8-a319-83e9886c7b6b/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1417,14 +1417,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/c524a776-88fe-4d8e-8430-1f458ef9bf08/",
+       "href": "/authority-questions/08f1c77e-8686-4cd8-a319-83e9886c7b6b/",
        "label": "Rediger TQ1",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/c524a776-88fe-4d8e-8430-1f458ef9bf08/delete/",
+       "href": "/authority-questions/08f1c77e-8686-4cd8-a319-83e9886c7b6b/delete/",
        "label": "Slett TQ1",
        "icon": "trash",
        "danger": true
@@ -1432,13 +1432,13 @@
      ]
     },
     {
-     "key": "45177a38-8972-41fa-a81b-83c62963a43f",
+     "key": "6ad2e707-eb7a-4bd9-8777-edfc64262d40",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "TQ2",
-       "href": "/authority-questions/45177a38-8972-41fa-a81b-83c62963a43f/",
+       "href": "/authority-questions/6ad2e707-eb7a-4bd9-8777-edfc64262d40/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1503,14 +1503,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/45177a38-8972-41fa-a81b-83c62963a43f/",
+       "href": "/authority-questions/6ad2e707-eb7a-4bd9-8777-edfc64262d40/",
        "label": "Rediger TQ2",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/45177a38-8972-41fa-a81b-83c62963a43f/delete/",
+       "href": "/authority-questions/6ad2e707-eb7a-4bd9-8777-edfc64262d40/delete/",
        "label": "Slett TQ2",
        "icon": "trash",
        "danger": true
@@ -1599,7 +1599,7 @@
        "label": "Alle lokaliteter"
       },
       {
-       "value": "94d07521-34a0-488e-a217-d5e1f37d5a44",
+       "value": "a1ecbfc8-8a80-494d-9e05-57b77795f47c",
        "label": "Test Site North"
       }
      ],
@@ -1616,7 +1616,7 @@
        "label": "Alle arter"
       },
       {
-       "value": "c5063896-8dcd-471b-8380-891d77572314",
+       "value": "29f01a61-d80c-4536-982e-14895d630ba1",
        "label": "Atlantic salmon"
       }
      ],
@@ -1683,13 +1683,13 @@
    ],
    "rows": [
     {
-     "key": "81f32a94-ba06-4ded-a392-ffdebebd4da5",
+     "key": "5c5db449-3aa8-46a2-9185-beb687efa575",
      "status": null,
      "voided": false,
      "cells": {
       "experiment": {
        "text": "Test light trial",
-       "href": "/research/experiments/81f32a94-ba06-4ded-a392-ffdebebd4da5/view/",
+       "href": "/research/experiments/5c5db449-3aa8-46a2-9185-beb687efa575/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1760,14 +1760,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/research/experiments/81f32a94-ba06-4ded-a392-ffdebebd4da5/",
+       "href": "/research/experiments/5c5db449-3aa8-46a2-9185-beb687efa575/",
        "label": "Rediger Test light trial",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/research/experiments/81f32a94-ba06-4ded-a392-ffdebebd4da5/delete/",
+       "href": "/research/experiments/5c5db449-3aa8-46a2-9185-beb687efa575/delete/",
        "label": "Slett Test light trial",
        "icon": "trash",
        "danger": true
@@ -1775,13 +1775,13 @@
      ]
     },
     {
-     "key": "a1a3b4f3-7501-420e-b171-7446f12c65cc",
+     "key": "f81f630a-eb02-4df6-86e3-849051e1f31b",
      "status": null,
      "voided": false,
      "cells": {
       "experiment": {
        "text": "Test diet trial",
-       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/view/",
+       "href": "/research/experiments/f81f630a-eb02-4df6-86e3-849051e1f31b/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1852,14 +1852,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/",
+       "href": "/research/experiments/f81f630a-eb02-4df6-86e3-849051e1f31b/",
        "label": "Rediger Test diet trial",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/delete/",
+       "href": "/research/experiments/f81f630a-eb02-4df6-86e3-849051e1f31b/delete/",
        "label": "Slett Test diet trial",
        "icon": "trash",
        "danger": true
@@ -1953,7 +1953,7 @@
        "label": "Alle lokaliteter"
       },
       {
-       "value": "94d07521-34a0-488e-a217-d5e1f37d5a44",
+       "value": "a1ecbfc8-8a80-494d-9e05-57b77795f47c",
        "label": "Test Site North"
       }
      ],
@@ -1970,7 +1970,7 @@
        "label": "Alle arter"
       },
       {
-       "value": "c5063896-8dcd-471b-8380-891d77572314",
+       "value": "29f01a61-d80c-4536-982e-14895d630ba1",
        "label": "Atlantic salmon"
       }
      ],
@@ -2037,13 +2037,13 @@
    ],
    "rows": [
     {
-     "key": "a1a3b4f3-7501-420e-b171-7446f12c65cc",
+     "key": "f81f630a-eb02-4df6-86e3-849051e1f31b",
      "status": null,
      "voided": false,
      "cells": {
       "experiment": {
        "text": "Test diet trial",
-       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/view/",
+       "href": "/research/experiments/f81f630a-eb02-4df6-86e3-849051e1f31b/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -2114,14 +2114,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/",
+       "href": "/research/experiments/f81f630a-eb02-4df6-86e3-849051e1f31b/",
        "label": "Rediger Test diet trial",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/delete/",
+       "href": "/research/experiments/f81f630a-eb02-4df6-86e3-849051e1f31b/delete/",
        "label": "Slett Test diet trial",
        "icon": "trash",
        "danger": true
@@ -2215,7 +2215,7 @@
        "label": "Alle lokaliteter"
       },
       {
-       "value": "94d07521-34a0-488e-a217-d5e1f37d5a44",
+       "value": "a1ecbfc8-8a80-494d-9e05-57b77795f47c",
        "label": "Test Site North"
       }
      ],
@@ -2232,7 +2232,7 @@
        "label": "Alle arter"
       },
       {
-       "value": "c5063896-8dcd-471b-8380-891d77572314",
+       "value": "29f01a61-d80c-4536-982e-14895d630ba1",
        "label": "Atlantic salmon"
       }
      ],
@@ -2299,13 +2299,13 @@
    ],
    "rows": [
     {
-     "key": "6f9c10cb-3ac1-43c5-ac8f-c657e6baac9f",
+     "key": "26a2a99a-d82d-4818-aafc-3ccbefa10213",
      "status": null,
      "voided": false,
      "cells": {
       "experiment": {
        "text": "Test design kept",
-       "href": "/research/experiments/6f9c10cb-3ac1-43c5-ac8f-c657e6baac9f/view/",
+       "href": "/research/experiments/26a2a99a-d82d-4818-aafc-3ccbefa10213/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -2381,14 +2381,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/research/experiments/6f9c10cb-3ac1-43c5-ac8f-c657e6baac9f/",
+       "href": "/research/experiments/26a2a99a-d82d-4818-aafc-3ccbefa10213/",
        "label": "Rediger Test design kept",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/research/experiments/6f9c10cb-3ac1-43c5-ac8f-c657e6baac9f/delete/",
+       "href": "/research/experiments/26a2a99a-d82d-4818-aafc-3ccbefa10213/delete/",
        "label": "Slett Test design kept",
        "icon": "trash",
        "danger": true

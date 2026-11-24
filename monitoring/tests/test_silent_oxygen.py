@@ -472,3 +472,125 @@ class StandingWaterTests(SilentOxygenCase):
         more(4, 'NB')
         engine.run_once(self.now)
         self.assertEqual(queries(self.now + timedelta(seconds=1)), few)
+
+
+class CardHasItsAlarmTests(SilentOxygenCase):
+    """Review 5 of the branch (M1): a card at critical or at warning has its alarm at that level, whatever way a unit with
+    no point of its own is read (its loop point, its system's probes with no loop point, nothing). Its water's levels are
+    raised through the one path (alarms/sources.py `_water_subjects`): at the loop point, or, with none, without a point,
+    on the unit's site and department."""
+
+    def setUp(self):
+        super().setUp()
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+
+    def bare(self, code, loop=False, system=True):
+        """A unit with fish and no point of its own (N-<code>), in a system of its own (with a loop point when `loop`)."""
+        ras = System.objects.create(name=f'RAS {code}', code=code, site=self.bergen,
+                                    production_department=self.hall) if system else None
+        if loop:
+            point_of(ras)
+        unit = make_unit(f'N-{code}', self.hall, system=ras)
+        stock_fish(self.user, unit, 500, '50', 10, species=self.salmon)
+        return unit, ras
+
+    def probe(self, ras, code, value, at):
+        device = make_device(self.connection, self.format, self.bergen, code=f'P-{code}')
+        probe = make_channel(device, 'oxygen_mg_l', code='O2')
+        bindings.move(self.user, probe, system=ras, at=self.now - timedelta(hours=2))
+        self.send(probe, value, at)
+        return probe
+
+    def levels(self, unit, code):
+        """The highest level of the open alarms about the unit (its own, its system's probe's), 'none' without one."""
+        found = {alarm.severity for alarm in Alarm.objects.filter(clearance__isnull=True)
+                 if alarm.summary.startswith(f'{unit.code}') or f'P-{code}' in alarm.summary}
+        return 'critical' if 'critical' in found else 'warning' if 'warning' in found else 'none'
+
+    def passes(self):
+        for at in (self.now, self.now + timedelta(seconds=31)):
+            self.assertEqual(engine.run_once(at).failed_steps, [])
+
+    def test_a_low_oxygen_from_the_systems_probe_without_a_loop_point_is_one_critical(self):
+        """q1: 3.0 mg/L from the system's probe, no loop point: a red card, and its critical (and its warning twin)."""
+        unit, ras = self.bare('Q1')
+        self.probe(ras, 'Q1', 3.0, self.now - timedelta(seconds=30))
+        self.assertEqual(self.card(unit).state.key, 'critical')
+        self.passes()
+        found = sorted((alarm.source, alarm.severity, alarm.point_id) for alarm in Alarm.objects.filter(
+            clearance__isnull=True, summary__startswith='N-Q1'))
+        self.assertEqual(found, [('water_limit', 'critical', None), ('water_limit', 'warning', None)])
+        alarm = Alarm.objects.get(clearance__isnull=True, summary__startswith='N-Q1', severity='critical')
+        self.assertEqual((alarm.site, alarm.production_department), (self.bergen, self.hall))
+        self.assertTrue(alarm.summary.startswith('N-Q1, from its system: '), alarm.summary)
+        self.assertFalse(Alarm.objects.filter(parameter='no_water_point').exists())
+
+    def test_a_warning_oxygen_from_the_systems_probe_without_a_loop_point_is_one_warning(self):
+        """q2: 6.5 mg/L: a warning card and its warning."""
+        unit, ras = self.bare('Q2')
+        self.probe(ras, 'Q2', 6.5, self.now - timedelta(seconds=30))
+        self.assertEqual(self.card(unit).state.key, 'warning')
+        self.passes()
+        self.assertEqual(sorted((alarm.source, alarm.severity) for alarm in Alarm.objects.filter(
+            clearance__isnull=True, summary__startswith='N-Q2')), [('water_limit', 'warning')])
+        self.assertFalse(Alarm.objects.filter(parameter='no_water_point').exists())
+
+    def test_every_unit_without_a_point_has_the_alarm_its_card_says(self):
+        """The card's state is the highest level of its open alarms (critical, warning, else none), for every way a unit
+        with no point of its own is read."""
+        fresh, stale = self.now - timedelta(seconds=30), self.now - timedelta(hours=30)
+        cases = {}
+        unit, ras = self.bare('C1', loop=True)                          # loop point, fresh OK
+        self.typed(ras, 1, temperature_c='12.0', oxygen_mg_l='9.0')
+        cases['C1'] = unit
+        unit, ras = self.bare('C2', loop=True)                          # loop point, fresh low
+        self.typed(ras, 1, temperature_c='12.0', oxygen_mg_l='3.0')
+        cases['C2'] = unit
+        unit, ras = self.bare('C3', loop=True)                          # loop point, typed warning-band, old
+        self.typed(ras, 30, oxygen_mg_l='6.5')
+        cases['C3'] = unit
+        unit, ras = self.bare('C4', loop=True)                          # loop point, a silent system probe
+        self.probe(ras, 'C4', OXYGEN, stale)
+        cases['C4'] = unit
+        unit, ras = self.bare('C5')                                     # no loop point, no probe
+        cases['C5'] = unit
+        cases['C6'], _none = self.bare('C6', system=False)              # no system at all
+        unit, ras = self.bare('C7')                                     # no loop point, probe low
+        self.probe(ras, 'C7', 3.0, fresh)
+        cases['C7'] = unit
+        unit, ras = self.bare('C8')                                     # no loop point, probe warning-band
+        self.probe(ras, 'C8', 6.5, fresh)
+        cases['C8'] = unit
+        unit, ras = self.bare('C9')                                     # no loop point, probe fine
+        self.probe(ras, 'C9', OXYGEN, fresh)
+        cases['C9'] = unit
+        states = {code: self.card(unit).state.key for code, unit in cases.items()}
+        self.passes()
+        for code, unit in cases.items():
+            with self.subTest(code=code, card=states[code]):
+                card = states[code] if states[code] in ('critical', 'warning') else 'none'
+                self.assertEqual(self.levels(unit, code), card)
+        self.assertFalse(Alarm.objects.filter(clearance__isnull=True, parameter='no_water_point').exists())
+
+    def test_the_overview_lists_the_critical_unit_without_a_point_it_counts(self):
+        """q6: a unit with fish, no point and no system, its oxygen unknown: counted critical and listed."""
+        unit, _none = self.bare('Q6', system=False)
+        water = self.overview()
+        self.assertIn(unit.pk, {row['owner'].pk for row in water['alerts']})
+
+    def test_the_drawer_and_the_card_name_the_system_the_values_come_from(self):
+        """A unit read at its system: the drawer says "From its system, …" (never "no water is shown"), and the card's
+        water table names the place."""
+        unit, ras = self.bare('Q9', loop=True)
+        self.typed(ras, 1, temperature_c='12.0', oxygen_mg_l='9.0')
+        loop = point_of(ras)
+        drawer = self.client.get(reverse('farm:production_units'), {'unit': unit.pk}).content.decode()
+        self.assertNotIn('so no water is shown for it', drawer)
+        self.assertIn(f'From its system, {loop}: the unit has no sampling point of its own.', drawer)
+        detailed = self.client.get(PAGE, {'mode': 'detailed', 'units': str(unit.pk), 'full': '1'}).content.decode()
+        blocks = [node for node in card_of(detailed, unit).walk() if 'monitor-point' in node.classes]
+        names = [text(child) for block in blocks for child in block.children
+                 if not isinstance(child, str) and 'row-sub' in child.classes]
+        self.assertTrue(names and all(names), names)
+        self.assertIn(str(loop), ' '.join(names))

@@ -5467,12 +5467,27 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   unmarked and the
   others marked "optional", the server's errors on their fields and the tab that holds them open, a submit busy until
   the answer, the History tab and the delete link; the delete confirmation says the delete plan in the old page's words.
-  `core/formprops.py` decides which forms the island draws (`drawable`: the shared crud/form.html, no question asked
-  before a save (`question_template`: the withdrawal guard), no context of the page's own besides the tab to open, and
-  every widget kind drawn; an unknown widget or several hidden values in one field keep the classic page, never an
-  error); a tab with a form template of its own, and a request for a dialog, keep the classic page. Row lists (formsets,
-  `RowList`, `core.formpayload.formset_payload`) are built and tested but not drawn yet: every tab with row lists has a
-  form template of its own. A delete the plan blocks keeps its button off (`ServerForm` switches on only what it
+  `core/formprops.py` decides which forms the island draws (`drawable`: the shared crud/form.html or a template of its
+  own whose panels the tab words, no question asked before a save but the withdrawal guard's, no context of the page's
+  own the island does not draw, and every widget kind drawn, the rows' too; an unknown widget or several hidden values
+  in one field keep the classic page, never an error); a request for a dialog keeps the classic page.
+  **A tab with a form template of its own** (a site's and a supplier's contacts, a feeder's calibrations, a feed's
+  suitability, a medicine's withdrawal, a storage location's reorder levels, a board's cards, a channel's calibrations
+  and freshness, a task's and a recurring task's checklist, a device's channels and placement, a credential's Replace the
+  secret, a knowledge entry's review, a draft report's answer lists, a feeding protocol's table, an experiment's design,
+  places and team) words what its template adds in `Resource.next_panels` (`core/formpanels.py`, the
+  template's own msgids; a list's words are its `RowList`'s): a panel is a tab of its own before History, or more on one
+  of the record's tabs after the record's form (a site's contacts on Contact); its blocks are help, notices, read-only
+  tables (`core.listprops` cells), a started checklist, one-button forms with their hidden fields, links, forms of their
+  own saved as a whole (`formpanels.form`: fields, formsets as tables with a heading row and rows added from the empty
+  form, buttons that say which was pressed, a field that changes the grid posting a draft), and lists
+  saved apart (`core.crud.RowList`: its own form to its own address, the record's version with it, the formset's rows
+  named by a heading row, a row added from the empty form taking the focus, one primary contact at a time, a refused
+  list opening its tab with its errors). The record's own form and Save stand with the record's tabs only. The
+  withdrawal guard's question (`core.formpanels.question`: its warnings and the box whose value is their fingerprint, or
+  why a second person must approve) is drawn above the record's tabs on a refused save (`question_template`: a feed, a
+  species, a unit, a sampling point, the platform settings) and above a medicine's withdrawal list. The card designer
+  stays classic (the monitoring branch's). A delete the plan blocks keeps its button off (`ServerForm` switches on only what it
   switched off). Held: the props say
   what the classic page says (`core/tests_formprops.py`, three languages); every field of every tab's form, new, refused
   and editing a record, its row lists' rows and the handling acknowledgement, posts what the old page posts
@@ -5481,7 +5496,11 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   words and its links to the application's own pages (`segments`, never markup); a stored file links to its own
   permission-checked view (a widget's `current_url`); a link is the application's own only as a plain path
   (`core.formpayload.own_path`: no scheme, host, backslash or control character). Every drawn tab, new and editing a
-  record of the test world, is held to its classic page (`core/tests_formprops.py`, EveryDrawableTabTests). The browser
+  record of the test world, is held to its classic page (`core/tests_formprops.py`, EveryDrawableTabTests); every tab with
+  a template of its own, new, editing and with each list refused, in three languages, and each list posts from its props
+  alone what it holds and saves; the guard's question on every tab that may ask it, and going past it saves a feed and a
+  medicine's withdrawal (`core/tests_formpanels.py`); in a browser, every such page in three languages at 1440 and 390,
+  a list's own form, a row added, one primary contact (`frontend/test/customforms.browser.test.ts`). The browser
   tests run on props recorded from the test world; the Python tests (`unsaid`) are what link those props to the real
   pages. In CI (CI=1 or CI=true) a missing browser fails the browser tests instead of skipping them.
 - **Every tab's list page** (`core.crud.ListView`; `templates/crud/list_next.html`, island `list-page`,

@@ -455,15 +455,12 @@ class WaterInputTests(Gate, TestCase):
                     model.objects.create(**fields())
                     raise RuntimeError('rolled back')
 
-    def test_the_freshness_rules_move_when_changed_lost_or_made_again(self):
+    def test_the_freshness_rules_move_when_changed(self):
+        # Never lost nor made again: the database refuses a DELETE (farm 0051), core/tests_kept_rows.py.
         found = WaterFreshness.objects.get(parameter='ph')
         with self.changes('water_freshness'):
             found.fresh_hours = 48
             found.save()
-        with self.changes('water_freshness'):
-            sql("DELETE FROM water_freshness WHERE parameter = 'ph'")
-        with self.changes('water_freshness'):              # made again from the seed, as farm/water/freshness.py does
-            WaterFreshness.objects.bulk_create([WaterFreshness(parameter='ph', fresh_hours=72)], ignore_conflicts=True)
         with self.changes('water_freshness'):
             sql("UPDATE water_freshness SET fresh_hours = 24 WHERE parameter = 'ph'")
 

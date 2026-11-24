@@ -30,7 +30,7 @@ export function Tile({ label, figure, sub, sub2, source, status, statusLabel, hr
         {status && statusLabel ? <span className="sr-only">{statusLabel}: </span> : null}
         {label}
       </span>
-      <span className="ui-tile-figure" data-figure="">{figure}</span>
+      <span className="ui-tile-figure" data-figure="" title={typeof figure === 'string' ? figure : undefined}>{figure}</span>
       {sub ? <span className="ui-tile-sub">{sub}</span> : null}
       {sub2 ? <span className="ui-tile-sub2">{sub2}</span> : null}
       {source ? <span className="ui-tile-source">{source}</span> : null}

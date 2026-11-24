@@ -35,12 +35,12 @@ Use the files in **Logos**: `suderra-mark-disc.png` (the fish on a white disc) i
 
 ## Colour
 
-Six themes, the design's set (the design project `Suderra Console`, 2026-11-23, approved by the owner), chosen per person with a cookie (never from the OS). Industry is the default; the other five are each one place on the Norwegian coast, with the design's values unchanged from tokens v2. All share the same role tokens, so a template written once looks right in every theme.
+Six themes, the design's set (the design project `Suderra Console`, 2026-11-23; the owner likes its themes, 2026-11-24), chosen per person with a cookie (never from the OS). With no choice made, the classic look stays on Fjord (`:root`) and the new look (`?ui=next`) opens on Industry; the owner decides the default for everyone at the switch (S8). The other five are each one place on the Norwegian coast, with the design's values unchanged from tokens v2. All share the same role tokens, so a template written once looks right in every theme.
 
 | Theme | `data-theme` | Kind | The picture | Accent (`brand`) |
 |---|---|---|---|---|
-| **Industry** | `industry` (default) | day | A technical drawing: steel blue on a light grey ground, a deep steel rail (`#1d2d3d`) | steel `#94bce3` |
-| **Fjord** | `fjord` | day | Deep navy water (the logo navy) under a pale cold sky | logo teal `#63a2a9` |
+| **Industry** | `industry` (the new look's default) | day | A technical drawing: steel blue on a light grey ground, a deep steel rail (`#1d2d3d`) | steel `#94bce3` |
+| **Fjord** | `fjord` (the classic look's default, `:root`) | day | Deep navy water (the logo navy) under a pale cold sky | logo teal `#63a2a9` |
 | **Polarnatt** | `polarnatt` | night | The polar night: blue-black, light kept for text and figures | muted teal `#7cb8be` |
 | **Nordlys** | `nordlys` | night, wall screens | Indigo-black sky, a faint green glow at the foot of the rail | aurora green `#7de0c3` |
 | **Tang** | `tang` | day | Kelp forest: deep kelp rail, green-grey canvas | sea grass `#a9c9b4` |
@@ -192,7 +192,7 @@ behind `?ui=next` (`core/ui.py`, `<html data-ui="next">`) until the owner switch
   `ui-plates` (a 12-column grid, `data-span` 4, 6, 8, 12), `ui-tile` and `ui-tiles` (a stat tile: label, figure, sub-line,
   source; a 4 px edge and a glyph only when abnormal), `ui-notice` (safety, flash, error), `ui-empty`, `ui-loading`,
   `ui-error`, `ui-chart` (the chart frame), `ui-unit` (a unit inside a field's frame), `ui-fixed`, `ui-checks`,
-  `ui-form-grid`, `ui-seg`, `ui-strip`; button variants `ghost` and `danger-text`, and busy (`data-pending` or
+  `ui-form-grid`, `ui-segmented` (the classic `.ui-seg` is another control), `ui-strip`; button variants `ghost` and `danger-text`, and busy (`data-pending` or
   `aria-busy`, a turning ring in place of the icon).
 
 ## Components

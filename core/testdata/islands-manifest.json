@@ -4,15 +4,22 @@
     "name": "units",
     "src": "frontend/islands/units.tsx",
     "isEntry": true,
-    "imports": ["_ui-Ef56Gh78.js"],
-    "css": ["assets/units-Zz99Yy88.css"]
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ],
+    "css": [
+      "assets/units-Zz99Yy88.css"
+    ]
   },
   "frontend/islands/water.tsx": {
     "file": "water-Ij90Kl12.js",
     "name": "water",
     "src": "frontend/islands/water.tsx",
     "isEntry": true,
-    "imports": ["_ui-Ef56Gh78.js", "_uplot-Mn34Op56.js"]
+    "imports": [
+      "_ui-Ef56Gh78.js",
+      "_uplot-Mn34Op56.js"
+    ]
   },
   "frontend/islands/sensor-charts.tsx": {
     "file": "sensor-charts-Uv12Wx34.js",
@@ -24,15 +31,31 @@
   "_ui-Ef56Gh78.js": {
     "file": "chunks/ui-Ef56Gh78.js",
     "name": "ui",
-    "imports": ["_react-Qr78St90.js"]
+    "imports": [
+      "_react-Qr78St90.js"
+    ]
   },
   "_react-Qr78St90.js": {
     "file": "chunks/react-Qr78St90.js",
-    "name": "react"
+    "name": "react",
+    "css": [
+      "assets/deep-Ee88Ff99.css"
+    ]
   },
   "_uplot-Mn34Op56.js": {
     "file": "chunks/uplot-Mn34Op56.js",
     "name": "uplot",
-    "imports": ["_react-Qr78St90.js"]
+    "imports": [
+      "_react-Qr78St90.js"
+    ]
+  },
+  "frontend/test/gallery/gallery.tsx": {
+    "file": "gallery.js",
+    "name": "gallery",
+    "src": "frontend/test/gallery/gallery.tsx",
+    "isEntry": true,
+    "css": [
+      "assets/gallery.css"
+    ]
   }
 }

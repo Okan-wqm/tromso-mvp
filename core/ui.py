@@ -48,19 +48,19 @@ class LookMiddleware:
         return response
 
 
-def strip(user, now=None):
-    """The status strip of the new look's top bar (the design's direction B): the open alarms, the people on site and the
-    company's clock, each only for a person who may see it, from the same readers as their pages. [{key, text, url,
-    status}]: status 'critical' when a critical alarm is open, 'warning' for open warnings only, '' otherwise."""
+def strip(user, now=None, attention=None):
+    """The status strip of the new look's top bar (the design's direction B): what needs a look (`alarms_item`), the people
+    on site and the company's clock, each only for a person who may see it, from the same readers as their pages.
+    [{key, text, url, status}]. The page draws it with the alarms still being read (the reader looks at every unit's
+    water, so the page never waits for it); the whole strip is then polled (`strip_view`, frontend/poll.ts), so the
+    clock and the muster count never stand still beside a live alarm count."""
     from core.dates import company_zone
 
     now = now or timezone.now()
     items = []
     if user.has_perm('alarms.view_alarm'):
-        # The alarms' item reads the water of every live unit (alarms.read.attention), so the page never waits for it:
-        # it comes as a fragment (frontend/poll.ts), and until it is there it says it is being read, never "no alarms".
-        items.append({'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'poll': reverse('core:ui_strip_alarms'),
-                      'text': _('Reading the alarms…'), 'status': ''})
+        items.append(alarms_item(attention) if attention is not None else
+                     {'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'text': _('Reading the alarms…'), 'status': ''})
     if user.has_perm('hr.view_attendancerecord'):
         from hr import read as hr_read
         from hr.models import SchedulingSettings
@@ -74,33 +74,28 @@ def strip(user, now=None):
 
 
 def alarms_item(attention):
-    """The strip's alarms item from alarms.read.attention: the open alarms, and, where none is open yet, what the water
-    judges now. It says "No open alarms" only when nothing is open, critical, warning or blind."""
-    if attention.alarms:
-        text = ngettext('%(count)d open alarm', '%(count)d open alarms', attention.alarms) % {'count': attention.alarms}
-    elif attention.critical:
-        text = ngettext('%(count)d unit critical', '%(count)d units critical', attention.critical) % {'count': attention.critical}
-    elif attention.unreadable:
-        text = _('Live values cannot be read')
-    elif attention.blind:
-        text = ngettext('%(count)d unit without recent data', '%(count)d units without recent data',
-                        attention.blind) % {'count': attention.blind}
-    elif attention.warning:
-        text = ngettext('%(count)d unit with a warning', '%(count)d units with a warning',
-                        attention.warning) % {'count': attention.warning}
-    else:
-        text = _('No open alarms')
+    """The strip's alarms item from alarms.read.attention: every count that needs a look, worst first, none hidden behind
+    another ("1 open alarm · 3 units critical · 2 units with no recent data"), in the cards' own words for their rungs;
+    "No open alarms" only when nothing is open and every stocked unit is OK or a note (`Attention.quiet`)."""
+    counts = (
+        (attention.alarms, lambda n: ngettext('%(count)d open alarm', '%(count)d open alarms', n)),
+        (attention.critical, lambda n: ngettext('%(count)d unit critical', '%(count)d units critical', n)),
+        (attention.unreadable, lambda n: ngettext('%(count)d unit cannot be read', '%(count)d units cannot be read', n)),
+        (attention.warning, lambda n: ngettext('%(count)d unit with a warning', '%(count)d units with a warning', n)),
+        (attention.blind, lambda n: ngettext('%(count)d unit with no recent data', '%(count)d units with no recent data', n)),
+        (attention.unjudged, lambda n: ngettext('%(count)d unit with no limit', '%(count)d units with no limit', n)))
+    parts = [words(count) % {'count': count} for count, words in counts if count]
+    text = ' · '.join(parts) if parts else _('No open alarms')
     return {'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'text': text, 'status': attention.status}
 
 
-def strip_alarms(request):
-    """The strip's alarms item, again (polled by the top bar of the new look): 403 for a person who may not see alarms."""
-    from django.core.exceptions import PermissionDenied
+def strip_view(request):
+    """The strip again (polled by the new look's top bar every 30 s): its items, the alarms read now."""
     from django.shortcuts import render
+
     from alarms import read as alarms_read
-    if not request.user.has_perm('alarms.view_alarm'):
-        raise PermissionDenied
-    return render(request, 'core/_strip_item.html', {'item': alarms_item(alarms_read.attention())})
+    found = alarms_read.attention() if request.user.has_perm('alarms.view_alarm') else None
+    return render(request, 'core/_strip.html', {'items': strip(request.user, attention=found)})
 
 
 def context(request):

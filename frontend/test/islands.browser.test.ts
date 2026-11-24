@@ -24,11 +24,11 @@ const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascr
 
 // The gallery's entry in the build's manifest, as {% island %} reads it: its module and its stylesheets (uPlot's).
 function galleryEntry(): { file: string; css: string[] } {
-  const manifest = join(GALLERY, '.vite', 'manifest.json');
+  const manifest = join(GALLERY, 'manifest.json');
   if (!existsSync(manifest)) throw new Error('.build/gallery has no gallery: run `npm run build:gallery` (npm test does)');
   const entry = Object.values(JSON.parse(readFileSync(manifest, 'utf8')) as Record<string, { file: string; css?: string[]; name?: string }>)
     .find((chunk) => chunk.name === 'gallery');
-  if (!entry) throw new Error('the gallery is not in .build/gallery/.vite/manifest.json');
+  if (!entry) throw new Error('the gallery is not in .build/gallery/manifest.json');
   return { file: entry.file, css: entry.css ?? [] };
 }
 
@@ -113,6 +113,11 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
       assert.equal(await tab.getAttribute('#b-busy', 'data-pending'), 'true');
       assert.equal(await tab.getAttribute('#b-busy', 'aria-disabled'), 'true');
       assert.equal(await tab.locator('#b-busy .ui-spinner').count(), 1);
+      await tab.click('#b-busy', { force: true });                  // a second press while busy is refused
+      await tab.focus('#b-busy');
+      await tab.keyboard.press('Enter');
+      assert.equal(await tab.textContent('#b-busy-presses'), '1');
+      assert.equal(await tab.$eval('#b-busy', (button) => getComputedStyle(button).opacity), '1');   // full contrast
       // the series is drawn by uPlot on a canvas; a frame without values says so in words
       await tab.waitForSelector('.ui-series canvas');
       assert.equal(await tab.locator('.ui-chart-empty').first().textContent(), 'No values in this range.');
@@ -120,15 +125,53 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
         await tab.focus(selector);
         await tab.keyboard.press('Shift+Tab');
         await tab.keyboard.press('Tab');
-        const ring = await tab.evaluate((s) => {
-          const style = getComputedStyle(document.querySelector(s) as Element);
-          return style.outlineStyle !== 'none' && style.outlineWidth !== '0px' || style.boxShadow !== 'none';
+        // the focused look differs from the resting one, and its ring stands at 3:1 or more against the sheet (WCAG 2.4.7, 1.4.11)
+        const seen = await tab.evaluate((s) => {
+          const element = document.querySelector(s) as HTMLElement;
+          const look = (style: CSSStyleDeclaration) => `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor} ${style.boxShadow}`;
+          const focused = getComputedStyle(element);
+          const ring = focused.outlineStyle !== 'none' && focused.outlineWidth !== '0px' ? focused.outlineColor
+            : (focused.boxShadow.match(/rgba?\([^)]*\)/g)?.pop() ?? '');      // the outer ring of a double one
+          const was = look(focused);
+          element.blur();
+          const resting = look(getComputedStyle(element));
+          const parse = (value: string) => (value.match(/[\d.]+/g) ?? []).map(Number).slice(0, 3);
+          const lum = ([r = 0, g = 0, b = 0]: number[]) => [r, g, b].map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+            .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i]!, 0);
+          const sheet = parse(getComputedStyle(document.body).getPropertyValue('--surface-sheet').trim().replace(/^#(..)(..)(..)$/, (_m, r, g, b) => `${parseInt(r, 16)} ${parseInt(g, 16)} ${parseInt(b, 16)}`));
+          const [high, low] = [lum(parse(ring)), lum(sheet)].sort((a, b) => b - a);
+          return { changed: was !== resting, contrast: ((high ?? 0) + 0.05) / ((low ?? 0) + 0.05) };
         }, selector);
-        assert.ok(ring, `${selector} shows its focus`);
+        assert.ok(seen.changed, `${selector} looks different when focused`);
+        assert.ok(seen.contrast >= 3, `${selector} focus ring at ${seen.contrast.toFixed(2)}:1`);
       }
       // the registration marks of the new look: a plate and the primary button draw them, a secondary does not
       const marks = await tab.evaluate(() => ['.ui-plate', '#b-primary', '#b-secondary'].map((s) => getComputedStyle(document.querySelector(s) as Element, '::before').backgroundImage.includes('linear-gradient')));
       assert.deepEqual(marks, [true, true, false]);
+      await tab.close();
+    });
+
+    await t.test('keyboard: tabs move with the arrows, Home and End; link tabs are links in reading order', async () => {
+      const tab = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      await tab.goto(`${origin}/page/industry`);
+      await tab.waitForSelector('[data-mounted] [role="tab"]');
+      const selected = () => tab.evaluate(() => [...document.querySelectorAll('[role="tablist"] [role="tab"]')].findIndex((each) => each.getAttribute('aria-selected') === 'true'));
+      await tab.focus('[role="tablist"] [role="tab"][aria-selected="true"]');
+      await tab.keyboard.press('ArrowRight');
+      assert.equal(await selected(), 1);
+      await tab.keyboard.press('End');
+      assert.equal(await selected(), 2);
+      await tab.keyboard.press('Home');
+      assert.equal(await selected(), 0);
+      await tab.keyboard.press('ArrowLeft');                       // wraps to the last
+      assert.equal(await selected(), 2);
+      assert.equal(await tab.evaluate(() => document.activeElement?.getAttribute('aria-selected')), 'true');
+      // LinkTabs: plain links (each view its own address): Tab reaches them in order, Enter follows one
+      await tab.focus('nav[aria-label="Views"] a[aria-current="page"]');
+      await tab.keyboard.press('Tab');
+      assert.equal(await tab.evaluate(() => document.activeElement?.textContent), 'Every alarm');
+      await tab.keyboard.press('Enter');
+      assert.match(tab.url(), /#all$/);
       await tab.close();
     });
 

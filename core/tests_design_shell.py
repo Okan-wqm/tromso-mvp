@@ -25,8 +25,12 @@ class ThemeCookieTests(TestCase):
         self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(self.admin)
 
-    def test_industry_is_the_default(self):
-        self.assertIn('data-theme="industry"', html_tag(self.client.get(reverse('home'))))
+    def test_fjord_is_the_classic_looks_default_and_industry_the_new_looks(self):
+        self.assertIn('data-theme="fjord"', html_tag(self.client.get(reverse('home'))))
+        self.assertIn('data-theme="industry"', html_tag(self.client.get(reverse('home'), {'ui': 'next'})))
+        self.client.post(reverse('core:set_theme'), {'theme': 'tang', 'next': '/'})
+        self.assertIn('data-theme="tang"', html_tag(self.client.get(reverse('home'))))       # a choice holds in both looks
+        self.assertIn('data-theme="tang"', html_tag(self.client.get(reverse('home'), {'ui': 'next'})))
 
     def test_choosing_a_theme_sets_the_cookie_and_returns_to_the_page(self):
         response = self.client.post(reverse('core:set_theme'), {'theme': 'polarnatt',
@@ -56,9 +60,9 @@ class ThemeCookieTests(TestCase):
         self.assertNotIn(theme.COOKIE, response.cookies)
         self.assertIn('data-theme="tang"', html_tag(self.client.get(reverse('home'))))
 
-    def test_a_forged_cookie_falls_back_to_industry(self):
+    def test_a_forged_cookie_falls_back_to_fjord(self):
         self.client.cookies[theme.COOKIE] = '"><script>'
-        self.assertIn('data-theme="industry"', html_tag(self.client.get(reverse('home'))))
+        self.assertIn('data-theme="fjord"', html_tag(self.client.get(reverse('home'))))
 
     def test_it_never_sends_the_person_to_another_site(self):
         response = self.client.post(reverse('core:set_theme'), {'theme': 'laks', 'next': 'https://evil.example/'})

@@ -3,9 +3,11 @@
 // page raises, the text under 4.5:1 on what it stands on, and the critical or serious axe findings. Test code only.
 import type { Page } from 'playwright-core';
 
-// The product's policy (config/settings.py, SECURE_CSP), without the nonce: a page of islands needs none.
-export const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
-  + "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+import { policy } from './csp.js';
+
+// The product's policy (config/settings.py, SECURE_CSP, read by frontend/test/csp.ts), without a nonce: a page of islands
+// runs no inline script.
+export const CSP = policy();
 export async function watchCsp(tab: Page): Promise<string[]> {
   const violations: string[] = [];
   tab.on('console', (message) => { if (/Content.Security.Policy|Refused to/i.test(message.text())) violations.push(message.text()); });
@@ -34,7 +36,7 @@ export async function lowContrast(tab: Page): Promise<string[]> {
       return parse(getComputedStyle(document.body).backgroundColor).slice(0, 3);
     };
     const low: string[] = [];
-    const selector = '.ui-btn:not(:disabled):not([aria-disabled="true"]), .ui-chip > span, .ui-tile-label, .ui-tile-figure, .ui-tile-sub, .ui-tile-source, .ui-notice-body, .ui-plate-head h2, .ui-plate-meta, .ui-plate-link, .help, .errorlist li, .ui-table th, .ui-table td, .ui-tab, .ui-empty-text, .ui-chart-caption, .field label';
+    const selector = '.ui-btn:not(:disabled):not([aria-disabled="true"]), .ui-btn[data-pending], .ui-chip > span, .ui-tile-label, .ui-tile-figure, .ui-tile-sub, .ui-tile-source, .ui-notice-body, .ui-plate-head h2, .ui-plate-meta, .ui-plate-link, .help, .errorlist li, .ui-table th, .ui-table td, .ui-tab, .ui-empty-text, .ui-chart-caption, .field label';
     for (const element of document.querySelectorAll(selector)) {
       if (!element.textContent?.trim()) continue;
       const fore = parse(getComputedStyle(element).color).slice(0, 3);

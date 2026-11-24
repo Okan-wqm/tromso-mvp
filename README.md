@@ -5395,8 +5395,11 @@ validation and every chemistry judgement; the island draws the finished values i
   build writes an empty manifest.
 - **On a page.** `{% load assets %}{% island "units" props label=_("Loading the units…") %}` writes the root (with
   `label` as its loading line), the props as a JSON data block (`json_script`: never run), and once per page the island's
-  module, its chunks as `modulepreload` and its CSS, read from `static/islands/.vite/manifest.json`
-  (`settings.ISLANDS_MANIFEST` points elsewhere; the tests use `core/testdata/islands-manifest.json`). An unknown island
+  module, its chunks as `modulepreload` and every stylesheet they bring (at any depth), read from the build's manifest,
+  `static/islands/manifest.json` (no dot-folder, so `collectstatic` copies it). **In production** it must be beside the
+  islands it names: `STATIC_ROOT/islands/manifest.json` after `collectstatic` (read first when it is there), else the
+  build's own; `manage.py check --deploy` fails (core.E007) when it is missing or cannot be read, and the plain check
+  warns (core.W001). `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
   raises; a missing build is core.W001. Props carry finished, translated values only; a form posts back to Django
   (`ServerForm` with the CSRF token from the props), whose errors come back as props and land on the fields.
 - **Rules** (`npm run check:ds`): an island writes no colour, no `style=` or style object, no markup string
@@ -5407,8 +5410,12 @@ validation and every chemistry judgement; the island draws the finished values i
 - **Tests.** `frontend/islands/ui/ui.test.tsx` renders each component to markup; `frontend/test/islands.browser.test.ts`
   mounts the component gallery (`frontend/test/gallery/`, `npm run build:gallery`, never shipped) under the product's
   policy in all six themes: 0 CSP violations, no critical or serious axe finding, every text at 4.5:1, visible focus, the
-  busy and invalid states, no sideways scroll at 390 px (`SHOTS=<folder>` writes screenshots). `core/tests_islands.py`
-  holds the tag, the build check and the new look's shell.
+  busy and invalid states, no sideways scroll at 390 px (`SHOTS=<folder>` writes screenshots).
+  `frontend/test/page.browser.test.ts` loads a whole server-printed page of the new look (`frontend/test/pages/shell-next.html`,
+  `manage.py layout_pages`: the shell, its scripts, the strip and an island) under the server's own policy and nonce;
+  `frontend/test/classic.browser.test.ts` holds the classic look as it was. The browser tests read the policy from
+  `config/settings.py` (`frontend/test/csp.ts`). `core/tests_islands.py`
+  holds the tag and the build checks.
 - **Real pages in a browser.** An island page's props are made in the TEST database, through its real view, by a Django
   test (`core/island_props.py`: `render_island` asks the view in the new look and the language given, `keep` writes the
   props to `.build/island-props/`, never committed: the repository is public, so nothing recorded from a real database
@@ -5420,6 +5427,8 @@ validation and every chemistry judgement; the island draws the finished values i
   (CSP, axe, 4.5:1, no sideways scroll at 1440 and 390 px). CI runs it in the Django job right after the suite (a run
   with labels makes the props too) and keeps its screenshots as the artifact `island-pages-shots`; missing props fail
   it, never skip it.
+- **Notices.** `npm run build` writes `static/islands/THIRD_PARTY_NOTICES.txt` beside the bundles: the licence text of every
+  package they may ship (package-lock.json, not dev), served with them.
 
 ### The new look (`?ui=next`)
 
@@ -5428,15 +5437,27 @@ previewed on every page behind `?ui=next`: `core/ui.py` keeps it in a cookie (`u
 `app_base.html` writes `data-ui="next"` on `<html>`. The same markup is drawn square and hairline-framed with Barlow
 headings (the `look` block of tokens.json, ds.css and app.css under `[data-ui="next"]`), with the status strip in the
 top bar, the trail "Panel › Group › Page" from the menu registry (`core.navigation.page_place`; a page outside the menu keeps
-its own eyebrow) and the menu group over the page title. The classic look stays the default until the owner switches.
+its own eyebrow) and the menu group over the page title. The classic look stays the default until the owner switches,
+on Fjord when no theme is chosen; the new look opens on Industry (`core/theme.py`). The user menu has "Back to the classic
+look".
 
-The status strip: the people on site (`hr.read.muster`) and the company's clock, and the alarms item, each only for who
-may see it. The alarms item is `alarms.read.attention`: the open alarms and every live unit's water as the alarm engine and
-the monitoring cards judge it now (`farm.water.read.unit_water`, the one judge), so it never says "No open alarms" while a
-unit is critical whose alarm is not raised yet, or a unit with fish has no recent value ("1 unit critical", "2 units
-without recent data", "Live values cannot be read"). It reads every unit's water, so it is not drawn with the page: the
-page says "Reading the alarms…" and the fragment (`core:ui_strip_alarms`) is polled every 30 s (`frontend/poll.ts`, after
-its start-up gate); no answer, an old one or a refusal says "The alarms cannot be read" (`frontend/test/strip.browser.test.ts`).
+The status strip: what needs a look, the people on site (`hr.read.muster`) and the company's clock, each only for who may
+see it.
+- **What needs a look** is `alarms.read.attention(now=None, site=None)` (and `attention_by_site()`): the open alarms and every
+  stocked unit on the monitoring cards' own ladder, rungs 1 to 4 (`monitoring.read.water_rungs`, which `_ladder` calls
+  too): critical, warning, blind (an old or missing temperature or oxygen, no point at all, live values not read),
+  unjudged (no limit for the fish). The strip says every count, none hidden behind another ("1 open alarm · 3 units
+  critical · 2 units with no recent data"), and "No open alarms" only when nothing is open and every stocked unit is OK
+  or a note. A unit whose water cannot be read is read on its own, as the engine reads it, and counted ("1 unit cannot be
+  read"); the others still are. A farm-wide alarm (on no site) counts on every site, marked `farm_wide`. The reading is
+  the same for every viewer and kept 15 s (`settings.ATTENTION_CACHE_SECONDS`): a farm's open pages ask the database once
+  in that time. One reader for the strip, an overview's open-alarms figure and a site's count.
+- **Polled whole** (`core:ui_strip`, every 30 s): the clock and the muster count never stand still beside a live alarm
+  count. The page draws it with "Reading the alarms…" (the reader looks at every unit's water, so the page never waits
+  for it). It is asked for only while it is drawn (`data-poll-if-shown`: it is hidden under 1100 px), and is marked "Not
+  updated: the alarms cannot be read" after ONE failed answer (`data-poll-stale-after="1"`), never an old "No open alarms"
+  unmarked. A rise of its alarms is said in a live region beside it (`frontend/strip.ts`; a critical one assertively), never
+  the item every 30 s (`frontend/test/strip.browser.test.ts`).
 
 ## One format for every tab
 

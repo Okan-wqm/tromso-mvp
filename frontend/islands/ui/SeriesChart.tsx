@@ -135,6 +135,10 @@ export function SeriesChart({ times, series, unit, emptyLabel, height = 220, env
     if (!element || empty) return undefined;
     const ink = role(element, '--chart-tick-ink');
     const grid = role(element, '--chart-grid');
+    // the canvas's text in the product's face at the chart steps (--fs-chart-tick, --fs-chart-axis), not uPlot's system font
+    const face = role(element, '--font-text');
+    const tick = `${role(element, '--fs-chart-tick')} ${face}`;
+    const axis = `600 ${role(element, '--fs-chart-axis')} ${face}`;
     const status = { warning: role(element, '--chart-warn'), critical: role(element, '--chart-crit') };
     const stale = role(element, '--chart-stale');
     const [low, high] = extent(series, envelope, limits);
@@ -261,9 +265,9 @@ export function SeriesChart({ times, series, unit, emptyLabel, height = 220, env
         y: { range: (): uPlot.Range.MinMax => [low, high] },
       },
       axes: [
-        { stroke: ink, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 }, space: 64,
+        { stroke: ink, font: tick, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 }, space: 64,
           values: (_u: uPlot, splits: number[]) => splits.map((split) => clockText(split, zone)) },
-        { stroke: ink, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 }, label: unit,
+        { stroke: ink, font: tick, labelFont: axis, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 }, label: unit,
           ...(decimals !== undefined ? { values: (_u: uPlot, splits: number[]) => splits.map((split) => split.toFixed(decimals)) } : {}) },
       ],
       hooks: { drawClear: [behind], draw: [over] },

@@ -4,8 +4,8 @@
 // into static/islands/.
 //   - Production build only: there is no dev server and no hot reload (a dev server's injected scripts and styles break
 //     the Content-Security-Policy, script-src and style-src 'self'). Nothing is ever served by Vite.
-//   - Hashed file names, so a browser never keeps a stale copy; the manifest (static/islands/.vite/manifest.json) maps an
-//     island to its file and the chunks it imports, and the template tag reads it.
+//   - Hashed file names, so a browser never keeps a stale copy; the manifest (static/islands/manifest.json) maps an
+//     island to its file and the chunks it imports (static/islands/manifest.json), and the template tag reads it.
 //   - No source maps (core/test_no_chemistry_in_browser.py refuses them) and no inlined assets (no data: URL): every
 //     asset is a file of its own.
 //   - No module-preload polyfill: it is an inline script. The tag writes <link rel="modulepreload"> itself.
@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: mode === 'gallery' ? '.build/gallery' : 'static/islands',
     emptyOutDir: true,
-    manifest: true,
+    manifest: 'manifest.json',          // not .vite/manifest.json: collectstatic leaves dot-folders out
     sourcemap: false,
     assetsInlineLimit: 0,
     cssCodeSplit: true,

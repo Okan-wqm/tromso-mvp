@@ -1,15 +1,14 @@
 """The TEST WORLD: the one set of records the browser tests' fixtures and props are made from, never the development
 database (owner's privacy rule, 2026-11-24: the repository is public). Every person, address and name is a fixture value
 (names "Test …", addresses @example.com; core/tests_fixture_privacy.py guards the addresses). It is built in a test
-database only: by the tests that make the islands' props and pages in the test run's own database
-(farm/tests/test_island_pages.py), and by a recorder of fixtures in a throwaway database, where one exists. The clock is pinned to MOMENT while it is
+database only: by scripts/record_test_world.py in the throwaway database test_world (scripts/record_test_world.sh), and
+by the tests that make the islands' props and pages in the test run's own database (farm/tests/test_island_pages.py).
+The clock is pinned to MOMENT while it is
 built and read.
 
     world(admin)                      every part below, in order, through a client signed in as `admin`
     company_world(admin, client)      the company's: sites, a hall, a loop, units with fish, a storage location, a
                                       library document, a knowledge entry, a person, a role and an employee
-    hr_world(admin, client)           the people's: office departments, employees placed and one who left, shifts, a
-                                      holiday, a leave type, leave requests and attendance
     water_world(admin, parts)         TT-01's water over the week before MOMENT: a probe (temperature, oxygen, pH) on
                                       its middle point with a ten-hour outage and a pH silent for the last two hours,
                                       meter and lab samples, the fish's temperature and pH limits, one water-limit alarm
@@ -20,9 +19,11 @@ built and read.
       treatment_world(admin, tank)    a thermal delousing of TT-01 five days back
       feeding_world(admin, tank)      a feeding of TT-01 the day before
       limits_world(tank)              the fish's NH₃-N and CO₂ limits, so the Deffeyes chart draws its regions
+    hr_world(admin, client)           the people's: office departments, employees placed and one who left, shifts, a
+                                      holiday, a leave type, leave requests and attendance
     roster_world(admin, client)       today's roster of the hall: one planned person in each state of the board
-    stale_water_world(admin)          after world(), for Production units' test only: TM-01's oxygen stale and critical when
-                                      taken (80 hours back)
+    stale_water_world(admin)          after world(), for Production units' and Overview's tests only: TM-01's oxygen
+                                      stale and critical when taken (80 hours back)
     sensors_world(admin)              after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat"""
 import math

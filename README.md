@@ -4577,6 +4577,10 @@ from which device, how late) is logged. The server side is built; the push trans
 - **Append-only**: alarms, clearances, notifications, delivery attempts, escalations and acknowledgements are never changed
   or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
   a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
+  Above them it names the units that need a look on the Monitoring screen, from the new look's strip's own reading
+  (`alarms.views.units_note`, README › The new look), with how many of them have critical or warning water and no open
+  water alarm at their own points (`Attention.unalarmed`); nothing is said of the rungs the engine never raises an alarm
+  for (blind, no limit, over capacity, weigh now), and nothing is promised.
 - **The pass** (`alarms/engine.py`) checks the sensor rules and the water limits, queues and escalates. Each step
   (sensor rules, sensor events, water, device clocks, notify, and the supervision last) runs in its own transaction under
   one advisory lock, so two passes never queue twice and a failing step rolls back alone, logged and said in the pass's
@@ -5537,8 +5541,9 @@ validation and every chemistry judgement; the island draws the finished values i
   module, its chunks as `modulepreload` and every stylesheet they bring (at any depth), read from the build's manifest,
   `static/islands/manifest.json` (no dot-folder, so `collectstatic` copies it). **In production** it must be beside the
   islands it names: `STATIC_ROOT/islands/manifest.json` after `collectstatic` (read first when it is there), else the
-  build's own; `manage.py check --deploy` fails (core.E007) when it is missing or cannot be read, and the plain check
-  warns (core.W001). `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
+  build's own; `manage.py check --deploy` fails (core.E007) when it or an entry script of `static/js` is missing or
+  cannot be read, and the plain check warns (core.W001); both look where the server serves them, STATIC_ROOT first
+  (`assets.built`), so a server that serves STATIC_ROOT only passes with what it has. `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
   raises; a missing build is core.W001. Props carry finished, translated values only; a form posts back to Django
   (`ServerForm` with the CSRF token from the props), whose errors come back as props and land on the fields.
 - **Rules** (`npm run check:ds`): an island writes no colour, no `style=` or style object, no markup string
@@ -5584,14 +5589,29 @@ The status strip: what needs a look, the people on site (`hr.read.muster`) and t
 see it.
 - **What needs a look** is `alarms.read.attention(now=None, site=None)`, with `attention_all()` (the farm and every site from
   one reading, for a page that shows both) and `attention_by_site()`: the open alarms and every
-  stocked unit on the monitoring cards' own ladder, rungs 1 to 4 (`monitoring.read.water_rungs`, which `_ladder` calls
-  too): critical, warning, blind (an old or missing temperature or oxygen, no point at all, live values not read),
-  unjudged (no limit for the fish). The strip says every count, none hidden behind another ("1 open alarm · 3 units
-  critical · 2 units with no recent data"), and "No open alarms" only when nothing is open and every stocked unit is OK
-  or a note. A unit whose water cannot be read is read on its own, as the engine reads it, and counted ("1 unit cannot be
-  read"); the others still are. A farm-wide alarm (on no site) counts on every site, marked `farm_wide`. The reading is
-  the same for every viewer and kept 15 s (`settings.ATTENTION_CACHE_SECONDS`): a farm's open pages ask the database once
-  in that time. One reader for the strip, an overview's open-alarms figure and a site's count.
+  stocked unit on the monitoring cards' own ladder, rungs 1 to 4, by the one rule the cards apply
+  (`monitoring.read.upper_state` over `water_rungs`, which `_ladder` calls too): critical, warning (from the water, the
+  stock over capacity, or an estimate that says weigh now), blind (an old or missing temperature or oxygen, no point at
+  all, live values not read), unjudged (no limit for the fish). The strip and the cards never disagree: a card that says
+  Over capacity or Weigh now is a unit with a warning on the strip too. The strip says every count, none hidden behind
+  another ("1 open alarm · 3 units critical · 2 units with no recent data"; the words are `core.ui.attention_words`, the
+  one wording of an Attention, with `core.ui.attention_said` its text-only form for the Overview), and "No open alarms" only when nothing is open and every stocked unit is OK or a note. A
+  unit whose water or feeding cannot be read is read on its own, as the engine reads it, and a unit whose state cannot be
+  worked out is caught on its own: either is counted ("1 unit cannot be read"; its water critical still says critical),
+  the others still are, and the strip never answers 500 for one unit. A farm-wide alarm (on no site) counts on every
+  site, marked `farm_wide`. The reading is the same for every viewer and kept 15 s (`settings.ATTENTION_CACHE_SECONDS`):
+  a farm's open pages ask the database once in that time. So a value recorded just after a reading shows on the strip
+  after up to 15 s plus the poll's 30 s (the engine's own alarm has an on-delay of the same order). One reader for the
+  strip, an overview's open-alarms figure and a site's count.
+- **Where it leads**: each count to the page that lists what it counts. The open alarms to the Alarms page; the units to
+  Operations › Monitoring (every stocked unit, the ones that need a look in its band first; it has no filter by state),
+  as plain words for a person who may not open Monitoring. With both, one link each in the same item ("1 open alarm" ·
+  "1 unit critical"). The Alarms page says, from the same reading, "On the Monitoring screen: 1 unit critical." and, for the units whose
+  water is critical or past a warning (what the engine raises a water alarm for) with no open water alarm at their own
+  points, "1 unit with critical or warning water has no open alarm." (never a promise that one will open; nothing for
+  blind, no limit, over capacity or weigh now), with a link to Monitoring (`alarms.views.units_note`), so a red strip
+  never leads to an empty
+  page (on a server where the alarm engine is not running, the cards' state is there before any alarm).
 - **Polled whole** (`core:ui_strip`, every 30 s): the clock and the muster count never stand still beside a live alarm
   count. The page draws it with "Reading the alarms…" (the reader looks at every unit's water, so the page never waits
   for it). It is asked for only while it is drawn (`data-poll-if-shown`: it is hidden under 1100 px), and is marked "Not

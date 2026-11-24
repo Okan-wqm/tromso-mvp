@@ -11,7 +11,7 @@
 // the page works as a link and with the back button. Every word and value comes from the server. A page of several
 // points (System › Water: the loop and its tanks' points) heads each point's charts with the point's name, and each
 // chart's accessible name says its point.
-import { ChartFrame, EmptyState, Plate, Plates, Table } from './ui/index.js';
+import { ChartFrame, Chip, EmptyState, Plate, Plates, Table } from './ui/index.js';
 import { useDateInputs } from './lib/dates.js';
 import { DeffeyesChart, DeffeyesLegend, type DeffeyesDrawing, type DeffeyesWords } from './lib/deffeyes.js';
 import { mount } from './ui/mount.js';
@@ -78,6 +78,8 @@ interface Words extends SeriesWords {
   samples: string;
   calculated: string;
   zoneNote: string;
+  /** the limit bands are the fish's limits of today, drawn over the whole window */
+  bandsToday: string;
 }
 
 export interface WaterProps {
@@ -104,7 +106,8 @@ function when(seconds: number, zone: string): string {
 }
 
 function markersOf(events: Event[]): Marker[] {
-  return events.map((event) => ({ at: event.at, label: `${event.when} · ${event.label}`, href: event.url,
+  // listed: each event is a link in the events list, the keyboard's path; the chart's own markers keep their Tab stop
+  return events.map((event) => ({ at: event.at, label: `${event.when} · ${event.label}`, href: event.url, listed: true,
     ...(event.severity ? { status: event.severity } : {}) }));
 }
 
@@ -142,14 +145,16 @@ function ParameterChart({ chart, point, props, markers }: { chart: ChartData; po
   const placed = place(chart, props.words, props.locale);
   const flagged = flaggedText(chart.samples, chart.quantity.decimals, chart.quantity.unit, props.locale,
     (seconds) => when(seconds, props.zone));
-  const caption = [`${chart.tier_text}, ${chart.width_text}`, chart.simulated ? chart.simulated_text : '', ...flagged,
+  const banded = Object.keys(chart.bands).length > 0;
+  const caption = [`${chart.tier_text}, ${chart.width_text}`, ...flagged, banded ? props.words.bandsToday : '',
     chart.gap_text ? `${props.words.noValue}: ${chart.gap_text}` : '', ...chart.notes, props.words.zoneNote].filter(Boolean).join(' · ');
   return (
     <Plate span={6} label={chart.quantity.label}>
       <ChartFrame title={chart.quantity.label} keys={keysOf(placed)} caption={caption}
+        {...(chart.simulated ? { now: <Chip kind="neutral">{chart.simulated_text}</Chip> } : {})}
         values={[...chart.said, ...flagged.map((text): [string, string] => [props.words.samples, text])]}
         label={named(chart.quantity.label, point, props)}>
-        <SeriesChart {...placed} markers={[...(placed.markers ?? []), ...markers]} marksListed gapLabel={props.words.noValue}
+        <SeriesChart {...placed} markers={[...(placed.markers ?? []), ...markers]} gapLabel={props.words.noValue}
           emptyLabel={chart.empty_text} />
       </ChartFrame>
     </Plate>
@@ -162,7 +167,8 @@ function WorkedChart({ code, item, point, props, markers }: { code: string; item
   const times = shown.map((value) => value.at);
   const flagged = flaggedText(item.values, item.decimals, 'mg/L', props.locale, (seconds) => when(seconds, props.zone));
   const refusals = refused.map((value) => `${props.words.notWorked} ${when(value.at, props.zone)}: ${value.note}`);
-  const caption = [`${props.words.worked}: ${props.words.calculated}`, ...flagged, ...refusals, props.words.zoneNote].join(' · ');
+  const caption = [`${props.words.worked}: ${props.words.calculated}`, ...flagged,
+    Object.keys(item.band).length ? props.words.bandsToday : '', ...refusals, props.words.zoneNote].filter(Boolean).join(' · ');
   return (
     <Plate span={6} label={item.label}>
       <ChartFrame title={item.label} keys={[{ label: props.words.worked, series: 5 }]} caption={caption}
@@ -171,7 +177,7 @@ function WorkedChart({ code, item, point, props, markers }: { code: string; item
         ...refusals.map((text): [string, string] => [props.words.notWorked, text])]}
         label={named(item.label, point, props)}>
         <SeriesChart key={code} times={times} unit="mg/L" decimals={item.decimals} zone={props.zone}
-          range={[props.start, props.end]} emptyLabel={props.words.noChart} markers={markers} marksListed
+          range={[props.start, props.end]} emptyLabel={props.words.noChart} markers={markers}
           series={[{ label: props.words.worked, series: 5, points: true, hollow: true, values: shown.map((value) => value.value) }]}
           zones={zonesOf(item.band)} limits={limitsOf(item.band, props.words, item.decimals, props.locale)} />
       </ChartFrame>

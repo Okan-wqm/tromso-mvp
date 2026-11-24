@@ -26,7 +26,7 @@ from django.db import connection, transaction
 from django.db.models.functions import Upper
 from django.utils.translation import gettext as _
 
-from core import audit
+from core import access, audit
 from core.models import AuditLog, EntryKey
 from farm.models.supplier import SupplyCategory
 from farm.stock.dates import check_site_date, shown_date, site_today
@@ -270,9 +270,15 @@ def _log(user, action, operation):
 
 
 # ---- the operations ------------------------------------------------------------------------------
+# Who may record a store operation and void one (inventory/views.py asks the same); asked here too (the data-layering
+# audit, L-6).
+RECORD, VOID = 'inventory.add_inventoryoperation', 'inventory.delete_inventoryoperation'
+
+
 def receive(user, *, supplier, day, lines, reference='', notes='', token=None):
     """A delivery from a supplier: `lines` = [(feed, lot number, expiry, location, quantity, unit cost,
     currency)]; a lot named for the first time is made, a known one reused (its expiry must agree)."""
+    access.require(user, RECORD)
     if not lines:
         raise ValidationError({'lines': _('List what was delivered.')})
     entries = [Entry(NewLot(item_for(feed, user), number, expiry), location, LineKind.IN, quantity,
@@ -292,6 +298,7 @@ def _departure(user, kind, *, location, lot, day, quantity, notes='', token=None
 
 def issue(user, *, location, lot, day, quantity, reason, notes='', token=None):
     """Taken out for a use other than feeding (a treatment, samples, maintenance)."""
+    access.require(user, RECORD)
     needs_notes(reason, notes)
     return _departure(user, OperationKind.ISSUE, location=location, lot=lot, day=day, quantity=quantity,
                       reason=reason, notes=notes, token=token)
@@ -299,6 +306,7 @@ def issue(user, *, location, lot, day, quantity, reason, notes='', token=None):
 
 def write_off(user, *, location, lot, day, quantity, reason, notes='', token=None):
     """Thrown away: expired, damaged, contaminated, spilled."""
+    access.require(user, RECORD)
     needs_notes(reason, notes)
     return _departure(user, OperationKind.WRITE_OFF, location=location, lot=lot, day=day, quantity=quantity,
                       reason=reason, notes=notes, token=token)
@@ -306,6 +314,7 @@ def write_off(user, *, location, lot, day, quantity, reason, notes='', token=Non
 
 def return_to_supplier(user, *, location, lot, day, quantity, supplier, reference='', notes='', token=None):
     """Sent back to a supplier: it leaves the store (the source's return added stock, STR-03)."""
+    access.require(user, RECORD)
     return _departure(user, OperationKind.RETURN, location=location, lot=lot, day=day, quantity=quantity,
                       supplier=supplier, reference=reference, notes=notes, token=token)
 
@@ -313,6 +322,7 @@ def return_to_supplier(user, *, location, lot, day, quantity, supplier, referenc
 def transfer(user, *, source, lot, destination, day, quantity, notes='', token=None):
     """A lot moved from one location to another, on the same site or another one (owner decision Q-S6),
     dated on both sites' clocks: a pair of lines, out and in, of the same lot."""
+    access.require(user, RECORD)
     if destination == source:
         raise ValidationError({'destination': _('Choose another location than the one it leaves.')})
     entries = [Entry(lot, source, LineKind.TRANSFER_OUT, -quantity, pair=1),
@@ -325,6 +335,7 @@ def count(user, *, location, day, lines, found=(), notes='', token=None):
     number, expiry, quantity)] for lots the book did not have there (a lot never delivered is made, its
     supplier unknown). Everything else the book has there is counted as 0. One person records it, no
     approval (owner decision Q-S7); the variance is read, never stored."""
+    access.require(user, RECORD)
     entries = [Entry(lot, location, LineKind.COUNT, quantity) for lot, quantity in lines]
     entries += [Entry(NewLot(item_for(feed, user), number, expiry), location, LineKind.COUNT, quantity)
                 for feed, number, expiry, quantity in found]
@@ -335,6 +346,7 @@ def void(user, operation, reason):
     """The undo: the operation stops counting, with its reason, within the backdating window of its sites.
     Refused when a later departure needs its stock (the message names it); a lot left without live lines
     is voided with it."""
+    access.require(user, VOID)
     with transaction.atomic():
         operation = InventoryOperation.all_objects.select_for_update(of=('self',)).get(pk=operation.pk)
         lines = list(operation.lines.select_related('location__site', 'lot__item__feed'))

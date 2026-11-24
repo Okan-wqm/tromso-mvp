@@ -17,7 +17,7 @@ from . import read, services
 from .forms import CancelForm, CompleteForm, NoteForm
 from .models import TaskChecklistItem, Task
 
-VIEW = 'tasks.view_task'
+VIEW = services.VIEW
 
 
 def _task(pk):

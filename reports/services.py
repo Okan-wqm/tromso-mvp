@@ -116,9 +116,11 @@ def close_due(user, *, kind, place, period, reason):
     nothing is owed there (it was filed, or is not due), or without a reason. Logged; `reopen` undoes it."""
     if not reason.strip():
         raise ValidationError({'reason': [_('Say why it is closed.')]})
-    if not any(row.kind == kind and row.place == place and row.period == period for row in due.due().rows):
-        _refuse(_('Nothing is owed there: it was filed, closed already or is not due.'))
     with transaction.atomic():
+        # Owed is decided in the transaction that closes it (the data-layering audit, L-13): a closure or a filing that
+        # committed just before is seen, and the closure's own constraint refuses a second one at the same moment.
+        if not any(row.kind == kind and row.place == place and row.period == period for row in due.due().rows):
+            _refuse(_('Nothing is owed there: it was filed, closed already or is not due.'))
         closure = DueClosure(kind=kind, period_start=period.start, reason=reason.strip(), closed_by=user,
                              **{'facility' if kind == 'slaughter_planned' else 'site': place})
         closure.full_clean()

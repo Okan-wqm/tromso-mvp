@@ -22,7 +22,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import audit, softdelete
+from core import atomic, audit, softdelete
 from core.codes import next_code
 from core.models import AuditLog, EntryKey
 from farm.feeding import assignments
@@ -572,6 +572,7 @@ def move_span(user, experiment, old_span):
     """After a draft's day 0 or duration changed (inside the saving transaction): the windows that equalled the old span
     move to the new one, the others stay (a window of its own days is the person's; the design says when it is outside the
     span). Logged on the experiment as "Places". `old_span` is (first, last) before the change, or None."""
+    atomic.required('experiments.services.move_span')
     new = span(experiment)
     if old_span is None or new is None or old_span == new or experiment.status != Status.DRAFT:
         return

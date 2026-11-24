@@ -41,7 +41,7 @@ from ..templatetags.feeding import amount
 from ..templatetags.stock import grams, tonnes
 from . import read, services
 
-VIEW, RECORD, VOID = 'farm.view_feedingrecord', 'farm.add_feedingrecord', 'farm.delete_feedingrecord'
+VIEW, RECORD, VOID = 'farm.view_feedingrecord', services.RECORD, services.VOID
 RECORDS, BOARD = 'farm:feeding_records', 'farm:meal_board'
 FILTERS = ('site', 'unit', 'batch', 'feed', 'from', 'to', 'voided')
 DAY_FILTERS = ('site', 'unit', 'batch', 'from', 'to')

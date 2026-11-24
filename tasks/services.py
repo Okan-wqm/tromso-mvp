@@ -20,7 +20,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import audit
+from core import access, atomic, audit
 from core.models import AuditLog
 from farm.clocks import clocks
 from farm.stock.dates import site_today
@@ -28,7 +28,10 @@ from farm.stock.dates import site_today
 from . import places, read
 from .models import OPEN_STATUSES, Status, Task, TaskChecklistItem, TaskNote, TaskSeries
 
-EDIT = 'tasks.change_task'
+# Who may read tasks (every action on a task needs it, as its page does) and edit them; the recurring tasks' rights. Each
+# writer below asks itself (core.access.require; the data-layering audit, L-6).
+VIEW, EDIT = 'tasks.view_task', 'tasks.change_task'
+ADD_SERIES, EDIT_SERIES = 'tasks.add_taskseries', 'tasks.change_taskseries'
 LOCATION = gettext_lazy('Location')
 CHECKLIST = gettext_lazy('Checklist')
 NOTE = gettext_lazy('Note')
@@ -109,6 +112,7 @@ def _before(task):
 # ---- a task's status ---------------------------------------------------------------------------------
 def start(user, task):
     """Open → in progress, with who and when."""
+    access.require(user, VIEW)
     with transaction.atomic():
         task = _locked(task)
         if not may_work_on(user, task):
@@ -122,6 +126,7 @@ def start(user, task):
 
 def complete(user, task, note=''):
     """Open or in progress → done, with who, when and an optional note."""
+    access.require(user, VIEW)
     note = note.strip()
     with transaction.atomic():
         task = _locked(task)
@@ -138,6 +143,7 @@ def complete(user, task, note=''):
 
 def cancel(user, task, reason):
     """Open or in progress → cancelled, with who, when and why. Needs Edit on tasks."""
+    access.require(user, VIEW)
     reason = reason.strip()
     with transaction.atomic():
         task = _locked(task)
@@ -160,6 +166,7 @@ def reopen(user, task):
     they closed it (the completion note, the reason for cancelling) is not lost with the clearing: each is kept on the
     task as a note by its writer, marked as what it was (TaskNote.kind). The log has only their digests, so this is
     where the words live on; only the erasure procedure removes them (docs/erasure.md)."""
+    access.require(user, VIEW)
     with transaction.atomic():
         task = _locked(task)
         if not user.has_perm(EDIT):
@@ -182,6 +189,7 @@ def reopen(user, task):
 def tick(user, item, done):
     """Sets a line done or not done (an absolute set: sent twice, it changes nothing the second time), with who
     and when; refused on a task that is done or cancelled. Logged on the task."""
+    access.require(user, VIEW)
     with transaction.atomic():
         task = _locked(item.task)
         if not may_work_on(user, task):
@@ -204,6 +212,7 @@ def add_note(user, task, body):
     """A note on the task, kept on it for good (never edited or removed: task notes are part of the work record). The
     activity log says that a note was added, by whom and when, with the keyed digest of its text and never the text
     (core.audit.private): the words are read on the task, and the log, which nobody can erase from, holds none."""
+    access.require(user, VIEW)
     body = body.strip()
     if not body:
         raise ValidationError({'body': _('Write the note first.')})
@@ -279,7 +288,9 @@ def materialise_due():
 
 def withdraw(user, series):
     """Removes the tasks of a recurring task that are only its plan (Task.planned: untouched, due today or
-    later) and logs each as deleted by `user`. They are its projection: no one did anything with them."""
+    later) and logs each as deleted by `user`. They are its projection: no one did anything with them. Inside its
+    caller's transaction (replan's), with the recurring task locked."""
+    atomic.required('tasks.services.withdraw')
     for task in Task.planned(Task.objects.filter(series=series)):
         with audit.source_language():
             audit.record_delete(user, task)
@@ -291,6 +302,7 @@ def replan(user, series, created=False):
     from today on follow the rule as it is now. A new one is planned from its first day (and back at most
     TASK_BACKFILL_DAYS); a changed one from today, so a change never makes tasks for days already past, and a
     resumed one does not make the days it was paused. Tasks someone touched stay as they are."""
+    access.require_any(user, ADD_SERIES, EDIT_SERIES)
     with transaction.atomic():
         series = _locked_series(series)
         if series is None:

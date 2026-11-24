@@ -33,10 +33,7 @@ from ..stock.dates import earliest, shown_date
 from ..stock.services import AlreadyRecorded
 from . import notices, read, services, withdrawal
 
-TREATMENTS = {'view': 'farm.view_treatment', 'add': 'farm.add_treatment', 'change': 'farm.change_treatment',
-              'delete': 'farm.delete_treatment'}
-COUNTS = {'view': 'farm.view_licecount', 'add': 'farm.add_licecount', 'delete': 'farm.delete_licecount'}
-EVENTS = {'view': 'farm.view_healthevent', 'add': 'farm.add_healthevent', 'delete': 'farm.delete_healthevent'}
+TREATMENTS, COUNTS, EVENTS = services.TREATMENTS, services.COUNTS, services.EVENTS
 PAGE_SIZE = 50
 LICE_WEEKS = 12        # the weeks of site averages the lice page shows
 UNDER_WITHDRAWAL, VACCINATIONS = 'withdrawal', 'vaccinations'

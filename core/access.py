@@ -101,6 +101,16 @@ def require(user, *perms):
     account holding every one of `perms`. A service that writes for a person asks it first, so a caller that is not
     the page (a command, a worker, a future API) cannot skip the right the page asks for. The one implementation:
     messaging's services, the farm's and the others call it."""
-    if user is None or not user.is_active or not all(user.has_perm(perm) for perm in perms):
+    _refuse_unless(user, all, perms)
+
+
+def require_any(user, *perms):
+    """As `require`, for a write any one of `perms` allows (a recurring task's plan, made again after it is created or
+    changed)."""
+    _refuse_unless(user, any, perms)
+
+
+def _refuse_unless(user, how, perms):
+    if user is None or not user.is_active or not how(user.has_perm(perm) for perm in perms):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied

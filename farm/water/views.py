@@ -46,7 +46,7 @@ from . import calculation, messages as words, parameters, read, services
 from .evaluate import ALERTS, Status
 from .parameters import MEASURED, NH3_N
 
-VIEW, RECORD, VOID = 'farm.view_watermeasurement', 'farm.add_watermeasurement', 'farm.delete_watermeasurement'
+VIEW, RECORD, VOID = 'farm.view_watermeasurement', services.RECORD, services.VOID
 HISTORY = 'history'
 PAGE_SIZE = 50
 HISTORY_DAYS = 30      # the history's default span, back from today

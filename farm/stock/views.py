@@ -44,7 +44,7 @@ from ..water import views as water_views
 from . import read, services
 from .services import AlreadyRecorded
 
-VIEW, RECORD, VOID = 'farm.view_stockoperation', 'farm.add_stockoperation', 'farm.delete_stockoperation'
+VIEW, RECORD, VOID = 'farm.view_stockoperation', services.RECORD, services.VOID
 FILTERS = ('q', 'site', 'kind', 'occupancy', 'status')
 NO_SITE = 'none'
 STOCKED, EMPTY = 'stocked', 'empty'

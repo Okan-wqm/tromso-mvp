@@ -40,8 +40,7 @@ from .forms import (
 )
 from .models import InventoryItem, InventoryLine, InventoryLot, InventoryOperation, OperationKind, StorageLocation
 
-VIEW, RECORD, VOID = 'inventory.view_inventoryoperation', 'inventory.add_inventoryoperation', \
-    'inventory.delete_inventoryoperation'
+VIEW, RECORD, VOID = 'inventory.view_inventoryoperation', services.RECORD, services.VOID
 TABS = [('overview', gettext_lazy('Overview')), ('stock', gettext_lazy('Stock')),
         ('movements', gettext_lazy('Movements')), ('counts', gettext_lazy('Counts'))]
 FEEDING = 'feeding'     # the movements' kind filter for the feeding read from the records

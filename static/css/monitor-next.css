@@ -106,6 +106,12 @@ html[data-ui="next"][data-wall] .content:has(.monitor-grid > .is-fit) { flex: no
 
 /* ---- the pane (the Big card of the unit gone into, beside the cards) ---------------------------------------------- */
 html[data-ui="next"] .monitor-dock .monitor-dock-bar { font-family: var(--font-display); }
+/* Its name in the design's quiet line, and Close as the design's outlined control (a link: it works without script). */
+html[data-ui="next"] .monitor-dock .monitor-dock-bar { align-items: center; color: var(--text-2); }
+html[data-ui="next"] .monitor-dock .monitor-dock-close { padding: .2em .7em; border: 1px solid var(--line-control); background: var(--plate); font-family: var(--font-display); }
+html[data-ui="next"] .monitor-dock .monitor-dock-close:is(:hover, :focus-visible) { background: var(--surface-sunken); text-decoration: none; }
+/* The page's two wall buttons (leave the wall, full screen) on a wall: square, outlined, on the plate. */
+html[data-ui="next"][data-wall] .monitor-actions .button { border: 1px solid var(--line-control); background: var(--plate); }
 
 /* ---- forced colours (Windows high contrast): a glyph is a mask painted in the system's text colour ---------------- */
 @media (forced-colors: active) {

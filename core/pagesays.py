@@ -84,8 +84,8 @@ def says(html):
     return parser.items
 
 
-def strings(payload):
-    """Every string of a JSON payload (keys too), squashed."""
+def strings(payload, keys=True):
+    """Every string of a JSON payload (its keys too, unless `keys` is False), squashed."""
     found = []
 
     def walk(value):
@@ -93,7 +93,8 @@ def strings(payload):
             found.append(squash(value))
         elif isinstance(value, dict):
             for key, item in value.items():
-                found.append(squash(key))
+                if keys:
+                    found.append(squash(key))
                 walk(item)
         elif isinstance(value, (list, tuple)):
             for item in value:
@@ -112,12 +113,20 @@ def unsaid(old_html, payload, ignore=(), new_html=None, once=()):
     as its panel's heading) that the new page must say, once at least. A control's name is one control, however many
     boxes carry it (a group of boxes): it must be carried, not counted."""
     carried = strings(payload) + ([value for _kind, value in says(new_html)] if new_html is not None else [])
-    left, present = Counter(carried), set(carried)
+    left = Counter(carried)
+    # a control's name is carried as a value of the payload (a widget's name) or a control of the new page's own markup,
+    # never by a key of the payload's JSON ("name", "label", "kind")
+    controls = set(strings(payload, keys=False)) | ({value for kind, value in says(new_html) if kind == 'control'}
+                                                    if new_html is not None else set())
     missing = []
     for kind, value in says(old_html):
         if value in ignore:
             continue
-        if (kind == 'control' or value in once) and value in present:
+        if kind == 'control':
+            if value not in controls:
+                missing.append((kind, value))
+            continue
+        if value in once and value in left:
             continue
         if left[value] > 0:                     # a value of its own, as many times as the old page says it
             left[value] -= 1

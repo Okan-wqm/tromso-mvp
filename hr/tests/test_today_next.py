@@ -93,7 +93,8 @@ class TodayNextTests(TestCase):
         row = next(row for row in props['grid']['rows'] if row['key'] == str(second.pk))
         empty = next(cell['key'] for cell in row['cells'] if cell['key'] and cell['add'])
         shift = Shift.objects.get(code='TD')
-        self.assertIn({'value': str(shift.pk), 'label': 'TD', 'title': 'Test day shift'}, paint['choices'])
+        self.assertIn({'value': str(shift.pk), 'label': 'TD', 'title': 'Test day shift', 'kind': 'shift', 'tone': shift.tone},
+                      paint['choices'])
         response = self.client.post(paint['action'], {'csrfmiddlewaretoken': paint['csrfToken'], 'next': paint['next'],
                                                       'shift': str(shift.pk), 'cells': [empty]})
         self.assertEqual(response.status_code, 302)

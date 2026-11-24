@@ -107,7 +107,10 @@ test('the water calculator and its report in the new look, in a browser', { skip
           assert.ok(await tab.locator('svg.deffeyes-chart .deffeyes-ph').count(), 'the pH labels the server placed');
           assert.ok(await tab.locator('.calc-layers input[type="checkbox"]').count(), 'the layers, each a box');
           assert.ok(await tab.locator('.calc-simulator:not([hidden]) table.calc-steps tbody tr').count() >= 2, 'the simulator\'s steps');
-          assert.equal(await tab.locator('.calc-results .calc-status').count(), 2, 'ammonia and hydrogen sulfide judged');
+          assert.equal(await tab.locator('.calc-results .calc-status').count(), 3, 'ammonia, hydrogen sulfide and the CO₂ judged');
+          assert.ok(await tab.locator('.calc-results .calc-tiles dd').count() >= 6, 'the values worked out as tiles');
+          assert.equal(await tab.locator('.calc-results tr[data-tile]').first().isVisible(), false, 'said once: as a tile, not again in the card');
+          assert.ok((await tab.locator('.calc-chart-words').textContent())?.startsWith('pH '), 'the water of the chart in one line');
           // a value typed: the server is asked with the form's values and its parts replace the page's
           await tab.evaluate(() => { (document.querySelector('[data-live-part="results"]') as HTMLElement).dataset.drawn = 'before'; });
           const before = asked.length;

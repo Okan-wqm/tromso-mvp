@@ -306,10 +306,19 @@ class Card:
         return self.stock.losses
 
 
-def _weigh(lines):
-    """The worst drift of a unit's batches ('now' over 'soon')."""
+def weigh(lines):
+    """The worst drift of a unit's batches ('now' over 'soon'), from its meal lines (`lines_of`)."""
     found = {line['drift'] for line in lines}
     return 'now' if 'now' in found else 'soon' if 'soon' in found else ''
+
+
+def lines_of(own, figures, today):
+    """The meal lines of a stocked unit's day (feeding.read.meal_lines: why it has no ration, each batch's drift) from its
+    stock (stock_of) and its feeding figures (feeding.read.figures with `ration`); () with no fish or no day. What a
+    card shows and the strip's weigh-now (alarms.read) are read from."""
+    day = figures.ration if figures else None
+    return tuple(feeding_read.meal_lines(day, {share.batch.pk: share.batch for share in own.shares}, today)
+                 if own and day else ())
 
 
 def _log_failure(name, message):
@@ -433,11 +442,10 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
         own = stock.get(unit.pk)
         figures = feeding.get(unit.pk)
         day = figures.ration if figures else None
-        lines = tuple(feeding_read.meal_lines(day, {share.batch.pk: share.batch for share in own.shares}, today)
-                      if own and day else ())
+        lines = lines_of(own, figures, today)
         found.append(Card(
             unit=unit, template=resolved[unit.pk], today=today, stock=own, day=day, feeding=figures,
-            lines=lines, drift=_weigh(lines), water=tuple(water.get(unit.pk, ())),
+            lines=lines, drift=weigh(lines), water=tuple(water.get(unit.pk, ())),
             withdrawal=tuple(withdrawals.get(unit.pk, ())), treatments=tuple(treatments.get(unit.pk, ())),
             events=tuple(events.get(unit.pk, ())), lice=counts.get(unit.pk), tasks=tasks.get(unit.pk),
             chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed), chart=charts.get(unit.pk),
@@ -667,15 +675,16 @@ class WaterRungs:
 
     @property
     def key(self):
-        """The rung the water alone puts a stocked unit on: CRITICAL, WARNING, BLIND, UNJUDGED or OK (a card adds the
-        stock's and the feeding's warnings and the notes, _ladder)."""
+        """The rung the water alone puts a stocked unit on: CRITICAL, WARNING, BLIND, UNJUDGED or OK (`upper_state` adds
+        the stock's and the feeding's warnings, _ladder the notes)."""
         return (CRITICAL if self.critical else WARNING if self.warning else BLIND if self.blind
                 else UNJUDGED if self.unjudged else OK)
 
 
 def water_rungs(middle, now):
-    """Rungs 1 to 4 of the ladder (_ladder) from a stocked unit's middle point's water: the ONE rule the cards and the new
-    look's status strip (alarms.read.attention) both apply. Critical and warning values (fresh or old, the old ones
+    """The water's part of rungs 1 to 4 of the ladder (_ladder) from a stocked unit's middle point's water; `upper_state`
+    adds the stock's and the feeding's warnings, and is the ONE rule the cards and the new look's status strip
+    (alarms.read.attention) both apply. Critical and warning values (fresh or old, the old ones
     marked); a value the chemistry core refuses to work out (beside a critical, else a warning); the unit's own stale
     value its system stands in for. Blind: the temperature or the oxygen missing or older than its freshness, no middle
     point at all (`middle` None), a timestamp in the future, the live sensors not read. Unjudged: a value no limit row
@@ -713,6 +722,29 @@ def state_of(card):
     return State(NOTE if state.key == OK else state.key, state.reasons + card.clock, state.basis, state.stale)
 
 
+def upper_state(rungs, over_capacity, drift, water=True, basis=()):
+    """Rungs 1 to 4 of the ladder (_ladder) for a stocked unit, or None below them: critical from its water (`rungs`,
+    water_rungs); warning from its water, its stock over capacity, or an estimate that says weigh now (`drift` 'now');
+    then, when the water is shown (`water`), blind and unjudged. The ONE rule the cards and the new look's status strip
+    (alarms.read.attention, which shows every section) both apply, so the strip never says "No open alarms" beside a
+    card that says Over capacity or Weigh now."""
+    if rungs.critical:
+        return State(CRITICAL, rungs.critical, basis, rungs.old)
+    warning = list(rungs.warning)
+    if over_capacity:
+        warning.append(_('Over capacity'))
+    if drift == 'now':
+        warning.append(_('Weigh now: the estimate is not reliable'))
+    if warning:
+        return State(WARNING, tuple(warning), basis, rungs.old)
+    if water:
+        if rungs.blind:
+            return State(BLIND, rungs.blind, basis, rungs.blind)
+        if rungs.unjudged:
+            return State(UNJUDGED, rungs.unjudged, basis)
+    return None
+
+
 def _ladder(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
     1. critical: a water value judged critical, fresh or old (an old one says its age, and the card is marked old),
@@ -735,24 +767,13 @@ def _ladder(card):
         return State(EMPTY_STATE, (), basis)
     note = []
     # The unit's own water (a detailed card's other points do not change its state), rungs 1 to 4 by the one rule the
-    # strip shares (water_rungs): a value the chemistry core refuses to work out is said with the core's reason, as its
-    # alarm is (alarms/sources.py; V-A), beside a critical (RC-3), else a warning; a status the unit's own stale value
-    # keeps while its system's value stands in (read.last_own, F3-9) is said beside it.
-    rungs = water_rungs(_middle(card), card.now)
-    if rungs.critical:
-        return State(CRITICAL, rungs.critical, basis, rungs.old)
-    warning = list(rungs.warning)
-    if card.stock.over_capacity:
-        warning.append(_('Over capacity'))
-    if card.drift == 'now':
-        warning.append(_('Weigh now: the estimate is not reliable'))
-    if warning:
-        return State(WARNING, tuple(warning), basis, rungs.old)
-    if WATER in card.sections:
-        if rungs.blind:
-            return State(BLIND, rungs.blind, basis, rungs.blind)
-        if rungs.unjudged:
-            return State(UNJUDGED, rungs.unjudged, basis)
+    # strip shares (upper_state over water_rungs): a value the chemistry core refuses to work out is said with the core's
+    # reason, as its alarm is (alarms/sources.py; V-A), beside a critical (RC-3), else a warning; a status the unit's own
+    # stale value keeps while its system's value stands in (read.last_own, F3-9) is said beside it.
+    upper = upper_state(water_rungs(_middle(card), card.now), card.stock.over_capacity, card.drift,
+                        water=WATER in card.sections, basis=basis)
+    if upper is not None:
+        return upper
     if card.withdrawal:
         text, first = _('Medicine withdrawal in force'), card.withdrawal[0]
         # (in short, with its end in the product's one wording, farm.handling.withdrawal.harvest_from: the first day

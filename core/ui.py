@@ -6,10 +6,13 @@ default until the owner switches (frontend redesign, slice S8).
 `?ui=next` turns it on and a cookie keeps it, so every page the person opens next is in the new frame; `?ui=classic`
 turns it off. One question answers it everywhere: `is_next(request)`, for the shell (templates/app_base.html, data-ui on
 <html>) and for an island that has a next form (`{% island %}`, core/templatetags/assets.py)."""
+from django.core.exceptions import ImproperlyConfigured
 from django.utils import timezone
 from django.utils.functional import SimpleLazyObject
 from django.utils.translation import gettext as _, ngettext
 from django.urls import reverse
+
+from core import navigation
 
 COOKIE = 'ui'
 PARAM = 'ui'
@@ -59,7 +62,7 @@ def strip(user, now=None, attention=None):
     now = now or timezone.now()
     items = []
     if user.has_perm('alarms.view_alarm'):
-        items.append(alarms_item(attention) if attention is not None else
+        items.append(alarms_item(attention, user) if attention is not None else
                      {'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'text': _('Reading the alarms…'), 'status': ''})
     if user.has_perm('hr.view_attendancerecord'):
         from hr import read as hr_read
@@ -73,27 +76,65 @@ def strip(user, now=None, attention=None):
     return items
 
 
-def attention_said(attention, alarms=True):
-    """What needs a look, in words: every count of alarms.read.Attention, worst first, none hidden behind another ("1 open
-    alarm", "3 units critical", "2 units with no recent data"), in the cards' own words for their rungs; each figure says
-    what it counts (alarms, units). [] when there is nothing. The one wording of an Attention: the strip and the company
-    overview (config/company_props.py, without the alarms: its figure is their count) both say it with this."""
+ALARMS, UNITS = 'alarms', 'units'
+MONITORING = 'monitoring:monitor'
+
+
+def attention_words(attention):
+    """An Attention (alarms.read) in words: [(ALARMS or UNITS, text)], every count that needs a look, worst first, none
+    hidden behind another ("1 open alarm", "3 units critical", "2 units with no recent data"), in the cards' own words
+    for their rungs. ALARMS: the open alarms, listed on the Alarms page; UNITS: the stocked units on a rung of the
+    cards' ladder, listed on Operations › Monitoring. [] when nothing needs a look (`Attention.quiet`): only then may
+    "No open alarms" be said. The one wording of an Attention: the strip's (`alarms_item`), the Alarms page's note and
+    the company overview's."""
     counts = (
-        *(((attention.alarms, lambda n: ngettext('%(count)d open alarm', '%(count)d open alarms', n)),) if alarms else ()),
-        (attention.critical, lambda n: ngettext('%(count)d unit critical', '%(count)d units critical', n)),
-        (attention.unreadable, lambda n: ngettext('%(count)d unit cannot be read', '%(count)d units cannot be read', n)),
-        (attention.warning, lambda n: ngettext('%(count)d unit with a warning', '%(count)d units with a warning', n)),
-        (attention.blind, lambda n: ngettext('%(count)d unit with no recent data', '%(count)d units with no recent data', n)),
-        (attention.unjudged, lambda n: ngettext('%(count)d unit with no limit', '%(count)d units with no limit', n)))
-    return [words(count) % {'count': count} for count, words in counts if count]
+        (ALARMS, attention.alarms, lambda n: ngettext('%(count)d open alarm', '%(count)d open alarms', n)),
+        (UNITS, attention.critical, lambda n: ngettext('%(count)d unit critical', '%(count)d units critical', n)),
+        (UNITS, attention.unreadable,
+         lambda n: ngettext('%(count)d unit cannot be read', '%(count)d units cannot be read', n)),
+        (UNITS, attention.warning, lambda n: ngettext('%(count)d unit with a warning', '%(count)d units with a warning', n)),
+        (UNITS, attention.blind,
+         lambda n: ngettext('%(count)d unit with no recent data', '%(count)d units with no recent data', n)),
+        (UNITS, attention.unjudged, lambda n: ngettext('%(count)d unit with no limit', '%(count)d units with no limit', n)))
+    return [(what, words(count) % {'count': count}) for what, count, words in counts if count]
 
 
-def alarms_item(attention):
-    """The strip's alarms item from alarms.read.attention (attention_said); "No open alarms" only when nothing is open and
-    every stocked unit is OK or a note (`Attention.quiet`)."""
-    parts = attention_said(attention)
-    text = ' · '.join(parts) if parts else _('No open alarms')
-    return {'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'text': text, 'status': attention.status}
+def attention_said(attention, alarms=True):
+    """`attention_words` as text only, without the open alarms when `alarms` is False: the company overview's units line
+    (config/company_props.py, whose figure is the alarms' count)."""
+    return [text for what, text in attention_words(attention) if alarms or what != ALARMS]
+
+
+def may_open(user, url_name):
+    """Whether the person may open the page of this menu entry (its permission and its `show_when`); False when the menu
+    in use has no such entry."""
+    try:
+        return navigation.page(url_name).entry.shown_to(user)
+    except ImproperlyConfigured:
+        return False
+
+
+def alarms_item(attention, user=None):
+    """The strip's alarms item from alarms.read.attention, in `attention_words`, leading to where what it counts is
+    listed: the open alarms to the Alarms page, the units to Operations › Monitoring (which shows every stocked unit by
+    default, the ones that need a look in its band first; it has no filter by state). Both present: `parts`, one link
+    each ("1 open alarm" · "1 unit critical"), so a red strip never leads to an empty page. The units' words are plain
+    text for a person who may not open Monitoring (and with no `user`). "No open alarms" only when nothing needs a look (`Attention.quiet`)."""
+    urls = {ALARMS: reverse('alarms:alarm_list'), UNITS: reverse(MONITORING) if user is not None and may_open(user, MONITORING)
+            else ''}
+    parts = []
+    for what, text in attention_words(attention):
+        if parts and parts[-1]['what'] == what:
+            parts[-1]['text'] = f'{parts[-1]["text"]} · {text}'
+        else:
+            parts.append({'what': what, 'text': text, 'url': urls[what]})
+    if not parts:
+        return {'key': 'alarms', 'url': urls[ALARMS], 'text': _('No open alarms'), 'status': attention.status}
+    item = {'key': 'alarms', 'text': ' · '.join(part['text'] for part in parts), 'status': attention.status,
+            'url': parts[0]['url'] if len(parts) == 1 else ''}
+    if len(parts) > 1:
+        item['parts'] = parts
+    return item
 
 
 def strip_view(request):

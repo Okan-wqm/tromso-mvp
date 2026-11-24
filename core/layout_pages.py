@@ -225,13 +225,13 @@ _WALL = (
        ('TG-M04', 'Cage M4', '9.90', 'ok', '8.3', '8.02', '110', '0.10', 0.01, '')])
 
 
-def _wall(language, pane=''):
+def _wall(language, pane='', cards_only=False):
     """A wall of twenty Small cards with its band (monitoring/_grid.html), from made-up units and readings and the REAL
     chart of each (the chemistry core through calculation.charts_of, the fish's limits made up too): a normal card, a
     warning, a critical one with a second reason, old values, a unit not in use, a withdrawal, an empty unit, a chart
     that cannot be worked out (no alkalinity; a sea unit with no salinity). No database. `pane`: instead of the wall,
     the pane of that unit (monitoring/_dock.html: its Big card with the line that names and closes it, as the dock
-    beside the wall holds it)."""
+    beside the wall holds it). `cards_only`: the cards themselves, not their markup (`_strip`)."""
     from datetime import timedelta
     from uuid import UUID
 
@@ -293,6 +293,8 @@ def _wall(language, pane=''):
             cards.append(read.Card(unit=unit, template=chosen, today=NOW.date(), stock=stock, water=(water,),
                                    withdrawal=withdrawal, sections=frozenset(read.SECTIONS), now=NOW, chart=chart,
                                    ph_scale=(6.4, 8.6)))
+        if cards_only:
+            return cards
         if pane:
             from dataclasses import replace
             big = N(pk=builtin.BIG, shown_name='Big', expanded_id=builtin.DETAILED, measure=builtin.BIG_MEASURE)
@@ -312,6 +314,21 @@ def _wall(language, pane=''):
             'modes': [{'label': label, 'url': '#', 'current': label == 'Small', 'id': label.lower()}
                       for label in ('Small', 'Simple', 'Detailed')],
             'computed_at': NOW.replace(tzinfo=None), 'count_line': '20 of 25 units shown'})
+
+
+def _strip(alarms=0):
+    """The new look's status strip (core/_strip.html) as the server prints it beside the wall (`_wall('en')`): its units
+    counted on their cards' rungs, as alarms.read counts them, with `alarms` open alarms (none: a server whose alarm engine
+    is not running), worded and linked by core.ui.alarms_item for a person who may open Monitoring and Alarms.
+    frontend/test/strip-link.browser.test.ts clicks it and must land on the page that lists what it counts."""
+    from alarms.read import Attention
+    from core import ui
+    keys = [card.state.key for card in _wall('en', cards_only=True) if card.stock is not None]
+    attention = Attention(alarms=alarms, alarms_critical=alarms, critical=keys.count('critical'),
+                          warning=keys.count('warning'), blind=keys.count('blind'), unjudged=keys.count('unjudged'))
+    items = [ui.alarms_item(attention, N(has_perm=lambda perm: True)),
+             {'key': 'clock', 'url': '', 'status': '', 'text': '06.11.2026, 10:19 · Europe/Oslo'}]
+    return render_to_string('core/_strip.html', {'items': items})
 
 
 def _shell_next():
@@ -356,7 +373,8 @@ def _shell_next():
 PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
          'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'report-tabs': _report_tabs, 'overview': _overview,
          'wall-small-en': lambda: _wall('en'), 'wall-small-tr': lambda: _wall('tr'),
-         'dock-big-tr': lambda: _wall('tr', pane='HA-R02'), 'shell-next': _shell_next}
+         'dock-big-tr': lambda: _wall('tr', pane='HA-R02'), 'shell-next': _shell_next,
+         'strip-units': _strip, 'strip-split': lambda: _strip(alarms=1)}
 
 
 def rendered():

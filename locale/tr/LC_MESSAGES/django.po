@@ -676,6 +676,12 @@ msgstr[0] "%(count)s balıklı birim"
 msgstr[1] "%(count)s balıklı birim"
 
 #, python-format
+msgid "%(count)s unit with critical or warning water has no open alarm."
+msgid_plural "%(count)s units with critical or warning water have no open alarm."
+msgstr[0] "Suyu kritik veya uyarı düzeyinde olan %(count)s birimin açık alarmı yok."
+msgstr[1] "Suyu kritik veya uyarı düzeyinde olan %(count)s birimin açık alarmı yok."
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s uyarı"
@@ -11037,6 +11043,10 @@ msgstr "İzinde"
 msgid "On site now"
 msgstr "Şu an sahada"
 
+#, python-format
+msgid "On the Monitoring screen: %(units)s."
+msgstr "İzleme ekranında: %(units)s."
+
 msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
 msgstr "Yerin sahasının saatine göre. Her kanalın şu ana kadarki ataması o zaman sona erer."
 
@@ -13329,6 +13339,9 @@ msgstr "Günlük kaydı görün"
 
 msgid "See the feedings"
 msgstr "Yemlemeleri gör"
+
+msgid "See them on Monitoring"
+msgstr "İzleme ekranında görün"
 
 msgid "Seed"
 msgstr "Tohum"
@@ -16287,6 +16300,9 @@ msgstr ""
 #, python-format
 msgid "The units take %(placed)s fish, but %(count)s arrive: the split must add up."
 msgstr "Birimler %(placed)s balık alıyor, ama %(count)s balık geliyor: dağılımın toplamı tutmalı."
+
+msgid "The units that need a look could not be read here."
+msgstr "Bakılması gereken birimler burada okunamadı."
 
 msgid "The units the fish go into and how many each takes; together they take every fish arriving."
 msgstr ""

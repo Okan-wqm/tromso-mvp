@@ -43,7 +43,8 @@ class HistoryPageTests(WaterTestCase):
         self.assertGreater(nh3['value'], 0)
 
     def test_the_presets_and_a_custom_window(self):
-        self.assertEqual(self.history(range='7d')['end'] - self.history(range='7d')['start'], 7 * 86400)
+        week = self.history(range='7d')
+        self.assertEqual(week['end'] - week['start'], 7 * 86400)
         start = (timezone.now() - timedelta(days=2)).strftime('%Y-%m-%dT%H:%M')
         end = (timezone.now() - timedelta(days=1)).strftime('%Y-%m-%dT%H:%M')
         found = self.history(start=start, end=end)

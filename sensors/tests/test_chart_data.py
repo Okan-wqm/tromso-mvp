@@ -110,7 +110,6 @@ class SimulatedAndCompareTests(ChartDataCase):
         self.assertTrue(all(drawn['buckets']['simulated']))
 
     def test_compare_reads_a_second_place_on_exactly_the_same_window(self):
-        insert(self.temp.channel_no, [(self.start + timedelta(minutes=5), 9.0)])
         body = self.client.get(URL, self.query(compare=f'unit:{self.t2.pk}')).json()
         first, second = body['chart'], body['compare']['chart']
         self.assertEqual((second['start'], second['end'], second['width_s']),

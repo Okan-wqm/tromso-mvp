@@ -5528,7 +5528,11 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   nobody acknowledged) are the row's POST action with the page's token, for a person who may. "Nothing is sent yet" stays
   on Alarm events while no push transport is connected. Acknowledge and Resolve show their word beside the icon (the
   list page's `labelled` action: a safety state changes); a dead letter's payload, its hex and size are a closed
-  disclosure (`listprops.details`), as the classic page's `<details>`. A place's bindings (`?place=`) say whose they are and lead back
+  disclosure (`listprops.details`), as the classic page's `<details>`. Bindings: a channel's history (`?channel=`) is
+  drawn above its table as a timeline (`sensors.lists.binding_timeline` over the list's own rows; `ui/Timeline.tsx`: a
+  lane per place, each binding a span in % of the window from its first start to now, its words inside it and in the
+  lane's name for a screen reader); the site, role and "now bound" selects are `BindingResource.filter_list`'s (the
+  classic page reads the same address). A place's bindings (`?place=`) say whose they are and lead back
   to every binding. Overview is island `sensors-home` (`frontend/islands/pages/SensorsHome.tsx`): the classic page's own
   state and setup counts (`sensors.views.state_tiles`, each with its key) in the design's order, with the moment they were
   worked out, the ingest's oldest heartbeat (the one that decides Down) and the offline devices; a status edge only for

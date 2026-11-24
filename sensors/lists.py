@@ -3,9 +3,11 @@ its classic list template words them (templates/sensors/*_list.html, the same ms
 to the old one. Each function is the `list_rows` (or `list_filters`) of its tab in sensors/resources.py; the rows are the
 ones the tab's list view read (search, filters and page applied there). A row's title opens the record's own page (the
 record form), never the classic dialog; its actions are the classic row's (sensors/_row_actions.html)."""
+from datetime import timedelta
+
 from django.template.defaultfilters import floatformat
 from django.urls import reverse
-from django.utils import formats
+from django.utils import formats, timezone
 from django.utils.translation import gettext as _
 
 from core import listprops as L
@@ -148,6 +150,8 @@ def bindings(view, objects, context):
                  'until': L.cell(moment(row.valid_to, row.clock)) if row.valid_to
                  else L.cell(chip=L.chip('accent', _('now'))),
              }, L.edit_delete(view, context, row, row.channel.code)) for row in objects]}
+    if context.get('channel'):
+        table['timeline'] = binding_timeline(objects, timezone.now())
     place = context.get('place')
     if place is not None:
         table['tabs'] = L.tabs(_('Bindings'), [(listed, _('Show every binding'), None, False),
@@ -155,6 +159,57 @@ def bindings(view, objects, context):
         table['notices'] = [L.notice('place', 'neutral', _(
             'The sensors at %(place)s: those there now first, then those there before.') % {'place': place})]
     return table
+
+
+def binding_filters(view, context):
+    """Bindings' selects in the new look (BindingResource.filter_list reads them): the channel's device's site, the role,
+    and those bound now or every one."""
+    return [L.choice('site', _('Site'), context.get('chosen_site', ''),
+                     [('', _('All sites')), *((site.pk, site.name) for site in context.get('sites', ()))]),
+            L.choice('bound', _('Bound'), context.get('chosen_bound', ''),
+                     [('', _('Now and before')), ('now', _('Now bound'))]),
+            L.choice('role', _('Role'), context.get('chosen_role', ''), [('', _('All roles')), *context.get('roles', ())])]
+
+
+def binding_timeline(rows, now):
+    """One channel's bindings (the list's own rows under `?channel=`) as lanes (frontend/islands/ui/Timeline.tsx): a
+    lane per place in the order the channel first went there, each binding a span from its start to its end (to now
+    while it holds), placed in % of the window from its first start to now, worded as the table's From and Until on the
+    place's clock; about five day ticks and "now" at the end. None without rows."""
+    rows = sorted(rows, key=lambda row: row.valid_from)
+    if not rows:
+        return None
+    start = rows[0].valid_from
+    end = max([now, *(row.valid_to for row in rows if row.valid_to)])
+    seconds = max((end - start).total_seconds(), 3600)
+
+    def at(when):
+        return round(min(max((when - start).total_seconds() / seconds * 100, 0), 100), 2)
+
+    lanes = {}
+    for row in rows:
+        label = f'{row.get_role_display()} · {moment(row.valid_from, row.clock)} – ' + (
+            moment(row.valid_to, row.clock) if row.valid_to else _('now'))
+        lane = lanes.setdefault(f'{row.target_kind}:{row.target.pk}', {
+            'key': f'{row.target_kind}:{row.target.pk}', 'label': str(row.target), 'spans': []})
+        lane['spans'].append({'key': str(row.pk), 'x': at(row.valid_from),
+                              'width': round(at(row.valid_to or end) - at(row.valid_from), 2), 'tone': row.role,
+                              'open': row.valid_to is None, 'label': label})
+    clock = rows[0].clock
+    local_start, local_end = site_clock(start, clock), site_clock(end, clock)
+    step = timedelta(days=max(1, round(seconds / 86400 / 5)))
+    ticks = [{'x': 0, 'label': formats.date_format(local_start, 'd.m')}]
+    day = local_start.replace(hour=0, minute=0, second=0, microsecond=0) + step
+    while day < local_end:
+        x = at(day)
+        if 8 <= x <= 90:
+            ticks.append({'x': x, 'label': formats.date_format(day, 'd.m')})
+        day += step
+    ticks.append({'x': 100, 'label': _('now')})
+    channel = rows[0].channel
+    return {'title': f'{channel.code} #{channel.channel_no} · {channel.device.code} · {_("History")}',
+            'label': _('Where %(channel)s was bound over time') % {'channel': channel.code},
+            'ticks': ticks, 'lanes': list(lanes.values())}
 
 
 def alarm_rules(view, objects, context):

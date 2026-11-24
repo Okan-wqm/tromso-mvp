@@ -3466,6 +3466,9 @@ msgstr "Tüm protokoller"
 msgid "All reports"
 msgstr "Tüm raporlar"
 
+msgid "All roles"
+msgstr "Tüm roller"
+
 msgid "All rules"
 msgstr "Tüm kurallar"
 
@@ -4424,6 +4427,9 @@ msgstr ""
 
 msgid "Bought from a supplier"
 msgstr "Tedarikçiden satın alındı"
+
+msgid "Bound"
+msgstr "Bağlı"
 
 msgid "Bound to"
 msgstr "Atandığı yer"
@@ -10833,6 +10839,12 @@ msgstr "Hemen bildirin"
 
 msgid "Now"
 msgstr "Şimdi"
+
+msgid "Now and before"
+msgstr "Şimdi ve önce"
+
+msgid "Now bound"
+msgstr "Şimdi bağlı"
 
 msgid "Nullable"
 msgstr "Boş olabilir"
@@ -17662,6 +17674,10 @@ msgstr ""
 
 msgid "Where"
 msgstr "Nerede"
+
+#, python-format
+msgid "Where %(channel)s was bound over time"
+msgstr "%(channel)s zaman içinde nereye bağlıydı"
 
 msgid ""
 "Where a PLC or field bus holds the value, as JSON. Modbus: unit_id, function, register; S7: db, "

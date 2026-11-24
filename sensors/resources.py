@@ -13,14 +13,14 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as gettext_now, gettext_lazy as _, ngettext_lazy
 
-from core.crud import CreateView, Resource, RowList, done, refusal_text, render_page
-from farm.models import Equipment, System, Tank
+from core.crud import CreateView, Resource, RowList, done, filter_by, refusal_text, render_page
+from farm.models import Equipment, Site, System, Tank
 from farm.models.site import zone_of
 
 from . import bindings, credentials, lists
 from .forms import (AlarmRuleForm, BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm,
                     CredentialForm, DeviceForm, PayloadFormatForm, place_of)
-from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat
+from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat, Role
 
 
 def _count(model, link, **condition):
@@ -290,18 +290,31 @@ class BindingResource(Resource):
                 .select_related('channel__device', 'point__unit', 'point__system', 'point__equipment', 'system',
                                 'equipment').order_by('-valid_from'))
 
+    list_filters = staticmethod(lists.binding_filters)
+
     @classmethod
     def filter_list(cls, request, objects):
         """The bindings of one channel (its history), or of one place (`?place=unit:…`: the sensors there now, then
-        those there before), when the address names it."""
+        those there before), when the address names it; then by the channel's device's site (`site`), the role (`role`)
+        and those that hold now (`bound=now`), the new look's selects (the classic page has no control for them: its
+        address narrows it the same way)."""
         channel = request.GET.get('channel', '')
+        place = None
         if _uuid(channel):
-            return objects.filter(channel_id=channel), {'channel': channel, 'place': None}
-        place = place_of(request.GET.get('place', ''))
-        if place is not None:
-            found = objects.filter(_at_place(place)).order_by(F('valid_to').desc(nulls_first=True), '-valid_from')
-            return found, {'channel': '', 'place': place}
-        return objects, {'channel': '', 'place': None}
+            objects = objects.filter(channel_id=channel)
+        else:
+            channel = ''
+            place = place_of(request.GET.get('place', ''))
+            if place is not None:
+                objects = objects.filter(_at_place(place)).order_by(F('valid_to').desc(nulls_first=True), '-valid_from')
+        sites = Site.objects.filter(sensor_devices__isnull=False).distinct().order_by('name')
+        objects, chosen_site = filter_by(request, objects, 'site', sites, 'channel__device__site_id')
+        objects, chosen_role = filter_by(request, objects, 'role', Role.choices, 'role')
+        bound = 'now' if request.GET.get('bound') == 'now' else ''
+        if bound:
+            objects = objects.at(timezone.now())
+        return objects, {'channel': channel, 'place': place, 'sites': sites, 'chosen_site': chosen_site,
+                         'roles': Role.choices, 'chosen_role': chosen_role, 'chosen_bound': bound}
 
 
 class AlarmRuleResource(Resource):

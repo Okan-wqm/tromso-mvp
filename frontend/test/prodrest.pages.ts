@@ -32,7 +32,7 @@ const PREFIXES = ['sensors-', 'production-'];
 const EXPECTED: Record<string, string[]> = {
   'sensors.tests.test_pages_next': ['bindings', 'channels', 'connections', 'credentials', 'dead-all', 'devices', 'events',
     'formats', 'home', 'live', 'rules'].map((name) => `sensors-${name}-en`)
-    .concat(['sensors-devices-nb', 'sensors-devices-tr', 'sensors-live-nb', 'sensors-live-tr']),
+    .concat(['sensors-devices-nb', 'sensors-devices-tr', 'sensors-live-nb', 'sensors-live-tr', 'sensors-bindings-channel-en']),
   'farm.tests.test_production_overview_next': ['en', 'nb', 'tr'].map((language) => `production-overview-${language}`),
   'farm.tests.test_production_units_next': ['en', 'nb', 'tr'].map((language) => `production-units-${language}`)
     .concat(['production-units-drawer-en']),
@@ -129,7 +129,8 @@ test('the rest of Production and Sensors in a browser', { skip: skipWithout(BROW
           // an island's page opens no classic dialog; a page the server draws keeps the dialogs of forms not redrawn yet
           if (island) assert.equal(await tab.locator('[data-modal]').count(), 0, 'nothing opens the classic dialog');
           // a list in groups (Live values) is a table per group; a water page of several points a heading per point
-          const given = (kept(key).props ?? {}) as { groups?: unknown[] | null; places?: unknown[] };
+          const given = (kept(key).props ?? {}) as { groups?: unknown[] | null; places?: unknown[]; timeline?: { lanes: unknown[] } | null };
+          if (given.timeline) assert.equal(await tab.locator('.ui-timeline-track').count(), given.timeline.lanes.length, 'a lane per place');
           if (island === 'list-page' && given.groups?.length) assert.equal(await tab.locator('main table').count(), given.groups.length, 'a table per group');
           if (island === 'water') assert.equal(await tab.locator('.ui-plates-head').count(), (given.places?.length ?? 0) > 1 ? given.places?.length : 0, 'a heading per point');
           assert.deepEqual(violations, [], 'CSP violations');

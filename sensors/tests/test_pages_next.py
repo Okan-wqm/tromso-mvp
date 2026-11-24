@@ -130,6 +130,55 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
         self.assertTrue(all(action.get('labelled') for row in dead['table']['rows'] for action in row['actions']))
         self.assertEqual({each['name'] for each in dead['toolbar']['filters']}, {'reason', 'show'})
 
+    def test_a_channel_s_bindings_are_its_timeline_a_lane_per_place(self):
+        """`?channel=`: the list's own rows of that channel drawn as lanes over time (a moved channel: two places, the
+        first binding closed, the next open to now), above its table; the classic page says the same rows."""
+        from datetime import timedelta
+
+        from sensors import bindings
+        from sensors.models import Binding, Channel
+        from farm.models import Tank
+        from farm.tests.helpers import point_of
+        oxygen = Channel.objects.get(device__code='PROBE-TT01', quantity='oxygen_mg_l')
+        first = Binding.objects.filter(channel=oxygen).earliest('valid_from')
+        there = point_of(Tank.objects.get(code='TM-01'))
+        bindings.move(self.admin, oxygen, MOMENT - timedelta(days=1), role='primary', note='', point=there)
+        old, new = self.pages('sensors:binding_list', {'channel': str(oxygen.pk)}, 'en')
+        props = props_of(new, 'list-page')
+        self.assertEqual(unsaid(old, props, new_html=new), [])
+        timeline = props['timeline']
+        self.assertEqual(timeline['title'], f'{oxygen.code} #{oxygen.channel_no} · PROBE-TT01 · History')
+        self.assertEqual([lane['label'] for lane in timeline['lanes']], [str(first.target), str(there)])
+        [closed], [open_] = (lane['spans'] for lane in timeline['lanes'])
+        self.assertEqual((closed['x'], closed['open'], open_['open']), (0, False, True))
+        self.assertAlmostEqual(closed['x'] + closed['width'], open_['x'], delta=0.02)
+        self.assertEqual(open_['x'] + open_['width'], 100)
+        self.assertTrue(open_['label'].endswith('– now'))
+        self.assertEqual((timeline['ticks'][0]['x'], timeline['ticks'][-1]), (0, {'x': 100, 'label': 'now'}))
+        keep('sensors-bindings-channel-en', {'island': 'list-page', 'props': props})
+        # no channel named: no timeline
+        self.assertIsNone(props_of(self.pages('sensors:binding_list', {}, 'en')[1], 'list-page')['timeline'])
+
+    def test_the_bindings_filters_site_role_and_bound_now_are_the_servers(self):
+        from sensors.models import Binding
+        from farm.models import Site
+        props = props_of(self.pages('sensors:binding_list', {}, 'en')[1], 'list-page')
+        self.assertEqual([each['name'] for each in props['toolbar']['filters']], ['site', 'bound', 'role'])
+        everything = Binding.objects.visible().count()
+        self.assertEqual(len(props['table']['rows']), everything)
+        backup = props_of(self.pages('sensors:binding_list', {'role': 'backup'}, 'en')[1], 'list-page')
+        self.assertEqual(len(backup['table']['rows']), Binding.objects.visible().filter(role='backup').count())
+        now = props_of(self.pages('sensors:binding_list', {'bound': 'now'}, 'en')[1], 'list-page')
+        self.assertEqual(len(now['table']['rows']), Binding.objects.visible().at(MOMENT).count())
+        self.assertTrue(all(row['cells']['until'].get('chip') for row in now['table']['rows']), 'only those open now')
+        south = Site.objects.get(code='TSS')
+        there = props_of(self.pages('sensors:binding_list', {'site': str(south.pk)}, 'en')[1], 'list-page')
+        self.assertEqual(len(there['table']['rows']),
+                         Binding.objects.visible().filter(channel__device__site=south).count())
+        # the classic page reads the same address the same way (it has no control for them)
+        old, new = self.pages('sensors:binding_list', {'bound': 'now'}, 'en')
+        self.assertEqual(unsaid(old, props_of(new, 'list-page'), new_html=new), [])
+
     def test_a_place_s_bindings_lead_back_to_every_binding(self):
         from farm.models import Tank
         unit = Tank.objects.get(code='TT-01')

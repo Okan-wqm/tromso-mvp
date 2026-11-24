@@ -3459,6 +3459,9 @@ msgstr "Alle protokoller"
 msgid "All reports"
 msgstr "Alle rapporter"
 
+msgid "All roles"
+msgstr "Alle roller"
+
 msgid "All rules"
 msgstr "Alle regler"
 
@@ -4417,6 +4420,9 @@ msgstr "Kjøpt fisk har en leverandør; fisk fra eget klekkeri eller villfanget 
 
 msgid "Bought from a supplier"
 msgstr "Kjøpt fra leverandør"
+
+msgid "Bound"
+msgstr "Bundet"
 
 msgid "Bound to"
 msgstr "Knyttet til"
@@ -10809,6 +10815,12 @@ msgstr "Varsle straks"
 
 msgid "Now"
 msgstr "Nå"
+
+msgid "Now and before"
+msgstr "Nå og før"
+
+msgid "Now bound"
+msgstr "Bundet nå"
 
 msgid "Nullable"
 msgstr "Kan være tom"
@@ -17624,6 +17636,10 @@ msgstr ""
 
 msgid "Where"
 msgstr "Hvor"
+
+#, python-format
+msgid "Where %(channel)s was bound over time"
+msgstr "Hvor %(channel)s har vært bundet over tid"
 
 msgid ""
 "Where a PLC or field bus holds the value, as JSON. Modbus: unit_id, function, register; S7: db, "

@@ -5497,10 +5497,15 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   permission-checked view (a widget's `current_url`); a link is the application's own only as a plain path
   (`core.formpayload.own_path`: no scheme, host, backslash or control character). Every drawn tab, new and editing a
   record of the test world, is held to its classic page (`core/tests_formprops.py`, EveryDrawableTabTests); every tab with
-  a template of its own, new, editing and with each list refused, in three languages, and each list posts from its props
-  alone what it holds and saves; the guard's question on every tab that may ask it, and going past it saves a feed and a
-  medicine's withdrawal (`core/tests_formpanels.py`); in a browser, every such page in three languages at 1440 and 390,
-  a list's own form, a row added, one primary contact (`frontend/test/customforms.browser.test.ts`). The browser
+  a template of its own, new, editing and with each list refused, in three languages; a Python model of what the island
+  posts (the props' names and values) saves each list, the feeding table and the design, and a draft saves nothing; the
+  guard's question on every tab that may ask it, and going past it saves a feed and a medicine's withdrawal
+  (`core/tests_formpanels.py`). In a real browser (`frontend/test/customforms.browser.test.ts`), every such page in three
+  languages at 1440 and 390, CSP and axe on every tab; what the browser itself posts: a list's own form (its rows,
+  management form, version, nothing of the record's), a one-button form, the experiment's Randomise, Save places and Add
+  factor (the pressed button's name and value: `ServerForm` sends a copy, as a switched-off button is not sent,
+  `frontend/test/serverform.browser.test.ts`), a draft refresh's marker, gone after a return from history; a row added,
+  one primary contact. The browser
   tests run on props recorded from the test world; the Python tests (`unsaid`) are what link those props to the real
   pages. In CI (CI=1 or CI=true) a missing browser fails the browser tests instead of skipping them.
 - **Every tab's list page** (`core.crud.ListView`; `templates/crud/list_next.html`, island `list-page`,

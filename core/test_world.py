@@ -210,6 +210,63 @@ def forms_world(admin, client):
             'groups-MAX_NUM_FORMS': '1000', 'groups-0-id': '', 'groups-0-name': 'Test control', 'groups-0-role': 'control',
             'groups-0-label_0': 'Cold', 'groups-0-value_0': '8', 'groups-0-replicates': '2'})
         made.append(f'design of {trial}: {response.status_code}')
+    return made + states_world(admin, client)
+
+
+def states_world(admin, client):
+    """The common states a form shows as it is, beside the drafts above (review B3): a feeding protocol assigned to a
+    unit (its table fixed), a started experiment with a tank placed (its design and places fixed), a reviewed knowledge
+    entry, and a device whose channel was placed and moved (a placement history). Each is a record of its own."""
+    from datetime import timedelta
+
+    from experiments.models import Experiment
+    from farm.models import (Feed, FeedingProtocol, ProductionDepartment, ProtocolAssignment, Site, Species,
+                             Tank)
+    from farm.tests.helpers import make_species, point_of
+    from farm.tests.test_stock import make_unit
+    from knowledge.models import Document, KnowledgeEntry
+    from knowledge.tests.helpers import entry_data
+    from sensors import bindings
+    from sensors.tests import make_channel, make_connection, make_device, make_format
+    made = []
+    north, hall = Site.objects.get(code='TSN'), ProductionDepartment.objects.get(code='THA')
+    salmon, feed = Species.objects.get(code='SAL'), Feed.objects.get(code='TFE')
+    # an assigned protocol: its table saved through its address, then given to the stocked tank
+    protocol = FeedingProtocol.objects.create(name='Test assigned protocol', species=salmon, expected_fcr=D('1.10'))
+    table = {'version': str(FeedingProtocol.objects.get(pk=protocol.pk).version), 'temperatures': '10',
+             'bands-TOTAL_FORMS': '1', 'bands-INITIAL_FORMS': '0', 'bands-MIN_NUM_FORMS': '0',
+             'bands-MAX_NUM_FORMS': '1000', 'bands-0-min_weight_g': '0', 'bands-0-max_weight_g': '',
+             'bands-0-feed': str(feed.pk), 'bands-0-meals_per_day': '3', 'bands-0-expected_fcr': '1.05',
+             'bands-0-sfr_100': '1.2'}
+    response = client.post(reverse('farm:feedingprotocol_table', args=[protocol.pk]), table)
+    made.append(f'table of {protocol}: {response.status_code}')
+    ProtocolAssignment.objects.create(protocol=protocol, unit=Tank.objects.get(code='TT-01'),
+                                      valid_from=MOMENT.date() - timedelta(days=5))
+    # a started experiment: one group of one replicate in a tank of its own, running since three days ago
+    first = MOMENT.date() - timedelta(days=3)
+    tank = make_unit('TX-01', hall)
+    trout = make_species(code='TRT', common_name='Test rainbow trout', scientific_name='Oncorhynchus testus')
+    started = Experiment.objects.create(code='E-2026-090', name='Test started trial', site=north, species=trout,
+                                        duration_days=28, starts_on=first)
+    group = started.groups.create(name='Test group', role='control')
+    group.replicates.create(number=1).placements.create(unit=tank, from_on=first, until_on=first + timedelta(days=28))
+    Experiment.objects.filter(pk=started.pk).update(status='running', hypothesis='A test hypothesis.',
+                                                    primary_endpoint='bfcr', allocation_method='manual',
+                                                    allocation_note='Test placement')
+    # a reviewed entry, beside the draft one
+    document = Document.objects.first()
+    if document is not None:
+        client.post(reverse('knowledge:knowledgeentry_create'),
+                    entry_data(document=str(document.pk), statement='A reviewed test statement.'))
+        entry = KnowledgeEntry.objects.get(statement='A reviewed test statement.')
+        response = client.post(reverse('knowledge:entry_review', args=[entry.pk]),
+                               {'version': entry.version, 'status': 'reviewed'})
+        made.append(f'review of an entry: {response.status_code}')
+    # a device placed in the tank's water two days ago, then moved to the experiment's tank: two stays, both on the north site
+    device = make_device(make_connection('Test placed broker'), make_format('Test placed format'), north, code='TEST-2')
+    channel = make_channel(device, 'temperature_c', code='TEST-P')
+    bindings.move(admin, channel, MOMENT - timedelta(days=2), point=point_of(Tank.objects.get(code='TT-01')))
+    bindings.move(admin, channel, MOMENT - timedelta(days=1), point=point_of(tank))
     return made
 
 

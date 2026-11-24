@@ -27,7 +27,7 @@
     "status": "critical",
     "statusLabel": "Kritisk",
     "sub": null,
-    "sub2": "1 enhet kritisk",
+    "sub2": "1 enhet kritisk · 1 enhet uten nye data",
     "source": "Alarmer · 13:42"
    },
    {
@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "e1c92060-f99f-46b7-81a4-4c4e90217b39",
+    "key": "caad9d8a-4805-45c8-ba0f-054736767c36",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/e1c92060-f99f-46b7-81a4-4c4e90217b39/",
+    "href": "/sites/caad9d8a-4805-45c8-ba0f-054736767c36/",
     "type": "Landbasert anlegg",
     "status": "critical",
     "units": "1",
@@ -95,12 +95,12 @@
     "onSite": null
    },
    {
-    "key": "f0b6751c-2631-4806-8d5b-0968df43101f",
+    "key": "9a276d5e-090d-4ca7-b128-edc631ce538f",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/f0b6751c-2631-4806-8d5b-0968df43101f/",
+    "href": "/sites/9a276d5e-090d-4ca7-b128-edc631ce538f/",
     "type": "Merd",
-    "status": null,
+    "status": "warning",
     "units": "1",
     "biomass": "450 kg",
     "water": {
@@ -109,7 +109,7 @@
     },
     "alarms": {
      "figure": "0",
-     "sub": null
+     "sub": "1 enhet uten nye data"
     },
     "onSite": null
    }
@@ -244,7 +244,7 @@
   "critical": "Kritisk",
   "entries": [
    {
-    "key": "569caf37-f44e-4da3-9222-613de96092db",
+    "key": "1e7790a7-4708-4f6b-b4e6-6cff704f99f1",
     "action": "Opprettet",
     "critical": false,
     "record": "Kunnskapsoppføring · A test statement.",
@@ -256,7 +256,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "9a8d3ce3-6740-42a0-99a1-032ec6c0873a",
+    "key": "3865273f-fa32-4c09-899b-683397536f23",
     "action": "Opprettet",
     "critical": false,
     "record": "Dokument · Test document",
@@ -268,7 +268,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "85576856-75ba-42da-b461-2c7ff3547de8",
+    "key": "32511f29-2ad2-4fa2-89a9-85af01d6cf6f",
     "action": "Opprettet",
     "critical": false,
     "record": "Lagerplass · Test Store (TS-01)",
@@ -280,7 +280,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "b6882f1f-32a9-4649-91a3-7fd178bbf78a",
+    "key": "6b41c82e-0a93-46fd-9888-27d407313fca",
     "action": "Opprettet",
     "critical": false,
     "record": "Vannprøve · Water sample · TT-01 › Middle · 2026-11-23 12:42",
@@ -292,7 +292,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "19158ea9-2513-453a-b1f2-e5ca6c6d0eeb",
+    "key": "fc3785ab-4dd8-4f36-b6f3-1cf41dda6682",
     "action": "Endret",
     "critical": false,
     "record": "Enhet · Unit TM-01 (TM-01)",
@@ -314,10 +314,10 @@
   },
   "rows": [
    {
-    "key": "ae67faa2-ff38-4c19-8463-0684de563de5",
+    "key": "45f5343e-b891-4e9f-b058-92189a4d3f4b",
     "text": "A test statement.",
     "source": "Test document (u.å.)",
-    "href": "/knowledge/entries/ae67faa2-ff38-4c19-8463-0684de563de5/view/",
+    "href": "/knowledge/entries/45f5343e-b891-4e9f-b058-92189a4d3f4b/view/",
     "kind": "neutral",
     "chip": "Utkast"
    }

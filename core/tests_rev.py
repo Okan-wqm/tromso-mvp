@@ -27,7 +27,7 @@ from farm.models import (Equipment, EquipmentSystem, EquipmentType, ProductionDe
                          StockMovement, StockOperation, System, Tank, WaterFreshness, WaterLimit, WaterMeasurement)
 from farm.models.stock import TransferReason
 from farm.stock import services
-from farm.tests.helpers import make_species, point_of, stock_fish
+from farm.tests.helpers import make_species, may_record, point_of, stock_fish
 from farm.tests.test_stock import make_unit
 from farm.water import services as water
 from sensors import quantities
@@ -63,7 +63,7 @@ class Gate:
 
 class Farm:
     def make_farm(self):
-        self.user = get_user_model().objects.create_user('rev', 'rev@example.com', 'x')
+        self.user = may_record(get_user_model().objects.create_user('rev', 'rev@example.com', 'x'))
         site = Site.objects.create(name='Bergen', code='BG')
         hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
         self.t1, self.t2 = make_unit('T-01', hall), make_unit('T-02', hall)
@@ -349,7 +349,7 @@ class WaterInputTests(Gate, TestCase):
 
     @classmethod
     def make_fixture(cls):
-        cls.user = get_user_model().objects.create_user('rev', 'rev@example.com', 'x')
+        cls.user = may_record(get_user_model().objects.create_user('rev', 'rev@example.com', 'x'))
         cls.site = Site.objects.create(name='Bergen', code='BG', timezone='UTC')
         cls.hall = ProductionDepartment.objects.create(site=cls.site, name='Hall A', code='HA')
         cls.ras = System.objects.create(name='RAS 1', code='R1', site=cls.site, production_department=cls.hall)

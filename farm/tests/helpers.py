@@ -146,3 +146,17 @@ def going_on(call, *args, **kwargs):
         return call(*args, **kwargs)
     except WithdrawalChanged as asked:
         return call(*args, withdrawal_ack=asked.change.fingerprint, **kwargs)
+
+
+# The rights a fixture needs to write the farm's records through their services, which ask who may themselves (the
+# data-layering audit, L-6): stocking, a sample, a feeding, and voiding each.
+RECORDER = ('add_stockoperation', 'delete_stockoperation', 'add_watermeasurement', 'delete_watermeasurement',
+            'add_feedingrecord', 'delete_feedingrecord')
+
+
+def may_record(user, *codenames):
+    """`user` given the rights a fixture records with (RECORDER, or `codenames`), as rights of the person (no role, so
+    no role name to clash); returns the user read again, since Django keeps a person's rights once it has read them."""
+    from django.contrib.auth.models import Permission
+    user.user_permissions.add(*Permission.objects.filter(codename__in=codenames or RECORDER))
+    return type(user).objects.get(pk=user.pk)

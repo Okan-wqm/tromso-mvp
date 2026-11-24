@@ -288,6 +288,7 @@ class ProtocolTestCase(FeedingTestCase):
     def setUp(self):
         super().setUp()
         self.user.groups.add(role('Protocol keeper', *PROTOCOL_KEEPER))
+        self.user = type(self.user).objects.get(pk=self.user.pk)      # its rights read again (Django keeps them once read)
 
     def make_protocol(self, name='Salmon grow-out', bands=((0, 100, None), (100, None, '1.20')), columns=('12', '14'),
                       sfr=(('1.10', '1.30'), ('0.90', '1.00')), status='active', fcr='1.00', species=None):

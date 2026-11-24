@@ -5,6 +5,7 @@ from django.db import connection, transaction
 from django.test import TestCase
 
 from farm.models import ProductionDepartment, Site
+from farm.tests.helpers import may_record
 from sensors import quantities
 from sensors.models import Channel, Connection, Device, PayloadFormat
 
@@ -47,7 +48,7 @@ class SensorsCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user('tekniker', 'tekniker@example.com', 'x')
+        cls.user = may_record(get_user_model().objects.create_user('tekniker', 'tekniker@example.com', 'x'))
         cls.site = Site.objects.create(name='Bergen', code='BG', timezone='UTC')     # the clock the tests count on
         cls.hall = ProductionDepartment.objects.create(site=cls.site, name='Hall A', code='HA')
         cls.connection = make_connection()

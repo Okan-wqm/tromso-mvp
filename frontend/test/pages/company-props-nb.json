@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "c20b86a9-be45-4825-9178-0726e8d5b6ca",
+    "key": "d304efb5-1547-4203-a0ad-ea6510e45af1",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/c20b86a9-be45-4825-9178-0726e8d5b6ca/",
+    "href": "/sites/d304efb5-1547-4203-a0ad-ea6510e45af1/",
     "type": "Landbasert anlegg",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "bf77f4b3-b9e2-485a-b7f4-27d0121779db",
+    "key": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/bf77f4b3-b9e2-485a-b7f4-27d0121779db/",
+    "href": "/sites/a7500093-8eb0-42fd-9d51-4cc024f0ca92/",
     "type": "Merd",
     "status": "warning",
     "units": "1",
@@ -248,58 +248,58 @@
   "critical": "Kritisk",
   "entries": [
    {
-    "key": "fa766943-1e36-4d9d-a023-89f18d1c79cb",
-    "action": "Opprettet",
-    "critical": false,
-    "record": "Kunnskapsoppføring · A test statement.",
-    "by": {
-     "before": "av",
-     "name": "test.admin",
-     "after": ""
-    },
-    "when": "23.11.2026 13:42"
-   },
-   {
-    "key": "fffbf3e2-7cb1-4788-8936-53cb36d40548",
-    "action": "Opprettet",
-    "critical": false,
-    "record": "Dokument · Test document",
-    "by": {
-     "before": "av",
-     "name": "test.admin",
-     "after": ""
-    },
-    "when": "23.11.2026 13:42"
-   },
-   {
-    "key": "51cebb53-5dad-4b4d-962d-561af4d067c9",
-    "action": "Opprettet",
-    "critical": false,
-    "record": "Lagerplass · Test Store (TS-01)",
-    "by": {
-     "before": "av",
-     "name": "test.admin",
-     "after": ""
-    },
-    "when": "23.11.2026 13:42"
-   },
-   {
-    "key": "30ba1d5c-a02b-4333-b2d3-2375fa9dcb61",
-    "action": "Opprettet",
-    "critical": false,
-    "record": "Vannprøve · Water sample · TT-01 › Middle · 2026-11-23 12:42",
-    "by": {
-     "before": "av",
-     "name": "test.admin",
-     "after": ""
-    },
-    "when": "23.11.2026 13:42"
-   },
-   {
-    "key": "cdd8ecde-181f-4f1a-ac4d-306ef2451638",
+    "key": "14abd588-6984-4e0f-8f37-ad6a374bd619",
     "action": "Endret",
     "critical": false,
-    "record": "Enhet · Unit TM-01 (TM-01)",
+    "record": "Forsøk · E-2026-001 · Test trial",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "c9eb6a94-302a-4d8e-8cc9-ae4321cf1502",
+    "action": "Endret",
+    "critical": false,
+    "record": "Forsøk · E-2026-001 · Test trial",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "d859dbc5-fca2-45b4-af97-89ec456d8c2b",
+    "action": "Opprettet",
+    "critical": false,
+    "record": "Forsøk · E-2026-001 · Test trial",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "fec83e39-a370-4618-9d6f-c7e5218434b3",
+    "action": "Endret",
+    "critical": false,
+    "record": "Fôringsprotokoll · Test grow-out",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "58157bf8-2551-4db4-8718-3ef789f3847d",
+    "action": "Endret",
+    "critical": false,
+    "record": "Kanal · TEST-1 › TEST-T",
     "by": {
      "before": "av",
      "name": "test.admin",
@@ -318,10 +318,10 @@
   },
   "rows": [
    {
-    "key": "df3c21be-3fc4-4ede-b78b-531a0fc38eeb",
+    "key": "a2dab101-c96a-4682-90c5-2b09098210b7",
     "text": "A test statement.",
     "source": "Test document (u.å.)",
-    "href": "/knowledge/entries/df3c21be-3fc4-4ede-b78b-531a0fc38eeb/view/",
+    "href": "/knowledge/entries/a2dab101-c96a-4682-90c5-2b09098210b7/view/",
     "kind": "neutral",
     "chip": "Utkast"
    }

@@ -11,7 +11,7 @@
     },
     {
      "name": "entry_key",
-     "value": "4fb53496-d964-451f-b55c-617f7ba3c12e",
+     "value": "daf8d4f0-f7a2-4232-b1d5-baff73cb1516",
      "kind": "hidden"
     }
    ],
@@ -778,7 +778,7 @@
             "label": null,
             "options": [
              {
-              "value": "598e3886-0056-415c-a66a-f9056ba225ac",
+              "value": "129adba1-a3e3-41f6-ab17-187e9ee60fea",
               "label": "Test Site North · Test Hall A",
               "selected": false,
               "attrs": {}
@@ -789,7 +789,7 @@
             "label": null,
             "options": [
              {
-              "value": "4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
+              "value": "fc7976d3-8eb7-471f-87bc-570b6e54666a",
               "label": "Test Site South · Test Cages",
               "selected": false,
               "attrs": {}
@@ -830,16 +830,16 @@
           "emptyText": "Ingen system å velge: produksjonsavdelingens lokalitet har ingen, eller ingen produksjonsavdeling er valgt.",
           "rows": [
            {
-            "pk": "d88a04b1-ff96-4660-9661-4188e2536554",
+            "pk": "81f997fd-4c40-4361-9a1a-16c0818ae67a",
             "label": "Test Loop 1 (TL1)",
-            "group": "598e3886-0056-415c-a66a-f9056ba225ac",
+            "group": "129adba1-a3e3-41f6-ab17-187e9ee60fea",
             "id": "id_systems_0",
             "checked": false,
             "primary": false,
             "primarySaid": "Test Loop 1 (TL1) er den primære",
             "details": [
              {
-              "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-role",
+              "name": "systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-role",
               "label": "Rolle",
               "help": null,
               "required": false,
@@ -848,17 +848,17 @@
               "errors": [],
               "widget": {
                "kind": "text",
-               "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-role",
+               "name": "systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-role",
                "value": null,
                "attrs": {
                 "maxlength": "50",
-                "id": "id_systems-d88a04b1-ff96-4660-9661-4188e2536554-role"
+                "id": "id_systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-role"
                }
               },
               "initial": null
              },
              {
-              "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality",
+              "name": "systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-criticality",
               "label": "Kritikalitet",
               "help": null,
               "required": true,
@@ -867,12 +867,12 @@
               "errors": [],
               "widget": {
                "kind": "select",
-               "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality",
+               "name": "systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-criticality",
                "value": [
                 "3"
                ],
                "attrs": {
-                "id": "id_systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality"
+                "id": "id_systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-criticality"
                },
                "groups": [
                 {
@@ -981,11 +981,11 @@
             "label": null,
             "options": [
              {
-              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {
-               "data-group": "598e3886-0056-415c-a66a-f9056ba225ac"
+               "data-group": "129adba1-a3e3-41f6-ab17-187e9ee60fea"
               }
              }
             ]
@@ -1241,7 +1241,7 @@
  },
  "EquipmentResource edit": {
   "form": {
-   "action": "/equipment/8556e2b1-2cc2-4a1b-b4e9-16fad711aef4/",
+   "action": "/equipment/13d08525-a132-4e74-a0b5-428272470c3d/",
    "multipart": false,
    "hidden": [
     {
@@ -1987,7 +1987,7 @@
           "kind": "select",
           "name": "production_department",
           "value": [
-           "598e3886-0056-415c-a66a-f9056ba225ac"
+           "129adba1-a3e3-41f6-ab17-187e9ee60fea"
           ],
           "attrs": {
            "required": true,
@@ -2010,7 +2010,7 @@
             "label": null,
             "options": [
              {
-              "value": "598e3886-0056-415c-a66a-f9056ba225ac",
+              "value": "129adba1-a3e3-41f6-ab17-187e9ee60fea",
               "label": "Test Site North · Test Hall A",
               "selected": true,
               "attrs": {
@@ -2023,7 +2023,7 @@
             "label": null,
             "options": [
              {
-              "value": "4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
+              "value": "fc7976d3-8eb7-471f-87bc-570b6e54666a",
               "label": "Test Site South · Test Cages",
               "selected": false,
               "attrs": {}
@@ -2064,16 +2064,16 @@
           "emptyText": "Ingen system å velge: produksjonsavdelingens lokalitet har ingen, eller ingen produksjonsavdeling er valgt.",
           "rows": [
            {
-            "pk": "d88a04b1-ff96-4660-9661-4188e2536554",
+            "pk": "81f997fd-4c40-4361-9a1a-16c0818ae67a",
             "label": "Test Loop 1 (TL1)",
-            "group": "598e3886-0056-415c-a66a-f9056ba225ac",
+            "group": "129adba1-a3e3-41f6-ab17-187e9ee60fea",
             "id": "id_systems_0",
             "checked": false,
             "primary": false,
             "primarySaid": "Test Loop 1 (TL1) er den primære",
             "details": [
              {
-              "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-role",
+              "name": "systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-role",
               "label": "Rolle",
               "help": null,
               "required": false,
@@ -2082,17 +2082,17 @@
               "errors": [],
               "widget": {
                "kind": "text",
-               "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-role",
+               "name": "systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-role",
                "value": null,
                "attrs": {
                 "maxlength": "50",
-                "id": "id_systems-d88a04b1-ff96-4660-9661-4188e2536554-role"
+                "id": "id_systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-role"
                }
               },
               "initial": null
              },
              {
-              "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality",
+              "name": "systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-criticality",
               "label": "Kritikalitet",
               "help": null,
               "required": true,
@@ -2101,12 +2101,12 @@
               "errors": [],
               "widget": {
                "kind": "select",
-               "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality",
+               "name": "systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-criticality",
                "value": [
                 "3"
                ],
                "attrs": {
-                "id": "id_systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality"
+                "id": "id_systems-81f997fd-4c40-4361-9a1a-16c0818ae67a-criticality"
                },
                "groups": [
                 {
@@ -2630,9 +2630,8 @@
      },
      {
       "kind": "rows",
-      "action": "/equipment/8556e2b1-2cc2-4a1b-b4e9-16fad711aef4/calibrations/",
+      "action": "/equipment/13d08525-a132-4e74-a0b5-428272470c3d/calibrations/",
       "version": 2,
-      "rowKind": "calibration-row",
       "columns": [
        "Fôrstørrelse (mm)",
        "Etikett",
@@ -2794,7 +2793,7 @@
           },
           {
            "name": "calibrations-0-equipment",
-           "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4"
+           "value": "13d08525-a132-4e74-a0b5-428272470c3d"
           }
          ],
          "errors": []
@@ -2927,7 +2926,7 @@
          },
          {
           "name": "calibrations-__prefix__-equipment",
-          "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4"
+          "value": "13d08525-a132-4e74-a0b5-428272470c3d"
          }
         ]
        }
@@ -2938,7 +2937,7 @@
    }
   ],
   "delete": {
-   "href": "/equipment/8556e2b1-2cc2-4a1b-b4e9-16fad711aef4/delete/",
+   "href": "/equipment/13d08525-a132-4e74-a0b5-428272470c3d/delete/",
    "label": "Slett utstyr"
   },
   "history": {
@@ -2953,7 +2952,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "80524a2d-e5be-4f1e-b5be-5e75e4403096",
+     "key": "5c2d42eb-8ec1-4329-abdc-c78b5b72ea78",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -2985,7 +2984,7 @@
     },
     {
      "name": "entry_key",
-     "value": "d40d2e00-aa70-45fe-a5c6-07101199a623",
+     "value": "c0b8ecec-422a-417c-a628-616c297765f6",
      "kind": "hidden"
     }
    ],
@@ -3088,7 +3087,7 @@
             "label": null,
             "options": [
              {
-              "value": "963c845f-59b8-49a6-84a1-8d7ac46054fc",
+              "value": "bffa8336-6081-463d-920c-d55f2e87629b",
               "label": "Test Supplier (TSU)",
               "selected": false,
               "attrs": {}
@@ -3748,7 +3747,7 @@
  },
  "FeedResource edit": {
   "form": {
-   "action": "/feeds/96ea51db-ff70-479e-be66-8d070d774e24/",
+   "action": "/feeds/8531f199-e310-49fc-8113-1d322afa1752/",
    "multipart": false,
    "hidden": [
     {
@@ -3832,7 +3831,7 @@
           "kind": "select",
           "name": "manufacturer",
           "value": [
-           "963c845f-59b8-49a6-84a1-8d7ac46054fc"
+           "bffa8336-6081-463d-920c-d55f2e87629b"
           ],
           "attrs": {
            "aria-describedby": "id_manufacturer_helptext",
@@ -3854,7 +3853,7 @@
             "label": null,
             "options": [
              {
-              "value": "963c845f-59b8-49a6-84a1-8d7ac46054fc",
+              "value": "bffa8336-6081-463d-920c-d55f2e87629b",
               "label": "Test Supplier (TSU)",
               "selected": true,
               "attrs": {
@@ -4510,9 +4509,8 @@
      },
      {
       "kind": "rows",
-      "action": "/feeds/96ea51db-ff70-479e-be66-8d070d774e24/suitability/",
+      "action": "/feeds/8531f199-e310-49fc-8113-1d322afa1752/suitability/",
       "version": 2,
-      "rowKind": "suitability-row",
       "columns": [
        "Arter",
        "Livsstadium",
@@ -4561,7 +4559,7 @@
             "kind": "select",
             "name": "suitability-0-species",
             "value": [
-             "381ee422-e01a-4993-819b-ace98caff58e"
+             "1912784a-f072-418a-94bc-32aaccadd569"
             ],
             "attrs": {
              "id": "id_suitability-0-species"
@@ -4582,7 +4580,7 @@
               "label": null,
               "options": [
                {
-                "value": "381ee422-e01a-4993-819b-ace98caff58e",
+                "value": "1912784a-f072-418a-94bc-32aaccadd569",
                 "label": "Atlantic salmon (SAL)",
                 "selected": true,
                 "attrs": {
@@ -4814,7 +4812,7 @@
           },
           {
            "name": "suitability-0-feed",
-           "value": "96ea51db-ff70-479e-be66-8d070d774e24"
+           "value": "8531f199-e310-49fc-8113-1d322afa1752"
           }
          ],
          "errors": []
@@ -4857,7 +4855,7 @@
              "label": null,
              "options": [
               {
-               "value": "381ee422-e01a-4993-819b-ace98caff58e",
+               "value": "1912784a-f072-418a-94bc-32aaccadd569",
                "label": "Atlantic salmon (SAL)",
                "selected": false,
                "attrs": {}
@@ -5087,7 +5085,7 @@
          },
          {
           "name": "suitability-__prefix__-feed",
-          "value": "96ea51db-ff70-479e-be66-8d070d774e24"
+          "value": "8531f199-e310-49fc-8113-1d322afa1752"
          }
         ]
        }
@@ -5098,7 +5096,7 @@
    }
   ],
   "delete": {
-   "href": "/feeds/96ea51db-ff70-479e-be66-8d070d774e24/delete/",
+   "href": "/feeds/8531f199-e310-49fc-8113-1d322afa1752/delete/",
    "label": "Slett fôr"
   },
   "history": {
@@ -5113,7 +5111,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "2c4ace73-b452-4a00-a93c-9b8642cf2c4d",
+     "key": "a56ec227-2fed-466a-b01d-db83125578a5",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -5145,7 +5143,7 @@
     },
     {
      "name": "entry_key",
-     "value": "20267490-649f-4223-bf06-6f0bab5265db",
+     "value": "42ea6d3b-b269-4c6b-a842-ddb62d287d9c",
      "kind": "hidden"
     }
    ],
@@ -5221,7 +5219,7 @@
             "label": null,
             "options": [
              {
-              "value": "381ee422-e01a-4993-819b-ace98caff58e",
+              "value": "1912784a-f072-418a-94bc-32aaccadd569",
               "label": "Atlantic salmon (SAL)",
               "selected": false,
               "attrs": {}
@@ -5351,7 +5349,7 @@
  },
  "FeedingProtocolResource edit": {
   "form": {
-   "action": "/operations/feeding/protocols/1a9712a2-5cb4-4bdd-9e01-ea0c8aa5355f/",
+   "action": "/operations/feeding/protocols/87809dc8-1bcc-44c5-a1f3-891b65f0038b/",
    "multipart": false,
    "hidden": [
     {
@@ -5407,7 +5405,7 @@
           "kind": "select",
           "name": "species",
           "value": [
-           "381ee422-e01a-4993-819b-ace98caff58e"
+           "1912784a-f072-418a-94bc-32aaccadd569"
           ],
           "attrs": {
            "required": true,
@@ -5430,7 +5428,7 @@
             "label": null,
             "options": [
              {
-              "value": "381ee422-e01a-4993-819b-ace98caff58e",
+              "value": "1912784a-f072-418a-94bc-32aaccadd569",
               "label": "Atlantic salmon (SAL)",
               "selected": true,
               "attrs": {
@@ -5578,7 +5576,7 @@
      },
      {
       "kind": "form",
-      "action": "/operations/feeding/protocols/1a9712a2-5cb4-4bdd-9e01-ea0c8aa5355f/table/",
+      "action": "/operations/feeding/protocols/87809dc8-1bcc-44c5-a1f3-891b65f0038b/table/",
       "label": "Fôringstabell",
       "hidden": [
        {
@@ -5711,7 +5709,7 @@
               "kind": "select",
               "name": "bands-0-feed",
               "value": [
-               "96ea51db-ff70-479e-be66-8d070d774e24"
+               "8531f199-e310-49fc-8113-1d322afa1752"
               ],
               "attrs": {
                "id": "id_bands-0-feed"
@@ -5732,7 +5730,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "96ea51db-ff70-479e-be66-8d070d774e24",
+                  "value": "8531f199-e310-49fc-8113-1d322afa1752",
                   "label": "Test Feed (TFE)",
                   "selected": true,
                   "attrs": {
@@ -5913,7 +5911,7 @@
               "kind": "select",
               "name": "bands-1-feed",
               "value": [
-               "96ea51db-ff70-479e-be66-8d070d774e24"
+               "8531f199-e310-49fc-8113-1d322afa1752"
               ],
               "attrs": {
                "id": "id_bands-1-feed"
@@ -5934,7 +5932,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "96ea51db-ff70-479e-be66-8d070d774e24",
+                  "value": "8531f199-e310-49fc-8113-1d322afa1752",
                   "label": "Test Feed (TFE)",
                   "selected": true,
                   "attrs": {
@@ -6139,7 +6137,7 @@
                "label": null,
                "options": [
                 {
-                 "value": "96ea51db-ff70-479e-be66-8d070d774e24",
+                 "value": "8531f199-e310-49fc-8113-1d322afa1752",
                  "label": "Test Feed (TFE)",
                  "selected": false,
                  "attrs": {}
@@ -6286,7 +6284,7 @@
      },
      {
       "kind": "post",
-      "action": "/operations/feeding/protocols/1a9712a2-5cb4-4bdd-9e01-ea0c8aa5355f/duplicate/",
+      "action": "/operations/feeding/protocols/87809dc8-1bcc-44c5-a1f3-891b65f0038b/duplicate/",
       "label": "Dupliser",
       "primary": false,
       "fields": []
@@ -6299,7 +6297,7 @@
    }
   ],
   "delete": {
-   "href": "/operations/feeding/protocols/1a9712a2-5cb4-4bdd-9e01-ea0c8aa5355f/delete/",
+   "href": "/operations/feeding/protocols/87809dc8-1bcc-44c5-a1f3-891b65f0038b/delete/",
    "label": "Slett fôringsprotokoll"
   },
   "history": {
@@ -6314,7 +6312,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "3dcf0dda-9f74-4a51-9e24-cd0326c481ba",
+     "key": "fec83e39-a370-4618-9d6f-c7e5218434b3",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -6346,7 +6344,7 @@
     },
     {
      "name": "entry_key",
-     "value": "bb0a1a78-315a-4365-a280-a709b992ac3f",
+     "value": "dd091b39-3200-4f9f-911b-e52909ce9265",
      "kind": "hidden"
     }
    ],
@@ -7051,7 +7049,7 @@
  },
  "MedicineResource edit": {
   "form": {
-   "action": "/medicines/769bce64-aa3d-4f96-9ed9-6c4dfc7934fb/",
+   "action": "/medicines/b6c438ff-f40e-4a62-80d3-de33d1fea19f/",
    "multipart": false,
    "hidden": [
     {
@@ -7755,9 +7753,8 @@
      },
      {
       "kind": "rows",
-      "action": "/medicines/769bce64-aa3d-4f96-9ed9-6c4dfc7934fb/withdrawals/",
+      "action": "/medicines/b6c438ff-f40e-4a62-80d3-de33d1fea19f/withdrawals/",
       "version": 2,
-      "rowKind": "withdrawal-row",
       "columns": [
        "Arter",
        "Tilbakeholdelsestid (døgngrader)",
@@ -7829,7 +7826,7 @@
               "label": null,
               "options": [
                {
-                "value": "381ee422-e01a-4993-819b-ace98caff58e",
+                "value": "1912784a-f072-418a-94bc-32aaccadd569",
                 "label": "Atlantic salmon (SAL)",
                 "selected": false,
                 "attrs": {}
@@ -7945,7 +7942,7 @@
           },
           {
            "name": "withdrawals-0-medicine",
-           "value": "769bce64-aa3d-4f96-9ed9-6c4dfc7934fb"
+           "value": "b6c438ff-f40e-4a62-80d3-de33d1fea19f"
           }
          ],
          "errors": []
@@ -7988,7 +7985,7 @@
              "label": null,
              "options": [
               {
-               "value": "381ee422-e01a-4993-819b-ace98caff58e",
+               "value": "1912784a-f072-418a-94bc-32aaccadd569",
                "label": "Atlantic salmon (SAL)",
                "selected": false,
                "attrs": {}
@@ -8104,7 +8101,7 @@
          },
          {
           "name": "withdrawals-__prefix__-medicine",
-          "value": "769bce64-aa3d-4f96-9ed9-6c4dfc7934fb"
+          "value": "b6c438ff-f40e-4a62-80d3-de33d1fea19f"
          }
         ]
        }
@@ -8115,7 +8112,7 @@
    }
   ],
   "delete": {
-   "href": "/medicines/769bce64-aa3d-4f96-9ed9-6c4dfc7934fb/delete/",
+   "href": "/medicines/b6c438ff-f40e-4a62-80d3-de33d1fea19f/delete/",
    "label": "Slett legemiddel"
   },
   "history": {
@@ -8130,7 +8127,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "8a12963f-e1e2-4f55-a6e0-4b03edd59d37",
+     "key": "cad5df32-9587-47e0-9a59-911c3f1059ce",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -8162,7 +8159,7 @@
     },
     {
      "name": "entry_key",
-     "value": "29106e63-54c9-4d2b-849b-8510209b5a7b",
+     "value": "26f29f7a-6926-446c-aa13-dc273183e365",
      "kind": "hidden"
     }
    ],
@@ -9050,7 +9047,7 @@
  },
  "SiteResource edit": {
   "form": {
-   "action": "/sites/14ef6d2b-8881-41d0-90b3-2adec649fbe6/",
+   "action": "/sites/d304efb5-1547-4203-a0ad-ea6510e45af1/",
    "multipart": false,
    "hidden": [
     {
@@ -9937,10 +9934,15 @@
      },
      {
       "kind": "rows",
-      "action": "/sites/14ef6d2b-8881-41d0-90b3-2adec649fbe6/contacts/",
+      "action": "/sites/d304efb5-1547-4203-a0ad-ea6510e45af1/contacts/",
       "version": 2,
-      "rowKind": "",
-      "columns": [],
+      "columns": [
+       "Navn",
+       "Rolle",
+       "E-post",
+       "Telefon",
+       "Hovedkontakt"
+      ],
       "legend": "Kontakt",
       "empty": "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad.",
       "add": "Legg til kontaktperson",
@@ -10092,11 +10094,11 @@
          "hidden": [
           {
            "name": "contacts-0-id",
-           "value": "fe8e5afe-3738-4bfa-9906-25fb2c7f1093"
+           "value": "17f1798b-8531-4698-afe1-41c6421abce7"
           },
           {
            "name": "contacts-0-site",
-           "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+           "value": "d304efb5-1547-4203-a0ad-ea6510e45af1"
           }
          ],
          "errors": []
@@ -10229,7 +10231,7 @@
          },
          {
           "name": "contacts-__prefix__-site",
-          "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+          "value": "d304efb5-1547-4203-a0ad-ea6510e45af1"
          }
         ]
        }
@@ -10240,7 +10242,7 @@
    }
   ],
   "delete": {
-   "href": "/sites/14ef6d2b-8881-41d0-90b3-2adec649fbe6/delete/",
+   "href": "/sites/d304efb5-1547-4203-a0ad-ea6510e45af1/delete/",
    "label": "Slett lokalitet"
   },
   "history": {
@@ -10255,7 +10257,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "95f3e206-a206-4a5a-aeae-9cbf8d86d080",
+     "key": "f8a17746-d332-4636-974e-a664d515fd81",
      "action": "Opprettet",
      "critical": false,
      "by": {
@@ -10308,7 +10310,7 @@
      ]
     },
     {
-     "key": "666834f6-90bf-41b5-a3d0-1657dac87419",
+     "key": "1ac07315-c3c3-4b70-b3bb-bf1164978780",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -10340,7 +10342,7 @@
     },
     {
      "name": "entry_key",
-     "value": "dafbc496-bdcc-4d52-b180-13fa498055c6",
+     "value": "3af89b8f-5b1b-403f-b8a0-6994af6e520a",
      "kind": "hidden"
     }
    ],
@@ -11021,7 +11023,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {
@@ -11035,7 +11037,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {
@@ -11141,7 +11143,7 @@
  },
  "SupplierResource edit": {
   "form": {
-   "action": "/suppliers/963c845f-59b8-49a6-84a1-8d7ac46054fc/",
+   "action": "/suppliers/bffa8336-6081-463d-920c-d55f2e87629b/",
    "multipart": false,
    "hidden": [
     {
@@ -11832,7 +11834,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {
@@ -11846,7 +11848,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {
@@ -11946,10 +11948,15 @@
      },
      {
       "kind": "rows",
-      "action": "/suppliers/963c845f-59b8-49a6-84a1-8d7ac46054fc/contacts/",
+      "action": "/suppliers/bffa8336-6081-463d-920c-d55f2e87629b/contacts/",
       "version": 2,
-      "rowKind": "",
-      "columns": [],
+      "columns": [
+       "Navn",
+       "Rolle",
+       "E-post",
+       "Telefon",
+       "Hovedkontakt"
+      ],
       "legend": "Kontakt",
       "empty": "Ingen kontaktpersoner ennå. Bruk «Legg til kontaktperson» for å legge til en rad.",
       "add": "Legg til kontaktperson",
@@ -12101,11 +12108,11 @@
          "hidden": [
           {
            "name": "contacts-0-id",
-           "value": "9c4f78aa-0308-4d33-a096-dafd3f3f21d3"
+           "value": "dea2c507-a85d-4cc6-997d-d1e747b3ab17"
           },
           {
            "name": "contacts-0-supplier",
-           "value": "963c845f-59b8-49a6-84a1-8d7ac46054fc"
+           "value": "bffa8336-6081-463d-920c-d55f2e87629b"
           }
          ],
          "errors": []
@@ -12238,7 +12245,7 @@
          },
          {
           "name": "contacts-__prefix__-supplier",
-          "value": "963c845f-59b8-49a6-84a1-8d7ac46054fc"
+          "value": "bffa8336-6081-463d-920c-d55f2e87629b"
          }
         ]
        }
@@ -12249,7 +12256,7 @@
    }
   ],
   "delete": {
-   "href": "/suppliers/963c845f-59b8-49a6-84a1-8d7ac46054fc/delete/",
+   "href": "/suppliers/bffa8336-6081-463d-920c-d55f2e87629b/delete/",
    "label": "Slett leverandør"
   },
   "history": {
@@ -12264,7 +12271,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "34d99ff4-ce34-4236-b0a2-2f287486fb39",
+     "key": "285d3b8b-baed-4eed-a0c9-cb67a85f6f25",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -12296,7 +12303,7 @@
     },
     {
      "name": "entry_key",
-     "value": "a45188fe-e187-4e99-9a26-5db7d6f41b94",
+     "value": "a4110e92-13de-4abf-88cc-e27dc2ed5442",
      "kind": "hidden"
     }
    ],
@@ -12526,7 +12533,7 @@
             "label": null,
             "options": [
              {
-              "value": "381ee422-e01a-4993-819b-ace98caff58e",
+              "value": "1912784a-f072-418a-94bc-32aaccadd569",
               "label": "Atlantic salmon (SAL)",
               "selected": false,
               "attrs": {
@@ -12668,7 +12675,7 @@
             "label": null,
             "options": [
              {
-              "value": "17d7f131-6c99-4d22-a0ff-f3f7a89e9394",
+              "value": "2f18a2dc-ae08-48c0-8aa9-c1536fa10354",
               "label": "Test document (u.å.) · Test document",
               "selected": false,
               "attrs": {}
@@ -12772,7 +12779,7 @@
  },
  "KnowledgeEntryResource edit": {
   "form": {
-   "action": "/knowledge/entries/76126549-6cc9-4587-afa7-201a63231fda/",
+   "action": "/knowledge/entries/a2dab101-c96a-4682-90c5-2b09098210b7/",
    "multipart": false,
    "hidden": [
     {
@@ -13012,7 +13019,7 @@
             "label": null,
             "options": [
              {
-              "value": "381ee422-e01a-4993-819b-ace98caff58e",
+              "value": "1912784a-f072-418a-94bc-32aaccadd569",
               "label": "Atlantic salmon (SAL)",
               "selected": false,
               "attrs": {
@@ -13130,7 +13137,7 @@
           "kind": "select",
           "name": "document",
           "value": [
-           "17d7f131-6c99-4d22-a0ff-f3f7a89e9394"
+           "2f18a2dc-ae08-48c0-8aa9-c1536fa10354"
           ],
           "attrs": {
            "aria-describedby": "id_document_helptext",
@@ -13152,7 +13159,7 @@
             "label": null,
             "options": [
              {
-              "value": "17d7f131-6c99-4d22-a0ff-f3f7a89e9394",
+              "value": "2f18a2dc-ae08-48c0-8aa9-c1536fa10354",
               "label": "Test document (u.å.) · Test document",
               "selected": true,
               "attrs": {
@@ -13269,7 +13276,7 @@
      },
      {
       "kind": "post",
-      "action": "/knowledge/entries/76126549-6cc9-4587-afa7-201a63231fda/review/",
+      "action": "/knowledge/entries/a2dab101-c96a-4682-90c5-2b09098210b7/review/",
       "label": "Merk som gjennomgått",
       "primary": true,
       "fields": [
@@ -13291,7 +13298,7 @@
    }
   ],
   "delete": {
-   "href": "/knowledge/entries/76126549-6cc9-4587-afa7-201a63231fda/delete/",
+   "href": "/knowledge/entries/a2dab101-c96a-4682-90c5-2b09098210b7/delete/",
    "label": "Slett kunnskapsoppføring"
   },
   "history": {
@@ -13306,7 +13313,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "897a59c2-3160-40ed-9f88-23b08cf84ac4",
+     "key": "6a22ab3e-5408-4d0a-9257-44c11f9a0472",
      "action": "Opprettet",
      "critical": false,
      "by": {
@@ -13358,7 +13365,7 @@
     },
     {
      "name": "entry_key",
-     "value": "24858a48-5ef8-4f43-879d-598a45d8eea8",
+     "value": "eeb8b0ca-326f-48ff-90c4-79ac48e7f752",
      "kind": "hidden"
     }
    ],
@@ -13413,7 +13420,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -13424,7 +13431,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -13671,11 +13678,11 @@
             "label": null,
             "options": [
              {
-              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -13840,7 +13847,7 @@
  },
  "StorageLocationResource edit": {
   "form": {
-   "action": "/storage-locations/53fbe9db-8d12-471c-a4e3-372ffae43b7c/",
+   "action": "/storage-locations/f6bc439b-99c6-4f86-ad28-a834c7dc519f/",
    "multipart": false,
    "hidden": [
     {
@@ -13875,7 +13882,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+           "d304efb5-1547-4203-a0ad-ea6510e45af1"
           ],
           "attrs": {
            "required": true,
@@ -13899,7 +13906,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": true,
               "attrs": {
@@ -13912,7 +13919,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -14159,11 +14166,11 @@
             "label": null,
             "options": [
              {
-              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -14322,9 +14329,8 @@
      },
      {
       "kind": "rows",
-      "action": "/storage-locations/53fbe9db-8d12-471c-a4e3-372ffae43b7c/reorder/",
+      "action": "/storage-locations/f6bc439b-99c6-4f86-ad28-a834c7dc519f/reorder/",
       "version": 2,
-      "rowKind": "reorder-row",
       "columns": [
        "Fôr",
        "Bestillingspunkt (kg)"
@@ -14370,7 +14376,7 @@
             "kind": "select",
             "name": "reorder-0-feed",
             "value": [
-             "96ea51db-ff70-479e-be66-8d070d774e24"
+             "8531f199-e310-49fc-8113-1d322afa1752"
             ],
             "attrs": {
              "id": "id_reorder-0-feed"
@@ -14391,7 +14397,7 @@
               "label": null,
               "options": [
                {
-                "value": "96ea51db-ff70-479e-be66-8d070d774e24",
+                "value": "8531f199-e310-49fc-8113-1d322afa1752",
                 "label": "Test Feed (TFE)",
                 "selected": true,
                 "attrs": {
@@ -14450,7 +14456,7 @@
           },
           {
            "name": "reorder-0-location",
-           "value": "53fbe9db-8d12-471c-a4e3-372ffae43b7c"
+           "value": "f6bc439b-99c6-4f86-ad28-a834c7dc519f"
           }
          ],
          "errors": []
@@ -14493,7 +14499,7 @@
              "label": null,
              "options": [
               {
-               "value": "96ea51db-ff70-479e-be66-8d070d774e24",
+               "value": "8531f199-e310-49fc-8113-1d322afa1752",
                "label": "Test Feed (TFE)",
                "selected": false,
                "attrs": {}
@@ -14550,7 +14556,7 @@
          },
          {
           "name": "reorder-__prefix__-location",
-          "value": "53fbe9db-8d12-471c-a4e3-372ffae43b7c"
+          "value": "f6bc439b-99c6-4f86-ad28-a834c7dc519f"
          }
         ]
        }
@@ -14561,7 +14567,7 @@
    }
   ],
   "delete": {
-   "href": "/storage-locations/53fbe9db-8d12-471c-a4e3-372ffae43b7c/delete/",
+   "href": "/storage-locations/f6bc439b-99c6-4f86-ad28-a834c7dc519f/delete/",
    "label": "Slett lagerplass"
   },
   "history": {
@@ -14576,7 +14582,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "6e8f36fc-0c4e-4a49-a73f-5a4fe675c37d",
+     "key": "d944e067-434e-4a39-af81-680e8afbb76a",
      "action": "Opprettet",
      "critical": false,
      "by": {
@@ -14614,7 +14620,7 @@
      ]
     },
     {
-     "key": "120b3008-75ae-40f1-a458-50d7da13c571",
+     "key": "5d5f7858-3a77-49ce-bec3-6abad556465a",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -14646,7 +14652,7 @@
     },
     {
      "name": "entry_key",
-     "value": "30a28e1d-3202-4c48-b958-5eabbbf8d39c",
+     "value": "0e3ed946-965f-4f1d-b4ae-0527ebe5aa90",
      "kind": "hidden"
     }
    ],
@@ -14855,7 +14861,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -14866,7 +14872,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -15360,7 +15366,7 @@
  },
  "ReportResource edit": {
   "form": {
-   "action": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/",
+   "action": "/reports/20b0d0e9-a54e-42bb-a2e5-70c18c627b31/",
    "multipart": false,
    "hidden": [
     {
@@ -15551,7 +15557,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "8ff91311-7674-4594-9986-15ea1ecbe432"
+           "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
           ],
           "attrs": {
            "disabled": true,
@@ -15573,7 +15579,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -15584,7 +15590,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": true,
               "attrs": {
@@ -15769,9 +15775,8 @@
      },
      {
       "kind": "rows",
-      "action": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/treatments/",
+      "action": "/reports/20b0d0e9-a54e-42bb-a2e5-70c18c627b31/treatments/",
       "version": 1,
-      "rowKind": "treatment-answer-row",
       "columns": [
        "Behandling",
        "Gitt før tellingen",
@@ -15904,7 +15909,7 @@
          },
          {
           "name": "treatments-__prefix__-report",
-          "value": "d3d5f0c6-1a4c-49bb-b280-9042f163f484"
+          "value": "20b0d0e9-a54e-42bb-a2e5-70c18c627b31"
          }
         ]
        }
@@ -15925,9 +15930,8 @@
      },
      {
       "kind": "rows",
-      "action": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/resistance/",
+      "action": "/reports/20b0d0e9-a54e-42bb-a2e5-70c18c627b31/resistance/",
       "version": 1,
-      "rowKind": "resistance-row",
       "columns": [
        "Resistens mot",
        "Annet: hvilket",
@@ -16251,7 +16255,7 @@
          },
          {
           "name": "resistance-__prefix__-report",
-          "value": "d3d5f0c6-1a4c-49bb-b280-9042f163f484"
+          "value": "20b0d0e9-a54e-42bb-a2e5-70c18c627b31"
          }
         ]
        }
@@ -16272,9 +16276,8 @@
      },
      {
       "kind": "rows",
-      "action": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/sensitivity/",
+      "action": "/reports/20b0d0e9-a54e-42bb-a2e5-70c18c627b31/sensitivity/",
       "version": 1,
-      "rowKind": "sensitivity-row",
       "columns": [
        "Testet",
        "Laboratorium",
@@ -16609,7 +16612,7 @@
          },
          {
           "name": "sensitivity-__prefix__-report",
-          "value": "d3d5f0c6-1a4c-49bb-b280-9042f163f484"
+          "value": "20b0d0e9-a54e-42bb-a2e5-70c18c627b31"
          }
         ]
        }
@@ -16620,7 +16623,7 @@
    }
   ],
   "delete": {
-   "href": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/delete/",
+   "href": "/reports/20b0d0e9-a54e-42bb-a2e5-70c18c627b31/delete/",
    "label": "Slett lovpålagt rapport"
   },
   "history": {
@@ -16648,7 +16651,7 @@
     },
     {
      "name": "entry_key",
-     "value": "c95550f3-74a8-4cd8-a547-7f1bb81f69db",
+     "value": "1f8b3070-a680-4e5f-a50d-67f549cd5ebb",
      "kind": "hidden"
     }
    ],
@@ -16949,7 +16952,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North",
               "selected": false,
               "attrs": {}
@@ -16960,7 +16963,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South",
               "selected": false,
               "attrs": {}
@@ -17011,19 +17014,19 @@
             "label": "Hele lokaliteten",
             "options": [
              {
-              "value": "site:14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "site:d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "site:8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "site:a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -17032,19 +17035,19 @@
             "label": "Produksjonsavdelinger",
             "options": [
              {
-              "value": "department:598e3886-0056-415c-a66a-f9056ba225ac",
+              "value": "department:129adba1-a3e3-41f6-ab17-187e9ee60fea",
               "label": "Test Hall A — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
+              "value": "department:fc7976d3-8eb7-471f-87bc-570b6e54666a",
               "label": "Test Cages — Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -17053,11 +17056,11 @@
             "label": "Systemer",
             "options": [
              {
-              "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
+              "value": "system:81f997fd-4c40-4361-9a1a-16c0818ae67a",
               "label": "TL1 · Test Loop 1 — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -17066,19 +17069,19 @@
             "label": "Enheter",
             "options": [
              {
-              "value": "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+              "value": "unit:c4ffddc0-9318-48c3-869b-59bfd727357a",
               "label": "TT-01 · Unit TT-01 — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "unit:b174ad91-982a-487c-b86a-a73294845477",
+              "value": "unit:5485761b-9cc4-449c-b199-2ccbb9bc9c1e",
               "label": "TM-01 · Unit TM-01 — Test Cages · Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -17087,11 +17090,11 @@
             "label": "Utstyr",
             "options": [
              {
-              "value": "equipment:8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "equipment:13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD) — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -17139,11 +17142,11 @@
             "label": null,
             "options": [
              {
-              "value": "8598f81d-3fdb-4c2a-bdea-0ffc65bc0b01",
+              "value": "ac46a4d8-6306-4ecc-85d0-ac8b575335e1",
               "label": "B-2026-002 · Atlantic salmon",
               "selected": false,
               "attrs": {
-               "data-group": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3 site:8ff91311-7674-4594-9986-15ea1ecbe432 unit:b174ad91-982a-487c-b86a-a73294845477"
+               "data-group": "department:fc7976d3-8eb7-471f-87bc-570b6e54666a site:a7500093-8eb0-42fd-9d51-4cc024f0ca92 unit:5485761b-9cc4-449c-b199-2ccbb9bc9c1e"
               }
              }
             ]
@@ -17152,11 +17155,11 @@
             "label": null,
             "options": [
              {
-              "value": "04290815-1f14-4f38-b6ad-64626f8fd270",
+              "value": "92c434cb-fedb-4f51-8eb5-863c36e7e4db",
               "label": "B-2026-001 · Atlantic salmon",
               "selected": false,
               "attrs": {
-               "data-group": "department:598e3886-0056-415c-a66a-f9056ba225ac site:14ef6d2b-8881-41d0-90b3-2adec649fbe6 system:d88a04b1-ff96-4660-9661-4188e2536554 unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df"
+               "data-group": "department:129adba1-a3e3-41f6-ab17-187e9ee60fea site:d304efb5-1547-4203-a0ad-ea6510e45af1 system:81f997fd-4c40-4361-9a1a-16c0818ae67a unit:c4ffddc0-9318-48c3-869b-59bfd727357a"
               }
              }
             ]
@@ -17297,7 +17300,7 @@
  },
  "TaskResource edit": {
   "form": {
-   "action": "/operations/tasks/de10c57d-6c29-4cbd-8165-ab5bf40b777e/",
+   "action": "/operations/tasks/6c5e56da-9888-4597-96fd-7ee7f4c67981/",
    "multipart": false,
    "hidden": [
     {
@@ -17578,7 +17581,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+           "d304efb5-1547-4203-a0ad-ea6510e45af1"
           ],
           "attrs": {
            "required": true,
@@ -17601,7 +17604,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North",
               "selected": true,
               "attrs": {
@@ -17614,7 +17617,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South",
               "selected": false,
               "attrs": {}
@@ -17639,7 +17642,7 @@
           "kind": "select",
           "name": "location",
           "value": [
-           "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df"
+           "unit:c4ffddc0-9318-48c3-869b-59bfd727357a"
           ],
           "attrs": {
            "data-depends-on": "site",
@@ -17663,19 +17666,19 @@
             "label": "Hele lokaliteten",
             "options": [
              {
-              "value": "site:14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "site:d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "site:8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "site:a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -17684,19 +17687,19 @@
             "label": "Produksjonsavdelinger",
             "options": [
              {
-              "value": "department:598e3886-0056-415c-a66a-f9056ba225ac",
+              "value": "department:129adba1-a3e3-41f6-ab17-187e9ee60fea",
               "label": "Test Hall A — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
+              "value": "department:fc7976d3-8eb7-471f-87bc-570b6e54666a",
               "label": "Test Cages — Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -17705,11 +17708,11 @@
             "label": "Systemer",
             "options": [
              {
-              "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
+              "value": "system:81f997fd-4c40-4361-9a1a-16c0818ae67a",
               "label": "TL1 · Test Loop 1 — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -17718,20 +17721,20 @@
             "label": "Enheter",
             "options": [
              {
-              "value": "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+              "value": "unit:c4ffddc0-9318-48c3-869b-59bfd727357a",
               "label": "TT-01 · Unit TT-01 — Test Hall A · Test Site North",
               "selected": true,
               "attrs": {
                "selected": true,
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "unit:b174ad91-982a-487c-b86a-a73294845477",
+              "value": "unit:5485761b-9cc4-449c-b199-2ccbb9bc9c1e",
               "label": "TM-01 · Unit TM-01 — Test Cages · Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -17740,11 +17743,11 @@
             "label": "Utstyr",
             "options": [
              {
-              "value": "equipment:8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "equipment:13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD) — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -17792,11 +17795,11 @@
             "label": null,
             "options": [
              {
-              "value": "8598f81d-3fdb-4c2a-bdea-0ffc65bc0b01",
+              "value": "ac46a4d8-6306-4ecc-85d0-ac8b575335e1",
               "label": "B-2026-002 · Atlantic salmon",
               "selected": false,
               "attrs": {
-               "data-group": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3 site:8ff91311-7674-4594-9986-15ea1ecbe432 unit:b174ad91-982a-487c-b86a-a73294845477"
+               "data-group": "department:fc7976d3-8eb7-471f-87bc-570b6e54666a site:a7500093-8eb0-42fd-9d51-4cc024f0ca92 unit:5485761b-9cc4-449c-b199-2ccbb9bc9c1e"
               }
              }
             ]
@@ -17805,11 +17808,11 @@
             "label": null,
             "options": [
              {
-              "value": "04290815-1f14-4f38-b6ad-64626f8fd270",
+              "value": "92c434cb-fedb-4f51-8eb5-863c36e7e4db",
               "label": "B-2026-001 · Atlantic salmon",
               "selected": false,
               "attrs": {
-               "data-group": "department:598e3886-0056-415c-a66a-f9056ba225ac site:14ef6d2b-8881-41d0-90b3-2adec649fbe6 system:d88a04b1-ff96-4660-9661-4188e2536554 unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df"
+               "data-group": "department:129adba1-a3e3-41f6-ab17-187e9ee60fea site:d304efb5-1547-4203-a0ad-ea6510e45af1 system:81f997fd-4c40-4361-9a1a-16c0818ae67a unit:c4ffddc0-9318-48c3-869b-59bfd727357a"
               }
              }
             ]
@@ -17944,9 +17947,8 @@
      },
      {
       "kind": "rows",
-      "action": "/operations/tasks/de10c57d-6c29-4cbd-8165-ab5bf40b777e/checklist/",
+      "action": "/operations/tasks/6c5e56da-9888-4597-96fd-7ee7f4c67981/checklist/",
       "version": 2,
-      "rowKind": "checklist-row",
       "columns": [
        "Sjekklistepunkt"
       ],
@@ -18025,7 +18027,7 @@
           },
           {
            "name": "checklist-0-task",
-           "value": "de10c57d-6c29-4cbd-8165-ab5bf40b777e"
+           "value": "6c5e56da-9888-4597-96fd-7ee7f4c67981"
           }
          ],
          "errors": []
@@ -18078,7 +18080,7 @@
           },
           {
            "name": "checklist-1-task",
-           "value": "de10c57d-6c29-4cbd-8165-ab5bf40b777e"
+           "value": "6c5e56da-9888-4597-96fd-7ee7f4c67981"
           }
          ],
          "errors": []
@@ -18132,7 +18134,7 @@
          },
          {
           "name": "checklist-__prefix__-task",
-          "value": "de10c57d-6c29-4cbd-8165-ab5bf40b777e"
+          "value": "6c5e56da-9888-4597-96fd-7ee7f4c67981"
          }
         ]
        }
@@ -18143,7 +18145,7 @@
    }
   ],
   "delete": {
-   "href": "/operations/tasks/de10c57d-6c29-4cbd-8165-ab5bf40b777e/delete/",
+   "href": "/operations/tasks/6c5e56da-9888-4597-96fd-7ee7f4c67981/delete/",
    "label": "Slett oppgave"
   },
   "history": {
@@ -18158,7 +18160,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "828a86a9-5804-42ac-b33d-ded3cf3a0bd7",
+     "key": "31cb51d1-dc90-4dc2-9265-bb52d03d6b85",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -18190,7 +18192,7 @@
     },
     {
      "name": "entry_key",
-     "value": "416ba821-943b-4f1a-971b-980bff590716",
+     "value": "be9c6592-532e-4356-9d0f-4c8a2912bdd6",
      "kind": "hidden"
     }
    ],
@@ -18491,7 +18493,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North",
               "selected": false,
               "attrs": {}
@@ -18502,7 +18504,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South",
               "selected": false,
               "attrs": {}
@@ -18553,19 +18555,19 @@
             "label": "Hele lokaliteten",
             "options": [
              {
-              "value": "site:14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "site:d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "site:8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "site:a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -18574,19 +18576,19 @@
             "label": "Produksjonsavdelinger",
             "options": [
              {
-              "value": "department:598e3886-0056-415c-a66a-f9056ba225ac",
+              "value": "department:129adba1-a3e3-41f6-ab17-187e9ee60fea",
               "label": "Test Hall A — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
+              "value": "department:fc7976d3-8eb7-471f-87bc-570b6e54666a",
               "label": "Test Cages — Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -18595,11 +18597,11 @@
             "label": "Systemer",
             "options": [
              {
-              "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
+              "value": "system:81f997fd-4c40-4361-9a1a-16c0818ae67a",
               "label": "TL1 · Test Loop 1 — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -18608,19 +18610,19 @@
             "label": "Enheter",
             "options": [
              {
-              "value": "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+              "value": "unit:c4ffddc0-9318-48c3-869b-59bfd727357a",
               "label": "TT-01 · Unit TT-01 — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "unit:b174ad91-982a-487c-b86a-a73294845477",
+              "value": "unit:5485761b-9cc4-449c-b199-2ccbb9bc9c1e",
               "label": "TM-01 · Unit TM-01 — Test Cages · Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -18629,11 +18631,11 @@
             "label": "Utstyr",
             "options": [
              {
-              "value": "equipment:8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "equipment:13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD) — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -19032,7 +19034,7 @@
  },
  "TaskSeriesResource edit": {
   "form": {
-   "action": "/operations/tasks/recurring/47410fad-a4fe-4093-8630-457704a35aee/",
+   "action": "/operations/tasks/recurring/1041789d-9d8d-4a25-a212-77a26add57c7/",
    "multipart": false,
    "hidden": [
     {
@@ -19313,7 +19315,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+           "d304efb5-1547-4203-a0ad-ea6510e45af1"
           ],
           "attrs": {
            "required": true,
@@ -19336,7 +19338,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North",
               "selected": true,
               "attrs": {
@@ -19349,7 +19351,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South",
               "selected": false,
               "attrs": {}
@@ -19374,7 +19376,7 @@
           "kind": "select",
           "name": "location",
           "value": [
-           "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df"
+           "unit:c4ffddc0-9318-48c3-869b-59bfd727357a"
           ],
           "attrs": {
            "data-depends-on": "site",
@@ -19398,19 +19400,19 @@
             "label": "Hele lokaliteten",
             "options": [
              {
-              "value": "site:14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "site:d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "site:8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "site:a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -19419,19 +19421,19 @@
             "label": "Produksjonsavdelinger",
             "options": [
              {
-              "value": "department:598e3886-0056-415c-a66a-f9056ba225ac",
+              "value": "department:129adba1-a3e3-41f6-ab17-187e9ee60fea",
               "label": "Test Hall A — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
+              "value": "department:fc7976d3-8eb7-471f-87bc-570b6e54666a",
               "label": "Test Cages — Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -19440,11 +19442,11 @@
             "label": "Systemer",
             "options": [
              {
-              "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
+              "value": "system:81f997fd-4c40-4361-9a1a-16c0818ae67a",
               "label": "TL1 · Test Loop 1 — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -19453,20 +19455,20 @@
             "label": "Enheter",
             "options": [
              {
-              "value": "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+              "value": "unit:c4ffddc0-9318-48c3-869b-59bfd727357a",
               "label": "TT-01 · Unit TT-01 — Test Hall A · Test Site North",
               "selected": true,
               "attrs": {
                "selected": true,
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              },
              {
-              "value": "unit:b174ad91-982a-487c-b86a-a73294845477",
+              "value": "unit:5485761b-9cc4-449c-b199-2ccbb9bc9c1e",
               "label": "TM-01 · Unit TM-01 — Test Cages · Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
+               "data-group": "a7500093-8eb0-42fd-9d51-4cc024f0ca92"
               }
              }
             ]
@@ -19475,11 +19477,11 @@
             "label": "Utstyr",
             "options": [
              {
-              "value": "equipment:8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "equipment:13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD) — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+               "data-group": "d304efb5-1547-4203-a0ad-ea6510e45af1"
               }
              }
             ]
@@ -19756,9 +19758,8 @@
      },
      {
       "kind": "rows",
-      "action": "/operations/tasks/recurring/47410fad-a4fe-4093-8630-457704a35aee/checklist/",
+      "action": "/operations/tasks/recurring/1041789d-9d8d-4a25-a212-77a26add57c7/checklist/",
       "version": 2,
-      "rowKind": "checklist-row",
       "columns": [
        "Sjekklistepunkt"
       ],
@@ -19837,7 +19838,7 @@
           },
           {
            "name": "checklist-0-series",
-           "value": "47410fad-a4fe-4093-8630-457704a35aee"
+           "value": "1041789d-9d8d-4a25-a212-77a26add57c7"
           }
          ],
          "errors": []
@@ -19891,7 +19892,7 @@
          },
          {
           "name": "checklist-__prefix__-series",
-          "value": "47410fad-a4fe-4093-8630-457704a35aee"
+          "value": "1041789d-9d8d-4a25-a212-77a26add57c7"
          }
         ]
        }
@@ -19902,7 +19903,7 @@
    }
   ],
   "delete": {
-   "href": "/operations/tasks/recurring/47410fad-a4fe-4093-8630-457704a35aee/delete/",
+   "href": "/operations/tasks/recurring/1041789d-9d8d-4a25-a212-77a26add57c7/delete/",
    "label": "Slett gjentakende oppgave"
   },
   "history": {
@@ -19917,7 +19918,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "2642b00c-4e86-48d4-9be2-590c280627fd",
+     "key": "1dbf4cdd-3309-49e6-b606-f559cd0ed548",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -19949,7 +19950,7 @@
     },
     {
      "name": "entry_key",
-     "value": "21b8694a-d2a4-4028-959a-4b7802cd6d54",
+     "value": "03e72abe-e87c-49cf-9217-1a55689d2f9e",
      "kind": "hidden"
     }
    ],
@@ -20024,7 +20025,7 @@
             "label": null,
             "options": [
              {
-              "value": "381ee422-e01a-4993-819b-ace98caff58e",
+              "value": "1912784a-f072-418a-94bc-32aaccadd569",
               "label": "Atlantic salmon (SAL)",
               "selected": false,
               "attrs": {}
@@ -20074,7 +20075,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -20085,7 +20086,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -20308,7 +20309,7 @@
  },
  "ExperimentResource edit": {
   "form": {
-   "action": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/",
+   "action": "/research/experiments/a73dfdc6-30ca-4311-a359-563cd80e6eec/",
    "multipart": false,
    "hidden": [
     {
@@ -20363,7 +20364,7 @@
           "kind": "select",
           "name": "species",
           "value": [
-           "381ee422-e01a-4993-819b-ace98caff58e"
+           "1912784a-f072-418a-94bc-32aaccadd569"
           ],
           "attrs": {
            "disabled": true,
@@ -20386,7 +20387,7 @@
             "label": null,
             "options": [
              {
-              "value": "381ee422-e01a-4993-819b-ace98caff58e",
+              "value": "1912784a-f072-418a-94bc-32aaccadd569",
               "label": "Atlantic salmon (SAL)",
               "selected": true,
               "attrs": {
@@ -20413,7 +20414,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+           "d304efb5-1547-4203-a0ad-ea6510e45af1"
           ],
           "attrs": {
            "disabled": true,
@@ -20436,7 +20437,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": true,
               "attrs": {
@@ -20449,7 +20450,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -20681,19 +20682,19 @@
      },
      {
       "kind": "link",
-      "href": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/start/",
+      "href": "/research/experiments/a73dfdc6-30ca-4311-a359-563cd80e6eec/start/",
       "label": "Start forsøket",
       "icon": null
      },
      {
       "kind": "link",
-      "href": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/copy/",
+      "href": "/research/experiments/a73dfdc6-30ca-4311-a359-563cd80e6eec/copy/",
       "label": "Kopier som nytt forsøk",
       "icon": null
      },
      {
       "kind": "link",
-      "href": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/copy/?as=template",
+      "href": "/research/experiments/a73dfdc6-30ca-4311-a359-563cd80e6eec/copy/?as=template",
       "label": "Lagre som mal",
       "icon": null
      },
@@ -20703,7 +20704,7 @@
      },
      {
       "kind": "form",
-      "action": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/design/",
+      "action": "/research/experiments/a73dfdc6-30ca-4311-a359-563cd80e6eec/design/",
       "label": "Design",
       "hidden": [
        {
@@ -20751,7 +20752,7 @@
           "hidden": [
            {
             "name": "factors-0-id",
-            "value": "1ae2a533-e807-4cf0-9540-43afcb3f90ce"
+            "value": "26c8fb42-cf77-4c10-8024-c830322e308d"
            }
           ],
           "errors": [],
@@ -20924,7 +20925,7 @@
           "hidden": [
            {
             "name": "groups-0-id",
-            "value": "e139999a-e78b-4055-9d0b-7243647d9a29"
+            "value": "729f2ba7-204d-462a-a2a6-37b2f6b3fbd9"
            }
           ],
           "errors": [],
@@ -21320,7 +21321,7 @@
      },
      {
       "kind": "form",
-      "action": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/places/",
+      "action": "/research/experiments/a73dfdc6-30ca-4311-a359-563cd80e6eec/places/",
       "label": "Plassering",
       "hidden": [
        {
@@ -21366,7 +21367,7 @@
              "label": "Kar",
              "options": [
               {
-               "value": "tank:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+               "value": "tank:c4ffddc0-9318-48c3-869b-59bfd727357a",
                "label": "TT-01 · Unit TT-01",
                "selected": false,
                "attrs": {}
@@ -21377,7 +21378,7 @@
              "label": "Systemer",
              "options": [
               {
-               "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
+               "value": "system:81f997fd-4c40-4361-9a1a-16c0818ae67a",
                "label": "TL1 · Test Loop 1",
                "selected": false,
                "attrs": {}
@@ -21401,7 +21402,7 @@
           "widget": {
            "kind": "number",
            "name": "seed",
-           "value": "381398994",
+           "value": "453311247",
            "attrs": {
             "min": 0,
             "max": 9223372036854775807,
@@ -21461,7 +21462,7 @@
           "hidden": [
            {
             "name": "places-0-replicate",
-            "value": "f0aff4ff-038e-472f-8a8c-ac473eb0bd2c"
+            "value": "c78b7b60-2d8e-4774-8fb3-03f38c0bff4d"
            }
           ],
           "errors": [],
@@ -21489,7 +21490,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+                  "value": "c4ffddc0-9318-48c3-869b-59bfd727357a",
                   "label": "TT-01 · Unit TT-01 · Test Loop 1",
                   "selected": false,
                   "attrs": {}
@@ -21537,7 +21538,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "d88a04b1-ff96-4660-9661-4188e2536554",
+                  "value": "81f997fd-4c40-4361-9a1a-16c0818ae67a",
                   "label": "TL1 · Test Loop 1",
                   "selected": false,
                   "attrs": {}
@@ -21602,7 +21603,7 @@
           "hidden": [
            {
             "name": "places-1-replicate",
-            "value": "2926d29d-c5d3-44a1-8a40-755798c5dbaf"
+            "value": "7f1845b0-d13e-4da2-b34e-1431ad0f8bab"
            }
           ],
           "errors": [],
@@ -21630,7 +21631,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+                  "value": "c4ffddc0-9318-48c3-869b-59bfd727357a",
                   "label": "TT-01 · Unit TT-01 · Test Loop 1",
                   "selected": false,
                   "attrs": {}
@@ -21678,7 +21679,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "d88a04b1-ff96-4660-9661-4188e2536554",
+                  "value": "81f997fd-4c40-4361-9a1a-16c0818ae67a",
                   "label": "TL1 · Test Loop 1",
                   "selected": false,
                   "attrs": {}
@@ -21795,9 +21796,8 @@
      },
      {
       "kind": "rows",
-      "action": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/team/",
+      "action": "/research/experiments/a73dfdc6-30ca-4311-a359-563cd80e6eec/team/",
       "version": 2,
-      "rowKind": "team-row",
       "columns": [
        "Person",
        "Rolle"
@@ -21982,7 +21982,7 @@
           },
           {
            "name": "team-0-experiment",
-           "value": "8cb38c19-4f6a-4696-810f-be8536660726"
+           "value": "a73dfdc6-30ca-4311-a359-563cd80e6eec"
           }
          ],
          "errors": []
@@ -22141,7 +22141,7 @@
          },
          {
           "name": "team-__prefix__-experiment",
-          "value": "8cb38c19-4f6a-4696-810f-be8536660726"
+          "value": "a73dfdc6-30ca-4311-a359-563cd80e6eec"
          }
         ]
        }
@@ -22152,7 +22152,7 @@
    }
   ],
   "delete": {
-   "href": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/delete/",
+   "href": "/research/experiments/a73dfdc6-30ca-4311-a359-563cd80e6eec/delete/",
    "label": "Slett forsøk"
   },
   "history": {
@@ -22167,7 +22167,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "2ff249f6-cb3b-4ae4-8b38-7fc1a38d4aa3",
+     "key": "d859dbc5-fca2-45b4-af97-89ec456d8c2b",
      "action": "Opprettet",
      "critical": false,
      "by": {
@@ -22210,7 +22210,7 @@
      ]
     },
     {
-     "key": "0d39e4f0-ed03-4ab0-9327-8cce0dc87e35",
+     "key": "c9eb6a94-302a-4d8e-8cc9-ae4321cf1502",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -22228,7 +22228,7 @@
      ]
     },
     {
-     "key": "d1dd06de-5550-48a3-b371-a00b8e9496f9",
+     "key": "14abd588-6984-4e0f-8f37-ad6a374bd619",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -22260,7 +22260,7 @@
     },
     {
      "name": "entry_key",
-     "value": "fa82fba5-0d49-428a-b3a6-52231b3c8e5e",
+     "value": "cd1f742b-1146-4bf4-8883-a0521f838414",
      "kind": "hidden"
     }
    ],
@@ -22532,7 +22532,7 @@
  },
  "MonitorBoardResource edit": {
   "form": {
-   "action": "/monitoring-boards/c0610ef1-c2be-4418-bb6a-2c6802429cb3/",
+   "action": "/monitoring-boards/b9d2d1fb-edc2-4461-a36e-b976cfc1cb86/",
    "multipart": false,
    "hidden": [
     {
@@ -22803,9 +22803,8 @@
      },
      {
       "kind": "rows",
-      "action": "/monitoring-boards/c0610ef1-c2be-4418-bb6a-2c6802429cb3/units/",
+      "action": "/monitoring-boards/b9d2d1fb-edc2-4461-a36e-b976cfc1cb86/units/",
       "version": 2,
-      "rowKind": "monitor-board-row",
       "columns": [
        "Enhet",
        "Mal"
@@ -22851,7 +22850,7 @@
             "kind": "select",
             "name": "units-0-unit",
             "value": [
-             "91b0eb55-e980-41b1-9c3e-a4ae28d336df"
+             "c4ffddc0-9318-48c3-869b-59bfd727357a"
             ],
             "attrs": {
              "id": "id_units-0-unit"
@@ -22872,7 +22871,7 @@
               "label": null,
               "options": [
                {
-                "value": "b174ad91-982a-487c-b86a-a73294845477",
+                "value": "5485761b-9cc4-449c-b199-2ccbb9bc9c1e",
                 "label": "Unit TM-01 (TM-01)",
                 "selected": false,
                 "attrs": {}
@@ -22883,7 +22882,7 @@
               "label": null,
               "options": [
                {
-                "value": "91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+                "value": "c4ffddc0-9318-48c3-869b-59bfd727357a",
                 "label": "Unit TT-01 (TT-01)",
                 "selected": true,
                 "attrs": {
@@ -23012,7 +23011,7 @@
           },
           {
            "name": "units-0-board",
-           "value": "c0610ef1-c2be-4418-bb6a-2c6802429cb3"
+           "value": "b9d2d1fb-edc2-4461-a36e-b976cfc1cb86"
           }
          ],
          "errors": []
@@ -23055,7 +23054,7 @@
              "label": null,
              "options": [
               {
-               "value": "b174ad91-982a-487c-b86a-a73294845477",
+               "value": "5485761b-9cc4-449c-b199-2ccbb9bc9c1e",
                "label": "Unit TM-01 (TM-01)",
                "selected": false,
                "attrs": {}
@@ -23066,7 +23065,7 @@
              "label": null,
              "options": [
               {
-               "value": "91b0eb55-e980-41b1-9c3e-a4ae28d336df",
+               "value": "c4ffddc0-9318-48c3-869b-59bfd727357a",
                "label": "Unit TT-01 (TT-01)",
                "selected": false,
                "attrs": {}
@@ -23193,7 +23192,7 @@
          },
          {
           "name": "units-__prefix__-board",
-          "value": "c0610ef1-c2be-4418-bb6a-2c6802429cb3"
+          "value": "b9d2d1fb-edc2-4461-a36e-b976cfc1cb86"
          }
         ]
        }
@@ -23204,7 +23203,7 @@
    }
   ],
   "delete": {
-   "href": "/monitoring-boards/c0610ef1-c2be-4418-bb6a-2c6802429cb3/delete/",
+   "href": "/monitoring-boards/b9d2d1fb-edc2-4461-a36e-b976cfc1cb86/delete/",
    "label": "Slett overvåkingspanel"
   },
   "history": {
@@ -23219,7 +23218,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "c617f22c-357f-4b81-841b-bdab646d7a82",
+     "key": "79b6a08c-0d8c-44a9-ad15-8b607aaeea02",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -23251,7 +23250,7 @@
     },
     {
      "name": "entry_key",
-     "value": "e7384562-f9eb-48b6-8224-8e20481bae93",
+     "value": "f40a1e2a-8259-48b7-b226-a386ef4f75fe",
      "kind": "hidden"
     }
    ],
@@ -23303,7 +23302,7 @@
             "label": null,
             "options": [
              {
-              "value": "933cf3c5-810d-4e7f-aac9-7c75c00fcbc1",
+              "value": "016ecb92-3755-443e-9f0c-e90ef21ff870",
               "label": "Test broker",
               "selected": false,
               "attrs": {}
@@ -23390,7 +23389,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -23401,7 +23400,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -23450,7 +23449,7 @@
             "label": null,
             "options": [
              {
-              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {}
@@ -23609,7 +23608,7 @@
             "label": null,
             "options": [
              {
-              "value": "ae7bf4a0-2085-45ef-8f01-ecec0bb0c7a4",
+              "value": "fd784fae-73e0-4196-9ddd-aa3c46099ffd",
               "label": "Test format",
               "selected": false,
               "attrs": {}
@@ -23718,7 +23717,7 @@
             "label": null,
             "options": [
              {
-              "value": "450bc34b-c28e-4b7c-988c-f57f5b42b45e",
+              "value": "619c9f1c-545b-4a64-b6ba-cd756570c7ea",
               "label": "test-gateway",
               "selected": false,
               "attrs": {}
@@ -23753,7 +23752,7 @@
  },
  "DeviceResource edit": {
   "form": {
-   "action": "/sensors/devices/748aef17-7ad2-48a4-892c-99c236ba7dbc/",
+   "action": "/sensors/devices/c5c26310-27fb-4c9c-9610-64cb6c1c388f/",
    "multipart": false,
    "hidden": [
     {
@@ -23786,7 +23785,7 @@
           "kind": "select",
           "name": "connection",
           "value": [
-           "933cf3c5-810d-4e7f-aac9-7c75c00fcbc1"
+           "016ecb92-3755-443e-9f0c-e90ef21ff870"
           ],
           "attrs": {
            "disabled": true,
@@ -23808,7 +23807,7 @@
             "label": null,
             "options": [
              {
-              "value": "933cf3c5-810d-4e7f-aac9-7c75c00fcbc1",
+              "value": "016ecb92-3755-443e-9f0c-e90ef21ff870",
               "label": "Test broker",
               "selected": true,
               "attrs": {
@@ -23873,7 +23872,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
+           "d304efb5-1547-4203-a0ad-ea6510e45af1"
           ],
           "attrs": {
            "required": true,
@@ -23895,7 +23894,7 @@
             "label": null,
             "options": [
              {
-              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
+              "value": "d304efb5-1547-4203-a0ad-ea6510e45af1",
               "label": "Test Site North (TSN)",
               "selected": true,
               "attrs": {
@@ -23908,7 +23907,7 @@
             "label": null,
             "options": [
              {
-              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
+              "value": "a7500093-8eb0-42fd-9d51-4cc024f0ca92",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -23957,7 +23956,7 @@
             "label": null,
             "options": [
              {
-              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
+              "value": "13d08525-a132-4e74-a0b5-428272470c3d",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {}
@@ -24092,7 +24091,7 @@
           "kind": "select",
           "name": "payload_format",
           "value": [
-           "ae7bf4a0-2085-45ef-8f01-ecec0bb0c7a4"
+           "fd784fae-73e0-4196-9ddd-aa3c46099ffd"
           ],
           "attrs": {
            "required": true,
@@ -24114,7 +24113,7 @@
             "label": null,
             "options": [
              {
-              "value": "ae7bf4a0-2085-45ef-8f01-ecec0bb0c7a4",
+              "value": "fd784fae-73e0-4196-9ddd-aa3c46099ffd",
               "label": "Test format",
               "selected": true,
               "attrs": {
@@ -24225,7 +24224,7 @@
             "label": null,
             "options": [
              {
-              "value": "450bc34b-c28e-4b7c-988c-f57f5b42b45e",
+              "value": "619c9f1c-545b-4a64-b6ba-cd756570c7ea",
               "label": "test-gateway",
               "selected": false,
               "attrs": {}
@@ -24293,13 +24292,13 @@
       ],
       "rows": [
        {
-        "key": "81c54c3a-5ec5-4a0c-95cf-3702f8302369",
+        "key": "769778a4-bf87-49e4-8f3e-c7f160c74502",
         "status": null,
         "voided": false,
         "cells": {
          "channel": {
           "text": "TEST-T",
-          "href": "/sensors/channels/81c54c3a-5ec5-4a0c-95cf-3702f8302369/",
+          "href": "/sensors/channels/769778a4-bf87-49e4-8f3e-c7f160c74502/",
           "strong": true,
           "chip": null,
           "chips": [],
@@ -24358,7 +24357,7 @@
      },
      {
       "kind": "link",
-      "href": "/sensors/devices/move/?device=748aef17-7ad2-48a4-892c-99c236ba7dbc",
+      "href": "/sensors/devices/move/?device=c5c26310-27fb-4c9c-9610-64cb6c1c388f",
       "label": "Flytt apparat",
       "icon": "target"
      },
@@ -24370,7 +24369,7 @@
    }
   ],
   "delete": {
-   "href": "/sensors/devices/748aef17-7ad2-48a4-892c-99c236ba7dbc/delete/",
+   "href": "/sensors/devices/c5c26310-27fb-4c9c-9610-64cb6c1c388f/delete/",
    "label": "Slett apparat"
   },
   "history": {
@@ -24398,7 +24397,7 @@
     },
     {
      "name": "entry_key",
-     "value": "c5d76085-4bc0-4cda-b1ee-3d18233d9883",
+     "value": "9cc4a3b2-6462-4795-8d73-4fe5d4147ffb",
      "kind": "hidden"
     }
    ],
@@ -24450,7 +24449,7 @@
             "label": null,
             "options": [
              {
-              "value": "748aef17-7ad2-48a4-892c-99c236ba7dbc",
+              "value": "c5c26310-27fb-4c9c-9610-64cb6c1c388f",
               "label": "Probe TEST-1 (TEST-1)",
               "selected": false,
               "attrs": {}
@@ -25394,7 +25393,7 @@
  },
  "ChannelResource edit": {
   "form": {
-   "action": "/sensors/channels/81c54c3a-5ec5-4a0c-95cf-3702f8302369/",
+   "action": "/sensors/channels/769778a4-bf87-49e4-8f3e-c7f160c74502/",
    "multipart": false,
    "hidden": [
     {
@@ -25427,7 +25426,7 @@
           "kind": "select",
           "name": "device",
           "value": [
-           "748aef17-7ad2-48a4-892c-99c236ba7dbc"
+           "c5c26310-27fb-4c9c-9610-64cb6c1c388f"
           ],
           "attrs": {
            "disabled": true,
@@ -25449,7 +25448,7 @@
             "label": null,
             "options": [
              {
-              "value": "748aef17-7ad2-48a4-892c-99c236ba7dbc",
+              "value": "c5c26310-27fb-4c9c-9610-64cb6c1c388f",
               "label": "Probe TEST-1 (TEST-1)",
               "selected": true,
               "attrs": {
@@ -26332,9 +26331,8 @@
      },
      {
       "kind": "rows",
-      "action": "/sensors/channels/81c54c3a-5ec5-4a0c-95cf-3702f8302369/calibrations/",
+      "action": "/sensors/channels/769778a4-bf87-49e4-8f3e-c7f160c74502/calibrations/",
       "version": 2,
-      "rowKind": "calibration-row",
       "columns": [
        "Fra",
        "Forsterkning",
@@ -26494,7 +26492,7 @@
           },
           {
            "name": "calibrations-0-channel",
-           "value": "81c54c3a-5ec5-4a0c-95cf-3702f8302369"
+           "value": "769778a4-bf87-49e4-8f3e-c7f160c74502"
           }
          ],
          "errors": []
@@ -26625,7 +26623,7 @@
          },
          {
           "name": "calibrations-__prefix__-channel",
-          "value": "81c54c3a-5ec5-4a0c-95cf-3702f8302369"
+          "value": "769778a4-bf87-49e4-8f3e-c7f160c74502"
          }
         ]
        }
@@ -26636,7 +26634,7 @@
    }
   ],
   "delete": {
-   "href": "/sensors/channels/81c54c3a-5ec5-4a0c-95cf-3702f8302369/delete/",
+   "href": "/sensors/channels/769778a4-bf87-49e4-8f3e-c7f160c74502/delete/",
    "label": "Slett kanal"
   },
   "history": {
@@ -26651,7 +26649,7 @@
    "empty_value": "tom",
    "entries": [
     {
-     "key": "e4640251-0247-4d72-88ce-42e10e16a312",
+     "key": "58157bf8-2551-4db4-8718-3ef789f3847d",
      "action": "Endret",
      "critical": false,
      "by": {
@@ -26683,7 +26681,7 @@
     },
     {
      "name": "entry_key",
-     "value": "e24e0e97-691d-4089-aa2d-7555614edcec",
+     "value": "0e9dac5a-cec5-4560-9f82-baeba35b140a",
      "kind": "hidden"
     }
    ],
@@ -26768,7 +26766,7 @@
  },
  "CredentialResource edit": {
   "form": {
-   "action": "/sensors/credentials/450bc34b-c28e-4b7c-988c-f57f5b42b45e/",
+   "action": "/sensors/credentials/619c9f1c-545b-4a64-b6ba-cd756570c7ea/",
    "multipart": false,
    "hidden": [
     {
@@ -26865,7 +26863,7 @@
      },
      {
       "kind": "post",
-      "action": "/sensors/credentials/450bc34b-c28e-4b7c-988c-f57f5b42b45e/rotate/",
+      "action": "/sensors/credentials/619c9f1c-545b-4a64-b6ba-cd756570c7ea/rotate/",
       "label": "Bytt hemmeligheten",
       "primary": false,
       "fields": [
@@ -26879,7 +26877,7 @@
    }
   ],
   "delete": {
-   "href": "/sensors/credentials/450bc34b-c28e-4b7c-988c-f57f5b42b45e/delete/",
+   "href": "/sensors/credentials/619c9f1c-545b-4a64-b6ba-cd756570c7ea/delete/",
    "label": "Slett sensorlegitimasjon"
   },
   "history": {

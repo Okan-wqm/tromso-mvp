@@ -150,7 +150,7 @@ function drawn(tab: Page, root = '.monitor-grid'): Promise<Drawn> {
     const shapes = Array.from(document.querySelectorAll(`${selector} .monitor-shape`)).filter((shape) => (shape as HTMLElement).offsetParent);
     return {
       cards: cards.length,
-      links: cards.filter((card) => card.querySelector('a.monitor-water[href$="/water/"]')).length,
+      links: cards.filter((card) => card.querySelector('a.monitor-water-link[href$="/water/"]')).length,
       states: cards.map((card) => card.querySelector('.monitor-state-word')?.textContent ?? ''),
       glyphs: shapes.filter((shape) => getComputedStyle(shape).maskImage.startsWith('url(')).length,
       bare: shapes.filter((shape) => { const box = shape.getBoundingClientRect(); return box.width < 6 || box.height < 6; }).length,
@@ -217,7 +217,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
         const pane = await drawn(tab, '.monitor-dock');
         assert.equal(pane.cards, 1);
         assert.equal(pane.links, 1, 'the pane\'s card links its tank\'s water');
-        assert.equal(await tab.locator('.monitor-dock a.monitor-water[id^="pane-water-"]').count(), 1, 'its own id');
+        assert.equal(await tab.locator('.monitor-dock a.monitor-water-link[id^="pane-water-"]').count(), 1, 'its own id');
         assert.deepEqual(await lowContrast(tab), [], 'card text under 4.5:1');
         assert.deepEqual(await axeFindings(tab, origin), [], 'axe');
         assert.deepEqual(violations, [], 'CSP violations');
@@ -244,7 +244,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
           }
           return { scrolls: document.documentElement.scrollHeight > window.innerHeight + 1
                      || document.documentElement.scrollWidth > window.innerWidth + 1,
-                   smallest, links: cards.filter((card) => card.querySelector('a.monitor-water')).length, cards: cards.length };
+                   smallest, links: cards.filter((card) => card.querySelector('a.monitor-water-link')).length, cards: cards.length };
         });
         assert.equal(seen.scrolls, false, 'the wall is one screen');
         assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
@@ -267,7 +267,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
       await now();
       await tab.waitForFunction(() => document.querySelector('#monitor-announce [aria-live="assertive"]')?.textContent !== '');
       assert.equal(await assertive.textContent(), 'TW-01 is now Critical.');
-      assert.equal(await tab.locator('.monitor-grid > .monitor-card.monitor-critical a.monitor-water').count() >= 2, true,
+      assert.equal(await tab.locator('.monitor-grid > .monitor-card.monitor-critical a.monitor-water-link').count() >= 2, true,
         'the worse card is merged in, with its link');
       mode = 'fail';
       await now();

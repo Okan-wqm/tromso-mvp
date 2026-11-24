@@ -3,4 +3,4 @@
    chemistry. On the Small card (`icon_only`) it is its icon, its words read by a screen reader only; on a full-height
    card and a card that flows, icon and words. The page needs the same right as the cards (farm.stock.views.VIEW), so
    every card has it; the designer's preview has none. `row.ns`: the pane's card is a second
-   card of its unit on the page. {% endcomment %}<a class="monitor-water" id="{{ row.ns }}water-{{ unit.pk }}" href="{% url 'farm:tank_water' unit.pk %}" title="{% blocktrans trimmed with unit=unit.code %}Water history of {{ unit }}{% endblocktrans %}">{% include "icons/_icon.html" with name="chart-line" %}<span class="monitor-water-word{% if icon_only %} sr-only{% endif %}">{% trans "Water history" %}</span></a>
+   card of its unit on the page. {% endcomment %}<a class="monitor-water-link" id="{{ row.ns }}water-{{ unit.pk }}" href="{% url 'farm:tank_water' unit.pk %}" title="{% blocktrans trimmed with unit=unit.code %}Water history of {{ unit }}{% endblocktrans %}">{% include "icons/_icon.html" with name="chart-line" %}<span class="monitor-water-word{% if icon_only %} sr-only{% endif %}">{% trans "Water history" %}</span></a>

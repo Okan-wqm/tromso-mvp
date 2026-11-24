@@ -335,9 +335,9 @@ html[data-wall] .monitor-grid:has(> .is-fit):is([data-poll-state="stale"], [data
 /* ---- the link from a card to its tank's water history (templates/monitoring/_water_link.html: Tank › Water) -----------
    The chart icon at the size of the text it stands in, and its words where the card has room (on the Small card they are
    for a screen reader only); the action's colour, underlined on hover and focus. */
-.monitor-water { display: inline-flex; flex: none; align-items: center; gap: .3em; color: var(--action); text-decoration: none; white-space: nowrap; }
-.monitor-water .icon { width: 1.1em; height: 1.1em; }
-.monitor-water:is(:hover, :focus-visible) .monitor-water-word { text-decoration: underline; }
+.monitor-water-link { display: inline-flex; flex: none; align-items: center; gap: .3em; color: var(--action); text-decoration: none; white-space: nowrap; }
+.monitor-water-link .icon { width: 1.1em; height: 1.1em; }
+.monitor-water-link:is(:hover, :focus-visible) .monitor-water-word { text-decoration: underline; }
 
 /* ---- forced colours (Windows high contrast): the state's shape, border and the bars keep their meaning ---------- */
 @media (forced-colors: active) {

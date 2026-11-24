@@ -2,8 +2,8 @@
 {% load i18n %}
 {# The supplier form adds its contact persons to its Contact tab. #}
 {% block extra_panels %}
-{% trans "The people to contact at the supplier: sales, orders, technical support, the vet on call. At most one can be the primary contact. Contacts are saved separately from the supplier details." as help %}
-{% trans "Contacts can be added once the supplier is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
 {% if object %}{% url 'farm:supplier_contacts' object.pk as action %}{% endif %}
-{% include "farm/_contacts.html" %}
+{% include "farm/_contacts.html" with words=row_words.contacts %}
 {% endblock %}

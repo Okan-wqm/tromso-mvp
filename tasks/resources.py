@@ -87,10 +87,10 @@ class TaskResource(Resource):
         if not extra.get('checklist_started'):
             return formpanels.row_list_panels(cls, view, task, extra)
         from .templatetags.tasks import person
-        return [formpanels.panel('checklist', _('Checklist'), [
+        return [formpanels.panel('checklist', TaskChecklist.title, [
             formpanels.help_text(_('The checklist has been started: its lines can no longer be changed. Add a note '
                                    'instead.')),
-            formpanels.checks(_('Checklist'), [
+            formpanels.checks(TaskChecklist.title, [
                 (line.text, line.done_at is not None, f'{person(line.done_by)} · '
                  f'{formpanels.moment(line.done_at, task.place_site)}' if line.done_at else '')
                 for line in extra.get('checklist_lines', ())])])]

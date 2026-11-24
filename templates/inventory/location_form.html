@@ -1,14 +1,14 @@
 {% extends "crud/form.html" %}
 {% load i18n %}
 {# A storage location's form adds its reorder levels on a tab of their own, saved as a list (core.crud.RowList). #}
-{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="reorder">{% trans "Reorder levels" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="reorder">{{ row_words.reorder.title }}</button>{% endblock %}
 {% block extra_panels %}
-{% trans "Reorder levels" as panel_title %}
-{% trans "Below the reorder level of a feed in this location, the Storage overview says the stock is low. One row per feed. They are saved separately from the location details." as help %}
-{% trans "No reorder levels yet. Use “Add feed” to add a row." as empty %}
-{% trans "Add feed" as add %}
-{% trans "Save reorder levels" as save %}
-{% trans "Reorder levels can be set once the location is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
+{# #}
+{# #}
+{# #}
+{# #}
 {% if object %}{% url 'inventory:storagelocation_reorder' object.pk as action %}{% endif %}
-{% include "crud/_row_list.html" with rows=reorder tab="reorder" legend=panel_title kind="reorder-row" %}
+{% include "crud/_row_list.html" with rows=reorder tab="reorder" words=row_words.reorder kind="reorder-row" %}
 {% endblock %}

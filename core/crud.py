@@ -787,8 +787,11 @@ class FormView(ResourceView):
                     history_url=f"{reverse('core:activity_log')}?type={quote(r.entity_type(), safe='/')}&q={quote(str(obj), safe='/')}"
                     if obj is not None else '', open_tab=extra.get('open_tab', ''), panels=panels,
                     question=formpanels.question(extra.get('withdrawal_change')) if extra.get('question_template') else None)))
+        # The words of the tab's row lists (RowList.words): one source for both looks, read by crud/_row_list.html and
+        # farm/_contacts.html as `row_words.<key>`.
+        row_words = {rows.key: formpanels.template_words(formpanels.list_words(rows, obj)) for rows in r.row_lists}
         return render_page(self.request, r.form_template, self.context(
-            form=form, object=obj, history=history, form_action=action, **extra))
+            form=form, object=obj, history=history, form_action=action, row_words=row_words, **extra))
 
     def draft_page(self, form, obj=None):
         """The form rendered again from a draft (TabbedForm.refresh_on), open on the tab of the field

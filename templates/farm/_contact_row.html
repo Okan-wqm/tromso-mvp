@@ -1,11 +1,11 @@
 {% load i18n %}<fieldset class="contact-row" data-row>
-  <legend class="sr-only">{% trans "Contact" %}</legend>
+  <legend class="sr-only">{{ words.legend }}</legend>
   {% for hidden in row.hidden_fields %}{{ hidden }}{% endfor %}
   {% for field in row.visible_fields %}
   {% if field.name == "is_primary" %}
-  <label class="check">{{ field }} {% trans "Primary" %}</label>
+  <label class="check">{{ field }} {{ words.fields.is_primary }}</label>
   {% elif field.name == "DELETE" %}
-  <label class="check check-remove">{{ field }} {% trans "Remove" %}</label>
+  <label class="check check-remove">{{ field }} {{ words.fields.DELETE }}</label>
   {% else %}
   <div class="field{% if field.errors %} has-error{% endif %}">
     <label class="sr-only" for="{{ field.id_for_label }}">{{ field.label }}</label>

@@ -35,6 +35,7 @@ class HangingTransport(Transport):
     """A push service that does not answer until the test lets it."""
 
     channel = 'push'
+    max_chars = 4000
     release = threading.Event()
     entered = threading.Event()
 
@@ -46,6 +47,7 @@ class HangingTransport(Transport):
 
 class RaisingTransport(Transport):
     channel = 'push'
+    max_chars = 4000
 
     def send(self, notification):
         raise RuntimeError('the push library broke')

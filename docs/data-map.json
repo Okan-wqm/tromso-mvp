@@ -772,7 +772,8 @@
         "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py",
-        "alarms/tests/test_review_recheck.py"
+        "alarms/tests/test_review_recheck.py",
+        "alarms/tests/test_review_size.py"
       ]
     },
     {
@@ -1135,6 +1136,7 @@
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_size.py",
         "alarms/tests/test_snooze.py"
       ]
     },
@@ -1201,7 +1203,8 @@
         "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py",
-        "alarms/tests/test_review_recheck.py"
+        "alarms/tests/test_review_recheck.py",
+        "alarms/tests/test_review_size.py"
       ]
     },
     {
@@ -2057,6 +2060,7 @@
         "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_size.py",
         "alarms/tests/test_snooze.py"
       ]
     },

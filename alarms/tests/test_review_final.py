@@ -165,7 +165,7 @@ class OpenCriticalsAreNeverCoveredTests(FinalCase):
 
     def test_the_follow_up_time_is_the_critical_rules_and_none_sends_each_at_once(self):
         self.assertEqual(outbox.alarm_rules.current().follow_up('critical'), timedelta(seconds=5))
-        for severity, seconds in (('critical', 31), ('warning', 1)):
+        for severity, seconds in (('critical', 9), ('warning', 1)):
             with self.subTest(severity=severity), self.assertRaises(DatabaseError), transaction.atomic():
                 SeverityPolicy.objects.filter(severity=severity).update(follow_up_seconds=seconds)
         SeverityPolicy.objects.filter(severity='critical').update(follow_up_seconds=0)

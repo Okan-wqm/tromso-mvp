@@ -105,7 +105,7 @@ A transport took a notification (sent) or failed to (failed, with what it said),
 - **read**: alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_delivery_attempts
 - **constraints**: chk_alarm_delivery_attempts_outcome (check); uq_alarm_delivery_attempts_sent_once (unique: notification)
-- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_floods.py` and 5 more
+- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_floods.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -148,7 +148,7 @@ The outbox: one alarm for one person through one channel at one level, queued by
 - **read**: alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_notifications
 - **constraints**: uq_alarm_notifications_once (unique: alarm, recipient, channel, level); uq_alarm_notifications_snooze_once (unique: shelve, recipient, channel, kind); chk_alarm_notifications_kind (check); chk_alarm_notifications_channel (check); chk_alarm_notifications_level (check)
-- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_clock.py`, `alarms/tests/test_cross_review.py` and 7 more
+- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_clock.py`, `alarms/tests/test_cross_review.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -172,7 +172,7 @@ A notification still to be sent: the outbox's queue (alarms/outbox.py), written 
 - **delete**: none, by design: removed by the outbox once the notification is sent, covered by a flood message or given up
 - **read**: none, by design: the outbox's own queue (alarms/outbox.py); the notifications are on their alarm's page
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_outbox
-- **tests that mention it**: `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_review_final.py`, `alarms/tests/test_review_fixes.py` and 2 more
+- **tests that mention it**: `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_review_final.py`, `alarms/tests/test_review_fixes.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -225,7 +225,7 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Alarms › alarm_severity_policies
 - **forms**: `SeverityPolicyForm`
 - **constraints**: uq_alarm_severity_policies_severity (unique: severity); chk_alarm_severity_policies_severity (check); chk_alarm_severity_policies_delays (check); chk_alarm_severity_policies_on_delay (check); chk_alarm_severity_policies_escalation (check); chk_alarm_severity_policies_attempts (check); chk_alarm_severity_policies_retry (check); chk_alarm_severity_policies_shelve (check); chk_alarm_severity_policies_flood (check); chk_alarm_severity_policies_flood_window (check); chk_alarm_severity_policies_follow_up (check); chk_alarm_severity_policies_clock (check); chk_alarm_severity_policies_clock_window (check); chk_alarm_severity_policies_kept (check)
-- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `alarms/tests/test_alarms.py` and 10 more
+- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `alarms/tests/test_alarms.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

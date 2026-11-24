@@ -71,7 +71,7 @@ WRITES_ALLOWED = {
                                    'data-layering audit, L-2)'),
     'hr/roles.py': (1, 'the two role presets of manage.py hr_roles, each logged as the roles tab logs a new role '
                        '(L-3)'),
-    'sensors/demo.py': (12, "the development tool's demo configuration (core/management/devtool.py: refused outside "
+    'sensors/demo.py': (7, "the development tool's demo configuration (core/management/devtool.py: refused outside "
                             'development)'),
 }
 
@@ -92,7 +92,7 @@ READS_ALLOWED = {
     ('experiments/read.py', 'StockMovement'): 6,
     ('farm/feeding/read.py', 'StockMovement'): 4,
     ('farm/forms/feeding_protocol.py', 'StockMovement'): 2,
-    ('farm/forms/health.py', 'HealthEvent'): 3,
+    ('farm/forms/health.py', 'HealthEvent'): 1,
     ('farm/forms/stock.py', 'HealthEvent'): 1,
     ('farm/harvest/read.py', 'StockMovement'): 2,
     ('farm/harvest/views.py', 'StockMovement'): 3,
@@ -112,7 +112,6 @@ READS_ALLOWED = {
     ('farm/resources/species.py', 'StockMovement'): 2,
     ('farm/stock/integrity.py', 'WithdrawalAcknowledgement'): 2,
     ('farm/stock/services.py', 'HealthEvent'): 2,
-    ('farm/stock/views.py', 'HealthEvent'): 4,
     ('inventory/read.py', 'FeedingRecord'): 6,
     ('reports/compute/biomass.py', 'FeedingRecord'): 1,
     ('reports/compute/cleaner.py', 'FeedingRecord'): 1,

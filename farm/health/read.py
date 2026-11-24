@@ -11,10 +11,10 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import OuterRef, Subquery, Sum
+from django.db.models import OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
 
-from farm.models import HealthEvent, LiceCount, StockMovement, Treatment
+from farm.models import HealthEvent, LiceCount, StockMovement, Tank, Treatment
 from farm.models.stock import MovementKind
 from farm.stock.dates import local_today
 
@@ -161,9 +161,28 @@ def recent_treatments(units, days=RECENT_DAYS):
     return found
 
 
+# ---- which health events concern a unit -------------------------------------------------------------------------------
+# THE rule (the data-layering audit, L-9): an event concerns a unit when it is of the unit's site and names the unit or
+# names no unit (the whole site). `concerns` says it of one event and one unit, `concerning` as a query; every list of
+# events for a unit (its drawer, a mortality's or a cull's choice, a treatment's choice) is one of these.
+def concerns(named_unit_ids, unit_id):
+    """Whether an event of the unit's site that names `named_unit_ids` concerns the unit."""
+    return not named_unit_ids or unit_id in named_unit_ids
+
+
+def concerning(unit_ids, closed_since=None):
+    """The live health events that concern any of the units (`unit_ids`: ids, or a query of them), open ones, and with
+    `closed_since` those closed on or after that day too: a queryset, one row per event, in one query."""
+    sites = Tank.all_objects.filter(pk__in=unit_ids).values('production_department__site_id')
+    still = Q(closed_on__isnull=True) if closed_since is None else Q(closed_on__isnull=True) | Q(
+        closed_on__gte=closed_since)
+    return (HealthEvent.objects.filter(site_id__in=sites).filter(still)
+            .filter(Q(units__in=unit_ids) | Q(units__isnull=True)).distinct())
+
+
 def open_events(units):
-    """{unit id: [HealthEvent]} of every unit given: the open health events of its site that name it or name no unit
-    (the whole site), in the events' own order. Two queries for all the units."""
+    """{unit id: [HealthEvent]} of every unit given: the open health events that concern it (`concerns`), in the
+    events' own order. Two queries for all the units."""
     found = {unit.pk: [] for unit in units}
     by_site = defaultdict(list)
     for unit in units:
@@ -174,7 +193,7 @@ def open_events(units):
     for event in HealthEvent.objects.filter(site_id__in=by_site, closed_on__isnull=True).prefetch_related('units'):
         named = {unit.pk for unit in event.units.all()}
         for unit in by_site[event.site_id]:
-            if not named or unit.pk in named:
+            if concerns(named, unit.pk):
                 found[unit.pk].append(event)
     return found
 

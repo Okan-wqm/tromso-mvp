@@ -18,7 +18,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -30,14 +30,14 @@ from core.crud import DRAFT, done, render_page
 from core.platform import correction_window_days
 
 from ..feeding import read as feeding_read, views as feeding_views
-from ..health import views as health_views
+from ..health import read as health_read, views as health_views
 from ..forms.stock import (
     BatchDetailsForm, BatchInputForm, CullForm, DeliveryForm, EscapeForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm,
     PlannedForm, StockVoidForm, TransferForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
 from .. import placements
-from ..models import Batch, HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
+from ..models import Batch, HandlingPlanItem, StockMovement, StockOperation, Tank
 from ..models.stock import takes_fish
 from ..templatetags.stock import fish, number, tonnes
 from ..water import views as water_views
@@ -409,10 +409,7 @@ def _events(request, unit):
     (None otherwise): the live ones of its site that concern it, open or closed within the backdating window."""
     if not request.user.has_perm('farm.view_healthevent') or unit.production_department.site is None:
         return None
-    events = (HealthEvent.objects.filter(site=unit.production_department.site)
-              .filter(Q(closed_on__isnull=True) | Q(closed_on__gte=services.earliest(unit)))
-              .filter(Q(units=unit) | Q(units__isnull=True)).distinct())
-    return events.order_by('-date', '-created_at')
+    return health_read.concerning([unit.pk], closed_since=services.earliest(unit)).order_by('-date', '-created_at')
 
 
 def _plan(request, unit, form_class):

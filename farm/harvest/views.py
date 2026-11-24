@@ -126,9 +126,3 @@ def drawer(request, unit, stock):
         context['plan_list_url'] = f'{reverse("farm:handlingplanitem_list")}?{urlencode({"unit": unit.pk})}'
     return context
 
-
-def withdrawals(units):
-    """{unit id: [WithdrawalBlock]} of the units with a medicine withdrawal in force today, for the row badge;
-    empty when no provider is registered."""
-    found = check.in_force_of(units)
-    return {unit_id: blocks for unit_id, blocks in (found or {}).items() if blocks}

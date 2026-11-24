@@ -34,8 +34,8 @@ def label(record):
             f'{record.amount_kg.normalize():f} kg · {record.feed.code}')
 
 
-# Who may record a feeding and void one (farm/feeding/views.py asks the same); asked here too (the data-layering audit, L-6).
-RECORD, VOID = 'farm.add_feedingrecord', 'farm.delete_feedingrecord'
+# Who may read the feedings, record one and void one (the pages and the readers ask the same); asked here too (the data-layering audit, L-6).
+VIEW, RECORD, VOID = 'farm.view_feedingrecord', 'farm.add_feedingrecord', 'farm.delete_feedingrecord'
 
 
 def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, feeder=None, notes='', ack=False,

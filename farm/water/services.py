@@ -216,9 +216,9 @@ def _values(values):
     return {code: value for code, value in values.items() if value is not None}
 
 
-# Who may record a water sample and void one (farm/water/views.py asks the same); asked here too (the data-layering audit,
+# Who may read the water samples, record one and void one (the pages and the readers ask the same); asked here too (the data-layering audit,
 # L-6).
-RECORD, VOID = 'farm.add_watermeasurement', 'farm.delete_watermeasurement'
+VIEW, RECORD, VOID = 'farm.view_watermeasurement', 'farm.add_watermeasurement', 'farm.delete_watermeasurement'
 
 
 def record(user, *, point, measured_at, source, values, notes='', token=None, require_basis=False,

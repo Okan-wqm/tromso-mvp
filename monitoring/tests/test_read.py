@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from farm.feeding import read as feeding_read
-from farm.harvest import views as harvest_views
+from farm.handling import check
 from farm.models import HandlingPlanItem, HealthEvent
 from farm.tests.helpers import make_facility, stock_fish
 from farm.tests.test_stock import make_unit
@@ -324,7 +324,7 @@ class CardsTests(MonitoringCase):
         self.assertEqual(card.water[0], shown)
         self.assertEqual(card.water[0].get('temperature_c').value, D('13.2'))
         # the withdrawal: the harvest module's registry answer
-        self.assertEqual(card.withdrawal, tuple(harvest_views.withdrawals([self.t2]).get(self.t2.pk, ())))
+        self.assertEqual(card.withdrawal, tuple(check.in_force_now([self.t2]).get(self.t2.pk, ())))
 
     def test_a_withdrawal_in_force_is_on_the_card_exactly_as_production_units_has_it(self):
         from farm.handling.withdrawal import WithdrawalBlock

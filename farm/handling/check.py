@@ -271,6 +271,14 @@ def in_force_of(units, day=None):
             for unit_id, blocks in found.items()}
 
 
+def in_force_now(units):
+    """{unit id: [block]} of the units with a medicine withdrawal in force today, the units without one left out; empty
+    when no provider is registered. The one read of it for the pages and the readers (the production units' row badge,
+    the monitoring cards); it lived in a views module (the data-layering audit, L-10)."""
+    found = in_force_of(units)
+    return {unit_id: blocks for unit_id, blocks in (found or {}).items() if blocks}
+
+
 def held_apart(batch, named=None):
     """Whether a withdrawal of `batch` is kept apart from a harvest of the production fish beside it: its fish are
     cleaner fish (and it is not the batch the handling itself names). THE one place that says it (review F-05; the

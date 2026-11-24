@@ -782,9 +782,9 @@ def _input(user, *, species, input_stage, origin, day, lines, supplier=None, sup
                    size_mix_ack=size_mix_ack, token=token, new_batch=batch, opening=opening)
 
 
-# Who may record stock operations and void them (the pages ask the same: farm/stock/views.py). Every public writer below
+# Who may read stock operations, record them and void them (the pages and the readers ask the same). Every public writer below
 # asks itself (core.access.require), so a caller that is not a page cannot skip it (the data-layering audit, L-6).
-RECORD, VOID = 'farm.add_stockoperation', 'farm.delete_stockoperation'
+VIEW, RECORD, VOID = 'farm.view_stockoperation', 'farm.add_stockoperation', 'farm.delete_stockoperation'
 # The platform owner's right: the opening balance is theirs (it is the one record dated beyond the correction window).
 OPENING_PERM = 'core.change_platformsettings'
 

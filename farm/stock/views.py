@@ -37,6 +37,7 @@ from ..forms.stock import (
 )
 from ..harvest import read as harvest_read, views as harvest_views
 from .. import placements
+from ..handling import check
 from ..models import Batch, HandlingPlanItem, StockMovement, StockOperation, Tank
 from ..models.stock import takes_fish
 from ..templatetags.stock import fish, number, tonnes
@@ -44,7 +45,7 @@ from ..water import views as water_views
 from . import read, services
 from .services import AlreadyRecorded
 
-VIEW, RECORD, VOID = 'farm.view_stockoperation', services.RECORD, services.VOID
+VIEW, RECORD, VOID = services.VIEW, services.RECORD, services.VOID
 FILTERS = ('q', 'site', 'kind', 'occupancy', 'status')
 NO_SITE = 'none'
 STOCKED, EMPTY = 'stocked', 'empty'
@@ -142,7 +143,7 @@ def production_units(request):
     drawer_unit = next((unit for unit in units if str(unit.pk) == params['unit']), None)
     feeding = feeding_views.unit_figures(request.user, stock, details=[drawer_unit] if drawer_unit else ())
     water = water_views.unit_water(request.user, shown)
-    withdrawals = harvest_views.withdrawals([unit for unit in shown if unit.pk in stock])
+    withdrawals = check.in_force_now([unit for unit in shown if unit.pk in stock])
     chips = placements.of(shown, request.user)
 
     context = _context(

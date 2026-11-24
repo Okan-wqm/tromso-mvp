@@ -27,7 +27,6 @@ from core.testing import BAD_HOURS, FrozenClock
 
 from ..handling import check as handling_check, withdrawal as registry
 from ..handling.withdrawal import WithdrawalBlock
-from ..harvest import views as harvest_views
 from ..health import diseases, lice, notices, services, withdrawal
 from ..health import read
 from ..health.read import LiceWeek, lice_weeks
@@ -579,13 +578,13 @@ class BulkRegistryTests(HealthTestCase):
                 self.assertEqual(found[unit.pk], handling_check.in_force(unit, day or local_today(unit)))
 
     def test_the_row_badges_of_production_units_are_the_units_with_a_block_in_force(self):
-        self.assertEqual(set(harvest_views.withdrawals(self.units)), {self.t1.pk, self.t2.pk, self.s1.pk})
-        self.assertEqual(harvest_views.withdrawals([self.t1])[self.t1.pk][0].batch, self.batch)
-        self.assertEqual(harvest_views.withdrawals([]), {})
+        self.assertEqual(set(handling_check.in_force_now(self.units)), {self.t1.pk, self.t2.pk, self.s1.pk})
+        self.assertEqual(handling_check.in_force_now([self.t1])[self.t1.pk][0].batch, self.batch)
+        self.assertEqual(handling_check.in_force_now([]), {})
         kept = list(registry._providers)
         registry._providers.clear()
         try:
-            self.assertEqual(harvest_views.withdrawals(self.units), {})
+            self.assertEqual(handling_check.in_force_now(self.units), {})
             self.assertIsNone(handling_check.in_force_of(self.units))
         finally:
             registry._providers.extend(kept)

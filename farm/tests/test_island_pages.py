@@ -56,7 +56,7 @@ class IslandPagesTests(TestCase):
         cls.now = timezone.now().replace(second=0, microsecond=0)
         start = cls.now - timedelta(days=8)
         for quantity, base, swing in (('temperature_c', 12.0, 1.2), ('oxygen_mg_l', 8.4, 0.9), ('ph', 7.3, 0.15)):
-            channel = make_channel(device, quantity, code=quantity.upper())
+            channel = make_channel(device, quantity, code=quantity.upper(), heartbeat_s=600)    # a value every 10 min
             bindings.move(cls.user, channel, point=middle, at=start)
             rows, moment = [], start + STEP
             while moment < cls.now:

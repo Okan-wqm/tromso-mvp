@@ -2912,7 +2912,7 @@ The cards of each monitoring board: a unit and, when it differs from the board, 
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Monitoring › monitor_board_units
 - **forms**: `MonitorBoardUnitForm`, `BoardUnitForm`
 - **constraints**: uq_monitor_board_units_unit (unique: board, unit); chk_monitor_board_units_mode (check)
-- **tests that mention it**: `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py`, `monitoring/tests/test_golden.py` and 4 more
+- **tests that mention it**: `core/test_world.py`, `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2937,7 +2937,7 @@ The named wall screens of Monitoring: a name, the template its cards are drawn w
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_boards
 - **forms**: `MonitorBoardForm`
 - **constraints**: uq_monitor_boards_name_live (unique: name); chk_monitor_boards_name (check); chk_monitor_boards_mode (check); chk_monitor_boards_refresh (check); chk_monitor_boards_card_width (check); chk_monitor_boards_screen (check); chk_monitor_boards_distance (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py` and 5 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `monitoring/tests/test_band.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

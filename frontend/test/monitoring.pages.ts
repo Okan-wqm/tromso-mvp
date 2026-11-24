@@ -27,6 +27,7 @@ import type { Page } from 'playwright-core';
 import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
 import { watchCsp } from './checks.js';
 import { policy } from './csp.js';
+import { legibleUnit } from '../wall/slots.js';
 
 const PAGES = resolve('.build/monitor-pages');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
@@ -254,6 +255,28 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
         await tab.close();
       });
     }
+
+    await t.test('a board read from 2 m on a 55" TV: its cards at the legible unit, the wall turning pages', async () => {
+      mode = 'cards';
+      const { tab, violations } = await open('wall-board-en', 1920, 1080);
+      await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
+      await tab.waitForFunction(() => document.querySelector('.monitor-grid')?.hasAttribute('data-page'));
+      const seen = await tab.evaluate(() => {
+        const grid = document.querySelector('.monitor-grid') as HTMLElement;
+        const shown = Array.from(grid.querySelectorAll<HTMLElement>(':scope > .monitor-card'))
+          .filter((card) => { const box = card.getBoundingClientRect(); return box.bottom > 1 && box.top < innerHeight - 1; });
+        return { pages: Number(grid.dataset.pageCount), screen: [screen.width, screen.height],
+                 units: shown.map((card) => Number.parseFloat(getComputedStyle(card.firstElementChild as Element).fontSize)),
+                 scrolls: document.documentElement.scrollHeight > innerHeight + 1 };
+      });
+      const least = legibleUnit(55, 2, seen.screen[0] ?? 0, seen.screen[1] ?? 0);
+      assert.ok(seen.pages > 1, `${seen.pages} pages`);
+      assert.ok(seen.units.length > 0 && seen.units.every((unit) => unit >= least - 0.5), `units ${seen.units} under ${least}`);
+      assert.equal(seen.scrolls, false);
+      assert.deepEqual(violations, [], 'CSP violations');
+      await shot(tab, 'wall-board-en-1920', false);
+      await tab.close();
+    });
 
     await t.test('polling in the new look: a worse card is said, a failed poll marks the grid, the next answer says so', async () => {
       mode = 'cards';

@@ -23,7 +23,7 @@ from django.urls import reverse
 
 from core import ui
 from core.language import save_account_language
-from core.test_world import MOMENT, MONITORING_UNITS, monitoring_world, world
+from core.test_world import MOMENT, MONITORING_UNITS, TEST_WALL, monitoring_world, world
 from core.testing import FrozenClock
 from farm.models import Tank
 from farm.tests.helpers import point_of
@@ -177,6 +177,15 @@ class NextPagesTests(FrozenClock, TestCase):
                 'nonce': re.search(r'nonce="([^"]+)"', page.content.decode()).group(1)}
             index[f'strip-{language}'] = self.keep(f'strip-{language}',
                                                    self.ask(reverse('core:ui_strip'), language=language))
+        # the wall of a board that is read from 2 m on a 55" TV: the grid is told its screen and distance
+        from monitoring.models import MonitorBoard
+        board = MonitorBoard.objects.get(name=TEST_WALL)
+        wall = {'board': str(board.pk), 'mode': 'small', 'wall': '1'}
+        page = self.ask(PAGE, wall)
+        self.assertIn('data-screen-inches="55.0" data-distance-m="2.0"', page.content.decode())
+        index['wall-board-en'] = {'page': self.keep('page-wall-board-en', page), 'lang': 'en',
+                                  'cards': self.keep('cards-wall-board-en', self.ask(CARDS, wall)),
+                                  'nonce': re.search(r'nonce="([^"]+)"', page.content.decode()).group(1)}
         # the same screen after TW-01 got worse: its oxygen now past the critical limit (the announcer's case)
         water.record(self.admin, point=point_of(self.units['TW-01']), measured_at=MOMENT, source='manual',
                      values={'oxygen_mg_l': Decimal('4.5')})

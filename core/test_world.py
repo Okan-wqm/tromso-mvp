@@ -17,7 +17,8 @@ built and read.
       harvest_world(admin, tank)      a harvest from TT-01 six days back
       treatment_world(admin, tank)    a thermal delousing of TT-01 five days back
       feeding_world(admin, tank)      a feeding of TT-01 the day before
-    monitoring_world(admin)           seven more units of Test Hall A, one in each state a monitoring card can be in
+    monitoring_world(admin)           seven more units of Test Hall A, one in each state a monitoring card can be in,
+                                      and a wall board of the hall's units on a 55" TV read from 2 m (wall_board)
                                       (OK, critical, warning, no recent data, no limit, note, empty); not part of world():
                                       the monitoring pages' test builds it after it (monitoring/tests/test_next_pages.py)"""
 import math
@@ -226,6 +227,9 @@ MONITORING_UNITS = (
 )
 
 
+TEST_WALL = 'Test wall, Hall A'
+
+
 def monitoring_world(admin):
     """Seven more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
@@ -263,3 +267,16 @@ def monitoring_world(admin):
         if values:
             water.record(admin, point=point_of(unit), measured_at=MOMENT - timedelta(hours=hours), source='manual',
                          values={key: D(value) for key, value in values.items()})
+    wall_board(hall)
+
+
+def wall_board(hall):
+    """A wall board of Test Hall A's units (TEST_WALL): a 55-inch TV read from 2 m (its Wall screen tab), so its walls set
+    their type for that distance and turn pages."""
+    from farm.models import Tank
+    from monitoring.models import MonitorBoard, MonitorBoardUnit
+
+    board = MonitorBoard.objects.create(name=TEST_WALL, screen='55', screen_inches=D(55), distance_m=D(2))
+    for unit in Tank.objects.filter(production_department=hall).order_by('code'):
+        MonitorBoardUnit.objects.create(board=board, unit=unit)
+    return board

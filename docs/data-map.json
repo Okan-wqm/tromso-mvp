@@ -31600,6 +31600,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
@@ -32004,10 +32005,12 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
+        "monitoring/tests/test_next_pages.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_shell.py",
         "monitoring/tests/test_small.py",

@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "caad9d8a-4805-45c8-ba0f-054736767c36",
+    "key": "ea418369-7adc-4da8-8ede-fbf5ea8cae48",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/caad9d8a-4805-45c8-ba0f-054736767c36/",
+    "href": "/sites/ea418369-7adc-4da8-8ede-fbf5ea8cae48/",
     "type": "Kara tesisi",
     "status": "critical",
     "units": "1",
@@ -90,15 +90,15 @@
     },
     "alarms": {
      "figure": "0",
-     "sub": "1 birim kritik"
+     "sub": null
     },
     "onSite": null
    },
    {
-    "key": "9a276d5e-090d-4ca7-b128-edc631ce538f",
+    "key": "159c5ea0-854b-470e-8ddf-a4af2c0ae6f7",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/9a276d5e-090d-4ca7-b128-edc631ce538f/",
+    "href": "/sites/159c5ea0-854b-470e-8ddf-a4af2c0ae6f7/",
     "type": "Deniz kafesi",
     "status": "warning",
     "units": "1",
@@ -109,7 +109,7 @@
     },
     "alarms": {
      "figure": "0",
-     "sub": "1 birimde güncel veri yok"
+     "sub": null
     },
     "onSite": null
    }
@@ -123,14 +123,18 @@
    "href": "/alarms/",
    "label": "Alarmlar"
   },
-  "safety": "Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra gelecek). Her bildirim, alıcısı ve seviyesiyle aşağıdaki giden kutusunda bekler ve aktarım bağlandığında gönderilir.",
+  "safety": "Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra gelecek). Her bildirim, alıcısı ve seviyesiyle Alarmlar sayfasındaki giden kutusunda bekler ve aktarım bağlandığında gönderilir.",
   "columns": {
    "severity": "Önem",
    "what": "Ne"
   },
   "rows": [],
   "more": null,
-  "empty": "Açık alarm yok."
+  "empty": null,
+  "units": {
+   "tone": "critical",
+   "text": "1 birim kritik · 1 birimde güncel veri yok"
+  }
  },
  "people": {
   "title": "Bugün ofis çalışanları",
@@ -244,7 +248,7 @@
   "critical": "Kritik",
   "entries": [
    {
-    "key": "1e7790a7-4708-4f6b-b4e6-6cff704f99f1",
+    "key": "84b3bf24-3f82-4861-94ee-78589e098f86",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Bilgi kaydı · A test statement.",
@@ -256,7 +260,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "3865273f-fa32-4c09-899b-683397536f23",
+    "key": "1dbbe3f8-c0f3-44b2-8b79-beb129e77f14",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Belge · Test document",
@@ -268,7 +272,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "32511f29-2ad2-4fa2-89a9-85af01d6cf6f",
+    "key": "5f87fd58-285d-4865-b56a-48d2b3197db2",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Depolama yeri · Test Store (TS-01)",
@@ -280,7 +284,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "6b41c82e-0a93-46fd-9888-27d407313fca",
+    "key": "47e93e0d-8845-451f-8358-8175bd666d95",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Su numunesi · Water sample · TT-01 › Middle · 2026-11-23 12:42",
@@ -292,7 +296,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "fc3785ab-4dd8-4f36-b6f3-1cf41dda6682",
+    "key": "f2205c5c-9b1a-4c77-bb2f-adf21abe713f",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Birim · Unit TM-01 (TM-01)",
@@ -314,10 +318,10 @@
   },
   "rows": [
    {
-    "key": "45f5343e-b891-4e9f-b058-92189a4d3f4b",
+    "key": "b992ac8b-5124-44c8-b0fe-2db2f5fe9938",
     "text": "A test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/45f5343e-b891-4e9f-b058-92189a4d3f4b/view/",
+    "href": "/knowledge/entries/b992ac8b-5124-44c8-b0fe-2db2f5fe9938/view/",
     "kind": "neutral",
     "chip": "Taslak"
    }

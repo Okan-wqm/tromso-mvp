@@ -874,6 +874,38 @@ kept today, the parameters no row judges (`water.read.missing_limits`). The valu
 trace (at most once a minute per source): a required one gives the 503 (the screen keeps its last picture and says it is not
 updated), an optional one says "Could not be read: Tasks" on the frame, where no template can hide it.
 
+**In the new look** (`?ui=next`, see The new look; 2026-11-24). The same page, the same card read (`read.cards`,
+`_ladder`, `water_rungs`), the same templates, fragment, pane and polls (poll.ts's start-up gate, the merge by key, the
+announcer): the new look is a skin and one link. `templates/monitoring/monitor.html` loads `static/css/glyphs.css` and
+`static/css/monitor-next.css` only in the new look, and every rule of the second is under `html[data-ui="next"]`, so the
+classic page reads none of it (its markup is byte for byte what it was: the layout parts of the classic wall did not
+change). What it draws, from the design console: the state's glyph as the design's icons (critical the octagon,
+warning the triangle, no recent data the clock, no limit the gauge, note the bell, OK the check, empty the grid), a
+mask of the one icon source (`scripts/icons.mjs` builds `glyphs.css` from `templates/icons` beside the islands' set,
+`npm run check:icons` holds both), so the glyph a script sets (the band's "page of the worst card") follows; every rung
+keeps a glyph of its own and its word. The frame a square hairline plate with the state's edge on the left (dashed for
+no recent data and no limit, as in the classic look), a critical card framed in the critical colour, the head of a card
+with no recent data hatched (the design's "not known": it never looks like an OK card); the code in the text face, the
+figures in Barlow, OK in its green; the band a plate on the desk page with the switch of the cards as a segmented control;
+a card that flows (Simple, Detailed) with its state as a chip and its figures in hairline cells; the Big card's chart and
+its three boxes framed. Nothing is cut, hidden or faded that the classic card shows: the fitted cards keep their unit
+and measure, and the wall's browser test runs every case again in the new look (`frontend/test/wall.browser.test.ts`,
+`wall-small-next-*.html`, `dock-big-next-tr.html` of `manage.py layout_pages`). The one thing the new look adds is **the
+link to Tank › Water** on every card, the pane's included (`templates/monitoring/_water_link.html`: the chart icon, and
+"Water history" in words on a full-height card and a card that flows; on the Small card its words are for a screen
+reader); Tank › Water opens in the new look only, so the classic card has no such link. The fragments are rendered
+without a request, so their context carries the look (`UI_NEXT`, `monitoring/views.py _look`), and the change token
+holds it (`read.change_token(look=)`; the classic token is what it was): a screen whose look changed never keeps the
+other look's cards behind a 204. Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py`
+`monitoring_world`: a unit in each of the seven states): each card says in the new look what it says in the classic one
+(the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on the Small,
+Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish; and by `frontend/test/monitoring.pages.ts`
+(`npm run test:pages`, on the pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the
+product's policy and nonce, its polls answered with the real fragments, at 1440 and 390 px (no CSP violation, no serious
+axe finding, card text at 4.5:1, no sideways scroll, a glyph and a link on every card), the pane, the wall at 1920×1080
+and 3840×2160, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that
+fails said as "cannot be read".
+
 **Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The
 fragment `cards/?...&after=<token>` computes the **change token** first (`core.audit.revision()`: the newest audit entry and
 how many lie in the five minutes up to it, two indexed queries, read before any data; the minute, the language, what the person
@@ -5388,7 +5420,7 @@ validation and every chemistry judgement; the island draws the finished values i
   `./ui/SeriesChart.js`: an interactive series, gaps never bridged, colours from the chart roles). They draw the design system's classes (`static/css/ds.css`):
   a server-rendered page writes the same classes, so both look the same from one rule set. React Aria where a control
   needs behaviour (buttons, tabs); native `<select>`, `<dialog>` otherwise (no popover that would lock the scroll).
-  Icons come from `templates/icons/` (`scripts/icons.mjs` builds `ui/icon-shapes.ts`; `npm test` fails when it is stale).
+  Icons come from `templates/icons/` (`scripts/icons.mjs` builds `ui/icon-shapes.ts`, and `static/css/glyphs.css`: each icon as a CSS mask of the new look, `--glyph-<name>`, for a glyph drawn without markup; `npm test` fails when either is stale).
 - **Build.** `npm run build` runs `vite build` (`vite.config.mjs`, `scripts/islands.mjs`) into `static/islands/` (not
   committed): hashed names, no source maps, no inlined assets, no module-preload polyfill. There is **no dev server and
   no hot reload**: its injected scripts and styles would break the Content-Security-Policy. With no island yet the
@@ -5423,6 +5455,7 @@ validation and every chemistry judgement; the island draws the finished values i
   (`core/test_world.py`, shared with `scripts/record_test_world.py`, the clock at its `MOMENT`: TT-01's probe with an
   outage and a pH silent for two hours, the channels' state as the ingest writes it, samples, limits, an alarm, a harvest,
   a treatment and a feeding, each part a function of its own);
+  `monitoring/tests/test_next_pages.py` keeps the monitoring pages the same way (`.build/monitor-pages`, Operations › Monitoring above);
   `npm run test:pages` (`frontend/test/*.pages.ts`) then mounts the built islands on them under the product's policy
   (CSP, axe, 4.5:1, no sideways scroll at 1440 and 390 px). CI runs it in the Django job right after the suite (a run
   with labels makes the props too) and keeps its screenshots as the artifact `island-pages-shots`; missing props fail

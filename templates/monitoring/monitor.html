@@ -9,7 +9,7 @@
 {% block title %}{{ title }}{% endblock %}
 {% block measure %}{% if wall %}wall{% else %}fluid{% endif %}{% endblock %}
 {% block html_attrs %}{% if wall %} data-wall{% endif %}{% endblock %}
-{% block page_styles %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><link rel="stylesheet" href="{% asset 'css/card-grid.css' %}">{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% asset 'css/monitor.css' %}"><link rel="stylesheet" href="{% asset 'css/card-grid.css' %}">{% if UI_NEXT %}<link rel="stylesheet" href="{% asset 'css/glyphs.css' %}"><link rel="stylesheet" href="{% asset 'css/monitor-next.css' %}">{% endif %}{% endblock %}
 {% block extra_head %}<script type="module" src="{% asset 'js/windows.js' %}"></script><script type="module" src="{% asset 'js/announce.js' %}"></script><script type="module" src="{% asset 'js/wall.js' %}"></script>{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}

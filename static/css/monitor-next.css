@@ -1,0 +1,120 @@
+/* Monitoring in the new look (`?ui=next`, core/ui.py; docs/design/system/README.md, The new look): the cards, the band and
+   the pane as the design console draws them (F:\dev\balik-notes\design-in, "Suderra Console.dc.html", Monitoring).
+   Loaded by templates/monitoring/monitor.html AFTER monitor.css and only in the new look, and every rule is under
+   html[data-ui="next"] besides: the classic look never reads a line of it. The markup is the classic one (the same card
+   read, the same templates, the same fragment and poll); the new look adds only the link to Tank › Water
+   (monitoring/_water_link.html). Tokens only: no colour, no raw font size, no radius.
+
+   What it changes, and what it never does:
+   - the state's glyph: the design's icons (octagon, triangle, clock, ...) in place of the classic shapes, from the one
+     icon source (static/css/glyphs.css, built by scripts/icons.mjs from templates/icons). Every rung keeps a glyph of
+     its own and its word: never colour alone. A glyph a script sets (the band's "page of the worst card") follows.
+   - the frame: a square hairline plate; the state's edge on the left (dashed for no recent data and no limit, dotted
+     for empty: the classic shapes of the edge stay), a critical card framed in the critical colour, a card with no
+     recent data hatched in its head (the design's sign of "not known": never the plate of an OK card).
+   - the type: the unit's code in the text face, bold; the figures in the display face (Barlow); the state word in the
+     state's colour (OK in its green: the design's check), never paler than the text it stands in.
+   Nothing here hides, cuts or fades a word, a figure, its source and age, or "old": the fitted cards keep their unit
+   (--u) and their measure, so the wall's slot rule, its pages and its browser tests hold as they are. */
+
+/* ---- the state's glyph ------------------------------------------------------------------------------------------- */
+html[data-ui="next"] .monitor-shape {
+  width: 1em; height: 1em; flex: none;
+  border: 0; border-radius: 0; clip-path: none;
+  background: currentColor;
+  mask: var(--glyph) center / contain no-repeat;
+  vertical-align: -.14em;
+}
+html[data-ui="next"] .monitor-shape-critical { --glyph: var(--glyph-octagon); }
+html[data-ui="next"] .monitor-shape-warning { --glyph: var(--glyph-alert); }
+html[data-ui="next"] .monitor-shape-blind { --glyph: var(--glyph-clock); }
+html[data-ui="next"] .monitor-shape-unjudged { --glyph: var(--glyph-gauge); }
+html[data-ui="next"] .monitor-shape-note { --glyph: var(--glyph-bell); }
+html[data-ui="next"] .monitor-shape-ok { --glyph: var(--glyph-check-circle); }
+html[data-ui="next"] .monitor-shape-empty { --glyph: var(--glyph-layout-grid); }
+/* (a figure's glyph is drawn smaller than a word's, as the classic shapes were) */
+html[data-ui="next"] .is-fit b > .monitor-shape { width: .62em; height: .62em; margin-right: .1em; vertical-align: .05em; }
+
+/* ---- the state's word and tone ------------------------------------------------------------------------------------ */
+html[data-ui="next"] .monitor-state { font-family: var(--font-display); font-weight: 700; letter-spacing: .01em; }
+html[data-ui="next"] :is(.monitor-ok .monitor-state, .monitor-tally .monitor-ok) { color: var(--ok-text); }
+html[data-ui="next"] .monitor-tally .monitor-critical { color: var(--crit-text); }
+html[data-ui="next"] :is(.monitor-tally .monitor-warning, .monitor-tally .monitor-unjudged, .monitor-unjudged .monitor-state) { color: var(--warn-text); }
+
+/* ---- the frame ---------------------------------------------------------------------------------------------------- */
+html[data-ui="next"] .monitor-card {
+  isolation: isolate;
+  border: 1px solid var(--line-hair);
+  border-left-width: 4px;
+  background: var(--plate);
+}
+html[data-ui="next"] .monitor-critical { border-color: var(--crit); }
+html[data-ui="next"] .monitor-warning { border-left-color: var(--warn); }
+html[data-ui="next"] .monitor-ok { border-left-color: var(--ok); }
+html[data-ui="next"] .monitor-unjudged { border-left-color: var(--warn-text); }
+html[data-ui="next"] :is(.monitor-blind, .monitor-note) { border-left-color: var(--line-control); }
+html[data-ui="next"] .monitor-empty { border-left-color: var(--line-control); opacity: 1; }
+/* A card with no recent data: its head hatched (the design's "not known"), drawn behind the head by a pseudo-element
+   that takes no room, so the card's lines and its fit are what they were. */
+html[data-ui="next"] .monitor-card-head { position: relative; }
+html[data-ui="next"] .monitor-blind > .monitor-card-head::before {
+  content: ""; position: absolute; z-index: -1; inset: -.35em -.5em -.2em;
+  background: repeating-linear-gradient(135deg, var(--surface-sunken) 0 .3em, transparent .3em .6em);
+}
+/* The code: the text face, bold, as the design's unit codes; a card's name stays the quiet line beside it. */
+html[data-ui="next"] .monitor-card h3 { font-family: var(--font-text); font-weight: 700; letter-spacing: .01em; }
+/* The figures: the display face (narrower than the text face: a five-figure value keeps its room). */
+html[data-ui="next"] .monitor-card :is(dd b, .metrics dd:first-of-type, .wq) { font-family: var(--font-display); font-weight: 700; }
+/* The open card of the overview (its Big card is in the pane): the action's outline, as the design's. */
+html[data-ui="next"] .monitor-card.is-open { outline: 2px solid var(--action); outline-offset: 2px; }
+
+/* ---- a fitted card (Small; Big in the pane and on a wall of them) -------------------------------------------------- */
+/* The four values stand in a row of tiles under one hairline, each tile parted from the next (the template's own
+   border on a tile that does not start the row). */
+html[data-ui="next"] .is-fit .card-grid { padding-top: calc(var(--u) * .35); border-top: 1px solid var(--line-hair); }
+html[data-ui="next"] .is-fit .w-value + .w-value > dl { border-left-color: var(--line-hair); }
+/* The Big card's picture and its parts: the chart on the sheet in a hairline frame; what to dose, the other points
+   and the stock each in a hairline box (the design's three boxes under the values). */
+html[data-ui="next"] .is-fit .w-chart .monitor-chart-svg { outline: 1px solid var(--line-hair); outline-offset: .15em; }
+html[data-ui="next"] .is-fit :is(.w-dosing, .w-points, .w-stock) > section { padding: 0 .45em; border: 1px solid var(--line-hair); }
+html[data-ui="next"] .is-fit .w-water_table { border-top: 1px solid var(--line-hair); }
+
+/* ---- a card that flows (Simple, Detailed, a template without a measure) ------------------------------------------- */
+html[data-ui="next"] .monitor-card:not(.is-fit) .monitor-card-head h3 { font-size: 1.6em; line-height: 1.05; }
+/* The state as the design's chip on a flowing card: filled for critical, tinted for a warning, outlined otherwise. */
+html[data-ui="next"] .monitor-card:not(.is-fit) .monitor-card-state > .monitor-state { padding: .25em .6em; border: 1px solid var(--line-hair); }
+html[data-ui="next"] .monitor-critical:not(.is-fit) .monitor-card-state > .monitor-state { border-color: var(--crit); background: var(--crit); color: var(--on-crit); }
+html[data-ui="next"] .monitor-warning:not(.is-fit) .monitor-card-state > .monitor-state { border-color: var(--warn); background: var(--warn-tint); color: var(--warn-text); }
+html[data-ui="next"] .monitor-card:not(.is-fit) .metrics { gap: 0; border-top: 1px solid var(--line-hair); border-left: 1px solid var(--line-hair); }
+html[data-ui="next"] .monitor-card:not(.is-fit) .metrics > div { padding: .4em .6em; border-right: 1px solid var(--line-hair); border-bottom: 1px solid var(--line-hair); }
+html[data-ui="next"] .monitor-card:not(.is-fit) .monitor-card-foot { padding-top: .5em; border-top: 1px solid var(--line-hair); }
+
+/* ---- the link to Tank › Water (monitoring/_water_link.html) ------------------------------------------------------- */
+html[data-ui="next"] .monitor-water { display: inline-flex; flex: none; align-items: center; gap: .3em; color: var(--action); text-decoration: none; white-space: nowrap; }
+html[data-ui="next"] .monitor-water .icon { width: 1.1em; height: 1.1em; }
+html[data-ui="next"] .monitor-water:hover .monitor-water-word,
+html[data-ui="next"] .monitor-water:focus-visible .monitor-water-word { text-decoration: underline; }
+
+/* ---- the band (desk page; a wall keeps its own one-row band: monitor.css, "the wall") ----------------------------- */
+html[data-ui="next"]:not([data-wall]) .monitor-band { padding: .7em 1em; border: 1px solid var(--line-hair); background: var(--plate); }
+/* The switch of the screen's cards: the design's segmented control (the one in force tinted in the action colour). */
+html[data-ui="next"] .monitor-modes { border: 1px solid var(--line-hair); }
+html[data-ui="next"] .monitor-modes > a { padding: .35em .9em; border-right: 1px solid var(--line-hair); color: var(--text-2); font-family: var(--font-display); font-weight: 600; }
+html[data-ui="next"] .monitor-modes > a:last-child { border-right: 0; }
+html[data-ui="next"] .monitor-modes > a[aria-current="page"] { background: var(--action-tint); color: var(--action); }
+html[data-ui="next"] .monitor-modes > a:hover { background: var(--surface-sunken); color: var(--text-1); }
+
+/* ---- the wall: the new look's page content is a flex item that grows with what it holds, with a gap between its
+   children (app.css). A wall of fitted cards is exactly one screen (monitor.css: 100dvh, which that growth would undo:
+   the wall then never turned pages and scrolled instead), and only its grid takes room (the toolbar is fixed, the live
+   regions and the windows' place are empty), so no gap either: it would make the screen scroll by its own height. */
+html[data-ui="next"][data-wall] .content:has(.monitor-grid > .is-fit) { flex: none; gap: 0; }
+
+/* ---- the pane (the Big card of the unit gone into, beside the cards) ---------------------------------------------- */
+html[data-ui="next"] .monitor-dock .monitor-dock-bar { font-family: var(--font-display); }
+
+/* ---- forced colours (Windows high contrast): a glyph is a mask painted in the system's text colour ---------------- */
+@media (forced-colors: active) {
+  html[data-ui="next"] .monitor-shape { forced-color-adjust: none; border: 0; background: CanvasText; }
+  html[data-ui="next"] .monitor-blind > .monitor-card-head::before { display: none; }
+}

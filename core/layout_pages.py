@@ -225,13 +225,14 @@ _WALL = (
        ('TG-M04', 'Cage M4', '9.90', 'ok', '8.3', '8.02', '110', '0.10', 0.01, '')])
 
 
-def _wall(language, pane=''):
+def _wall(language, pane='', next_look=False):
     """A wall of twenty Small cards with its band (monitoring/_grid.html), from made-up units and readings and the REAL
     chart of each (the chemistry core through calculation.charts_of, the fish's limits made up too): a normal card, a
     warning, a critical one with a second reason, old values, a unit not in use, a withdrawal, an empty unit, a chart
     that cannot be worked out (no alkalinity; a sea unit with no salinity). No database. `pane`: instead of the wall,
     the pane of that unit (monitoring/_dock.html: its Big card with the line that names and closes it, as the dock
-    beside the wall holds it)."""
+    beside the wall holds it). `next_look`: as the new look draws them (UI_NEXT: the link to Tank › Water on each card;
+    the page then loads static/css/monitor-next.css)."""
     from datetime import timedelta
     from uuid import UUID
 
@@ -303,7 +304,7 @@ def _wall(language, pane=''):
             return render_to_string('monitoring/_dock.html', {
                 'pane': {'row': {'card': card, 'flip': {}, 'zoom': views, 'pane': True, 'ns': 'pane-'},
                          'pane_unit': card.unit, 'close_url': '#'},
-                'pane_poll_url': '#', 'poll_seconds': 15})
+                'pane_poll_url': '#', 'poll_seconds': 15, 'UI_NEXT': next_look})
         openers = {card.unit.pk: {'page': '#', 'into': '', 'open': card.unit.code == 'HA-R02'} for card in cards}
         return render_to_string('monitoring/_grid.html', {
             'openers': openers,
@@ -311,7 +312,7 @@ def _wall(language, pane=''):
             'band': read.band(cards),
             'modes': [{'label': label, 'url': '#', 'current': label == 'Small', 'id': label.lower()}
                       for label in ('Small', 'Simple', 'Detailed')],
-            'computed_at': NOW.replace(tzinfo=None), 'count_line': '20 of 25 units shown'})
+            'computed_at': NOW.replace(tzinfo=None), 'count_line': '20 of 25 units shown', 'UI_NEXT': next_look})
 
 
 def _shell_next():
@@ -356,7 +357,9 @@ def _shell_next():
 PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
          'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'report-tabs': _report_tabs, 'overview': _overview,
          'wall-small-en': lambda: _wall('en'), 'wall-small-tr': lambda: _wall('tr'),
-         'dock-big-tr': lambda: _wall('tr', pane='HA-R02'), 'shell-next': _shell_next}
+         'dock-big-tr': lambda: _wall('tr', pane='HA-R02'), 'shell-next': _shell_next,
+         'wall-small-next-en': lambda: _wall('en', next_look=True), 'wall-small-next-tr': lambda: _wall('tr', next_look=True),
+         'dock-big-next-tr': lambda: _wall('tr', pane='HA-R02', next_look=True)}
 
 
 def rendered():

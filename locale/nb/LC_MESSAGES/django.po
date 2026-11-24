@@ -17159,6 +17159,13 @@ msgstr "Vannmiljø"
 msgid "Water freshness"
 msgstr "Vannets ferskhet"
 
+msgid "Water history"
+msgstr "Vannhistorikk"
+
+#, python-format
+msgid "Water history of %(unit)s"
+msgstr "Vannhistorikk for %(unit)s"
+
 msgid ""
 "Water is sampled at the sampling points of the tanks, ponds and cages of Setup, of the loops of "
 "its systems and of its equipment."

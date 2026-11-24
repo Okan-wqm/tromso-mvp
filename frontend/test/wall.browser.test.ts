@@ -6,7 +6,9 @@
 // text is cut but the three that carry their whole text in a title (the unit's name, a long reason, why a picture
 // cannot be drawn), a figure, a label, a code and a state word never, and the smallest text is at least 11 px; in
 // Turkish too. On a 1280x720 window the wall turns pages rather than shrink: PageDown and PageUp turn them and the
-// band says which. Test code only.
+// band says which. The same in the NEW LOOK (?ui=next: the cards' own markup with the link to Tank › Water, the theme
+// Industry, static/css/glyphs.css and monitor-next.css after the page's sheets): wall-small-next-*.html and
+// dock-big-next-tr.html, every test of the wall run again on them. Test code only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -23,14 +25,16 @@ const SERVED: [string, string, string][] = [['/css/', resolve('static/css'), 'te
 const PAGES = resolve('frontend/test/pages');
 // (the sheets in the order the monitoring page links them: app_base.html with the page's own two before tw.css)
 const SHEETS = linksOf('app_base.html', ['monitor', 'card-grid']);
+const SHEETS_NEXT = linksOf('app_base.html', ['monitor', 'card-grid', 'glyphs', 'monitor-next']);
 
 /** The wall's page; `pane`: with the pane of a unit gone into in its dock (frontend/test/pages/dock-big-tr.html, the
  *  dock's own markup around the unit's Big card). */
-function page(language: string, pane = false): string {
-  const part = readFileSync(join(PAGES, `wall-small-${language}.html`), 'utf8');
-  const docked = pane ? readFileSync(join(PAGES, 'dock-big-tr.html'), 'utf8') : '';
-  return `<!doctype html><html lang="${language}" data-theme="fjord" data-wall><head><meta charset="utf-8"><title>wall</title>
-${SHEETS}<script type="module" src="/js/wall.js"></script></head>
+function page(language: string, pane = false, next = false): string {
+  const part = readFileSync(join(PAGES, `wall-small-${next ? 'next-' : ''}${language}.html`), 'utf8');
+  const docked = pane ? readFileSync(join(PAGES, next ? 'dock-big-next-tr.html' : 'dock-big-tr.html'), 'utf8') : '';
+  const look = next ? 'data-theme="industry" data-ui="next"' : 'data-theme="fjord"';
+  return `<!doctype html><html lang="${language}" ${look} data-wall><head><meta charset="utf-8"><title>wall</title>
+${next ? SHEETS_NEXT : SHEETS}<script type="module" src="/js/wall.js"></script></head>
 <body><div class="shell"><aside class="rail" id="rail"></aside><div class="console"><header class="topbar"></header><main class="content" data-measure="wall">
 <aside class="monitor-dock" id="monitor-dock" data-mw="48" data-mh="61">${docked}</aside>
 <div class="monitor-grid" data-card-width="2">${part}</div>
@@ -40,10 +44,10 @@ ${SHEETS}<script type="module" src="/js/wall.js"></script></head>
 function serve(): Promise<Server> {
   const server = createServer((request, response) => {
     const url = (request.url ?? '').split('?')[0] ?? '';
-    const language = /^\/(en|tr)(-pane)?$/.exec(url);
+    const language = /^\/(next-)?(en|tr)(-pane)?$/.exec(url);
     if (language) {
       return void response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-        .end(page(language[1] ?? 'en', language[2] !== undefined));
+        .end(page(language[2] ?? 'en', language[3] !== undefined, language[1] !== undefined));
     }
     for (const [prefix, root, type] of SERVED) {
       const file = join(root, url.slice(prefix.length));
@@ -263,7 +267,7 @@ async function open(tab: Page, origin: string, language: string, width: number, 
   await tab.waitForTimeout(100);
 }
 
-test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, async (t) => {
+for (const [name, prefix] of [['', ''], [' in the new look', 'next-']] as const) test(`the monitoring wall of small cards${name}`, { skip: skipWithout(BROWSERS) }, async (t) => {
   const server = await serve();
   const address = server.address();
   const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
@@ -274,7 +278,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
                                                    ['tr', 1920, 1080, '4x5'], ['en', 5120, 1440, '5x4'], ['en', 2560, 1440, '4x5'],
                                                    ['en', 3840, 2160, '4x5']] as const) {
       await t.test(`twenty cards are one screen at ${width}x${height} (${language}): nothing cut, nothing outside its card`, async () => {
-        await open(tab, origin, language, width, height);
+        await open(tab, origin, prefix + language, width, height);
         const seen = await look(tab);
         assert.equal(`${seen.cols}x${seen.rows}`, grid);
         assert.deepEqual([seen.cards, seen.onScreen, seen.pages], [20, 20, '1']);
@@ -292,7 +296,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
 
     for (const [width, height] of [[3440, 1440], [5120, 1440], [1920, 1080]] as const) {
       await t.test(`going into a tank at ${width}x${height}: the Big card beside the overview, both whole`, async () => {
-        await open(tab, origin, 'tr-pane', width, height);
+        await open(tab, origin, prefix + 'tr-pane', width, height);
         const pane = await docked(tab);
         assert.equal(pane.mode, 'beside');
         // beside the cards and under the band: nothing of the overview lies under the pane
@@ -331,7 +335,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     }
 
     await t.test('a band of three lines keeps its first line on the screen and the cards whole under it', async () => {
-      await open(tab, origin, 'tr', 1920, 1080);
+      await open(tab, origin, prefix + 'tr', 1920, 1080);
       const lines = async (): Promise<{ cut: string[]; height: number; rows: number }> => tab.evaluate(() => {
         const band = document.querySelector('.monitor-band') as HTMLElement;
         const box = band.getBoundingClientRect();
@@ -363,7 +367,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     });
 
     await t.test('a window too low for a readable card beside the cards: the pane lies over them, never hidden', async () => {
-      await open(tab, origin, 'tr-pane', 1280, 720);
+      await open(tab, origin, prefix + 'tr-pane', 1280, 720);
       const pane = await docked(tab);
       assert.equal(pane.mode, 'full');
       assert.ok(pane.right - pane.left > 0.9 * 1280, `the pane is ${pane.right - pane.left} px wide`);
@@ -372,7 +376,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
 
     for (const [width, height] of [[3440, 1440], [5120, 1440], [2560, 1440], [3840, 2160]] as const) {
       await t.test(`twenty-four cards are one screen at ${width}x${height}, the age under every figure`, async () => {
-        await open(tab, origin, 'tr', width, height);
+        await open(tab, origin, prefix + 'tr', width, height);
         await twentyFour(tab);
         const seen = await look(tab);
         assert.deepEqual([seen.cards, seen.onScreen, seen.pages], [24, 24, '1']);
@@ -383,7 +387,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     }
 
     await t.test('twenty-four cards on 1920x1080 turn pages rather than lose the age or shrink the type', async () => {
-      await open(tab, origin, 'tr', 1920, 1080);
+      await open(tab, origin, prefix + 'tr', 1920, 1080);
       await twentyFour(tab);
       const seen = await look(tab);
       assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
@@ -392,7 +396,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     });
 
     await t.test('a low window turns pages rather than shrink the type, and the keys turn them', async () => {
-      await open(tab, origin, 'en', 1280, 720);
+      await open(tab, origin, prefix + 'en', 1280, 720);
       const first = await look(tab);
       assert.ok(Number(first.pages) > 1, `${first.pages} pages`);
       assert.ok(first.smallest >= 11, `the smallest text is ${first.smallest} px`);
@@ -421,7 +425,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     });
 
     await t.test('on a paged wall: Home goes to the worst card, a chip turns to its card, a poll keeps the focus', async () => {
-      await open(tab, origin, 'en', 1280, 720);
+      await open(tab, origin, prefix + 'en', 1280, 720);
       const first = await look(tab);
       const worstPage = Number(first.page);                       // the wall opened on the page of HA-R02 (critical)
       const jump = tab.locator('#pages-worst');

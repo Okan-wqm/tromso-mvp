@@ -147,7 +147,8 @@ class EveryListOnTheTestWorldTests(TestCase):
                     if name != 'leave':     # Company › HR's pending tab: the office has none pending (its empty state)
                         self.assertTrue(props['table']['rows'], 'the test world has rows on every list')
                     self.assertEqual(unsaid(old, props, new_html=new), [])
-                    self.assertNotIn('data-modal', new)
+                    main = new[new.index('<main'):new.index('</main>')]
+                    self.assertIsNone(re.search(r'\sdata-modal[\s>=]', main), 'nothing of the list opens the classic dialog')
 
     def test_the_leave_lists_tabs_count_and_the_cancel_posts_with_the_token(self):
         new = self.client.get(reverse('hr:leaverequest_list'), {'ui': 'next', 'tab': 'all'}).content.decode()

@@ -44,10 +44,13 @@ WORKDIR /app
 # stylesheets (static/css/tw.css, tokens.css) are used as they are: CI checks they are what their sources build.
 FROM node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee AS browser
 WORKDIR /src
-COPY package.json package-lock.json tsconfig.json ./
+COPY package.json package-lock.json tsconfig.json vite.config.mjs ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY frontend/ ./frontend/
-RUN npx tsc -p tsconfig.json
+COPY scripts/islands.mjs ./scripts/islands.mjs
+# the entry scripts (static/js), then the islands and their manifest (static/islands, scripts/islands.mjs: an empty
+# manifest while there is no island), which the server's check asks for (core.W001)
+RUN npx tsc -p tsconfig.json && node scripts/islands.mjs
 
 # The production web server (deploy/compose.yml, docs/ops/): the runner (Python, the hashed requirements with gunicorn,
 # the chemistry core), the application, its compiled browser code, the catalogs and the static files under hashed names
@@ -80,6 +83,7 @@ COPY chemcore/EXPECTED ./chemcore/EXPECTED
 COPY deploy/web/ ./deploy/web/
 COPY deploy/db/sql/grants.sql ./deploy/db/sql/grants.sql
 COPY --from=browser /src/static/js/ ./static/js/
+COPY --from=browser /src/static/islands/ ./static/islands/
 # Built here, never at run time (the root file system is read-only): the .mo catalogs, then the static files under
 # hashed names with their manifest (DEBUG off is what selects ManifestStaticFilesStorage; no database is asked).
 RUN DJANGO_DEBUG=1 python manage.py compile_catalogs \

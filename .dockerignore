@@ -25,6 +25,8 @@
 !package.json
 !package-lock.json
 !tsconfig.json
+!vite.config.mjs
+!scripts/islands.mjs
 !deploy/web/
 !deploy/db/sql/grants.sql
 chemcore/target/

@@ -52,6 +52,12 @@ broker's queue (devices resend), the static files (in the image), the secrets (`
 - `dc exec backup sh /usr/local/lib/balik-backup/agent.sh snapshots`: the newest snapshot is minutes old.
 - `dc logs backup`: one line per job; `ERROR:` lines say what failed. A failed job is tried again after 15 minutes.
 - The database's own side: `SELECT * FROM pg_stat_archiver` (`failed_count` stays 0, `last_archived_time` is recent).
+- **A ship refused** ("archived WAL segment(s) not 16 MiB, nothing shipped: <name>"): a file in `/wal-archive` that is
+  not a whole WAL segment (a short copy, or any stray file or folder, e.g. `lost+found` if the archive is ever put on a
+  mount of its own: keep it a plain volume). Nothing is shipped while it is there. Look at it
+  (`dc exec -u root db ls -l /wal-archive`), remove it (`dc exec -u root db rm /wal-archive/<name>`), then take a new
+  base backup at once (`dc exec backup sh /usr/local/lib/balik-backup/agent.sh base`, then `... ship`): a short segment
+  breaks the point-in-time chain from that segment on, and only a base backup after it starts a whole one again.
 
 ## The target, and who may delete (one design)
 
@@ -74,12 +80,31 @@ One small server for all farms, at another provider or data centre than any farm
    farm's repository with a year's growth (a farm's repository: about its dumps and base backups of a month, plus the
    WAL: measure after the first month), an alert at 80 %.
 2. **rest-server** (the release binary, its sha256 checked, as the backup image checks restic's), as a systemd service
-   of a user of its own:
+   of a user of its own, `/etc/systemd/system/rest-server.service`:
    ```
-   rest-server --path /srv/restic --listen :8000 --append-only --private-repos \
+   [Unit]
+   Description=restic REST server (append-only, private repositories)
+   After=network-online.target
+   Wants=network-online.target
+
+   [Service]
+   User=rest-server
+   Group=rest-server
+   ExecStart=/usr/local/bin/rest-server --path /srv/restic --listen :8000 --append-only --private-repos \
      --htpasswd-file /srv/restic/.htpasswd --tls --tls-cert /etc/rest-server/server.crt \
      --tls-key /etc/rest-server/server.key --max-size <bytes for all farms>
+   # re-reads .htpasswd (a farm's user added or removed) without dropping a backup under way
+   ExecReload=/bin/kill -HUP $MAINPID
+   Restart=on-failure
+   NoNewPrivileges=yes
+   ProtectSystem=strict
+   ReadWritePaths=/srv/restic
+   PrivateTmp=yes
+
+   [Install]
+   WantedBy=multi-user.target
    ```
+   then `systemctl daemon-reload && systemctl enable --now rest-server`.
    `--private-repos`: the user `farm-a` reaches `/farm-a/...` only, so a farm's repository is
    `RESTIC_REPOSITORY=rest:https://<backup host>:8000/farm-a/main/` (the path starts with the farm's user name, which is
    the farm's `COMPOSE_PROJECT_NAME`). `--max-size` stops a runaway farm before it fills the disk.
@@ -88,8 +113,9 @@ One small server for all farms, at another provider or data centre than any farm
    owner's own CA (`sh scripts/certs.sh proxy-internal <backup host>` on the owner's machine makes both): its CA
    certificate goes into each farm's `SECRETS_DIR/backup-ca.crt`, which compose hands to the backup and restore services
    as `/run/secrets/backup_ca`, and `RESTIC_CACERT=/run/secrets/backup_ca` in `farm.env`.
-4. **A farm's user:** on the backup machine, `create_user farm-a` (rest-server's script: it asks for a password and
-   writes a bcrypt line into `.htpasswd`; `htpasswd -B /srv/restic/.htpasswd farm-a` does the same), then
+4. **A farm's user:** on the backup machine, `htpasswd -B /srv/restic/.htpasswd farm-a` (bcrypt: rest-server refuses
+   an `$apr1$` line; `htpasswd` is in the `apache2-utils` package; the `create_user` script does the same but ships only
+   in rest-server's Docker image, not with the release binary), then
    `systemctl reload rest-server` (SIGHUP: the server reads `.htpasswd` again). The farm gets that user and password as
    `RESTIC_REST_USERNAME`/`RESTIC_REST_PASSWORD` in its `backup.env`; then `dc run --rm backup init` on the farm.
 5. **Its own backup:** the repositories are encrypted (each farm's restic password, which the backup machine never holds

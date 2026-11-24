@@ -4,9 +4,10 @@
 //   node scripts/tokens.mjs          write both files (npm run build:tokens, part of npm run build)
 //   node scripts/tokens.mjs --check  fail when either file is not what tokens.json builds now (npm run check:tokens;
 //                                    CI runs it, and npm test runs it too)
-// The layout of the file: the default theme's block (`:root, [data-theme="fjord"]`), then one block per other theme with
+// The layout of the file: the root theme's block (`:root, [data-theme="fjord"]`, tokens.json `root`), then one block per other theme with
 // every colour and shadow token (a constant repeats its value) and the per-theme gradients, then one `:root` block of the
-// theme-independent tokens: type sizes, spacing, radius, sizes, layers, the other gradients and the two families.
+// theme-independent tokens: type sizes, spacing, radius, sizes, layers, the other gradients and the families; then one
+// block per look (tokens.json `look`: the new console look under [data-ui="next"]) over the theme-independent tokens.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,7 +21,10 @@ const APP_MARK = '/* App additions (not in tokens.json yet)';
 const normal = (text) => text.replace(/\r\n/g, '\n');
 
 export function build(json) {
-  const themes = json.color.themes.map((theme) => theme.id);
+  // The theme marked `root` is the :root block (the classic look's default, Fjord until the switch); the others follow
+  // in their listed order. The new look's default (Industry) is chosen by the server (core/theme.py), not by :root.
+  const root = (json.color.themes.find((theme) => theme.root) ?? json.color.themes[0]).id;
+  const themes = [root, ...json.color.themes.map((theme) => theme.id).filter((id) => id !== root)];
   const perTheme = (token) => typeof token.value === 'object';
   const valueIn = (token, theme) => (perTheme(token) ? token.value[theme] : token.value);
   const lines = [`/* ${json.name} — generated from tokens.json by scripts/tokens.mjs. Themes via <html data-theme>: `
@@ -45,6 +49,17 @@ export function build(json) {
   for (const token of json.gradient.tokens.filter((token) => !perTheme(token))) lines.push(`  --${token.name}: ${token.value};`);
   for (const [name, value] of Object.entries(json.type.families)) lines.push(`  --font-${name}: ${value};`);
   lines.push('}');
+  // A look overrides theme-independent tokens under its selector (tokens.json `look`): it may only change a token the
+  // blocks above define, so a look can never bring a name the classic pages do not know.
+  const known = new Set(lines.map((line) => line.match(/^ {2}--([a-z0-9-]+):/)?.[1]).filter(Boolean));
+  for (const look of json.look?.looks ?? []) {
+    lines.push(`${look.selector} {`);
+    for (const token of look.tokens) {
+      if (!known.has(token.name)) throw new Error(`tokens.json: the look ${look.id} sets ${token.name}, which no block defines`);
+      lines.push(`  --${token.name}: ${token.value};`);
+    }
+    lines.push('}');
+  }
   return `${lines.join('\n')}\n`;
 }
 

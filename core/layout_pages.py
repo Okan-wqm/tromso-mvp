@@ -314,10 +314,49 @@ def _wall(language, pane=''):
             'computed_at': NOW.replace(tzinfo=None), 'count_line': '20 of 25 units shown'})
 
 
+def _shell_next():
+    """A whole page of the new look (templates/app_base.html, data-ui="next") with an island in it ({% island %}, the
+    component gallery of the browser tests, frontend/test/gallery): the shell, the strip, the scripts and the island as
+    the server prints them, for frontend/test/page.browser.test.ts to load under the server's own policy (its nonce is
+    'layout'). Made-up menu and person; the asset URLs without their modification time and the island read from the test
+    fixture manifest, so the part is the same on every machine."""
+    from django.template import engines
+    from django.urls import reverse
+
+    from core import theme
+    from core.templatetags import assets
+    page = engines['django'].from_string(
+        '{% extends "app_base.html" %}{% load assets %}{% block title %}Gallery{% endblock %}'
+        '{% block heading %}Gallery{% endblock %}{% block content %}'
+        '{% island "gallery" props label="Loading the gallery…" %}{% endblock %}')
+    entry = {'label': 'Sites', 'url': '/farm/sites/', 'icon': 'building', 'current': True, 'badge': None, 'area': 'farm'}
+    section = {'label': '', 'groups': [{'label': 'Facility', 'entries': [entry]}], 'collapsed': False, 'key': 'company-top',
+               'current': True}
+    workspace = {'key': 'company', 'label': 'Company', 'sections': [section], 'url': '/', 'badge': None}
+    user = N(get_username=lambda: 'test.person', get_full_name=lambda: 'Test Person', email='test.person@example.com',
+             is_authenticated=True)
+    props = {'rows': [{'code': 'TK-01', 'name': 'Test Store', 'site': 'Test Site North', 'capacity': '5,000 kg',
+                       'status': 'ok', 'word': 'Active'}],
+             'errors': {'organisation_number': ['Enter nine digits, with or without spaces.']}}
+    context = {
+        'request': N(path='/farm/sites/', get_full_path=lambda: '/farm/sites/'), 'user': user, 'csp_nonce': 'layout',
+        'csrf_token': 'layout-token', 'LANGUAGE_CODE': 'en', 'UI_NEXT': True, 'THEME': theme.DEFAULT_NEXT,
+        'THEMES': theme.THEMES, 'workspaces': [workspace], 'workspace': workspace, 'rail_sections': [section],
+        'bottom_bar': [entry], 'page_area': 'farm', 'page_icon': 'building', 'page_group': 'Facility',
+        'page_panel': 'Company', 'page_label': 'Sites', 'props': props,
+        'ui_strip': [{'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'text': 'Reading the alarms…', 'status': ''},
+                     {'key': 'clock', 'url': '', 'status': '', 'text': '06.11.2026, 10:19 · Europe/Oslo'}],
+    }
+    fixture = Path(settings.BASE_DIR, 'core', 'testdata', 'islands-manifest.json')
+    with mock.patch.object(assets, 'versioned', side_effect=lambda path: assets.static(path)), \
+            mock.patch.object(assets, 'manifest_path', return_value=str(fixture)):
+        return page.render(context)
+
+
 PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
          'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'report-tabs': _report_tabs, 'overview': _overview,
          'wall-small-en': lambda: _wall('en'), 'wall-small-tr': lambda: _wall('tr'),
-         'dock-big-tr': lambda: _wall('tr', pane='HA-R02')}
+         'dock-big-tr': lambda: _wall('tr', pane='HA-R02'), 'shell-next': _shell_next}
 
 
 def rendered():

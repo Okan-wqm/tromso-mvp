@@ -3,7 +3,11 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "rootDir": "frontend",
     "outDir": "static/js",
     "strict": true,
@@ -19,6 +23,12 @@
     "removeComments": false,
     "types": []
   },
-  "include": ["frontend/**/*.ts"],
-  "exclude": ["frontend/**/*.test.ts", "frontend/test/**"]
+  "include": [
+    "frontend/**/*.ts"
+  ],
+  "exclude": [
+    "frontend/**/*.test.ts",
+    "frontend/test/**",
+    "frontend/islands/**"
+  ]
 }

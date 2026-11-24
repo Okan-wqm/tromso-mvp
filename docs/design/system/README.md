@@ -1,4 +1,4 @@
-Suderra Platform is the design system of the Suderra fish-farm platform: a fish farm's whole day in one calm, legible console that a newcomer reads at a glance and an operator trusts with wet hands at the tank side. Its colour comes from the Norwegian coast — fjord water, the polar night, the northern lights, kelp and salmon — as five themes that share one grammar: a dark rail, a pale or deep canvas, slate greys, and a single brand accent on the rail. Colour runs in two channels that never mix: the area hues say where you are (navigation, page heads, module icons), the status colours say what is wrong (and only that).
+Suderra Platform is the design system of the Suderra fish-farm platform: a fish farm's whole day in one calm, legible console that a newcomer reads at a glance and an operator trusts with wet hands at the tank side. Its colour comes from the design console of 2026-11-23 — Industry, steel on a light technical ground, the default — and from the Norwegian coast — fjord water, the polar night, the northern lights, kelp and salmon — as six themes that share one grammar: a dark rail, a pale or deep canvas, slate greys, and a single brand accent on the rail. Colour runs in two channels that never mix: the area hues say where you are (navigation, page heads, module icons), the status colours say what is wrong (and only that).
 
 This release covers the **shell** (rail sidebar and top bar) and three **Production** screens: Meal board, Production units and Water chemistry. Login and the other panels are out of scope for now.
 
@@ -35,11 +35,12 @@ Use the files in **Logos**: `suderra-mark-disc.png` (the fish on a white disc) i
 
 ## Colour
 
-Five themes, chosen per person with a cookie (never from the OS). Each is one place on the Norwegian coast; all share the same role tokens, so a template written once looks right in every theme.
+Six themes, the design's set (the design project `Suderra Console`, 2026-11-23; the owner likes its themes, 2026-11-24), chosen per person with a cookie (never from the OS). With no choice made, the classic look stays on Fjord (`:root`) and the new look (`?ui=next`) opens on Industry; the owner decides the default for everyone at the switch (S8). The other five are each one place on the Norwegian coast, with the design's values unchanged from tokens v2. All share the same role tokens, so a template written once looks right in every theme.
 
 | Theme | `data-theme` | Kind | The picture | Accent (`brand`) |
 |---|---|---|---|---|
-| **Fjord** | `fjord` (default) | day | Deep navy water (the logo navy) under a pale cold sky | logo teal `#63a2a9` |
+| **Industry** | `industry` (the new look's default) | day | A technical drawing: steel blue on a light grey ground, a deep steel rail (`#1d2d3d`) | steel `#94bce3` |
+| **Fjord** | `fjord` (the classic look's default, `:root`) | day | Deep navy water (the logo navy) under a pale cold sky | logo teal `#63a2a9` |
 | **Polarnatt** | `polarnatt` | night | The polar night: blue-black, light kept for text and figures | muted teal `#7cb8be` |
 | **Nordlys** | `nordlys` | night, wall screens | Indigo-black sky, a faint green glow at the foot of the rail | aurora green `#7de0c3` |
 | **Tang** | `tang` | day | Kelp forest: deep kelp rail, green-grey canvas | sea grass `#a9c9b4` |
@@ -68,15 +69,23 @@ check:tokens`, CI and `npm test` fail when either file is not what it builds).
 | Charts | `chart-s1`…`chart-s5`, `chart-iso`, `zone-safe`, `zone-toxic` |
 | Roster shift chips | `tone-1`…`tone-8` (Fjord, Birch, Sand, Heather, Clay, Glacier, Stone, Lingon) with `text-1` |
 
-Contrast is measured, not claimed: `core/tests_contrast.py` checks 48 pairs in each of the five themes, every text pair
+Contrast is measured, not claimed: `core/tests_contrast.py` checks 48 pairs in each of the six themes, every text pair
 at 4.5:1 and every shape at 3:1 (text-1/2/3 on sheet, canvas and sunken; action; on-primary; the rail; each status's
 words on its tint and on the sheet; each area's icon on its tint, on the sheet and on the rail). The lowest text pairs
 are `text-3` on sunken (4.83 in Tang) and the night themes' area icons on their tints (4.50 to 4.58). Computed contrast
-in every theme (Fjord · Polarnatt · Nordlys · Tang · Laks): `text-1` on sheet 17.2 · 13.8 · 15.2 · 16.9 · 17.5;
-`text-3` on sunken 5.1 · 4.9 · 5.4 · 4.8 · 5.4; `text-on-rail` on rail 12.2 · 10.5 · 12.4 · 11.9 · 12.0; `brand` on
-rail 5.6 · 8.5 · 12.6 · 8.8 · 7.8; `action` on sheet 7.2 · 7.9 · 8.7 · 7.3 · 7.2; `warn-text` on `warn-tint` 6.0 · 8.2
-· 8.2 · 6.0 · 6.0; `on-crit` on `crit` 6.5 · 6.7 · 6.7 · 6.5 · 6.5; `line-control` on sunken 3.4 · 3.2 · 3.6 · 3.4 ·
+in every theme (Industry · Fjord · Polarnatt · Nordlys · Tang · Laks): `text-1` on sheet 15.5 · 17.2 · 13.8 · 15.2 · 16.9 · 17.5;
+`text-3` on sunken 5.3 · 5.1 · 4.9 · 5.4 · 4.8 · 5.4; `text-on-rail` on rail 11.5 · 12.2 · 10.5 · 12.4 · 11.9 · 12.0; `brand` on
+rail 7.1 · 5.6 · 8.5 · 12.6 · 8.8 · 7.8; `action` on sheet 6.1 · 7.2 · 7.9 · 8.7 · 7.3 · 7.2; `warn-text` on `warn-tint` 6.0 · 6.0 · 8.2
+· 8.2 · 6.0 · 6.0; `on-crit` on `crit` 6.5 · 6.5 · 6.7 · 6.7 · 6.5 · 6.5; `line-control` on sunken 3.5 · 3.4 · 3.2 · 3.6 · 3.4 ·
 3.6. `warn` is a shape colour (3.6:1 on a day sheet): never set words in it, use `warn-text`.
+
+Industry against the design: two of its values were changed by the least that passes. The design's primary `#5980a6`
+under its own `on-primary` `#f5f5f8` is 3.81:1, under the 4.5:1 a button's label needs: the primary is `#507395`
+(4.57:1; the hover stays the design's `#416180`, 5.94:1). The area icons on the Industry rail (`#1d2d3d`, lighter than
+Fjord's) took Fjord's values at 3.91 (farm, feed) and 4.06 (stock): they are lightened toward white by 8 to 10 %
+(`#868bdc`, `#ae7ed4`, `#d072b4`, 4.5:1). The design's console draws the rail icons in the rail's ink, so this changes
+nothing it shows. Every other Industry role is the design's value; the roles the design does not set (charts, zones,
+tones, areas, focus) take Fjord's, with the Industry neutrals where Fjord uses its own (`note`, `stale`, `area-neutral`).
 
 The `slate`, `navy`, `teal`, `fjord`, `kelp`, `amber`, `ember`, `aurora`, `kelpdeep` and `salmon` scales (50–950) are the palette behind the roles, for illustration and Tailwind utilities. UI code reaches for roles first.
 
@@ -159,6 +168,33 @@ Neither `form` nor `prose` leaves a dead band: what a wider window adds becomes 
 `frontend/test/layout.browser.test.ts` holds a fluid page's content to the window's right edge less the gutter at 390,
 1024, 1280, 1440, 1920, 2560, 3440, 3840 and 5120 px.
 
+## The new look
+
+The design console of 2026-11-23 (the Industry design system; the exported project is in
+`F:\dev\balik-notes\design-in`, its main file `Suderra Console.dc.html`, direction B) is the same patterns in another shape,
+behind `?ui=next` (`core/ui.py`, `<html data-ui="next">`) until the owner switches:
+
+- **Shape.** Square: `radius-chip`, `radius-control` and `radius-object` are 0 (only avatars and status dots stay round).
+  Plates (`ui-plate`) and the one primary button carry the `+` registration marks at their corners, drawn by one
+  pseudo-element; nothing else does. The page lies on grid paper (24 px, the hairline at 45 %).
+- **Type.** Barlow 600 (`--font-display`) for headings, plate titles, buttons, tabs, the rail's section names and
+  readouts; Atkinson Hyperlegible Next stays the data face. Sizes scale with `--k`: 1.04 on a phone, 1.08 at the desk,
+  1.15 from 1800 px, 1.55 on the wall (`--fs-h1` 30, `--fs-h2` 19, `--fs-body` 15, `--fs-cell` 14, `--fs-label` 13,
+  `--fs-head` 12, all × k). Column heads and group names are sentence case, 12/600, +0.04em (never upper case).
+- **Density.** Controls `--h` 40 (48 on a coarse pointer, 56 on the wall); cells 7 × 12 px; plates 16 px apart; the page's
+  gutter `--edge` 32 (24 under 1100 px, 16 on a phone, 48 on the wall); table rows 44 · 56 · 64.
+- **Shell.** The rail is the flat `surface-rail` with the brand stripe; its icons take the rail's ink (the area hue stays
+  on the page head); the active line is the rail-active fill with a 3 px brand bar. The top bar adds the status strip
+  (the alarms and the water as the engine judges it, filled critical when one is critical; people on site; the company's
+  clock) from 1100 px, and the trail Panel › Group › Page. Over the title,
+  the menu group (Facility, Operations); the page icon in a 40 px hairline square.
+- **Patterns added for it** (`ds.css`, and the same classes in the islands, `frontend/islands/ui`): `ui-plate` and
+  `ui-plates` (a 12-column grid, `data-span` 4, 6, 8, 12), `ui-tile` and `ui-tiles` (a stat tile: label, figure, sub-line,
+  source; a 4 px edge and a glyph only when abnormal), `ui-notice` (safety, flash, error), `ui-empty`, `ui-loading`,
+  `ui-error`, `ui-chart` (the chart frame), `ui-unit` (a unit inside a field's frame), `ui-fixed`, `ui-checks`,
+  `ui-form-grid`, `ui-segmented` (the classic `.ui-seg` is another control), `ui-strip`; button variants `ghost` and `danger-text`, and busy (`data-pending` or
+  `aria-busy`, a turning ring in place of the icon).
+
 ## Components
 
 One rule set per pattern, in `static/css/ds.css`, read by every page; it reads only tokens. Each pattern's name is the
@@ -179,7 +215,7 @@ links `base.css` and not `ds.css` in this place.
 | Filter bar | `ui-toolbar` | one wrapping row, a labelled control's label above it, the last button at the right | `toolbar`, `filter-bar`, `monitor-filters`, `feeding-filters`, `water-filters` |
 | Table | `ui-table` in `ui-table-wrap` | sunken head, rows with hover, `.num` right-aligned on one line; the frame scrolls and shades the side that goes on | `data-table` in `table-wrap` |
 | Tabs | `ui-tabs` of `ui-tab` | a button tab (`aria-selected`) and a link tab (`aria-current="page"`) look alike: the action underline; `ui-count` beside a name; `tab-error`; a strip longer than its row wraps onto rows, so every tab, the current one first of all, is on the screen at any width (it used to scroll sideways, and on a phone the current tab of `/reports/?kind=smolt` lay out of sight) | `tabs`/`tab`, `view-tabs`/`view-tab`, `view-count` (every template migrated) |
-| Badge | `ui-chip` with `data-status` (ok, note, warning, critical, hold, neutral) or `data-state` (nodata, stale) | glyph and word, a ladder of fill weight | `badge` with `badge-<status>` (each mapped to a tone) |
+| Badge | `ui-chip` with `data-status` (ok, note, warning, critical, hold, neutral, accent) or `data-state` (nodata, stale) | glyph and word, a ladder of fill weight | `badge` with `badge-<status>` (each mapped to a tone) |
 | Card | `ui-card` (`ui-sheet` for a frame without padding) | flat; raised one step when it is a link, and a link card keeps the page's focus ring beside that shadow (`:focus-visible`, WCAG 2.4.7; a `tw:` utility that sets a `box-shadow` on a link, like a metric card's status edge, adds its own focus variant) | `card`, `tile`, `calc-card` |
 | Page head | `ui-head` | area chip, `h1`, status line, actions | (one, in `app_base.html`) |
 
@@ -207,7 +243,7 @@ The ratchet is `ds-ratchet.json` in this folder: today's counts, which may only 
 the gate catches it. `frontend/test/cascade.browser.test.ts` holds what the gate cannot see, in a real browser: a page's
 rule for one element of a pattern still wins (a report's Print button and tables, a chip's size and link colour, a
 toolbar control's weight, the search icon), the rail's collapse button is hidden on a phone and readable on the rail in
-all five themes, every link, button and field of the parts shows when it has the focus, and a phone's tab strip shows
+all six themes, every link, button and field of the parts shows when it has the focus, and a phone's tab strip shows
 the current tab.
 
 ## Known gaps (slice 1a)

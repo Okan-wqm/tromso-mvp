@@ -120,3 +120,14 @@ class StripAlarmsTests(AlarmsCase):
     def test_nothing_open_and_good_water_says_no_open_alarms(self):
         self.sample(7.2)
         self.assertRegex(self.fragment(), r'data-strip="alarms">No open alarms</a>')
+
+    def test_the_reader_counts_per_site_from_one_read(self):
+        from alarms import read as alarms_read
+        self.sample(5.5)
+        self.assertEqual(alarms_read.attention(site=self.bergen).critical, 1)
+        self.assertEqual(alarms_read.attention(site=self.oslo.pk).critical, 0)
+        by_site = alarms_read.attention_by_site()
+        self.assertEqual(by_site[self.bergen.pk].critical, 1)
+        self.assertEqual(by_site[self.bergen.pk].status, 'critical')
+        self.assertNotIn(self.oslo.pk, by_site)                           # no unit and no alarm there
+        self.assertEqual(alarms_read.attention(), by_site[self.bergen.pk])

@@ -195,6 +195,10 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
         await tab.waitForSelector('[data-mounted] .ui-plate');
         const overflow = await tab.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         assert.equal(overflow, 0);
+        // six tiles of a whole-width plate: one row at 1440 px (as the design), two to a row on a phone
+        const rows = await tab.evaluate(() => new Set([...document.querySelectorAll('[aria-label="Company today"] .ui-tile')]
+          .map((tile) => Math.round(tile.getBoundingClientRect().top))).size);
+        assert.equal(rows, width === 1440 ? 1 : 3);
         if (process.env.SHOTS) {
           mkdirSync(process.env.SHOTS, { recursive: true });
           await tab.screenshot({ path: join(process.env.SHOTS, `gallery-${width}.png`), fullPage: true });

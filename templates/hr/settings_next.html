@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n %}
+{% load i18n durations %}
 {% comment %} Scheduling settings in the new look (hr.resources.SchedulingSettingsResource.list_template_next, behind ?ui=next):
    the classic page's limits and the lists they lead to (hr/settings_list.html), as plates; the limits' edit is the record's
    own page, not a dialog. {% endcomment %}
@@ -13,14 +13,14 @@
   <div class="ui-plate-head"><h2 id="limits">{% trans "Limits" %}</h2></div>
   <div class="ui-plate-body"><p class="ui-empty-text">{% trans "These are defaults the company can change, not the law: confirm them with your agreements. A limit may only be set stricter than the statute." %}</p></div>
   <div class="ui-tiles" data-fixed data-columns="4" role="group" aria-labelledby="limits">
-    <div class="ui-tile"><span class="ui-tile-label">{% trans "Standard week (minutes)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.standard_week_minutes }}</span></div>
-    <div class="ui-tile"><span class="ui-tile-label">{% trans "Minimum rest between shifts (minutes)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.min_rest_minutes }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Standard week" %}</span><span class="ui-tile-figure" data-figure>{{ settings.standard_week_minutes|minutes_said }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Minimum rest between shifts" %}</span><span class="ui-tile-figure" data-figure>{{ settings.min_rest_minutes|minutes_said }}</span></div>
     <div class="ui-tile"><span class="ui-tile-label">{% trans "Most working days in a row" %}</span><span class="ui-tile-figure" data-figure>{{ settings.max_consecutive_days }}</span></div>
     <div class="ui-tile"><span class="ui-tile-label">{% trans "A short rest, a long week or too many days in a row" %}</span><span class="ui-tile-value">{{ settings.get_rest_rule_display }}</span></div>
     <div class="ui-tile"><span class="ui-tile-label">{% trans "Working weekdays" %}</span><span class="ui-tile-value">{{ settings.weekday_labels|join:", " }}</span></div>
-    <div class="ui-tile"><span class="ui-tile-label">{% trans "Punch window (minutes)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.punch_window_minutes }}</span></div>
-    <div class="ui-tile"><span class="ui-tile-label">{% trans "Absent after (minutes)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.absent_after_minutes }}</span></div>
-    <div class="ui-tile"><span class="ui-tile-label">{% trans "A clock-in counts as forgotten after (hours)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.forgotten_after_hours }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Punch window" %}</span><span class="ui-tile-figure" data-figure>{{ settings.punch_window_minutes|minutes_said }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Absent after" %}</span><span class="ui-tile-figure" data-figure>{{ settings.absent_after_minutes|minutes_said }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "A clock-in counts as forgotten after" %}</span><span class="ui-tile-figure" data-figure>{{ settings.forgotten_after_hours|whole_hours_said }}</span></div>
   </div>
   {% if can_change %}<div class="ui-plate-body"><a class="ui-btn" href="{% url 'hr:schedulingsettings_edit' settings.pk %}">{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit the limits" %}</a></div>{% endif %}
 </section>

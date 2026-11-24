@@ -10,12 +10,48 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import translation
 
 from core import stack
 from core.pagesays import unsaid
 
 PAGES = ('hr:today', 'hr:production_today')
 MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-company-manifest.json')
+
+
+def week_days_said(days):
+    """A week's days, said by the classic page as "Mon" and "23.11." (or "Mon 23.11.") and by the new look on one line as
+    the design writes them, "Mon 23 Nov" (declared to core.pagesays.unsaid, the same day said another way)."""
+    from django.template.defaultfilters import date
+    found = {}
+    for day in days:
+        new = date(day, 'D j M')
+        found.update({date(day, 'D'): new, date(day, 'MONTH_DAY_FORMAT'): new, f"{date(day, 'D')} {date(day, 'MONTH_DAY_FORMAT')}": new})
+    return found
+
+
+def said_another_way(name, response):
+    """What a new-look HR page says another way by design, declared for core.pagesays.unsaid: the durations in hours and
+    minutes (core.durations) where the classic page says minutes, their labels without the unit, and the week's days on
+    one line. Worked out from the page's own context, in the language active now."""
+    from django.utils.translation import gettext as _
+
+    from core.durations import hours_said, minutes_said, said_as
+    from hr.models import SchedulingSettings
+    if name == 'hr:schedulingsettings_list':
+        limits = SchedulingSettings.get()
+        return said_as([
+            (_('Standard week (minutes)'), _('Standard week')), (limits.standard_week_minutes, minutes_said(limits.standard_week_minutes)),
+            (_('Minimum rest between shifts (minutes)'), _('Minimum rest between shifts')),
+            (limits.min_rest_minutes, minutes_said(limits.min_rest_minutes)),
+            (_('Punch window (minutes)'), _('Punch window')), (limits.punch_window_minutes, minutes_said(limits.punch_window_minutes)),
+            (_('Absent after (minutes)'), _('Absent after')), (limits.absent_after_minutes, minutes_said(limits.absent_after_minutes)),
+            (_('A clock-in counts as forgotten after (hours)'), _('A clock-in counts as forgotten after')),
+            (limits.forgotten_after_hours, minutes_said(limits.forgotten_after_hours * 60))])
+    overview = response.context['overview']
+    return {**week_days_said(overview.week.days), **said_as(
+        [(_('Against the standard week (min)'), _('Against the standard week'))]
+        + [(f"{'+' if row.over else ''}{row.over_minutes}", hours_said(row.over_minutes, signed=True)) for row in overview.rows])}
 
 
 def props_of(html, name):
@@ -56,7 +92,9 @@ class TodayNextTests(TestCase):
                     old = self.client.get(reverse(name), {'ui': 'classic'}).content.decode()
                     new = self.client.get(reverse(name), {'ui': 'next'}).content.decode()
                     self.assertIn('class="ui-plates"', new)
-                    self.assertEqual(unsaid(old, {}, new_html=new), [])
+                    with translation.override(language):
+                        declared = said_another_way(name, response=self.client.get(reverse(name), {'ui': 'next'}))
+                    self.assertEqual(unsaid(old, {}, new_html=new, said_as=declared), [])
                     main = new[new.index('<main'):new.index('</main>')]
                     self.assertIsNone(re.search(r'\sstyle=', main))
                     self.assertIsNone(re.search(r'\sdata-modal[\s>=]', main))
@@ -83,7 +121,9 @@ class TodayNextTests(TestCase):
                     props = props_of(new, 'roster')
                     self.assertIsNotNone(props)
                     self.assertTrue(props['grid']['rows'])
-                    self.assertEqual(unsaid(old, props, new_html=new), [])
+                    with translation.override(language):
+                        declared = week_days_said(self.client.get(reverse(name), {'ui': 'next'}).context['week'].days)
+                    self.assertEqual(unsaid(old, props, new_html=new, said_as=declared), [])
 
     def test_the_paint_posts_what_the_servers_batch_route_takes(self):
         from hr.models import Employee, Shift, ShiftAssignment
@@ -168,3 +208,24 @@ class TodayRosterTests(TestCase):
                 new = self.client.get(reverse('hr:production_today'), {'ui': 'next'}).content.decode()
                 self.assertIn('ui-stack-seg', new)                       # a bar with parts, not the empty one
                 self.assertEqual(unsaid(old, {}, new_html=new), [])
+
+
+class DurationsSaidTests(TestCase):
+    """core.durations, the one way the new look says a duration, in each language."""
+
+    def test_hours_and_minutes_and_a_signed_difference(self):
+        from core.durations import hours_said, minutes_said
+        self.assertEqual([minutes_said(value) for value in (2250, 660, 120, 30, 0, 960)],
+                         ['37 h 30 min', '11 h', '2 h', '30 min', '0 min', '16 h'])
+        self.assertEqual([hours_said(value, signed=True) for value in (600, -2250, -450, 0)], ['+10 h', '−37.5 h', '−7.5 h', '0 h'])
+        with translation.override('nb'):
+            from django.utils.translation import gettext as _
+            self.assertEqual(hours_said(-450, signed=True), '−' + _('%(hours)s h') % {'hours': '7,5'})   # its comma, its unit
+        with translation.override('tr'):
+            self.assertEqual(minutes_said(2250), _tr_said())
+
+
+def _tr_said():
+    """Turkish "37 sa 30 dk" as its catalog says it (its own words for h and min)."""
+    from django.utils.translation import gettext as _
+    return _('%(hours)s h %(minutes)s min') % {'hours': '37', 'minutes': '30'}

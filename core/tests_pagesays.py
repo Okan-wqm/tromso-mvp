@@ -57,3 +57,9 @@ class SaysTests(SimpleTestCase):
     def test_a_run_of_only_punctuation_is_layout_not_a_fact(self):
         old = '<main><p>by admin <span>·</span> 24.11.2026</p><p><del>14</del> <span>→</span> <ins>31</ins></p></main>'
         self.assertEqual([value for _kind, value in says(old)], ['by admin', '24.11.2026', '14', '31'])
+
+    def test_a_value_cell_holding_only_a_mark_says_a_fact(self):
+        old = '<main><table><tr><td>Silo 2</td><td>—</td></tr></table><dl><dt>Area</dt><dd>–</dd></dl></main>'
+        self.assertEqual([value for _kind, value in says(old)], ['Silo 2', '—', 'Area', '–'])
+        self.assertEqual(unsaid(old, {'name': 'Silo 2', 'area': 'Area'}), [('text', '—'), ('text', '–')])
+        self.assertEqual(unsaid(old, {'name': 'Silo 2', 'cover': '—', 'area': 'Area', 'value': '–'}), [])

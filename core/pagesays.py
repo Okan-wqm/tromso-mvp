@@ -14,6 +14,7 @@ from collections import Counter
 from html.parser import HTMLParser
 
 SILENT = {'script', 'style', 'template'}
+VALUE_CELLS = {'td', 'dd', 'output'}      # cells that hold a value: one holding only "—" says "no value"
 VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'}
 
 
@@ -25,6 +26,7 @@ class _Main(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.depth, self.silent, self.stack, self.items = 0, 0, [], []
+        self.cells = []             # the words of the value cells open now (td, dd, output): [[text, …], …]
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -43,6 +45,8 @@ class _Main(HTMLParser):
             for name in ('aria-label', 'title', 'placeholder'):
                 if attrs.get(name):
                     self.items.append(('text', squash(attrs[name])))
+        if tag in VALUE_CELLS:
+            self.cells.append([])
         if tag not in VOID:
             self.stack.append(tag)
 
@@ -53,12 +57,21 @@ class _Main(HTMLParser):
             self.silent -= 1
         if tag == 'main':
             self.depth -= 1
+        if tag in VALUE_CELLS and self.cells:
+            words = squash(''.join(self.cells.pop()))
+            # A value cell that says only a mark ("—": no value, "–") says a fact: the mark is the value. Between words
+            # the same mark is a separator (handle_data).
+            if words and not any(char.isalnum() for char in words) and not self.silent:
+                self.items.append(('text', words))
         while self.stack and self.stack.pop() != tag:
             pass
 
     def handle_data(self, data):
-        # A run of only punctuation or symbols ("·" between two facts, "→" from an old value to a new one) is layout, not a
-        # fact: the new page draws its own; a run with a letter or a digit is said.
+        # A run of only punctuation or symbols ("·" between two facts, "→" from an old value to a new one) is a separator,
+        # layout and not a fact: the new page draws its own; a run with a letter or a digit is said. A value cell holding
+        # nothing but such a mark is the exception (handle_endtag).
+        for cell in self.cells:
+            cell.append(data)
         if self.depth and not self.silent and any(char.isalnum() for char in data):
             self.items.append(('text', squash(data)))
 

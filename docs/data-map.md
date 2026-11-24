@@ -224,8 +224,8 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 - **read**: alarm severity rules tab (`/alarms/severity-rules/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Alarms › alarm_severity_policies
 - **forms**: `SeverityPolicyForm`
-- **constraints**: uq_alarm_severity_policies_severity (unique: severity); chk_alarm_severity_policies_severity (check); chk_alarm_severity_policies_delays (check); chk_alarm_severity_policies_on_delay (check); chk_alarm_severity_policies_escalation (check); chk_alarm_severity_policies_attempts (check); chk_alarm_severity_policies_retry (check); chk_alarm_severity_policies_shelve (check); chk_alarm_severity_policies_flood (check); chk_alarm_severity_policies_flood_window (check); chk_alarm_severity_policies_clock (check); chk_alarm_severity_policies_clock_window (check); chk_alarm_severity_policies_kept (check)
-- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `alarms/tests/test_alarms.py` and 9 more
+- **constraints**: uq_alarm_severity_policies_severity (unique: severity); chk_alarm_severity_policies_severity (check); chk_alarm_severity_policies_delays (check); chk_alarm_severity_policies_on_delay (check); chk_alarm_severity_policies_escalation (check); chk_alarm_severity_policies_attempts (check); chk_alarm_severity_policies_retry (check); chk_alarm_severity_policies_shelve (check); chk_alarm_severity_policies_flood (check); chk_alarm_severity_policies_flood_window (check); chk_alarm_severity_policies_follow_up (check); chk_alarm_severity_policies_clock (check); chk_alarm_severity_policies_clock_window (check); chk_alarm_severity_policies_kept (check)
+- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `alarms/tests/test_alarms.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -247,6 +247,7 @@ How an alarm of a severity behaves, one row per severity (a person with the righ
 | shelve_max_minutes | integer |  |  | SeverityPolicyForm › Rule |
 | flood_count | integer |  |  | SeverityPolicyForm › Rule |
 | flood_window_seconds | integer |  |  | SeverityPolicyForm › Rule |
+| follow_up_seconds | integer |  |  | SeverityPolicyForm › Rule |
 | clock_skew_seconds | integer |  |  | SeverityPolicyForm › Device clock |
 | clock_skew_deadband_seconds | integer |  |  | SeverityPolicyForm › Device clock |
 | clock_behind_window_seconds | integer |  |  | SeverityPolicyForm › Device clock |

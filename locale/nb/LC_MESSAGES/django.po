@@ -5634,6 +5634,17 @@ msgstr "Kritisk, nå avsluttet: %(summary)s. Åpnet %(opened)s, avsluttet %(clea
 msgid "Criticality"
 msgstr "Kritikalitet"
 
+msgid ""
+"Criticals only: after a message about a kind of critical alarm (one site, one quantity, rule or "
+"check), the next ones of that kind for that person are collected this long and go as one message "
+"naming each. 0: each at once. Critical 0 to 30; warning 0 (warnings are grouped by the flood "
+"window)."
+msgstr ""
+"Bare kritiske: etter en melding om et slag kritisk alarm (ett anlegg, én størrelse, regel eller "
+"kontroll) samles de neste av samme slag for samme person så lenge og går som én melding som "
+"nevner hver av dem. 0: hver med en gang. Kritisk 0 til 30; advarsel 0 (advarsler grupperes av "
+"flomvinduet)."
+
 msgid "Crude fat (%)"
 msgstr "Råfett (%)"
 
@@ -7318,6 +7329,9 @@ msgstr "Fokus: %(unit)s"
 msgid "Focus: {unit}"
 msgstr "Fokus: {unit}"
 
+msgid "Follow-up after (seconds)"
+msgstr "Oppfølging etter (sekunder)"
+
 msgid "Food fish (matfisk)"
 msgstr "Matfisk"
 
@@ -7554,12 +7568,12 @@ msgstr "Fra da av"
 msgid ""
 "From this many warnings of one kind (one site, one quantity, rule or check) within the flood "
 "window, a person gets one flood message for them. Criticals are never grouped this way: the first"
-" of a kind goes at once, the next ones within 15 s as one message naming each; for them it marks "
-"a flood on the Alarms page. 2 to 1000."
+" of a kind goes at once, the next ones as one follow-up message naming each; for them it marks a "
+"flood on the Alarms page. 2 to 1000."
 msgstr ""
 "Fra så mange advarsler av samme slag (ett anlegg, én størrelse, regel eller kontroll) innenfor "
 "flomvinduet får en person én flommelding for dem. Kritiske alarmer grupperes aldri slik: den "
-"første av et slag går med en gang, de neste innen 15 s som én melding som nevner hver av dem; for"
+"første av et slag går med en gang, de neste som én oppfølgingsmelding som nevner hver av dem; for"
 " dem markerer den en flom på alarmsiden. 2 til 1000."
 
 msgid "Frozen at"

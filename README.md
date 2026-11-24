@@ -4406,7 +4406,8 @@ from which device, how late) is logged. The server side is built; the push trans
   escalation time and the delivery attempts (Alarm severity rules, one row each: critical 0 s, 30 s, 5 min, 5; warning 30 s,
   30 s, 30 min, 5), the time between two attempts (critical 30 s, warning 120 s; `alarms` 0016), the longest snooze
   (critical 240 min, warning 720 min, owner decision Q5; `alarms` 0017; bounded at 480 and 1440) and a flood (3 alarms of
-  one kind within 120 s, both severities; `alarms` 0018), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
+  one kind within 120 s, both severities; `alarms` 0018) with a critical's follow-up time (5 s, at most 30 s; a
+  warning's 0; `alarms` 0021), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
   0.05, CO₂ 1 mg/L, TAN 0.05, NH₃-N 0.002, NO₂-N 0.05 mg/L, salinity 0.5 ‰). These are the owner's defaults (§7a),
   seeded once by `alarms` 0002; from then on they are rows edited on their tabs by the alarm admin's rights, bounded by
   database checks, logged, read once per pass (`alarms/rules.py`): a change takes effect on the next pass. The bounds are
@@ -4546,12 +4547,13 @@ from which device, how late) is logged. The server side is built; the push trans
   "grouped", never sent on their own); a flood message that said its alarms had cleared covers nothing. **Criticals:
   batched, never covered** (the coordinator's bar on the last recheck: no known way to drop or delay an open or newly
   cleared critical on a connected transport). The first critical of a kind for a person goes at once, on its own. The
-  next ones of that kind for that person are collected while a message of the kind went to them less than 15 s ago
-  (`floods.FOLLOW_UP_AFTER`; at most 30 s, the coordinator's bound), then go as ONE follow-up message, "N more
+  next ones of that kind for that person are collected while a message of the kind went to them less than the critical
+  rule's "Follow-up after" ago (5 s by default; at most 30 s, the coordinator's bound; 0 sends each at once), then go
+  as ONE follow-up message, "N more
   critical alarms of one kind since ..., M open now: ...", naming each (its summary names the unit, a cleared one
   "(cleared ...)"); one alone goes with its own text. Ones due in the same round as the first go with it, the rest as
-  the follow-up. So every critical reaches the person by name within 15 s of being queued, and a person gets at most one
-  message of a kind in that time. For criticals the flood count and window only mark a flood on the Alarms page. Grouping
+  the follow-up. So every critical reaches the person by name within the follow-up time of being queued, and a person
+  gets at most one message of a kind in that time. For criticals the flood count and window only mark a flood on the Alarms page. Grouping
   is the outbox's only: every alarm is raised in its own pass, kept, acknowledged and escalated on its own. The Alarms
   page names a flood of open alarms above the list; an alarm's history says "in a flood message of N alarms".
 - **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the

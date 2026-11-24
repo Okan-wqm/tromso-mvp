@@ -990,9 +990,13 @@ units=...)` reads it in the same pass as every point, keyed by the unit, its sys
 loop point's samples and probes, or the system's probes where there is no loop point), each value judged for the unit's
 own fish and saying "From its system, RAS 1 › Middle: the unit has no sampling point of its own." (nb, tr). Every
 reader takes it there: the card (its middle water, its values, its state), the water page's row, Production units and
-the overview, and the alarms (its water-limit levels at the loop point, "N-05, from R5 · Middle: …"; with no loop point
-no level can be placed, so the "no active sampling point" warning stays while its system's probes give its oxygen).
-A unit with a point is read exactly as before.
+the overview (counted and listed), and the alarms: its water-limit levels at the loop point ("N-05, from R5 · Middle:
+…"), or, where the system has no loop point, without a point ("N-05, from its system: …", alarms 0015), always on the
+unit's own site and department, so a card at critical or at warning has its alarm at that level (review 5, M1). The
+drawer and the card's water table say "From its system, …" above those values. The "no active sampling point" warning
+is about a unit read from nowhere (no point of its own, no system: alarms/sources.py `_read_nowhere`), whose oxygen is
+then the critical of no fresh value, so it holds only for a unit the stock counts with fish that the water finds holding
+none now. A unit with a point is read exactly as before.
 
 **A unit with fish whose oxygen has no fresh value is critical** (owner decisions of 2026-11-23; they replace, for the
 dissolved oxygen alone, the grey "no recent data … never red" of 2026-11-04). Where the unit holds fish NOW (after its

@@ -1937,7 +1937,7 @@
       "app": "alarms",
       "model": "Alarm",
       "table": "alarms",
-      "description": "One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point.",
+      "description": "One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point (`point`; none for a unit read at its system's probes where the system has no loop point: alarms/sources.py `_water_subjects`).",
       "columns": [
         {
           "name": "id",

@@ -252,7 +252,7 @@ The one mutable row of an alarm subject (a unit's parameter at a level: `water:u
 <a id="alarmsalarm"></a>
 ### alarms.Alarm (`alarms`)
 
-One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point.
+One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point (`point`; none for a unit read at its system's probes where the system has no loop point: alarms/sources.py `_water_subjects`).
 
 - **create**: none, by design: written by manage.py run_alarms (alarms/engine.py)
 - **edit**: none, by design: append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin

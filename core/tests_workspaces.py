@@ -54,7 +54,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         company = self.page(reverse('farm:site_list'))
         self.assertEqual(company.context['workspace']['key'], 'company')
         self.assertEqual(self.labels(company), ['Overview', 'Sites', 'Storage locations', 'Library', 'Knowledge entries',
-                                                 'Alarms', 'Alarm recipients', 'Alarm severity rules', 'Alarm deadbands',
+                                                 'Alarms', 'Alarm snoozes', 'Alarm recipients', 'Alarm severity rules',
+                                                 'Alarm deadbands',
                                                  'Activity log', 'Roles', 'Users', 'Database',
                                                  'Platform settings', 'Opening balances', 'Today & attendance', 'Team list', 'Departments',
                                                  'Organization chart', 'Shift schedule', 'Team overview', 'Attendance', 'Leave requests', 'Scheduling settings'])
@@ -259,6 +260,7 @@ class MenuPlacementTests(TestCase):
             'sensors.AlarmEvent': 'Sensors · Operations',
             'sensors.Credential': 'Sensors · Administration',
             'alarms.Alarm': 'Company · Alarms',
+            'alarms.AlarmShelve': 'Company · Alarms',
             'alarms.RecipientRule': 'Company · Alarms',
             'alarms.SeverityPolicy': 'Company · Alarms',
             'alarms.ParameterDeadband': 'Company · Alarms',

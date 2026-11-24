@@ -730,3 +730,20 @@ def page_figures(analyses):
                 figures.append({**deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)), 'point': None})
         indexes.append(index)
     return figures, indexes
+
+
+# The ingest is alive while each active connection's heartbeat is this recent (it beats every 10 s): the overview's
+# tile and the alarm worker's dead man read it here.
+INGEST_DEAD_AFTER = timedelta(seconds=90)
+
+
+def ingest_alive(now):
+    """Whether the ingest is alive: None when no connection is active (nothing to ingest), else whether every active
+    connection's heartbeat is within INGEST_DEAD_AFTER of `now` (a connection without one is not)."""
+    from .models import Connection, IngestStatus
+    active = list(Connection.objects.filter(is_active=True).values_list('pk', flat=True))
+    if not active:
+        return None
+    beats = dict(IngestStatus.objects.filter(connection_id__in=active).values_list('connection_id', 'heartbeat_at'))
+    return all(beats.get(pk) is not None and now - beats[pk] <= INGEST_DEAD_AFTER for pk in active)
+

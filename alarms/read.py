@@ -4,14 +4,17 @@ state is read from the append-only rows, never stored. `attention`: what needs a
 import logging
 from dataclasses import dataclass
 
-from django.db.models import Count, Exists, Max, OuterRef, Q
+from django.db.models import Count, Exists, Max, OuterRef, Q, Subquery
+from django.utils import timezone
 
-from .models import (Acknowledgement, Alarm, AlarmClearance, Channel, DeliveryAttempt, Escalation, Notification,
+from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, Channel, DeliveryAttempt, Escalation,
+                     Notification, OutboxEntry,
                      Outcome)
 from .rules import current as current_rules
 from .transports import transport_for
 
 ACKNOWLEDGE = 'alarms.change_alarm'
+SHELVE = 'alarms.add_alarmshelve'
 QUEUED, SENT, FAILED = 'queued', 'sent', 'failed'
 logger = logging.getLogger(__name__)
 
@@ -35,22 +38,18 @@ def nobody_notified(alarm):
 
 
 def status(notification):
-    """'sent' once a transport took it, 'failed' after its severity's delivery attempts failed, else 'queued'."""
+    """'sent' once a transport took it (or a flood message covered it); 'failed' once its severity's delivery attempts
+    failed, for a critical alarm's only once the alarm is acknowledged or cleared (alarms/outbox.py: until then it is
+    tried again); else 'queued'."""
     attempts = DeliveryAttempt.objects.filter(notification=notification)
-    if attempts.filter(outcome=Outcome.SENT).exists():
+    if attempts.filter(outcome__in=[Outcome.SENT, Outcome.GROUPED]).exists():
         return SENT
+    if not OutboxEntry.objects.filter(notification=notification).exists():
+        return FAILED                          # given up: its attempts used up, or its alarm cleared before the first
     failed = attempts.filter(outcome=Outcome.FAILED).count()
-    return FAILED if failed >= current_rules().delivery_attempts(notification.alarm.severity) else QUEUED
-
-
-def pending(rules):
-    """The notifications still to be sent: none sent, fewer failures than their severity's delivery attempts."""
-    waiting = (Notification.objects.annotate(sent=Exists(DeliveryAttempt.objects.filter(
-        notification=OuterRef('pk'), outcome=Outcome.SENT)), failures=Count('attempts', filter=Q(
-            attempts__outcome=Outcome.FAILED))).filter(sent=False)
-        .select_related('alarm', 'recipient').order_by('queued_at', 'id'))
-    return [notification for notification in waiting
-            if notification.failures < rules.delivery_attempts(notification.alarm.severity)]
+    alarm = notification.alarm
+    persists = alarm.severity == 'critical' and is_open(alarm) and not acknowledged(alarm)
+    return FAILED if failed >= current_rules().delivery_attempts(alarm.severity) and not persists else QUEUED
 
 
 def transport_connected(channel):
@@ -67,13 +66,50 @@ def may_acknowledge(user, alarm):
     return user.has_perm(ACKNOWLEDGE) or Notification.objects.filter(alarm=alarm, recipient=user).exists()
 
 
-def listing(state='open'):
-    """The alarms for the page, open ones first, each with its state annotated; `state` 'open' or 'all'."""
+def _in_force(now):
+    """The snoozes in force at `now`: begun, not past their `until`, not ended by then."""
+    return (Q(shelved_at__lte=now, until__gt=now)
+            & ~Q(pk__in=AlarmShelve.objects.filter(end__ended_at__lte=now).values('pk')))
+
+
+def snoozes(alarm_ids, now):
+    """{alarm id: its snooze in force at `now`}."""
+    return {row.alarm_id: row for row in AlarmShelve.objects.filter(_in_force(now), alarm__in=alarm_ids)
+            .select_related('user')}
+
+
+def ended(alarm_ids, now):
+    """{alarm id: its last snooze that has ended by `now`} (its time out, or ended early)."""
+    found = {}
+    for row in AlarmShelve.objects.filter(alarm__in=alarm_ids, shelved_at__lte=now).select_related('end'):
+        if row.ends_at() <= now and (row.alarm_id not in found or row.ends_at() > found[row.alarm_id].ends_at()):
+            found[row.alarm_id] = row
+    return found
+
+
+def resumed(alarm_ids, now):
+    """{alarm id: when its last snooze ended}, for the alarms a snooze of which has ended by `now`: their escalation
+    time is counted again from then."""
+    return {alarm_id: row.ends_at() for alarm_id, row in ended(alarm_ids, now).items()}
+
+
+def may_snooze(user, alarm, now=None):
+    """Whether `user` may snooze the alarm now (Alarm snoozes: Create; an open alarm with none in force)."""
+    from .health import OWN_HEALTH
+    return (user.has_perm(SHELVE) and is_open(alarm) and not (alarm.source == 'system' and alarm.parameter in OWN_HEALTH)
+            and alarm.pk not in snoozes([alarm.pk], now or timezone.now()))
+
+
+def listing(state='open', now=None):
+    """The alarms for the page, open ones first, each with its state annotated (and until when it is snoozed, if it
+    is); `state` 'open' or 'all'."""
+    now = now or timezone.now()
     alarms = Alarm.objects.select_related('site', 'production_department', 'point', 'clearance').annotate(
         is_cleared=Exists(AlarmClearance.objects.filter(alarm=OuterRef('pk'))),
         acknowledgements_count=Count('acknowledgements', distinct=True),
         notifications_count=Count('notifications', distinct=True),
-        top_level=Max('escalations__level'))
+        top_level=Max('escalations__level'),
+        snoozed_until=Subquery(AlarmShelve.objects.filter(_in_force(now), alarm=OuterRef('pk')).values('until')[:1]))
     if state == 'open':
         alarms = alarms.filter(is_cleared=False)
     return alarms.order_by('is_cleared', '-opened_at', '-id')
@@ -82,7 +118,7 @@ def listing(state='open'):
 @dataclass(frozen=True)
 class Event:
     at: object
-    kind: str            # opened, notified, delivered, escalated, acknowledged, cleared
+    kind: str            # opened, notified, delivered, escalated, acknowledged, snoozed, snooze_ended, cleared
     row: object
     state: str = ''      # a notification's: queued, sent or failed
 
@@ -96,10 +132,14 @@ def history(alarm):
     events += [Event(escalation.escalated_at, 'escalated', escalation) for escalation in alarm.escalations.all()]
     events += [Event(ack.acknowledged_at, 'acknowledged', ack)
                for ack in alarm.acknowledgements.select_related('user', 'notification')]
+    for shelve in alarm.shelves.select_related('user', 'end', 'end__user'):
+        events.append(Event(shelve.shelved_at, 'snoozed', shelve))
+        if getattr(shelve, 'end', None) is not None:
+            events.append(Event(shelve.end.ended_at, 'snooze_ended', shelve.end))
     clearance = AlarmClearance.objects.filter(alarm=alarm).first()
     if clearance is not None:
         events.append(Event(clearance.cleared_at, 'cleared', clearance))
-    order = ['opened', 'notified', 'delivered', 'escalated', 'acknowledged', 'cleared']
+    order = ['opened', 'notified', 'delivered', 'escalated', 'acknowledged', 'snoozed', 'snooze_ended', 'cleared']
     return sorted(events, key=lambda event: (event.at, order.index(event.kind)))
 
 

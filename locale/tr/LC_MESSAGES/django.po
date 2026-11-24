@@ -520,6 +520,12 @@ msgstr[0] "hemen verilmesi gereken %(count)s bildirim"
 msgstr[1] "hemen verilmesi gereken %(count)s bildirim"
 
 #, python-format
+msgid "%(count)s of them for the whole farm"
+msgid_plural "%(count)s of them for the whole farm"
+msgstr[0] "%(count)s tanesi tüm çiftlik için"
+msgstr[1] "%(count)s tanesi tüm çiftlik için"
+
+#, python-format
 msgid "%(count)s overdue"
 msgid_plural "%(count)s overdue"
 msgstr[0] "%(count)s tane gecikmiş"

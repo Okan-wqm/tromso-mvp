@@ -5450,10 +5450,12 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   latest log and knowledge entries), split per site from the same rows; `config/company_props.py` words it in the
   request's language. A block is left out for a person who may not read its area. The water chip per site says the
   sampling points' worst judgement (critical, warning, OK, or "Not measured"). The Open alarms tile and each site's
-  Open alarms are the one reader of the status strip (`alarms.read.attention`, `attention_by_site`): the figure counts
-  open alarms, its line under it counts units ("2 units critical", "1 unit without recent data", or "Live values cannot
-  be read"), the units' water as the alarm engine judges it now, so a critical unit shows before its alarm is raised; the
-  water chip says a value of a sampling point, never a count. Held to the classic page
+  Open alarms are the status strip's one reader, the farm and its sites from one reading of the water
+  (`alarms.read.attention_all`): the figure counts open alarms (a site's holds the farm-wide ones too, and says how many
+  of them are for the whole farm); the line under it counts stocked units on the monitoring cards' ladder, in the strip's
+  words ("2 units critical", "1 unit with no recent data", "1 unit with no limit", "1 unit cannot be read"), so a
+  critical unit shows before its alarm is raised; the water chip says a value of a sampling point, never a count. Held
+  to the classic page
   by `core.pagesays` in three languages (`farm/tests/test_company_overview.py`); its island is checked in a browser in
   every theme and language for CSP, axe and contrast (`frontend/test/company.browser.test.ts`).
 - **Every tab's create, edit and delete page** (`core.crud.FormView.page`, `DeleteView`; `templates/crud/form_next.html`,

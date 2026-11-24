@@ -521,6 +521,12 @@ msgstr[0] "%(count)s melding som skal sendes straks"
 msgstr[1] "%(count)s meldinger som skal sendes straks"
 
 #, python-format
+msgid "%(count)s of them for the whole farm"
+msgid_plural "%(count)s of them for the whole farm"
+msgstr[0] "%(count)s av dem for hele anlegget"
+msgstr[1] "%(count)s av dem for hele anlegget"
+
+#, python-format
 msgid "%(count)s overdue"
 msgid_plural "%(count)s overdue"
 msgstr[0] "%(count)s forsinket"

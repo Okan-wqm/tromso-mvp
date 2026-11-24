@@ -168,7 +168,7 @@ test('the form parts draw the old page\'s markup, post the old names, and take e
   assert.match(radios, /<legend>Placement<\/legend>/);
   assert.match(radios, /name="placement"(?: checked="")? value="b"(?: checked="")?/);
   assert.equal((radios.match(/checked=""/g) ?? []).length, 1);
-  const file = html(<FileField name="file" label="PDF" current={{ name: 'x.pdf', href: '/f/', intro: 'Currently', clearName: 'file-clear', clearLabel: 'Remove the file' }} />);
+  const file = html(<FileField name="file" label="PDF" current={{ name: 'x.pdf', href: '/f/', intro: 'Currently:', clearName: 'file-clear', clearLabel: 'Remove the file' }} />);
   assert.match(file, /<p class="file-current">Currently: <a href="\/f\/"[^>]*>x\.pdf<\/a><\/p>/);
   assert.match(file, /name="file-clear"/);
   assert.match(file, /type="file"[^>]*name="file"/);
@@ -176,7 +176,7 @@ test('the form parts draw the old page\'s markup, post the old names, and take e
   assert.match(ack, /class="ui-notice ui-ack" data-tone="critical"/);
   assert.match(ack, /type="checkbox"[^>]*name="ack"[^>]*value="f00d"/);
   const matrix = html(<PermissionMatrix name="permissions" label="Rights" areaLabel="Area" columns={['Read', 'Create']}
-    sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: ['Note'], cells: [{ action: 'Read', value: '1', checked: true, id: 'p-1' }, null] }] }]} />);
+    sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: ['Note'], cells: [{ action: 'Read', said: 'Sites: Read', value: '1', checked: true, id: 'p-1' }, null] }] }]} />);
   assert.match(matrix, /<table class="matrix">/);
   assert.match(matrix, /name="permissions"[^>]*value="1"/);
   assert.match(matrix, /id="p-1"[^>]*checked=""|checked=""[^>]*id="p-1"/);

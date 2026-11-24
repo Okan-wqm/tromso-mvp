@@ -202,7 +202,9 @@ def widget_payload(bound):
         found['sections'] = [
             {'label': plain(group), 'areas': [
                 {'label': plain(area['label']), 'notes': plain(list(area['notes'])),
-                 'cells': [{'action': plain(label), 'option': _option(cell) if cell else None}
+                 # each box's name for a screen reader, as the old page words it ("Sites: Read")
+                 'cells': [{'action': plain(label), 'said': f"{plain(area['label'])}: {plain(label)}",
+                            'option': _option(cell) if cell else None}
                            for label, cell in area['cells']]}
                 for area in areas]}
             for group, areas in context['sections']]
@@ -225,7 +227,9 @@ def widget_payload(bound):
             {'name': str(bound.value()).rsplit('/', 1)[-1],
              'href': current_url(bound.value()) if current_url else None,
              'clearName': plain(context.get('checkbox_name')), 'clearId': plain(context.get('checkbox_id')),
-             'clearLabel': plain(getattr(widget, 'clear_checkbox_label', ''))}
+             'clearLabel': plain(getattr(widget, 'clear_checkbox_label', '')),
+             # the widget's own words before the stored file and the new one, as the old page says them ("Currently:")
+             'intro': f"{plain(getattr(widget, 'initial_text', ''))}:", 'changeLabel': f"{plain(getattr(widget, 'input_text', ''))}:"}
             if context.get('is_initial') else None)
     return found
 

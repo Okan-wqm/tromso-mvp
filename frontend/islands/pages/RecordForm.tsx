@@ -18,10 +18,11 @@ interface Option { value: string; label: string; selected: boolean; attrs: Recor
 interface Widget {
   kind: string; name: string; value: Value; attrs: Record<string, Value>;
   groups?: { label: string | null; options: Option[] }[];
-  columns?: string[]; sections?: { label: string; areas: { label: string; notes: string[]; cells: { action: string; option: Option | null }[] }[] }[];
+  columns?: string[]; sections?: { label: string; areas: { label: string; notes: string[]; cells: { action: string; said: string; option: Option | null }[] }[] }[];
   rows?: { pk: string; label: string; group: string; id: string; checked: boolean; primary: boolean; details: Field[] }[];
   primary?: boolean; dependsOn?: string; emptyText?: string; areaLabel?: string; shown?: string;
-  current?: { name: string; href: string | null; clearName: string | null; clearId: string | null; clearLabel: string } | null;
+  current?: { name: string; href: string | null; clearName: string | null; clearId: string | null; clearLabel: string;
+    intro?: string; changeLabel?: string } | null;
 }
 export interface Field {
   name: string; label: string; help: Said | null; required: boolean; disabled: boolean; fieldset: boolean; errors: string[];
@@ -114,14 +115,15 @@ export function FieldOf({ field, optional, source }: { field: Field; optional: s
       break;
     case 'file':
       control = <FileField {...base} wide accept={attr(widget, 'accept')} current={widget.current ? {
-        name: widget.current.name, href: widget.current.href ?? undefined, intro: field.label, clearName: widget.current.clearName ?? undefined,
+        name: widget.current.name, href: widget.current.href ?? undefined, intro: widget.current.intro ?? field.label,
+        changeLabel: widget.current.changeLabel, clearName: widget.current.clearName ?? undefined,
         clearLabel: widget.current.clearLabel } : null} />;
       break;
     case 'matrix':
       control = <PermissionMatrix {...base} areaLabel={widget.areaLabel ?? ''} columns={widget.columns ?? []}
         sections={(widget.sections ?? []).map((section) => ({ label: section.label, areas: section.areas.map((area) => ({
           label: area.label, notes: area.notes, cells: area.cells.map((cell) => (cell.option ? {
-            action: cell.action, value: cell.option.value, checked: cell.option.selected, id: String(cell.option.attrs.id ?? ''),
+            action: cell.action, said: cell.said, value: cell.option.value, checked: cell.option.selected, id: String(cell.option.attrs.id ?? ''),
             requires: cell.option.attrs['data-requires'] ? String(cell.option.attrs['data-requires']) : undefined } : null)) })) }))} />;
       break;
     case 'links':

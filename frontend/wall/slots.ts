@@ -7,7 +7,9 @@
 // Of every grid whose cells hold all the cards, the rule takes the one that gives the largest unit (with equal units,
 // the fewer cells). When that unit is under the smallest that can be read (`minU`; never under FLOOR), the wall turns
 // pages instead of shrinking the type: the grid with the MOST cells whose unit can still be read (with equal cells,
-// the larger unit). A cell is never lower than `mh` units of FLOOR: a window too low for one row scrolls.
+// the larger unit). When no grid reaches it (a board read from farther than its screen allows, or a window too small),
+// ONE card a page at the largest unit a cell gives: never the densest grid, whose type would be the smallest of all.
+// A cell is never lower than `mh` units of FLOOR: a window too low for one row scrolls.
 
 /** Under this unit (px) a card's smallest text, 0.8 of it, is under 11 px. */
 export const FLOOR = 14;
@@ -29,6 +31,7 @@ export function slots(count: number, width: number, height: number, gap: number,
   const least = Math.max(minU, FLOOR);
   let all: Slots | null = null;
   let paged: Slots | null = null;
+  let largest: Slots | null = null;
   for (let cols = 1; cols <= MAX_COLS; cols += 1) {
     for (let rows = 1; rows <= MAX_ROWS; rows += 1) {
       const room = (height - (rows - 1) * gap) / rows;
@@ -37,6 +40,7 @@ export function slots(count: number, width: number, height: number, gap: number,
       const fits = cell <= room + 0.5;
       const cells = cols * rows;
       const found: Slots = { cols, rows, u, pages: Math.max(1, Math.ceil(count / cells)) };
+      if (cells === 1) largest = found;
       if (fits && cells >= count && (all === null || u > all.u + EPSILON
           || (Math.abs(u - all.u) <= EPSILON && cells < all.cols * all.rows))) {
         all = found;
@@ -50,7 +54,7 @@ export function slots(count: number, width: number, height: number, gap: number,
   if (all !== null && all.u >= least - EPSILON) {
     return all;
   }
-  return paged ?? all ?? { cols: 1, rows: 1, u: FLOOR, pages: Math.max(1, count) };
+  return paged ?? largest ?? { cols: 1, rows: 1, u: FLOOR, pages: Math.max(1, count) };
 }
 
 /** A FULL-HEIGHT card (its measure is higher than wide) keeps at least this share of the unit one card alone on the
@@ -100,11 +104,11 @@ export function worst(states: readonly string[], per: number, order: readonly st
 }
 
 // ---- how large a wall's type must be to be read from where it is watched (monitoring/cards/slots.py, the authority;
-// frontend-redesign CONSENSUS §9): state words at 20 arcmin (FHWA-RD-98-057 ch. 3), every other text at 15 arcmin
-// (MIL-STD-1472H §5.17.18.2), a character's height the cap height of the text face. The standards' figures, not a
+// frontend-redesign CONSENSUS §9): state words at 20 arcmin (FHWA-RD-98-057 ch. 3), every other text at 16 arcmin
+// (the least character height for reading of ANSI/HFES 100-2007 and ISO 9241-303), a character's height the cap height of the text face. The standards' figures, not a
 // farm's preference: a board chooses its screen and its distance.
 export const ARCMIN_CRITICAL = 20;
-export const ARCMIN_SECONDARY = 15;
+export const ARCMIN_SECONDARY = 16;
 export const CAP = 0.67;
 const STEP_STATE = 1.25;
 const STEP_SMALLEST = 0.8;

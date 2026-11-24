@@ -1,8 +1,9 @@
 from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Coalesce
+from django.utils import formats
 from django.utils.translation import gettext_lazy as _
 
-from core import audit
+from core import audit, listprops
 from core.crud import Mount, Resource, tab_fields
 from farm.stock.dates import site_today
 
@@ -108,3 +109,42 @@ class EmployeeResource(Resource):
     def detail_extras(cls, request, employee):
         return {'placements': employee.postings.select_related('production_department', 'office_department'),
                 'today': site_today(None)}
+
+    # --- the list in the new look (core/listprops.py), the words of hr/employee_list.html ---------------------------
+    search_placeholder = _('Search by name or number')
+    empty_text = _('The people of your team appear here. Someone who manages a department sees the people placed in it.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [
+            listprops.choice('department', _('Department'), context['chosen_department'], [('', _('All departments'))],
+                             groups=context['departments']),
+            listprops.choice('type', _('Employment type'), context['chosen_type'], [('', _('All types')), *context['types']]),
+            listprops.choice('status', _('Status'), context['chosen_status'], [('', _('Any status')), *context['statuses']]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        L, today, own = listprops, context['today'], context['own']
+        rows = []
+        for employee in objects:
+            name = employee.full_name
+            show = view.url('detail', employee.pk)
+            editable = context['can_change'] and employee.pk != own
+            edit = view.url('edit', employee.pk) if editable else None
+            left = employee.left_on is not None and employee.left_on < today
+            rows.append(L.row(employee.pk, {
+                'employee': L.cell(name, href=edit or show, strong=True, sub=[employee.employee_number]),
+                'type': L.cell(employee.get_employment_type_display()),
+                'department': L.cell(employee.department_name) if employee.department_name
+                else L.cell(chip=L.chip('warning', _('Not placed'))),
+                'title': L.cell(employee.current_title or '–'),
+                'joined': L.cell(formats.date_format(employee.joined_on, 'DATE_FORMAT')),
+                'status': L.cell(chip=L.chip('neutral', f"{_('Left')} {formats.date_format(employee.left_on, 'DATE_FORMAT')}")
+                                 if left else L.chip('ok', _('Working here'))),
+            }, actions=[L.link(show, _('Show %(name)s') % {'name': name}, 'search'),
+                        *([L.link(edit, _('Edit %(name)s') % {'name': name}, 'pencil')] if edit else [])]))
+        return {'columns': [L.column('employee', _('Employee')), L.column('type', _('Type')),
+                            L.column('department', _('Department')), L.column('title', _('Title')),
+                            L.column('joined', _('Joined')), L.column('status', _('Status'))],
+                'rows': rows}

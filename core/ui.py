@@ -99,6 +99,12 @@ def attention_words(attention):
     return [(what, words(count) % {'count': count}) for what, count, words in counts if count]
 
 
+def attention_said(attention, alarms=True):
+    """`attention_words` as text only, without the open alarms when `alarms` is False: the company overview's units line
+    (config/company_props.py, whose figure is the alarms' count)."""
+    return [text for what, text in attention_words(attention) if alarms or what != ALARMS]
+
+
 def may_open(user, url_name):
     """Whether the person may open the page of this menu entry (its permission and its `show_when`); False when the menu
     in use has no such entry."""
@@ -108,13 +114,14 @@ def may_open(user, url_name):
         return False
 
 
-def alarms_item(attention, user):
+def alarms_item(attention, user=None):
     """The strip's alarms item from alarms.read.attention, in `attention_words`, leading to where what it counts is
     listed: the open alarms to the Alarms page, the units to Operations › Monitoring (which shows every stocked unit by
     default, the ones that need a look in its band first; it has no filter by state). Both present: `parts`, one link
     each ("1 open alarm" · "1 unit critical"), so a red strip never leads to an empty page. The units' words are plain
-    text for a person who may not open Monitoring. "No open alarms" only when nothing needs a look (`Attention.quiet`)."""
-    urls = {ALARMS: reverse('alarms:alarm_list'), UNITS: reverse(MONITORING) if may_open(user, MONITORING) else ''}
+    text for a person who may not open Monitoring (and with no `user`). "No open alarms" only when nothing needs a look (`Attention.quiet`)."""
+    urls = {ALARMS: reverse('alarms:alarm_list'), UNITS: reverse(MONITORING) if user is not None and may_open(user, MONITORING)
+            else ''}
     parts = []
     for what, text in attention_words(attention):
         if parts and parts[-1]['what'] == what:

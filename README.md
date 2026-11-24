@@ -3370,8 +3370,9 @@ at the cost it had before: each activity-log entry is stamped when it is written
 included; `*` when the row is gone), and the token leaves out the entries stamped with a work hidden from the person,
 read from one statement a request (`core.sealing.reach`: per part the experiments hidden from them, Oversee, and a
 digest of what they read, added to the token so a grant, a share's end or an audience change moves it). The seal
-itself is never read on a poll; the activity log's own pages still decide what a person may read from the seals at
-read time. A person who reads no confidential work gets the token as before. The delete plan says that records the person may not see are
+itself is never read on a poll. The activity log's pages and the database viewer's audit_log decide from the seals
+at read time and also leave out an entry stamped with a work hidden from the person: an entry's text is written once
+and may name what its record reached then (a transfer from an open tank into a sealed one names both units). A person who reads no confidential work gets the token as before. The delete plan says that records the person may not see are
 reached, never how many. The seal reads the person when the SQL is compiled, so a queryset built at import is never
 bound to anyone (`core.sealing.Viewing`; `core/tests_boot.py` starts the server as a server).
 

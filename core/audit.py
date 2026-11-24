@@ -42,7 +42,7 @@ def hidden_types(user):
 def readable(user, entries=None):
     """The log entries `user` may read: every one but those of a restricted record type they lack the permission for,
     and those about a record the viewer of the moment may not see (core.sealing: a sealed cell's records, decided at
-    read time from the same seals; the works stamped on an entry serve the change token alone, `revision`)."""
+    read time from the same seals, and the works each entry was stamped with when written, `stamp`)."""
     entries = AuditLog.objects.all() if entries is None else entries
     hidden = hidden_types(user)
     entries = entries.exclude(entity_type__in=hidden) if hidden else entries
@@ -67,6 +67,13 @@ def sealed_out(entries):
             continue
         ids = seal.model._base_manager.filter(condition).annotate(log_id=Cast('pk', models.CharField())).values('log_id')
         entries = entries.exclude(entity_type__in=entity_types(seal.model), entity_id__in=ids)
+    if entries.model is AuditLog:
+        # And those stamped, when they were written, with a work hidden from the person (`stamp`): an entry's text was
+        # written once for everyone and may name what its record reached then (a transfer from an open tank into a
+        # sealed one names both, while the operation itself stays visible with its open line).
+        left_out = _left_out(sealing.reach())
+        if left_out is not None:
+            entries = entries.exclude(left_out)
     return entries
 
 

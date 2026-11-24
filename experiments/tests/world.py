@@ -93,6 +93,7 @@ def build_open(cls):
     cls.today = site_today(cls.site)
     cls.boss = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
     cls.feed = Feed.objects.create(name='Grower 4', code='GR-4', feed_type='grower', pellet_size_mm=Decimal(4))
+    cls.facility = make_facility()                # reference data, the same in both worlds
     cls.medicine = Medicine.objects.create(name='Salmosan vet.', kind='lice', administration='bath',
                                            active_substance='azamethiphos', lice_report_code='AZAMETHIPHOS')
     cls.open_batch = stock_fish(cls.boss, cls.open_tank, 1000, '50', days_ago=20, species=cls.salmon)
@@ -123,8 +124,11 @@ def build_open(cls):
 
 
 @withdrawal_gate.opened('test fixture: the worlds’ feedings and treatments written straight in the database')
-def build_sealed(cls):
-    """Adds X to world B: a running trial with a whole system (two tanks) and a tank, and everything on them."""
+def build_sealed(cls, mixed=True):
+    """Adds X to world B: a running trial with a whole system (two tanks) and a tank, and everything on them; with
+    `mixed`, a mixed batch too (the open batch partly moved into X's third tank). The mixed batch's line out of the open
+    tank is the open tank's own history, shown to everyone by design, so a comparison of the two worlds leaves it out
+    (test_confidential.NonInterferenceTests); the walk and every other test have it."""
     began = cls.today - timedelta(days=BEGAN)
     cls.sealed_system = System.objects.create(site=cls.site, production_department=cls.hall, name='XQZ loop',
                                               code='XQZ-S')
@@ -191,14 +195,15 @@ def build_sealed(cls):
                                               day=cls.today - timedelta(days=2), count=3, cause='XQZ net torn')
     cls.harvest = stock_services.record_harvest(
         cls.boss, unit=second, batch=cls.second_batch, day=cls.today - timedelta(days=1), count=20,
-        measured_weight_kg=Decimal('1.1'), facility=make_facility(), vessel='XQZ wellboat',
+        measured_weight_kg=Decimal('1.1'), facility=cls.facility, vessel='XQZ wellboat',
         handling_ack=check.assess('harvest', second, cls.today - timedelta(days=1), cls.second_batch).fingerprint)
     # A mixed batch: the open batch, part of it moved into X's third tank inside the trial. The batch and the operation
     # stay visible with the open tank's line (any_of); the line into the sealed tank is X's.
     day = cls.today - timedelta(days=2)
     cls.mixed_transfer = stock_services.record_transfer(
         cls.boss, source=cls.open_tank, batch=cls.open_batch, day=day, legs=[(cls.sealed_tanks[2], 100)],
-        reason='density', handling_ack=check.assess('transport', cls.open_tank, day, cls.open_batch).fingerprint)
+        reason='density', handling_ack=check.assess('transport', cls.open_tank, day, cls.open_batch).fingerprint,
+    ) if mixed else None
     cls.sealed_channel = make_channel(cls.device, 'oxygen_mg_l', name='XQZ oxygen')
     from sensors.models import Binding
     cls.binding = Binding.objects.create(channel=cls.sealed_channel, point=cls.sealed_point,
@@ -225,7 +230,9 @@ def sealed_ids(cls):
             cls.treatment, cls.task, cls.system_task, cls.sealed_channel, cls.binding, cls.task_note, cls.checklist,
             cls.alarm, cls.notification, cls.second_batch, cls.escape.escape_record, cls.harvest.harvest_record,
             *cls.sealed_batch.movements.values_list('operation', flat=True).distinct(),
-            *cls.second_batch.movements.values_list('operation', flat=True).distinct()]
+            *cls.second_batch.movements.values_list('operation', flat=True).distinct(),
+            # the mixed batch's line into X's tank (its operation and batch stay visible with the open line)
+            *(cls.mixed_transfer.movements.filter(unit=cls.sealed_tanks[2]) if cls.mixed_transfer else [])]
     found = {}
     from farm.models import StockOperation
     for row in rows:

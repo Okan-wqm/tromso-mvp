@@ -306,7 +306,7 @@ class NonInterferenceTests(TestCase):
         self.addCleanup(still.stop)
         world.build_open(self)
         without = self.lists(self.researcher)
-        world.build_sealed(self)
+        world.build_sealed(self, mixed=False)       # (a mixed batch's open line is the open tank's history: shown)
         with_x = self.lists(self.researcher)
         # The store's book counts every feeding, a sealed tank's too: feed drawn from the store is a stock figure, the
         # same for everyone (review F5, the coordinator's decision), so the store's page tells that feed was fed.

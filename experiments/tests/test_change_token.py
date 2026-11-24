@@ -30,9 +30,9 @@ from . import world
 CARDS = 'monitoring:cards'
 
 
-def add_sealed(cls, number):
-    """One more sealed experiment, led by the lead, on a tank of its own with fish in it."""
-    tank = make_unit(f'EXTRA-{number}', cls.hall)
+def add_sealed(cls, number, tank=None):
+    """One more sealed experiment, led by the lead, on a tank of its own (`tank`, or a new one) with fish in it."""
+    tank = tank or make_unit(f'EXTRA-{number}', cls.hall)
     began = cls.today - timedelta(days=world.BEGAN)
     experiment = Experiment.objects.create(code=next_code(Experiment, f'E-{cls.today.year}-'), name=f'Extra {number}',
                                            site=cls.site, species=cls.salmon, duration_days=world.DURATION,
@@ -148,7 +148,8 @@ class MovesTests(TokenCase):
                                                valid_until=timezone.now() + timedelta(days=30), reason='test')
         granted = self.token(self.researcher)
         rows = AuditLog.objects.count()
-        ExperimentShare.objects.filter(pk=share.pk).update(valid_until=timezone.now() - timedelta(seconds=1))
+        ExperimentShare.objects.filter(pk=share.pk).update(valid_from=timezone.now() - timedelta(days=2),
+                                                            valid_until=timezone.now() - timedelta(seconds=1))
         self.assertEqual(AuditLog.objects.count(), rows)
         self.assertNotEqual(self.token(self.researcher), granted)
 
@@ -163,8 +164,9 @@ class MovesTests(TokenCase):
         self.assertNotEqual(self.token(self.researcher), private['researcher'])   # opened to everyone
 
     def test_a_new_sealed_experiment_elsewhere_moves_no_outsiders_token(self):
+        tank = make_unit('EXTRA-7', self.hall)       # a new tank is everyone's news; its trial is not
         before = self.token(self.staff)
-        add_sealed(type(self), 7)
+        add_sealed(type(self), 7, tank)
         self.assertEqual(self.token(self.staff), before)
 
 

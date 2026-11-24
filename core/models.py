@@ -233,9 +233,9 @@ class AuditLog(models.Model):
     changes = models.JSONField(default=dict, blank=True)
     severity = models.CharField(max_length=10, choices=Severity.choices, default=Severity.NORMAL)
     # The confidential works the record lay in when the entry was written (core.sealing.works_of; '*' when that could
-    # not be read): stamped by `save` and the log's bulk_create (core.audit.stamp), for the change token alone, which
-    # leaves out a change to a record of work hidden from the person looking (core.audit.revision). Who may read an
-    # entry is decided when it is read, from the seals (core.audit.readable), never from this.
+    # not be read): stamped by `save` and the log's bulk_create (core.audit.stamp). The change token leaves out an entry
+    # stamped with a work hidden from the person looking (core.audit.revision), and so does the log's reading
+    # (core.audit.sealed_out), beside the seals read at read time: the entry's text may name what the record reached.
     works = ArrayField(models.CharField(max_length=64), default=list, blank=True, editable=False)
 
     objects = AuditLogManager()

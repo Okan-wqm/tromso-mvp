@@ -13,12 +13,9 @@ import { extname, join, resolve } from 'node:path';
 import type { Page } from 'playwright-core';
 
 import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
+import { CSP } from './csp.js';
 import { linksOf } from './sheets.js';
 
-// The product's policy (config/settings.py, SECURE_CSP), as frontend/test/islands.browser.test.ts states it (importing that
-// file would run its tests here too).
-const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
-  + "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 const THEMES = ['industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks'];
 const LANGUAGES = ['en', 'nb', 'tr'];
 const GALLERY = resolve('.build/gallery');

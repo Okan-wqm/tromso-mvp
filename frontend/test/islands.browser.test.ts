@@ -17,13 +17,11 @@ import { extname, join, resolve } from 'node:path';
 import type { Page } from 'playwright-core';
 
 import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
+import { CSP } from './csp.js';
 import { linksOf } from './sheets.js';
 
 const THEMES = ['industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks'];
 const GALLERY = resolve('.build/gallery');
-// The product's policy (config/settings.py, SECURE_CSP), without the nonce: a page of islands needs none.
-export const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
-  + "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 // The gallery's entry in the build's manifest, as {% island %} reads it: its module and its stylesheets (uPlot's).

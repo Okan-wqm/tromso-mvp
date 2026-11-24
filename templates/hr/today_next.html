@@ -1,0 +1,22 @@
+{% extends base_template %}
+{% load i18n crud hr %}
+{% comment %} Today & attendance in the new look (hr.views.today behind ?ui=next): drawn by the server with the design system's
+   classes (ui-tiles, ui-table, ui-chip, the stacked bar), so the one poll (frontend/poll.ts) draws the board again every 30 s
+   as it does the classic one (hr/_board_next.html, hr.views.today_board). The words are the classic page's
+   (hr/today.html, hr/_board.html). {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="ui-toolbar">
+  {% if own and forgotten %}
+  <div class="ui-notice" data-tone="warning" role="status">{% include "icons/_icon.html" with name="alert" %}<div class="ui-notice-body">{{ forgotten }}</div></div>
+  {% elif own %}
+  <form method="post" action="{% url 'hr:punch'|mounted:request 'out' %}" {% if not open_punch %}hidden{% endif %}>{% csrf_token %}<button type="submit" class="ui-btn">{% include "icons/_icon.html" with name="user-check" %}{% trans "Clock out" %}</button></form>
+  <form method="post" action="{% url 'hr:punch'|mounted:request 'in' %}" {% if open_punch %}hidden{% endif %}>{% csrf_token %}<button type="submit" class="ui-btn">{% include "icons/_icon.html" with name="user-check" %}{% trans "Clock in" %}</button></form>
+  {% if open_punch %}<span class="ui-cell-sub">{% blocktrans trimmed with since=open_punch.clock_in|on_clock:open_zone|date:"TIME_FORMAT" %}Clocked in since {{ since }}.{% endblocktrans %}</span>{% endif %}
+  {% endif %}
+  {% if can_enter %}<a class="ui-btn" data-variant="primary" href="{% url 'hr:attendancerecord_create'|mounted:request %}">{% include "icons/_icon.html" with name="plus" %}{% trans "Mark present" %}</a>{% endif %}
+</div>
+<div data-poll="{% url 'hr:today_board'|mounted:request %}" data-poll-every="30">{% include "hr/_board_next.html" %}</div>
+{% endblock %}

@@ -73,18 +73,25 @@ def strip(user, now=None, attention=None):
     return items
 
 
-def alarms_item(attention):
-    """The strip's alarms item from alarms.read.attention: every count that needs a look, worst first, none hidden behind
-    another ("1 open alarm · 3 units critical · 2 units with no recent data"), in the cards' own words for their rungs;
-    "No open alarms" only when nothing is open and every stocked unit is OK or a note (`Attention.quiet`)."""
+def attention_said(attention, alarms=True):
+    """What needs a look, in words: every count of alarms.read.Attention, worst first, none hidden behind another ("1 open
+    alarm", "3 units critical", "2 units with no recent data"), in the cards' own words for their rungs; each figure says
+    what it counts (alarms, units). [] when there is nothing. The one wording of an Attention: the strip and the company
+    overview (config/company_props.py, without the alarms: its figure is their count) both say it with this."""
     counts = (
-        (attention.alarms, lambda n: ngettext('%(count)d open alarm', '%(count)d open alarms', n)),
+        *(((attention.alarms, lambda n: ngettext('%(count)d open alarm', '%(count)d open alarms', n)),) if alarms else ()),
         (attention.critical, lambda n: ngettext('%(count)d unit critical', '%(count)d units critical', n)),
         (attention.unreadable, lambda n: ngettext('%(count)d unit cannot be read', '%(count)d units cannot be read', n)),
         (attention.warning, lambda n: ngettext('%(count)d unit with a warning', '%(count)d units with a warning', n)),
         (attention.blind, lambda n: ngettext('%(count)d unit with no recent data', '%(count)d units with no recent data', n)),
         (attention.unjudged, lambda n: ngettext('%(count)d unit with no limit', '%(count)d units with no limit', n)))
-    parts = [words(count) % {'count': count} for count, words in counts if count]
+    return [words(count) % {'count': count} for count, words in counts if count]
+
+
+def alarms_item(attention):
+    """The strip's alarms item from alarms.read.attention (attention_said); "No open alarms" only when nothing is open and
+    every stocked unit is OK or a note (`Attention.quiet`)."""
+    parts = attention_said(attention)
     text = ' · '.join(parts) if parts else _('No open alarms')
     return {'key': 'alarms', 'url': reverse('alarms:alarm_list'), 'text': text, 'status': attention.status}
 

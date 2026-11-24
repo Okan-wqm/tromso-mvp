@@ -17,9 +17,11 @@ export interface TabsProps {
   selected?: string;
   defaultSelected?: string;
   onChange?: (id: string) => void;
+  /** keep every panel in the page, the unselected hidden (a form whose fields stand on several tabs posts them all) */
+  keepMounted?: boolean | undefined;
 }
 
-export function Tabs({ label, items, selected, defaultSelected, onChange }: TabsProps) {
+export function Tabs({ label, items, selected, defaultSelected, onChange, keepMounted }: TabsProps) {
   const change = onChange ? (key: Key) => onChange(String(key)) : undefined;
   return (
     <AriaTabs
@@ -34,7 +36,7 @@ export function Tabs({ label, items, selected, defaultSelected, onChange }: Tabs
           </Tab>
         ))}
       </TabList>
-      {items.map((item) => <TabPanel key={item.id} id={item.id} className="ui-tab-panel">{item.content}</TabPanel>)}
+      {items.map((item) => <TabPanel key={item.id} id={item.id} className="ui-tab-panel" shouldForceMount={Boolean(keepMounted)}>{item.content}</TabPanel>)}
     </AriaTabs>
   );
 }

@@ -1,0 +1,45 @@
+{% extends base_template %}
+{% load i18n %}
+{% comment %} Scheduling settings in the new look (hr.resources.SchedulingSettingsResource.list_template_next, behind ?ui=next):
+   the classic page's limits and the lists they lead to (hr/settings_list.html), as plates; the limits' edit is the record's
+   own page, not a dialog. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ group }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="ui-plates">
+{% for settings in objects %}
+<section class="ui-plate" data-span="12" aria-labelledby="limits">
+  <div class="ui-plate-head"><h2 id="limits">{% trans "Limits" %}</h2>{% if can_change %}<a class="ui-plate-link" href="{% url 'hr:schedulingsettings_edit' settings.pk %}">{% trans "Edit the limits" %} <span aria-hidden="true">→</span></a>{% endif %}</div>
+  <div class="ui-plate-body">
+    <div class="ui-notice" role="status">{% include "icons/_icon.html" with name="hourglass" %}<div class="ui-notice-body">{% trans "These are defaults the company can change, not the law: confirm them with your agreements. A limit may only be set stricter than the statute." %}</div></div>
+    <dl class="facts">
+      <div><dt>{% trans "Standard week (minutes)" %}</dt><dd>{{ settings.standard_week_minutes }}</dd></div>
+      <div><dt>{% trans "Minimum rest between shifts (minutes)" %}</dt><dd>{{ settings.min_rest_minutes }}</dd></div>
+      <div><dt>{% trans "Most working days in a row" %}</dt><dd>{{ settings.max_consecutive_days }}</dd></div>
+      <div><dt>{% trans "A short rest, a long week or too many days in a row" %}</dt><dd>{{ settings.get_rest_rule_display }}</dd></div>
+      <div><dt>{% trans "Working weekdays" %}</dt><dd>{{ settings.weekday_labels|join:", " }}</dd></div>
+      <div><dt>{% trans "Punch window (minutes)" %}</dt><dd>{{ settings.punch_window_minutes }}</dd></div>
+      <div><dt>{% trans "Absent after (minutes)" %}</dt><dd>{{ settings.absent_after_minutes }}</dd></div>
+      <div><dt>{% trans "A clock-in counts as forgotten after (hours)" %}</dt><dd>{{ settings.forgotten_after_hours }}</dd></div>
+    </dl>
+  </div>
+</section>
+{% endfor %}
+<section class="ui-plate" data-span="4" aria-labelledby="shifts">
+  <div class="ui-plate-head"><h2 id="shifts">{% trans "Shifts" %}</h2>{% if perms.hr.view_shift %}<a class="ui-plate-link" href="{% url 'hr:shift_list' %}">{% trans "Manage shifts" %} <span aria-hidden="true">→</span></a>{% endif %}</div>
+  {% if shifts %}<ul class="ui-list" role="list">{% for shift in shifts %}<li class="ui-list-item">{% include "ui/_chip.html" with kind="note" text=shift.code %}<span class="ui-list-main"><span>{{ shift.name }} · {{ shift.starts_at|time:"TIME_FORMAT" }}–{{ shift.ends_at|time:"TIME_FORMAT" }}</span></span></li>{% endfor %}</ul>
+  {% else %}<div class="ui-plate-body"><p class="ui-empty-text">{% trans "No shifts yet." %}</p></div>{% endif %}
+</section>
+<section class="ui-plate" data-span="4" aria-labelledby="holidays">
+  <div class="ui-plate-head"><h2 id="holidays">{% trans "Holidays" %}</h2>{% if perms.hr.view_holiday %}<a class="ui-plate-link" href="{% url 'hr:holiday_list' %}">{% trans "Manage holidays" %} <span aria-hidden="true">→</span></a>{% endif %}</div>
+  {% if holidays %}<ul class="ui-list" role="list">{% for holiday in holidays %}<li class="ui-list-item"><span class="ui-list-main"><span>{{ holiday.day|date:"DATE_FORMAT" }} · {{ holiday.name }}</span></span></li>{% endfor %}</ul>
+  {% else %}<div class="ui-plate-body"><p class="ui-empty-text">{% trans "No holidays yet." %}</p></div>{% endif %}
+</section>
+<section class="ui-plate" data-span="4" aria-labelledby="leave-types">
+  <div class="ui-plate-head"><h2 id="leave-types">{% trans "Leave types" %}</h2>{% if perms.hr.view_leavetype %}<a class="ui-plate-link" href="{% url 'hr:leavetype_list' %}">{% trans "Manage leave types" %} <span aria-hidden="true">→</span></a>{% endif %}</div>
+  {% if leave_types %}<ul class="ui-list" role="list">{% for kind in leave_types %}<li class="ui-list-item"><span class="ui-list-main"><span>{{ kind.name }} ({{ kind.code }}){% if kind.annual_days is not None %} · {% blocktrans trimmed with days=kind.annual_days|floatformat:"-2" %}{{ days }} days a year{% endblocktrans %}{% endif %}{% if not kind.needs_approval %} · {% trans "granted without approval" %}{% endif %}{% if kind.status != "active" %} · {{ kind.get_status_display }}{% endif %}</span></span></li>{% endfor %}</ul>
+  {% else %}<div class="ui-plate-body"><p class="ui-empty-text">{% trans "No leave types yet: a leave request cannot be filed until there is one." %}</p></div>{% endif %}
+</section>
+</div>
+{% endblock %}

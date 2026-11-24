@@ -168,9 +168,8 @@ def posted(field):
 def with_initial(field):
     """posted(field) and the hidden copy of its first value, when it has one (show_hidden_initial)."""
     initial = field['initial']
-    return posted(field) + ([{'name': initial['name'], 'value': '' if initial['value'] is None else str(initial['value']),
-                              'on': True, 'type': 'hidden', 'required': False, 'disabled': False, 'bounds': {}}]
-                            if initial else [])
+    return posted(field) + [{'name': initial['name'], 'value': value, 'on': True, 'type': 'hidden', 'required': False,
+                             'disabled': False, 'bounds': {}} for value in (initial['values'] if initial else [])]
 
 
 def normalised(controls):

@@ -118,7 +118,10 @@ def _initial(bound):
     else:
         value = bound.value()
     context = hidden.get_context(bound.html_initial_name, value, {})['widget']
-    return {'name': bound.html_initial_name, 'value': plain(context.get('value'))}
+    # One hidden input per value: a list field's copy (MultipleHiddenInput) writes one per chosen value, none for none.
+    subwidgets = context.get('subwidgets')
+    values = [sub['value'] for sub in subwidgets] if subwidgets is not None else [context.get('value')]
+    return {'name': bound.html_initial_name, 'values': ['' if each is None else str(plain(each)) for each in values]}
 
 
 def _text(value):

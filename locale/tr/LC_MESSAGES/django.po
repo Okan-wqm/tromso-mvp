@@ -13945,6 +13945,9 @@ msgctxt "occupancy"
 msgid "Stocked"
 msgstr "Dolu"
 
+msgid "Stocked and empty"
+msgstr "Dolu ve boş"
+
 msgid "Stocked on"
 msgstr "Stoklama tarihi"
 

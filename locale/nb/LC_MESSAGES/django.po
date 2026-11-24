@@ -13915,6 +13915,9 @@ msgctxt "occupancy"
 msgid "Stocked"
 msgstr "Med fisk"
 
+msgid "Stocked and empty"
+msgstr "Med fisk og tomme"
+
 msgid "Stocked on"
 msgstr "Satt ut"
 

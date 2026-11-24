@@ -10,9 +10,11 @@ import re
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase, override_settings
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils.translation import gettext
 
+from core import listprops as L
 from core.island_props import keep, props_of
 from core.pagesays import unsaid
 from core.test_world import MOMENT, world
@@ -28,10 +30,11 @@ DENSITY = re.compile(r'<span class="ui-gauge-text">([^<]*)</span>')
 
 def said_another_way(old):
     """The classic page's filter buttons' addresses and its water values' titles and densities (see the
-    module's docstring)."""
+    module's docstring), and the kind and fish buttons' bare "All": the selects' first options say "All kinds" and
+    "Stocked and empty"."""
     return {htmllib.unescape(each) for each in BUTTON.findall(old)} | \
         {' '.join(htmllib.unescape(each).split()) for each in VALUE_TITLE.findall(old)} | \
-        {' '.join(htmllib.unescape(each).split()) for each in DENSITY.findall(old)}
+        {' '.join(htmllib.unescape(each).split()) for each in DENSITY.findall(old)} | {gettext('All')}
 
 
 @override_settings(ISLANDS_MANIFEST=MANIFEST)
@@ -82,6 +85,19 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
         filters = {each['name']: each for each in props['toolbar']['filters']}
         self.assertEqual(filters['occupancy']['value'], 'stocked')
         self.assertEqual([option['value'] for option in filters['occupancy']['options']], ['', 'stocked', 'empty'])
+        self.assertEqual(filters['occupancy']['options'][0]['label'], 'Stocked and empty')
+        if 'kind' in filters:
+            self.assertEqual(filters['kind']['options'][0]['label'], 'All kinds')
+
+    def test_the_density_cell_draws_the_share_of_capacity_as_a_gauge_with_the_share_in_words(self):
+        _old, new = self.pages('en', occupancy='stocked')
+        row = next(each for each in props_of(new, 'list-page')['table']['rows']
+                   if each['cells']['unit']['text'] == 'TT-01')
+        density = row['cells']['density']
+        self.assertTrue(density['text'].endswith('kg/m³'))
+        self.assertRegex(density['gauge']['text'], r'^\d+ % of capacity$')
+        self.assertTrue(0 <= density['gauge']['value'] <= 100)
+        self.assertIsNone(density['gauge']['status'])
 
     def test_the_drawer_is_the_classic_drawer_beside_the_list(self):
         old, new = self.pages('en', unit=str(self.unit.pk))
@@ -96,3 +112,19 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
                 cell = row['cells'].get(key)
                 if cell and cell.get('chip'):
                     self.assertIn(cell['chip']['kind'], ('critical', 'warning', 'stale'))
+
+
+class GaugeCellTests(SimpleTestCase):
+    """core/listprops.py `gauge`: the bar's share clamped to 0-100 (the words say it whole), a status only critical or
+    warning; a cell without a gauge has no `gauge` key (the island's props as before)."""
+
+    def test_the_share_is_clamped_and_said_in_words(self):
+        self.assertEqual(L.gauge(124.36, '124 % of capacity', 'critical'),
+                         {'value': 100.0, 'text': '124 % of capacity', 'status': 'critical'})
+        self.assertEqual(L.gauge(None, '— of capacity')['value'], 0.0)
+        self.assertEqual(L.gauge(-2, '0 %')['value'], 0.0)
+        with self.assertRaises(ValueError):
+            L.gauge(5, '5 %', 'ok')
+        self.assertNotIn('gauge', L.cell('7.4 kg/m³'))
+        self.assertEqual(L.cell('7.4 kg/m³', gauge=L.gauge(12, '12 %'))['gauge']['value'], 12.0)
+        self.assertIs(L._pager, L.pager)

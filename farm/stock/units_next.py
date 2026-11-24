@@ -91,8 +91,10 @@ def batch_cell(row):
 def density_cell(stock):
     if stock is None:
         return L.cell('—')
-    # the design's: the density, and under it the share of the unit's capacity
-    return L.cell(density(stock.density), sub=[_('%(percent)s of capacity') % {'percent': percent(stock.capacity)}],
+    # the design's: the density, and under it the share of the unit's capacity as a gauge (the classic page's .ui-gauge:
+    # the bar and the share in words, so the bar is never the only cue; over capacity also said by its chip)
+    share = _('%(percent)s of capacity') % {'percent': percent(stock.capacity)}
+    return L.cell(density(stock.density), gauge=L.gauge(stock.capacity, share, 'critical' if stock.over_capacity else None),
                   chips=[L.chip('critical', _('Over'))] if stock.over_capacity else ())
 
 
@@ -155,8 +157,9 @@ def units_props(request, context):
     if context['site_buttons']:
         filters.append(_buttons_choice('site', _('Site'), context['site_buttons'], params))
     if len(context['kind_buttons']) > 2:
-        filters.append(_buttons_choice('kind', _('Kind'), context['kind_buttons'], params))
-    filters.append(_buttons_choice('occupancy', _('Fish'), context['occupancy_buttons'], params))
+        filters.append(_buttons_choice('kind', _('Kind'), context['kind_buttons'], params, first=_('All kinds')))
+    filters.append(_buttons_choice('occupancy', _('Fish'), context['occupancy_buttons'], params,
+                                   first=_('Stocked and empty')))
     filters.append(L.choice('status', _('Status'), context['chosen_status'],
                             [('', _('All statuses')), *context['statuses']]))
     if not context['units']:
@@ -186,13 +189,14 @@ def units_props(request, context):
     }
 
 
-def _buttons_choice(name, label, buttons, params):
+def _buttons_choice(name, label, buttons, params, first=None):
     """The classic page's row of filter buttons ("All" and one per option, farm.stock.views._buttons) as a select of the
-    same values: the first is "All", each other the value its link sets."""
+    same values: the first is "All" (or `first`, the design's "All kinds" where a bare "All" in a select would not say
+    of what), each other the value its link sets."""
     from urllib.parse import parse_qs, urlsplit
     options = []
-    for button in buttons:
+    for at, button in enumerate(buttons):
         value = parse_qs(urlsplit(button['href']).query).get(name, [''])[0]
-        options.append((value, button['label']))
+        options.append((value, first if at == 0 and first is not None else button['label']))
     return L.choice(name, label, params[name], options)
 

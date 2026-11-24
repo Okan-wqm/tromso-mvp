@@ -168,12 +168,16 @@ class StripAlarmsTests(AlarmsCase):
         self.assertEqual(self.agree(), {self.t1.pk: 'blind'})
         self.assertIn('1 unit with no recent data', self.fragment())
 
-    def test_blind_a_stocked_unit_with_no_active_point(self):
+    def test_blind_a_stocked_unit_with_no_point(self):
+        """A unit with fish and no sampling point of its own: nothing is known of its water (the card says no recent data)."""
         self.limits()
         self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)
-        type(self.mid1).objects.filter(unit=self.t1).update(is_active=False)
-        self.assertEqual(self.agree(), {self.t1.pk: 'blind'})
-        self.assertIn('1 unit with no recent data', self.fragment())
+        bare = make_unit('T-02', self.hall)                           # no point (the fixture's T-01 has its middle one)
+        stock_fish(self.keeper, bare, 500, '50', 10, species=self.salmon)
+        self.assertEqual(self.agree(), {self.t1.pk: 'ok', bare.pk: 'blind'})
+        html = self.fragment()
+        self.assertNotIn('No open alarms', html)
+        self.assertIn('1 unit with no recent data', html)
 
     def test_unjudged_no_limit_for_the_fish(self):
         self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)        # no temperature or oxygen limit (the fixture)

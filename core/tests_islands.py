@@ -9,7 +9,7 @@ from pathlib import Path
 from django.template import Context, Template
 from django.test import SimpleTestCase, override_settings
 
-from django.core.checks import Error as CheckError
+from django.core.checks import ERROR
 
 from core.checks import compiled_scripts, compiled_scripts_deployed
 from core.templatetags.assets import ManifestUnreadable, UnknownIsland, islands_manifest
@@ -80,7 +80,7 @@ class IslandBuildCheckTests(SimpleTestCase):
             self.assertEqual([problem.id for problem in warned], ['core.W001'])
             self.assertIn('cannot be read', warned[0].msg)
             stopped = compiled_scripts_deployed(None)
-            self.assertEqual([(problem.id, problem.level) for problem in stopped], [('core.E007', CheckError.level)])
+            self.assertEqual([(problem.id, problem.level) for problem in stopped], [('core.E007', ERROR)])
             with self.assertRaises(ManifestUnreadable):
                 render('{% island "units" %}')
         missing = os.path.join(folder, 'none.json')

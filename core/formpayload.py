@@ -13,6 +13,8 @@ every tab (core.crud.Resource.registry) and fails on one, so a new widget cannot
 A value the payload carries is a string, a number, a boolean, None, or a list or dict of those: a lazy translation is
 said in the request's language, a model choice by its key; anything else is refused (UnsafeValue) instead of being
 turned into a string nobody checked."""
+from html.parser import HTMLParser
+
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.forms.models import ModelChoiceIteratorValue
@@ -125,11 +127,46 @@ def _initial(bound):
     return {'name': bound.html_initial_name, 'values': ['' if each is None else str(plain(each)) for each in values]}
 
 
+class _Segments(HTMLParser):
+    """The words of markup a project's own code built, as text and link segments: an <a> becomes {'href', 'label'} when its
+    address is the application's own (a path, never a scheme or another host), any other element gives only its words."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.segments, self.href, self.label = [], None, []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            href = dict(attrs).get('href') or ''
+            self.href = href if href.startswith('/') and not href.startswith('//') else ''
+            self.label = []
+
+    def handle_endtag(self, tag):
+        if tag == 'a' and self.href is not None:
+            label = ''.join(self.label)
+            self.segments.append({'href': self.href, 'label': label} if self.href else {'text': label})
+            self.href = None
+
+    def handle_data(self, data):
+        if self.href is not None:
+            self.label.append(data)
+        elif self.segments and 'text' in self.segments[-1]:
+            self.segments[-1]['text'] += data
+        else:
+            self.segments.append({'text': data})
+
+
 def _text(value):
-    """A help text or a label: {'text'} or, for markup a project's own code built (format_html, mark_safe), {'html'}."""
+    """A help text: {'text'}, or, for markup the project's own code built (format_html, mark_safe), {'segments'}: its words
+    and its links to the application's own pages (_Segments), so an island draws links without drawing markup."""
     if not value:
         return None
-    return {'html': str(value)} if isinstance(value, SafeData) else {'text': str(value)}
+    if not isinstance(value, SafeData):
+        return {'text': str(value)}
+    parser = _Segments()
+    parser.feed(str(value))
+    parser.close()
+    return {'segments': parser.segments}
 
 
 def widget_payload(bound):
@@ -167,9 +204,14 @@ def widget_payload(bound):
     elif kind == 'designer':
         found.update(catalogue=plain(context['catalogue']), previewUrl=plain(context['preview_url']),
                      units=plain(context['units']))
+    elif kind == 'output':
+        # what the widget shows (templates/core/widgets/output.html): its value, or its own mark for none
+        found['shown'] = str(plain(context.get('value'))) if context.get('value') else '–'
     elif kind == 'file':
+        current_url = getattr(widget, 'current_url', None)
         found['current'] = (
             {'name': str(bound.value()).rsplit('/', 1)[-1],
+             'href': current_url(bound.value()) if current_url else None,
              'clearName': plain(context.get('checkbox_name')), 'clearId': plain(context.get('checkbox_id')),
              'clearLabel': plain(getattr(widget, 'clear_checkbox_label', ''))}
             if context.get('is_initial') else None)

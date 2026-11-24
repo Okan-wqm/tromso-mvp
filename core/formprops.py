@@ -37,27 +37,12 @@ def drawable(resource, form):
     return resource.form_template == 'crud/form.html' and all(kind_of(bound.field.widget) in DRAWN for bound in form)
 
 
-def _plain_help(payload):
-    """A help built with format_html travels as markup; the island writes no markup (check:ds), so it gets the words."""
-    def plain(said):
-        if said and 'html' in said:
-            return {'text': ' '.join(strip_tags(said['html']).split())}
-        return said
-    for tab in payload['tabs']:
-        tab['help'] = plain(tab['help'])
-        for fieldset in tab['fieldsets']:
-            fieldset['help'] = plain(fieldset['help'])
-            for field in fieldset['fields']:
-                field['help'] = plain(field['help'])
-    return payload
-
-
 def record_form_props(request, form, *, action, name, obj, list_url, delete_url, history, history_url):
     """Everything the record-form island draws: the form, its submit and cancel, the History tab, the delete link."""
     from django.middleware.csrf import get_token
 
     return {
-        'form': _plain_help(form_payload(form, action=action)),
+        'form': form_payload(form, action=action),
         'csrfToken': get_token(request),
         'submit': (_('Save %(name)s') % {'name': name}) if obj is not None else (_('Create %(name)s') % {'name': name}),
         'cancel': {'href': list_url, 'label': _('Cancel')},

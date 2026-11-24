@@ -206,32 +206,85 @@ class FormPayloadTests(TestCase):
             sent.is_valid()
             yield f'{resource.__name__} sent empty', sent
 
-    def test_every_tab_form_has_a_payload_that_says_and_posts_what_its_old_page_does(self):
+    def check_form(self, name, form):
+        """Holds the form's payload to the old field template, field by field; the number of fields checked."""
         checked = 0
-        for name, form in self.forms():
-            with self.subTest(form=name):
-                payload = form_payload(form, action='/here/')
-                fields = {field['name']: field for tab in payload['tabs'] for fieldset in tab['fieldsets']
-                          for field in fieldset['fields']}
-                for bound in form:
-                    if bound.is_hidden or bound.name in unshown_visible_fields(form):
-                        continue
-                    field = fields[bound.html_name]
-                    old = drawn(bound)
-                    self.assertEqual(normalised(with_initial(field)), normalised(old.controls), bound.html_name)
-                    label = old.said('legend') if bound.use_fieldset else old.said('label')
-                    self.assertIn(' '.join(str(field['label']).split()), label, bound.html_name)
-                    if field['help'] and 'text' in field['help']:
-                        self.assertEqual(' '.join(field['help']['text'].split()), old.said('help'), bound.html_name)
-                    # one <li> per error, no space between them in the old markup: compared without whitespace
-                    self.assertEqual(''.join(''.join(field['errors']).split()), ''.join(old.said('error').split()),
-                                     bound.html_name)
-                    checked += 1
-                hidden = {each['name'] for each in payload['hidden']}
-                self.assertEqual(hidden, {bound.html_name for bound in form.hidden_fields()
-                                          if bound.html_name not in fields}, name)
-                self.assertEqual(payload['errors'], [str(error) for error in form.non_field_errors()], name)
+        with self.subTest(form=name):
+            payload = form_payload(form, action='/here/')
+            fields = {field['name']: field for tab in payload['tabs'] for fieldset in tab['fieldsets']
+                      for field in fieldset['fields']}
+            for bound in form:
+                if bound.is_hidden or bound.name in unshown_visible_fields(form):
+                    continue
+                self.check_field(fields[bound.html_name], bound)
+                checked += 1
+            hidden = {each['name'] for each in payload['hidden']}
+            self.assertEqual(hidden, {bound.html_name for bound in form.hidden_fields()
+                                      if bound.html_name not in fields}, name)
+            self.assertEqual(payload['errors'], [str(error) for error in form.non_field_errors()], name)
+        return checked
+
+    def check_field(self, field, bound):
+        old = drawn(bound)
+        self.assertEqual(normalised(with_initial(field)), normalised(old.controls), bound.html_name)
+        label = old.said('legend') if bound.use_fieldset else old.said('label')
+        self.assertIn(' '.join(str(field['label']).split()), label, bound.html_name)
+        if field['help']:
+            words = field['help'].get('text') or ''.join(each.get('text') or each.get('label') for each in field['help']['segments'])
+            self.assertEqual(' '.join(words.split()), old.said('help'), bound.html_name)
+        # one <li> per error, no space between them in the old markup: compared without whitespace
+        self.assertEqual(''.join(''.join(field['errors']).split()), ''.join(old.said('error').split()), bound.html_name)
+
+    def test_every_tab_form_has_a_payload_that_says_and_posts_what_its_old_page_does(self):
+        checked = sum(self.check_form(name, form) for name, form in self.forms())
         self.assertGreater(checked, 300)
+
+    def test_editing_a_record_its_rows_and_the_handling_acknowledgement_too(self):
+        """The test world's records (no development data): every tab with a record is edited, its row lists' rows and
+        empty row are held field by field, and the handling acknowledgement (a stock form's, not a tab's)."""
+        from decimal import Decimal as D
+
+        from django import forms
+        from django.contrib.auth.models import Group, Permission
+
+        from farm.forms.stock import handling_ack_field
+        from farm.models import ProductionDepartment, Site, System
+        from farm.tests.helpers import make_species
+        from farm.tests.test_stock import make_unit
+        from hr.tests.helpers_people import employee
+        site = Site.objects.create(name='Test Site North', code='TSN', altitude=D(0), timezone='UTC')
+        hall = ProductionDepartment.objects.create(site=site, name='Test Hall A', code='THA')
+        loop = System.objects.create(name='Test Loop 1', code='TL1', site=site, production_department=hall)
+        make_unit('TT-01', hall, system=loop)
+        make_species()
+        person = get_user_model().objects.create_user('test.person', 'test.person@example.com', first_name='Test')
+        role = Group.objects.create(name='Test role')
+        role.permissions.set(Permission.objects.filter(codename__in=['view_site', 'add_site']))
+        person.groups.add(role)
+        employee('E-9001', last='Person', first='Test')
+        edited, rows = [], 0
+        for resource in Resource.registry:
+            if resource.form_class is None or not resource.allows('change'):
+                continue
+            record = resource.queryset().order_by('pk').first()
+            if record is None:
+                continue
+            self.check_form(f'{resource.__name__} edit', resource.form(self.request(), instance=record))
+            edited.append(resource.__name__)
+            for key, formset in resource.edit_extras(self.request(), record).items():
+                if isinstance(formset, forms.BaseFormSet):
+                    for index, row in enumerate([*formset.forms, formset.empty_form]):
+                        rows += self.check_form(f'{resource.__name__} rows {key} {index}', row)
+        for name in ('SiteResource', 'ProductionDepartmentResource', 'SpeciesResource', 'UserResource', 'RoleResource'):
+            self.assertIn(name, edited)
+
+        class Acknowledged(forms.Form):
+            go_on = handling_ack_field('harvest')
+        acknowledged = Acknowledged()
+        acknowledged.fields['go_on'].widget.fingerprint = 'f00d'
+        self.assertEqual(self.check_form('handling acknowledgement', acknowledged), 1)
+        self.assertEqual(kind_of(acknowledged.fields['go_on'].widget), 'acknowledge')
+        self.assertGreater(rows, 0)
 
     def test_a_form_sent_empty_carries_the_servers_refusals_on_the_fields_and_its_tabs(self):
         for name, form in self.forms():
@@ -275,4 +328,14 @@ class FormPayloadTests(TestCase):
 
         form = Helped()
         self.assertEqual(field_payload(form['plain'])['help'], {'text': '<b>not markup</b>'})
-        self.assertEqual(field_payload(form['built'])['help'], {'html': '<a href="/x/">see</a>'})
+        self.assertEqual(field_payload(form['built'])['help'], {'segments': [{'href': '/x/', 'label': 'see'}]})
+
+    def test_built_markup_keeps_only_links_to_the_applications_own_pages(self):
+        from django import forms
+        from django.utils.html import format_html
+
+        class Helped(forms.Form):
+            mixed = forms.CharField(help_text=format_html('See <a href="{}">{}</a> or <a href="{}">{}</a>, <b>{}</b>.',
+                                                          '/reports/', 'the reports', 'https://evil.example/', 'elsewhere', 'now'))
+        self.assertEqual(field_payload(Helped()['mixed'])['help'], {'segments': [
+            {'text': 'See '}, {'href': '/reports/', 'label': 'the reports'}, {'text': ' or '}, {'text': 'elsewhere, now.'}]})

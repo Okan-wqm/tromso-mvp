@@ -13,15 +13,15 @@ import {
 } from '../ui/index.js';
 
 type Value = string | number | boolean | null | string[];
-interface Said { text?: string; html?: string }
+interface Said { text?: string; segments?: ({ text: string } | { href: string; label: string })[] }
 interface Option { value: string; label: string; selected: boolean; attrs: Record<string, Value> }
 interface Widget {
   kind: string; name: string; value: Value; attrs: Record<string, Value>;
   groups?: { label: string | null; options: Option[] }[];
   columns?: string[]; sections?: { label: string; areas: { label: string; notes: string[]; cells: { action: string; option: Option | null }[] }[] }[];
   rows?: { pk: string; label: string; group: string; id: string; checked: boolean; primary: boolean; details: Field[] }[];
-  primary?: boolean; dependsOn?: string; emptyText?: string; areaLabel?: string;
-  current?: { name: string; clearName: string | null; clearId: string | null; clearLabel: string } | null;
+  primary?: boolean; dependsOn?: string; emptyText?: string; areaLabel?: string; shown?: string;
+  current?: { name: string; href: string | null; clearName: string | null; clearId: string | null; clearLabel: string } | null;
 }
 export interface Field {
   name: string; label: string; help: Said | null; required: boolean; disabled: boolean; fieldset: boolean; errors: string[];
@@ -44,7 +44,15 @@ export interface RecordFormProps {
     empty_value: string; entries: Entry[] } | null;
 }
 
-const text = (said: Said | null): string | undefined => (said ? said.text ?? said.html : undefined);
+/** A help: its words, or its words and its links to the application's own pages (core.formpayload._Segments). */
+const text = (said: Said | null): ReactNode => {
+  if (!said) return undefined;
+  if (said.segments) {
+    return said.segments.map((segment, index) => ('href' in segment
+      ? <a key={index} href={segment.href}>{segment.label}</a> : <Fragment key={index}>{segment.text}</Fragment>));
+  }
+  return said.text;
+};
 const str = (value: Value): string => (value === null || value === undefined || typeof value === 'boolean' ? '' : Array.isArray(value) ? value.join(',') : String(value));
 const options = (widget: Widget) => (widget.groups ?? []).flatMap((group) => group.options);
 const attr = (widget: Widget, name: string): string | undefined => {
@@ -68,7 +76,7 @@ export function FieldOf({ field, optional, source }: { field: Field; optional: s
     return str(widget.value);
   };
   if (widget.kind === 'output' || (field.disabled && !['matrix', 'links', 'checkbox'].includes(widget.kind))) {
-    return <>{<FixedField label={field.label} value={widget.kind === 'output' ? str(widget.value) || '—' : disabledText() || '—'} help={text(field.help)} />}{initial}</>;
+    return <>{<FixedField label={field.label} value={widget.kind === 'output' ? widget.shown ?? str(widget.value) : disabledText() || '—'} help={text(field.help)} />}{initial}</>;
   }
   let control: ReactNode;
   switch (widget.kind) {
@@ -101,7 +109,7 @@ export function FieldOf({ field, optional, source }: { field: Field; optional: s
       break;
     case 'file':
       control = <FileField {...base} wide accept={attr(widget, 'accept')} current={widget.current ? {
-        name: widget.current.name, intro: field.label, clearName: widget.current.clearName ?? undefined,
+        name: widget.current.name, href: widget.current.href ?? undefined, intro: field.label, clearName: widget.current.clearName ?? undefined,
         clearLabel: widget.current.clearLabel } : null} />;
       break;
     case 'matrix':

@@ -1,17 +1,17 @@
 {% extends "crud/form.html" %}
-{% load i18n dates %}
+{% load i18n dates sensors_words %}
 {% comment %} A device's form adds its channels on a tab of their own, read-only: each channel is edited on its own form;
    and where it is placed now and was before (sensors/bindings.py `placement_history`), with the Move device dialog for
    a person who may bind. {% endcomment %}
-{% block extra_tabs %}{% if object %}<button type="button" role="tab" class="ui-tab" data-tab="channels">{% trans "Channels" %}</button><button type="button" role="tab" class="ui-tab" data-tab="placement">{% trans "Placement" %}</button>{% endif %}{% endblock %}
-{% block extra_panels %}
+{% block extra_tabs %}{% sensor_words as sw %}{% if object %}<button type="button" role="tab" class="ui-tab" data-tab="channels">{{ sw.channels }}</button><button type="button" role="tab" class="ui-tab" data-tab="placement">{{ sw.placement }}</button>{% endif %}{% endblock %}
+{% block extra_panels %}{% sensor_words as sw %}
 {% if object %}
 <section class="tab-panel" role="tabpanel" data-panel="channels">
-  <h3 class="panel-title">{% trans "Channels" %}</h3>
+  <h3 class="panel-title">{{ sw.channels }}</h3>
   {% if channels %}
   <div class="table-wrap">
     <table class="data-table">
-      <thead><tr><th scope="col">{% trans "Channel" %}</th><th scope="col">{% trans "Quantity" %}</th><th scope="col">{% trans "Value" %}</th><th scope="col" class="num">{% trans "Heartbeat (s)" %}</th><th scope="col">{% trans "State" %}</th></tr></thead>
+      <thead><tr><th scope="col">{{ sw.channel }}</th><th scope="col">{{ sw.quantity }}</th><th scope="col">{{ sw.value }}</th><th scope="col" class="num">{{ sw.heartbeat_s }}</th><th scope="col">{{ sw.state }}</th></tr></thead>
       <tbody>
         {% for channel in channels %}
         <tr><td><a class="row-title" href="{% url 'sensors:channel_edit' channel.pk %}">{{ channel.code }}</a><span class="row-sub">{{ channel.name }} · #{{ channel.channel_no }}</span></td><td>{{ channel.get_quantity_display }}</td><td class="mono">{{ channel.value_path|default:channel.item_name }}</td><td class="num">{{ channel.heartbeat_s }}</td><td>{{ channel.get_state_display }}</td></tr>
@@ -19,24 +19,24 @@
       </tbody>
     </table>
   </div>
-  {% else %}<p class="panel-help">{% trans "No channels yet: add them on the Channels page." %}</p>{% endif %}
+  {% else %}<p class="panel-help">{{ sw.no_channels_yet_add_them_on }}</p>{% endif %}
 </section>
 <section class="tab-panel" role="tabpanel" data-panel="placement">
-  <h3 class="panel-title">{% trans "Placement" %}</h3>
-  <p class="panel-help">{% if placed_at %}{% trans "Placed at" %}: {% for place in placed_at %}{{ place }}{% if not forloop.last %}, {% endif %}{% endfor %}.{% else %}{% trans "Not placed: out of the water, its readings belong to no place." %}{% endif %}
-  {% if perms.sensors.add_binding %}<a class="button button-ghost" href="{% url 'sensors:device_move' %}?device={{ object.pk }}">{% include "icons/_icon.html" with name="target" %}{% trans "Move device" %}</a>{% endif %}</p>
+  <h3 class="panel-title">{{ sw.placement }}</h3>
+  <p class="panel-help">{% if placed_at %}{{ sw.placed_at }}: {% for place in placed_at %}{{ place }}{% if not forloop.last %}, {% endif %}{% endfor %}.{% else %}{{ sw.not_placed_out_of_the_water }}{% endif %}
+  {% if perms.sensors.add_binding %}<a class="button button-ghost" href="{% url 'sensors:device_move' %}?device={{ object.pk }}">{% include "icons/_icon.html" with name="target" %}{{ sw.move_device }}</a>{% endif %}</p>
   {% if placement_history %}
   <div class="table-wrap">
     <table class="data-table">
-      <thead><tr><th scope="col">{% trans "Where" %}</th><th scope="col">{% trans "From" %}</th><th scope="col">{% trans "Until" %}</th></tr></thead>
+      <thead><tr><th scope="col">{{ sw.where }}</th><th scope="col">{{ sw.from }}</th><th scope="col">{{ sw.until }}</th></tr></thead>
       <tbody>
         {% for stay in placement_history %}
-        <tr><td>{% for place in stay.places %}{{ place }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td><td>{{ stay.start|site_clock:object.site|date:"DATETIME_FORMAT" }}</td><td>{% if stay.end %}{{ stay.end|site_clock:object.site|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{% trans "now" %}</span>{% endif %}</td></tr>
+        <tr><td>{% for place in stay.places %}{{ place }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td><td>{{ stay.start|site_clock:object.site|date:"DATETIME_FORMAT" }}</td><td>{% if stay.end %}{{ stay.end|site_clock:object.site|date:"DATETIME_FORMAT" }}{% else %}<span class="badge">{{ sw.now }}</span>{% endif %}</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  {% else %}<p class="panel-help">{% trans "Never placed yet." %}</p>{% endif %}
+  {% else %}<p class="panel-help">{{ sw.never_placed_yet }}</p>{% endif %}
 </section>
 {% endif %}
 {% endblock %}

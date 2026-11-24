@@ -154,14 +154,14 @@ def question(change):
     or, when a second person must approve, why a tick cannot go past it. None when nothing is asked."""
     if not change:
         return None
+    from farm import words as farm_words
     from farm.health.withdrawal import FIELD
     second = str(change.second_person or '')
-    return {'title': _('Medicine withdrawal'), 'messages': [str(text) for text in change.messages()],
+    return {'title': str(farm_words.MEDICINE_WITHDRAWAL), 'messages': [str(text) for text in change.messages()],
             'secondPerson': second or None,
             'box': None if second else {
-                'name': FIELD, 'value': change.fingerprint, 'label': _('Go on despite these warnings'),
-                'help': _('Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown '
-                          'here and logged as critical.')}}
+                'name': FIELD, 'value': change.fingerprint, 'label': str(farm_words.GO_ON_DESPITE_THESE_WARNINGS),
+                'help': str(farm_words.FISH_UNDER_A_MEDICINE_WITHDRAWAL_MUST)}}
 
 
 # The templates of the questions a save may ask first (Resource.question_template) that the island draws (`question`).

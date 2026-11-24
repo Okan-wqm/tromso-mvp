@@ -19,7 +19,7 @@ from core.people import person_name
 from farm.models import Site, Species, System, Tank
 from farm.stock.dates import site_today
 
-from . import design as design_module, read, services
+from . import design as design_module, read, services, words
 from .forms import (
     CopyForm, ExperimentForm, MemberFormSet, ReleaseForm, ReplaceForm, StartForm, design_forms, design_rows,
     place_rows, places_forms,
@@ -192,8 +192,8 @@ class ExperimentResource(Resource):
         if experiment is None:
             return team
         can_add = view.request.user.has_perm(cls.perm('add'))
-        copies = [formpanels.link(extra['copy_url'], _('Copy as a new experiment')),
-                  formpanels.link(f"{extra['copy_url']}?as=template", _('Save as a template'))] if can_add else []
+        copies = [formpanels.link(extra['copy_url'], words.COPY_AS_A_NEW_EXPERIMENT),
+                  formpanels.link(f"{extra['copy_url']}?as=template", words.SAVE_AS_A_TEMPLATE)] if can_add else []
         return [design_panel(experiment, extra, copies),
                 *([] if experiment.is_template else [places_panel(experiment, extra)]), *team]
 
@@ -217,60 +217,55 @@ def design_panel(experiment, extra, copies):
     from django.template.defaultfilters import floatformat
 
     form, factors, groups = extra['design_form'], extra['factors'], extra['groups']
-    title = _('Design')
+    title = words.DESIGN
     refused = bool(form.errors or factors.non_form_errors() or any(factors.errors)
                    or groups.non_form_errors() or any(groups.errors)) if factors.is_bound or form.is_bound else False
     if extra.get('frozen'):
         table = extra['table']
         return formpanels.panel('design', title, [
-            formpanels.notice(_('The experiment has started, so its design is fixed: it was registered before the first day '
-                                'and what is judged is what was planned. To change it, copy the experiment and change the '
-                                'copy.')),
+            formpanels.notice(words.THE_EXPERIMENT_HAS_STARTED_SO_ITS),
             formpanels.table(title, [
-                listprops.column('group', _('Group')), listprops.column('role', _('Role')),
+                listprops.column('group', words.GROUP), listprops.column('role', words.ROLE),
                 *(listprops.column(f'f{index}', f'{factor.name} ({factor.unit})' if factor.unit else factor.name)
                   for index, factor in enumerate(table['factors'])),
-                listprops.column('replicates', _('Replicates'), numeric=True)], [
+                listprops.column('replicates', words.REPLICATES, numeric=True)], [
                 listprops.row(row['group'].pk, {
-                    'group': listprops.cell(row['group'].name, chips=[listprops.chip('note', _('Control'))]
+                    'group': listprops.cell(row['group'].name, chips=[listprops.chip('note', words.CONTROL)]
                                             if row['group'].is_control else ()),
                     'role': listprops.cell(row['group'].get_role_display()),
                     **{f'f{index}': listprops.cell(
                         (f'{level} ({floatformat(level.value, "-4")})' if level.value is not None else str(level))
                         if level else '—') for index, level in enumerate(row['levels'])},
                     'replicates': listprops.cell(len(row['replicates']))})
-                for row in table['rows']]) if table['rows'] else formpanels.help_text(_('No group.')),
+                for row in table['rows']]) if table['rows'] else formpanels.help_text(words.NO_GROUP),
             *copies])
     findings = extra.get('findings')
     columns = list(groups.columns)
     return formpanels.panel('design', title, [
-        formpanels.notices(_('To fix before it can start'), [each.text for each in findings.errors], 'critical')
+        formpanels.notices(words.TO_FIX_BEFORE_IT_CAN_START, [each.text for each in findings.errors], 'critical')
         if findings else None,
-        formpanels.notices(_('To read before it starts'), [each.text for each in findings.warnings]) if findings else None,
-        None if experiment.is_template else formpanels.link(extra['start_url'], _('Start the experiment')),
+        formpanels.notices(words.TO_READ_BEFORE_IT_STARTS, [each.text for each in findings.warnings]) if findings else None,
+        None if experiment.is_template else formpanels.link(extra['start_url'], words.START_THE_EXPERIMENT),
         *copies,
-        formpanels.help_text(_(
-            'A factor is what the groups differ in: the diet, whose levels are feeding protocols (how the farm applies it), '
-            'or another factor such as a temperature, whose levels are labels. Each group has one level of each factor and '
-            'its replicates, the tanks of which are placed on the Places tab. The design is saved as a whole.')),
+        formpanels.help_text(words.A_FACTOR_IS_WHAT_THE_GROUPS),
         formpanels.form(extra['design_url'], title, [
-            formpanels.heading(_('Factors')),
-            formpanels.grid(factors, [_('Factor'), _('Kind'), _('Unit of its levels')],
+            formpanels.heading(words.FACTORS),
+            formpanels.grid(factors, [words.FACTOR, words.KIND, words.UNIT_OF_ITS_LEVELS],
                             lambda row: [[row['name']], [row['kind']], [row['unit']], [row['DELETE']]],
-                            legend=_('Factor'), empty_text=''),
-            formpanels.button(_('Add factor'), DRAFT, extra['add_factor']),
-            formpanels.heading(_('Groups')),
-            formpanels.grid(groups, [_('Group'), _('Role'),
+                            legend=words.FACTOR, empty_text=''),
+            formpanels.button(words.ADD_FACTOR, DRAFT, extra['add_factor']),
+            formpanels.heading(words.GROUPS),
+            formpanels.grid(groups, [words.GROUP, words.ROLE,
                                      *(f"{column['name']} ({column['unit']})" if column.get('unit') else column['name']
-                                       for column in columns), _('Replicates')],
+                                       for column in columns), words.REPLICATES],
                             lambda row: [[row['name']], [row['role']], *(cell for _column, cell in row.cells()),
                                          [row['replicates']], [row['DELETE']]],
-                            legend=_('Group'), add=_('Add group'), can_add=bool(columns),
-                            empty_text=_('No group yet. Use “Add group” to add a row.') if columns
-                            else _('Name a factor first: the groups follow its columns.'))],
+                            legend=words.GROUP, add=words.ADD_GROUP, can_add=bool(columns),
+                            empty_text=words.NO_GROUP_YET_USE_ADD_GROUP if columns
+                            else words.NAME_A_FACTOR_FIRST_THE_GROUPS)],
             hidden=[form['version']],
             errors=[*form.non_field_errors(), *factors.non_form_errors(), *groups.non_form_errors()],
-            actions=[formpanels.button(_('Save design'), primary=True)])], has_errors=refused)
+            actions=[formpanels.button(words.SAVE_DESIGN, primary=True)])], has_errors=refused)
 
 
 def places_panel(experiment, extra):
@@ -279,48 +274,41 @@ def places_panel(experiment, extra):
     from django.utils import formats
 
     form, places, span = extra['places_form'], extra['places'], extra.get('span')
-    title = _('Places')
+    title = words.PLACES
     refused = bool(form.errors or places.non_form_errors() or any(places.errors)) if form.is_bound else False
     blocks = [formpanels.notice(extra['allocation']) if extra.get('allocation') else None]
     if extra.get('frozen'):
-        blocks += [formpanels.help_text(_('The experiment has started: its tanks and days are fixed. A tank that has to '
-                                          'leave, or be replaced, is released from its page.')),
+        blocks += [formpanels.help_text(words.THE_EXPERIMENT_HAS_STARTED_ITS_TANKS),
                    formpanels.table(title, [
-                       listprops.column('group', _('Group')), listprops.column('replicate', _('Replicate')),
-                       listprops.column('tank', _('Tank')), listprops.column('from', _('From')),
-                       listprops.column('until', _('Until'))], [
+                       listprops.column('group', words.GROUP), listprops.column('replicate', words.REPLICATE),
+                       listprops.column('tank', words.TANK), listprops.column('from', words.FROM),
+                       listprops.column('until', words.UNTIL)], [
                        listprops.row(cell.id, {
                            'group': listprops.cell(cell.group.name), 'replicate': listprops.cell(f'R{cell.replicate.number}'),
                            'tank': listprops.cell(f'{cell.unit.code} · {cell.unit.name}'),
                            'from': listprops.cell(formats.date_format(cell.first, 'DATE_FORMAT')),
                            'until': listprops.cell(formats.date_format(cell.last, 'DATE_FORMAT'))})
                        for cell in extra.get('cells', ())]) if extra.get('cells') else formpanels.help_text(
-                       _('No tank is placed.'))]
+                       words.NO_TANK_IS_PLACED)]
     elif span is None:
-        blocks.append(formpanels.notice(_('Set day 0 on the Details tab first: a tank is booked for days.'), 'warning'))
+        blocks.append(formpanels.notice(words.SET_DAY_0_ON_THE_DETAILS, 'warning'))
     elif not places.forms:
-        blocks.append(formpanels.help_text(_('No replicate yet: design the groups on the Design tab first.')))
+        blocks.append(formpanels.help_text(words.NO_REPLICATE_YET_DESIGN_THE_GROUPS))
     else:
         blocks += [
-            formpanels.help_text(_('The tanks are booked for the days of the experiment, %(first)s to %(last)s, unless a '
-                                   'row gives days of its own. The error degrees of freedom the design leaves are '
-                                   '%(error_df)s.') % {'first': formats.date_format(span[0], 'DATE_FORMAT'),
-                                                       'last': formats.date_format(span[1], 'DATE_FORMAT'),
-                                                       'error_df': formats.localize(extra.get('error_df'))}),
+            formpanels.help_text(words.booked_for(span, extra.get('error_df'))),
             formpanels.form(extra['places_url'], title, [
-                formpanels.heading(_('Randomise')),
-                formpanels.help_text(_('Choose as many tanks or systems as there are replicates and a seed: they are dealt '
-                                       'to the replicates by a fixed method, so the deal can be repeated and checked. The '
-                                       'seed is kept with the placements.')),
+                formpanels.heading(words.RANDOMISE),
+                formpanels.help_text(words.CHOOSE_AS_MANY_TANKS_OR_SYSTEMS),
                 formpanels.fields(form['pool'], form['seed']),
-                formpanels.button(_('Randomise'), 'action', 'randomise'),
-                formpanels.heading(_('By hand')),
-                formpanels.grid(places, [_('Replicate'), _('Tanks'), _('Add the tanks of a system'), _('From'), _('Until')],
+                formpanels.button(words.RANDOMISE, 'action', 'randomise'),
+                formpanels.heading(words.BY_HAND),
+                formpanels.grid(places, [words.REPLICATE, words.TANKS, words.ADD_THE_TANKS_OF_A_SYSTEM, words.FROM, words.UNTIL],
                                 lambda row: [[row['tanks']], [row['system']], [row['first']], [row['last']]],
-                                legend=_('Replicate'), empty_text='', head=lambda row: row.label),
+                                legend=words.REPLICATE, empty_text='', head=lambda row: row.label),
                 formpanels.fields(form['note'])],
                 hidden=[form['version']], errors=[*form.non_field_errors(), *places.non_form_errors()],
-                actions=[formpanels.button(_('Save places'), 'action', 'save', primary=True)])]
+                actions=[formpanels.button(words.SAVE_PLACES, 'action', 'save', primary=True)])]
     return formpanels.panel('places', title, blocks, has_errors=refused)
 
 

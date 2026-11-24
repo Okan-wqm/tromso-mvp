@@ -1,20 +1,20 @@
 {% extends "crud/form.html" %}
-{% load i18n stock feeding %}
+{% load i18n stock feeding farm_words %}
 {% comment %} A feeding protocol: its general fields (crud/form.html) and its feeding table on a tab of its own, a grid
    of weight bands by temperature columns saved as a whole (farm.resources.feeding_protocol.ProtocolTableView). Once
    the protocol is assigned the table is shown as it is, with Duplicate to change a copy.{% endcomment %}
-{% block extra_tabs %}<button type="button" role="tab" class="ui-tab{% if bands.non_form_errors or table_form.errors %} tab-error{% endif %}" data-tab="table">{% trans "Feeding table" %}</button>{% endblock %}
-{% block extra_panels %}
+{% block extra_tabs %}{% farm_words as fw %}<button type="button" role="tab" class="ui-tab{% if bands.non_form_errors or table_form.errors %} tab-error{% endif %}" data-tab="table">{{ fw.feeding_table }}</button>{% endblock %}
+{% block extra_panels %}{% farm_words as fw %}
 <section class="tab-panel feeding-table" data-panel="table" aria-labelledby="table-title"{% if bands.non_form_errors or table_form.errors %} data-has-errors{% endif %}>
-  <h3 class="panel-title" id="table-title">{% trans "Feeding table" %}</h3>
+  <h3 class="panel-title" id="table-title">{{ fw.feeding_table }}</h3>
   {% if not object %}
-  <p class="panel-help">{% trans "The feeding table can be filled in once the protocol is created." %}</p>
+  <p class="panel-help">{{ fw.the_feeding_table_can_be_filled }}</p>
   {% elif frozen %}
-  <p class="notice">{% trans "The protocol is assigned, so its table is fixed: the rations of the days it fed are read from it. To change it, duplicate the protocol, change the copy and assign it from a date." %}</p>
+  <p class="notice">{{ fw.the_protocol_is_assigned_so_its }}</p>
   {% with columns=object.columns %}
   <div class="table-wrap">
     <table class="data-table grid-table">
-      <thead><tr><th scope="col">{% trans "Weight band" %}</th><th scope="col">{% trans "Feed" %}</th><th scope="col" class="num">{% trans "Meals a day" %}</th><th scope="col" class="num">{% trans "Expected FCR" %}</th>{% for temperature in columns %}<th scope="col" class="num">{{ temperature|celsius }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th scope="col">{{ fw.weight_band }}</th><th scope="col">{{ fw.feed }}</th><th scope="col" class="num">{{ fw.meals_a_day }}</th><th scope="col" class="num">{{ fw.expected_fcr }}</th>{% for temperature in columns %}<th scope="col" class="num">{{ temperature|celsius }}</th>{% endfor %}</tr></thead>
       <tbody>
         {% for band in object.bands.all %}
         <tr><td class="nowrap">{{ band|weights }}</td><td>{{ band.feed }}</td><td class="num">{{ band.meals_per_day }}</td><td class="num">{% if band.expected_fcr %}{{ band.expected_fcr|fcr }}{% else %}<span class="muted">{{ object.expected_fcr|fcr }}</span>{% endif %}</td>{% for rate in band.rates.all %}<td class="num">{{ rate.sfr_pct|percent:2 }}</td>{% endfor %}</tr>
@@ -24,7 +24,7 @@
   </div>
   {% endwith %}
   {% else %}
-  <p class="panel-help">{% trans "One row per weight band, from its lower weight up to, not including, its upper one; the bands meet without gaps and only the last may have no upper weight. Fish outside the bands, or in water outside the first and last temperature column, get no ration. In each cell the SFR, the % of the body weight fed a day; 0 means no feeding at that temperature. An empty FCR is the protocol’s. The table is saved as a whole." %}</p>
+  <p class="panel-help">{{ fw.one_row_per_weight_band_from }}</p>
   <form method="post" action="{{ table_url }}" novalidate data-formset>
     {% csrf_token %}
     {{ table_form.version }}
@@ -36,22 +36,22 @@
     <div class="table-wrap">
       <table class="data-table grid-table">
         <thead>
-          <tr><th scope="col">{% trans "From (g)" %}</th><th scope="col">{% trans "Up to (g)" %}</th><th scope="col">{% trans "Feed" %}</th><th scope="col">{% trans "Meals a day" %}</th><th scope="col">{% trans "Expected FCR" %}</th>{% for temperature in bands.columns %}<th scope="col">{% blocktrans trimmed with temperature=temperature|celsius %}SFR at {{ temperature }}{% endblocktrans %}</th>{% endfor %}<th scope="col"><span class="sr-only">{% trans "Remove" %}</span></th></tr>
+          <tr><th scope="col">{{ fw.from_g }}</th><th scope="col">{{ fw.up_to_g }}</th><th scope="col">{{ fw.feed }}</th><th scope="col">{{ fw.meals_a_day }}</th><th scope="col">{{ fw.expected_fcr }}</th>{% for temperature in bands.columns %}<th scope="col">{% sfr_at temperature|celsius %}</th>{% endfor %}<th scope="col"><span class="sr-only">{{ fw.remove }}</span></th></tr>
         </thead>
         <tbody data-rows>
           {% for row in bands %}{% include "farm/_band_row.html" %}{% endfor %}
         </tbody>
       </table>
     </div>
-    <p class="contact-empty" data-empty{% if bands.forms %} hidden{% endif %}>{% trans "No band yet. Use “Add band” to add a row." %}</p>
+    <p class="contact-empty" data-empty{% if bands.forms %} hidden{% endif %}>{{ fw.no_band_yet_use_add_band }}</p>
     <template data-row-template>{% with row=bands.empty_form %}{% include "farm/_band_row.html" %}{% endwith %}</template>
     {% else %}
-    <p class="contact-empty">{% trans "Give the temperature columns first: the grid follows them." %}</p>
+    <p class="contact-empty">{{ fw.give_the_temperature_columns_first_the }}</p>
     <template data-row-template></template>
     {% endif %}
     <div class="form-actions">
-      <button type="button" class="button button-ghost" data-add-row{% if not bands.columns %} disabled{% endif %}>{% include "icons/_icon.html" with name="plus" %}{% trans "Add band" %}</button>
-      <button type="submit" class="button button-inline">{% trans "Save table" %}</button>
+      <button type="button" class="button button-ghost" data-add-row{% if not bands.columns %} disabled{% endif %}>{% include "icons/_icon.html" with name="plus" %}{{ fw.add_band }}</button>
+      <button type="submit" class="button button-inline">{{ fw.save_table }}</button>
     </div>
   </form>
   {% endif %}
@@ -59,8 +59,8 @@
   {% if object and duplicate_url %}
   <form method="post" action="{{ duplicate_url }}" class="duplicate-form">
     {% csrf_token %}
-    <button type="submit" class="button button-ghost">{% trans "Duplicate" %}</button>
-    <span class="help">{% trans "A draft copy with this table, to change and assign from a date." %}</span>
+    <button type="submit" class="button button-ghost">{{ fw.duplicate }}</button>
+    <span class="help">{{ fw.a_draft_copy_with_this_table }}</span>
   </form>
   {% endif %}
 </section>

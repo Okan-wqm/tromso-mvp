@@ -15,7 +15,7 @@ from core.widgets import NONE
 from farm.clocks import clocks
 from farm.stock.dates import site_today
 
-from . import places, read, services
+from . import places, read, services, words
 from .forms import SeriesChecklistLines, TaskChecklistLines, TaskForm, TaskSeriesForm
 from .models import Category, Priority, Status, Task, TaskSeries
 
@@ -88,8 +88,7 @@ class TaskResource(Resource):
             return formpanels.row_list_panels(cls, view, task, extra)
         from .templatetags.tasks import person
         return [formpanels.panel('checklist', TaskChecklist.title, [
-            formpanels.help_text(_('The checklist has been started: its lines can no longer be changed. Add a note '
-                                   'instead.')),
+            formpanels.help_text(words.THE_CHECKLIST_HAS_BEEN_STARTED_ITS),
             formpanels.checks(TaskChecklist.title, [
                 (line.text, line.done_at is not None, f'{person(line.done_by)} · '
                  f'{formpanels.moment(line.done_at, task.place_site)}' if line.done_at else '')

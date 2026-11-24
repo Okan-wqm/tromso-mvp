@@ -11,6 +11,7 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext
 from core import formpanels, listprops
 from core.crud import DRAFT, CreateView, Resource, ResourceView, UpdateView, done, filter_by
 
+from .. import words
 from ..feeding import assignments, protocols
 from ..feeding.ration import Policy, band_range
 from ..feeding.read import tables
@@ -71,20 +72,18 @@ class FeedingProtocolResource(Resource):
         the table as it is; the notices of its bands, and Duplicate."""
         from ..templatetags.feeding import celsius, fcr, weights
         from ..templatetags.stock import percent
-        title = _('Feeding table')
+        title = words.FEEDING_TABLE
         if protocol is None:
             return [formpanels.panel('table', title, [
-                formpanels.help_text(_('The feeding table can be filled in once the protocol is created.'))])]
+                formpanels.help_text(words.THE_FEEDING_TABLE_CAN_BE_FILLED)])]
         table_form, bands = extra['table_form'], extra['bands']
         if extra.get('frozen'):
             columns = protocol.columns()
-            blocks = [formpanels.notice(_(
-                'The protocol is assigned, so its table is fixed: the rations of the days it fed are read from it. To '
-                'change it, duplicate the protocol, change the copy and assign it from a date.')),
+            blocks = [formpanels.notice(words.THE_PROTOCOL_IS_ASSIGNED_SO_ITS),
                 formpanels.table(title, [
-                    listprops.column('band', _('Weight band')), listprops.column('feed', _('Feed')),
-                    listprops.column('meals', _('Meals a day'), numeric=True),
-                    listprops.column('fcr', _('Expected FCR'), numeric=True),
+                    listprops.column('band', words.WEIGHT_BAND), listprops.column('feed', words.FEED),
+                    listprops.column('meals', words.MEALS_A_DAY, numeric=True),
+                    listprops.column('fcr', words.EXPECTED_FCR, numeric=True),
                     *(listprops.column(f't{index}', celsius(temperature), numeric=True)
                       for index, temperature in enumerate(columns))], [
                     listprops.row(band.pk, {
@@ -97,31 +96,26 @@ class FeedingProtocolResource(Resource):
         else:
             columns = list(bands.columns)
             cells = {column_name(temperature) for temperature in columns}
-            blocks = [formpanels.help_text(_(
-                'One row per weight band, from its lower weight up to, not including, its upper one; the bands meet '
-                'without gaps and only the last may have no upper weight. Fish outside the bands, or in water outside the '
-                'first and last temperature column, get no ration. In each cell the SFR, the %% of the body weight fed a '
-                'day; 0 means no feeding at that temperature. An empty FCR is the protocol’s. The table is saved as a '
-                'whole.')),
+            blocks = [formpanels.help_text(words.ONE_ROW_PER_WEIGHT_BAND_FROM),
                 formpanels.form(extra['table_url'], title, [
                     formpanels.fields(table_form['temperatures']),
                     formpanels.grid(
-                        bands, [_('From (g)'), _('Up to (g)'), _('Feed'), _('Meals a day'), _('Expected FCR'),
-                                *(_('SFR at %(temperature)s') % {'temperature': celsius(each)} for each in columns)],
+                        bands, [words.FROM_G, words.UP_TO_G, words.FEED, words.MEALS_A_DAY, words.EXPECTED_FCR,
+                                *(words.sfr_at(celsius(each)) for each in columns)],
                         lambda row: [[bound] for bound in row.base_fields_shown] + [[bound] for bound in row.cells]
                         + [[row['DELETE']]],
-                        legend=title, add=_('Add band'), can_add=bool(columns),
-                        empty_text=_('No band yet. Use “Add band” to add a row.') if columns
-                        else _('Give the temperature columns first: the grid follows them.'),
-                        label_of=lambda bound: _('SFR at %(temperature)s') % {'temperature': bound.label}
+                        legend=title, add=words.ADD_BAND, can_add=bool(columns),
+                        empty_text=words.NO_BAND_YET_USE_ADD_BAND if columns
+                        else words.GIVE_THE_TEMPERATURE_COLUMNS_FIRST_THE,
+                        label_of=lambda bound: words.sfr_at(bound.label)
                         if bound.name in cells else bound.label)],
                     hidden=[table_form['version']],
                     errors=[*table_form.non_field_errors(), *bands.non_form_errors()],
-                    actions=[formpanels.button(_('Save table'), primary=True)])]
+                    actions=[formpanels.button(words.SAVE_TABLE, primary=True)])]
         blocks += [formpanels.notice(text, 'warning') for text in extra.get('table_notices', ())]
         if extra.get('duplicate_url'):
-            blocks += [formpanels.post(extra['duplicate_url'], _('Duplicate')),
-                       formpanels.help_text(_('A draft copy with this table, to change and assign from a date.'))]
+            blocks += [formpanels.post(extra['duplicate_url'], words.DUPLICATE),
+                       formpanels.help_text(words.A_DRAFT_COPY_WITH_THIS_TABLE)]
         refused = bands.is_bound and (bool(bands.non_form_errors()) or any(bands.errors)) or bool(table_form.errors)
         return [formpanels.panel('table', title, blocks, has_errors=refused)]
 

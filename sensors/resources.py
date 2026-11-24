@@ -18,7 +18,7 @@ from core.crud import CreateView, Resource, RowList, done, refusal_text, render_
 from farm.models import Equipment, System, Tank
 from farm.models.site import zone_of
 
-from . import bindings, credentials
+from . import bindings, credentials, words
 from .forms import (AlarmRuleForm, BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm,
                     CredentialForm, DeviceForm, PayloadFormatForm, place_of)
 from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat
@@ -101,10 +101,10 @@ class DeviceResource(Resource):
         if device is None:
             return []
         channels = list(extra.get('channels', ()))
-        channel_table = formpanels.table(_('Channels'), [
-            listprops.column('channel', _('Channel')), listprops.column('quantity', _('Quantity')),
-            listprops.column('value', _('Value')), listprops.column('heartbeat', _('Heartbeat (s)'), numeric=True),
-            listprops.column('state', _('State'))], [
+        channel_table = formpanels.table(words.CHANNELS, [
+            listprops.column('channel', words.CHANNEL), listprops.column('quantity', words.QUANTITY),
+            listprops.column('value', words.VALUE), listprops.column('heartbeat', words.HEARTBEAT_S, numeric=True),
+            listprops.column('state', words.STATE)], [
             listprops.row(channel.pk, {
                 'channel': listprops.cell(channel.code, href=reverse('sensors:channel_edit', args=[channel.pk]), strong=True,
                                           sub=[f'{channel.name} · #{channel.channel_no}']),
@@ -114,24 +114,24 @@ class DeviceResource(Resource):
                 'state': listprops.cell(channel.get_state_display())}) for channel in channels])
         places = [str(place) for place in extra.get('placed_at') or ()]
         history = list(extra.get('placement_history') or ())
-        where = (f"{gettext_now('Placed at')}: {', '.join(places)}." if places
-                 else _('Not placed: out of the water, its readings belong to no place.'))
+        where = (f"{words.PLACED_AT}: {', '.join(places)}." if places
+                 else words.NOT_PLACED_OUT_OF_THE_WATER)
         return [
-            formpanels.panel('channels', _('Channels'), [channel_table] if channels else [
-                formpanels.help_text(_('No channels yet: add them on the Channels page.'))]),
-            formpanels.panel('placement', _('Placement'), [
+            formpanels.panel('channels', words.CHANNELS, [channel_table] if channels else [
+                formpanels.help_text(words.NO_CHANNELS_YET_ADD_THEM_ON)]),
+            formpanels.panel('placement', words.PLACEMENT, [
                 formpanels.help_text(where),
-                formpanels.link(f"{reverse('sensors:device_move')}?device={device.pk}", _('Move device'), 'target')
+                formpanels.link(f"{reverse('sensors:device_move')}?device={device.pk}", words.MOVE_DEVICE, 'target')
                 if view.request.user.has_perm('sensors.add_binding') else None,
-                formpanels.table(_('Placement'), [
-                    listprops.column('where', _('Where')), listprops.column('from', _('From')),
-                    listprops.column('until', _('Until'))], [
+                formpanels.table(words.PLACEMENT, [
+                    listprops.column('where', words.WHERE), listprops.column('from', words.FROM),
+                    listprops.column('until', words.UNTIL)], [
                     listprops.row(index, {
                         'where': listprops.cell(stay.places[0] if stay.places else '', sub=stay.places[1:]),
                         'from': listprops.cell(formpanels.moment(stay.start, device.site)),
                         'until': listprops.cell(formpanels.moment(stay.end, device.site)) if stay.end
-                        else listprops.cell(chip=listprops.chip('neutral', _('now')))})
-                    for index, stay in enumerate(history)]) if history else formpanels.help_text(_('Never placed yet.'))]),
+                        else listprops.cell(chip=listprops.chip('neutral', words.NOW))})
+                    for index, stay in enumerate(history)]) if history else formpanels.help_text(words.NEVER_PLACED_YET)]),
         ]
 
 
@@ -174,10 +174,8 @@ class ChannelResource(Resource):
     def next_panels(cls, view, form, channel, extra):
         """sensors/channel_form.html in the new look: on its Storing tab how long a value stays fresh, and its
         calibrations."""
-        fresh = [formpanels.panel('reduction', None, [formpanels.help_text(
-            _('Channel number %(number)s. A value is fresh for %(heartbeats)s heartbeats: %(seconds)s seconds.') % {
-                'number': formats.localize(channel.channel_no), 'heartbeats': formats.localize(channel.fresh_heartbeats),
-                'seconds': formats.localize(channel.fresh_s)})], tab='reduction')] if channel is not None else []
+        fresh = [formpanels.panel('reduction', None, [formpanels.help_text(words.fresh_for(channel))], tab='reduction')
+                 ] if channel is not None else []
         return fresh + formpanels.row_list_panels(cls, view, channel, extra)
 
     @classmethod
@@ -242,9 +240,8 @@ class CredentialResource(Resource):
         if credential is None or not (cls.allows('change') and view.request.user.has_perm(cls.perm('change'))):
             return []
         return [formpanels.panel('general', None, [
-            formpanels.help_text(_('Replacing the secret makes a new one, shown once. The old one stops working once the '
-                                   'broker’s files are written again.')),
-            formpanels.post(reverse('sensors:credential_rotate', args=[credential.pk]), _('Replace the secret'),
+            formpanels.help_text(words.REPLACING_THE_SECRET_MAKES_A_NEW),
+            formpanels.post(reverse('sensors:credential_rotate', args=[credential.pk]), words.REPLACE_THE_SECRET,
                             [('version', credential.version)])], tab='general')]
 
     @classmethod

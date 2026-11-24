@@ -1,37 +1,37 @@
-{% load i18n %}{% comment %} The Places tab of an experiment (experiments.resources.ExperimentPlacesView): how the tanks were given to the
+{% load i18n experiments_words %}{% experiment_words as ew %}{% comment %} The Places tab of an experiment (experiments.resources.ExperimentPlacesView): how the tanks were given to the
    replicates (the banner), a pool and a seed for the seeded deal (Randomise), and a row a replicate to place tanks by hand
    (with the reason), optionally on days of their own. A tank booked to another experiment on these days is shown with its
    number and cannot be chosen: a draft reserves its tanks. Once the experiment has started its places are shown as they
    are. What is stored is the tanks; a system is only a shortcut that adds its tanks. {% endcomment %}
 <section class="tab-panel experiment-places" data-panel="places" aria-labelledby="places-title"{% if places_form.errors or places.errors or places.non_form_errors %} data-has-errors{% endif %}>
-  <h3 class="panel-title" id="places-title">{% trans "Places" %}</h3>
+  <h3 class="panel-title" id="places-title">{{ ew.places }}</h3>
   {% if allocation %}<p class="notice">{{ allocation }}</p>{% endif %}
   {% if frozen %}
-  <p class="panel-help">{% trans "The experiment has started: its tanks and days are fixed. A tank that has to leave, or be replaced, is released from its page." %}</p>
+  <p class="panel-help">{{ ew.the_experiment_has_started_its_tanks }}</p>
   {% include "experiments/_cells.html" %}
   {% elif span is None %}
-  <p class="notice notice-warning">{% trans "Set day 0 on the Details tab first: a tank is booked for days." %}</p>
+  <p class="notice notice-warning">{{ ew.set_day_0_on_the_details }}</p>
   {% elif not places.forms %}
-  <p class="contact-empty">{% trans "No replicate yet: design the groups on the Design tab first." %}</p>
+  <p class="contact-empty">{{ ew.no_replicate_yet_design_the_groups }}</p>
   {% else %}
-  <p class="panel-help">{% blocktrans trimmed with first=span.0|date:"DATE_FORMAT" last=span.1|date:"DATE_FORMAT" %}The tanks are booked for the days of the experiment, {{ first }} to {{ last }}, unless a row gives days of its own. The error degrees of freedom the design leaves are {{ error_df }}.{% endblocktrans %}</p>
+  <p class="panel-help">{% booked_for span error_df %}</p>
   <form method="post" action="{{ places_url }}" novalidate>
     {% csrf_token %}
     {{ places_form.version }}
     {% if places_form.non_field_errors %}<div class="form-error" role="alert">{{ places_form.non_field_errors }}</div>{% endif %}
     {% if places.non_form_errors %}<div class="form-error" role="alert">{{ places.non_form_errors }}</div>{% endif %}
     {{ places.management_form }}
-    <h4 class="section-title">{% trans "Randomise" %}</h4>
-    <p class="panel-help">{% trans "Choose as many tanks or systems as there are replicates and a seed: they are dealt to the replicates by a fixed method, so the deal can be repeated and checked. The seed is kept with the placements." %}</p>
+    <h4 class="section-title">{{ ew.randomise }}</h4>
+    <p class="panel-help">{{ ew.choose_as_many_tanks_or_systems }}</p>
     <div class="form-grid">
       {% with field=places_form.pool %}{% include "registration/_field.html" %}{% endwith %}
       {% with field=places_form.seed %}{% include "registration/_field.html" %}{% endwith %}
     </div>
-    <p><button type="submit" name="action" value="randomise" class="button button-ghost">{% trans "Randomise" %}</button></p>
-    <h4 class="section-title">{% trans "By hand" %}</h4>
+    <p><button type="submit" name="action" value="randomise" class="button button-ghost">{{ ew.randomise }}</button></p>
+    <h4 class="section-title">{{ ew.by_hand }}</h4>
     <div class="table-wrap">
       <table class="data-table grid-table">
-        <thead><tr><th scope="col">{% trans "Replicate" %}</th><th scope="col">{% trans "Tanks" %}</th><th scope="col">{% trans "Add the tanks of a system" %}</th><th scope="col">{% trans "From" %}</th><th scope="col">{% trans "Until" %}</th></tr></thead>
+        <thead><tr><th scope="col">{{ ew.replicate }}</th><th scope="col">{{ ew.tanks }}</th><th scope="col">{{ ew.add_the_tanks_of_a_system }}</th><th scope="col">{{ ew.from }}</th><th scope="col">{{ ew.until }}</th></tr></thead>
         <tbody>
           {% for row in places %}
           <tr class="place-row">
@@ -47,7 +47,7 @@
     </div>
     <div class="form-grid">{% with field=places_form.note %}{% include "registration/_field.html" %}{% endwith %}</div>
     <div class="form-actions">
-      <button type="submit" name="action" value="save" class="button button-inline">{% trans "Save places" %}</button>
+      <button type="submit" name="action" value="save" class="button button-inline">{{ ew.save_places }}</button>
     </div>
   </form>
   {% endif %}

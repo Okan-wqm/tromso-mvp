@@ -36,7 +36,8 @@ BLANK = [(re.compile(r'(name="csrfmiddlewaretoken" value=")[^"]*'), r'\1-'),
          (re.compile(r'nonce="[^"]*"'), 'nonce="-"'),
          (re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'), 'UUID'),
          (re.compile(r'(name="seed" value=")[0-9]*'), r'\1-'),     # a random seed offered each time
-         (re.compile(r'\?v=\d+'), '?v=-')]                          # a static file's version (its build time)
+         (re.compile(r'\?v=\d+'), '?v=-'),                          # a static file's version (its build time)
+         (re.compile(r'\b[0-9a-f]{64}\b'), 'HASH')]                  # a report's content hash (over its records' keys)
 
 
 class Rollback(Exception):

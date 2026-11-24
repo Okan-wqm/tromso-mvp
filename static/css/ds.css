@@ -587,3 +587,55 @@ a.ui-chart-mark { cursor: pointer; }
 .ui-series .uplot :is(.u-cursor-x, .u-cursor-y) { border-color: var(--line-control); }
 .ui-series .uplot { font-family: var(--font-text); }
 .ui-chart-caption { margin-top: auto; padding: 6px 14px 10px; color: var(--text-2); font-size: var(--fs-caption); text-wrap: pretty; }
+
+/* Lists (the design's "list" and "audit" blocks): rows of a plate on hairlines, a main line, a sub-line, a meta at the
+   right and a chip; a row's status is its 4 px edge, as a table row's. An activity entry heads with its action in the
+   display face, the record and who and when on one line. */
+.ui-list { margin: 0; padding: 0; list-style: none; }
+.ui-list-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: -1px; padding: var(--cell-py, var(--space-2)) var(--cell-px, var(--space-3)); border-bottom: 1px solid var(--line-hair); }
+.ui-list-item[data-status="critical"] { box-shadow: var(--edge-crit); }
+.ui-list-item[data-status="warning"] { box-shadow: var(--edge-warn); }
+.ui-list-main { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; text-wrap: pretty; }
+.ui-list-meta { flex: none; color: var(--text-3); font-size: var(--fs-caption); white-space: nowrap; }
+.ui-list-item > .ui-chip { flex: none; }
+.ui-audit-item { flex-direction: column; gap: 6px; }
+.ui-audit-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.ui-audit-action { font-family: var(--font-display); font-size: var(--fs-tab); font-weight: 600; line-height: 1.2; }
+.ui-audit-record { color: var(--text-2); }
+.ui-audit-who { margin-left: auto; color: var(--text-3); font-size: var(--fs-small); white-space: nowrap; }
+.ui-audit-who strong { color: var(--text-2); }
+
+/* A field's required or optional mark after its label, in words (the design's caption type). */
+.ui-field-mark { margin-left: var(--space-1); color: var(--text-3); font-size: var(--fs-caption); font-weight: 400; }
+
+/* The critical acknowledgement (the design's "ack" block): the notice framed in the critical colour, its box below. */
+.ui-ack { border: 2px solid var(--crit); }
+.ui-ack-box { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-h, 40px); margin-top: var(--space-2); color: var(--text-1); font-weight: 600; }
+
+/* A tab panel kept in the page while another tab is shown (Tabs keepMounted: a form posts the fields of every tab): out of
+   sight and, through React Aria's inert, out of the focus order. */
+.ui-tab-panel[data-inert] { display: none; }
+
+/* The delete confirmation (the new look's ConfirmDelete): its question large, each group of the delete plan under its head. */
+.ui-confirm-question { margin: 0; font-family: var(--font-display); font-size: var(--fs-tab); font-weight: 600; }
+.ui-confirm-group h3 { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--fs-label); }
+
+/* Stacked bar (frontend/islands/ui/StackedBar.tsx, templates/ui/_stack.html): one whole cut into its parts, each segment
+   as long as its share (an SVG whose viewBox is the whole), its tone's colour; a hairline of the sheet between two
+   segments. The legend under it says each part in words with its figure and the same colour as a square mark. */
+.ui-stack { display: grid; gap: var(--space-2); margin: 0; }
+.ui-stack-bar { display: block; width: 100%; height: var(--space-4); }
+.ui-stack-seg { stroke: var(--surface-sheet); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+:is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="ok"] { --stack-tone: var(--ok); }
+:is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="warning"] { --stack-tone: var(--warn); }
+:is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="critical"] { --stack-tone: var(--crit); }
+:is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="hold"] { --stack-tone: var(--action); }
+:is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="neutral"] { --stack-tone: var(--stale); }
+:is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="note"] { --stack-tone: var(--note); }
+.ui-stack-seg { fill: var(--stack-tone, var(--stale)); }
+.ui-stack figcaption { display: grid; gap: var(--space-1); }
+.ui-stack-title { color: var(--text-2); font-size: var(--fs-small); font-weight: 600; }
+.ui-stack-legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: 0; list-style: none; font-size: var(--fs-small); }
+.ui-stack-legend > li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.ui-stack-swatch { width: var(--space-3); height: var(--space-3); background: var(--stack-tone, var(--stale)); }
+.ui-stack-empty { margin: 0; color: var(--text-2); font-size: var(--fs-small); }

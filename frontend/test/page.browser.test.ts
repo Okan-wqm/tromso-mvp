@@ -45,6 +45,11 @@ function serve(): Promise<{ server: Server; asked: string[] }> {
     }
     if (url.pathname === '/static/islands/gallery.js') file = join(GALLERY, built.file);
     else if (url.pathname === '/static/islands/assets/gallery.css') file = join(GALLERY, built.css[0] ?? 'none');
+    // the gallery's own chunks, which gallery.js imports beside it: the production build's chunks are cut from other
+    // islands and carry other hashes
+    else if (url.pathname.startsWith('/static/islands/chunks/') && existsSync(join(GALLERY, url.pathname.slice('/static/islands/'.length)))) {
+      file = join(GALLERY, url.pathname.slice('/static/islands/'.length));
+    }
     else if (url.pathname.startsWith('/static/')) file = resolve(`.${url.pathname}`);
     if (file && existsSync(file)) {
       response.writeHead(200, { ...headers, 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' });

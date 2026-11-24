@@ -66,14 +66,31 @@ def outline(check):
     return found
 
 
+FRAMES = {'table-wrap', 'ui-table-wrap'}
+
+
+def in_a_frame(tag, classes, stack):
+    """A table inside a frame that scrolls it (FRAMES), or the problem in words."""
+    if tag == 'table' and not any(FRAMES & set(open_classes) for _, open_classes, _ in stack):
+        return 'a table outside a .table-wrap'
+
+
 class PagePartsTests(SimpleTestCase):
     def test_every_table_scrolls_in_the_shared_frame(self):
-        """A table is printed in a .table-wrap: the frame that scrolls a wide table inside itself and shows that more of
-        it lies to a side (static/css/components.css), so no table widens the page or hides its last columns unseen."""
-        def check(tag, classes, stack):
-            if tag == 'table' and not any('table-wrap' in open_classes for _, open_classes, _ in stack):
-                return 'a table outside a .table-wrap'
-        self.assertEqual(outline(check), [])
+        """A table is printed in a .table-wrap, or the design system's name for the same frame, .ui-table-wrap (static/css/
+        ds.css styles both as one rule): the frame that scrolls a wide table inside itself and shows that more of it lies
+        to a side, so no table widens the page or hides its last columns unseen."""
+        self.assertEqual(outline(in_a_frame), [])
+
+    def test_the_frame_rule_takes_either_name_and_nothing_else(self):
+        def found(markup):
+            reader = Outline(in_a_frame)
+            reader.feed(markup)
+            return [problem for _line, problem in reader.found]
+        self.assertEqual(found('<div class="table-wrap"><table></table></div>'), [])
+        self.assertEqual(found('<div class="ui-table-wrap" tabindex="0"><table></table></div>'), [])
+        self.assertEqual(found('<div class="ui-table-wrapper"><table></table></div>'), ['a table outside a .table-wrap'])
+        self.assertEqual(found('<div><table></table></div>'), ['a table outside a .table-wrap'])
 
     def test_a_forms_buttons_end_with_its_one_primary(self):
         """The buttons of a form or a dialog (.form-actions): the others first, then at most one filled button (the

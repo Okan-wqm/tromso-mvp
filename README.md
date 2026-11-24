@@ -5505,6 +5505,71 @@ see it.
   the item every 30 s (`frontend/test/strip.browser.test.ts`). In the top bar it gives way before the language switch and the person's menu: its alarms item wraps onto a
   second line, never cut and never pushing them past the window (found by the monitoring page test at 1440 px).
 
+Pages drawn by an island in the new look (the classic page is unchanged behind `?ui=classic`):
+
+- **Company › Overview** (`/`, `templates/home_next.html`, island `company`, `frontend/islands/pages/Company.tsx`): the
+  design's board. `config/company.py` reads each block by its area's own function (stock from the ledger, water from the
+  Water page's own rows, alarms, the office board and muster, reports due, unread messages, feed on hand and cover, the
+  latest log and knowledge entries), split per site from the same rows; `config/company_props.py` words it in the
+  request's language. A block is left out for a person who may not read its area. The water chip per site says the
+  sampling points' worst judgement (critical, warning, OK, or "Not measured"). The Open alarms tile and each site's
+  Open alarms are the status strip's one reader, the farm and its sites from one reading of the water
+  (`alarms.read.attention_all`): the figure counts open alarms (a site's holds the farm-wide ones too, and says how many
+  of them are for the whole farm); the line under it counts stocked units on the monitoring cards' ladder, in the strip's
+  words ("2 units critical", "1 unit with no recent data", "1 unit with no limit", "1 unit cannot be read"), so a
+  critical unit shows before its alarm is raised (one wording, `core.ui.attention_said`, the strip's and the Overview's). The Open alarms plate says "No alarm is open." only when nothing needs a look (`Attention.quiet`); else it says the units' line. A site's water chip says a value of a sampling point, never a count, and never "OK" while the site's units are flagged: then it says their line. A page load reads the shared, cached reading the strip reads. Held
+  to the classic page
+  by `core.pagesays` in three languages (`farm/tests/test_company_overview.py`); its island is checked in a browser in
+  every theme and language for CSP, axe and contrast (`frontend/test/company.browser.test.ts`).
+- **The create, edit and delete page of every tab on the shared `crud/form.html`** (`core.crud.FormView.page`, `DeleteView`; `templates/crud/form_next.html`,
+  `confirm_delete_next.html`; islands `record-form` and `confirm-delete`, `frontend/islands/pages/RecordForm.tsx` and
+  `ConfirmDelete.tsx`): the same view, form and address; the island draws `core.formpayload`'s form with the library's
+  form components (Field.tsx and FormParts.tsx: text, number, date and moment boxes tidied by `frontend/date-input.ts`,
+  selects that follow another field and keep their groups' headings and switched-off options, box groups, radios, a
+  single box, files with the stored one, the role matrix, link lists, the handling acknowledgement), the required fields
+  unmarked and the
+  others marked "optional", the server's errors on their fields and the tab that holds them open, a submit busy until
+  the answer, the History tab and the delete link; the delete confirmation says the delete plan in the old page's words.
+  `core/formprops.py` decides which forms the island draws (`drawable`: the shared crud/form.html, no question asked
+  before a save (`question_template`: the withdrawal guard), no context of the page's own besides the tab to open, and
+  every widget kind drawn; an unknown widget or several hidden values in one field keep the classic page, never an
+  error); a tab with a form template of its own, and a request for a dialog, keep the classic page. Row lists (formsets,
+  `RowList`, `core.formpayload.formset_payload`) are built and tested but not drawn yet: every tab with row lists has a
+  form template of its own. A delete the plan blocks keeps its button off (`ServerForm` switches on only what it
+  switched off). Held: the props say
+  what the classic page says (`core/tests_formprops.py`, three languages); every field of every tab's form, new, refused
+  and editing a record, its row lists' rows and the handling acknowledgement, posts what the old page posts
+  (`frontend/islands/pages/RecordForm.test.tsx` against `frontend/test/pages/form-oracle.json`); the tabs, focus, busy
+  state, CSP and axe in a browser (`frontend/test/recordform.browser.test.ts`). A help built with links travels as its
+  words and its links to the application's own pages (`segments`, never markup); a stored file links to its own
+  permission-checked view (a widget's `current_url`); a link is the application's own only as a plain path
+  (`core.formpayload.own_path`: no scheme, host, backslash or control character). Every drawn tab, new and editing a
+  record of the test world, is held to its classic page (`core/tests_formprops.py`, EveryDrawableTabTests). The browser
+  tests run on props recorded from the test world; the Python tests (`unsaid`) are what link those props to the real
+  pages. In CI (CI=1 or CI=true) a missing browser fails the browser tests instead of skipping them.
+- **Every tab's list page** (`core.crud.ListView`; `templates/crud/list_next.html`, island `list-page`,
+  `frontend/islands/ui/ListPage.tsx`, built once for every list): the same view reads the same rows; `core/listprops.py`
+  words them: the search and the filters as one GET form (the server reads the address and is the only source of what is
+  listed; a view or tab in the address is kept), the link tabs of the list's views with their counts, notices, the table
+  (a cell's text, its link, sub-lines, chips) with each row's actions (a link, or a small POST with the page's CSRF
+  token), the empty state (no records yet, or none matching with the way back), the pager keeping the search and the
+  filters. Every word is the classic page's msgid. A tab opts in with `Resource.list_rows` (its columns and rows, built
+  with `core.listprops` helpers; `listprops.title` and `edit_delete` give the usual name link and Edit and Delete) and
+  `list_filters` (selects and day boxes from the values `filter_list` returns); a tab without `list_rows` keeps its
+  classic list in the new look. A row's title and its actions open the record's own page (the record form island), never
+  the classic dialog. Drawn now: the HR lists (Team, Departments, Attendance, Leave requests, Shifts, Holidays, Leave
+  types), under both mounts. Held: `hr/tests/test_list_next.py` (each list against its classic page on the test world in
+  three languages; the search, the filters and the pager are the address's); `frontend/islands/ui/ui.test.tsx` (the
+  markup); `frontend/test/listpage.browser.test.ts` (the GET form sends what the server reads; CSP and axe in every theme
+  at 1440 and 390) and `listpages.browser.test.ts` (every recorded list in three languages at both widths).
+- **The browser tests' fixtures come from the test world, never from the development database.**
+  `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
+  migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture
+  names "Test …", addresses @example.com; `core/test_world.py`, one function per part: `company_world`, `hr_world`) in a
+  transaction it rolls back, and writes `form-oracle.json`, `company-props-<language>.json` and
+  `list-props-<language>.json`. `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
+  `frontend/islands` and `core/testdata` outside example.com and the `.example` domains.
+
 ## One format for every tab
 
 `core/crud.py` turns a `Resource` (model, form, labels, list template) into list, create, edit and
@@ -5611,6 +5676,16 @@ What one tab needed and the next ones will too lives in `core/`:
   kind (tampering, a broken client) is refused with a reason on the form, never a server error (F7c).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
+- `core/formpayload.py`: a form as the JSON a new page's island draws (`?ui=next`). It is what Django's own renderer is
+  handed for the old page (the bound field's label, help, required, errors; the widget's formatted value, attributes with
+  the server's bounds, options), projected to JSON, so the server stays the only validator and the island posts the same
+  names to the same address. Every widget of the project has a `kind` the island draws; another widget class, or a value
+  that is not plain JSON, is refused, never guessed. Help text built with `format_html` travels as markup, any other as
+  text. `core/tests_formpayload.py` builds every tab's form, new and sent empty, draws each field with the old field
+  template and holds the payload to it: the same controls posted with the same values, the same label, help and errors.
+  A whole new page is held to its old one by `core/pagesays.py`: every run of text, link address and control name of the
+  old page's `<main>` must be carried by the new page's payload (`unsaid` names what is not), the two pages read side
+  by side in one test on one fixture.
 - `core/query.py`: the numbers and years a page reads from its address (`?page=`, `?before=`, `?year=`), one rule for
   every page (F-006, F-176, F-120): a number in ASCII digits within its bounds, a year of the calendar `core.dates`
   reads; anything else is taken as not given and the page shows its default, as for a stale link, never a server error.

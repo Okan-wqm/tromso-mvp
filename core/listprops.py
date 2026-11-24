@@ -178,6 +178,7 @@ def list_props(view, objects, context):
         'lines': [str(line) for line in table.get('lines', ())],
         'table': {'label': str(r.title(view.mount)), 'columns': table['columns'], 'rows': table['rows'],
                   'actionsLabel': _('Actions')},
+        'timeline': table.get('timeline'),
         'empty': empty,
         'pager': pager(context.get('page'), context.get('pager_query', '')),
     }

@@ -305,6 +305,31 @@ test('a list cell may be a closed disclosure; a labelled action shows its word b
   assert.match(page, /<a class="icon-button" href="\/x\/" aria-label="Edit x"/, 'an unlabelled action is the icon button as before');
 });
 
+test('a timeline: a lane per place, each span placed in % and said in words, the lane a named picture, no style', async () => {
+  const { Timeline } = await import('./index.js');
+  const page = html(<Timeline label="Where OXYGEN was bound over time" ticks={[{ x: 0, label: '01.11' }, { x: 50, label: '12.11' }, { x: 100, label: 'now' }]}
+    lanes={[
+      { key: 'rt', label: 'Research hall › RT-03', spans: [{ key: 'a', x: 0, width: 22.5, tone: 'primary', open: false, label: 'Primary · 01.11.2026 08:00 – 06.11.2026 08:02' }] },
+      { key: 'bio', label: 'Biofilter loop', spans: [{ key: 'b', x: 22.5, width: 77.5, tone: 'backup', open: true, label: 'Backup · 06.11.2026 08:02 – now' }] },
+    ]} />);
+  assert.match(page, /^<figure class="ui-timeline" aria-label="Where OXYGEN was bound over time">/);
+  assert.match(page, /<svg class="ui-timeline-track" role="img" aria-label="Research hall › RT-03: Primary · 01\.11\.2026 08:00 – 06\.11\.2026 08:02">/);
+  assert.match(page, /<svg x="22\.5%" width="77\.5%" y="4" height="20" class="ui-timeline-span" data-tone="backup" data-open="">/);
+  assert.match(page, /<title>Backup · 06\.11\.2026 08:02 – now<\/title>/);
+  assert.match(page, /text-anchor="end">now<\/text>/);
+  assert.doesNotMatch(page, /style=/);
+});
+
+test('a list page draws its timeline in a plate above the table; without one, as before', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const timeline = { title: 'OXYGEN #186 · SIM-BIO-1 · History', label: 'Where OXYGEN was bound', ticks: [{ x: 0, label: '01.11' }],
+    lanes: [{ key: 'a', label: 'Loop', spans: [] }] };
+  const page = html(<ListPage {...LIST_PROPS} timeline={timeline} />);
+  assert.match(page, /<h2>OXYGEN #186 · SIM-BIO-1 · History<\/h2><\/div><figure class="ui-timeline"[^]*<table/);
+  assert.doesNotMatch(html(<ListPage {...LIST_PROPS} />), /ui-timeline/);
+});
+
 test('a stacked bar: each part a segment as long as its share on the whole, every part in words, no style', async () => {
   const { StackedBar } = await import('./index.js');
   const bar = html(<StackedBar label="Planned today: 6" parts={[

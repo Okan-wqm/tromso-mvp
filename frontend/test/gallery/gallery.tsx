@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
-  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, Gauge, IconButton, LinkButton,
+  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, Gauge, IconButton, Timeline, LinkButton,
   LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
@@ -198,6 +198,15 @@ function Gallery({ rows, errors }: GalleryProps) {
             { key: 'here', label: 'Here now', value: 0, figure: '0', tone: 'ok' },
           ]} />
         </div>
+      </Plate>
+      <Plate title="OXYGEN-MG-L #186 · SIM-BIO-1 · History" span={12}>
+        <Timeline label="Where OXYGEN-MG-L was bound over time"
+          ticks={[{ x: 0, label: '01.11' }, { x: 22.7, label: '06.11' }, { x: 45.4, label: '11.11' }, { x: 68.1, label: '16.11' }, { x: 100, label: 'now' }]}
+          lanes={[
+            { key: 'rt', label: 'Research hall › RT-03', spans: [{ key: 'a', x: 0, width: 22.7, tone: 'primary', open: false, label: 'Primary · 01.11.2026 08:00 – 06.11.2026 08:02' }] },
+            { key: 'bio', label: 'Biofilter loop (BIO-1)', spans: [{ key: 'b', x: 22.7, width: 77.3, tone: 'primary', open: true, label: 'Primary · 06.11.2026 08:02 – now' }] },
+            { key: 'ha', label: 'HA-K01 › Middle', spans: [{ key: 'c', x: 54.5, width: 12, tone: 'backup', open: false, label: 'Backup · 13.11.2026 08:00 – 16.11.2026 08:00' }] },
+          ]} />
       </Plate>
       <Plate title="Capacity" span={6}>
         <div className="ui-plate-body" id="gauges">

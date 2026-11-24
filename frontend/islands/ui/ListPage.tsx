@@ -16,6 +16,7 @@ import { Chip, type ChipKind } from './Chip.js';
 import { Gauge, type GaugeProps } from './Gauge.js';
 import { Icon, type IconName } from './Icon.js';
 import { Plate, Plates } from './Plate.js';
+import { Timeline, type TimelineProps } from './Timeline.js';
 import { EmptyState, Notice, type NoticeTone } from './States.js';
 import { LinkTabs, type LinkTab } from './Tabs.js';
 
@@ -100,6 +101,8 @@ export interface ListPageProps {
   table: { label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string };
   /** the rows in groups, one plate and table each (optional: without it, one table) */
   groups?: ListGroup[] | null;
+  /** a timeline of the listed rows above the table, in a plate of its title (a channel's bindings over time; optional) */
+  timeline?: (TimelineProps & { title: string }) | null;
   /** said when there is no row: "No … yet" with what to do, or "No … match" with the way back */
   empty: { title: string; text: string | null; link: ListLink | null; add: ListLink | null };
   pager: { label: string; range: string; page: string; previous: ListLink | null; next: ListLink | null } | null;
@@ -227,7 +230,7 @@ function Groups({ groups, table, csrfToken }: { groups: ListGroup[]; table: List
   );
 }
 
-export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, empty, pager }: ListPageProps) {
+export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, timeline, empty, pager }: ListPageProps) {
   return (
     <>
       {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
@@ -239,6 +242,11 @@ export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, grou
       ))}
       {table.rows.length ? (
         <>
+          {timeline ? (
+            <Plates>
+              <Plate title={timeline.title}><Timeline label={timeline.label} ticks={timeline.ticks} lanes={timeline.lanes} /></Plate>
+            </Plates>
+          ) : null}
           {lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}
           {groups && groups.length ? <Groups groups={groups} table={table} csrfToken={csrfToken} />
             : <RowsTable label={table.label} columns={table.columns} rows={table.rows} actionsLabel={table.actionsLabel}

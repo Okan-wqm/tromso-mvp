@@ -528,6 +528,29 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-tile-sub2 { color: var(--text-3); font-size: var(--fs-small); }
 .ui-tile-source { margin-top: auto; padding-top: var(--space-1); color: var(--text-3); font-size: var(--fs-caption); }
 
+/* ==================================================================================================== Timeline ===
+   ui-timeline: lanes of spans on one time axis (Sensors › Bindings: where a channel was bound). A lane's name, then its
+   track; every position is the server's, in % of the track (SVG attributes, no style). A primary span is filled, a backup
+   dashed; each says its words inside it (cut by its own box) and in its <title>; the lane is named in words for a screen
+   reader. Under 640 px the name stands above its track. */
+.ui-timeline { margin: 0; padding: var(--space-3) var(--cell-px, var(--space-4)); }
+.ui-timeline-row { display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); align-items: center; gap: var(--space-3); }
+.ui-timeline-row + .ui-timeline-row { margin-top: var(--space-2); }
+.ui-timeline-name { overflow-wrap: anywhere; color: var(--text-1); font-size: var(--fs-small); font-weight: 600; }
+.ui-timeline-axis { display: block; width: 100%; height: 16px; overflow: visible; }
+.ui-timeline-axis text { fill: var(--text-3); font-size: var(--fs-caption); }
+.ui-timeline-track { display: block; width: 100%; height: 28px; border: 1px solid var(--line-hair); background: var(--surface-sunken); }
+.ui-timeline-tick { stroke: var(--line-hair); }
+.ui-timeline-span rect { fill: var(--surface-sheet); stroke: var(--line-control); }
+.ui-timeline-span[data-tone="primary"] rect { fill: var(--primary); stroke: var(--primary); }
+.ui-timeline-span[data-tone="backup"] rect { stroke-dasharray: 4 3; }
+.ui-timeline-span text { fill: var(--text-1); font-size: var(--fs-caption); }
+.ui-timeline-span[data-tone="primary"] text { fill: var(--on-primary); }
+@media (max-width: 639px) {
+  .ui-timeline-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+  .ui-timeline-row > span:empty { display: none; }
+}
+
 /* ====================================================================================================== Notice ===
    ui-notice: a sentence that must stay in sight. data-tone="warning" is the safety line ("Nothing is sent yet: …"), "ok"
    the flash after a save (with its close), "critical" an error, none a note. Glyph and words, a 4 px edge. */

@@ -13720,6 +13720,7 @@
         "core/tests_deletepayload.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
+        "core/tests_formpayload.py",
         "core/tests_query_pages.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
@@ -15429,6 +15430,7 @@
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
         "core/tests_erasure.py",
+        "core/tests_formpayload.py",
         "core/tests_private_log.py",
         "core/tests_query_pages.py",
         "core/tests_rev.py",
@@ -19001,6 +19003,7 @@
       "tests": [
         "core/test_languages.py",
         "core/tests_deletepayload.py",
+        "core/tests_formpayload.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",

@@ -28,11 +28,11 @@
        "label": "Kontoravdelinger",
        "options": [
         {
-         "value": "office:f10187cd-7979-4625-8e99-f1132978a199",
+         "value": "office:d36f9096-3401-4892-a0e9-94866b49ee86",
          "label": "Test Accounts (TAC)"
         },
         {
-         "value": "office:d003b693-8f4d-4612-a811-f0b79a5686d7",
+         "value": "office:2c9aaa7c-efdd-49ae-8e81-18b028a561da",
          "label": "Test Office (TOF)"
         }
        ]
@@ -146,13 +146,13 @@
    ],
    "rows": [
     {
-     "key": "8e843b55-6d38-4c15-bbcd-f50d79c0c934",
+     "key": "65f8feeb-7668-44c3-b365-c30fa742eaa4",
      "status": null,
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Former",
-       "href": "/hr/team/8e843b55-6d38-4c15-bbcd-f50d79c0c934/",
+       "href": "/hr/team/65f8feeb-7668-44c3-b365-c30fa742eaa4/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -210,14 +210,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/team/8e843b55-6d38-4c15-bbcd-f50d79c0c934/view/",
+       "href": "/hr/team/65f8feeb-7668-44c3-b365-c30fa742eaa4/view/",
        "label": "Vis Test Former",
        "icon": "search",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/team/8e843b55-6d38-4c15-bbcd-f50d79c0c934/",
+       "href": "/hr/team/65f8feeb-7668-44c3-b365-c30fa742eaa4/",
        "label": "Rediger Test Former",
        "icon": "pencil",
        "danger": false
@@ -225,13 +225,13 @@
      ]
     },
     {
-     "key": "30bb2de0-c0d2-4de0-8eb2-7f6eaf6d9933",
+     "key": "b1824ecd-9d9f-4749-8ed0-f63d2a889068",
      "status": null,
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Person",
-       "href": "/hr/team/30bb2de0-c0d2-4de0-8eb2-7f6eaf6d9933/",
+       "href": "/hr/team/b1824ecd-9d9f-4749-8ed0-f63d2a889068/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -286,14 +286,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/team/30bb2de0-c0d2-4de0-8eb2-7f6eaf6d9933/view/",
+       "href": "/hr/team/b1824ecd-9d9f-4749-8ed0-f63d2a889068/view/",
        "label": "Vis Test Person",
        "icon": "search",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/team/30bb2de0-c0d2-4de0-8eb2-7f6eaf6d9933/",
+       "href": "/hr/team/b1824ecd-9d9f-4749-8ed0-f63d2a889068/",
        "label": "Rediger Test Person",
        "icon": "pencil",
        "danger": false
@@ -343,11 +343,11 @@
        "label": "Produksjonsavdelinger",
        "options": [
         {
-         "value": "production:789a7bc6-7692-4ae9-925c-0325efb99cba",
+         "value": "production:8ba285ea-1076-4944-a3fa-d58c8261ccb6",
          "label": "Test Cages (TCG)"
         },
         {
-         "value": "production:35839d1d-b5f3-423b-9c34-1dc68f2d264c",
+         "value": "production:272a4732-ce1d-4249-8f15-88ea81cec947",
          "label": "Test Hall A (THA)"
         }
        ]
@@ -461,13 +461,393 @@
    ],
    "rows": [
     {
-     "key": "db921458-adc3-41ce-8306-d9c06b72e4c2",
+     "key": "df4c2b70-cdaf-437d-90af-0f392fbd324f",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Absent",
+       "href": "/production/team/people/df4c2b70-cdaf-437d-90af-0f392fbd324f/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9105"
+       ]
+      },
+      "type": {
+       "text": "Ansatt",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Jobber her"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/df4c2b70-cdaf-437d-90af-0f392fbd324f/view/",
+       "label": "Vis Test Absent",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/df4c2b70-cdaf-437d-90af-0f392fbd324f/",
+       "label": "Rediger Test Absent",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "58ba0b33-1370-49e5-9eea-6983ab3e4761",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Away",
+       "href": "/production/team/people/58ba0b33-1370-49e5-9eea-6983ab3e4761/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9106"
+       ]
+      },
+      "type": {
+       "text": "Ansatt",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Jobber her"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/58ba0b33-1370-49e5-9eea-6983ab3e4761/view/",
+       "label": "Vis Test Away",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/58ba0b33-1370-49e5-9eea-6983ab3e4761/",
+       "label": "Rediger Test Away",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "a92aaf96-8823-49dc-af33-2a3171834b69",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Done",
+       "href": "/production/team/people/a92aaf96-8823-49dc-af33-2a3171834b69/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9107"
+       ]
+      },
+      "type": {
+       "text": "Ansatt",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Jobber her"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/a92aaf96-8823-49dc-af33-2a3171834b69/view/",
+       "label": "Vis Test Done",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/a92aaf96-8823-49dc-af33-2a3171834b69/",
+       "label": "Rediger Test Done",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "76941706-e06d-4c5c-84d6-df7377fe9f12",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Late",
+       "href": "/production/team/people/76941706-e06d-4c5c-84d6-df7377fe9f12/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9103"
+       ]
+      },
+      "type": {
+       "text": "Ansatt",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Jobber her"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/76941706-e06d-4c5c-84d6-df7377fe9f12/view/",
+       "label": "Vis Test Late",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/76941706-e06d-4c5c-84d6-df7377fe9f12/",
+       "label": "Rediger Test Late",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "20cf48db-9fb5-4ef3-aa42-647ed3b25b96",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Present",
+       "href": "/production/team/people/20cf48db-9fb5-4ef3-aa42-647ed3b25b96/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9102"
+       ]
+      },
+      "type": {
+       "text": "Ansatt",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Jobber her"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/20cf48db-9fb5-4ef3-aa42-647ed3b25b96/view/",
+       "label": "Vis Test Present",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/20cf48db-9fb5-4ef3-aa42-647ed3b25b96/",
+       "label": "Rediger Test Present",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "bb2d0080-be70-4d66-afe2-11ba3e4187a2",
      "status": null,
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Second",
-       "href": "/production/team/people/db921458-adc3-41ce-8306-d9c06b72e4c2/",
+       "href": "/production/team/people/bb2d0080-be70-4d66-afe2-11ba3e4187a2/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -522,15 +902,167 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/production/team/people/db921458-adc3-41ce-8306-d9c06b72e4c2/view/",
+       "href": "/production/team/people/bb2d0080-be70-4d66-afe2-11ba3e4187a2/view/",
        "label": "Vis Test Second",
        "icon": "search",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/production/team/people/db921458-adc3-41ce-8306-d9c06b72e4c2/",
+       "href": "/production/team/people/bb2d0080-be70-4d66-afe2-11ba3e4187a2/",
        "label": "Rediger Test Second",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "f9988989-0e63-4105-9e9f-189057c0d9f0",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Upcoming",
+       "href": "/production/team/people/f9988989-0e63-4105-9e9f-189057c0d9f0/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9101"
+       ]
+      },
+      "type": {
+       "text": "Ansatt",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Jobber her"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/f9988989-0e63-4105-9e9f-189057c0d9f0/view/",
+       "label": "Vis Test Upcoming",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/f9988989-0e63-4105-9e9f-189057c0d9f0/",
+       "label": "Rediger Test Upcoming",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "e3ddf1cc-40bd-4c98-a625-658e1dd7d76f",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Waiting",
+       "href": "/production/team/people/e3ddf1cc-40bd-4c98-a625-658e1dd7d76f/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9104"
+       ]
+      },
+      "type": {
+       "text": "Ansatt",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Jobber her"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/e3ddf1cc-40bd-4c98-a625-658e1dd7d76f/view/",
+       "label": "Vis Test Waiting",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/e3ddf1cc-40bd-4c98-a625-658e1dd7d76f/",
+       "label": "Rediger Test Waiting",
        "icon": "pencil",
        "danger": false
       }
@@ -624,13 +1156,13 @@
    ],
    "rows": [
     {
-     "key": "d003b693-8f4d-4612-a811-f0b79a5686d7",
+     "key": "2c9aaa7c-efdd-49ae-8e81-18b028a561da",
      "status": null,
      "voided": false,
      "cells": {
       "department": {
        "text": "Test Office",
-       "href": "/hr/departments/d003b693-8f4d-4612-a811-f0b79a5686d7/",
+       "href": "/hr/departments/2c9aaa7c-efdd-49ae-8e81-18b028a561da/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -677,14 +1209,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/departments/d003b693-8f4d-4612-a811-f0b79a5686d7/",
+       "href": "/hr/departments/2c9aaa7c-efdd-49ae-8e81-18b028a561da/",
        "label": "Rediger Test Office",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/departments/d003b693-8f4d-4612-a811-f0b79a5686d7/delete/",
+       "href": "/hr/departments/2c9aaa7c-efdd-49ae-8e81-18b028a561da/delete/",
        "label": "Slett Test Office",
        "icon": "trash",
        "danger": true
@@ -692,13 +1224,13 @@
      ]
     },
     {
-     "key": "f10187cd-7979-4625-8e99-f1132978a199",
+     "key": "d36f9096-3401-4892-a0e9-94866b49ee86",
      "status": null,
      "voided": false,
      "cells": {
       "department": {
        "text": "Test Accounts",
-       "href": "/hr/departments/f10187cd-7979-4625-8e99-f1132978a199/",
+       "href": "/hr/departments/d36f9096-3401-4892-a0e9-94866b49ee86/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -751,14 +1283,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/departments/f10187cd-7979-4625-8e99-f1132978a199/",
+       "href": "/hr/departments/d36f9096-3401-4892-a0e9-94866b49ee86/",
        "label": "Rediger Test Accounts",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/departments/f10187cd-7979-4625-8e99-f1132978a199/delete/",
+       "href": "/hr/departments/d36f9096-3401-4892-a0e9-94866b49ee86/delete/",
        "label": "Slett Test Accounts",
        "icon": "trash",
        "danger": true
@@ -845,13 +1377,13 @@
    ],
    "rows": [
     {
-     "key": "0cac89c9-8eb7-4410-8d3e-aaa40dd991a5",
+     "key": "a29583b1-12d7-4bef-bf46-e5813f91a5d4",
      "status": "warning",
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Person",
-       "href": "/hr/time/attendance/0cac89c9-8eb7-4410-8d3e-aaa40dd991a5/",
+       "href": "/hr/time/attendance/a29583b1-12d7-4bef-bf46-e5813f91a5d4/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -888,14 +1420,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/time/attendance/0cac89c9-8eb7-4410-8d3e-aaa40dd991a5/",
+       "href": "/hr/time/attendance/a29583b1-12d7-4bef-bf46-e5813f91a5d4/",
        "label": "Rett",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/time/attendance/0cac89c9-8eb7-4410-8d3e-aaa40dd991a5/delete/",
+       "href": "/hr/time/attendance/a29583b1-12d7-4bef-bf46-e5813f91a5d4/delete/",
        "label": "Annuller",
        "icon": "trash",
        "danger": true
@@ -1103,13 +1635,13 @@
    ],
    "rows": [
     {
-     "key": "4e4a41eb-51f6-4bf4-9f93-4017af7694db",
+     "key": "7ff5c492-c8ae-4f19-ab65-76bc32693679",
      "status": null,
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Person",
-       "href": "/hr/leave/4e4a41eb-51f6-4bf4-9f93-4017af7694db/view/",
+       "href": "/hr/leave/7ff5c492-c8ae-4f19-ab65-76bc32693679/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1162,7 +1694,7 @@
      "actions": [
       {
        "kind": "post",
-       "href": "/hr/leave/4e4a41eb-51f6-4bf4-9f93-4017af7694db/cancel/",
+       "href": "/hr/leave/7ff5c492-c8ae-4f19-ab65-76bc32693679/cancel/",
        "label": "Kanseller søknaden",
        "icon": "calendar-off",
        "danger": true,
@@ -1241,13 +1773,84 @@
    ],
    "rows": [
     {
-     "key": "f89b9a6c-1927-4105-a474-c9b13feff82a",
+     "key": "b37ddd95-9161-48e5-9e48-8a4c9ad4dc92",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test early shift",
+       "href": "/hr/settings/shifts/b37ddd95-9161-48e5-9e48-8a4c9ad4dc92/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TE1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "06:00–10:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktiv"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/b37ddd95-9161-48e5-9e48-8a4c9ad4dc92/",
+       "label": "Rediger Test early shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/b37ddd95-9161-48e5-9e48-8a4c9ad4dc92/delete/",
+       "label": "Slett Test early shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "e2995824-f6f6-4875-8c06-e3a9fc5651ba",
      "status": null,
      "voided": false,
      "cells": {
       "shift": {
        "text": "Test day shift",
-       "href": "/hr/settings/shifts/f89b9a6c-1927-4105-a474-c9b13feff82a/",
+       "href": "/hr/settings/shifts/e2995824-f6f6-4875-8c06-e3a9fc5651ba/",
        "strong": true,
        "chip": null,
        "chips": [
@@ -1297,14 +1900,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/settings/shifts/f89b9a6c-1927-4105-a474-c9b13feff82a/",
+       "href": "/hr/settings/shifts/e2995824-f6f6-4875-8c06-e3a9fc5651ba/",
        "label": "Rediger Test day shift",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/settings/shifts/f89b9a6c-1927-4105-a474-c9b13feff82a/delete/",
+       "href": "/hr/settings/shifts/e2995824-f6f6-4875-8c06-e3a9fc5651ba/delete/",
        "label": "Slett Test day shift",
        "icon": "trash",
        "danger": true
@@ -1312,13 +1915,297 @@
      ]
     },
     {
-     "key": "9dde47ad-9132-47a5-850a-6050a95cf95f",
+     "key": "54b2d1aa-6aff-4fc2-a5a2-5bb3ef7ff282",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test morning shift",
+       "href": "/hr/settings/shifts/54b2d1aa-6aff-4fc2-a5a2-5bb3ef7ff282/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TD1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "07:00–15:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktiv"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/54b2d1aa-6aff-4fc2-a5a2-5bb3ef7ff282/",
+       "label": "Rediger Test morning shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/54b2d1aa-6aff-4fc2-a5a2-5bb3ef7ff282/delete/",
+       "label": "Slett Test morning shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "84d6b8ec-b0fd-4d78-b1ec-5908757a3a79",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test midday shift",
+       "href": "/hr/settings/shifts/84d6b8ec-b0fd-4d78-b1ec-5908757a3a79/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TM1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "12:00–20:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktiv"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/84d6b8ec-b0fd-4d78-b1ec-5908757a3a79/",
+       "label": "Rediger Test midday shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/84d6b8ec-b0fd-4d78-b1ec-5908757a3a79/delete/",
+       "label": "Slett Test midday shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "d0aa2a2d-4145-49ba-8005-5fa3842a9021",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test later shift",
+       "href": "/hr/settings/shifts/d0aa2a2d-4145-49ba-8005-5fa3842a9021/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TL1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "13:30–21:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktiv"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/d0aa2a2d-4145-49ba-8005-5fa3842a9021/",
+       "label": "Rediger Test later shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/d0aa2a2d-4145-49ba-8005-5fa3842a9021/delete/",
+       "label": "Slett Test later shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "16965d14-2137-4745-9260-1caa8198ce70",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test evening shift",
+       "href": "/hr/settings/shifts/16965d14-2137-4745-9260-1caa8198ce70/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TV1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "18:00–23:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktiv"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/16965d14-2137-4745-9260-1caa8198ce70/",
+       "label": "Rediger Test evening shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/16965d14-2137-4745-9260-1caa8198ce70/delete/",
+       "label": "Slett Test evening shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "edb2a7ba-6791-42a4-b6ac-ccee63411640",
      "status": null,
      "voided": false,
      "cells": {
       "shift": {
        "text": "Test night shift",
-       "href": "/hr/settings/shifts/9dde47ad-9132-47a5-850a-6050a95cf95f/",
+       "href": "/hr/settings/shifts/edb2a7ba-6791-42a4-b6ac-ccee63411640/",
        "strong": true,
        "chip": null,
        "chips": [
@@ -1370,14 +2257,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/settings/shifts/9dde47ad-9132-47a5-850a-6050a95cf95f/",
+       "href": "/hr/settings/shifts/edb2a7ba-6791-42a4-b6ac-ccee63411640/",
        "label": "Rediger Test night shift",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/settings/shifts/9dde47ad-9132-47a5-850a-6050a95cf95f/delete/",
+       "href": "/hr/settings/shifts/edb2a7ba-6791-42a4-b6ac-ccee63411640/delete/",
        "label": "Slett Test night shift",
        "icon": "trash",
        "danger": true
@@ -1440,7 +2327,7 @@
    ],
    "rows": [
     {
-     "key": "d72d0a1f-085d-431e-9b95-b2f64c54fd54",
+     "key": "33d5d3b0-8b11-434b-be9c-dd24a9282967",
      "status": null,
      "voided": false,
      "cells": {
@@ -1456,7 +2343,7 @@
       },
       "holiday": {
        "text": "Test holiday",
-       "href": "/hr/settings/holidays/d72d0a1f-085d-431e-9b95-b2f64c54fd54/",
+       "href": "/hr/settings/holidays/33d5d3b0-8b11-434b-be9c-dd24a9282967/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1474,14 +2361,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/settings/holidays/d72d0a1f-085d-431e-9b95-b2f64c54fd54/",
+       "href": "/hr/settings/holidays/33d5d3b0-8b11-434b-be9c-dd24a9282967/",
        "label": "Rediger Test holiday",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/settings/holidays/d72d0a1f-085d-431e-9b95-b2f64c54fd54/delete/",
+       "href": "/hr/settings/holidays/33d5d3b0-8b11-434b-be9c-dd24a9282967/delete/",
        "label": "Slett Test holiday",
        "icon": "trash",
        "danger": true
@@ -1549,13 +2436,13 @@
    ],
    "rows": [
     {
-     "key": "7f38933e-886e-4211-b6ac-155dd23b4261",
+     "key": "48925eea-771e-4d90-82b2-1dd9dba1530f",
      "status": null,
      "voided": false,
      "cells": {
       "type": {
        "text": "Test annual leave",
-       "href": "/hr/settings/leave-types/7f38933e-886e-4211-b6ac-155dd23b4261/",
+       "href": "/hr/settings/leave-types/48925eea-771e-4d90-82b2-1dd9dba1530f/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1594,14 +2481,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/settings/leave-types/7f38933e-886e-4211-b6ac-155dd23b4261/",
+       "href": "/hr/settings/leave-types/48925eea-771e-4d90-82b2-1dd9dba1530f/",
        "label": "Rediger Test annual leave",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/settings/leave-types/7f38933e-886e-4211-b6ac-155dd23b4261/delete/",
+       "href": "/hr/settings/leave-types/48925eea-771e-4d90-82b2-1dd9dba1530f/delete/",
        "label": "Slett Test annual leave",
        "icon": "trash",
        "danger": true

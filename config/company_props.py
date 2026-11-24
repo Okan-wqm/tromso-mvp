@@ -5,23 +5,13 @@ area pages already say keeps their own msgids (the upcoming reports, the board's
 a page says the same thing in both looks (core.pagesays holds the new page to the old one)."""
 from django.urls import reverse
 from django.utils import formats, timezone
-from django.utils.html import strip_tags
 from django.utils.translation import gettext as _, ngettext
 
 from core.dates import company_zone
+from core.formprops import by, when
 from farm.templatetags.stock import fish as whole, kilos, tonnes
 
 from .company import overview
-
-
-def when(moment):
-    return formats.date_format(timezone.localtime(moment, company_zone()), 'DATETIME_FORMAT')
-
-
-def by(name):
-    """'by <strong>name</strong>' of the activity log, as its words around the name: no markup crosses to the island."""
-    before, _sep, after = _('by <strong>%(name)s</strong>').partition('<strong>%(name)s</strong>')
-    return {'before': strip_tags(before).strip(), 'name': name, 'after': strip_tags(after).strip()}
 
 
 def count_of(said, number):
@@ -66,13 +56,22 @@ def upcoming_props(upcoming):
     }
 
 
-def _water_chip(water):
+def _water_chip(water, now):
+    """A site's water in a chip, as the design words it: its worst value as the Water page judges it ("CO₂ (mg/L) 15.6"),
+    with "No recent data" when that value is old; else "No recent data · <age>" for a point whose values grew old; else
+    "Not measured" or OK. The count of critical and warning points stays the tiles' and the Water page's."""
+    from django.utils.timesince import timesince
+
+    from farm.water.read import said_value
     if water is None:
         return None
-    if water['critical']:
-        return {'kind': 'critical', 'text': count_of(ngettext('%(count)s critical', '%(count)s critical', water['critical']), water['critical'])}
-    if water['warning']:
-        return {'kind': 'warning', 'text': count_of(ngettext('%(count)s warning', '%(count)s warnings', water['warning']), water['warning'])}
+    if water['worst'] is not None:
+        reading, judged, old = water['worst']
+        text = f'{reading.parameter.short} {said_value(reading)}'
+        return {'kind': 'critical' if judged == 'critical' else 'warning',
+                'text': f"{text} · {_('No recent data')}" if old else text}
+    if water['stale_since'] is not None:
+        return {'kind': 'stale', 'text': f"{_('No recent data')} · {timesince(water['stale_since'], now, depth=1)}"}
     if not water['measured']:
         return {'kind': 'nodata', 'text': _('Not measured')}
     return {'kind': 'ok', 'text': _('OK')}
@@ -127,7 +126,7 @@ def _tiles(found, now):
     return tiles
 
 
-def _sites(user, sites):
+def _sites(user, sites, now):
     return {
         'title': _('Sites'), 'link': {'href': reverse('farm:site_list'), 'label': _('Sites')},
         'columns': {'site': _('Site'), 'type': _('Type'), 'units': _('Units stocked'), 'biomass': _('Biomass'),
@@ -140,7 +139,7 @@ def _sites(user, sites):
                       'warning' if (row['water'] or {}).get('warning') else None,
             'units': None if row['units_stocked'] is None else whole(row['units_stocked']),
             'biomass': None if row['biomass_kg'] is None else tonnes(row['biomass_kg']),
-            'water': _water_chip(row['water']),
+            'water': _water_chip(row['water'], now),
             'alarms': None if row['open_alarms'] is None else whole(row['open_alarms']),
             'onSite': None if row['on_site'] is None else whole(row['on_site']),
         } for row in sites['rows']],
@@ -244,7 +243,7 @@ def overview_props(user, moment=None):
         'today': {'title': _('Company today'),
                   'meta': _('Worked out %(when)s · %(zone)s') % {'when': when(now), 'zone': found['zone']},
                   'tiles': _tiles(found, now)},
-        'sites': _sites(user, found['sites']) if found['sites'] is not None else None,
+        'sites': _sites(user, found['sites'], now) if found['sites'] is not None else None,
         'alarms': _alarms(found['alarms']) if found['alarms'] is not None else None,
         'people': _people(found['people']) if found['people'] is not None else None,
         'upcoming': upcoming_props(found['reports']),

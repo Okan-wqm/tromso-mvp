@@ -20,13 +20,14 @@ MESSAGES = 3        # the latest conversations with unread messages shown
 ALARMS = 5          # the open alarms listed; the rest are a link
 
 
-def _site_of_owner(owner):
-    """The site of a water row's owner: a unit or a piece of equipment by its production department, a loop by its
-    system's own site."""
-    department = getattr(owner, 'production_department', None)
-    if department is not None:
-        return department.site
-    return getattr(owner, 'site', None)
+def _site_of_point(point):
+    """The site of a sampling point (farm.models.water_point.site_of, the one resolver), or None for one of equipment
+    whose production department has none."""
+    from farm.models.water_point import site_of
+    try:
+        return site_of(point)
+    except AttributeError:
+        return None
 
 
 def _sites(user):
@@ -54,18 +55,28 @@ def _sites(user):
         from farm.water.views import _latest
         latest = _latest(None)
         for row in rows.values():
-            row['water'] = {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0}
+            row['water'] = {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0, 'worst': None, 'stale_since': None}
         for water_row in latest['rows']:
-            site = _site_of_owner(water_row['owner'])
-            if site is None or site.pk not in rows or water_row['point'] is None:
+            point, water = water_row['point'], water_row['water']
+            site = _site_of_point(point) if point is not None else None
+            if site is None or site.pk not in rows:
                 continue
             said = rows[site.pk]['water']
             said['points'] += 1
-            said['measured'] += bool(water_row['water'].readings)
-            if water_row['water'].point_status == Status.CRITICAL:
+            said['measured'] += bool(water.readings)
+            if water.point_status == Status.CRITICAL:
                 said['critical'] += 1
-            elif water_row['water'].point_status == Status.WARNING:
+            elif water.point_status == Status.WARNING:
                 said['warning'] += 1
+            # The site's line says its worst value as the Water page judges it (PointWater.worst_alert: a critical
+            # first, a fresh one before an old one), the first such point in the page's order; or, with no alert, since
+            # when a point with limited values has had no recent data.
+            alert = water.worst_alert
+            if alert is not None and (said['worst'] is None or (alert[1] == Status.CRITICAL, not alert[2])
+                                      > (said['worst'][1] == Status.CRITICAL, not said['worst'][2])):
+                said['worst'] = alert
+            if water.point_status == Status.STALE and water.newest_at is not None:
+                said['stale_since'] = min(filter(None, [said['stale_since'], water.newest_at]))
     if user.has_perm('alarms.view_alarm'):
         from alarms import read as alarms
         for row in rows.values():

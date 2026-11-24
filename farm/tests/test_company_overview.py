@@ -138,3 +138,26 @@ class CompanyOverviewPageTests(CompanyFixture):
         for name in ('alarms', 'people', 'upcoming', 'feed', 'messages', 'activity', 'knowledge'):
             self.assertIsNone(props[name], name)
         self.assertEqual([tile['key'] for tile in props['today']['tiles']], ['sites'])
+
+
+class WaterChipTests(CompanyFixture):
+    """The site's water chip says the worst value as the Water page judges it (PointWater.worst_alert), not a count."""
+
+    def test_the_worst_value_is_said_critical_before_warning(self):
+        from config.company_props import overview_props
+        from farm.water import parameters
+        props = overview_props(self.admin)
+        chips = {row['code']: row['water'] for row in props['sites']['rows']}
+        short = str(parameters.get('oxygen_mg_l').short)
+        self.assertEqual(chips['BG']['kind'], 'critical')
+        self.assertTrue(chips['BG']['text'].startswith(short), chips['BG'])
+        self.assertIn('5', chips['BG']['text'])
+        self.assertEqual(chips['AL'], {'kind': 'nodata', 'text': 'Not measured'})
+
+    def test_a_point_without_an_alert_says_nothing_worse_than_its_judgement(self):
+        from farm.water.evaluate import Status
+        from farm.water.read import latest
+        water = latest([self.mid2])[self.mid2.pk]
+        reading, judged, old = water.worst_alert
+        self.assertEqual((reading.code, judged, old), ('oxygen_mg_l', Status.WARNING, False))
+        self.assertIsNone(latest([self.loop])[self.loop.pk].worst_alert)

@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "ea418369-7adc-4da8-8ede-fbf5ea8cae48",
+    "key": "f8c08b71-1d36-491a-9a9f-cefaf9a0a3f8",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/ea418369-7adc-4da8-8ede-fbf5ea8cae48/",
+    "href": "/sites/f8c08b71-1d36-491a-9a9f-cefaf9a0a3f8/",
     "type": "Kara tesisi",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "159c5ea0-854b-470e-8ddf-a4af2c0ae6f7",
+    "key": "4dfaaf22-76d0-4d3c-8992-6d3d7b296608",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/159c5ea0-854b-470e-8ddf-a4af2c0ae6f7/",
+    "href": "/sites/4dfaaf22-76d0-4d3c-8992-6d3d7b296608/",
     "type": "Deniz kafesi",
     "status": "warning",
     "units": "1",
@@ -248,7 +248,7 @@
   "critical": "Kritik",
   "entries": [
    {
-    "key": "84b3bf24-3f82-4861-94ee-78589e098f86",
+    "key": "111bf347-d80d-471a-931e-f6cd78b16b1f",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Bilgi kaydı · A test statement.",
@@ -260,7 +260,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "1dbbe3f8-c0f3-44b2-8b79-beb129e77f14",
+    "key": "7fcf3a20-4773-4793-99d6-b58dec52ffb2",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Belge · Test document",
@@ -272,7 +272,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "5f87fd58-285d-4865-b56a-48d2b3197db2",
+    "key": "c9bc7f02-0f50-470f-8af9-31007df6b8a2",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Depolama yeri · Test Store (TS-01)",
@@ -284,7 +284,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "47e93e0d-8845-451f-8358-8175bd666d95",
+    "key": "24819d20-771f-482a-99d0-7e58a60a4d7f",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Su numunesi · Water sample · TT-01 › Middle · 2026-11-23 12:42",
@@ -296,7 +296,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "f2205c5c-9b1a-4c77-bb2f-adf21abe713f",
+    "key": "6370746a-ac6f-4cd8-ba05-fe2e8f998001",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Birim · Unit TM-01 (TM-01)",
@@ -318,10 +318,10 @@
   },
   "rows": [
    {
-    "key": "b992ac8b-5124-44c8-b0fe-2db2f5fe9938",
+    "key": "ab19bb62-1b39-4b3f-b589-030479ed5ec0",
     "text": "A test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/b992ac8b-5124-44c8-b0fe-2db2f5fe9938/view/",
+    "href": "/knowledge/entries/ab19bb62-1b39-4b3f-b589-030479ed5ec0/view/",
     "kind": "neutral",
     "chip": "Taslak"
    }

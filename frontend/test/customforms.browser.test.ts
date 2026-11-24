@@ -96,6 +96,82 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
       await tab.close();
     });
 
+    // What the browser itself posts (review B1, B3): every POST of the page is caught (Playwright routing, no server).
+    const caught = async (tab: Page) => {
+      const sent: { url: string; body: URLSearchParams }[] = [];
+      await tab.route('**/*', async (route) => {
+        if (route.request().method() !== 'POST') return route.continue();
+        sent.push({ url: new URL(route.request().url()).pathname, body: new URLSearchParams(route.request().postData() ?? '') });
+        return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>sent</title>sent' });
+      });
+      return sent;
+    };
+    const press = async (tab: Page, panel: string | null, button: string) => {
+      if (panel) await tab.click(`[role="tab"][data-key="${panel}"]`);
+      await tab.locator(`button[type="submit"]:visible:has-text("${button}")`).first().click();
+      await tab.waitForFunction(() => document.title === 'sent');
+    };
+
+    for (const [label, expected] of [['Randomise', ['action', 'randomise']], ['Save places', ['action', 'save']],
+      ['Add factor', ['_draft', 'add_factor']]] as const) {
+      await t.test(`the experiment's ${label} posts ${expected.join('=')} from a real browser`, async () => {
+        const name = names.find((each) => each.startsWith('ExperimentResource edit'));
+        assert.ok(name);
+        const { tab } = await open(name);
+        const sent = await caught(tab);
+        await press(tab, label === 'Add factor' ? 'design' : 'places', label);
+        assert.equal(sent.length, 1);
+        assert.deepEqual(sent[0]?.body.getAll(expected[0]), [expected[1]]);
+        assert.ok(sent[0]?.body.get('version'), 'the record\'s version goes with it');
+        await tab.close();
+      });
+    }
+
+    await t.test('a list saved apart, the record\'s form and a one-button form each post their own fields', async () => {
+      const name = names.find((each) => each.startsWith('SiteResource edit'));
+      assert.ok(name);
+      const { tab } = await open(name);
+      const sent = await caught(tab);
+      await press(tab, 'contact', 'Save contacts');
+      const rows = sent.at(-1);
+      assert.match(rows?.url ?? '', /contacts\/$/);
+      assert.equal(rows?.body.get('contacts-TOTAL_FORMS'), '1');
+      assert.ok(rows?.body.get('contacts-0-name') && rows.body.get('version') && rows.body.get('csrfmiddlewaretoken'));
+      assert.equal(rows?.body.get('name'), null, 'nothing of the record\'s form');
+      await tab.close();
+      const entry = names.find((each) => each.startsWith('KnowledgeEntryResource edit'));
+      assert.ok(entry);
+      const review = await open(entry);
+      const posted = await caught(review.tab);
+      await press(review.tab, 'review', 'Mark as reviewed');
+      assert.equal(posted.at(-1)?.body.get('status'), 'reviewed');
+      assert.ok(posted.at(-1)?.body.get('version'));
+      await review.tab.close();
+    });
+
+    await t.test('a draft refresh of a form of its own posts its marker once; back from history the marker is gone', async () => {
+      const name = names.find((each) => each.startsWith('FeedingProtocolResource edit'));
+      assert.ok(name);
+      const { tab } = await open(name);
+      const sent = await caught(tab);
+      await tab.click('[role="tab"][data-key="table"]');
+      await tab.fill('input[name="temperatures"]', '8 12 16');
+      await tab.locator('input[name="temperatures"]').dispatchEvent('change');
+      await tab.waitForFunction(() => document.title === 'sent');
+      assert.deepEqual(sent.at(-1)?.body.getAll('_draft'), ['temperatures']);
+      await tab.close();
+      // the same, the browser's sending held, so the page stays as a return from history finds it
+      const again = await open(name);
+      await again.tab.evaluate(() => document.querySelectorAll('form').forEach((form) => form.addEventListener('submit', (event) => event.preventDefault())));
+      await again.tab.click('[role="tab"][data-key="table"]');
+      await again.tab.fill('input[name="temperatures"]', '8 12 16');
+      await again.tab.locator('input[name="temperatures"]').dispatchEvent('change');
+      assert.equal(await again.tab.locator('input[name="_draft"]').count(), 1);
+      await again.tab.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+      await again.tab.waitForFunction(() => !document.querySelector('input[name="_draft"]'));
+      await again.tab.close();
+    });
+
     await t.test('contacts on the record\'s own tab, after its form: one primary at a time', async () => {
       const name = names.find((each) => each.startsWith('SiteResource edit'));
       assert.ok(name);

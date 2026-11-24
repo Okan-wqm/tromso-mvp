@@ -207,6 +207,35 @@ export function FieldOf({ field, optional, source, inRow = false }: { field: Fie
   return <>{control}{initial}</>;
 }
 
+/** The browser's own change event under the returned element (a box left with a new value, a choice made), not React's
+ * onChange (each key typed): a draft refresh waits until the field is done, as the old page's (components.ts) does. */
+function useChange(handler: (target: HTMLInputElement | HTMLSelectElement) => void) {
+  const holder = useRef<HTMLDivElement>(null);
+  const latest = useRef(handler);
+  latest.current = handler;
+  useEffect(() => {
+    const node = holder.current;
+    if (!node) return undefined;
+    const listen = (event: Event) => latest.current(event.target as HTMLInputElement | HTMLSelectElement);
+    node.addEventListener('change', listen);
+    return () => node.removeEventListener('change', listen);
+  }, []);
+  return holder;
+}
+
+/** A draft refresh (data-refresh): the form posted again with its marker (`name`: the field that changed), nothing saved.
+ * The marker is one sending's (data-sent): ServerForm takes it away when the page comes back from history, so the next
+ * Save saves (review B2). */
+function sendDraft(form: HTMLFormElement, marker: string, name: string) {
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = marker;
+  input.value = name;
+  input.dataset.sent = '';
+  form.append(input);
+  form.requestSubmit();
+}
+
 /** A date box left: its day or moment put dd.mm.yyyy (frontend/date-input.ts), as the old page's date box does. */
 function tidied(event: FocusEvent<HTMLDivElement>) {
   const target = event.target as HTMLInputElement;
@@ -339,22 +368,20 @@ function GridOf({ part, optional }: { part: GridPart; optional: string }) {
  * that changes the form itself (data-refresh: the temperature columns, a factor's name) posts it again with the draft
  * marker, nothing saved, as the old page does. */
 function OwnForm({ block, csrfToken, optional }: { block: FormBlock; csrfToken: string; optional: string }) {
-  const changed = (event: FormEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLInputElement | HTMLSelectElement;
-    const marker = target.dataset?.refresh;
-    if (!marker || !target.form) return;
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = marker;
-    input.value = target.name;
-    target.form.append(input);
-    target.form.requestSubmit();
-  };
+  // the fields that change the form itself, by name, with their marker (the widget's data-refresh: the field components
+  // draw no data attribute of their own)
+  const refresh = new Map(block.parts.flatMap((part) => (part.kind === 'fields' ? part.fields
+    : part.kind === 'grid' ? part.rows.flatMap((row) => row.cells.flat()) : []))
+    .filter((field) => field.widget.attrs['data-refresh']).map((field) => [field.widget.name, String(field.widget.attrs['data-refresh'])]));
+  const holder = useChange((target) => {
+    const marker = refresh.get(target.name);
+    if (marker && target.form) sendDraft(target.form, marker, target.name);
+  });
   return (
     <ServerForm action={block.action} csrfToken={csrfToken} label={block.label} formErrors={block.errors} noValidate
       actions={<>{block.actions.map(buttonOf)}</>}>
       {block.hidden.map((hidden) => <input key={hidden.name} type="hidden" name={hidden.name} value={str(hidden.value)} />)}
-      <div className="ui-form-own" data-wide="" onChange={changed} onBlur={tidied}>
+      <div className="ui-form-own" data-wide="" ref={holder} onBlur={tidied}>
         {block.parts.map((part, index) => {
           switch (part.kind) {
             case 'fields':
@@ -430,15 +457,6 @@ function PanelBlocks({ panel, label, csrfToken, optional }: { panel: Panel; labe
 
 export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabel, hasErrors, openTab, delete: remove, history,
   question, panels = [] }: RecordFormProps) {
-  const holder = useRef<HTMLDivElement>(null);
-  // Back from the browser's history (bfcache) after a draft refresh, the draft marker must not go with the next Save.
-  useEffect(() => {
-    const back = (event: PageTransitionEvent) => {
-      if (event.persisted) holder.current?.closest('form')?.querySelectorAll('input[name="_draft"]').forEach((marker) => marker.remove());
-    };
-    window.addEventListener('pageshow', back);
-    return () => window.removeEventListener('pageshow', back);
-  }, []);
   const fields = form.tabs.flatMap((tab) => tab.fieldsets.flatMap((fieldset) => fieldset.fields));
   const initialValues: Record<string, string> = {};
   for (const field of fields) {
@@ -448,18 +466,12 @@ export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabe
   const refresh = new Set(fields.filter((field) => field.widget.attrs['data-refresh']).map((field) => field.widget.name));
   const changed = (event: FormEvent<HTMLDivElement>) => {
     const target = event.target as HTMLInputElement | HTMLSelectElement;
-    if (!target.name) return;
-    if (target instanceof HTMLSelectElement) setValues((was) => ({ ...was, [target.name]: target.value }));
-    if (refresh.has(target.name) && target.form) {
-      // The old page's draft refresh (TabbedForm.refresh_on): the form again with what was entered, nothing saved.
-      const marker = document.createElement('input');
-      marker.type = 'hidden';
-      marker.name = '_draft';
-      marker.value = target.name;
-      target.form.append(marker);
-      target.form.requestSubmit();
-    }
+    if (target.name && target instanceof HTMLSelectElement) setValues((was) => ({ ...was, [target.name]: target.value }));
   };
+  // The old page's draft refresh (TabbedForm.refresh_on): the form again with what was entered, nothing saved.
+  const holder = useChange((target) => {
+    if (target.name && refresh.has(target.name) && target.form) sendDraft(target.form, '_draft', target.name);
+  });
   const left = tidied;
   const fieldOf = (field: Field) => <FieldOf key={field.name} field={field} optional={optional} source={(name) => values[name]} />;
   // A tab is the design's two-column field grid; a group of fields (Fieldset) heads its fields across the grid.

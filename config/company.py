@@ -3,7 +3,7 @@ area's own functions, each block only for a person who may read its area (None f
 
 Nothing here is worked out twice: the stock is the ledger's (farm.stock.read.stock_of), the water the Water chemistry
 page's own rows (farm.water.views._latest), what needs a look the one reader of open alarms and the units' water
-(alarms.read.attention, attention_by_site: the status strip's), the open alarms listed the Alarms page's (alarms.read.listing), the people the Today
+(alarms.read.attention_all: the status strip's reader, the farm and its sites from one reading of the water), the open alarms listed the Alarms page's (alarms.read.listing), the people the Today
 page's board and muster (hr.read), the reports the overview's due list (config.views._upcoming), the feed the Storage
 overview (inventory.read.overview), the messages the inbox (messaging.read), the activity what the person may read of
 the log (core.audit.readable). Only the split per site is done here, and it reads the same rows."""
@@ -20,11 +20,6 @@ MESSAGES = 3        # the latest conversations with unread messages shown
 ALARMS = 5          # the open alarms listed; the rest are a link
 
 
-def _nothing():
-    from alarms.read import Attention
-    return Attention(alarms=0, alarms_critical=0, critical=0, warning=0, blind=0, unreadable=False)
-
-
 def _site_of_point(point):
     """The site of a sampling point (farm.models.water_point.site_of, the one resolver), or None for one of equipment
     whose production department has none."""
@@ -35,7 +30,7 @@ def _site_of_point(point):
         return None
 
 
-def _sites(user, now):
+def _sites(user, now, attention):
     if not user.has_perm('farm.view_site'):
         return None
     sites = list(Site.objects.order_by('name'))
@@ -82,24 +77,25 @@ def _sites(user, now):
                 said['worst'] = alert
             if water.point_status == Status.STALE and water.newest_at is not None:
                 said['stale_since'] = min(filter(None, [said['stale_since'], water.newest_at]))
-    if user.has_perm('alarms.view_alarm'):
-        # a site's open alarms and its units' water now, from the one reader (a site with neither is not in its answer)
+    if attention is not None:
+        # a site's open alarms (the farm-wide ones with them) and its stocked units' water now, from the one reading; a
+        # site the reading does not list (no stocked unit, no alarm of its own) is asked on its own: its farm-wide alarms
         from alarms import read as alarms
-        found = alarms.attention_by_site(now)
+        by_site = attention[1]
         for site_id, row in rows.items():
-            row['attention'] = found.get(site_id) or _nothing()
+            row['attention'] = by_site[site_id] if site_id in by_site else alarms.attention(now, site=site_id)
     return {'rows': list(rows.values()), 'count': len(sites),
             'by_status': [(label, sum(1 for site in sites if site.status == value)) for value, label in Site.Status.choices
                           if any(site.status == value for site in sites)]}
 
 
-def _alarms(user, now):
-    """The open alarms and the units' water now (alarms.read.attention, the one reader: never a count of our own), and the
-    first open alarms to list (the Alarms page's listing); the rest are a link."""
-    if not user.has_perm('alarms.view_alarm'):
+def _alarms(attention):
+    """The open alarms and the units' water now (the farm's half of alarms.read.attention_all, the one reader: never a
+    count of our own), and the first open alarms to list (the Alarms page's listing); the rest are a link."""
+    if attention is None:
         return None
     from alarms import read as alarms
-    attention = alarms.attention(now)
+    attention = attention[0]
     shown = list(alarms.listing('open')[:ALARMS])
     return {'attention': attention, 'rows': shown, 'more': max(attention.alarms - len(shown), 0),
             'connected': alarms.connected()}
@@ -149,7 +145,12 @@ def overview(user, moment=None):
     """Every block of the company overview, read now (`moment` for the people's board)."""
     from .views import _upcoming
     moment = moment or timezone.now()
-    sites = _sites(user, moment)
+    # the farm and its sites from ONE reading of the water (alarms.read.attention_all), for the tile and the sites' rows
+    attention = None
+    if user.has_perm('alarms.view_alarm'):
+        from alarms import read as alarms
+        attention = alarms.attention_all(moment)
+    sites = _sites(user, moment, attention)
     people = _people(user, moment)
     if sites is not None and people is not None:
         by_name = people['on_site_by_site']
@@ -157,6 +158,6 @@ def overview(user, moment=None):
             # The muster splits by site only when people are on more than one; one site holds them all.
             row['on_site'] = by_name.get(row['site'].name, 0) if by_name else (
                 people['on_site'] if len(sites['rows']) == 1 else None)
-    return {'now': moment, 'zone': settings.COMPANY_TIME_ZONE, 'sites': sites, 'alarms': _alarms(user, moment),
+    return {'now': moment, 'zone': settings.COMPANY_TIME_ZONE, 'sites': sites, 'alarms': _alarms(attention),
             'people': people, 'reports': _upcoming(user), 'messages': _messages(user), 'feed': _feed(user),
             'activity': _activity(user), 'knowledge': _knowledge(user)}

@@ -12,7 +12,7 @@ from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 
 from alarms.models import Alarm, Source
-from alarms.read import attention
+from alarms.read import attention, attention_all
 from config.company import overview
 from config.company_props import overview_props, units_said
 from core.pagesays import unsaid
@@ -76,9 +76,13 @@ class CompanyOverviewTests(CompanyFixture):
         moment = timezone.now()
         found = overview(self.admin, moment)
         # the tile and each site are the one reader's (alarms.read.attention), never a count of the overview's own
-        self.assertEqual(found['alarms']['attention'], attention(moment))
+        farm, by_site = attention_all(moment)
+        self.assertEqual(found['alarms']['attention'], farm)
+        self.assertEqual(farm, attention(moment))
         self.assertEqual((found['alarms']['attention'].alarms, found['alarms']['attention'].alarms_critical), (1, 1))
         for row in found['sites']['rows']:
+            self.assertEqual(row['attention'], by_site.get(row['site'].pk) or attention(moment, site=row['site']),
+                             row['site'].code)
             self.assertEqual(row['attention'], attention(moment, site=row['site']), row['site'].code)
         self.assertEqual([row['attention'].alarms for row in found['sites']['rows']], [0, 1, 0])   # Alta, Bergen, Tromsø
         # Bergen's critical oxygen is a critical unit before its alarm is raised: the tile's second line says so, in units
@@ -87,6 +91,15 @@ class CompanyOverviewTests(CompanyFixture):
         self.assertEqual((tile['figure'], tile['status'], tile['sub']), ('1', 'critical', '1 critical'))
         self.assertEqual(tile['sub2'], ' · '.join(units_said(found['alarms']['attention'])))
         self.assertIn('unit', tile['sub2'])
+
+    def test_a_farm_wide_alarm_counts_on_every_site_and_each_says_so(self):
+        Alarm.objects.create(source=Source.SYSTEM, parameter='sensors_failed', severity=Severity.CRITICAL, site=None,
+                             opened_at=timezone.now(), summary='The live water values (the sensors) cannot be read.')
+        moment = timezone.now()
+        rows = {row['code']: row for row in overview_props(self.admin, moment)['sites']['rows']}
+        for code in ('AL', 'BG', 'TR'):
+            self.assertEqual(rows[code]['alarms']['figure'], '1', code)
+            self.assertIn('1 of them for the whole farm', rows[code]['alarms']['sub'], code)
 
     def test_a_person_gets_only_the_blocks_of_the_areas_they_may_read(self):
         person = get_user_model().objects.create_user('sites-only', 'so@example.com')

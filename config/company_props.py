@@ -135,17 +135,21 @@ def _alarm_counts(found):
 
 
 def units_said(found):
-    """What the units' water says now (alarms.read.Attention), in the status strip's words, each figure counting units:
-    critical, with a warning, without recent data; or that the live values cannot be read."""
-    return [
-        *([ngettext('%(count)d unit critical', '%(count)d units critical', found.critical) % {'count': found.critical}]
-          if found.critical else []),
-        *([ngettext('%(count)d unit with a warning', '%(count)d units with a warning', found.warning) % {'count': found.warning}]
-          if found.warning else []),
-        *([ngettext('%(count)d unit without recent data', '%(count)d units without recent data', found.blind)
-           % {'count': found.blind}] if found.blind else []),
-        *([_('Live values cannot be read')] if found.unreadable else []),
-    ]
+    """What the stocked units' water says now (alarms.read.Attention, the cards' ladder), worst first, in the status strip's
+    own words (core.ui.alarms_item), each figure counting units, never sampling points."""
+    counts = (
+        (found.critical, lambda n: ngettext('%(count)d unit critical', '%(count)d units critical', n)),
+        (found.unreadable, lambda n: ngettext('%(count)d unit cannot be read', '%(count)d units cannot be read', n)),
+        (found.warning, lambda n: ngettext('%(count)d unit with a warning', '%(count)d units with a warning', n)),
+        (found.blind, lambda n: ngettext('%(count)d unit with no recent data', '%(count)d units with no recent data', n)),
+        (found.unjudged, lambda n: ngettext('%(count)d unit with no limit', '%(count)d units with no limit', n)))
+    return [words(count) % {'count': count} for count, words in counts if count]
+
+
+def farm_wide_said(found):
+    """A site's open alarms hold the farm-wide ones (they are about every site): how many of its figure they are."""
+    return [ngettext('%(count)s of them for the whole farm', '%(count)s of them for the whole farm', found.farm_wide)
+            % {'count': found.farm_wide}] if found.farm_wide else []
 
 
 def _sites(user, sites, now):
@@ -164,7 +168,8 @@ def _sites(user, sites, now):
             'biomass': None if row['biomass_kg'] is None else tonnes(row['biomass_kg']),
             'water': _water_chip(row['water'], now),
             'alarms': None if row['attention'] is None else {
-                'figure': whole(row['attention'].alarms), 'sub': ' · '.join(units_said(row['attention'])) or None},
+                'figure': whole(row['attention'].alarms),
+                'sub': ' · '.join([*farm_wide_said(row['attention']), *units_said(row['attention'])]) or None},
             'onSite': None if row['on_site'] is None else whole(row['on_site']),
         } for row in sites['rows']],
         'none': '—',

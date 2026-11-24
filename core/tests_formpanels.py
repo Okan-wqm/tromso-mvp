@@ -28,17 +28,20 @@ def ported():
 
 
 def labels_of(props):
-    """What the old page says twice as layout (a tab's label on its tab and as its panel's heading): said once is enough."""
-    return {tab['label'] for tab in props['form']['tabs']} | {each['label'] for each in props['panels'] if each['label']} | (
-        {props['history']['empty_value']} if props.get('history') else set())
+    """What the old page says twice as layout, a tab's label on its tab and as its panel's heading: said once is enough. Only
+    the record's tab labels and the panels' own labels (review B6): a field or a column called like a tab is counted."""
+    return {tab['label'] for tab in props['form']['tabs']} | {each['label'] for each in props['panels'] if each['label']}
 
 
 def apart(props):
-    """What the old page says in one run that the island says in two of the same words: a history entry's words after the
-    person's name and the separator before the time ('tarafından ·' in Turkish), drawn as the words, then ' · ', then the
-    time."""
-    entries = props['history']['entries'] if props.get('history') else []
-    return {f"{entry['by']['after']} ·" for entry in entries if entry['by']['after']}
+    """What the island says from one prop where the old page repeats it, each derived from the props so it hides nothing else:
+    a history entry's words after the person's name and the separator before the time ('tarafından ·' in Turkish: one
+    run on the old page, the words then ' · ' on the island), and the history's word for an empty value ('tom'), which
+    the island draws for each change from its one prop."""
+    if not props.get('history'):
+        return set()
+    return {f"{entry['by']['after']} ·" for entry in props['history']['entries'] if entry['by']['after']} | {
+        props['history']['empty_value']}
 
 
 def value_of(field):
@@ -83,13 +86,13 @@ def rows_blocks(props):
 def rows_posted(block):
     """What a list's form posts as the island draws it: the management form (its total the rows drawn), the record's
     version, every row's hidden and visible fields."""
-    formset = block['formset']
-    data = {each['name']: [str(each['value'])] for each in formset['management']}
-    data[f"{formset['prefix']}-TOTAL_FORMS"] = [str(len(formset['rows']))]
+    grid = block['grid']
+    data = {each['name']: [str(each['value'])] for each in grid['management']}
+    data[f"{grid['prefix']}-TOTAL_FORMS"] = [str(len(grid['rows']))]
     if block['version'] is not None:
         data['version'] = [str(block['version'])]
-    for row in formset['rows']:
-        data.update(posted(row['fields'], row['hidden']))
+    for row in grid['rows']:
+        data.update(posted([field for cell in row['cells'] for field in cell], row['hidden']))
     return data
 
 
@@ -178,8 +181,8 @@ class PortedFormTests(TestCase):
                     self.assertEqual(props['openTab'], rows.tab)
                     [block] = [block for each in props['panels'] if each['key'] == rows.tab for block in each['blocks']
                                if block['kind'] == 'rows']
-                    refused = block['formset']['errors'] or any(
-                        field['errors'] for row in block['formset']['rows'] for field in row['fields'])
+                    refused = block['grid']['errors'] or any(
+                        field['errors'] for row in block['grid']['rows'] for cell in row['cells'] for field in cell)
                     self.assertTrue(refused, 'the refusal is in the list')
                     self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode(),
                                             once=labels_of(props), ignore=apart(props)), [])
@@ -213,17 +216,17 @@ class PortedFormTests(TestCase):
         self.assertEqual(contacts['tab'], 'contact')                     # on the site's own Contact tab
         [block] = [each for each in contacts['blocks'] if each['kind'] == 'rows']
         data = rows_posted(block)
-        index = len(block['formset']['rows'])
-        for field in block['formset']['empty']['fields']:
+        index = len(block['grid']['rows'])
+        for field in [field for cell in block['grid']['empty']['cells'] for field in cell]:
             name = field['widget']['name'].replace('__prefix__', str(index))
             data[name] = {'name': ['Test Second'], 'email': ['second@example.com'], 'is_primary': ['on']}.get(
                 name.rsplit('-', 1)[-1], [''])
-        data[f"{block['formset']['prefix']}-TOTAL_FORMS"] = [str(index + 1)]
+        data[f"{block['grid']['prefix']}-TOTAL_FORMS"] = [str(index + 1)]
         refused = self.client.post(block['action'], {key: value for key, value in data.items()
                                                      if not key.endswith('-DELETE')})
         props = props_of(refused.content.decode(), 'record-form')
         [block] = rows_blocks(props)
-        self.assertTrue(block['formset']['errors'])                       # two primaries: said on the list
+        self.assertTrue(block['grid']['errors'])                       # two primaries: said on the list
         data[f'contacts-{index}-is_primary'] = []
         self.assertEqual(self.client.post(block['action'], {key: value for key, value in data.items() if value != []
                                                             and not key.endswith('-DELETE')}).status_code, 302)

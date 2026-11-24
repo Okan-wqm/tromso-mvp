@@ -146,7 +146,7 @@ def record_lists(admin):
 def record_forms(admin):
     """{language: {'<tab> new' | '<tab> edit': the record-form island's props}} of every form with a template of its own
     that the island draws (its Resource words the template's panels: core/formpanels.py), as the test world's admin sees
-    it, the record of each edit page chosen as the tests choose it (core.test_world.record_of)."""
+    it, editing every record of the tab in the test world (up to five)."""
     import re
     from django.test import Client
     from django.urls import reverse
@@ -161,16 +161,70 @@ def record_forms(admin):
         pages = {}
         for resource in ported:
             urls = {'new': reverse(resource.url_name('create'))} if resource.allows('add') else {}
-            record = record_of(resource) if resource.allows('change') else None
-            if record is not None:
-                urls['edit'] = reverse(resource.url_name('edit'), args=[record.pk])
+            # every record of the test world (up to five, as the page walk of core/tests_formpanels.py): a draft and a
+            # fixed feeding protocol, a draft and a started experiment, a lice and a biomass report
+            if resource.allows('change'):
+                for index, record in enumerate(resource.queryset().order_by('pk')[:5]):
+                    urls[f'edit {index}'] = reverse(resource.url_name('edit'), args=[record.pk])
             for what, url in urls.items():
                 html = client.get(f'{url}?ui=next').content.decode()
                 block = re.search(r'<script id="island-record-form-1" type="application/json">(.*?)</script>', html, re.S)
                 if block is None:
                     sys.exit(f'refused: {url} has no record-form island')
                 pages[f'{resource.__name__} {what}'] = {**json.loads(block.group(1)), 'csrfToken': 'test-token'}
+        pages.update(refused_with_question(client))
         found[language] = pages
+    return found
+
+
+class Asked:
+    """A change the withdrawal guard asks about, as farm.health.withdrawal.Change gives it to the page (a fixture's
+    warning; the fingerprint a fixture value)."""
+
+    def __init__(self, second_person=''):
+        self.fingerprint, self.second_person = 'f00dfeed', second_person
+
+    def messages(self):
+        return ['Test harvest of 21.11.2026 lies inside this withdrawal (end unknown).']
+
+
+def refused_with_question(client):
+    """{'FeedResource refused' | 'FeedResource refused, second person': props} of the test world's feed saved again and
+    refused by the withdrawal guard (review B4: the question box in the browser tests' axe and CSP run): the edit goes
+    through the one edit view with what its form holds, the guard's answer stood in for (core/tests_formpanels.py holds
+    the real guard: a feed made medicated over a recorded harvest), with the box, and with a second person's approval and
+    no box."""
+    import re
+    from django.core.exceptions import ValidationError
+    from django.urls import reverse
+    from farm.models import Feed
+    from farm.resources.feed import FeedResource
+    feed = Feed.objects.get(code='TFE')
+    url = reverse(FeedResource.url_name('edit'), args=[feed.pk])
+    form = FeedResource.form(None, instance=feed)
+    data = {}
+    for bound in form:
+        value = bound.value()
+        if isinstance(value, (list, tuple)):
+            data[bound.html_name] = [str(each) for each in value]
+        elif isinstance(value, bool):
+            if value:
+                data[bound.html_name] = 'on'
+        elif value is not None:
+            data[bound.html_name] = str(value)
+    found = {}
+    for name, second in (('FeedResource refused', ''),
+                         ('FeedResource refused, second person', 'A second person must approve this change.')):
+        def refuse(cls, request, read, write, seen, second=second):
+            error = ValidationError(['Tick the box to go on despite these warnings.'])
+            error.change = Asked(second)
+            raise error
+        with mock.patch.object(FeedResource, 'edited', classmethod(refuse)):
+            html = client.post(f'{url}?ui=next', data).content.decode()
+        block = re.search(r'<script id="island-record-form-1" type="application/json">(.*?)</script>', html, re.S)
+        if block is None or '"question": {' not in block.group(1):
+            sys.exit(f'refused: the refused feed has no question box ({name})')
+        found[name] = {**json.loads(block.group(1)), 'csrfToken': 'test-token'}
     return found
 
 

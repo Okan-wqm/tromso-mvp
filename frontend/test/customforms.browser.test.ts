@@ -49,6 +49,9 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
   };
   try {
     const names = Object.keys(pages('en'));
+    // the recorded page of a tab in the state a test needs (a draft protocol's grid, a draft experiment's places)
+    const pageOf = (prefix: string, holds: string) => names.find((each) => each.startsWith(prefix)
+      && JSON.stringify(pages('en')[each]).includes(holds));
     assert.ok(names.length >= 20, `recorded: ${names.join(', ')}`);
     for (const name of names) {
       for (const language of LANGUAGES) {
@@ -76,7 +79,7 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
     }
 
     await t.test('a list saved apart: its own form, a row added, the record\'s Save out of sight on its tab', async () => {
-      const name = names.find((each) => each.startsWith('EquipmentResource edit'));
+      const name = pageOf('EquipmentResource edit', 'calibrations-TOTAL_FORMS');
       assert.ok(name, 'the feeder of the test world is recorded');
       const { tab } = await open(name);
       await tab.click('[role="tab"]:has-text("Feed calibration")');
@@ -115,7 +118,7 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
     for (const [label, expected] of [['Randomise', ['action', 'randomise']], ['Save places', ['action', 'save']],
       ['Add factor', ['_draft', 'add_factor']]] as const) {
       await t.test(`the experiment's ${label} posts ${expected.join('=')} from a real browser`, async () => {
-        const name = names.find((each) => each.startsWith('ExperimentResource edit'));
+        const name = pageOf('ExperimentResource edit', '"randomise"');
         assert.ok(name);
         const { tab } = await open(name);
         const sent = await caught(tab);
@@ -128,7 +131,7 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
     }
 
     await t.test('a list saved apart, the record\'s form and a one-button form each post their own fields', async () => {
-      const name = names.find((each) => each.startsWith('SiteResource edit'));
+      const name = pageOf('SiteResource edit', 'contacts-TOTAL_FORMS');
       assert.ok(name);
       const { tab } = await open(name);
       const sent = await caught(tab);
@@ -139,7 +142,7 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
       assert.ok(rows?.body.get('contacts-0-name') && rows.body.get('version') && rows.body.get('csrfmiddlewaretoken'));
       assert.equal(rows?.body.get('name'), null, 'nothing of the record\'s form');
       await tab.close();
-      const entry = names.find((each) => each.startsWith('KnowledgeEntryResource edit'));
+      const entry = pageOf('KnowledgeEntryResource edit', 'Mark as reviewed');
       assert.ok(entry);
       const review = await open(entry);
       const posted = await caught(review.tab);
@@ -150,7 +153,7 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
     });
 
     await t.test('a draft refresh of a form of its own posts its marker once; back from history the marker is gone', async () => {
-      const name = names.find((each) => each.startsWith('FeedingProtocolResource edit'));
+      const name = pageOf('FeedingProtocolResource edit', '"temperatures"');
       assert.ok(name);
       const { tab } = await open(name);
       const sent = await caught(tab);
@@ -172,8 +175,21 @@ test('every form with panels of its own in a browser', { skip: skipWithout(BROWS
       await again.tab.close();
     });
 
+    await t.test('a refused save asks the guard\'s question: the box with its fingerprint, or a second person and no box', async () => {
+      const asked = await open('FeedResource refused');
+      const box = asked.tab.locator('input[type="checkbox"][name="withdrawal_ack"]');
+      assert.equal(await box.count(), 1);
+      assert.equal(await box.getAttribute('value'), 'f00dfeed');
+      assert.equal(await box.isChecked(), false, 'never ticked for the person');
+      await asked.tab.close();
+      const second = await open('FeedResource refused, second person');
+      assert.equal(await second.tab.locator('input[name="withdrawal_ack"]').count(), 0);
+      assert.ok(await second.tab.getByText('A second person must approve this change.').isVisible());
+      await second.tab.close();
+    });
+
     await t.test('contacts on the record\'s own tab, after its form: one primary at a time', async () => {
-      const name = names.find((each) => each.startsWith('SiteResource edit'));
+      const name = pageOf('SiteResource edit', 'contacts-TOTAL_FORMS');
       assert.ok(name);
       const { tab } = await open(name);
       await tab.click('[role="tab"]:has-text("Contact")');

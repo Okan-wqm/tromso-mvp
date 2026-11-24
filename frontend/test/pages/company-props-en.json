@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "776da6d1-42ce-4b59-8ce5-dd8423f0cfe0",
+    "key": "9b05eba6-f8f7-409b-a1bb-b5f9053ac206",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/776da6d1-42ce-4b59-8ce5-dd8423f0cfe0/",
+    "href": "/sites/9b05eba6-f8f7-409b-a1bb-b5f9053ac206/",
     "type": "Land-based facility",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "6853dee4-58b1-4f0c-858a-74e858b20bad",
+    "key": "67315342-921d-47b4-8f67-8cecc8f26435",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/6853dee4-58b1-4f0c-858a-74e858b20bad/",
+    "href": "/sites/67315342-921d-47b4-8f67-8cecc8f26435/",
     "type": "Sea cage",
     "status": "warning",
     "units": "1",
@@ -248,7 +248,7 @@
   "critical": "Critical",
   "entries": [
    {
-    "key": "d2b00613-64d0-4972-b4ce-7640f6d2650d",
+    "key": "f1546104-e072-43f5-897b-4f67f735a075",
     "action": "Changed",
     "critical": false,
     "record": "Channel · TEST-2 › TEST-P",
@@ -260,7 +260,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "57279dfe-ef03-4139-ad9c-7fa121deaa7e",
+    "key": "3e7d7f90-fcd8-4b72-85b4-5cd726391fb8",
     "action": "Changed",
     "critical": false,
     "record": "Channel · TEST-2 › TEST-P",
@@ -272,7 +272,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "80c89475-b83d-4650-a796-5bf94e29dd59",
+    "key": "af0ae087-864f-413c-bd6b-e9162de73c47",
     "action": "Created",
     "critical": false,
     "record": "Knowledge entry · A reviewed test statement.",
@@ -284,7 +284,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "b7f3e152-a217-48e3-b33b-58201b28977c",
+    "key": "09b74860-a6c7-45aa-b159-70f6d1332c1c",
     "action": "Changed",
     "critical": false,
     "record": "Feeding protocol · Test assigned protocol",
@@ -296,7 +296,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "5513ca49-fc48-49e6-b97b-a1f7f5dde6fd",
+    "key": "996e508c-40ba-4a20-89e2-6476b0ce07d4",
     "action": "Changed",
     "critical": false,
     "record": "Experiment · E-2026-001 · Test trial",
@@ -318,18 +318,18 @@
   },
   "rows": [
    {
-    "key": "f0fef0ae-1f7b-4581-905e-d959260285db",
+    "key": "e7fcca23-036b-48eb-9797-7a6e904affe5",
     "text": "A reviewed test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/f0fef0ae-1f7b-4581-905e-d959260285db/view/",
+    "href": "/knowledge/entries/e7fcca23-036b-48eb-9797-7a6e904affe5/view/",
     "kind": "ok",
     "chip": "Reviewed"
    },
    {
-    "key": "29561196-1be7-4591-b065-4f37d42a97cc",
+    "key": "63c3780f-6bf0-43c5-86b1-49fde7068da4",
     "text": "A test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/29561196-1be7-4591-b065-4f37d42a97cc/view/",
+    "href": "/knowledge/entries/63c3780f-6bf0-43c5-86b1-49fde7068da4/view/",
     "kind": "neutral",
     "chip": "Draft"
    }

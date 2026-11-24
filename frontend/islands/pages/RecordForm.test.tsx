@@ -64,9 +64,11 @@ function posted(controls: Control[]): string[] {
 }
 
 /** The choices offered: (name, value, words; for an option the heading it is under and whether it is switched off) of
- *  every enabled option and box. */
+ *  every option and box of an enabled field. A box switched off on its own is a choice switched off (a tank another
+ *  experiment has booked: the old page's option is off, the island's box is), still offered; a switched-off select's
+ *  options are not. */
 function offered(controls: Control[]): string[] {
-  return controls.filter((c) => c.name && !c.disabled && (c.type === 'option' || c.type === 'checkbox' || c.type === 'radio'))
+  return controls.filter((c) => c.name && (!c.disabled || c.type === 'checkbox') && (c.type === 'option' || c.type === 'checkbox' || c.type === 'radio'))
     .map((c) => `${c.name}|${c.value}${c.label !== undefined ? `|${c.label}` : ''}${c.type === 'option' ? `|${c.group ?? ''}|${c.off ? 'off' : ''}` : ''}`).sort();
 }
 

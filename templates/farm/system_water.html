@@ -1,0 +1,12 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} System › Water (farm.water.system_page.system_water), in the new look: the system's points side by side on one
+   time axis, drawn by the island of Tank › Water from the server's finished values (props); the range is the address
+   (?range=, ?start=&end=, ?around=), so a view can be linked to and works with the back button.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block head_actions %}<div class="ui-head-actions"><a class="ui-btn" href="{{ systems_url }}">{% trans "Systems" %}</a>{% if props.record %}<a class="ui-btn" data-variant="primary" href="{{ props.record }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record water sample" %}</a>{% endif %}</div>{% endblock %}
+{% block content %}
+{% island "water" props label=_("Loading the water history…") %}
+{% endblock %}

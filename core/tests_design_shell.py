@@ -263,7 +263,13 @@ class DisplayWeightTests(SimpleTestCase):
     h2), asks for no other weight, so the browser never fakes a bold."""
 
     def test_the_display_face_is_never_asked_for_another_weight(self):
+        """In the new look (`[data-ui="next"]`, tokens.css) the display face is Barlow, served at the weights its
+        @font-face rules name (fonts.css): a rule whose every selector is the new look's may ask for any of those."""
         rule = re.compile(r'([^{}]+)\{([^{}]*)\}')
+        fonts = (ROOT / 'static' / 'css' / 'fonts.css').read_text(encoding='utf-8')
+        barlow = {weight for body in re.findall(r'@font-face\s*\{([^}]*)\}', fonts) if '"Barlow"' in body
+                  for weight in re.findall(r'font-weight:\s*(\d+)', body)}
+        self.assertIn('600', barlow)
         found = []
         for path in (ROOT / 'static' / 'css').glob('*.css'):
             css = re.sub(r'/\*.*?\*/', '', path.read_text(encoding='utf-8'), flags=re.S)
@@ -271,7 +277,10 @@ class DisplayWeightTests(SimpleTestCase):
                 display = 'var(--font-display)' in body or 'Bricolage' in body or any(
                     re.search(r'(^|[\s>+~,])h[12]\b', selector.strip()) for selector in selectors.split(','))
                 weight = re.search(r'font-weight:\s*(\d+)', body)
-                if display and weight and weight.group(1) != '600':
+                next_look = 'Bricolage' not in body and all(
+                    '[data-ui="next"]' in selector for selector in selectors.split(','))
+                served = barlow if next_look else {'600'}
+                if display and weight and weight.group(1) not in served:
                     found.append(f'{path.name}: {selectors.strip()} {weight.group(1)}')
         self.assertEqual(found, [])
 

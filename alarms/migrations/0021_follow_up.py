@@ -1,6 +1,6 @@
 """A critical is batched, never covered (alarms/floods.py; the coordinator's bar on the last recheck, 2026-11-24): per
 severity how long the next criticals of a kind wait for one follow-up message after a message of that kind went to the
-person, seeded 5 s for critical (at most 30 s) and 0 for warning (warnings are grouped by their flood window), from here
+person, seeded 5 s for critical (at most 8 s, inside the owner's 10 s from a value to its message) and 0 for warning (warnings are grouped by their flood window), from here
 on the user's rows (Alarm severity rules). The database default 0 holds nothing back for a row written without it.
 Back: the column goes."""
 
@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
             model_name='severitypolicy',
             constraint=models.CheckConstraint(
                 condition=models.Q(('pk__in', []),
-                                   models.Q(('follow_up_seconds__gte', 0), ('follow_up_seconds__lte', 30),
+                                   models.Q(('follow_up_seconds__gte', 0), ('follow_up_seconds__lte', 8),
                                             ('severity', 'critical')),
                                    models.Q(('follow_up_seconds__gte', 0), ('follow_up_seconds__lte', 0),
                                             ('severity', 'warning')), _connector='OR'),

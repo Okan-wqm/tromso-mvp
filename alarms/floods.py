@@ -16,7 +16,7 @@ whether or when an alarm opens.
 - **A critical is batched, never covered** (the coordinator's bar on the last recheck, 2026-11-24: no known way to drop or
   delay an open or newly cleared critical). The first critical of a kind for a person goes at once, on its own. The
   next ones of that kind for that person are collected while a message of the kind went to them less than the
-  critical rule's follow-up time ago (Alarm severity rules: "Follow-up after", 5 s by default, at most 30 s), and then go
+  critical rule's follow-up time ago (Alarm severity rules: "Follow-up after", 5 s by default, at most 8 s), and then go
   as ONE follow-up message that names every one of them (its summary names the unit) and says how many of them are open
   now (`Flood.listed`); one alone goes with its own text. So each reaches the person at most the follow-up time after it
   was queued, and a person gets at most one message of a kind in that time. Ones that are due in the same round as the

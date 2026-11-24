@@ -239,49 +239,100 @@ def _summary_due(row, began):
             and not row.failures and began - row.cleared_at > SUMMARY_AFTER)
 
 
-def text(notification, flood=None):
-    """What the person is told, in their language (their profile's, else the platform's), on the site's clock: the
-    alarm's severity and summary; a critical alarm that has cleared by the time it is sent says it was critical and has
-    cleared, when it opened and when it cleared (the decision of 2026-11-24: a critical that came and went while the
-    transport was down is still said); a word about a snooze says so. With `flood` (alarms/floods.py): the follow-up
+def _within(said, limit):
+    """`said` in at most `limit` characters (None: as it is): cut at the last space before the limit and marked "…", so
+    a word or a number is never cut in half (only a single word longer than the limit can be)."""
+    if limit is None or len(said) <= limit:
+        return said
+    cut = said[:limit - 1]
+    if said[limit - 1] != ' ' and ' ' in cut:
+        cut = cut[:cut.rindex(' ')]
+    return cut.rstrip(' ;,:') + '…'
+
+
+def _listing(flood, limit, moment):
+    """The criticals' follow-up within `limit`: how many, since when, how many are open now, then the names that fit,
+    the open ones first (the order of `flood.listed`), each whole; "and K more, see the alarm list" for the rest, or
+    "see the alarm list" when no name fits."""
+    names = [summary if cleared is None else _('%(summary)s (cleared %(cleared)s)') % {
+        'summary': summary, 'cleared': moment(cleared)} for summary, cleared in flood.listed]
+
+    def said(shown):
+        if shown == len(names):
+            alarms = '; '.join(names)
+        elif shown:
+            alarms = _('%(alarms)s; and %(more)d more, see the alarm list') % {
+                'alarms': '; '.join(names[:shown]), 'more': len(names) - shown}
+        else:
+            alarms = _('see the alarm list')
+        return _('%(count)d more critical alarms of one kind since %(since)s, %(open)d open now: %(alarms)s') % {
+            'count': len(names), 'since': moment(flood.since), 'open': flood.open, 'alarms': alarms}
+    if limit is None:
+        return said(len(names))
+    best, used = said(0), 0
+    for shown in range(1, len(names) + 1):         # the names alone past the limit: no more can fit
+        used += len(names[shown - 1]) + (len('; ') if shown > 1 else 0)
+        if used > limit:
+            break
+        each = said(shown)
+        if len(each) <= limit:
+            best = each
+    return best
+
+
+def text(notification, flood=None, limit=None):
+    """What the person is told, in their language (their profile's, else the platform's), on the site's clock, in at
+    most `limit` characters (the transport's `max_chars`; F-A: a message over a push service's or an SMS gateway's
+    payload limit is refused for ever): the alarm's severity and summary; a critical alarm that has cleared by the time
+    it is sent says it was critical and has cleared, when it opened and when it cleared (the decision of 2026-11-24: a
+    critical that came and went while the transport was down is still said); a word about a snooze says so. With `flood` (alarms/floods.py): the follow-up
     message of criticals names each (its summary, and when it cleared if it has) and says how many of them are open
     now; a warnings' flood message says how many alarms, of which severity, since when, an example; the summary of old
-    cleared criticals says how many, the first opening and the last clearing, "see the alarm log"."""
+    cleared criticals says how many, the first opening and the last clearing, "see the alarm log". The follow-up names
+    what fits, the open ones first, and counts the rest; anything else too long is cut between two words (`_within`)."""
     from core.templatetags.dates import on, zone_for
     alarm = notification.alarm
     language = getattr(getattr(notification.recipient, 'profile', None), 'language', '') or settings.LANGUAGE_CODE
     clearance = AlarmClearance.objects.filter(alarm=alarm).first()
     moment = (lambda at: on(at, zone_for(alarm.site)).strftime('%d.%m.%Y %H:%M'))
     with translation.override(language):
-        if flood is not None and flood.summary:
-            return _('%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log. '
-                     'The first opened %(opened)s, the last cleared %(cleared)s.') % {
-                'count': flood.size, 'opened': moment(flood.since), 'cleared': moment(flood.last_cleared)}
-        if flood is not None and flood.listed:
-            named = '; '.join(summary if cleared is None else _('%(summary)s (cleared %(cleared)s)') % {
-                'summary': summary, 'cleared': moment(cleared)} for summary, cleared in flood.listed)
-            return _('%(count)d more critical alarms of one kind since %(since)s, %(open)d open now: %(alarms)s') % {
-                'count': len(flood.listed), 'since': moment(flood.since), 'open': flood.open, 'alarms': named}
-        if flood is not None:
-            return _('%(count)d %(severity)s alarms of one kind since %(since)s. For example: %(summary)s') % {
-                'count': flood.size, 'severity': alarm.get_severity_display().lower(), 'since': moment(flood.since),
-                'summary': flood.example}
-        if notification.kind == NotificationKind.SNOOZED:
-            return _('Snoozed: %(summary)s') % {'summary': alarm.summary}
-        if notification.kind == NotificationKind.RESUMED:
-            return _('Still open after its snooze: %(summary)s') % {'summary': alarm.summary}
-        if alarm.severity == Severity.CRITICAL and clearance is not None:
-            return _('Critical, now cleared: %(summary)s. Opened %(opened)s, cleared %(cleared)s.') % {
-                'summary': alarm.summary, 'opened': moment(alarm.opened_at), 'cleared': moment(clearance.cleared_at)}
-        return _('%(severity)s: %(summary)s') % {'severity': alarm.get_severity_display(), 'summary': alarm.summary}
+        return _within(_listing(flood, limit, moment) if flood is not None and flood.listed else _said(
+            notification, flood, clearance, moment), limit)
+
+
+def _said(notification, flood, clearance, moment):
+    """`text` at any length, in the language in force, but the criticals' follow-up (`_listing`)."""
+    alarm = notification.alarm
+    if flood is not None and flood.summary:
+        return _('%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log. '
+                 'The first opened %(opened)s, the last cleared %(cleared)s.') % {
+            'count': flood.size, 'opened': moment(flood.since), 'cleared': moment(flood.last_cleared)}
+    if flood is not None:
+        return _('%(count)d %(severity)s alarms of one kind since %(since)s. For example: %(summary)s') % {
+            'count': flood.size, 'severity': alarm.get_severity_display().lower(), 'since': moment(flood.since),
+            'summary': flood.example}
+    if notification.kind == NotificationKind.SNOOZED:
+        return _('Snoozed: %(summary)s') % {'summary': alarm.summary}
+    if notification.kind == NotificationKind.RESUMED:
+        return _('Still open after its snooze: %(summary)s') % {'summary': alarm.summary}
+    if alarm.severity == Severity.CRITICAL and clearance is not None:
+        return _('Critical, now cleared: %(summary)s. Opened %(opened)s, cleared %(cleared)s.') % {
+            'summary': alarm.summary, 'opened': moment(alarm.opened_at), 'cleared': moment(clearance.cleared_at)}
+    return _('%(severity)s: %(summary)s') % {'severity': alarm.get_severity_display(), 'summary': alarm.summary}
 
 
 def _call(transport, notification, timeout, flood=None):
     """The transport's answer, within `timeout` seconds (None: as long as it takes); a raise is a Failed. `flood`: the
-    notification is the first of a flood message (alarms/floods.py). The notification carries its `text`."""
+    notification is the first of a flood message (alarms/floods.py). The notification carries its `text`, within the
+    transport's `max_chars`; a transport that declares none is a failed attempt, said why (never an unbounded text)."""
     answer = {}
+    limit = getattr(transport, 'max_chars', None)
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        logger.error('The %s transport declares no max_chars; notification %s is not sent.', notification.channel,
+                     notification.pk)
+        return Failed(f'not sent: the {notification.channel} transport declares no max_chars')
     try:
-        notification.text = text(notification, flood)
+        notification.text = text(notification, flood, limit)
     except Exception as error:                    # its own handling failed: a failed attempt, retried and counted (N5)
         logger.exception('The text of notification %s could not be made.', notification.pk)
         return Failed(f'not sent: {type(error).__name__}: {error}')
@@ -506,6 +557,7 @@ def _send_flood(delivery, mine, transport, found, kind, moment, timeout):
                    .values_list('alarm', 'cleared_at'))
     since = min(notification.alarm.opened_at for notification in mine)
     if mine[0].alarm.severity == Severity.CRITICAL:
+        mine = sorted(mine, key=lambda notification: notification.alarm_id in cleared)    # the open ones named first
         size = len(mine)
         flood = Flood(size, since, mine[0].alarm.summary, listed=tuple(
             (notification.alarm.summary, cleared.get(notification.alarm_id)) for notification in mine),

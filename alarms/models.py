@@ -485,9 +485,10 @@ SHELVE_BOUNDS = {Severity.CRITICAL: (1, 480), Severity.WARNING: (1, 1440)}
 FLOOD_COUNT_BOUNDS = (2, 1000)
 FLOOD_WINDOW_BOUNDS = {Severity.CRITICAL: (10, 300), Severity.WARNING: (10, 3600)}
 # How long the next criticals of a kind wait for one follow-up message after a message of that kind went to the person
-# (seconds; alarms/floods.py): none to 30 s, the coordinator's bound on the last recheck (a critical is batched, never
-# covered). Warnings are grouped by their flood window instead: theirs is 0.
-FOLLOW_UP_BOUNDS = {Severity.CRITICAL: (0, 30), Severity.WARNING: (0, 0)}
+# (seconds; alarms/floods.py): none to 8 s, so a second critical of a kind still reaches the person within the owner's
+# 10 s from a value to its message (REVIEW4: the alarm opens in about 1.3 s, a tick of 1 s). Warnings are grouped by their
+# flood window instead: theirs is 0.
+FOLLOW_UP_BOUNDS = {Severity.CRITICAL: (0, 8), Severity.WARNING: (0, 0)}
 # A device clock's limit (seconds), either way: at least a second (a limit of 0 would alarm on the network's own delay),
 # at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
 # device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.

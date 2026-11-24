@@ -76,8 +76,9 @@ class SeverityPolicyForm(TabbedForm):
                              'each; for them it marks a flood on the Alarms page. 2 to 1000.'),
             'follow_up_seconds': _('Criticals only: after a message about a kind of critical alarm (one site, one '
                                    'quantity, rule or check), the next ones of that kind for that person are collected '
-                                   'this long and go as one message naming each. 0: each at once. Critical 0 to 30; '
-                                   'warning 0 (warnings are grouped by the flood window).'),
+                                   'this long and go as one message naming each. 0: each at once. Critical 0 to 8, so '
+                                   'a second critical still reaches the person within 10 s of its value; warning 0 '
+                                   '(warnings are grouped by the flood window).'),
             'flood_window_seconds': _('How long the alarms of a flood are counted together, and how long a flood '
                                       'message of warnings covers the warnings that come after it (a critical is never '
                                       'covered). 10 to 3600.'),

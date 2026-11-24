@@ -4,7 +4,7 @@ delay an open or newly cleared critical on a connected transport. Each held by a
 - N7 (probe T18): a critical that clears while the transport is connected but failing is never given up: only an
   acknowledgement ends a critical's retries; when it is delivered it says "Critical, now cleared";
 - batch, never drop (probes M1, M2): the first critical of a kind goes at once; the next open criticals of that kind for
-  that person are never covered: they are collected for the critical rule's follow-up time (5 s, at most 30 s; 0: at
+  that person are never covered: they are collected for the critical rule's follow-up time (5 s, at most 8 s; 0: at
   once) and go as one follow-up message naming every unit and how many are open now, each within 30 s; a different tank
   of the same quantity is named too;
 - D8c: the summaries of old cleared criticals go after the criticals' messages in a round;

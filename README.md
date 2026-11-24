@@ -5495,16 +5495,31 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `list_filters` (selects and day boxes from the values `filter_list` returns); a tab without `list_rows` keeps its
   classic list in the new look. A row's title and its actions open the record's own page (the record form island), never
   the classic dialog. Drawn now: the HR lists (Team, Departments, Attendance, Leave requests, Shifts, Holidays, Leave
-  types), under both mounts. Held: `hr/tests/test_list_next.py` (each list against its classic page on the test world in
+  types), under both mounts; Production's Recurring tasks (the Tasks page's views as its link tabs), Questions for the
+  authority and Experiments (its three views; the rows are the ones the list view read, so an experiment the classic
+  list does not show is not shown, and no field of it the classic list leaves out). Held: `hr/tests/test_list_next.py` (each list against its classic page on the test world in
   three languages; the search, the filters and the pager are the address's); `frontend/islands/ui/ui.test.tsx` (the
   markup); `frontend/test/listpage.browser.test.ts` (the GET form sends what the server reads; CSP and axe in every theme
   at 1440 and 390) and `listpages.browser.test.ts` (every recorded list in three languages at both widths).
+- **Production pages drawn by the server in the new look** (no island: the classic page's own context, the classic
+  view's reads, drawn with the design system's classes in a template of their own beside the classic one): Operations ›
+  Tasks (`TaskResource.list_template_next`, `templates/tasks/task_list_next.html`: its views with their counts, the
+  filters as one GET form, the overdue count, the table, and the drawer of the task picked as a plate beside it, its
+  buttons the classic forms posted to the task's own addresses), Operations › Storage (`inventory.views.storage`,
+  `templates/inventory/storage_next.html`: Overview, Stock, Movements and Counts, every warning of the classic page),
+  Regulatory reports (`ReportResource.list_template_next`, `templates/reports/report_list_next.html`: all eleven kinds,
+  where each stands, the reports and notices due, what the records no longer give, closed without filing, not set up)
+  and Messages (`messaging.views`, `templates/messaging/inbox_next.html`: the conversations and the open one as two
+  plates around the classic fragments the poll renders again). What opened a dialog on the classic page (an action, an
+  edit, a delete, New message) opens its own page. Held: `core/tests_panel_next.py` (each page, its views, tabs, kinds
+  and the drawer, against the classic page on the test world in three languages; no style attribute, no dialog link).
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture
-  names "Test …", addresses @example.com; `core/test_world.py`, one function per part: `company_world`, `hr_world`) in a
-  transaction it rolls back, and writes `form-oracle.json`, `company-props-<language>.json` and
-  `list-props-<language>.json`. `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
+  names "Test …", addresses @example.com; `core/test_world.py`, one function per part: `company_world`, `hr_world`,
+  `panel_world` and its parts for tasks, questions, experiments, reports, storage and messages) in a transaction it
+  rolls back, and writes `form-oracle.json`, `company-props-<language>.json`, `list-props-<language>.json` and
+  `panel-props-<language>.json` (the production panel's lists). `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
   `frontend/islands` and `core/testdata` outside example.com and the `.example` domains.
 
 ## One format for every tab

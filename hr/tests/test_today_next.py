@@ -78,3 +78,41 @@ class StackTests(TestCase):
         self.assertEqual(found['said'], 'Planned today. Here now 3, Absent 0, On leave 2')
         with self.assertRaises(ValueError):
             stack.part('d', 'Odd', 1, 'purple')
+
+
+@override_settings(ALLOWED_HOSTS=['localhost', 'testserver'])
+class TodayRosterTests(TestCase):
+    """Review N3: the test world plans today's roster (core/test_world.py roster_world), one person in each planned state:
+    the new board says every state, and its stacked bar's parts are the board's own tiles and add up to Planned today."""
+
+    def setUp(self):
+        from core.test_world import MOMENT, world
+        clock = mock.patch('django.utils.timezone.now', return_value=MOMENT)
+        clock.start()
+        self.addCleanup(clock.stop)
+        self.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
+        world(self.admin)
+        self.client.force_login(self.admin)
+
+    def test_every_planned_state_is_on_the_board_and_the_bar_adds_up(self):
+        response = self.client.get(reverse('hr:production_today'), {'ui': 'next'})
+        board, bar = response.context['board'], response.context['planned_stack']
+        states = {row.employee.last_name: row.state for row in board.rows if row.employee.first_name == 'Test'}
+        for last, state in (('Upcoming', 'upcoming'), ('Present', 'present'), ('Late', 'late'), ('Waiting', 'not_in'),
+                            ('Absent', 'absent'), ('Away', 'on_leave'), ('Done', 'done')):
+            self.assertEqual(states.get(last), state, last)
+        self.assertGreaterEqual(board.planned, 7)
+        self.assertEqual(bar['total'], board.planned)
+        parts = {part['key']: part['value'] for part in bar['parts']}
+        self.assertEqual(parts, {tile.key: tile.count for tile in board.tiles})
+        self.assertEqual((parts['upcoming'], parts['here'], parts['not_in'], parts['on_leave'], parts['done']), (1, 2, 1, 1, 1))
+        self.assertGreaterEqual(parts['absent'], 1)
+
+    def test_the_planned_board_says_everything_the_classic_board_says_in_three_languages(self):
+        for language in ('en', 'nb', 'tr'):
+            with self.subTest(language=language):
+                self.client.cookies['django_language'] = language
+                old = self.client.get(reverse('hr:production_today'), {'ui': 'classic'}).content.decode()
+                new = self.client.get(reverse('hr:production_today'), {'ui': 'next'}).content.decode()
+                self.assertIn('ui-stack-seg', new)                       # a bar with parts, not the empty one
+                self.assertEqual(unsaid(old, {}, new_html=new), [])

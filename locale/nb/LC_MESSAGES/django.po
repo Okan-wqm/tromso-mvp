@@ -7425,6 +7425,10 @@ msgstr "Fra og til"
 msgid "From end to end; each end is a half circle as wide as the tank."
 msgstr "Fra ende til ende; hver ende er en halvsirkel like bred som karet."
 
+#, python-format
+msgid "From its system, %(place)s: the unit has no sampling point of its own."
+msgstr "Fra systemet, %(place)s: enheten har ikke noe eget prøvepunkt."
+
 msgid "From lokalitetsnummer"
 msgstr "Fra lokalitetsnummer"
 

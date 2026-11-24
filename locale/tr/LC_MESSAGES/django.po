@@ -7447,6 +7447,10 @@ msgstr "Başlangıç ve bitiş"
 msgid "From end to end; each end is a half circle as wide as the tank."
 msgstr "Uçtan uca; her uç, tank genişliğinde bir yarım dairedir."
 
+#, python-format
+msgid "From its system, %(place)s: the unit has no sampling point of its own."
+msgstr "Sisteminden, %(place)s: birimin kendi numune noktası yok."
+
 msgid "From lokalitetsnummer"
 msgstr "Çıkış lokalitetsnummer"
 

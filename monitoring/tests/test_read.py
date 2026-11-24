@@ -153,7 +153,7 @@ class LadderTests(SimpleTestCase):
 
     def test_an_oxygen_the_water_judges_silent_is_critical(self):
         """Owner decision of 2026-11-23: the water's judgement (PointWater.silent_oxygen: fish now, no fresh oxygen),
-        of the middle point or of a unit with no point at all (read.pointless_water), makes the card critical, said as
+        of the middle point or of a unit with no point at all (read.latest `units`), makes the card critical, said as
         missing or old data, the chip's short words "O₂ (mg/L): no recent data"."""
         stale = reading('oxygen_mg_l', 9, hours=30, status=Status.STALE)
         for found, said in ((water(reading('temperature_c', 9), stale), 'no recent data, 1'),

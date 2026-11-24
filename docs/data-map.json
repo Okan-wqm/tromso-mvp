@@ -3399,7 +3399,6 @@
         "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
-        "experiments/tests/test_review.py",
         "alarms/tests/test_freshness.py",
         "alarms/tests/test_reference.py"
       ]

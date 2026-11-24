@@ -130,7 +130,8 @@ def normal(data, ids=()):
     for fresh in FRESH:
         data = fresh.sub(rb'\1-', data)
     for value in ids:
-        data = data.replace(str(value).encode(), b'<id>')
+        if len(str(value)) >= 6:          # a short number (an alarm's id 3) would be taken out of every other number
+            data = data.replace(str(value).encode(), b'<id>')
     return data
 
 
@@ -278,6 +279,9 @@ def where(before, after):
             f'…{second[max(0, at - 120):at + 120].decode(errors="replace")}…')
 
 
+STOCK_FIGURES = ('inventory:storage',)
+
+
 class NonInterferenceTests(TestCase):
     """What an outsider reads on every list is the same before X exists and after."""
 
@@ -304,5 +308,7 @@ class NonInterferenceTests(TestCase):
         without = self.lists(self.researcher)
         world.build_sealed(self)
         with_x = self.lists(self.researcher)
-        differ = sorted(name for name in without if without[name] != with_x.get(name))
+        # The store's book counts every feeding, a sealed tank's too: feed drawn from the store is a stock figure, the
+        # same for everyone (review F5, the coordinator's decision), so the store's page tells that feed was fed.
+        differ = sorted(name for name in without if without[name] != with_x.get(name) and name not in STOCK_FIGURES)
         self.assertFalse(differ, '\n'.join(f'{name}: {where(without[name], with_x.get(name))}' for name in differ))

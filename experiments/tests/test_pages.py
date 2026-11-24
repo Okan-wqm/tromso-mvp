@@ -435,7 +435,7 @@ class PermissionTests(PageTestCase):
                          {'list': 200, 'detail': 200, 'create': 200, 'edit': 200, 'create post': 200,
                           'edit post': 200})
         self.assertEqual((student['delete'], student['delete post']), (403, 403))
-        self.assertNotEqual(student['team post'], 403)
+        self.assertEqual(student['team post'], 403)          # the team is its lead's alone (review F3)
         researcher = self.statuses(person('researcher', *RESEARCHER))
         self.assertEqual({researcher[name] for name in ('list', 'detail', 'create', 'edit', 'delete')}, {200})
         self.assertEqual((researcher['team post'], researcher['delete post']), (200, 302))

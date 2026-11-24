@@ -1540,7 +1540,10 @@ def _shown(model, codes):
     """{code: what to print}: a unit's or a batch's code when whoever is looking may see it, else "a restricted unit"
     or "a restricted batch" (core.sealing: a hold caused through a sealed tank names neither the tank nor its fish)."""
     codes = [code for code in codes if code]
-    seen = set(model.all_objects.filter(code__in=codes).values_list('code', flat=True))
+    if sealing.who() is None:                                   # the system: every code is said
+        return {code: code for code in codes}
+    seen = sealing.memo(('codes seen', model._meta.label),          # once a request, however many holds are said
+                        lambda: set(model.all_objects.values_list('code', flat=True)))
     other = _('a restricted unit') if model is Tank else _('a restricted batch')
     return {code: code if code in seen else other for code in codes}
 

@@ -6,6 +6,8 @@ come with the data, the design and the systems; the data with the design and the
 The seal's predicate reads them as subqueries inside the statement that reads the rows (`hidden_work`), with the person
 read when the statement is compiled (core.sealing.Viewing), so narrowing costs no query of its own and a queryset built
 earlier is never bound to anyone; Python's decisions on an experiment's own pages load them once per request (`load`)."""
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.db.models.functions import Now
@@ -104,6 +106,14 @@ def load(user):
                           team=team, granted=granted, barred=barred)
 
 
+def _uuid(value):
+    try:
+        uuid.UUID(str(value))
+    except ValueError:
+        return False
+    return True
+
+
 def note_reads(ids, route, part=''):
     """Writes the read log for the experiments `ids` the person looking has just been shown (a page, a list, the
     activity log, the database viewer, the admin): every one that is not open and not theirs: the platform admin's
@@ -112,6 +122,9 @@ def note_reads(ids, route, part=''):
     if current is None or not ids:
         return
     from core.models import AccessEvent
+    ids = [value for value in ids if _uuid(value)]            # an activity log names records of every kind
+    if not ids:
+        return
     sealed = Experiment._base_manager.filter(pk__in=list(ids)).exclude(audience=Experiment.Audience.OPEN)         .exclude(pk__in=list(current.team)).values_list('pk', flat=True)
     for pk in sealed:
         kind = AccessEvent.Kind.SUPPORT if current.is_super and pk not in current.everything() else AccessEvent.Kind.VIEW

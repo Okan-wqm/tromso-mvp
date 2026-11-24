@@ -38,6 +38,7 @@ from farm.models.stock import MovementKind
 from farm.stock import read as stock_read
 from farm.stock.dates import local_today, site_today
 
+from . import sealing as experiments_sealing
 from .models import ExperimentGroup, FactorKind, GroupLevel, Replicate, ReplicateSystem, ReplicateUnit, Status
 
 
@@ -509,8 +510,14 @@ def chips(units, user):
         for day, unit_ids in by_day.items():
             for unit_id, cell in placements(unit_ids, day).items():
                 experiment = cell.group.experiment
+                # The group and the replicate are the design: a person who reads the experiment's places but not its
+                # design (a grantee of its water) sees its number alone (review F9).
+                design = 'design' in experiments_sealing.parts_of(experiment)
+                label = experiment.code
+                if design:
+                    label = f'{experiment.code} · {cell.group.name} · R{cell.replicate.number}'
                 found[unit_id] = [farm_placements.Placement(
-                    label=f'{experiment.code} · {cell.group.name} · R{cell.replicate.number}',
+                    label=label,
                     title=f'{experiment.name} ({experiment.get_status_display()})',
                     url=reverse('experiments:experiment_detail', args=[experiment.pk]))]
     if user.has_perm('experiments.oversee_experiment') and not user.is_superuser:

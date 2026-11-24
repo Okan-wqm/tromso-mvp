@@ -91,12 +91,14 @@ class TeamTests(ReviewCase):
 
 class WithdrawalTests(ReviewCase):
     def test_the_unresolved_old_courses_are_the_persons_to_see(self):
-        from core.models import PlatformSettings
+        from unittest import mock
         from farm.health import withdrawal
         with withdrawal_gate.opened('test fixture: an old course without a rule'):
-            PlatformSettings.objects.update(unknown_withdrawal_days=1)
             Treatment.objects.filter(pk=self.treatment.pk).update(start_date=self.today - timedelta(days=12),
                                                                     end_date=self.today - timedelta(days=10))
+        days = mock.patch.object(withdrawal, 'unknown_withdrawal_days', return_value=1)
+        days.start()
+        self.addCleanup(days.stop)
         with sealing.system('the test'):
             everything = {batch.pk for batch, _held in withdrawal.unresolved()}
         self.assertIn(self.sealed_batch.pk, everything)
@@ -121,7 +123,7 @@ class DueListTests(ReviewCase):
         from farm.health import diseases
         from reports import due
         Site.objects.filter(pk=self.site.pk).update(reports_from=self.today - timedelta(days=30))
-        HealthEvent.objects.filter(pk=self.event.pk).update(diagnosis=diseases.NOTIFIABLE[0])
+        HealthEvent.objects.filter(pk=self.event.pk).update(diagnosis=diseases.NOTIFIABLE[0], confirmation='suspected')
         with sealing.as_viewer(self.researcher):
             rows = due.due().rows
         self.assertIn(self.event.pk, {row.event.pk for row in rows if row.event is not None})

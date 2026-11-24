@@ -412,7 +412,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Administration › platform_settings
 - **forms**: `PlatformSettingsForm`
 - **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check)
-- **tests that mention it**: `core/tests_platform.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 10 more
+- **tests that mention it**: `core/tests_platform.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

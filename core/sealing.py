@@ -109,6 +109,7 @@ class _Lazy:
         self.loaded = None
         self.light = None
         self.read = False
+        self.memo = {}
 
     def get(self):
         if self.loaded is None:
@@ -261,6 +262,31 @@ class Viewing(models.Expression):
             return '%s', [None if current is None else current.user_id]
         flag = current is not None if self.what == 'looking' else (current is not None and current.is_super)
         return ('TRUE' if flag else 'FALSE'), []
+
+
+class Sealed(models.ExpressionWrapper):
+    """The seal's condition, decided when the SQL is compiled: for the system (a command, a named system read) it is
+    FALSE and its subqueries are never compiled, so a system read costs what an unsealed one does; for a person it is
+    the condition itself, read with them (Viewing)."""
+
+    def __init__(self, condition):
+        super().__init__(condition, output_field=models.BooleanField())
+
+    def as_sql(self, compiler, connection):
+        if who() is None:
+            return 'FALSE', []
+        return super().as_sql(compiler, connection)
+
+
+def memo(key, compute):
+    """`compute()`, kept for the rest of the request (or `as_viewer` block) under `key`: for a page that asks the
+    same question of the seal for many rows (which unit codes the person may see), once."""
+    current = _current.get()
+    if not isinstance(current, _Lazy):
+        return compute()
+    if key not in current.memo:
+        current.memo[key] = compute()
+    return current.memo[key]
 
 
 def system_reason():
@@ -528,8 +554,8 @@ def hidden(seal, part=None):
     if seal.cls == FACT and seal.work is None and _provider is not None:
         # A farm fact is shown to a person who holds Oversee (the role matrix): read in the same statement.
         result &= ~Q(Exists(_provider.oversees()))
-    # The system (a command, a named system read) hides nothing.
-    return Q(Viewing('looking')) & result
+    # The system (a command, a named system read) hides nothing, and its read is not made longer by the condition.
+    return Q(Sealed(result))
 
 
 def _child(spec):

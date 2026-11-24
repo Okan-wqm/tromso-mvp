@@ -47,3 +47,11 @@ test('marks whose moments are listed beside the chart are for the pointer only: 
   assert.equal(html.match(/<g class="ui-chart-mark" aria-hidden="true"/g)?.length, 2);
   assert.match(html, /<title>01:00 · Calibrated<\/title>/);                     // its label on hover
 });
+
+test('a marker listed beside the chart is for the pointer only; the own marker of the chart keeps its Tab stop', () => {
+  const overlay: Overlay = { ...OVERLAY, marks: [OVERLAY.marks[0]!, { marker: { ...OVERLAY.marks[1]!.marker, listed: true }, x: 300 }] };
+  const html = renderToStaticMarkup(<Marks overlay={overlay} />);
+  assert.match(html, /<a class="ui-chart-mark" href="\/calibrations\/" aria-label="01:00 · Calibrated">/);
+  assert.equal(html.match(/<g class="ui-chart-mark" aria-hidden="true"/g)?.length, 1);
+  assert.equal(html.match(/tabindex/g), null);
+});

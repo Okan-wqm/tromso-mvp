@@ -109,7 +109,10 @@ test('the Production and Sensors islands in a browser', { skip: skipWithout(BROW
             if (drawn && events.length) {
               await tab.waitForSelector('.ui-chart-mark');
               const marks = tab.locator('.ui-chart-mark');
-              assert.equal(await tab.locator('.ui-chart-mark[tabindex], a.ui-chart-mark').count(), 0, 'no Tab stop per event per chart');
+              // the events' marks are for the pointer (the events list is the keyboard's path); a sensor's own keeps its Tab stop
+              const labels = new Set(events.map((event) => `${event.when} · ${event.label}`));
+              const tabbable = await tab.locator('.ui-chart-mark[tabindex], a.ui-chart-mark').evaluateAll((found) => found.map((mark) => mark.getAttribute('aria-label') ?? ''));
+              assert.deepEqual(tabbable.filter((label) => labels.has(label)), [], 'no Tab stop per event per chart');
               assert.equal(await marks.first().getAttribute('aria-hidden'), 'true', 'the marks are for the pointer');
               await marks.first().locator('.ui-chart-mark-handle').hover();
               assert.equal(await marks.first().locator('.ui-chart-mark-label').evaluate((label) => getComputedStyle(label).visibility),

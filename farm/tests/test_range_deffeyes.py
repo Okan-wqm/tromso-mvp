@@ -92,3 +92,29 @@ class RangeDeffeyesTests(SimpleTestCase):
 
     def test_nothing_for_a_person_who_may_not_read_the_sensors(self):
         self.assertIsNone(self.drawn([frame(0, 1.0)], user=Person()))
+
+
+class FramesOnTheHourTests(SimpleTestCase):
+    """Review recheck N1: at a step of an hour or more the replay reads the hourly tier (the last value of the newest hour
+    that has ended by the frame), so a frame at :42 would see a probe's value 42 minutes old, never fresh. The range's
+    frames then start on the top of the hour, whatever the minute the page was opened at; under an hour, as asked."""
+
+    def asked(self, start, end):
+        found = Frames(None, start, end, STEP, 'raw', 1, 0, None, [frame(0, missing=('ph',))], [])
+        with mock.patch('sensors.read.deffeyes_frames', return_value=found) as frames, \
+                mock.patch.object(views, 'site_of', return_value=None), \
+                mock.patch.object(views, 'zone_of', return_value=ZoneInfo('Europe/Oslo')):
+            views.range_deffeyes(SENSORS, SimpleNamespace(), start, end)
+        return frames.call_args.args[1], frames.call_args.args[3]
+
+    def test_a_window_of_days_starts_its_frames_on_the_hour(self):
+        opened = datetime(2026, 11, 23, 12, 42, 17, tzinfo=tz.utc)
+        first, step = self.asked(opened - timedelta(days=7), opened)
+        self.assertGreaterEqual(step, timedelta(hours=1))
+        self.assertEqual(first, datetime(2026, 11, 16, 12, 0, tzinfo=tz.utc))
+
+    def test_a_day_keeps_the_minute_it_was_asked_for(self):
+        opened = datetime(2026, 11, 23, 12, 42, tzinfo=tz.utc)
+        first, step = self.asked(opened - timedelta(hours=24), opened)
+        self.assertLess(step, timedelta(hours=1))
+        self.assertEqual(first, opened - timedelta(hours=24))

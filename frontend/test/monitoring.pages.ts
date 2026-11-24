@@ -25,7 +25,7 @@ import { extname, join, resolve } from 'node:path';
 import type { Page } from 'playwright-core';
 
 import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
-import { axeFindings, watchCsp } from './checks.js';
+import { watchCsp } from './checks.js';
 import { policy } from './csp.js';
 
 const PAGES = resolve('.build/monitor-pages');
@@ -39,8 +39,36 @@ interface Screen { page: Answer; cards: Answer; worse?: Answer; pane?: Answer; n
 let current = 'small-en';
 let mode: 'cards' | 'worse' | 'fail' = 'cards';
 
+/** A kept answer; '' when there is none (the stub then answers 404, as the server does for a pane that is gone). */
 function read(name: string): string {
-  return readFileSync(join(PAGES, `${name}.html`), 'utf8');
+  const file = join(PAGES, `${name}.html`);
+  return existsSync(file) ? readFileSync(file, 'utf8') : '';
+}
+
+/** The critical and serious axe findings, each with the elements it found (axe-core served from `origin`/axe.js). */
+async function axeFindings(tab: Page, origin: string): Promise<string[]> {
+  await tab.addScriptTag({ url: `${origin}/axe.js` });
+  return tab.evaluate(async () => {
+    const axe = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: { id: string; impact: string; nodes: { target: string[] }[] }[] }> } }).axe;
+    const result = await axe.run(document, { resultTypes: ['violations'] });
+    return result.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')
+      .map((v) => `${v.id}: ${v.nodes.map((node) => node.target.join(' ')).slice(0, 4).join(' | ')}`);
+  });
+}
+
+/** What reaches past the right edge of the window (the elements, outermost first): [] when nothing does. */
+function sideways(tab: Page): Promise<string[]> {
+  return tab.evaluate(() => {
+    const past: string[] = [];
+    for (const element of document.querySelectorAll<HTMLElement>('body *')) {
+      const box = element.getBoundingClientRect();
+      if (box.right <= document.documentElement.clientWidth + 1 || box.width === 0) continue;
+      if (element.parentElement && element.parentElement.getBoundingClientRect().right > document.documentElement.clientWidth + 1
+          && element.parentElement !== document.body) continue;
+      past.push(`${element.tagName.toLowerCase()}.${String(element.className).split(' ').slice(0, 3).join('.')} to ${Math.round(box.right)}`);
+    }
+    return past.slice(0, 8);
+  });
 }
 
 function serve(index: Record<string, Screen>): Promise<Server> {
@@ -63,9 +91,13 @@ function serve(index: Record<string, Screen>): Promise<Server> {
     const next = { 'X-Poll-Next': `${url.pathname}${url.search}`, 'Cache-Control': 'no-store' };
     if (url.pathname === '/operations/monitoring/cards/') {
       if (mode === 'fail') return void response.writeHead(503, headers).end('The cards cannot be read just now.');
-      return html(read(mode === 'worse' && screen?.worse ? `cards-${current}-worse` : `cards-${current}`), next);
+      const body = read(mode === 'worse' && screen?.worse ? `cards-${current}-worse` : `cards-${current}`);
+      return body ? html(body, next) : void response.writeHead(404, headers).end();
     }
-    if (url.pathname === '/operations/monitoring/pane/') return html(read(`pane-${current}`), next);
+    if (url.pathname === '/operations/monitoring/pane/') {
+      const body = read(`pane-${current}`);
+      return body ? html(body, next) : void response.writeHead(404, headers).end();
+    }
     if (url.pathname === '/ui/strip/') return html(read(`strip-${screen?.lang ?? 'en'}`));
     let file = '';
     if (url.pathname.startsWith('/static/')) file = resolve(`.${url.pathname}`);
@@ -141,7 +173,9 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
   const address = server.address();
   const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
   const browser = await launch();
+  // (one page at a time: a page a failed check left open would go on polling the stub for another screen)
   const open = async (key: string, width: number, height: number): Promise<{ tab: Page; violations: string[] }> => {
+    await Promise.all(browser.contexts().flatMap((context) => context.pages()).map((page) => page.close()));
     const tab = await browser.newPage({ viewport: { width, height } });
     const violations = await watchCsp(tab);
     await tab.goto(`${origin}/page/${key}`);
@@ -163,7 +197,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
             assert.ok(seen.states.every(Boolean), 'every card says its state');
             assert.ok(seen.glyphs > 0, 'the state glyphs are drawn');
             assert.equal(seen.bare, 0, 'no glyph is a speck');
-            assert.equal(seen.sideways, 0, 'nothing scrolls sideways');
+            assert.deepEqual(seen.sideways ? await sideways(tab) : [], [], `nothing scrolls sideways (${seen.sideways} px)`);
             assert.deepEqual(await lowContrast(tab), [], 'card text under 4.5:1');
             assert.deepEqual(await axeFindings(tab, origin), [], 'axe');
             assert.deepEqual(violations, [], 'CSP violations');

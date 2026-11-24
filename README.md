@@ -4454,7 +4454,7 @@ production people in Production, with the same permission.
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
-## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm recipients `/alarms/recipients/`, Alarm severity rules `/alarms/severity-rules/`, Alarm deadbands `/alarms/deadbands/`)
+## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm snoozes `/alarms/snoozes/`, Alarm recipients `/alarms/recipients/`, Alarm severity rules `/alarms/severity-rules/`, Alarm deadbands `/alarms/deadbands/`)
 
 The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push notifications through the coming mobile app
 (not e-mail: it gets too little attention), and every alarm, every notification and every acknowledgement (who, when,
@@ -4483,7 +4483,10 @@ from which device, how late) is logged. The server side is built; the push trans
   statement, so a subject never has two open alarms (defect 6). A warning is not notified while its critical is open.
 - **The rules are the user's reference data** (owner, alarm plan §7c): per severity the on-delay, the off-delay, the
   escalation time and the delivery attempts (Alarm severity rules, one row each: critical 0 s, 30 s, 5 min, 5; warning 30 s,
-  30 s, 30 min, 5), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
+  30 s, 30 min, 5), the time between two attempts (critical 30 s, warning 120 s; `alarms` 0016), the longest snooze
+  (critical 240 min, warning 720 min, owner decision Q5; `alarms` 0017; bounded at 480 and 1440) and a flood (3 alarms of
+  one kind within 120 s, both severities; `alarms` 0018) with a critical's follow-up time (5 s, at most 8 s; a
+  warning's 0; `alarms` 0021), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
   0.05, CO₂ 1 mg/L, TAN 0.05, NH₃-N 0.002, NO₂-N 0.05 mg/L, salinity 0.5 ‰). These are the owner's defaults (§7a),
   seeded once by `alarms` 0002; from then on they are rows edited on their tabs by the alarm admin's rights, bounded by
   database checks, logged, read once per pass (`alarms/rules.py`): a change takes effect on the next pass. The bounds are
@@ -4561,8 +4564,85 @@ from which device, how late) is logged. The server side is built; the push trans
   never escalated.
 - **The outbox**: one notification per alarm, person, channel and level (push only; channels are pluggable). A transport
   per channel is named in `settings.ALARM_TRANSPORTS` (`alarms/transports.py`, an interface with a test double); none is
-  connected, so nothing is sent anywhere, every notification waits, and the pages say so. A failing transport is tried
-  again up to its severity's delivery attempts.
+  connected, so nothing is sent anywhere, every notification waits, and the pages say so. A pass only queues; the
+  worker's sender thread goes through the outbox every tick (`alarms/outbox.py`), outside any pass, transaction or
+  lock, so a transport that is slow or down never delays an alarm: critical first, then the oldest. A round reads the
+  outbox's queue (`alarm_outbox`, `alarms` 0019: the notifications still to be sent, removed once sent, covered or given
+  up), never the whole history. **A critical is never given up until someone has seen it** (the review, F1; N7 of the
+  last recheck): a critical alarm's notification is tried again until it is sent or its alarm is acknowledged, the wait
+  doubling from the severity's retry time up to its escalation time; clearing does not end it (a critical that came and
+  went while the push service failed is told once it answers, "Critical, now cleared"). Once its alarm is acknowledged
+  it has its delivery attempts like a warning's, which are tried their retry time apart and then failed (its alarm's
+  page says so). A critical notification of an unacknowledged alarm (open or cleared) that has failed for longer than
+  the escalation time cannot be delivered: a critical alarm of the alarm system says so ("notifications_undeliverable"; a snoozed alarm's never counts), and the pages' notice and the
+  health check too. **A critical is never behind a round of warnings** (F5): a round ends at `ALARM_WORKER_SEND_ROUND`
+  (5 s), and before a warning's group when a critical was queued since it began; the next round, a tick later, starts
+  with it (a critical that joins the queue during the round, whatever time it is stamped with). A round sends the
+  criticals first, then the summaries below, then the warnings (D8c). Each send gets `send_timeout` seconds (no answer
+  or a raise is a failed attempt). A notification whose own handling raises (its text, its kind, its due check, its
+  group's plan) gets a failed attempt, at most one per its severity's retry time, so it is retried and said
+  undeliverable like any failure; one that went before the error gets none. Each notification goes with its text in the
+  person's language (`outbox.text`). A critical alarm that opened and cleared before it could be sent (the transport
+  down or failing through an oxygen crash or a power cut) is still sent, never dropped (the coordinator's decision of
+  2026-11-24): one message saying it was critical and has cleared, when it opened and when it cleared, through the same
+  flood rules (cleared criticals of one kind go as the first and one follow-up naming each, below). A warning, or a word about a snooze, whose alarm
+  cleared before it was ever tried is given up, its attempt saying so, so a backlog of cleared warnings never goes out
+  when a transport is first connected. They are given up after the round's sending, never before it, a chunk a
+  round (`outbox.GIVE_UP_CHUNK`, 100, each chunk one transaction): 20,000 of them never delay a critical, and drain
+  over a few hundred rounds, a few minutes at a round a tick. So is a word about a snooze whose alarm has cleared since
+  (it would no longer be true). A round sends the criticals of open, unacknowledged alarms first, then the other
+  criticals, then the rest.
+  **Connecting a transport** (the go-live runbook's step): criticals that cleared more than 24 h before they could
+  first be sent (`outbox.SUMMARY_AFTER`: a channel's first connection, a long outage) are not told one by one: each
+  person gets ONE summary, "N critical alarms happened and cleared while no message could be sent; see the alarm log",
+  with the first opening and the last clearing, and each one's own notification is covered by it (grouped, said why).
+  Open criticals and those cleared within 24 h go out as usual. Before connecting the first transport, look at the
+  Alarms page: what is open there will be told at once; a channel without a transport is left out of a round in the database. One notification that cannot be
+  handled is logged and left for the next round, never stopping the others. The attempt, the queue's entry and the log
+  are written in one transaction, and a round drops an entry that already went. Never lost: a restart sends
+  what was not sent; a sender that died after the transport took one and before its attempt was written sends it again
+  (at least once; the notification's id is the push service's collapse key), and a notification is never written sent
+  twice (a unique constraint). Two senders never send one at once (a claim lock, then a second look). A round that fails
+  (the outbox itself unreadable) is the alarm system's step "send": a critical alarm. A second channel (e-mail, SMS: an
+  owner decision) joins as a `Channel` value and a transport in `ALARM_TRANSPORTS`; its notifications are queued,
+  retried, grouped and given up by the same rules.
+- **Snooze** (ISA-18.2 shelving; owner decision Q5): who holds Alarm snoozes: Create snoozes an open alarm from its page
+  for 1 to its severity's longest snooze, saying why; one at a time, all the snoozes of one alarm together at most that
+  longest (so a snooze is never renewed past it), never an alarm about the alarm system's own health (`alarms/health.py`:
+  not checked for a while, a step failing, notifications undeliverable, rules incomplete, and the sensors that cannot
+  be read, the farm being blind then; its alarms about one place, an oxygen with no fresh value, a unit or a value that
+  cannot be evaluated, are snoozed like any); ended early from the
+  same page. The people notified of the alarm are told who snoozed it, until when and why. While it lasts the alarm is
+  still raised, kept, listed and cleared; nobody new is notified, what was queued waits, and it is not escalated. Once
+  it ends (its time out, also while the worker was down, or ended early) notification goes on, the escalation time
+  counts again from the end, and, the alarm still open and unacknowledged, the people of its level are told again (once
+  per snooze; the coordinator's call on the review, F9). Snoozes are append-only (`alarm_shelves`, `alarm_shelve_ends`), logged
+  (critical for a critical alarm) and listed on Alarm snoozes; the Alarms list says "Snoozed until".
+- **Alarm floods** (ISA-18.2; the owner's burst requirement; `alarms/floods.py`): the kind of an alarm is its site, its
+  severity and what it is about (a water quantity, the oxygen in mg/L and % one; a sensor rule; a check of the alarm
+  system, each failed step its own). **Warnings**: in a round of the outbox, the due warnings of one person, channel and
+  kind go out as one flood message when, with the ones of that kind sent to them within the flood window, they reach
+  the flood count; the ones within the window after a flood message of open alarms are covered by it (outcome
+  "grouped", never sent on their own); a flood message that said its alarms had cleared covers nothing. **Criticals:
+  batched, never covered** (the coordinator's bar on the last recheck: no known way to drop or delay an open or newly
+  cleared critical on a connected transport). The first critical of a kind for a person goes at once, on its own. The
+  next ones of that kind for that person are collected while a message of the kind went to them less than the critical
+  rule's "Follow-up after" ago (5 s by default; at most 8 s, so a second critical still reaches the person within the
+  owner's 10 s from its value; 0 sends each at once), then go as ONE follow-up message, "N more
+  critical alarms of one kind since ..., M open now: ...", naming each (its summary names the unit, a cleared one
+  "(cleared ...)"), the open ones first; one alone goes with its own text. **Every text fits its transport** (REVIEW4,
+  F-A): each transport declares `max_bytes`, its service's payload limit in UTF-8 bytes (a Norwegian or Turkish letter
+  is two; a real push transport declares about 3,000 of its 4,096, the envelope being in it too; an SMS 160), and
+  `outbox.text` builds to it: a follow-up names what fits, whole, then "and K more, see the alarm list" (or only
+  "see the alarm list"), always with how many are open now; any other text too long is cut between two words and
+  marked "…". `manage.py check --deploy` (CI, a release) refuses a configured transport that cannot be imported, is
+  not a `Transport` or declares no whole `max_bytes` of at least 1 (`alarms/checks.py`, alarms.E001-E003); it is a
+  deployment check only, so a wrong setting never stops `run_alarm_worker`. One that reaches a round all the same
+  sends nothing: each attempt fails, saying so. Ones due in the same round as the first go with it, the rest as
+  the follow-up. So every critical reaches the person by name within the follow-up time of being queued, and a person
+  gets at most one message of a kind in that time. For criticals the flood count and window only mark a flood on the Alarms page. Grouping
+  is the outbox's only: every alarm is raised in its own pass, kept, acknowledged and escalated on its own. The Alarms
+  page names a flood of open alarms above the list; an alarm's history says "in a flood message of N alarms".
 - **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the
   notification answered; once per person; the delay is computed from the alarm's opening. Who holds Alarms: Edit may
   acknowledge, and so may anyone the alarm was sent to. The sensors' Alarm events page acknowledges through the same
@@ -4570,12 +4650,75 @@ from which device, how late) is logged. The server side is built; the push trans
 - **Append-only**: alarms, clearances, notifications, delivery attempts, escalations and acknowledgements are never changed
   or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
   a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
-- **The loop**: `manage.py run_alarms [--loop SECONDS]` (`alarms/engine.py`) checks the sensor rules and the water limits,
-  queues, escalates and hands what is queued to the connected transports. Each step (sensor rules, sensor events, water,
-  device clocks, notify, send, and the supervision last) runs in its own transaction under one advisory lock, so two loops never queue or send twice and a failing
-  step rolls back alone, logged and said in the pass's summary; a failed pass is logged and the loop goes on (defect 5).
-  The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a burst of alarms costs
-  the queries one costs (defect 7). Deployment runs it instead of `check_sensors` (the sensors' check alone).
+  Above them it names the units that need a look on the Monitoring screen, from the new look's strip's own reading
+  (`alarms.views.units_note`, README › The new look), with how many of them have critical or warning water and no open
+  water alarm at their own points (`Attention.unalarmed`); nothing is said of the rungs the engine never raises an alarm
+  for (blind, no limit, over capacity, weigh now), and nothing is promised.
+- **The pass** (`alarms/engine.py`) checks the sensor rules and the water limits, queues and escalates. Each step
+  (sensor rules, sensor events, water, device clocks, notify, and the supervision last) runs in its own transaction under
+  one advisory lock, so two passes never queue twice and a failing step rolls back alone, logged and said in the pass's
+  summary (defect 5). The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a
+  burst of alarms costs the queries one costs (defect 7). `manage.py run_alarms` runs one pass and one round through the
+  outbox, for an operator.
+- **The alarm worker** (`manage.py run_alarm_worker`, `alarms/worker.py`; the compose service `alarms`, profile `alarms`:
+  `docker compose --profile alarms up -d`) keeps the alarms checked, a pass at a time, for as long as it runs:
+  - **within 10 s of a value's commit**: every tick (`ALARM_WORKER_TICK`, 1 s) it looks at what an alarm reads
+    (`alarms/changes.py`: the channel states' transaction ids, which every ingest commit moves, and the activity log's
+    revision, which every record written through the platform moves) and passes at once when it moved; at least every
+    sweep (`ALARM_WORKER_SWEEP`, 15 s) for what time alone moves (a value going stale, the delays, escalation). No
+    LISTEN/NOTIFY: a stalled listener makes the ingest's commits fail (live-arch ROUND2-F), and a look costs a few
+    milliseconds. The alarms never read a precomputed water store (live-arch stage 3);
+  - **one active per database**: a session advisory lock; a second worker waits as a hot standby and takes over within a
+    tick of the first one's session ending (its session's TCP keepalives end a dead worker's session within two thirds
+    of `stale_after`); only the active one sends. Each tick it checks that its connection is still the session that
+    holds the lock (`pg_backend_pid()`): a connection opened again after an error inside a pass is a new session, and
+    the lock is taken again on it with the session's settings (F4). A holder that is wedged (its process alive, its
+    session idle and never ending) is evicted by hand: `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE
+    application_name = 'alarm-worker' AND datname = current_database();` (the standby takes over within a tick). After
+    a network cut the database holds the lost worker's lock until its keepalives give the peer up: about 30 s with the
+    default `stale_after` of 45 s (15 s idle, then three probes 5 s apart), so the standby takes over before the pages
+    call the alarms unchecked;
+  - **its row** (`alarm_worker_status`, `alarms` 0015): running or stopped, its last pass and last good pass on the
+    database's clock, how long the pass took, the failed steps, the outbox's waiting notifications and the oldest;
+  - **what it survives and when it ends itself**: the database away, tried again after the tick doubled up to
+    `ALARM_WORKER_BACKOFF_MAX`, and exit 1 after `ALARM_WORKER_DB_DOWN_EXIT` (60 s); passes failing whole, exit 1 after
+    `ALARM_WORKER_MAX_FAILURES` (5); a pass running, or its loop not coming round, for longer than
+    `ALARM_WORKER_HANG_EXIT` (120 s), its watchdog exits 1 (the log flushed, never shut down); its statements bounded
+    (`statement_timeout`, `lock_timeout`); every connection of the platform gives up a connect after `DB_CONNECT_TIMEOUT`
+    (10 s) and finds a dead peer by TCP keepalives (`DB_KEEPALIVES_IDLE`, 30 s); its threads are waited for at most a
+    send's time when it stops. Docker starts it again (`restart: unless-stopped`); Docker
+    does not restart an unhealthy container, which is why the worker ends itself. SIGTERM: the pass under way finishes,
+    the row says stopped, exit 0. Its intervals are counted on the monotonic clock: a server clock that jumps neither
+    stops nor hurries them;
+  - its timings are the deployment's (`settings.ALARM_WORKER`, each from the environment, refused at start when they
+    make no sense), not the farm's rules; the Alarms page shows them read-only beside the worker's figures (state, last
+    pass and how long it took, last round through the outbox, notifications waiting and the oldest, criticals that
+    cannot be delivered; the coordinator's call on the review: no page edits them);
+  - **landing**: the worker is a compose service of its own, started with `docker compose --profile alarms up -d` (a
+    plain `docker compose up -d` starts only the database); without it the pages say the alarms are NOT being checked.
+- **The dead man: the farm is told when the worker stops** (owner decision of 2026-11-15, item H; `alarms/watch.py`, one
+  query). Every Alarms page (the alarms, snoozes, recipients, severity rules, deadbands, the sensors' alarm rules and
+  events), the water page, the monitoring wall and the Sensors overview say "The alarms are NOT being checked since
+  hh:mm" (no worker has ever run, it stopped, no pass for longer than its `stale_after` of 45 s, or its steps fail), "The
+  alarm notifications are NOT being sent" (its sender silent that long) or "N critical notifications cannot be
+  delivered", and nothing while all is well; the water page says when they were last checked; the wall and the Sensors
+  overview also say that nothing is sent while no transport is connected. On the wall, left open for hours, the notice
+  is asked for again every 15 s (`alarms:alarm_watch_notice`, `frontend/poll.ts`), so a worker that stops is said there
+  without a reload. `manage.py
+  alarm_worker_health` (the compose healthcheck) says the same with its exit code. A worker taking over after such a
+  stretch raises a critical alarm of the alarm system naming it ("The alarms were not checked from … to …"), notified
+  like any other and cleared after its off-delay; it is kept for the next pass until a supervision step passes (F7). Off the server (go-live): with `ALARM_DEADMAN_URL` (https) the worker
+  asks that address after each good pass, at most every `ALARM_DEADMAN_EVERY` seconds, on a thread a hang cannot hold,
+  and only while all it vouches for holds: the alarms checked and sent, no critical undeliverable, and the ingest alive
+  where there is one (F3, F11);
+  a heartbeat service on another network calls the on-call phone when the asks stop (owner decision Q6: a commercial
+  one; none is chosen yet, so it is off).
+- **The server is not a safety layer** (alarm plan §5). The platform's alarms tell people; they do not keep fish alive.
+  A server, a network link, a database or a phone can fail silently and at the worst moment, and push delivery has no
+  guaranteed delay. Every tank or system with live fish must have a local, hard-wired low-oxygen alarm (a DO controller
+  or PLC with its own setpoint, a siren or light on site, a relay that starts the oxygen backup) that works with the
+  server, the network and the IT power all down. The 10 s is from a value's commit to an open alarm on the server; it
+  says nothing about when a person is reached.
 
 ## Platform settings (Company › Administration, `/administration/platform-settings/`)
 
@@ -4625,7 +4768,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm recipients (read, create, edit, delete), Alarm severity rules (read, edit), Alarm deadbands (read, create, edit, delete),
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm snoozes (read, create = snooze an alarm and end a snooze), Alarm recipients (read, create, edit, delete), Alarm severity rules (read, edit), Alarm deadbands (read, create, edit, delete),
   Platform settings (read, edit: the platform owner's right), Opening balances (read; registering one is the platform owner's
   right) and Activity log (read).
   A new tab appears in the matrix by
@@ -5471,8 +5614,9 @@ validation and every chemistry judgement; the island draws the finished values i
   module, its chunks as `modulepreload` and every stylesheet they bring (at any depth), read from the build's manifest,
   `static/islands/manifest.json` (no dot-folder, so `collectstatic` copies it). **In production** it must be beside the
   islands it names: `STATIC_ROOT/islands/manifest.json` after `collectstatic` (read first when it is there), else the
-  build's own; `manage.py check --deploy` fails (core.E007) when it is missing or cannot be read, and the plain check
-  warns (core.W001). `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
+  build's own; `manage.py check --deploy` fails (core.E007) when it or an entry script of `static/js` is missing or
+  cannot be read, and the plain check warns (core.W001); both look where the server serves them, STATIC_ROOT first
+  (`assets.built`), so a server that serves STATIC_ROOT only passes with what it has. `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
   raises; a missing build is core.W001. Props carry finished, translated values only; a form posts back to Django
   (`ServerForm` with the CSRF token from the props), whose errors come back as props and land on the fields.
 - **Rules** (`npm run check:ds`): an island writes no colour, no `style=` or style object, no markup string
@@ -5519,14 +5663,29 @@ The status strip: what needs a look, the people on site (`hr.read.muster`) and t
 see it.
 - **What needs a look** is `alarms.read.attention(now=None, site=None)`, with `attention_all()` (the farm and every site from
   one reading, for a page that shows both) and `attention_by_site()`: the open alarms and every
-  stocked unit on the monitoring cards' own ladder, rungs 1 to 4 (`monitoring.read.water_rungs`, which `_ladder` calls
-  too): critical, warning, blind (an old or missing temperature or oxygen, no point at all, live values not read),
-  unjudged (no limit for the fish). The strip says every count, none hidden behind another ("1 open alarm · 3 units
-  critical · 2 units with no recent data"), and "No open alarms" only when nothing is open and every stocked unit is OK
-  or a note. A unit whose water cannot be read is read on its own, as the engine reads it, and counted ("1 unit cannot be
-  read"); the others still are. A farm-wide alarm (on no site) counts on every site, marked `farm_wide`. The reading is
-  the same for every viewer and kept 15 s (`settings.ATTENTION_CACHE_SECONDS`): a farm's open pages ask the database once
-  in that time. One reader for the strip, an overview's open-alarms figure and a site's count.
+  stocked unit on the monitoring cards' own ladder, rungs 1 to 4, by the one rule the cards apply
+  (`monitoring.read.upper_state` over `water_rungs`, which `_ladder` calls too): critical, warning (from the water, the
+  stock over capacity, or an estimate that says weigh now), blind (an old or missing temperature or oxygen, no point at
+  all, live values not read), unjudged (no limit for the fish). The strip and the cards never disagree: a card that says
+  Over capacity or Weigh now is a unit with a warning on the strip too. The strip says every count, none hidden behind
+  another ("1 open alarm · 3 units critical · 2 units with no recent data"; the words are `core.ui.attention_words`, the
+  one wording of an Attention, with `core.ui.attention_said` its text-only form for the Overview), and "No open alarms" only when nothing is open and every stocked unit is OK or a note. A
+  unit whose water or feeding cannot be read is read on its own, as the engine reads it, and a unit whose state cannot be
+  worked out is caught on its own: either is counted ("1 unit cannot be read"; its water critical still says critical),
+  the others still are, and the strip never answers 500 for one unit. A farm-wide alarm (on no site) counts on every
+  site, marked `farm_wide`. The reading is the same for every viewer and kept 15 s (`settings.ATTENTION_CACHE_SECONDS`):
+  a farm's open pages ask the database once in that time. So a value recorded just after a reading shows on the strip
+  after up to 15 s plus the poll's 30 s (the engine's own alarm has an on-delay of the same order). One reader for the
+  strip, an overview's open-alarms figure and a site's count.
+- **Where it leads**: each count to the page that lists what it counts. The open alarms to the Alarms page; the units to
+  Operations › Monitoring (every stocked unit, the ones that need a look in its band first; it has no filter by state),
+  as plain words for a person who may not open Monitoring. With both, one link each in the same item ("1 open alarm" ·
+  "1 unit critical"). The Alarms page says, from the same reading, "On the Monitoring screen: 1 unit critical." and, for the units whose
+  water is critical or past a warning (what the engine raises a water alarm for) with no open water alarm at their own
+  points, "1 unit with critical or warning water has no open alarm." (never a promise that one will open; nothing for
+  blind, no limit, over capacity or weigh now), with a link to Monitoring (`alarms.views.units_note`), so a red strip
+  never leads to an empty
+  page (on a server where the alarm engine is not running, the cards' state is there before any alarm).
 - **Polled whole** (`core:ui_strip`, every 30 s): the clock and the muster count never stand still beside a live alarm
   count. The page draws it with "Reading the alarms…" (the reader looks at every unit's water, so the page never waits
   for it). It is asked for only while it is drawn (`data-poll-if-shown`: it is hidden under 1100 px), and is marked "Not
@@ -6146,7 +6305,7 @@ runs the server:
 | `core/codes.py` | The next generated code of a kind of record (a batch's, an experiment's), under an advisory lock |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
-| `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the loop (`engine.py`, `manage.py run_alarms`), the transports (`transports.py`), the pages (`views.py`) |
+| `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the pass (`engine.py`), the worker (`worker.py`, `manage.py run_alarm_worker`) with its look at what changed (`changes.py`), the outbox's delivery (`outbox.py`) and floods (`floods.py`), whether the alarms are checked (`watch.py`, `{% alarm_watch %}`), the transports (`transports.py`), the pages (`views.py`) |
 | `core/platform.py` | The platform owner's settings as the code reads them: the correction window and second approval |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
@@ -6215,8 +6374,10 @@ under the wrong kind, fails.
 
 | Command | App | Kind | What it does | Who runs it |
 |---|---|---|---|---|
-| `run_alarms` | alarms | product | One pass of the alarms, or one every `--loop` seconds: opens, clears, notifies, escalates, sends | The deployment, as its loop (Alarms) |
-| `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the deployment runs `run_alarms` instead, which checks these too |
+| `run_alarm_worker` | alarms | product | The alarm worker: keeps the alarms checked until stopped (a pass within a tick of a change and every sweep, the outbox on its own thread, one active per database) | The deployment, as the compose service `alarms` (Alarms) |
+| `alarm_worker_health` | alarms | product | Exit 0 when the alarms are being checked, 1 and why when they are not | The compose service's healthcheck; anyone on the server |
+| `run_alarms` | alarms | product | One pass of the alarms and one round through the outbox, now: opens, clears, notifies, escalates, sends | An operator; the worker runs the same for as long as it runs |
+| `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the alarm worker checks these on every pass |
 | `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | A cron job (the Tasks pages do the same before they read) |
 | `sensors_housekeeping` | sensors | product | Deletes the dead letters last seen more than 90 days ago | A daily job |
 | `sensor_broker_sync` | sensors | product | Writes the MQTT broker's passwd and acl files from the sensors configuration | An operator, after the sensors configuration changed (the broker reloads the files) |

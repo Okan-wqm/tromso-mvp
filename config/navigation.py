@@ -46,6 +46,8 @@ WORKSPACES = [
             # mobile app) is connected; the pages say so.
             Group(_('Alarms'), [
                 Entry(_('Alarms'), 'alarms:alarm_list', 'bell', 'alarms.view_alarm'),
+                # Who snoozed which alarm, until when and why (ISA-18.2 shelving; owner decision Q5).
+                Entry(_('Alarm snoozes'), 'alarms:alarm_snoozes', 'hourglass', 'alarms.view_alarmshelve'),
                 Entry(_('Alarm recipients'), 'alarms:recipientrule_list', 'send', 'alarms.view_recipientrule'),
                 # The alarm rules are the user's reference data (owner, alarm plan §7c): per severity and per parameter.
                 Entry(_('Alarm severity rules'), 'alarms:severitypolicy_list', 'timer', 'alarms.view_severitypolicy'),

@@ -20059,6 +20059,7 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/test_lean_endpoints.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
@@ -20084,6 +20085,7 @@
         "farm/tests/test_site_structure.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_tank_water_page.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_history_page.py",

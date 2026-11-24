@@ -317,7 +317,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 121 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 122 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -520,7 +520,7 @@ A group of replicates that get the same level of every factor.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_groups
 - **forms**: `GroupRowForm`
 - **constraints**: uq_experiment_groups_name_live (unique: name, experiment); uq_experiment_groups_id_experiment (unique: id, experiment); chk_experiment_groups_role (check)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_design.py`, `experiments/tests/test_overview.py` and 3 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_change_token.py`, `experiments/tests/test_design.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -583,7 +583,7 @@ A person of the experiment's team, with their part.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Research › experiment_members
 - **forms**: `MemberForm`, `MemberForm`
 - **constraints**: uq_experiment_members_user (unique: experiment, user); uq_experiment_members_lead (unique: experiment); chk_experiment_members_role (check); chk_experiment_members_window (check)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_collaborator.py` and 8 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_change_token.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -639,7 +639,7 @@ A tank booked to a replicate for a range of days, both included, on the site's c
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_replicate_units
 - **forms**: `PlaceRowForm`
 - **constraints**: chk_experiment_placements_period (check); excl_replicate_units_unit (exclusion: unit, from_on, until_on)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_amend.py` and 13 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_amend.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -671,7 +671,7 @@ One experimental unit of a group, numbered within it.
 - **how it works**: One slot for each of the group's replicates; a slot holding tanks is never removed. Saved with the experiment's design on the Design tab (services.save_design), logged as one "Design" entry of the experiment; a row the design no longer has is deleted with the delete plan, and a started design cannot change.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_replicates
 - **constraints**: uq_experiment_replicates_number_live (unique: group, number); chk_experiment_replicates_number (check)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_amend.py`, `experiments/tests/test_design.py` and 5 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_amend.py`, `experiments/tests/test_change_token.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -700,7 +700,7 @@ A part of an experiment given by its lead to a person or a role outside its team
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Research › experiment_shares
 - **forms**: `ShareForm`
 - **constraints**: chk_experiment_shares_grantee (check); chk_experiment_shares_part (check); chk_experiment_shares_period (check); chk_experiment_shares_length (check); chk_experiment_shares_reason (check); chk_experiment_shares_revoked (check); uq_experiment_shares_user_part (unique: experiment, user, part); uq_experiment_shares_group_part (unique: experiment, group, part)
-- **tests that mention it**: `experiments/tests/test_access.py`, `experiments/tests/test_collaborator.py`, `experiments/tests/test_confidential.py` and 3 more
+- **tests that mention it**: `experiments/tests/test_access.py`, `experiments/tests/test_change_token.py`, `experiments/tests/test_collaborator.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -730,7 +730,7 @@ A trial of one species on one site: its design, its allocation and its dates; al
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Research › experiments
 - **forms**: `ExperimentForm`, `AudienceForm`
 - **constraints**: uq_experiments_code (unique: code); chk_experiments_code (check); chk_experiments_status (check); chk_experiments_audience (check); chk_experiments_approval (check); chk_experiments_endpoint (check); chk_experiments_duration (check); chk_experiments_template (check); chk_experiments_started (check); chk_experiments_allocation (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/tests_entry_key.py`, `core/tests_sealing.py` and 20 more
+- **tests that mention it**: `core/test_datamap.py`, `core/tests_entry_key.py`, `core/tests_sealing.py` and 21 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -778,7 +778,7 @@ A group of fish that came in together: its identity and origin, no counts.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › batches
 - **forms**: `BatchDetailsForm`, `BatchInputForm`, `OpeningBalanceForm`
 - **constraints**: uq_batches_code (unique: code); chk_batches_code (check); chk_batches_stage (check); chk_batches_origin (check); chk_batches_supplier (check); chk_batches_provenance (check); chk_batches_origin_provenance (check); chk_batches_year_class (check); chk_batches_harvest_after_input (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/tests_sealing.py`, `farm/tests/test_batch_details.py` and 23 more
+- **tests that mention it**: `core/test_datamap.py`, `core/tests_sealing.py`, `farm/tests/test_batch_details.py` and 24 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1738,7 +1738,7 @@ A line of the stock ledger: fish of one batch into (+) or out of (−) one unit,
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › stock_movements
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`
 - **constraints**: chk_stock_movements_kind (check); chk_stock_movements_sign (check); chk_stock_movements_weight_positive (check); chk_stock_movements_weight_required (check); chk_stock_movements_weight_inherited (check); chk_stock_movements_pair (check); chk_stock_movements_measured (check); chk_stock_movements_reason (check); chk_stock_movements_escape_removes (check); chk_stock_movements_size_class (check); chk_stock_movements_harvest_weighed (check); chk_stock_movements_sample (check); uq_stock_movements_line (unique: operation, unit, batch, kind, pair)
-- **tests that mention it**: `core/tests_rev.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_emptied_unit.py` and 13 more
+- **tests that mention it**: `core/tests_rev.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_emptied_unit.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1921,7 +1921,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_rev.py` and 57 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests_rev.py` and 58 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3959,7 +3959,7 @@ A note on a task by a person who can read it: part of the task's record, never e
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Tasks › task_notes
 - **forms**: `NoteForm`
 - **constraints**: chk_task_notes_body (check); chk_task_notes_kind (check)
-- **tests that mention it**: `tasks/tests/test_models.py`, `tasks/tests/test_pages.py`, `tasks/tests/test_reopen_keeps.py` and 2 more
+- **tests that mention it**: `tasks/tests/test_models.py`, `tasks/tests/test_pages.py`, `tasks/tests/test_reopen_keeps.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -4065,7 +4065,7 @@ A job at one place for one or more people, due on a day on the clock of the plac
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › tasks
 - **forms**: `TaskForm`
 - **constraints**: chk_tasks_one_place (check); chk_tasks_title (check); chk_tasks_category (check); chk_tasks_priority (check); chk_tasks_status (check); chk_tasks_started (check); chk_tasks_in_progress_started (check); chk_tasks_open_not_started (check); chk_tasks_done (check); chk_tasks_cancelled (check); chk_tasks_occurrence (check); uq_tasks_series_occurrence (unique: series, occurrence_date)
-- **tests that mention it**: `core/tests_private_log.py`, `core/tests_sealing.py`, `core/tests_workspaces.py` and 11 more
+- **tests that mention it**: `core/tests_private_log.py`, `core/tests_sealing.py`, `core/tests_workspaces.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

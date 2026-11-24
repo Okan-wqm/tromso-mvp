@@ -423,6 +423,26 @@ class HarvestedPageTests(HarvestTestCase):
         empty = self.client.get(self.url, {'facility': self.other.pk, 'to': self.day(3).isoformat()})
         self.assertContains(empty, 'No harvest matches these filters.')
 
+    def test_only_the_page_is_built_and_the_totals_count_every_harvest(self):
+        """The data-layering audit, L-12: the page is cut in the database and only its rows are built (records, plans,
+        acknowledgements); the totals still count every live harvest the filters choose."""
+        from unittest import mock
+
+        from ..harvest import read as harvest_read, views as harvest_views
+        built = []
+        real = harvest_read.harvests
+
+        def spy(lines, **kwargs):
+            rows = real(lines, **kwargs)
+            built.append(len(rows))
+            return rows
+        with mock.patch.object(harvest_views, 'PAGE_SIZE', 1), mock.patch.object(harvest_read, 'harvests', spy):
+            response = self.client.get(self.url)
+        self.assertEqual(built, [1])
+        self.assertEqual([row['harvest'].fish for row in response.context['rows']], [5800])
+        self.assertEqual(response.context['by_batch'][0].fish, 9800)
+        self.assertEqual(response.context['count_line'], '2 harvests')
+
     def test_the_page_speaks_each_language(self):
         for language, words in {'tr': ('Hasat edilenler', 'Canlı ağırlık'), 'nb': ('Høstet', 'Rund vekt')}.items():
             Profile.objects.update_or_create(user=self.user, defaults={'language': language})

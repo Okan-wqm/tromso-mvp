@@ -9,8 +9,10 @@
 //   --u-floor        on .monitor-grid: the smallest unit a card may be drawn at: 14 px, or the board's legible unit
 //                    (its screen's diagonal and viewing distance, data-screen-inches and data-distance-m on the grid:
 //                    wall/slots.ts legibleUnit, CONSENSUS §9), so a wall read from across the room turns pages rather
-//                    than shrink its type under what can be read from there
-//   --wu             on <html>: the band's unit, raised to the band's legible unit when the board says its distance
+//                    than shrink its type under what can be read from there; when no cell can give that unit, the
+//                    largest one card a page gets (the slot rule's answer then)
+//   --wu             on <html>: the band's unit, raised to the band's legible unit when the board says its distance,
+//                    never so far that the band takes more than a sixth of the screen (its tally wraps)
 //   --dock-space     on .monitor-grid: the room the pane takes beside the cards (0 when none is open)
 //   --dock, --dock-top, data-dock="beside|full"   on #monitor-dock (the pane of the unit gone into, opened by
 //                    frontend/windows.ts or drawn by the server for ?focus=): its width, one cell of a wall of
@@ -32,6 +34,9 @@
 // A wall of cards that flow (Simple, Detailed) is left as it is: the page scrolls. Without this script the fitted
 // cards stand four across and the grid scrolls.
 import { FLOOR, dock, fillUnit, legibleUnit, pageOf, slots, worst } from './wall/slots.js';
+
+/** The most of the screen's height the band may take when a board's distance raises its type. */
+const BAND_SHARE = 1 / 6;
 
 const number = (value: string | null | undefined): number => Number.parseFloat(value ?? '') || 0;
 // The rungs a wall opens on and jumps to: critical, warning, no recent data (the first three of the states' order).
@@ -120,8 +125,8 @@ function clear(wall: HTMLElement): void {
 }
 
 /** Lays the wall out for the window as it is now; `keep`: stay on the page shown (a poll changed the cards), else the
- *  page of the worst card. */
-function lay(keep: boolean): void {
+ *  page of the worst card. `again`: the second pass of a band that grew once its page indicator showed. */
+function lay(keep: boolean, again = false): void {
   const wall = grid();
   if (!wall) return;
   const cards = cardsOf(wall);
@@ -134,13 +139,10 @@ function lay(keep: boolean): void {
   // (the board's distance: the cards' least unit, and the band's, read before the band is measured)
   const floor = legible(wall);
   wall.style.setProperty('--u-floor', `${floor.card}px`);
-  const root = document.documentElement;
-  root.style.removeProperty('--wu');
-  const bandSize = band0(wall);
-  if (floor.band > FLOOR && floor.band > bandSize) root.style.setProperty('--wu', `${floor.band}px`);
+  const band = wall.querySelector<HTMLElement>(':scope > .monitor-band');
+  bandUnit(wall, band, floor.band);
   const style = getComputedStyle(wall);
   const gap = number(style.rowGap);
-  const band = wall.querySelector<HTMLElement>(':scope > .monitor-band');
   const width = wall.clientWidth - number(style.paddingLeft) - number(style.paddingRight);
   // (the band wraps rather than cut a chip, review R4: the cards get the room it really leaves. Its row is as high as
   // --band says, so its own height is measured with the row left to its content: never less than the sheet's height
@@ -178,6 +180,9 @@ function lay(keep: boolean): void {
   const least = Math.max(floor.card, fitted.card.hasAttribute('data-fill')
     ? fillUnit(width - space, height, fitted.mw, fitted.mh, padX, padY) : FLOOR);
   const chosen = slots(cards.length, width - space, height, gap, fitted.mw, fitted.mh, least, padX, padY);
+  // (a distance no cell can meet: the cells are as high as the screen gives, never higher than the screen; review
+  // round 2, B3)
+  if (chosen.u < floor.card) wall.style.setProperty('--u-floor', `${Math.max(chosen.u, FLOOR)}px`);
   wall.style.setProperty('--cols', String(chosen.cols));
   wall.style.setProperty('--rows', String(chosen.rows));
   wall.style.setProperty('--mh', String(fitted.mh));
@@ -185,7 +190,49 @@ function lay(keep: boolean): void {
   wall.dataset.per = String(per);
   wall.dataset.pageCount = String(chosen.pages);
   // (critical, warning, no recent data: the three rungs a wall opens on; a card never moves for the others either)
+  const measured = band ? band.offsetHeight : 0;
   show(wall, keep && wall.dataset.page ? Number(wall.dataset.page) : worstOf(wall)?.page ?? 1);
+  // (the page indicator that shows only now takes room in the band's first line, and a band whose tally wraps may
+  // grow a line for it: laid out again with it shown, or the band's top lines would lie outside its row)
+  if (!again && band && ownHeight(wall, band) > measured + 0.5) lay(true, true);
+}
+
+/** The band's unit (--wu): the sheet's, raised to the board's legible unit for the band (`legible`), but never so far
+ *  that the band takes more than BAND_SHARE of the screen's height: its tally wraps into rows rather than run off the
+ *  screen, and a unit past what the band can hold is lowered to the largest that fits, never under the sheet's
+ *  (review round 2, B3: a 24" screen read from 3 m gave a band of 52 % of the screen with no tally on it). */
+function bandUnit(wall: HTMLElement, band: HTMLElement | null, legible: number): void {
+  const root = document.documentElement;
+  root.style.removeProperty('--wu');
+  const sheet = band0(wall);
+  if (!band || !(legible > FLOOR && legible > sheet)) return;
+  const most = window.innerHeight * BAND_SHARE;
+  wall.style.setProperty('--band', 'max-content');            // (the band's own height, not its row's)
+  const fits = (unit: number): boolean => {
+    root.style.setProperty('--wu', `${unit}px`);
+    return band.offsetHeight <= most;
+  };
+  // (the largest unit whose band fits, halving the interval: a band's height grows in steps as its lines wrap)
+  let [low, high] = [sheet, legible];
+  if (!fits(high)) {
+    for (let round = 0; round < 12 && high - low > 0.25; round += 1) {
+      const middle = (low + high) / 2;
+      if (fits(middle)) low = middle; else high = middle;
+    }
+    root.style.setProperty('--wu', `${low}px`);
+  }
+  wall.style.removeProperty('--band');
+}
+
+/** The band's own height, as high as what it holds (not its row's, which --band sets). The page shown stays: the
+ *  grid's rows change while it is measured, which would scroll it back to its top. */
+function ownHeight(wall: HTMLElement, band: HTMLElement): number {
+  const [set, shown] = [wall.style.getPropertyValue('--band'), wall.scrollTop];
+  wall.style.setProperty('--band', 'max-content');
+  const high = band.offsetHeight;
+  wall.style.setProperty('--band', set);
+  wall.scrollTop = shown;
+  return high;
 }
 
 /** The band's unit as the sheet sets it (its font size: monitor.css html[data-wall] .monitor-band). */

@@ -413,12 +413,15 @@ for (const [name, prefix] of [['', ''], [' in the new look', 'next-']] as const)
           .filter((card) => { const box = card.getBoundingClientRect(); return box.bottom > 1 && box.top < innerHeight - 1; });
         const band = document.querySelector('.monitor-band') as HTMLElement;
         return { cards: cards.map((card) => Number.parseFloat(getComputedStyle(card.firstElementChild as Element).fontSize)),
-                 band: Number.parseFloat(getComputedStyle(band).fontSize) };
+                 band: Number.parseFloat(getComputedStyle(band).fontSize), high: band.getBoundingClientRect().height };
       });
       const legible = legibleUnit(55, 3, 1920, 1080);
       assert.ok(Number(far.pages) > Number(before.pages), `${far.pages} pages from 3 m, ${before.pages} at the desk`);
       assert.ok(units.cards.length > 0 && units.cards.every((unit) => unit >= legible - 0.5), `units ${units.cards} under ${legible}`);
-      assert.ok(units.band >= legibleUnit(55, 3, 1920, 1080, 1) - 0.5, `band ${units.band}`);
+      // the band's type is raised as far as a band of a sixth of the screen allows (its tally and chips wrap into rows;
+      // at its full legible unit it would take some 40 % of the screen: review round 2, B3)
+      assert.ok(units.band > 1.6 * 10.8 + 1 && units.band <= legibleUnit(55, 3, 1920, 1080, 1) + 0.5, `band ${units.band}`);
+      assert.ok(units.high <= 1080 / 6 + 1, `the band is ${units.high} px high`);
       assert.deepEqual([far.spills, far.cut, far.never], [[], [], []]);
       assert.equal(far.pageScrolls, false, 'the screen itself never scrolls');
       assert.deepEqual(await ages(tab), []);
@@ -431,6 +434,56 @@ for (const [name, prefix] of [['', ''], [' in the new look', 'next-']] as const)
       await tab.waitForTimeout(150);
       assert.equal((await look(tab)).pages, before.pages);
     });
+
+    // (review round 2, B3: the reviewer's pairs; on a Full HD screen 24" from 3 m or 5 m and 55" from 5 m ask more than
+    // one card a page can give, 55" from 3 m does not)
+    for (const [inches, distance] of [[24, 3], [55, 5], [24, 5], [55, 3]] as const) {
+      await t.test(`a board read from ${distance} m on a ${inches}" screen: every tally on the screen, one card a page at most`, async () => {
+        await open(tab, origin, prefix + 'en', 1920, 1080);
+        await tab.evaluate(([diagonal, metres]) => {
+          const grid = document.querySelector('.monitor-grid') as HTMLElement;
+          grid.dataset.screenInches = String(diagonal);
+          grid.dataset.distanceM = String(metres);
+          window.dispatchEvent(new Event('resize'));
+        }, [inches, distance]);
+        await tab.waitForTimeout(150);
+        const seen = await look(tab);
+        const band = await tab.evaluate(() => {
+          const box = (document.querySelector('.monitor-band') as HTMLElement).getBoundingClientRect();
+          const hidden: string[] = [];
+          for (const item of Array.from(document.querySelectorAll<HTMLElement>('.monitor-tally li, .monitor-head'))) {
+            const at = item.getBoundingClientRect();
+            const middle = document.elementFromPoint(at.left + at.width / 2, at.top + at.height / 2);
+            if (at.left < -0.5 || at.right > innerWidth + 0.5 || at.top < -0.5 || at.bottom > innerHeight + 0.5
+                || !middle || !item.contains(middle)) hidden.push((item.textContent ?? '').trim());
+          }
+          const card = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'))
+            .find((each) => { const at = each.getBoundingClientRect(); return at.bottom > 1 && at.top < innerHeight - 1; });
+          // (the card the page indicator says is shown: the first of its page)
+          const grid = document.querySelector('.monitor-grid') as HTMLElement;
+          const first = grid.querySelectorAll<HTMLElement>(':scope > .monitor-card')[(Number(grid.dataset.page) - 1) * Number(grid.dataset.per)];
+          const at = first?.getBoundingClientRect();
+          return { height: box.height, hidden, unit: card ? Number.parseFloat(getComputedStyle(card.firstElementChild as Element).fontSize) : 0,
+                   shown: at !== undefined && at.top >= box.bottom - 1 && at.bottom <= innerHeight + 1 };
+        });
+        const least = legibleUnit(inches, distance, 1920, 1080);
+        assert.deepEqual(band.hidden, [], 'every tally and the time are on the screen, nothing over them');
+        assert.equal(band.shown, true, 'the page the band says is the page on the screen');
+        assert.ok(band.height <= 1080 / 6 + 1, `the band is ${band.height} px high`);
+        assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
+        assert.deepEqual([seen.spills, seen.cut, seen.never, seen.tallyCut], [[], [], [], []]);
+        assert.equal(seen.pageScrolls, false, 'the screen itself never scrolls');
+        assert.deepEqual(await ages(tab), []);
+        if (band.unit < least - 0.5) {
+          // the distance cannot be met: the most legible wall there is, one card a page, never the densest grid
+          assert.equal(`${seen.cols}x${seen.rows}`, '1x1');
+          assert.equal(seen.pages, '20');
+        } else {
+          assert.ok(Number(seen.pages) > 1);
+        }
+        assert.equal(inches === 55 && distance === 3, band.unit >= least - 0.5, `unit ${band.unit}, legible ${least}`);
+      });
+    }
 
     await t.test('a low window turns pages rather than shrink the type, and the keys turn them', async () => {
       await open(tab, origin, prefix + 'en', 1280, 720);

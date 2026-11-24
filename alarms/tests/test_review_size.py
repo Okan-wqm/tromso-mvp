@@ -49,7 +49,7 @@ class SizeCase(Case):
         texts = [sent.text for sent in RecordingTransport.sent]
         self.assertTrue(texts)
         for text in texts:
-            self.assertLessEqual(len(text), limit, text)
+            self.assertLessEqual(len(text.encode('utf-8')), limit, text)
         for row in made:                                         # every one sent (in a message), none left untold
             self.assertTrue(DeliveryAttempt.objects.filter(notification=row, outcome='sent').exists(), row.pk)
         self.assertFalse(OutboxEntry.objects.exists())

@@ -773,7 +773,8 @@
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py",
         "alarms/tests/test_review_recheck.py",
-        "alarms/tests/test_review_size.py"
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py"
       ]
     },
     {
@@ -1137,6 +1138,7 @@
         "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py",
         "alarms/tests/test_snooze.py"
       ]
     },
@@ -1204,7 +1206,8 @@
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py",
         "alarms/tests/test_review_recheck.py",
-        "alarms/tests/test_review_size.py"
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py"
       ]
     },
     {
@@ -4360,6 +4363,7 @@
         "monitoring/tests/test_template_pages.py",
         "alarms/tests/test_cleared_criticals.py",
         "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_review_transports.py",
         "alarms/tests/test_who_ends_a_level.py"
       ]
     },

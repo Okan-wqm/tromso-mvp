@@ -20,7 +20,7 @@
 #   network  who reaches whom, outside names, the way out of every service, and no packet out of the proxy's and the
 #            broker's networks (a capture on the runner's uplink)
 #   rotate   the app role's password rotated
-#   tsmove, tsback, tshalf   the TimescaleDB move of docs/ops/upgrade.md on the project's real schema (below)
+#   tsmove, tsback, tshalf, tsearly   the TimescaleDB move of docs/ops/upgrade.md on the project's real schema (below)
 #   logs     every service's last lines (on a failure)
 #   down     everything removed: containers, volumes, networks (both projects and the PITR server)
 set -euo pipefail
@@ -142,19 +142,23 @@ except OSError as error:                                  # no name, no route, n
     if [ "${got%% *}" = "$5" ]; then echo "ok    $1 -> $2 $3:$4 $got"
     else echo "FAIL  $1 -> $2 $3:$4 $got (expected $5)"; failures=$((failures + 1)); fi
   }
-  # The two DOCKER-USER rules of docs/ops/install.md, typed as written there (the subnets are its defaults, which the
-  # stack uses), then a capture on the runner's own uplink of everything sent from the proxy's and the broker's networks
-  # while every probe runs. Those networks are not masqueraded, so a packet of theirs would leave with its own source
-  # address: "unreachable" below says no answer came back, the empty capture says no packet even left.
-  local uplink front edge capture=$T/egress.pcap rules=$T/docker-user.rules
+  # The two DOCKER-USER rules, put in by deploy/scripts/docker-user-rules.sh as docs/ops/install.md has the host do it
+  # (from the farm's settings; twice, as every Docker start does: never a duplicate; --check fails before, passes after),
+  # then a capture on the runner's own uplink of everything sent from the proxy's and the broker's networks while every
+  # probe runs. Those networks are not masqueraded, so a packet of theirs would leave with its own source address:
+  # "unreachable" below says no answer came back, the empty capture says no packet even left.
+  local uplink front edge capture=$T/egress.pcap
   uplink=$(ip -4 route show default | awk '{print $5; exit}')
   front=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_front)
   edge=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_mqtt-edge)
-  grep -E '^  iptables -I DOCKER-USER ' docs/ops/install.md | sed 's/#.*//' > "$rules"
-  cat "$rules"
-  [ "$(wc -l < "$rules")" = 2 ] && grep -q "$front" "$rules" && grep -q "$edge" "$rules" \
-    || { echo "FAIL: install.md does not hold the two rules for $front and $edge"; exit 1; }
-  while read -r rule; do sudo $rule; done < "$rules"
+  if sudo sh deploy/scripts/docker-user-rules.sh --check "$ENV_FILE"; then echo "FAIL: --check passed with no rule"; exit 1; fi
+  sudo sh deploy/scripts/docker-user-rules.sh "$ENV_FILE"
+  sudo sh deploy/scripts/docker-user-rules.sh "$ENV_FILE"
+  sudo sh deploy/scripts/docker-user-rules.sh --check "$ENV_FILE"
+  sudo iptables -S DOCKER-USER
+  for net in "$front" "$edge"; do
+    [ "$(sudo iptables -S DOCKER-USER | grep -c -- "-s $net ")" = 1 ] || { echo "FAIL: the rule for $net is not there once"; exit 1; }
+  done
   sudo tcpdump -i "$uplink" -n -U -w "$capture" "src net $front or src net $edge" > "$T/tcpdump.log" 2>&1 &
   local capturing=$!
   for _ in $(seq 1 20); do grep -q 'listening on' "$T/tcpdump.log" && break; sleep 0.5; done
@@ -421,11 +425,14 @@ rotate() {
 # image as docker-compose.yml starts it (role, database and password balik), every migration of the project run on it
 # by the project's own image, as the development server ran them, and real data: readings with compressed chunks, the
 # hour rollup refreshed, water samples (a hypertable whose chunks carry the revision triggers, core/rev.py). Steps:
-#   tsmove  the move exactly as upgrade.md runs it; a second move refused, nothing written
-#   tsback  the way back: a failing one cleans up after itself; the real one restores the roles first and leaves a
-#           cluster the development stack signs in to with its own password
+#   tsmove  another database with a water chunk refused by name; a failed dump left as .partial; the move exactly as
+#           upgrade.md runs it; a second move refused, nothing written
+#   tsback  the way back: refused without room on Docker's disk; a failing one cleans up after itself; the real one
+#           restores the roles first and leaves a cluster the development stack signs in to with its own password
 #   tshalf  a move stopped half-way (on a copy taken before the move): the next move refuses and says how to go on,
-#           `resume` finishes it
+#           `resume` finishes it; a stop at the jobs' wait is closed by `close`
+#   tsearly the server recreated on the new image before the move (another copy): the move takes the dump on the
+#           extension's own release, and the way back restores that dump on the old image
 TS_OLD=timescale/timescaledb:2.17.2-pg17@sha256:3324f81ca7f84cdc2dc4497863b3798ababa8ce130c5b59d73f0b40e3a34148e
 TS_NEW=timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
 TS_MOVE=deploy/scripts/timescaledb-move.sh
@@ -481,17 +488,48 @@ SELECT format('CALL refresh_continuous_aggregate(%L, NULL, NULL)', format('%I.%I
 SQL
   ts_sql tsmove -c "SELECT 'chunk triggers', count(*) FROM pg_trigger t JOIN pg_inherits i ON i.inhrelid = t.tgrelid
     WHERE i.inhparent = 'water_measurements'::regclass AND t.tgname LIKE 'core\_rev\_%'"
-  say "a copy of it, taken before the move, for the stopped move (tshalf)"
+  say "two copies of it, taken before the move: the stopped move (tshalf), the server recreated first (tsearly)"
   docker stop tsmove > /dev/null
-  docker volume create tsmove-half > /dev/null
-  docker run --rm -v tsmove-data:/from:ro -v tsmove-half:/to --entrypoint sh "$TS_OLD" -c 'cp -a /from/. /to/'
+  for copy in tsmove-half tsmove-early; do
+    docker volume create "$copy" > /dev/null
+    docker run --rm -v tsmove-data:/from:ro -v "$copy:/to" --entrypoint sh "$TS_OLD" -c 'cp -a /from/. /to/'
+  done
   docker start tsmove > /dev/null
   ts_wait tsmove
+  mkdir -p "$T/tsmove"
+  local before
+  export DB_EXEC="docker exec -i tsmove" MANAGE
+  export RECREATE="docker rm -f tsmove > /dev/null && $(ts_run tsmove tsmove-data "$TS_NEW")"
+  MANAGE=$(ts_manage tsmove)
+
+  say "another database of the server with a water chunk (a stale copy): the move refuses it by name, writing nothing"
+  ts_sql tsmove -c 'SELECT _timescaledb_functions.stop_background_workers()' > /dev/null   # a template has no users
+  ts_sql tsmove -d postgres -c 'CREATE DATABASE stale_copy TEMPLATE balik' > /dev/null
+  ts_sql tsmove -c 'SELECT _timescaledb_functions.start_background_workers()' > /dev/null
+  if sh "$TS_MOVE" move "$T/tsmove" dev > "$T/tsmove-other.out" 2>&1; then
+    cat "$T/tsmove-other.out"; echo "FAIL: a move ran with another database holding revision triggers"; exit 1
+  fi
+  cat "$T/tsmove-other.out"
+  grep -q 'stale_copy' "$T/tsmove-other.out" || { echo "FAIL: the refusal does not name the database"; exit 1; }
+  [ -z "$(ls "$T/tsmove")" ] || { echo "FAIL: the refused move wrote a file"; ls -l "$T/tsmove"; exit 1; }
+  ts_sql tsmove -d postgres -c 'DROP DATABASE stale_copy WITH (FORCE)' > /dev/null
+
+  say "a dump that fails half-way: its file is named .partial, no dump or facts that look whole, no record"
+  printf '%s\n' 'if [ "$1" = pg_dump ]; then docker exec -i tsmove "$@" | head -c 100000; exit 1; fi' \
+    'exec docker exec -i tsmove "$@"' > "$T/dump-fails.sh"
+  if DB_EXEC="sh $T/dump-fails.sh" sh "$TS_MOVE" move "$T/tsmove" dev > "$T/tsmove-dump.out" 2>&1; then
+    cat "$T/tsmove-dump.out"; echo "FAIL: a move ran over a failed dump"; exit 1
+  fi
+  tail -n 5 "$T/tsmove-dump.out"
+  ls -l "$T/tsmove"
+  ls "$T"/tsmove | grep -q '\.dump\.partial$' || { echo "FAIL: no .partial dump"; exit 1; }
+  if ls "$T"/tsmove | grep -Eq '\.(dump|facts|roles\.sql)$|unfinished'; then
+    echo "FAIL: a failed dump left a whole-looking file or a record"; exit 1
+  fi
+  rm -f "$T"/tsmove/*.partial
 
   say "the move, exactly as docs/ops/upgrade.md runs it (with this runner's container names)"
-  mkdir -p "$T/tsmove"
-  DB_EXEC="docker exec -i tsmove" RECREATE="docker rm -f tsmove > /dev/null && $(ts_run tsmove tsmove-data "$TS_NEW")" \
-    MANAGE="$(ts_manage tsmove)" sh "$TS_MOVE" move "$T/tsmove" dev
+  sh "$TS_MOVE" move "$T/tsmove" dev
   ls -l "$T/tsmove"
   [ "$(ts_sql tsmove -c "SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'")" = 2.32.1 ] \
     || { echo "FAIL: not on 2.32.1"; exit 1; }
@@ -519,6 +557,16 @@ tsback() {
   facts="${dump%.dump}.facts"
   say "the way back, as upgrade.md says: the database stopped first"
   docker stop tsmove > /dev/null
+  say "a way back without room for its copy on Docker's disk: refused first, no volume, no container"
+  if DB_EXEC=unused MANAGE="$(ts_manage tsmove)" BACK_NETWORK=tsmove-net BACK_ALIAS=tsmove BACK_ROOM_FACTOR=100000000 \
+      sh "$TS_MOVE" back "$dump" "$facts" "$TS_OLD" "$TS_NEW" tsmove-back-room > "$T/tsback-room.out" 2>&1; then
+    cat "$T/tsback-room.out"; echo "FAIL: a way back ran without the room it needs"; exit 1
+  fi
+  cat "$T/tsback-room.out"
+  grep -q 'room' "$T/tsback-room.out" || { echo "FAIL: the refusal does not say why"; exit 1; }
+  if docker volume inspect tsmove-back-room > /dev/null 2>&1 || [ -n "$(docker ps -aq --filter name='^timescaledb-back$')" ]; then
+    echo "FAIL: the refused way back made a volume or a container"; exit 1
+  fi
   say "a way back that fails (a dump cut short) removes its container and says how to remove the new volume"
   mkdir -p "$T/tsback-bad"
   head -c 200000 "$dump" > "$T/tsback-bad/cut.dump"
@@ -570,14 +618,44 @@ tshalf() {
   cat "$T/tshalf-2.out"
   grep -q "resume $T/tshalf half" "$T/tshalf-2.out" || { echo "FAIL: the refusal does not say how to go on"; exit 1; }
   [ "$before" = "$(ts_files "$T/tshalf")" ] || { echo "FAIL: the refused move wrote or changed a file"; exit 1; }
-  say "resume: the move finished, its checks passed"
-  MANAGE="$manage" sh "$TS_MOVE" resume "$T/tshalf" half
+  say "resume, with no time for the jobs (JOB_WAIT_SECONDS=0): the move is done but its step 8 stops it"
+  if JOB_WAIT_SECONDS=0 MANAGE="$manage" sh "$TS_MOVE" resume "$T/tshalf" half > "$T/tshalf-4.out" 2>&1; then
+    cat "$T/tshalf-4.out"; echo "FAIL: the jobs were not waited for and the move passed"; exit 1
+  fi
+  tail -n 12 "$T/tshalf-4.out"
+  grep -q "close $T/tshalf half" "$T/tshalf-4.out" || { echo "FAIL: the stop at the checks does not name close"; exit 1; }
+  say "close: the checks again, with time; they pass, the record is removed and the closing is logged"
+  MANAGE="$manage" sh "$TS_MOVE" close "$T/tshalf" half
   if ls "$T"/tshalf | grep -q unfinished; then echo "FAIL: a finished move left its record"; exit 1; fi
+  ls "$T"/tshalf | grep -Eq '^half-before-[0-9]{8}-[0-9]{6}\.closed-[0-9]{8}-[0-9]{6}\.log$' \
+    || { echo "FAIL: the closing is not logged"; ls -l "$T/tshalf"; exit 1; }
   sh -c "$manage \"\$@\"" manage check --database default --fail-level WARNING
   if MANAGE="$manage" sh "$TS_MOVE" resume "$T/tshalf" half > "$T/tshalf-3.out" 2>&1; then
     cat "$T/tshalf-3.out"; echo "FAIL: a second resume ran"; exit 1
   fi
   cat "$T/tshalf-3.out"
+}
+
+tsearly() {
+  local manage dump
+  say "the server recreated on the new image before the move (a docker compose up after the merge): old extension, no record"
+  sh -c "$(ts_run tsmove-early tsmove-early "$TS_NEW")"
+  ts_wait tsmove-early
+  manage=$(ts_manage tsmove-early)
+  [ "$(ts_sql tsmove-early -c "SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'")" = 2.17.2 ] \
+    || { echo "FAIL: the setup is not the case"; exit 1; }
+  say "the move handles it: the dump on the extension's own release, then the rest"
+  mkdir -p "$T/tsearly"
+  DB_EXEC="docker exec -i tsmove-early" MANAGE="$manage" \
+    RECREATE="docker rm -f tsmove-early > /dev/null && $(ts_run tsmove-early tsmove-early "$TS_NEW")" \
+    sh "$TS_MOVE" move "$T/tsearly" early | tee "$T/tsearly.out"
+  grep -q 'already runs' "$T/tsearly.out" || { echo "FAIL: the case is not named"; exit 1; }
+  if ls "$T"/tsearly | grep -q unfinished; then echo "FAIL: a finished move left its record"; exit 1; fi
+  say "its dump is an old-release dump: the way back restores it on the old image"
+  docker stop tsmove-early > /dev/null
+  dump=$(ls "$T"/tsearly/early-before-*.dump)
+  DB_EXEC=unused MANAGE="$manage" BACK_NETWORK=tsmove-net BACK_ALIAS=tsmove-early \
+    sh "$TS_MOVE" back "$dump" "${dump%.dump}.facts" "$TS_OLD" "$TS_NEW" tsmove-early-back
 }
 
 logs() {
@@ -588,8 +666,8 @@ logs() {
 }
 
 down() {
-  docker rm -f -v tsmove tsmove-half tsmove-restored timescaledb-back > /dev/null 2>&1 || true
-  docker volume rm tsmove-data tsmove-half tsmove-back tsmove-back-bad > /dev/null 2>&1 || true
+  docker rm -f -v tsmove tsmove-half tsmove-early tsmove-restored timescaledb-back > /dev/null 2>&1 || true
+  docker volume rm tsmove-data tsmove-half tsmove-early tsmove-early-back tsmove-back tsmove-back-bad tsmove-back-room > /dev/null 2>&1 || true
   docker network rm tsmove-net > /dev/null 2>&1 || true
   docker rm -f -v farm-pitr > /dev/null 2>&1 || true
   docker volume rm farm-pitr-data > /dev/null 2>&1 || true

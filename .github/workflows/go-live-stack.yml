@@ -114,6 +114,8 @@ jobs:
         run: bash deploy/ci/stack.sh tsback
       - name: TimescaleDB, a move stopped half-way is seen and resumed
         run: bash deploy/ci/stack.sh tshalf
+      - name: TimescaleDB, the server recreated on the new image before the move
+        run: bash deploy/ci/stack.sh tsearly
       - name: Logs of the services
         if: failure()
         run: bash deploy/ci/stack.sh logs

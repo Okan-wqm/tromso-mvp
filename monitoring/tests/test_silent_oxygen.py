@@ -393,3 +393,82 @@ class ProbeCostTests(SilentOxygenCase):
         self.assertEqual(Alarm.objects.filter(clearance__isnull=True, parameter=PROBE_SILENT).count(), 30)
         self.assertEqual({(alarm.site, alarm.production_department) for alarm in Alarm.objects.filter(
             parameter=PROBE_SILENT)}, {(self.bergen, self.hall)})
+
+
+class StandingWaterTests(SilentOxygenCase):
+    """A unit with no point of its own has its water from its system (A9's second tier) as a first-class result of the
+    water read (farm.water.read.latest, `units`): the loop point's samples and probes, or the system's probes, judged
+    for the unit's own fish and marked as its system's; the card, the status, the pages and the alarms read it there
+    (review 4 of the branch, L1)."""
+
+    NOTE = {'en': 'From its system, {place}: the unit has no sampling point of its own.',
+            'nb': 'Fra systemet, {place}: enheten har ikke noe eget prøvepunkt.',
+            'tr': 'Sisteminden, {place}: birimin kendi numune noktası yok.'}
+
+    def setUp(self):
+        super().setUp()
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.ras = System.objects.create(name='RAS 5', code='R5', site=self.bergen, production_department=self.hall)
+        self.loop = point_of(self.ras)
+        self.unit = make_unit('N-05', self.hall, system=self.ras)
+        stock_fish(self.user, self.unit, 500, '50', 10, species=self.salmon)
+
+    def test_its_card_says_the_loops_water_judged_for_its_fish_and_marked_as_its_systems(self):
+        self.typed(self.ras, 1, temperature_c='12.0', oxygen_mg_l='9.0')
+        self.assertFalse(SamplingPoint.objects.filter(unit=self.unit).exists())
+        for language in ('en', 'nb', 'tr'):
+            with self.subTest(language=language), translation.override(language):
+                card = self.card(self.unit)
+                self.assertNotIn(card.state.key, ('critical', 'warning', 'blind'))
+                oxygen, temperature = (card.middle_water.get(code) for code in ('oxygen_mg_l', 'temperature_c'))
+                self.assertEqual((oxygen.value, oxygen.status, temperature.value, temperature.status),
+                                 (D('9.00'), 'ok', D('12.0'), 'ok'))
+                self.assertIn(self.NOTE[language].format(place=self.loop), oxygen.note)
+        small = self.screens(self.unit)['small']
+        self.assertEqual(small.attrs['data-state'], self.card(self.unit).state.key)
+        self.assertIn('9.00', text(small))
+        self.assertEqual(self.alarms(), [])
+        self.assertFalse(Alarm.objects.filter(parameter='no_water_point').exists())
+
+    def test_a_warning_oxygen_in_its_loop_is_its_warning(self):
+        self.typed(self.ras, 1, temperature_c='12.0', oxygen_mg_l='6.5')
+        water = water_read.unit_water([self.unit], self.now)[self.unit.pk]
+        self.assertEqual((water.status, water.get('oxygen_mg_l').judged), ('warning', 'warning'))
+        self.assertEqual(self.card(self.unit).state.key, 'warning')
+        found = self.alarms(self.now, self.now + timedelta(seconds=31))
+        self.assertEqual([(source, severity, parameter) for source, severity, parameter, _summary in found],
+                         [('water_limit', 'warning', parameters.OXYGEN_MG_L)])
+        self.assertTrue(found[0][3].startswith('N-05, from R5 · '), found[0][3])
+
+    def test_a_stale_loop_says_no_recent_data_and_the_one_critical_is_its_probes(self):
+        device = make_device(self.connection, self.format, self.bergen, code='PROBE-5')
+        probe = make_channel(device, 'oxygen_mg_l', code='O2')
+        bindings.move(self.user, probe, system=self.ras, at=self.now - timedelta(hours=2))
+        self.send(probe, OXYGEN, self.then)
+        card = self.card(self.unit)
+        self.assertEqual(card.state.key, 'critical')
+        self.assertTrue(card.state.reasons[0].startswith(f'{SILENT}, 1'), card.state.reasons)
+        self.assertEqual(card.middle_water.get('oxygen_mg_l').status, 'stale')
+        found = [each for each in self.alarms() if 'N-05' in each[3] or 'R5' in each[3]]
+        self.assertEqual([(source, severity) for source, severity, _parameter, _summary in found],
+                         [('sensor_rule', 'critical')])
+
+    def test_a_pass_costs_the_same_for_two_such_units_and_for_six(self):
+        self.typed(self.ras, 1, temperature_c='12.0', oxygen_mg_l='9.0')
+
+        def more(count, prefix):
+            for number in range(count):
+                stock_fish(self.user, make_unit(f'{prefix}-{number}', self.hall, system=self.ras), 100, '50', 10,
+                           species=self.salmon)
+
+        def queries(at):
+            with CaptureQueriesContext(connection) as found:
+                self.assertEqual(engine.run_once(at).failed_steps, [])
+            return len(found)
+        more(1, 'NA')
+        engine.run_once(self.now - timedelta(seconds=2))
+        few = queries(self.now - timedelta(seconds=1))
+        more(4, 'NB')
+        engine.run_once(self.now)
+        self.assertEqual(queries(self.now + timedelta(seconds=1)), few)

@@ -13,10 +13,10 @@ from farm.models import WaterLimit
 from farm.tests.helpers import make_species, role, stock_fish
 from farm.water import services as water_services
 
-from sensors import chart, demo as sensor_demo, read
+from sensors import bindings, chart, demo as sensor_demo, read
 from sensors.models import ChannelState, Device
 
-from . import make_connection
+from . import make_channel, make_connection
 from .test_read import READER, ReadCase, insert
 
 URL = reverse('sensors:chart_data')
@@ -46,6 +46,11 @@ class ChartDataTests(ChartDataCase):
         self.assertEqual(drawn['head'], chart.head_text(found, 'T-01'))
         self.assertEqual((drawn['quantity']['code'], drawn['quantity']['decimals']), ('temperature_c', 1))
         self.assertFalse(drawn['empty'])
+        # the chart in words, for whoever cannot see it (review of batch 1, S2): its latest, lowest, highest and gaps
+        self.assertEqual([term for term, _words in drawn['said']], ['Latest', 'Lowest', 'Highest', 'No value'])
+        self.assertEqual(drawn['said'][1][1], '9.0 °C at 01.10.2026 00:00')            # the site's clock (UTC here)
+        self.assertTrue(drawn['gap_text'].startswith('from 01.10.2026 00:'))
+        self.assertEqual(drawn['buckets']['other'], [False] * len(found.buckets))         # its own probe only
 
     def test_an_empty_window_says_so(self):
         found = read.series(self.t1, 'temperature_c', self.start - timedelta(days=3), self.start - timedelta(days=2))
@@ -72,6 +77,28 @@ class ChartDataTests(ChartDataCase):
         self.assertTrue(body['csv'].startswith(reverse('sensors:chart_csv') + '?'))
         self.assertEqual((body['now']['value'], body['now']['fresh']), (9.5, True))
         self.assertEqual(body['chart']['bands'], {})                       # no right to read the water: no band
+
+    def test_the_newest_value_is_the_channel_drawn_last_not_the_last_one_bound(self):
+        """A tank's own probe (fresh, drawn last) and the loop's probe on its system (filling the own probe's gap, no
+        value now): "now" is the own probe's, never the loop's "no recent data"; and the other way round."""
+        loop = make_channel(self.device, 'temperature_c', code='TEMP-LOOP')
+        bindings.move(self.user, loop, system=self.ras, at=self.start)
+        insert(loop.channel_no, [(self.start + timedelta(minutes=40 + minute), 11.0) for minute in range(30)])
+        now = timezone.now()
+        ChannelState.objects.create(channel_no=self.temp.channel_no, last_value=9.5, last_value_ts=now - timedelta(
+            seconds=20), last_good_at=now - timedelta(seconds=20))
+        body = self.client.get(URL, self.query()).json()
+        self.assertEqual(set(body['chart']['buckets']['channel']), {self.temp.channel_no, loop.channel_no})
+        self.assertEqual(body['chart']['buckets']['channel'][-1], self.temp.channel_no)
+        # the loop's buckets are marked as the system's, as the SVG chart marks them (review of batch 1, F1)
+        self.assertEqual(body['chart']['buckets']['other'], [channel == loop.channel_no for channel in body['chart']['buckets']['channel']])
+        self.assertEqual(body['chart']['other_text'], 'From the backup or the system’s channel')
+        self.assertEqual((body['now']['channel'], body['now']['value'], body['now']['fresh']),
+                         (self.temp.channel_no, 9.5, True))
+        # the window ends inside the loop's run: the loop's channel is drawn last, and "now" is its own (no value yet)
+        body = self.client.get(URL, self.query(end='2026-10-01T01:00')).json()
+        self.assertEqual(body['chart']['buckets']['channel'][-1], loop.channel_no)
+        self.assertEqual((body['now']['channel'], body['now']['fresh']), (loop.channel_no, False))
 
     def test_a_stale_newest_value_says_it_is_not_fresh(self):
         old = timezone.now() - timedelta(days=1)

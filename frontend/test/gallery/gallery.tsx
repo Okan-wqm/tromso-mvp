@@ -155,6 +155,27 @@ function Gallery({ rows, errors }: GalleryProps) {
         <ChartFrame title="Temperature" label="Temperature, no values" caption="Sensor">
           <SeriesChart unit="°C" emptyLabel="No values in this range." times={[]} series={[]} />
         </ChartFrame>
+        <ChartFrame title="Dissolved oxygen, TT-01" label="Dissolved oxygen, TT-01, with its limits, a gap and two events" interactive
+          values={[['Latest', '6.50 mg/L at 06:00'], ['No value', 'from 02:00 to 03:00']]} keys={[{ label: 'Sensor', series: 1 },
+            { label: 'From the backup or the system’s channel', series: 2 }, { label: 'Worked out', series: 5 }]}
+          caption="The envelope, the limits as zones and lines, a gap named, a mark a link, and a mark for the pointer only">
+          <div id="series-full">
+            <SeriesChart unit="mg/L" decimals={2} zone="Europe/Oslo" range={[0, 21600]} gapLabel="No value"
+              emptyLabel="No values in this range." times={[0, 3600, 9000, 14400, 18000, 21600]}
+              series={[{ label: 'Sensor', series: 1, values: [9.1, 8.8, null, 7.2, 6.9, 6.5] },
+                { label: 'From the backup or the system’s channel', series: 2, points: true, values: [undefined, 8.8, undefined, undefined, undefined, undefined] },
+                { label: 'Worked out', series: 5, points: true, hollow: true, values: [undefined, undefined, undefined, 7.0, undefined, undefined] }]}
+              envelope={{ low: [9.0, 8.6, null, 7.0, 6.8, 6.4], high: [9.2, 9.0, null, 7.4, 7.0, 6.6], series: 1 }}
+              zones={[{ from: null, to: 6, status: 'critical' }, { from: 6, to: 7, status: 'warning' }]}
+              limits={[{ value: 6, status: 'critical', label: 'Critical 6.00' }, { value: 7, status: 'warning', label: 'Warning 7.00' }]}
+              gaps={[[7200, 10800]]}
+              markers={[{ at: 5400, label: '01:30 · Calibrated', href: '#calibrated' }, { at: 16200, label: '04:30 · O₂ 6.2 mg/L', status: 'critical' }]} />
+          </div>
+          <div id="series-listed">
+            <SeriesChart unit="mg/L" emptyLabel="No values in this range." times={[0, 3600, 7200]} marksListed
+              series={[{ label: 'Sensor', series: 1, values: [9.1, 8.8, 8.5] }]} markers={[{ at: 3600, label: '01:00 · Fed 0.8 kg', href: '#fed' }]} />
+          </div>
+        </ChartFrame>
       </Plate>
       <Plate title="Planned today" span={6}>
         <div className="ui-plate-body" id="stack">

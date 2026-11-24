@@ -3,7 +3,8 @@
 // and a place to compare with), so the chart is an address; the server reads the series (sensors/read.py `series`, sensors/chart.py `data`) and the island
 // only places it: the mean with its lowest and highest, the meter and lab samples, the fish's limits as bands and lines
 // for a person who may read the water, the gaps shaded and named, never bridged, the moves and calibrations, the
-// channel's newest value (said stale when it is), the CSV of what is drawn. The compared place is read on exactly the
+// channel's newest value (said stale when it is, in the warning's colour), the buckets from a backup or the system's
+// channel drawn as such, the chart in words (its latest, lowest and highest, its gaps), the CSV of what is drawn. The compared place is read on exactly the
 // same window and drawn under it on the same time axis. A pressed preset is the last `range` of the query (the
 // browser sends the pressed button after the hidden one), so it wins over the one in force.
 import { useState } from 'react';
@@ -57,11 +58,13 @@ function nowText(now: Now | null, chart: ChartData, words: Words, locale: string
 
 function Drawn({ chart, now, props }: { chart: ChartData; now: Now | null; props: SensorChartsProps }) {
   const placed = place(chart, props.words, props.locale);
-  const caption = [`${chart.tier_text}, ${chart.width_text}`, ...chart.notes, chart.gaps.length ? props.words.gaps : '']
-    .filter(Boolean).join(' · ');
+  const caption = [`${chart.tier_text}, ${chart.width_text}`, ...chart.notes, chart.gaps.length ? props.words.gaps : '',
+    chart.gap_text ? `${props.words.noValue}: ${chart.gap_text}` : ''].filter(Boolean).join(' · ');
+  const stale = !now || now.value === null || !now.fresh;
   return (
     <Plate title={chart.head} span={12} badge={chart.simulated ? <Chip kind="neutral">{chart.simulated_text}</Chip> : undefined}>
       <ChartFrame title={`${chart.title} · ${chart.quantity.label}`} now={nowText(now, chart, props.words, props.locale)}
+        {...(stale ? { nowStatus: 'warning' as const } : {})} values={chart.said}
         keys={keysOf(placed)} caption={caption} label={chart.head} interactive={Boolean(placed.markers?.length)}>
         <SeriesChart {...placed} gapLabel={props.words.noValue} emptyLabel={chart.empty_text} height={300} />
       </ChartFrame>

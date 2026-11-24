@@ -423,6 +423,7 @@ class History:
     charts: list
     worked: dict
     bands: dict
+    judged: dict = field(default_factory=dict)   # {code: {measured_at: status}}: each live sample's value judged
 
 
 def sampled_codes(target, start, end):
@@ -453,7 +454,9 @@ def water_history(target, start, end, *, now=None, max_points=MAX_POINTS):
     """The History of a unit's, a system's or a point's water between start and end: every quantity bound there in the
     window and every parameter sampled there, in the catalogue's order, each the `series` of the same window (the
     charts share one time axis); the NH₃-N worked out from each live sample with a TAN (farm.water.read.history: the
-    sample's own pH and temperature, judged as the history page judges it); the fish's limits as bands."""
+    sample's own pH and temperature, judged as the history page judges it); every live sample's value judged as the
+    history page judges it (`judged`: {code: {measured_at: status}}, for the fish of its day); the fish's limits as
+    bands."""
     from farm.water import read as water_read
 
     if end <= start:
@@ -462,12 +465,16 @@ def water_history(target, start, end, *, now=None, max_points=MAX_POINTS):
     codes = set(bound_quantities(target, start, end)) | set(sampled_codes(target, start, end))
     charts = [series(target, code, start, end, max_points=max_points, now=now)
               for code in quantities.CODES if code in codes]
-    worked = {}
+    worked, judged = {}, {}
     points = [point for point in places(target)[1] if point is not None]
-    if points and parameters.TAN in codes:
-        samples = [sample for sample in water_read.samples_of(points=points, since=start, before=end)
-                   if not sample.is_deleted and sample.tan_mg_l is not None]
+    if points:
+        samples = [sample for sample in water_read.samples_of(points=points, since=start, before=end) if not sample.is_deleted]
         for row in reversed(water_read.history(samples)):            # samples_of is newest first: oldest first here
+            for code, reading in row.readings.items():
+                if code not in WORKED and reading.value is not None:
+                    judged.setdefault(code, {})[row.sample.measured_at] = str(reading.status)
+            if row.sample.tan_mg_l is None:
+                continue
             for code in WORKED:
                 reading = row.readings.get(code)
                 if reading is not None:
@@ -475,7 +482,7 @@ def water_history(target, start, end, *, now=None, max_points=MAX_POINTS):
                         row.sample.measured_at, None if reading.value is None else float(reading.value),
                         str(reading.status), str(reading.note or '')))
     place = target.unit if isinstance(target, SamplingPoint) and target.unit_id else target
-    return History(target, start, end, zone_for(target), charts, worked, bands_of(water_read.limits_now(place)))
+    return History(target, start, end, zone_for(target), charts, worked, bands_of(water_read.limits_now(place)), judged)
 
 
 # ---- devices ---------------------------------------------------------------------------------------------------

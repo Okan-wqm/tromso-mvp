@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { formatNumber, keysOf, limitsOf, place, zonesOf, type ChartData } from './series.js';
+import { flaggedText, formatNumber, keysOf, limitsOf, place, zonesOf, type ChartData } from './series.js';
 
 const WORDS = { sensor: 'Sensor', manual: 'Meter or test kit', lab: 'Laboratory', worked: 'Worked out', warning: 'Warning', critical: 'Critical' };
 
@@ -13,6 +13,7 @@ function chart(extra: Partial<ChartData> = {}): ChartData {
     head: 'T-01 · Oxygen', title: 'T-01', quantity: { code: 'oxygen_mg_l', label: 'Oxygen (mg/L)', unit: 'mg/L', decimals: 2, water: true },
     tier: 'raw', tier_text: 'stored values', width_s: 60, width_text: '1 min', start: 0, end: 600, zone: 'UTC',
     empty: false, empty_text: 'No sensor values in this time.', simulated: false, simulated_text: '',
+    other_text: 'From the backup or the system’s channel', said: [], gap_text: '',
     buckets: { start: [0, 60, 300], end: [60, 120, 360], avg: [9, 9.2, 8.8], min: [8.9, 9.1, 8.7], max: [9.1, 9.3, 8.9],
       n: [1, 1, 1], channel: [1, 1, 1], role: ['primary', 'primary', 'primary'], origin: ['sensor', 'sensor', 'sensor'],
       other: [false, false, false], simulated: [false, false, false] },
@@ -56,4 +57,24 @@ test('a value worked out per sample is drawn hollow, and one that could not be i
   const worked = placed.series.find((each) => each.label === 'Worked out');
   assert.equal(worked?.hollow, true);
   assert.deepEqual(worked?.values, [undefined, 0.0012, undefined, undefined, undefined]);
+});
+
+test('a bucket from a backup or the system\'s channel is drawn as such, never as the place\'s own probe (review F1)', () => {
+  const buckets = { ...chart().buckets, other: [false, true, false], channel: [1, 7, 1], role: ['primary', 'primary', 'primary'],
+    origin: ['sensor', 'system_sensor', 'sensor'] };
+  const placed = place(chart({ buckets }), WORDS, 'en');
+  const other = placed.series.find((each) => each.label === 'From the backup or the system’s channel');
+  assert.equal(other?.points, true);
+  assert.deepEqual(other?.values, [undefined, 9.2, undefined, undefined, undefined]);
+  assert.deepEqual(keysOf(placed).map((key) => key.label), ['Sensor', 'From the backup or the system’s channel',
+    'Meter or test kit', 'Laboratory']);
+  assert.equal(place(chart(), WORDS, 'en').series.some((each) => each.label.startsWith('From the backup')), false);
+});
+
+test('a value past a limit is said in words with its status, its time and its value; an OK one is not', () => {
+  const when = (seconds: number): string => `t${seconds}`;
+  assert.deepEqual(flaggedText([{ at: 90, value: 5.8, status: 'critical', status_text: 'Critical' },
+    { at: 120, value: 6.6, status: 'warning', status_text: 'Warning' }, { at: 150, value: 9, status: 'ok', status_text: 'OK' },
+    { at: 180, value: null, status: 'critical', status_text: 'Critical' }], 2, 'mg/L', 'nb', when),
+  ['Critical: t90, 5,80 mg/L', 'Warning: t120, 6,60 mg/L']);
 });

@@ -142,12 +142,47 @@ def _epoch(moment):
     return int(moment.timestamp())
 
 
+def _at(chart, moment):
+    return formats.date_format(timezone.localtime(moment, chart.zone), 'DATETIME_FORMAT')
+
+
+def _amount(chart, value):
+    return f'{formats.number_format(value, chart.quantity.decimals)} {chart.quantity.unit}'.strip()
+
+
+def gap_text(chart):
+    """The chart's gaps in words ("from 20.11.2026 03:00 to 20.11.2026 13:00; ..."), '' without one: what a person who
+    cannot see the shading reads (WCAG 1.1.1), and the caption's sentence."""
+    return '; '.join(_('from %(start)s to %(end)s') % {'start': _at(chart, start), 'end': _at(chart, end)}
+                     for start, end in chart.gaps)
+
+
+def said(chart):
+    """[[term, words]] of what the chart shows, for a screen reader and for whoever cannot see it (ChartFrame `values`):
+    the latest mean with its time, the lowest and the highest with theirs, the gaps; each in the quantity's decimals and
+    the site's clock. Nothing for an empty chart (its own sentence says so)."""
+    found = []
+    buckets = chart.buckets
+    if buckets:
+        last = buckets[-1]
+        low = min(buckets, key=lambda bucket: bucket.vmin)
+        high = max(buckets, key=lambda bucket: bucket.vmax)
+        for term, value, moment in ((_('Latest'), last.avg, last.last_ts), (_('Lowest'), low.vmin, low.start),
+                                    (_('Highest'), high.vmax, high.start)):
+            found.append([str(term), str(_('%(value)s at %(time)s') % {'value': _amount(chart, value),
+                                                                      'time': _at(chart, moment)})])
+    if chart.gaps:
+        found.append([str(_('No value')), str(gap_text(chart))])
+    return found
+
+
 def data(chart, title, bands=None):
     """The chart as data for a browser chart (Tank › Water, Sensors › Charts, behind `?ui=next`): exactly what `draw`
     draws, never more and never less, as columns (times in seconds since 1970, UTC; the page shows them on `zone`):
     the buckets with their mean, lowest and highest, messages, channel, role and source; the gaps (never bridged); the
     manual and lab samples; the moves, calibrations and pH-scale changes; the notes; and the fish's limit bands of the
-    quantity when it has any (`bands`: sensors.read.bands_of). Numbers are as stored: the page rounds them to the
+    quantity when it has any (`bands`: sensors.read.bands_of); the chart in words (`said`, `gap_text`) and the word for
+    a bucket from a backup or the system's channel (`other_text`), which `draw` marks with a small circle. Numbers are as stored: the page rounds them to the
     quantity's decimals. Every word is translated here; nothing is worked out in the browser. `simulated`: the drawn
     buckets that come from the live demo's channels (sensors/demo.py `demo_channels`), and `simulated_text` to say so."""
     from .demo import demo_channels
@@ -170,6 +205,9 @@ def data(chart, title, bands=None):
                     'other': [b.role == 'backup' or b.origin == read.SYSTEM_SENSOR for b in buckets],
                     'simulated': [b.channel_no in demo for b in buckets]},
         'simulated': bool(demo), 'simulated_text': str(_('Simulated values')) if demo else '',
+        # a bucket from a backup channel or from the system's channel (`other`) is drawn as such, as `draw` does
+        'other_text': str(_('From the backup or the system’s channel')),
+        'said': said(chart), 'gap_text': str(gap_text(chart)),
         'gaps': [[_epoch(start), _epoch(end)] for start, end in chart.gaps],
         'samples': [{'at': _epoch(at), 'value': float(value), 'source': source} for at, value, source in chart.samples],
         'markers': [{'at': _epoch(marker.at), 'kind': marker.kind, 'channel': marker.channel_no,

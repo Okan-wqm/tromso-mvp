@@ -264,6 +264,22 @@ restore() {
   "${RC[@]}" run --rm -T --no-deps restore verify-counts "$dump.counts"
   say "the application on the restored database: every migration applied (migrate --check)"
   "${RC[@]}" run --rm -T manage python manage.py migrate --check
+  say "a repository that cannot be read fails the prune check and records no success: missing, wrong password, no network"
+  local agent=/usr/local/lib/balik-backup/agent.sh case_env
+  for case_env in "RESTIC_REPOSITORY=/offsite/no-such-repository" "RESTIC_PASSWORD_FILE=/tmp/wrong-password" \
+                  "RESTIC_REPOSITORY=rest:http://backup.invalid:8000/farm-ci/main/"; do
+    before_ok=$("${DC[@]}" exec -T backup sh -c 'cat /backups/state/prunecheck.ok 2>/dev/null || echo none')
+    if "${DC[@]}" exec -T -e "$case_env" -e BACKUP_LIST_TIMEOUT=60 backup sh -c \
+        "echo wrong > /tmp/wrong-password && sh $agent prunecheck" > "$T/prunecase.out" 2>&1; then
+      cat "$T/prunecase.out"; echo "FAIL: the prune check passed with $case_env"; exit 1
+    fi
+    grep -q "could not be read" "$T/prunecase.out" || { cat "$T/prunecase.out"; echo "FAIL: no reason with $case_env"; exit 1; }
+    after_ok=$("${DC[@]}" exec -T backup sh -c 'cat /backups/state/prunecheck.ok 2>/dev/null || echo none')
+    [ "$before_ok" = "$after_ok" ] || { echo "FAIL: $case_env recorded a success"; exit 1; }
+    "${DC[@]}" exec -T backup test -f /backups/state/prunecheck.failed || { echo "FAIL: $case_env left no failure"; exit 1; }
+    echo "ok    $case_env: refused, no success recorded ($(grep -o 'could not be read.*' "$T/prunecase.out" | head -c 120))"
+  done
+  "${DC[@]}" exec -T backup sh "$agent" prunecheck                           # readable again: green
   say "a month without the owner's prune: 30 snapshots dated two months back; the farm's prune check turns red"
   "${RC[@]}" run --rm -T --no-deps --entrypoint sh restore -c \
     'unset RESTIC_CACERT; for minute in $(seq 10 39); do restic backup -q --host farm-ci --tag balik --time "2026-09-01 00:$minute:00" /etc/hostname; done'

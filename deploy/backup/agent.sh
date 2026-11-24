@@ -213,8 +213,14 @@ prunecheck() {
   # BACKUP_PRUNE_AGE_DAYS (35); an unpruned one keeps every ship's, about a hundred a day.
   cutoff=$(date -u -d "@$(( $(now) - PRUNE_AGE_DAYS * 86400 ))" +%Y-%m-%dT%H:%M:%S)
   limit=$(( KEEP_WEEKLY + KEEP_MONTHLY + 5 ))
-  old=$(restic snapshots --retry-lock 10m --host "$HOST_TAG" --tag balik --json \
-    | grep -o '"time":"[^"]*"' | cut -d'"' -f4 | cut -c1-19 | awk -v cutoff="$cutoff" '$0 < cutoff' | wc -l)
+  # restic's own answer first: a repository that cannot be read (missing, a wrong password, no network) is a failure
+  # here, never "no old snapshots"
+  listing=$(timeout "$(num BACKUP_LIST_TIMEOUT 600)" restic snapshots --retry-lock 10m --host "$HOST_TAG" --tag balik \
+    --json 2> /tmp/prunecheck.err) \
+    || die "the repository could not be read: $(tail -n 3 /tmp/prunecheck.err | tr '\n' ' ')"
+  case "$listing" in '['*) ;; *) die "the repository answered no snapshot list: $(echo "$listing" | head -c 200)" ;; esac
+  old=$(echo "$listing" | grep -o '"time":"[^"]*"' | cut -d'"' -f4 | cut -c1-19 \
+    | awk -v cutoff="$cutoff" '$0 < cutoff' | wc -l)
   if [ "$old" -gt "$limit" ]; then
     die "the owner's prune is overdue: $old snapshots older than $PRUNE_AGE_DAYS days (a pruned repository keeps $limit at most; docs/ops/backup-and-restore.md)"
   fi

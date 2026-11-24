@@ -5,6 +5,7 @@ from datetime import timedelta
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -95,6 +96,75 @@ class NewLookTests(TestCase):
         self.assertNotIn('ui-head-group', classic)
 
 
+class StripLinkTests(TestCase):
+    """Each count of the strip leads to the page that lists what it counts (core.ui.alarms_item), and one wording of an
+    Attention (core.ui.attention_words)."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
+        self.watcher = get_user_model().objects.create_user('watcher', password='x')     # Alarms, not Monitoring
+        self.watcher.groups.add(role('Alarm watchers', 'view_alarm'))
+        self.alarms, self.monitor = reverse('alarms:alarm_list'), reverse('monitoring:monitor')
+
+    def test_the_words_of_an_attention_in_the_strips_order(self):
+        every = alarms_read.Attention(alarms=2, alarms_critical=1, critical=3, warning=4, blind=5, unjudged=6, unreadable=7)
+        self.assertEqual(ui.attention_words(every), [
+            (ui.ALARMS, '2 open alarms'), (ui.UNITS, '3 units critical'), (ui.UNITS, '7 units cannot be read'),
+            (ui.UNITS, '4 units with a warning'), (ui.UNITS, '5 units with no recent data'),
+            (ui.UNITS, '6 units with no limit')])
+        one = alarms_read.Attention(alarms=1, critical=1, warning=1, blind=1, unjudged=1, unreadable=1)
+        self.assertEqual([text for _what, text in ui.attention_words(one)], [
+            '1 open alarm', '1 unit critical', '1 unit cannot be read', '1 unit with a warning',
+            '1 unit with no recent data', '1 unit with no limit'])
+        self.assertEqual(ui.attention_words(alarms_read.Attention()), [])
+        self.assertEqual(ui.attention_words(alarms_read.Attention(warning=19, critical=1)),
+                         [(ui.UNITS, '1 unit critical'), (ui.UNITS, '19 units with a warning')])
+
+    def test_the_words_are_translated(self):
+        from django.utils import translation
+        for language in ('nb', 'tr'):
+            with translation.override(language):
+                words = [text for _what, text in ui.attention_words(alarms_read.Attention(alarms=1, critical=2))]
+            self.assertNotIn('open alarm', words[0], language)
+            self.assertNotIn('units critical', words[1], language)
+
+    def test_units_only_lead_to_monitoring(self):
+        item = ui.alarms_item(alarms_read.Attention(critical=1, warning=19), self.admin)
+        self.assertEqual((item['url'], item['text'], item['status'], item.get('parts')),
+                         (self.monitor, '1 unit critical · 19 units with a warning', 'critical', None))
+
+    def test_alarms_only_lead_to_the_alarms_page(self):
+        item = ui.alarms_item(alarms_read.Attention(alarms=1, alarms_critical=1), self.admin)
+        self.assertEqual((item['url'], item['text'], item['status'], item.get('parts')),
+                         (self.alarms, '1 open alarm', 'critical', None))
+
+    def test_nothing_says_no_open_alarms_and_leads_to_the_alarms_page(self):
+        item = ui.alarms_item(alarms_read.Attention(), self.admin)
+        self.assertEqual((item['url'], item['text'], item['status']), (self.alarms, 'No open alarms', ''))
+
+    def test_both_one_link_each(self):
+        item = ui.alarms_item(alarms_read.Attention(alarms=1, critical=1, blind=2), self.admin)
+        self.assertEqual(item['url'], '')
+        self.assertEqual(item['text'], '1 open alarm · 1 unit critical · 2 units with no recent data')
+        self.assertEqual([(part['what'], part['text'], part['url']) for part in item['parts']],
+                         [(ui.ALARMS, '1 open alarm', self.alarms),
+                          (ui.UNITS, '1 unit critical · 2 units with no recent data', self.monitor)])
+
+    def test_units_are_plain_words_for_a_person_who_may_not_open_monitoring(self):
+        item = ui.alarms_item(alarms_read.Attention(critical=1), self.watcher)
+        self.assertEqual((item['url'], item['text'], item['status']), ('', '1 unit critical', 'critical'))
+        item = ui.alarms_item(alarms_read.Attention(alarms=1, critical=1), self.watcher)
+        self.assertEqual([(part['text'], part['url']) for part in item['parts']],
+                         [('1 open alarm', self.alarms), ('1 unit critical', '')])
+        html = render_to_string('core/_strip.html', {'items': [item]})
+        self.assertIn(f'<a class="ui-strip-link" href="{self.alarms}" data-strip-part="alarms">1 open alarm</a>', html)
+        self.assertIn('<span data-strip-part="units">1 unit critical</span>', html)
+        self.assertNotIn(self.monitor, html)
+        html = render_to_string('core/_strip.html', {'items': [ui.alarms_item(alarms_read.Attention(critical=1),
+                                                                               self.watcher)]})
+        self.assertIn('<span class="ui-strip-item" data-strip="alarms" data-status="critical">', html)
+
+
 @override_settings(ATTENTION_CACHE_SECONDS=0)
 class StripAlarmsTests(AlarmsCase):
     """The strip says what the alarm engine and the monitoring cards say (alarms.read.attention): the open alarms, and
@@ -108,10 +178,12 @@ class StripAlarmsTests(AlarmsCase):
         self.client.force_login(self.boss)
 
     def fragment(self):
+        """The strip's alarms item, from its start to the next item."""
         response = self.client.get(reverse('core:ui_strip'))
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        return html[html.index('data-strip="alarms"'):html.index('</a>', html.index('data-strip="alarms"'))]
+        start = html.index('data-strip="alarms"')
+        return html[start:html.index('data-strip="on_site"', start)]
 
     def agree(self):
         """{unit id: rung} of the strip, checked against the cards' state of the same units (a card's note is OK to the
@@ -144,6 +216,51 @@ class StripAlarmsTests(AlarmsCase):
         html = self.fragment()
         self.assertIn('data-status="critical"', html)
         self.assertIn('1 unit critical', html)
+
+    def test_a_red_strip_leads_to_a_page_that_lists_the_unit_it_counts(self):
+        """The owner's report (2026-11-24): the strip was red from the cards' judgement, with no alarm open (the engine
+        not running), and led to the Alarms page, which was empty. Units lead to Monitoring, which lists the unit, and
+        the Alarms page names them too."""
+        self.limits()
+        self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)
+        html = self.fragment()
+        monitor = reverse('monitoring:monitor')
+        self.assertIn(f'<a class="ui-strip-item" href="{monitor}" data-strip="alarms" data-status="critical">', html)
+        self.assertNotIn(reverse('alarms:alarm_list'), html)
+        page = self.client.get(monitor, {'full': '1'}).content.decode()    # the cards as the server draws them
+        self.assertIn(self.t1.code, page)
+        self.assertIn(f'data-key="card:{self.t1.pk}" data-state="critical"', page)
+        for look in ('classic', 'next'):                                 # the Alarms page is not empty in either look
+            listing = self.client.get(reverse('alarms:alarm_list'), {'ui': look}).content.decode()
+            self.assertIn('No alarm is open.', listing)
+            self.assertIn('On the Monitoring screen: 1 unit critical. No alarm is open for them yet.', listing)
+            self.assertIn(f'<a href="{monitor}">See them on Monitoring</a>', listing)
+
+    def test_the_alarms_page_says_nothing_of_units_when_none_needs_a_look(self):
+        self.limits()
+        self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)
+        listing = self.client.get(reverse('alarms:alarm_list')).content.decode()
+        self.assertNotIn('data-units-note', listing)
+
+    def test_the_alarms_page_with_an_open_alarm_does_not_say_none_is_open(self):
+        self.limits()
+        self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)
+        self.loop()
+        listing = self.client.get(reverse('alarms:alarm_list')).content.decode()
+        self.assertIn('On the Monitoring screen: 1 unit critical.', listing)
+        self.assertNotIn('No alarm is open for them yet.', listing)
+        html = self.fragment()                                           # one item, one link per page
+        self.assertIn('class="ui-strip-item ui-strip-split" data-strip="alarms" data-status="critical"', html)
+        self.assertRegex(html, rf'<a class="ui-strip-link" href="{reverse("alarms:alarm_list")}" data-strip-part="alarms">'
+                               r'\d open alarms?</a><span aria-hidden="true"> · </span>'
+                               rf'<a class="ui-strip-link" href="{reverse("monitoring:monitor")}" data-strip-part="units">'
+                               r'1 unit critical</a>')
+
+    def test_the_alarms_page_says_so_when_the_units_cannot_be_read(self):
+        with mock.patch.object(alarms_read, 'attention', side_effect=RuntimeError('broken')):
+            response = self.client.get(reverse('alarms:alarm_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'The units that need a look could not be read here.')
 
     def test_warning(self):
         self.limits()
@@ -242,6 +359,74 @@ class StripAlarmsTests(AlarmsCase):
         total, sites = alarms_read.attention_all()                    # the farm and its sites from one reading
         self.assertEqual((total, sites), (alarms_read.attention(), by_site))
         self.assertEqual((total.critical, total.blind, total.alarms), (1, 1, 1))
+
+    def test_over_capacity_is_a_warning_on_the_strip_as_on_the_card(self):
+        """Review LOW: a card that says Over capacity beside a strip that said "No open alarms"; one rule now
+        (monitoring.read.upper_state)."""
+        from farm.models import Tank
+        self.limits()
+        self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)
+        Tank.objects.filter(pk=self.t1.pk).update(max_biomass_kg=D(10))      # 1,000 fish of 50 g: 50 kg
+        self.assertEqual(self.agree(), {self.t1.pk: 'warning'})
+        self.assertIn('1 unit with a warning', self.fragment())
+
+    @override_settings(WEIGH_SOON_DAYS=3, WEIGH_NOW_DAYS=5)
+    def test_weigh_now_is_a_warning_on_the_strip_as_on_the_card(self):
+        """The fish were weighed when stocked, 10 days ago: past WEIGH_NOW_DAYS the card says Weigh now, a warning."""
+        from farm.models import Tank
+        from monitoring import read as monitoring_read
+        from monitoring.cards import resolve
+        self.limits()
+        self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)
+        card, = monitoring_read.cards([Tank.objects.get(pk=self.t1.pk)], self.boss, resolve.Choice())
+        self.assertEqual(card.drift, 'now')
+        self.assertEqual(self.agree(), {self.t1.pk: 'warning'})
+        self.assertIn('1 unit with a warning', self.fragment())
+
+    def test_a_unit_whose_state_cannot_be_worked_out_is_counted_and_the_strip_still_answers(self):
+        """Review M1 residual: the read was isolated per unit, the evaluation was not, so one unit whose evaluation
+        raised made the whole fragment 500. Each unit is worked out on its own now and counted unreadable."""
+        from monitoring import read as monitoring_read
+        self.limits()
+        t2 = make_unit('T-02', self.hall)                    # no point, no system: blind
+        stock_fish(self.keeper, t2, 500, '50', 10, species=self.salmon)
+        self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)
+        real = monitoring_read.upper_state
+        calls = []
+
+        def failing(rungs, *args, **kwargs):
+            calls.append(rungs)
+            if len(calls) == 2:
+                raise RuntimeError('broken evaluation')
+            return real(rungs, *args, **kwargs)
+
+        with mock.patch.object(monitoring_read, 'upper_state', side_effect=failing):
+            found = alarms_read.attention()
+        self.assertEqual(len(calls), 2)
+        self.assertEqual((found.critical, found.unreadable, found.blind), (1, 1, 0) if calls[0].critical else (0, 1, 1))
+        with mock.patch.object(monitoring_read, 'water_rungs', side_effect=RuntimeError('broken evaluation')):
+            found = alarms_read.attention()
+            html = self.fragment()                                    # 200 (fragment() checks it)
+        self.assertEqual((found.unreadable, found.critical, found.status), (2, 0, 'warning'))
+        self.assertIn('2 units cannot be read', html)
+        self.assertNotIn('No open alarms', html)
+
+    def test_a_unit_whose_feeding_cannot_be_read_is_counted_unless_its_water_is_critical(self):
+        from farm.feeding import read as feeding_read
+        self.limits()
+        t2 = make_unit('T-02', self.hall)
+        stock_fish(self.keeper, t2, 500, '50', 10, species=self.salmon)
+        self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)          # T-01 critical
+        real = feeding_read.figures
+
+        def failing(stock, *args, **kwargs):
+            if t2.pk in stock or self.t1.pk in stock:
+                raise RuntimeError('broken feeding')
+            return real(stock, *args, **kwargs)
+
+        with mock.patch.object(feeding_read, 'figures', side_effect=failing):
+            found = alarms_read.attention()
+        self.assertEqual(dict(found.units), {self.t1.pk: 'critical', t2.pk: alarms_read.UNREADABLE})
 
     @override_settings(ATTENTION_CACHE_SECONDS=15)
     def test_one_read_for_every_viewer_in_its_time(self):

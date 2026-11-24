@@ -114,6 +114,8 @@ NAMED = {
                                            'most 8 h), never the longest in force',
     ('alarms/models.py', 'FLOOD_COUNT_BOUNDS'): 'the refusal of nonsense of a flood count, never the count in force',
     ('alarms/models.py', 'FLOOD_WINDOW_BOUNDS'): 'the refusal of nonsense of a flood window, never the window in force',
+    ('alarms/models.py', 'FOLLOW_UP_BOUNDS'): "the coordinator's bound on a critical's follow-up (at most 30 s), never "
+                                              'the time in force',
     ('alarms/outbox.py', 'GIVE_UP_CHUNK'): "how many cleared warnings a round gives up after its sending (about 100 "
                                            "ms of work): a bound on a round's time, not a farm rule",
     ('alarms/outbox.py', 'SUMMARY_AFTER'): "the coordinator's 24 h after which cleared criticals not yet sent go as one "

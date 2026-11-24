@@ -95,7 +95,7 @@ class PageTests(AlarmsCase):
         policy = SeverityPolicy.objects.get(severity='warning')
         self.client.post(reverse('alarms:severitypolicy_edit', args=[policy.pk]), {
             'on_delay_seconds': '60', 'off_delay_seconds': '45', 'escalation_minutes': '20', 'delivery_attempts': '3',
-            'retry_seconds': '90', 'shelve_max_minutes': '120', 'flood_count': '4', 'flood_window_seconds': '60',
+            'retry_seconds': '90', 'shelve_max_minutes': '120', 'flood_count': '4', 'flood_window_seconds': '60', 'follow_up_seconds': '0',
             'clock_skew_seconds': '90', 'clock_skew_deadband_seconds': '15', 'clock_behind_window_seconds': '600',
             'version': policy.version})
         policy.refresh_from_db()

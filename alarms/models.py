@@ -484,6 +484,10 @@ SHELVE_BOUNDS = {Severity.CRITICAL: (1, 480), Severity.WARNING: (1, 1440)}
 # warnings.
 FLOOD_COUNT_BOUNDS = (2, 1000)
 FLOOD_WINDOW_BOUNDS = {Severity.CRITICAL: (10, 300), Severity.WARNING: (10, 3600)}
+# How long the next criticals of a kind wait for one follow-up message after a message of that kind went to the person
+# (seconds; alarms/floods.py): none to 30 s, the coordinator's bound on the last recheck (a critical is batched, never
+# covered). Warnings are grouped by their flood window instead: theirs is 0.
+FOLLOW_UP_BOUNDS = {Severity.CRITICAL: (0, 30), Severity.WARNING: (0, 0)}
 # A device clock's limit (seconds), either way: at least a second (a limit of 0 would alarm on the network's own delay),
 # at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
 # device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.
@@ -534,6 +538,8 @@ class SeverityPolicy(AuditedModel):
         _('A flood from (alarms)'),
         validators=[MinValueValidator(FLOOD_COUNT_BOUNDS[0]), MaxValueValidator(FLOOD_COUNT_BOUNDS[1])])
     flood_window_seconds = models.PositiveIntegerField(_('Flood window (seconds)'))
+    # A row written outside the form (a restore, a hand edit) without it holds nothing back: 0, the criticals at once.
+    follow_up_seconds = models.PositiveIntegerField(_('Follow-up after (seconds)'), db_default=0)
     clock_skew_seconds = models.PositiveIntegerField(
         _('Device clock off by more than (seconds)'),
         validators=[MinValueValidator(CLOCK_SKEW_BOUNDS[0]), MaxValueValidator(CLOCK_SKEW_BOUNDS[1])])
@@ -569,6 +575,8 @@ class SeverityPolicy(AuditedModel):
                                    name='chk_alarm_severity_policies_flood'),
             models.CheckConstraint(condition=_per_severity('flood_window_seconds', FLOOD_WINDOW_BOUNDS),
                                    name='chk_alarm_severity_policies_flood_window'),
+            models.CheckConstraint(condition=_per_severity('follow_up_seconds', FOLLOW_UP_BOUNDS),
+                                   name='chk_alarm_severity_policies_follow_up'),
             models.CheckConstraint(condition=Q(clock_skew_seconds__gte=CLOCK_SKEW_BOUNDS[0],
                                                clock_skew_seconds__lte=CLOCK_SKEW_BOUNDS[1],
                                                clock_skew_deadband_seconds__gte=0,
@@ -592,7 +600,8 @@ class SeverityPolicy(AuditedModel):
                                     ('escalation_minutes', ESCALATION_BOUNDS, _('minutes')),
                                     ('shelve_max_minutes', SHELVE_BOUNDS, _('minutes')),
                                     ('retry_seconds', RETRY_BOUNDS, _('seconds')),
-                                    ('flood_window_seconds', FLOOD_WINDOW_BOUNDS, _('seconds'))):
+                                    ('flood_window_seconds', FLOOD_WINDOW_BOUNDS, _('seconds')),
+                                    ('follow_up_seconds', FOLLOW_UP_BOUNDS, _('seconds'))):
             value, (low, high) = getattr(self, field), bounds.get(self.severity, (None, None))
             if value is not None and low is not None and not low <= value <= high:
                 errors[field] = _('For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s.') % {

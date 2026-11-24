@@ -30,7 +30,8 @@ manage.py run_alarms after its one pass.
   snoozed goes out at once.
 - **Floods.** The due warnings of one kind of alarm for one person go out as one flood message once they are a flood,
   and the next ones within the flood window are covered by it. A critical is never covered: the first of a kind goes at
-  once, the next ones as one follow-up message naming each, at most floods.FOLLOW_UP_AFTER later (alarms/floods.py).
+  once, the next ones as one follow-up message naming each, at most the critical rule's follow-up time later
+  (alarms/floods.py).
   Words about a snooze go out each on its own.
 - **Never lost; at worst twice.** A restart, a crash or a database outage finds the queue as it was and sends it. A
   process that dies after the transport took one and before its attempt was written sends it again when it runs again:
@@ -485,8 +486,8 @@ def _send_group(delivery, group, members, transports, found, rules, moment, time
                               for notification in covered])
         alone = [notification for notification in how.each if notification.pk in claimed]
         together = [notification for notification in how.flood if notification.pk in claimed]
-        if len(together) == 1:                  # the others went with another sender: it goes with its own text
-            alone, together = alone + together, []
+        if len(together) == 1 and together[0].alarm.severity == Severity.CRITICAL:
+            alone, together = alone + together, []      # the others went with another sender: its own text
         for notification in alone:
             _count(delivery, [services.attempt(notification, _call(transport, notification, timeout), moment(),
                                                flood_key=kind)])

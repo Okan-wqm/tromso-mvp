@@ -4,8 +4,9 @@ delay an open or newly cleared critical on a connected transport. Each held by a
 - N7 (probe T18): a critical that clears while the transport is connected but failing is never given up: only an
   acknowledgement ends a critical's retries; when it is delivered it says "Critical, now cleared";
 - batch, never drop (probes M1, M2): the first critical of a kind goes at once; the next open criticals of that kind for
-  that person are never covered: they are collected and go as one follow-up message naming every unit and how many are
-  open now, each within 30 s; a different tank of the same quantity is named too;
+  that person are never covered: they are collected for the critical rule's follow-up time (5 s, at most 30 s; 0: at
+  once) and go as one follow-up message naming every unit and how many are open now, each within 30 s; a different tank
+  of the same quantity is named too;
 - D8c: the summaries of old cleared criticals go after the criticals' messages in a round;
 - the follow-up after a cleared flood counts only the alarms it tells;
 - an error inside `is_due` follows the retry wait (no attempt a tick), and the critical it hides still raises the
@@ -16,13 +17,14 @@ from datetime import timedelta
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.db import DatabaseError, transaction
 from django.test import override_settings
 
 from farm.tests.helpers import point_of
 from farm.tests.test_stock import make_unit
 
 from .. import floods, outbox, read, services
-from ..models import Alarm, DeliveryAttempt, Notification, OutboxEntry
+from ..models import Alarm, DeliveryAttempt, Notification, OutboxEntry, SeverityPolicy
 from .doubles import RecordingTransport
 from .test_review_fixes import Case
 
@@ -160,6 +162,18 @@ class OpenCriticalsAreNeverCoveredTests(FinalCase):
         (text,) = [sent.text for sent in RecordingTransport.sent[told:]]
         counted = re.match(r'^(\d+) ', text)
         self.assertTrue(counted is None or counted.group(1) == '1', text)
+
+    def test_the_follow_up_time_is_the_critical_rules_and_none_sends_each_at_once(self):
+        self.assertEqual(outbox.alarm_rules.current().follow_up('critical'), timedelta(seconds=5))
+        for severity, seconds in (('critical', 31), ('warning', 1)):
+            with self.subTest(severity=severity), self.assertRaises(DatabaseError), transaction.atomic():
+                SeverityPolicy.objects.filter(severity=severity).update(follow_up_seconds=seconds)
+        SeverityPolicy.objects.filter(severity='critical').update(follow_up_seconds=0)
+        (first,) = self.system(1, 'critical')
+        outbox.send_due(self.at(seconds=1))
+        (second,) = self.system(1, 'critical', seconds=2)
+        outbox.send_due(self.at(seconds=2))
+        self.assertEqual([sent.pk for sent in RecordingTransport.sent], [first.pk, second.pk])
 
     def test_warnings_keep_their_coverage(self):
         self.system(5, 'warning')

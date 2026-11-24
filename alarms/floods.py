@@ -15,26 +15,23 @@ whether or when an alarm opens.
   covers nothing. After the window the count starts again.
 - **A critical is batched, never covered** (the coordinator's bar on the last recheck, 2026-11-24: no known way to drop or
   delay an open or newly cleared critical). The first critical of a kind for a person goes at once, on its own. The
-  next ones of that kind for that person are collected while a message of the kind went to them less than
-  FOLLOW_UP_AFTER ago, and then go as ONE follow-up message that names every one of them (its summary names the unit)
-  and says how many of them are open now (`Flood.listed`); one alone goes with its own text. So each reaches the person
-  at most FOLLOW_UP_AFTER after it was queued, and a person gets at most one message of a kind in that time. Ones
-  that are due in the same round as the first go with it: the first on its own, the rest as one follow-up message.
+  next ones of that kind for that person are collected while a message of the kind went to them less than the
+  critical rule's follow-up time ago (Alarm severity rules: "Follow-up after", 5 s by default, at most 30 s), and then go
+  as ONE follow-up message that names every one of them (its summary names the unit) and says how many of them are open
+  now (`Flood.listed`); one alone goes with its own text. So each reaches the person at most the follow-up time after it
+  was queued, and a person gets at most one message of a kind in that time. Ones that are due in the same round as the
+  first go with it: the first on its own, the rest as one follow-up message.
 - **The pages** show a flood of open alarms above the list (`open_floods`): at least the flood count of one kind, each
   opened within the flood window of the one before."""
 import hashlib
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from sensors.models.alarm import Severity
 
 from .models import Alarm, AlarmClearance, DeliveryAttempt, Outcome, Source
 from .sources import STEP_FAILED, slot_of
-
-# How long the next criticals of a kind wait for a follow-up message after a message of that kind went to the person: the
-# coordinator set at most 30 s from the first of them; 15 s leaves the rest for a round's tick and a send under way.
-FOLLOW_UP_AFTER = timedelta(seconds=15)
 
 
 def _digest(text):
@@ -58,7 +55,7 @@ def key(alarm):
 class Recent:
     """What a person got of one kind lately: how many notifications within its severity's window, the last flood
     message's time (a warning's covers the next ones), and the last time a message of the kind was sent to them (a
-    critical's next ones wait FOLLOW_UP_AFTER after it)."""
+    critical's next ones wait the follow-up time after it)."""
 
     count: int = 0
     last_flood_at: datetime | None = None
@@ -67,12 +64,12 @@ class Recent:
 
 def recent(groups, now, rules):
     """{(recipient id, channel, key): Recent} for the groups of a round ({(recipient id, channel, key): [notifications]}):
-    one query, the attempts of those people sent or covered within the longest window (or FOLLOW_UP_AFTER, if longer),
-    each group counted in its own severity's window."""
+    one query, the attempts of those people sent or covered within the longest window (or the critical follow-up time,
+    if longer), each group counted in its own severity's window."""
     if not groups:
         return {}
     windows = {group: rules.flood_window(members[0].alarm.severity) for group, members in groups.items()}
-    earliest = now - max(max(windows.values()), FOLLOW_UP_AFTER)
+    earliest = now - max(max(windows.values()), rules.follow_up(Severity.CRITICAL))
     counted = defaultdict(set)
     last, sent = {}, {}
     for recipient, channel, kind, notification, at, size, outcome, cleared_at in DeliveryAttempt.objects.filter(
@@ -99,7 +96,7 @@ def recent(groups, now, rules):
 class Plan:
     """How a group's due notifications go out this round: `each` on its own, `flood` as one message (a warnings' flood
     message, or a criticals' follow-up naming each), `covered` by the flood message sent within the window (warnings
-    only), `held` for the follow-up (criticals only: never longer than FOLLOW_UP_AFTER after the last message)."""
+    only), `held` for the follow-up (criticals only: never longer than the follow-up time after the last message)."""
 
     each: list = field(default_factory=list)
     flood: list = field(default_factory=list)
@@ -112,7 +109,7 @@ def plan(members, found, now, rules):
     got of that kind lately (`found`, a Recent)."""
     severity = members[0].alarm.severity
     if severity == Severity.CRITICAL:
-        if found.last_sent_at is not None and now - found.last_sent_at < FOLLOW_UP_AFTER:
+        if found.last_sent_at is not None and now - found.last_sent_at < rules.follow_up(severity):
             return Plan(held=list(members))
         first, rest = ([], list(members)) if found.count else (list(members[:1]), list(members[1:]))
         return Plan(each=first + rest) if len(rest) < 2 else Plan(each=first, flood=rest)

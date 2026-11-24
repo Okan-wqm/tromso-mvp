@@ -46,7 +46,8 @@ class RecipientRuleForm(TabbedForm):
 
 
 POLICY_TABS = [('rule', _('Rule'), ['on_delay_seconds', 'off_delay_seconds', 'escalation_minutes', 'delivery_attempts',
-                                     'retry_seconds', 'shelve_max_minutes', 'flood_count', 'flood_window_seconds']),
+                                     'retry_seconds', 'shelve_max_minutes', 'flood_count', 'flood_window_seconds',
+                                     'follow_up_seconds']),
                ('clock', _('Device clock'), ['clock_skew_seconds', 'clock_skew_deadband_seconds',
                                              'clock_behind_window_seconds'])]
 DEADBAND_TABS = [('deadband', _('Deadband'), ['parameter', 'deadband'])]
@@ -71,8 +72,12 @@ class SeverityPolicyForm(TabbedForm):
             'retry_seconds': _('How long after a failed attempt the notification is tried again. 1 to 3600.'),
             'flood_count': _('From this many warnings of one kind (one site, one quantity, rule or check) within the '
                              'flood window, a person gets one flood message for them. Criticals are never grouped this '
-                             'way: the first of a kind goes at once, the next ones within 15 s as one message naming '
+                             'way: the first of a kind goes at once, the next ones as one follow-up message naming '
                              'each; for them it marks a flood on the Alarms page. 2 to 1000.'),
+            'follow_up_seconds': _('Criticals only: after a message about a kind of critical alarm (one site, one '
+                                   'quantity, rule or check), the next ones of that kind for that person are collected '
+                                   'this long and go as one message naming each. 0: each at once. Critical 0 to 30; '
+                                   'warning 0 (warnings are grouped by the flood window).'),
             'flood_window_seconds': _('How long the alarms of a flood are counted together, and how long a flood '
                                       'message of warnings covers the warnings that come after it (a critical is never '
                                       'covered). 10 to 3600.'),

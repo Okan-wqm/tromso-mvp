@@ -15,7 +15,7 @@ export const BROWSERS = [
 
 /** The `skip` of a browser test: false (run it) when there is a browser or under CI=1, else why it is skipped. */
 export function skipWithout(found: string[], env: Record<string, string | undefined> = process.env): string | false {
-  return found.length || env.CI === '1' ? false : 'no Chrome or Edge on this machine';
+  return found.length || ['1', 'true'].includes(env.CI ?? '') ? false : 'no Chrome or Edge on this machine';
 }
 
 /** The first browser found, headless; under CI=1 without one, a failure that says what is missing. */

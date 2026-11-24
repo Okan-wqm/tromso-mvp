@@ -11,3 +11,10 @@ test('a browser test is skipped only where there is no browser and this is not C
   assert.equal(skipWithout([], { CI: '1' }), false);                    // CI: run, and fail for want of a browser
   assert.equal(skipWithout([], { CI: '0' }), 'no Chrome or Edge on this machine');
 });
+
+test('CI=true (as GitHub Actions sets it) is CI too: a missing browser fails there, never skips', () => {
+  assert.equal(skipWithout([], { CI: 'true' }), false);
+  for (const value of ['', 'false', 'TRUE', 'yes']) {
+    assert.equal(skipWithout([], { CI: value }), 'no Chrome or Edge on this machine', `CI=${value}`);
+  }
+});

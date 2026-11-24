@@ -21,7 +21,9 @@
 <form method="get" action="{{ calculator_url }}" class="calc" data-live="{{ results_url }}" novalidate>
   <input type="hidden" name="{{ form.DRAWN }}" value="1">
   {{ form.loaded }}{{ form.ph_loaded }}{{ form.phosphate_loaded }}
+  <div class="calc-values-plate ui-marks">
   <section class="calc-source" aria-label="{% trans "Where the values come from" %}">
+    {% if UI_NEXT %}<h2 class="calc-plate-title">{% trans "Values" %}</h2>{% endif %}
     <div class="calc-source-pick field">
       <label for="{{ form.point.id_for_label }}">{{ form.point.label }}</label>
       {{ form.point }}
@@ -45,6 +47,7 @@
       {% include "farm/calculator/_actions.html" %}
     </div>
   </div>
+  </div>
 
   {% include "farm/calculator/_errors.html" %}
   {% include "farm/calculator/_simulator.html" %}
@@ -54,7 +57,7 @@
       {% include "farm/calculator/_plot.html" with key="nh3" plot=result.plots.nh3 %}
       {% include "farm/calculator/_plot.html" with key="h2s" plot=result.plots.h2s %}
     </div>
-    <section class="calc-card calc-deffeyes" aria-label="{% trans "Water Quality Management Chart" %}">
+    <section class="calc-card calc-deffeyes ui-marks" aria-label="{% trans "Water Quality Management Chart" %}">
       <fieldset class="calc-layers">
         <legend>{{ form.layers.label }}</legend>
         {% for box in form.layers %}<label class="check">{{ box.tag }} {{ box.choice_label }}</label>{% endfor %}

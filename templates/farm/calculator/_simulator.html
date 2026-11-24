@@ -2,7 +2,7 @@
    of the Simulator tab, each value judged as the water is (CO₂ against its limit at that alkalinity, NH₃ and
    H₂S against their borders), the change from the water to the last step, and what cannot be. Its path is
    drawn on the chart. Hidden while no amount is given. {% endcomment %}
-<section class="calc-card calc-simulator" data-live-part="simulator" aria-labelledby="calc-simulator-title"{% if not result.steps and not result.steps_note %} hidden{% endif %}>
+<section class="calc-card calc-simulator ui-marks" data-live-part="simulator" aria-labelledby="calc-simulator-title"{% if not result.steps and not result.steps_note %} hidden{% endif %}>
   {% if result.steps or result.steps_note %}
   <h3 class="calc-card-title" id="calc-simulator-title">{% trans "Dosing simulator" %}</h3>
   <p class="calc-card-help">{% trans "The water after each amount, added in the order of the list, mixed through and closed to the air while it mixes. Amounts are of the pure substance." %}</p>

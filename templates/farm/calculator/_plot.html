@@ -2,7 +2,7 @@
    farm/water/charts.py): `key` nh3, h2s, carbonate or saturation, `plot` its charts.Drawing (None when it
    cannot be drawn, said why). Its title and the facts under it say in text what the chart shows; the SVG is
    drawn on the server with a dot decimal in every coordinate. {% endcomment %}
-<section class="calc-card calc-plot" data-live-part="plot-{{ key }}" aria-labelledby="plot-{{ key }}-title">
+<section class="calc-card calc-plot ui-marks" data-live-part="plot-{{ key }}" aria-labelledby="plot-{{ key }}-title">
   {% if result %}{% with water=analysis.water %}
   <h3 class="calc-card-title" id="plot-{{ key }}-title">
     {% if key == "nh3" %}{% trans "Un-ionised ammonia against pH" %}{% include "farm/_water_status.html" with status=analysis.nh3.status %}

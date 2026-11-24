@@ -3,7 +3,7 @@
    values worked out, the charts in the calculator's three columns with every layer drawn, and here the
    recipes and the simulator's steps too; a page of its own, laid out for A4 across. Its Print button is
    shown by the script (components.ts, data-print); without it the browser's own Print does the same.{% endcomment %}
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE }}"{% if UI_NEXT %} data-theme="{{ THEME }}" data-ui="next"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">

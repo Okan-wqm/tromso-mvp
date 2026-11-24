@@ -45,7 +45,7 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
         made = world(cls.admin, Client())
-        refused = [each for each in made if not each.endswith(': 302') and not each.startswith('hr:')]
+        refused = [each for each in made if each.rsplit(': ', 1)[-1].isdigit() and not each.endswith(': 302')]
         if refused:
             raise AssertionError(f'the test world was not built: {refused}')
         sensors_world(cls.admin)

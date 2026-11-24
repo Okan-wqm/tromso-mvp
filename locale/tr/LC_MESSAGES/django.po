@@ -13824,6 +13824,12 @@ msgstr "Paslanmaz çelik"
 msgid "Stale"
 msgstr "Eski"
 
+msgid "Stale, was critical"
+msgstr "Eski, kritikti"
+
+msgid "Stale, was warning"
+msgstr "Eski, uyarıydı"
+
 msgid "Standard week (minutes)"
 msgstr "Standart hafta (dakika)"
 
@@ -17326,12 +17332,6 @@ msgstr "Kabul edilen uyarılar"
 
 msgid "Warranty end date"
 msgstr "Garanti bitiş tarihi"
-
-msgid "Was critical"
-msgstr "Kritikti"
-
-msgid "Was warning"
-msgstr "Uyarıydı"
 
 msgid "Water"
 msgstr "Su"

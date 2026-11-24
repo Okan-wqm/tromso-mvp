@@ -5557,8 +5557,8 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   units). The density cell draws the share of capacity as the list page's gauge (`listprops.gauge`, `ui/Gauge.tsx`: the
   bar and "12 % of capacity" in words, critical with its "Over" chip above capacity). A water value is its figure with
   its origin and age; a warning, critical or stale one is in its status's chip, never drawn as OK; a stale one that was
-  critical or a warning when taken (F-244, `Reading.old_alert`) keeps its stale chip and says "Was critical: " with the
-  classic title's words (status, what it was, moment, age). Held:
+  critical or a warning when taken (F-244, `Reading.old_alert`) keeps its stale chip and says "Stale, was critical" and
+  its sample's moment (its age is the origin line's). Held:
   `farm/tests/test_production_units_next.py` (the filter links, the bare "All" and the values' titles are the things said
   another way, named there).
 - **System › Water** (`farm:system_water`, `/operations/systems/<id>/water/`; `farm/water/system_page.py`): the system's

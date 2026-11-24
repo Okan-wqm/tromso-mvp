@@ -13796,6 +13796,12 @@ msgstr "Rustfritt stål"
 msgid "Stale"
 msgstr "Utdatert"
 
+msgid "Stale, was critical"
+msgstr "Utdatert, var kritisk"
+
+msgid "Stale, was warning"
+msgstr "Utdatert, var advarsel"
+
 msgid "Standard week (minutes)"
 msgstr "Standarduke (minutter)"
 
@@ -17288,12 +17294,6 @@ msgstr "Anerkjente advarsler"
 
 msgid "Warranty end date"
 msgstr "Garantien utløper"
-
-msgid "Was critical"
-msgstr "Var kritisk"
-
-msgid "Was warning"
-msgstr "Var advarsel"
 
 msgid "Water"
 msgstr "Vann"

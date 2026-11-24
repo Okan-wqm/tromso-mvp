@@ -29,17 +29,33 @@ MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'isla
 BUTTON = re.compile(r'<a href="([^"]+)" aria-pressed="(?:true|false)">')
 # a water value's title, but never one of a value that was critical or a warning before it went stale (wq-was-…)
 VALUE_TITLE = re.compile(r'class="(?:num )?wq wq-(?:(?!wq-was-)[^"])*" title="([^"]*)"')
+WAS_TITLE = re.compile(r'class="(?:num )?wq wq-[^"]*wq-was-[^"]*" title="([^"]*)"')
 DENSITY = re.compile(r'<span class="ui-gauge-text">([^<]*)</span>')
 
 
+def was_unsaid(old, props):
+    """The words of each classic title of a value that was critical or a warning (`wq-was-…`: "Stale · Critical · <moment>
+    · <age> ago") that the new page does not carry: each part must be in a string of the props (its case aside: the
+    new cell says "Stale, was critical"), never ignored."""
+    from core.pagesays import strings
+    carried = [each.casefold() for each in strings(props)]
+    missing = []
+    for title in re.findall(r'wq-was-[a-z]+[^"]*" title="([^"]*)"', old):
+        for part in ' '.join(htmllib.unescape(title).split()).split(' · '):
+            if not any(part.casefold() in each for each in carried):
+                missing.append(part)
+    return missing
+
+
 def said_another_way(old, language='en'):
-    """The classic page's filter buttons' addresses and its water values' titles (not of a value that was critical or a
-    warning) and densities (see the module's docstring), and the kind and fish buttons' bare "All" in `language`: the
-    selects' first options say "All kinds" and "Stocked and empty"."""
+    """The classic page's filter buttons' addresses and its water values' titles (one of a value that was critical or a
+    warning only once `was_unsaid` found each of its words) and densities (see the module's docstring), and the kind and
+    fish buttons' bare "All" in `language`: the selects' first options say "All kinds" and "Stocked and empty"."""
     with translation.override(language):
         everything = gettext('All')
     return {htmllib.unescape(each) for each in BUTTON.findall(old)} | \
         {' '.join(htmllib.unescape(each).split()) for each in VALUE_TITLE.findall(old)} | \
+        {' '.join(htmllib.unescape(each).split()) for each in WAS_TITLE.findall(old)} | \
         {' '.join(htmllib.unescape(each).split()) for each in DENSITY.findall(old)} | {everything}
 
 
@@ -75,6 +91,7 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
                     old, new = self.pages(language, **query)
                     props = props_of(new, 'list-page')
                     self.assertTrue(props['table']['rows'])
+                    self.assertEqual(was_unsaid(old, props), [])
                     self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old, language)), [])
             old, new = self.pages(language)
             keep(f'production-units-{language}', {'island': 'list-page', 'props': props_of(new, 'list-page')})
@@ -114,17 +131,20 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
 
     def test_a_stale_value_that_was_critical_says_so_in_words(self):
         """F-244: TM-01's oxygen (5.2 mg/L, under the critical 6, taken 80 hours back) is stale now; its cell keeps the
-        stale chip and says it was critical, with the classic title's words (held by unsaid, not ignored)."""
+        stale chip and says it was critical and when it was taken; its age is the origin line's (the classic title's
+        every word held by was_unsaid)."""
         old, new = self.pages('en')
         self.assertIn('wq-stale wq-was-critical', old)
         row = next(each for each in props_of(new, 'list-page')['table']['rows']
                    if each['cells']['unit']['text'] == 'TM-01')
         oxygen = row['cells']['oxygen']
         self.assertEqual(oxygen['chip'], {'kind': 'stale', 'text': '5.20'})
-        self.assertRegex(oxygen['sub'][0], r'^Was critical: Stale · Critical · \d{2}\.\d{2}\.\d{4} \d{2}:\d{2} · 3\sdays ago$')
-        title = re.search(r'wq-was-critical" title="([^"]*)"', old).group(1)
-        self.assertIn(htmllib.unescape(title), oxygen['sub'][0])
-        self.assertNotIn(htmllib.unescape(title), said_another_way(old))
+        self.assertRegex(oxygen['sub'][0], r'^Stale, was critical · \d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$')
+        self.assertRegex(oxygen['sub'][-1], r' · 3\sdays ago$')                    # the age: the origin line's
+        self.assertEqual(was_unsaid(old, props_of(new, 'list-page')), [])
+        # the check sees a word the new page leaves out
+        self.assertEqual(was_unsaid(old.replace('wq-was-critical" title="Stale', 'wq-was-critical" title="Stale · Nowhere'),
+                                    props_of(new, 'list-page')), ['Nowhere'])
 
     def test_a_water_value_is_never_drawn_as_ok_when_it_is_not(self):
         _old, new = self.pages('en')

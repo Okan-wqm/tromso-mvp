@@ -15,7 +15,7 @@ from core import listprops as L
 from farm.templatetags.feeding import fcr, fed_on
 from farm.templatetags.health import harvest_from
 from farm.templatetags.stock import density, fish, grams, join_codes, kilos, percent
-from farm.templatetags.water import age, reading_figure, sample_clock, source, status_label
+from farm.templatetags.water import reading_figure, sample_clock, source, status_label
 
 FCR_SAID = ('Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the '
             'last weighing')
@@ -31,29 +31,26 @@ def point_said(water):
     return str(status_label(water.status))
 
 
-WAS = {'critical': lambda: _('Was critical'), 'warning': lambda: _('Was warning')}
+WAS = {'critical': lambda: _('Stale, was critical'), 'warning': lambda: _('Stale, was warning')}
 
 
-def value_title(reading):
-    """The classic value's title (farm/_water_value.html, `latest`): its status, what an old value was, the moment and
-    age of its sample, how it was worked out, its provenance and its note."""
-    parts = [str(status_label(reading.status))]
-    if reading.old_alert:
-        parts.append(str(status_label(reading.old_alert)))
-    parts += [formats.date_format(sample_clock(reading.sample), 'DATETIME_FORMAT'),
-              _('%(age)s ago') % {'age': age(reading.at)}]
+def was_said(reading):
+    """What a stale value that was critical or a warning says beside its figure: the classic title's words (farm/
+    _water_value.html: its status and what it was, the moment of its sample, how it was worked out, its provenance and
+    note) but its age, which the origin line under it says already, so the line stays short in a narrow column."""
+    parts = [WAS[reading.old_alert](), formats.date_format(sample_clock(reading.sample), 'DATETIME_FORMAT')]
     if reading.derived:
         parts.append(_('worked out from the sensors') if reading.sample.live else _('worked out from the sample'))
     parts += [str(each) for each in (reading.provenance, reading.note) if each]
-    return ' · '.join(parts)
+    return ' · '.join(str(part) for part in parts)
 
 
 def value_cell(reading):
     """One latest water value (farm/_water_face.html): its figure (in its status's chip when it is a warning, critical
     or stale), what was measured when it is stored converted, the unit's own older value a status keeps, and where it
     came from and how old it is. No value is "no data", never a dash. A stale value that was critical or a warning when
-    it was taken (Reading.old_alert, F-244) keeps its stale chip and says in words what it was, with the classic title's
-    words (status, what it was, moment, age): never only "stale"."""
+    it was taken (Reading.old_alert, F-244) keeps its stale chip and says in words what it was ("Stale, was critical"
+    and the sample's moment; its age is the origin line's): never only "stale"."""
     if reading is None:
         return L.cell(_('no data'))
     said = source(reading)
@@ -61,7 +58,7 @@ def value_cell(reading):
     sub = [reading.measured or '', getattr(reading, 'last_own_said', '') if reading.last_own else '',
            f"{said['origin']} · {said['age']}"]
     if reading.old_alert:
-        sub.insert(0, f'{WAS[reading.old_alert]()}: {value_title(reading)}')
+        sub.insert(0, was_said(reading))
     tone = VALUE_CHIP.get(reading.status)
     return L.cell(chip=L.chip(tone, figure), sub=sub) if tone else L.cell(figure, sub=sub)
 

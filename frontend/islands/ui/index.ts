@@ -8,7 +8,11 @@ export { Plate, Plates, type PlateProps, type Span } from './Plate.js';
 export { Tile, Tiles, type TileProps } from './Tiles.js';
 export { Table, CellLines, type Column, type TableProps } from './Table.js';
 export { Tabs, LinkTabs, type TabItem, type LinkTab } from './Tabs.js';
-export { TextField, SelectField, CheckboxGroup, FixedField, ServerForm } from './Field.js';
+export { TextField, SelectField, CheckboxGroup, FixedField, ServerForm, FieldMark } from './Field.js';
+export {
+  Checkbox, RadioGroup, FileField, Acknowledge, PermissionMatrix, LinkList, RowList, type ChoiceOption, type MatrixArea,
+  type MatrixCell, type LinkRow,
+} from './FormParts.js';
 export { List, ListItem, AuditItem, type ListItemProps, type AuditItemProps } from './List.js';
 export { Notice, EmptyState, LoadingState, ErrorState, type NoticeTone } from './States.js';
 export { ChartFrame, type ChartKey } from './ChartFrame.js';

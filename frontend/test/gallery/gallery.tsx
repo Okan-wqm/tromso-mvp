@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
-  AuditItem, Button, CellLines, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
+  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
   LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
@@ -114,6 +114,24 @@ function Gallery({ rows, errors }: GalleryProps) {
           <AuditItem action="Changed" record="Task · Clean the settling pond" who={<>by <strong>bjorn.eriksen</strong> · 23.11.2026 09:05</>} />
           <AuditItem action="Acknowledged a warning" status="critical" critical={<Chip kind="critical">Critical</Chip>} record="Harvest · TG-M01" who={<>by <strong>kari.nordmann</strong> · 23.11.2026 08:41</>} />
         </List>
+      </Plate>
+      <Plate title="Form parts" span={12}>
+        <div className="ui-plate-body">
+          <ServerForm action="#parts" csrfToken="test-token" label="Form parts" actions={<Button variant="primary" type="submit" id="parts-submit">Save role</Button>}>
+            <Checkbox name="only_on_shift" label="Only while on shift" mark="optional" defaultChecked />
+            <RadioGroup name="placement" label="Placement" options={[{ value: 'random', label: 'Randomise' }, { value: 'hand', label: 'By hand' }]} defaultValue="random" />
+            <FileField name="file" label="PDF" help="One PDF, up to 50 MB." current={{ name: 'fivelstad-2003.pdf', href: '#file', intro: 'Currently', clearName: 'file-clear', clearLabel: 'Remove the file', changeLabel: 'Change' }} />
+            <Acknowledge name="ack" title="Before handling" label="I have read this and go on" value="f00d">HA-K01 is on withdrawal to 24.11.2026.</Acknowledge>
+            <PermissionMatrix name="permissions" label="Rights" areaLabel="Area" columns={['Read', 'Create']}
+              sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: [], cells: [{ action: 'Read', value: '1', checked: true, id: 'p-1' }, { action: 'Create', value: '2', checked: false, id: 'p-2', requires: 'p-1' }] }] }]} />
+            <LinkList name="systems" label="Systems" columns={['Role']} primary primaryLabel="Primary" primaryWords="%(record)s is the primary one" emptyText="No system on this site."
+              rows={[{ pk: '7', label: 'RAS-1', checked: true, primary: true, details: <input name="systems-7-role" aria-label="Role" defaultValue="Filtration" /> }]} />
+            <RowList prefix="contacts" management={[{ name: 'contacts-TOTAL_FORMS', value: '1' }, { name: 'contacts-INITIAL_FORMS', value: '1' }]}
+              rows={[{ key: '1', content: <input name="contacts-0-name" aria-label="Name" defaultValue="Kari Nordmann" /> }]}
+              newRow={(index) => <input name={`contacts-${index}-name`} aria-label="Name" />} columns={['Name']} legend="Contact"
+              addLabel="Add contact" removeLabel="Remove this contact" emptyText="No contacts yet." />
+          </ServerForm>
+        </div>
       </Plate>
       <Plate title="Chart frame" span={4}>
         <ChartFrame title="Dissolved oxygen" now="6.50 mg/L" nowStatus="warning" label="Dissolved oxygen, last 24 hours"

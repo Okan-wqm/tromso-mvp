@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
-  AuditItem, Button, ChartFrame, CheckboxGroup, Chip, EmptyState, ErrorState, Icon, IconButton, LinkButton, LinkTabs, List, ListItem, LoadingState,
+  Acknowledge, AuditItem, Button, ChartFrame, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, CheckboxGroup, Chip, EmptyState, ErrorState, Icon, IconButton, LinkButton, LinkTabs, List, ListItem, LoadingState,
   Notice, Plate, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
 } from './index.js';
 import { ICONS } from './icon-shapes.js';
@@ -146,3 +146,47 @@ test('a list is the design system\'s ui-list: its rows with their sub-line, meta
   assert.doesNotMatch(list + entry, /style=/);
 });
 
+
+test('the form parts draw the old page\'s markup, post the old names, and take every word from props', () => {
+  const box = html(<Checkbox name="active" label="Active" mark="optional" defaultChecked />);
+  assert.match(box, /<label class="check"><input type="checkbox"[^>]*name="active"/);
+  assert.match(box, / checked=""/);
+  assert.match(box, / value="on"/);
+  assert.match(box, /<span class="ui-field-mark">optional<\/span>/);
+  const radios = html(<RadioGroup name="placement" label="Placement" options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]} defaultValue="b" />);
+  assert.match(radios, /<legend>Placement<\/legend>/);
+  assert.match(radios, /name="placement"(?: checked="")? value="b"(?: checked="")?/);
+  assert.equal((radios.match(/checked=""/g) ?? []).length, 1);
+  const file = html(<FileField name="file" label="PDF" current={{ name: 'x.pdf', href: '/f/', intro: 'Currently', clearName: 'file-clear', clearLabel: 'Remove the file' }} />);
+  assert.match(file, /<p class="file-current">Currently: <a href="\/f\/"[^>]*>x\.pdf<\/a><\/p>/);
+  assert.match(file, /name="file-clear"/);
+  assert.match(file, /type="file"[^>]*name="file"/);
+  const ack = html(<Acknowledge name="ack" title="Before handling" label="Go on" value="f00d">Warned.</Acknowledge>);
+  assert.match(ack, /class="ui-notice ui-ack" data-tone="critical"/);
+  assert.match(ack, /type="checkbox"[^>]*name="ack"[^>]*value="f00d"/);
+  const matrix = html(<PermissionMatrix name="permissions" label="Rights" areaLabel="Area" columns={['Read', 'Create']}
+    sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: ['Note'], cells: [{ action: 'Read', value: '1', checked: true, id: 'p-1' }, null] }] }]} />);
+  assert.match(matrix, /<table class="matrix">/);
+  assert.match(matrix, /name="permissions"[^>]*value="1"/);
+  assert.match(matrix, /id="p-1"[^>]*checked=""|checked=""[^>]*id="p-1"/);
+  assert.match(matrix, /<span class="sr-only">Sites: Read<\/span>/);
+  assert.match(matrix, /class="matrix-note"/);
+  const links = html(<LinkList name="systems" label="Systems" columns={['Role']} primary primaryLabel="Primary" primaryWords="%(record)s is the primary one"
+    rows={[{ pk: '7', label: 'RAS-1', checked: true, primary: true }]} />);
+  assert.match(links, /name="systems"(?: checked="")? value="7"/);
+  assert.match(links, /name="systems-primary"(?: checked="")? value="7"/);
+  assert.equal((links.match(/checked=""/g) ?? []).length, 2);
+  assert.match(links, /RAS-1 is the primary one/);
+  const rows = html(<RowList prefix="c" management={[{ name: 'c-TOTAL_FORMS', value: '9' }, { name: 'c-INITIAL_FORMS', value: '1' }]}
+    rows={[{ key: '1', content: <input name="c-0-name" /> }]} newRow={(index) => <input name={`c-${index}-name`} />} columns={['Name']}
+    legend="Contact" addLabel="Add contact" removeLabel="Remove" emptyText="None" />);
+  assert.match(rows, /name="c-TOTAL_FORMS" value="1"/);           // the count is what is drawn, not what was given
+  assert.match(rows, /name="c-INITIAL_FORMS" value="1"/);
+  assert.doesNotMatch(box + radios + file + ack + matrix + links + rows, /style=/);
+});
+
+test('a server form is busy while it posts: its submit is switched off and says so, and ready again from history', () => {
+  const form = html(<ServerForm action="/x/" csrfToken="t" label="Save" actions={<Button type="submit" variant="primary">Save</Button>} noValidate>x</ServerForm>);
+  assert.match(form, /<form[^>]*noValidate=""/i);
+  assert.doesNotMatch(form, /aria-busy/);                           // ready until it posts (the browser test presses it)
+});

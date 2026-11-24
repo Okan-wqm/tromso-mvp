@@ -574,6 +574,17 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-audit-who { margin-left: auto; color: var(--text-3); font-size: var(--fs-small); white-space: nowrap; }
 .ui-audit-who strong { color: var(--text-2); }
 
+/* A field's required or optional mark after its label, in words (the design's caption type). */
+.ui-field-mark { margin-left: var(--space-1); color: var(--text-3); font-size: var(--fs-caption); font-weight: 400; }
+
+/* The critical acknowledgement (the design's "ack" block): the notice framed in the critical colour, its box below. */
+.ui-ack { border: 2px solid var(--crit); }
+.ui-ack-box { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-h, 40px); margin-top: var(--space-2); color: var(--text-1); font-weight: 600; }
+
 /* A tab panel kept in the page while another tab is shown (Tabs keepMounted: a form posts the fields of every tab): out of
    sight and, through React Aria's inert, out of the focus order. */
 .ui-tab-panel[data-inert] { display: none; }
+
+/* The delete confirmation (the new look's ConfirmDelete): its question large, each group of the delete plan under its head. */
+.ui-confirm-question { margin: 0; font-family: var(--font-display); font-size: var(--fs-tab); font-weight: 600; }
+.ui-confirm-group h3 { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--fs-label); }

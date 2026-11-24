@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext, gettext_lazy as _
 
-from core import audit
+from core import audit, formpanels
 from core.crud import Resource, filter_by
 from farm.models import Species
 
@@ -30,6 +30,32 @@ class KnowledgeEntryResource(Resource):
     form_template = 'knowledge/entry_form.html'
     icon = 'lightbulb'
     page_size = 50
+
+    @classmethod
+    def next_panels(cls, view, form, entry, extra):
+        """knowledge/entry_form.html in the new look: an existing entry's Review tab (knowledge/_review.html), its status
+        and, for a person who may edit entries, the buttons that mark it reviewed or take it back to draft."""
+        if entry is None:
+            return []
+        from core.templatetags.dates import company_clock
+        from django.utils import formats
+        reviewed = entry.status == 'reviewed'
+        state = formpanels.status(
+            {'kind': 'ok' if reviewed else 'neutral', 'text': str(entry.get_status_display())},
+            gettext('by %(who)s, %(when)s') % {
+                'who': entry.reviewed_by, 'when': formats.date_format(company_clock(entry.reviewed_at), 'DATETIME_FORMAT')}
+            if reviewed else gettext('Not reviewed yet. AI agents will act on reviewed entries only.'))
+        blocks = [state]
+        if cls.allows('change') and view.request.user.has_perm(cls.perm('change')):
+            action = reverse('knowledge:entry_review', args=[entry.pk])
+            if reviewed:
+                blocks.append(formpanels.post(action, _('Back to draft'), [('version', entry.version), ('status', 'draft')]))
+            blocks += [formpanels.post(action, _('Review it again') if reviewed else _('Mark as reviewed'),
+                                       [('version', entry.version), ('status', 'reviewed')], primary=True),
+                       formpanels.help_text(_('Reviewing says the statement and its source are right: it is recorded in '
+                                              'your name, now. Editing the statement, topics, species or source of a '
+                                              'reviewed entry makes it a draft again.'))]
+        return [formpanels.panel('review', _('Review'), blocks)]
 
     @classmethod
     def queryset(cls):

@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from django.urls import reverse
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
+from core import formpanels
 from core.crud import Resource, RowList
 from core.dates import read_day
 from core.widgets import NONE
@@ -27,6 +28,14 @@ class TaskChecklist(RowList):
 
     key, tab, label = 'checklist', 'checklist', _('Checklist')
     formset = TaskChecklistLines
+    # Its panel's words (its form template's).
+    title = _('Checklist')
+    help_text = _('The steps of the job, one per line, at most 30; each is ticked on the Tasks page with who and when. The '
+                  'list can be changed until its first line is ticked. It is saved separately from the task.')
+    empty_text = _('No lines yet. Use “Add line” to add one.')
+    add_label, save_label = _('Add line'), _('Save checklist')
+    pending_text = _('A checklist can be added once the task is created.')
+    row_kind = 'checklist-row'
     saved = ngettext_lazy('%(count)d line saved.', '%(count)d lines saved.', 'count')
 
     @classmethod
@@ -39,6 +48,15 @@ class SeriesChecklist(RowList):
 
     key, tab, label = 'checklist', 'checklist', _('Checklist')
     formset = SeriesChecklistLines
+    # Its panel's words (its form template's).
+    title = _('Checklist')
+    help_text = _('The steps of the job, one per line, at most 30, copied to every task it plans. Saving them gives the '
+                  'tasks from today on that nobody has touched the new list. It is saved separately from the recurring '
+                  'task.')
+    empty_text = _('No lines yet. Use “Add line” to add one.')
+    add_label, save_label = _('Add line'), _('Save checklist')
+    pending_text = _('A checklist can be added once the recurring task is created.')
+    row_kind = 'checklist-row'
     saved = TaskChecklist.saved
 
     @classmethod
@@ -62,6 +80,22 @@ class TaskResource(Resource):
     icon = 'list-checks'
     row_lists = (TaskChecklist,)
     page_size = 50
+    next_extras = frozenset({'checklist_started', 'checklist_lines'})
+
+    @classmethod
+    def next_panels(cls, view, form, task, extra):
+        """tasks/task_form.html in the new look: the checklist to edit, or, once a line is ticked, its lines as they are,
+        each ticked one with who and when on the clock of the task's site."""
+        if not extra.get('checklist_started'):
+            return formpanels.row_list_panels(cls, view, task, extra)
+        from .templatetags.tasks import person
+        return [formpanels.panel('checklist', _('Checklist'), [
+            formpanels.help_text(_('The checklist has been started: its lines can no longer be changed. Add a note '
+                                   'instead.')),
+            formpanels.checks(_('Checklist'), [
+                (line.text, line.done_at is not None, f'{person(line.done_by)} · '
+                 f'{formpanels.moment(line.done_at, task.place_site)}' if line.done_at else '')
+                for line in extra.get('checklist_lines', ())])])]
 
     @classmethod
     def form(cls, request, *args, **kwargs):
@@ -200,6 +234,11 @@ class TaskSeriesResource(Resource):
     icon = 'repeat'
     row_lists = (SeriesChecklist,)
     page_size = 50
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """tasks/series_form.html in the new look: its row lists."""
+        return formpanels.row_list_panels(cls, view, obj, extra)
 
     @classmethod
     def queryset(cls):

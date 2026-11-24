@@ -1,5 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
+from core import formpanels
 from core.crud import Resource
 
 from ..forms import SiteContactFormSet, SiteForm
@@ -11,6 +12,9 @@ class SiteContacts(ContactList):
     """A site's contacts, saved as a whole list on the Contact tab (the source replaces them too)."""
 
     formset = SiteContactFormSet
+    help_text = _('The site’s operational contacts. At most one can be the primary contact. Contacts are saved separately '
+                  'from the site details.')
+    pending_text = _('Contacts can be added once the site is created.')
 
 
 class SiteResource(Resource):
@@ -25,3 +29,8 @@ class SiteResource(Resource):
     row_lists = (SiteContacts,)
     # A person's address and number: private in the activity log like a contact's (ContactList.describe, F-059).
     private_fields = ('contact_email', 'contact_phone')
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """farm/site_form.html in the new look: its row lists."""
+        return formpanels.row_list_panels(cls, view, obj, extra)

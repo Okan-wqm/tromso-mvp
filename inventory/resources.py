@@ -2,6 +2,7 @@
 saved as a list on a tab of their own."""
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
+from core import formpanels
 from core.crud import Resource, RowList, filter_by
 from farm.models import Site
 
@@ -15,6 +16,14 @@ class ReorderLevels(RowList):
     chooses a feed and stores the feed's item of the store, made when the feed has none yet."""
 
     key, tab, label = 'reorder', 'reorder', _('Reorder levels')
+    # Its panel's words (inventory/location_form.html).
+    title = _('Reorder levels')
+    help_text = _('Below the reorder level of a feed in this location, the Storage overview says the stock is low. One row '
+                  'per feed. They are saved separately from the location details.')
+    empty_text = _('No reorder levels yet. Use “Add feed” to add a row.')
+    add_label, save_label = _('Add feed'), _('Save reorder levels')
+    pending_text = _('Reorder levels can be set once the location is created.')
+    row_kind = 'reorder-row'
     formset = ReorderLevelFormSet
     saved = ngettext_lazy('%(count)d reorder level saved.', '%(count)d reorder levels saved.', 'count')
 
@@ -39,6 +48,11 @@ class StorageLocationResource(Resource):
     icon = 'warehouse'
     row_lists = (ReorderLevels,)
     page_size = 50
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """inventory/location_form.html in the new look: its row lists."""
+        return formpanels.row_list_panels(cls, view, obj, extra)
 
     @classmethod
     def queryset(cls):

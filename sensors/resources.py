@@ -10,9 +10,10 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, F, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.translation import gettext as gettext_now, gettext_lazy as _, ngettext_lazy
 
+from core import formpanels, listprops
 from core.crud import CreateView, Resource, RowList, done, refusal_text, render_page
 from farm.models import Equipment, System, Tank
 from farm.models.site import zone_of
@@ -91,11 +92,63 @@ class DeviceResource(Resource):
         return {**super().edit_extras(request, obj), 'channels': obj.channels.order_by('code'),
                 'placed_at': bindings.placements([obj])[obj.pk], 'placement_history': bindings.placement_history(obj)}
 
+    next_extras = frozenset({'channels', 'placed_at', 'placement_history'})
+
+    @classmethod
+    def next_panels(cls, view, form, device, extra):
+        """sensors/device_form.html in the new look: an existing device's Channels (each opens its own form) and its
+        Placement (where it is now, Move device for a person who may bind, where it was), on the device site's clock."""
+        if device is None:
+            return []
+        channels = list(extra.get('channels', ()))
+        channel_table = formpanels.table(_('Channels'), [
+            listprops.column('channel', _('Channel')), listprops.column('quantity', _('Quantity')),
+            listprops.column('value', _('Value')), listprops.column('heartbeat', _('Heartbeat (s)'), numeric=True),
+            listprops.column('state', _('State'))], [
+            listprops.row(channel.pk, {
+                'channel': listprops.cell(channel.code, href=reverse('sensors:channel_edit', args=[channel.pk]), strong=True,
+                                          sub=[f'{channel.name} · #{channel.channel_no}']),
+                'quantity': listprops.cell(channel.get_quantity_display()),
+                'value': listprops.cell(channel.value_path or channel.item_name),
+                'heartbeat': listprops.cell(formats.localize(channel.heartbeat_s)),
+                'state': listprops.cell(channel.get_state_display())}) for channel in channels])
+        places = [str(place) for place in extra.get('placed_at') or ()]
+        history = list(extra.get('placement_history') or ())
+        where = (f"{gettext_now('Placed at')}: {', '.join(places)}." if places
+                 else _('Not placed: out of the water, its readings belong to no place.'))
+        return [
+            formpanels.panel('channels', _('Channels'), [channel_table] if channels else [
+                formpanels.help_text(_('No channels yet: add them on the Channels page.'))]),
+            formpanels.panel('placement', _('Placement'), [
+                formpanels.help_text(where),
+                formpanels.link(f"{reverse('sensors:device_move')}?device={device.pk}", _('Move device'), 'target')
+                if view.request.user.has_perm('sensors.add_binding') else None,
+                formpanels.table(_('Placement'), [
+                    listprops.column('where', _('Where')), listprops.column('from', _('From')),
+                    listprops.column('until', _('Until'))], [
+                    listprops.row(index, {
+                        'where': listprops.cell(stay.places[0] if stay.places else '', sub=stay.places[1:]),
+                        'from': listprops.cell(formpanels.moment(stay.start, device.site)),
+                        'until': listprops.cell(formpanels.moment(stay.end, device.site)) if stay.end
+                        else listprops.cell(chip=listprops.chip('neutral', _('now')))})
+                    for index, stay in enumerate(history)]) if history else formpanels.help_text(_('Never placed yet.'))]),
+        ]
+
 
 class ChannelCalibrations(RowList):
     """A channel's calibrations, saved as a whole list on its Calibration tab; needs the right to edit channels."""
 
     key, tab, label = 'calibrations', 'calibration', _('Calibrations')
+    # Its panel's words (sensors/channel_form.html).
+    title = _('Calibration')
+    help_text = _('Value = gain × raw value + offset, from the moment given on the site’s clock, applied by the ingest at the '
+                  'device’s time before the unit conversion. Stored values are calibrated; a later calibration never changes '
+                  'them. The earliest calibration also covers the time before it. The calibrations are saved separately from '
+                  'the channel’s details.')
+    empty_text = _('No calibrations: values are stored as the device sends them (after the unit conversion).')
+    add_label, save_label = _('Add calibration'), _('Save calibrations')
+    pending_text = _('Calibrations can be added once the channel is created.')
+    row_kind = 'calibration-row'
     formset = CalibrationFormSet
     saved = ngettext_lazy('%(count)d calibration saved.', '%(count)d calibrations saved.', 'count')
 
@@ -117,6 +170,16 @@ class ChannelResource(Resource):
     icon = 'activity'
     row_lists = (ChannelCalibrations,)
     page_size = 100
+
+    @classmethod
+    def next_panels(cls, view, form, channel, extra):
+        """sensors/channel_form.html in the new look: on its Storing tab how long a value stays fresh, and its
+        calibrations."""
+        fresh = [formpanels.panel('reduction', None, [formpanels.help_text(
+            _('Channel number %(number)s. A value is fresh for %(heartbeats)s heartbeats: %(seconds)s seconds.') % {
+                'number': formats.localize(channel.channel_no), 'heartbeats': formats.localize(channel.fresh_heartbeats),
+                'seconds': formats.localize(channel.fresh_s)})], tab='reduction')] if channel is not None else []
+        return fresh + formpanels.row_list_panels(cls, view, channel, extra)
 
     @classmethod
     def queryset(cls):
@@ -172,6 +235,18 @@ class CredentialResource(Resource):
     icon = 'key-round'
     page_size = 50
     create_view = CredentialCreateView
+
+    @classmethod
+    def next_panels(cls, view, form, credential, extra):
+        """sensors/credential_form.html in the new look: on an existing credential, for a person who may edit it, the
+        button that replaces its secret (shown once on the next page)."""
+        if credential is None or not (cls.allows('change') and view.request.user.has_perm(cls.perm('change'))):
+            return []
+        return [formpanels.panel('general', None, [
+            formpanels.help_text(_('Replacing the secret makes a new one, shown once. The old one stops working once the '
+                                   'broker’s files are written again.')),
+            formpanels.post(reverse('sensors:credential_rotate', args=[credential.pk]), _('Replace the secret'),
+                            [('version', credential.version)])], tab='general')]
 
     @classmethod
     def queryset(cls):

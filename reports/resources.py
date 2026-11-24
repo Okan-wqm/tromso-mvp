@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
-from core import audit
+from core import audit, formpanels
 from core.crud import Resource, RowList, filter_by
 from core.dates import company_zone
 from farm.health.read import with_deaths
@@ -36,6 +36,13 @@ class ReportRows(RowList):
 
 class TreatmentAnswers(ReportRows):
     key, tab, label = 'treatments', 'treatments', _('Treatments')
+    # Its panel's words (reports/report_form.html), as each list's below; a filed report has none.
+    title = _('Treatments')
+    help_text = _("What the records of the week's lice treatments do not say: whether each was given before the count, "
+                  'and which were given together (the same combination number). Saved separately from the report.')
+    empty_text = _('No treatment of the week is answered. Use “Add treatment” to add a row.')
+    add_label, save_label = _('Add treatment'), _('Save treatments')
+    row_kind = 'treatment-answer-row'
     formset = TreatmentAnswerFormSet
     kinds = (ReportKind.SEA_LICE,)
 
@@ -51,6 +58,12 @@ class TreatmentAnswers(ReportRows):
 
 class ResistanceSuspicions(ReportRows):
     key, tab, label = 'resistance', 'resistance', _('Resistance suspicions')
+    title = _('Resistance suspicions')
+    help_text = _('A suspicion of resistance to a treatment against lice in the week (lakselusforskriften § 10 e): the '
+                  'substance and why it is suspected. Saved separately from the report.')
+    empty_text = _('No suspicion. Use “Add suspicion” to add a row.')
+    add_label, save_label = _('Add suspicion'), _('Save suspicions')
+    row_kind = 'resistance-row'
     formset = ResistanceSuspicionFormSet
     kinds = (ReportKind.SEA_LICE,)
 
@@ -64,6 +77,12 @@ class ResistanceSuspicions(ReportRows):
 
 class SensitivityTests(ReportRows):
     key, tab, label = 'sensitivity', 'sensitivity', _('Sensitivity tests')
+    title = _('Sensitivity tests')
+    help_text = _('The result of a sensitivity test in the week (lakselusforskriften § 10 d): when, the laboratory, the '
+                  'substance and the result. Saved separately from the report.')
+    empty_text = _('No test. Use “Add test” to add a row.')
+    add_label, save_label = _('Add test'), _('Save tests')
+    row_kind = 'sensitivity-row'
     formset = SensitivityTestFormSet
     kinds = (ReportKind.SEA_LICE,)
 
@@ -74,6 +93,12 @@ class SensitivityTests(ReportRows):
 
 class UnitAnswers(ReportRows):
     key, tab, label = 'units', 'units', _('Units of reduced capacity')
+    title = _('Units of reduced capacity')
+    help_text = _('The units used for production of reduced capacity this month (akvakulturdriftsforskriften § 44 first '
+                  'paragraph j): tick each that was. Saved separately from the report.')
+    empty_text = _('No unit. Use “Add unit” to add a row.')
+    add_label, save_label = _('Add unit'), _('Save units')
+    row_kind = 'unit-answer-row'
     formset = UnitAnswerFormSet
     kinds = (ReportKind.BIOMASS,)
 
@@ -121,6 +146,11 @@ class ReportResource(Resource):
     row_lists = (TreatmentAnswers, ResistanceSuspicions, SensitivityTests, UnitAnswers)
     # The contact person's address and number: private in the activity log (F-059); the filed report keeps them.
     private_fields = ('contact_email', 'contact_phone')
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """reports/report_form.html in the new look: the answer lists of a draft of their kind, each on a tab of its own."""
+        return formpanels.row_list_panels(cls, view, obj, extra)
 
     @classmethod
     def queryset(cls):

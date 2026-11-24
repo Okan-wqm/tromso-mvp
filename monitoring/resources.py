@@ -7,6 +7,7 @@ from django.db.models.functions import Coalesce
 from django.urls import path
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
+from core import formpanels
 from core.crud import Resource, RowList
 
 from .forms import (BoardUnitFormSet, CardTemplateAssignmentForm, CardTemplateForm, MonitorBoardForm,
@@ -18,6 +19,15 @@ class BoardUnits(RowList):
     """A board's cards, one per unit, saved as a whole list."""
 
     key, tab, label = 'units', 'units', _('Units')
+    # Its panel's words (monitoring/board_form.html).
+    title = _('Units')
+    help_text = _('One card per unit, in the farm’s order. A card is drawn as the board says unless its row says otherwise. '
+                  'A unit that is deleted keeps its row and its card comes back when the unit does; saving this list drops '
+                  'the row. The cards are saved separately from the board’s details.')
+    empty_text = _('No cards yet. Use “Add unit” to add a row.')
+    add_label, save_label = _('Add unit'), _('Save cards')
+    pending_text = _('Cards can be added once the board is created.')
+    row_kind = 'monitor-board-row'
     formset = BoardUnitFormSet
     saved = ngettext_lazy('%(count)d card saved.', '%(count)d cards saved.', 'count')
 
@@ -39,6 +49,11 @@ class MonitorBoardResource(Resource):
     icon = 'monitor'
     row_lists = (BoardUnits,)
     page_size = 50
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """monitoring/board_form.html in the new look: its row lists."""
+        return formpanels.row_list_panels(cls, view, obj, extra)
 
     @classmethod
     def queryset(cls):

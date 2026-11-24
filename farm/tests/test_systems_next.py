@@ -66,7 +66,7 @@ class SystemsListNextTests(FrozenClock, TestCase):
         [notice] = props['notices']
         self.assertEqual(notice['text'], '1 system is not in any production department.')
         self.assertEqual(notice['link'], {'href': '?production_department=none', 'label': 'Show them'})
-        row = next(each for each in props['table']['rows'] if each['cells']['system']['text'] == 'Test Biofilter 1')
+        row = next(each for each in props['table']['rows'] if each['cells']['system']['text'] == '↳ Test Biofilter 1')
         self.assertEqual(row['cells']['system']['sub'], ['TB1 · in Test Loop 1'])
         self.assertEqual(row['cells']['department']['chip'], {'kind': 'warning', 'text': 'No production department'})
 

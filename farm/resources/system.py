@@ -10,6 +10,12 @@ from ..forms import SystemForm
 from ..models import ProductionDepartment, Site, System
 from ..water import points
 
+def _nested(system):
+    """A system's name as the classic list nests it: under its parent a "↳" (an em space more per level deeper)."""
+    depth = min(getattr(system, 'depth', 0) or 0, 5)
+    return f"{chr(0x2003) * (depth - 1)}↳ {system.name}" if depth else system.name
+
+
 # a system's status as its chip in the new look (the classic badge's colour: operational green, the others not)
 SYSTEM_CHIP = {'operational': 'ok', 'maintenance': 'warning', 'offline': 'neutral', 'construction': 'neutral'}
 
@@ -98,7 +104,7 @@ class SystemResource(Resource):
             'notices': notices,
             'rows': [L.row(system.pk, {
                 # the code and the parent in one line, as the classic page says them; a nested system's depth by "in …"
-                'system': L.title(view, context, system, system.name, sub=[' · '.join(
+                'system': L.title(view, context, system, _nested(system), sub=[' · '.join(
                     [system.code, *([_('in %(name)s') % {'name': system.parent.name}] if system.parent else [])])]),
                 'type': L.cell(system.get_type_display()),
                 'status': L.cell(chip=L.chip(SYSTEM_CHIP.get(system.status, 'neutral'), system.get_status_display())),

@@ -5410,9 +5410,16 @@ The design console of 2026-11-23 (`F:\dev\balik-notes\design-in`; docs/design/sy
 previewed on every page behind `?ui=next`: `core/ui.py` keeps it in a cookie (`ui`) until `?ui=classic`, and
 `app_base.html` writes `data-ui="next"` on `<html>`. The same markup is drawn square and hairline-framed with Barlow
 headings (the `look` block of tokens.json, ds.css and app.css under `[data-ui="next"]`), with the status strip in the
-top bar (the open alarms, the people on site, the company's clock: each only for who may see it, from
-`alarms.read.listing`, `hr.read.muster` and the company's zone) and the menu group over the page title. The classic look
-stays the default until the owner switches.
+top bar, the trail "Panel › Group › Page" from the menu registry (`core.navigation.page_place`; a page outside the menu keeps
+its own eyebrow) and the menu group over the page title. The classic look stays the default until the owner switches.
+
+The status strip: the people on site (`hr.read.muster`) and the company's clock, and the alarms item, each only for who
+may see it. The alarms item is `alarms.read.attention`: the open alarms and every live unit's water as the alarm engine and
+the monitoring cards judge it now (`farm.water.read.unit_water`, the one judge), so it never says "No open alarms" while a
+unit is critical whose alarm is not raised yet, or a unit with fish has no recent value ("1 unit critical", "2 units
+without recent data", "Live values cannot be read"). It reads every unit's water, so it is not drawn with the page: the
+page says "Reading the alarms…" and the fragment (`core:ui_strip_alarms`) is polled every 30 s (`frontend/poll.ts`, after
+its start-up gate); no answer, an old one or a refusal says "The alarms cannot be read" (`frontend/test/strip.browser.test.ts`).
 
 Pages drawn by an island in the new look (the classic page is unchanged behind `?ui=classic`):
 

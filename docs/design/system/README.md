@@ -185,7 +185,8 @@ behind `?ui=next` (`core/ui.py`, `<html data-ui="next">`) until the owner switch
   gutter `--edge` 32 (24 under 1100 px, 16 on a phone, 48 on the wall); table rows 44 · 56 · 64.
 - **Shell.** The rail is the flat `surface-rail` with the brand stripe; its icons take the rail's ink (the area hue stays
   on the page head); the active line is the rail-active fill with a 3 px brand bar. The top bar adds the status strip
-  (open alarms, filled critical when one is critical; people on site; the company's clock) from 1100 px. Over the title,
+  (the alarms and the water as the engine judges it, filled critical when one is critical; people on site; the company's
+  clock) from 1100 px, and the trail Panel › Group › Page. Over the title,
   the menu group (Facility, Operations); the page icon in a 40 px hairline square.
 - **Patterns added for it** (`ds.css`, and the same classes in the islands, `frontend/islands/ui`): `ui-plate` and
   `ui-plates` (a 12-column grid, `data-span` 4, 6, 8, 12), `ui-tile` and `ui-tiles` (a stat tile: label, figure, sub-line,

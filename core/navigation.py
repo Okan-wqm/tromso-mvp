@@ -268,22 +268,25 @@ def rail(request):
     here = page_place(request.path)
     return {'workspaces': panels, 'workspace': current, 'rail_sections': sections, 'bottom_bar': bottom_bar(sections),
             'rail_foot': SimpleLazyObject(lambda: import_string(foot)(user)) if foot else '',
-            'page_area': here[0], 'page_icon': here[1], 'page_group': here[2]}
+            'page_area': here[0], 'page_icon': here[1], 'page_group': here[2],
+            'page_panel': here[3], 'page_label': here[4]}
 
 
 def page_place(path):
-    """(area, icon, group) of the menu line a page belongs to, for its page head: the area chip, and in the new look
-    the line's group over the title (its group's name, else its section's, else its panel's: Facility, Operations,
-    Company); ('neutral', '', '') for a page that belongs to none."""
+    """(area, icon, group, panel, label) of the menu line a page belongs to, for its page head: the area chip, and in the
+    new look the line's group over the title (its group's name, else its section's, else its panel's: Facility,
+    Operations, Company) and the trail in the top bar (panel › group › label); ('neutral', '', '', '', '') for a page that
+    belongs to none, whose top bar keeps the page's own eyebrow."""
     entry = entry_for(path)
     if entry is None:
-        return 'neutral', '', ''
+        return 'neutral', '', '', '', ''
     for workspace in workspaces():
         for section in workspace.sections:
             for group in section.groups:
                 if any(each is entry for each in group.entries):
-                    return area_of(workspace, section, group, entry), entry.icon, group.label or section.label or workspace.label
-    return 'neutral', '', ''
+                    return (area_of(workspace, section, group, entry), entry.icon, group.label or section.label or workspace.label,
+                            workspace.label, entry.label)
+    return 'neutral', '', '', '', ''
 
 
 def section_key(workspace, section):

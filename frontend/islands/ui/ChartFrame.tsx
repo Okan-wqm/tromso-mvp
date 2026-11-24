@@ -16,7 +16,7 @@ export interface ChartFrameProps {
   nowStatus?: 'critical' | 'warning';
   keys?: ChartKey[];
   caption?: ReactNode;
-  /** the drawing's name for a screen reader ("Dissolved oxygen, HA-K02, last 24 hours") */
+  /** the drawing's name for a screen reader ("Dissolved oxygen, TK-02, last 24 hours") */
   label: string;
   children: ReactNode;
 }

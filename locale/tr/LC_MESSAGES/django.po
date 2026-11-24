@@ -426,6 +426,24 @@ msgstr[0] "%(count)d birim"
 msgstr[1] "%(count)d birim"
 
 #, python-format
+msgid "%(count)d unit critical"
+msgid_plural "%(count)d units critical"
+msgstr[0] "%(count)d birim kritik"
+msgstr[1] "%(count)d birim kritik"
+
+#, python-format
+msgid "%(count)d unit with a warning"
+msgid_plural "%(count)d units with a warning"
+msgstr[0] "%(count)d birimde uyarı"
+msgstr[1] "%(count)d birimde uyarı"
+
+#, python-format
+msgid "%(count)d unit without recent data"
+msgid_plural "%(count)d units without recent data"
+msgstr[0] "%(count)d birimde güncel veri yok"
+msgstr[1] "%(count)d birimde güncel veri yok"
+
+#, python-format
 msgid "%(count)d water sample recorded."
 msgid_plural "%(count)d water samples recorded."
 msgstr[0] "%(count)d su numunesi kaydedildi."
@@ -8988,6 +9006,9 @@ msgstr "Canlı sensör değerleri okunamadı: yalnızca numuneler."
 msgid "Live values"
 msgstr "Canlı değerler"
 
+msgid "Live values cannot be read"
+msgstr "Canlı değerler okunamıyor"
+
 msgid "Loading the cards…"
 msgstr "Kartlar yükleniyor…"
 
@@ -12065,6 +12086,9 @@ msgstr "Metni sayfa sayfa oku"
 msgid "Reading order"
 msgstr "Okuma sırası"
 
+msgid "Reading the alarms…"
+msgstr "Alarmlar okunuyor…"
+
 msgid "Reagents"
 msgstr "Kimyasallar"
 
@@ -14199,6 +14223,9 @@ msgstr ""
 
 msgid "The alarm system itself"
 msgstr "Alarm sisteminin kendisi"
+
+msgid "The alarms cannot be read"
+msgstr "Alarmlar okunamıyor"
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "

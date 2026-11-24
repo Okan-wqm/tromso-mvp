@@ -46,9 +46,9 @@ export function page(theme: string, props: unknown): string {
 
 const PROPS = {
   rows: [
-    { code: 'FS-01', name: 'Feed store 1', site: 'Tromsø Grow-out', capacity: '120,000 kg', status: 'ok', word: 'Active' },
-    { code: 'SI-02', name: 'Silo 2', site: 'Bergen Hatchery', capacity: '5,000 kg', status: 'warning', word: 'Below the reorder level' },
-    { code: 'CR-01', name: 'Cold room', site: 'Tromsø Grow-out', capacity: '8 m³', status: 'neutral', word: 'Inactive' },
+    { code: 'FS-01', name: 'Feed store 1', site: 'Test Site South', capacity: '120,000 kg', status: 'ok', word: 'Active' },
+    { code: 'SI-02', name: 'Silo 2', site: 'Test Site North', capacity: '5,000 kg', status: 'warning', word: 'Below the reorder level' },
+    { code: 'CR-01', name: 'Cold room', site: 'Test Site South', capacity: '8 m³', status: 'neutral', word: 'Inactive' },
   ],
   errors: { organisation_number: ['Enter nine digits, with or without spaces.'] },
 };
@@ -131,7 +131,7 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
         await tab.click('#b-busy');
         await tab.keyboard.press('Tab');
         await tab.click('.ui-tabs [role="tab"]:nth-child(2)');
-        await tab.fill('input[name="name"]', 'Hitra Sjø');
+        await tab.fill('input[name="name"]', 'Test Site East');
         assert.deepEqual(violations, [], 'CSP violations');
         assert.deepEqual(await lowContrast(tab), [], 'text under 4.5:1');
         await tab.addScriptTag({ url: `${origin}/axe.js` });
@@ -193,6 +193,10 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
         await tab.waitForSelector('[data-mounted] .ui-plate');
         const overflow = await tab.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         assert.equal(overflow, 0);
+        // six tiles of a whole-width plate: one row at 1440 px (as the design), two to a row on a phone
+        const rows = await tab.evaluate(() => new Set([...document.querySelectorAll('[aria-label="Company today"] .ui-tile')]
+          .map((tile) => Math.round(tile.getBoundingClientRect().top))).size);
+        assert.equal(rows, width === 1440 ? 1 : 3);
         if (process.env.SHOTS) {
           mkdirSync(process.env.SHOTS, { recursive: true });
           await tab.screenshot({ path: join(process.env.SHOTS, `gallery-${width}.png`), fullPage: true });

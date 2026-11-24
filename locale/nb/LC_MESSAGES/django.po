@@ -427,6 +427,24 @@ msgstr[0] "%(count)d enhet"
 msgstr[1] "%(count)d enheter"
 
 #, python-format
+msgid "%(count)d unit critical"
+msgid_plural "%(count)d units critical"
+msgstr[0] "%(count)d enhet kritisk"
+msgstr[1] "%(count)d enheter kritiske"
+
+#, python-format
+msgid "%(count)d unit with a warning"
+msgid_plural "%(count)d units with a warning"
+msgstr[0] "%(count)d enhet med varsel"
+msgstr[1] "%(count)d enheter med varsel"
+
+#, python-format
+msgid "%(count)d unit without recent data"
+msgid_plural "%(count)d units without recent data"
+msgstr[0] "%(count)d enhet uten nye data"
+msgstr[1] "%(count)d enheter uten nye data"
+
+#, python-format
 msgid "%(count)d water sample recorded."
 msgid_plural "%(count)d water samples recorded."
 msgstr[0] "%(count)d vannprøve registrert."
@@ -8959,6 +8977,9 @@ msgstr "Sanntidsverdier fra sensorene kunne ikke leses: bare prøver."
 msgid "Live values"
 msgstr "Sanntidsverdier"
 
+msgid "Live values cannot be read"
+msgstr "Liveverdiene kan ikke leses"
+
 msgid "Loading the cards…"
 msgstr "Laster kortene …"
 
@@ -12039,6 +12060,9 @@ msgstr "Les teksten side for side"
 msgid "Reading order"
 msgstr "Lesestrekkefølge"
 
+msgid "Reading the alarms…"
+msgstr "Leser alarmene …"
+
 msgid "Reagents"
 msgstr "Kjemikalier"
 
@@ -14169,6 +14193,9 @@ msgstr ""
 
 msgid "The alarm system itself"
 msgstr "Selve alarmsystemet"
+
+msgid "The alarms cannot be read"
+msgstr "Alarmene kan ikke leses"
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "

@@ -59,10 +59,12 @@ export interface TextFieldProps extends FieldBase {
   maxLength?: number | undefined;
   /** a date or a moment typed the European way (frontend/date-input.ts tidies it when the box is left) */
   dateInput?: 'day' | 'moment' | undefined;
+  /** a code typed in capitals (the widget's data-uppercase): put in capitals while typing, as the classic page does */
+  uppercase?: boolean | undefined;
 }
 
 export function TextField({ name, label, help, errors, required, wide, disabled, defaultValue, type = 'text', numeric,
-  unit, placeholder, multiline, min, max, step, autoComplete, mark, maxLength, dateInput }: TextFieldProps) {
+  unit, placeholder, multiline, min, max, step, autoComplete, mark, maxLength, dateInput, uppercase }: TextFieldProps) {
   const id = useId();
   const invalid = Boolean(errors && errors.length);
   const control = multiline ? (
@@ -71,7 +73,13 @@ export function TextField({ name, label, help, errors, required, wide, disabled,
   ) : (
     <input id={id} name={name} type={type} defaultValue={defaultValue} required={required} disabled={disabled}
       placeholder={placeholder} inputMode={numeric ? 'decimal' : undefined} min={min} max={max} step={step}
-      autoComplete={autoComplete} maxLength={maxLength} data-date-input={dateInput} aria-invalid={invalid || undefined} aria-describedby={describedBy(id, help, errors)} />
+      autoComplete={autoComplete} maxLength={maxLength} data-date-input={dateInput} data-uppercase={uppercase ? '' : undefined}
+      onInput={uppercase ? (event: FormEvent<HTMLInputElement>) => {
+        const box = event.currentTarget;
+        const { selectionStart, selectionEnd } = box;
+        box.value = box.value.toUpperCase();
+        box.setSelectionRange(selectionStart, selectionEnd);
+      } : undefined} aria-invalid={invalid || undefined} aria-describedby={describedBy(id, help, errors)} />
   );
   return (
     <div className={invalid ? 'field has-error' : 'field'} data-wide={wide ? '' : undefined}>
@@ -82,13 +90,20 @@ export function TextField({ name, label, help, errors, required, wide, disabled,
   );
 }
 
+export interface SelectOption { value: string; label: string; disabled?: boolean | undefined }
+
 export interface SelectFieldProps extends FieldBase {
-  options: { value: string; label: string }[];
+  options: SelectOption[];
+  /** options under their group's heading (an <optgroup> each; a group without a label: its options as they are), after
+   *  `options`: two options of the same name under two headings stay two different choices */
+  groups?: { label: string | null; options: SelectOption[] }[] | undefined;
   defaultValue?: string | undefined;
 }
 
 /** A native select (the design's, with its chevron): the platform's own list on a phone, no popover to manage. */
-export function SelectField({ name, label, help, errors, required, wide, disabled, options, defaultValue, mark }: SelectFieldProps) {
+const optionOf = (option: SelectOption) => <option key={option.value} value={option.value} disabled={option.disabled || undefined}>{option.label}</option>;
+
+export function SelectField({ name, label, help, errors, required, wide, disabled, options, groups, defaultValue, mark }: SelectFieldProps) {
   const id = useId();
   const invalid = Boolean(errors && errors.length);
   return (
@@ -96,7 +111,10 @@ export function SelectField({ name, label, help, errors, required, wide, disable
       <label htmlFor={id}>{label}<FieldMark mark={mark} /></label>
       <select id={id} name={name} defaultValue={defaultValue} required={required} disabled={disabled}
         aria-invalid={invalid || undefined} aria-describedby={describedBy(id, help, errors)}>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        {options.map(optionOf)}
+        {groups?.map((group, index) => (group.label
+          ? <optgroup key={`${group.label}-${index}`} label={group.label}>{group.options.map(optionOf)}</optgroup>
+          : group.options.map(optionOf)))}
       </select>
       <Described id={id} help={help} errors={errors} />
     </div>
@@ -166,19 +184,33 @@ export function ServerForm({ action, csrfToken, formErrors, children, actions, m
   const form = useRef<HTMLFormElement>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
+    // the first invalid field; a group of boxes (a fieldset: a box group, the matrix, a link list) is not focusable, so its
+    // first control takes the focus and the group's legend and errors are read with it
     const first = form.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
-    if (first) first.focus();
+    const target = first?.matches('fieldset') ? first.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea, button') : first;
+    target?.focus();
   }, []);
   useEffect(() => {
     const ready = (event: PageTransitionEvent) => { if (event.persisted) setBusy(false); };
     window.addEventListener('pageshow', ready);
     return () => window.removeEventListener('pageshow', ready);
   }, []);
+  // The submit buttons this form switched off while busy: only they are switched on again; a button that is off of its own
+  // (a delete a plan blocks) stays off.
+  const switched = useRef<HTMLButtonElement[]>([]);
   useEffect(() => {
-    for (const button of form.current?.querySelectorAll<HTMLButtonElement>('button[type="submit"]') ?? []) {
-      button.disabled = busy;
-      if (busy) button.setAttribute('aria-busy', 'true');
-      else button.removeAttribute('aria-busy');
+    if (busy) {
+      for (const button of form.current?.querySelectorAll<HTMLButtonElement>('button[type="submit"]') ?? []) {
+        if (!button.disabled) {
+          button.disabled = true;
+          switched.current.push(button);
+        }
+        button.setAttribute('aria-busy', 'true');
+      }
+    } else {
+      for (const button of switched.current) button.disabled = false;
+      switched.current = [];
+      for (const button of form.current?.querySelectorAll<HTMLButtonElement>('button[aria-busy]') ?? []) button.removeAttribute('aria-busy');
     }
   }, [busy]);
   const submit = (event: FormEvent<HTMLFormElement>) => {

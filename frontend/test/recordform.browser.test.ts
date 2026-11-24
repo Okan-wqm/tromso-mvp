@@ -77,6 +77,29 @@ test('the record form in a browser', { skip: skipWithout(BROWSERS) }, async (t) 
       await tab.close();
     });
 
+    await t.test('an error on a group of boxes (a fieldset) puts the focus on its first box (review F10)', async () => {
+      const grouped = {
+        ...PROPS,
+        form: { ...PROPS.form, tabs: [{ key: 'general', label: 'General', help: null, hasErrors: true, fieldsets: [{ label: '', help: null, fields: [
+          { ...field('supplies', 'Supplies', 'checks'), errors: ['Choose at least one.'], fieldset: true, widget: { kind: 'checks', name: 'supplies', value: [],
+            attrs: {}, groups: [{ label: null, options: [{ value: 'a', label: 'Test feed', selected: false, attrs: {} },
+              { value: 'b', label: 'Test oxygen', selected: false, attrs: {} }] }] } },
+        ] }] }] },
+      };
+      const other = await serve((theme, language) => islandPage('recordform', grouped, theme, language, 'New supplier'));
+      const where = other.address();
+      const tab = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+      try {
+        await tab.goto(`http://127.0.0.1:${typeof where === 'object' && where ? where.port : 0}/page/industry/en`);
+        await tab.waitForSelector('[data-island="recordform"][data-mounted] form');
+        await tab.waitForFunction(() => document.activeElement?.getAttribute('name') === 'supplies', undefined, { timeout: 5000 });
+        assert.equal(await tab.evaluate(() => (document.activeElement as HTMLInputElement).value), 'a');
+      } finally {
+        await tab.close();
+        other.close();
+      }
+    });
+
     for (const theme of THEMES) {
       await t.test(`${theme}: no CSP violation, no serious axe finding`, async () => {
         const tab = await browser.newPage({ viewport: { width: 1440, height: 900 } });

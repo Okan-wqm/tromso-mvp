@@ -5488,7 +5488,8 @@ see it.
   for it). It is asked for only while it is drawn (`data-poll-if-shown`: it is hidden under 1100 px), and is marked "Not
   updated: the alarms cannot be read" after ONE failed answer (`data-poll-stale-after="1"`), never an old "No open alarms"
   unmarked. A rise of its alarms is said in a live region beside it (`frontend/strip.ts`; a critical one assertively), never
-  the item every 30 s (`frontend/test/strip.browser.test.ts`).
+  the item every 30 s (`frontend/test/strip.browser.test.ts`). In the top bar it gives way before the language switch and the person's menu: its alarms item wraps onto a
+  second line, never cut and never pushing them past the window (found by the monitoring page test at 1440 px).
 
 ## One format for every tab
 

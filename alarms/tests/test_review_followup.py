@@ -108,7 +108,7 @@ class InsertionOrderTests(Case):
 
 class ClearedFirstTests(Case):
     def test_a_notification_whose_alarm_cleared_before_its_first_attempt_is_given_up_and_said(self):
-        (notification,) = self.system(1, 'critical')
+        (notification,) = self.system(1, 'warning')               # (a critical is still delivered: test_cleared_criticals)
         services.clear(notification.alarm, self.at(1), 'restored')
         found = outbox.send_due(self.at(2))                       # no transport connected: given up all the same
         self.assertEqual(found.given_up, 1)

@@ -44,14 +44,15 @@ function serve(): Promise<Server> {
   return new Promise((done) => server.listen(0, '127.0.0.1', () => done(server)));
 }
 
-/** axe's serious and critical findings in the page's <main>: what these pages draw (the shell around it is the
+/** axe's serious and critical findings in the page's <main>, and two landmarks of one name (a plate and the region
+ *  inside it): what these pages draw (the shell around it is the
  *  foundation's, held by its own tests, shell.browser.test.ts). */
 async function axeOfMain(tab: Page, origin: string): Promise<string[]> {
   await tab.addScriptTag({ url: `${origin}/axe.js` });
   return tab.evaluate(async () => {
     const run = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: { id: string; impact: string; nodes: unknown[] }[] }> } }).axe;
     const result = await run.run(document.querySelector('main') ?? document, { resultTypes: ['violations'] });
-    return result.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious').map((v) => `${v.id} (${v.nodes.length})`);
+    return result.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious' || v.id === 'landmark-unique').map((v) => `${v.id} (${v.nodes.length})`);
   });
 }
 
@@ -75,7 +76,7 @@ test('the production panel pages drawn by the server, in a browser', { skip: ski
           assert.ok(await tab.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'no page-wide scroll');
           if (width === 1440) {
             const rail = await tab.evaluate(() => document.querySelector('aside.rail')?.getBoundingClientRect().width ?? 0);
-            assert.ok(rail === 0 || rail >= 240, `the rail keeps its width (${rail} px)`);
+            assert.ok(rail >= 240, `the rail keeps its width (${rail} px)`);
           }
           if (page.startsWith('messages-long')) {
             const list = await tab.evaluate(() => {

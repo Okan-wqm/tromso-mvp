@@ -38,7 +38,7 @@
   <ul class="ui-list" role="list">{% for location, item, held, level in s.low %}<li class="ui-list-item" data-status="warning"><span class="ui-list-main"><span>{% blocktrans trimmed with location=location.code site=location.site.name held=held|quantity:item.get_unit_display level=level|quantity:item.get_unit_display %}{{ item }} in {{ location }} ({{ site }}): {{ held }}, below the reorder level of {{ level }}.{% endblocktrans %}</span></span></li>{% endfor %}</ul>
 </section>
 {% endif %}
-<section class="ui-plate" data-span="{% if s.values %}8{% else %}12{% endif %}" aria-labelledby="on-hand-title">
+<section class="ui-plate" data-span="{% if s.values %}8{% else %}12{% endif %}">
   <div class="ui-plate-head"><h2 class="ui-plate-title" id="on-hand-title">{% trans "On hand per site" %}</h2></div>
   <div class="ui-table-wrap" tabindex="0" role="region" aria-labelledby="on-hand-title">
     <table class="ui-table">
@@ -231,7 +231,7 @@
 {% else %}
 <div class="ui-plates">
 {% for entry in counts %}{% with operation=entry.operation %}
-<section class="ui-plate" data-span="12" aria-labelledby="count-{{ forloop.counter }}"{% if operation.is_deleted %} data-voided=""{% endif %}>
+<section class="ui-plate" data-span="12"{% if operation.is_deleted %} data-voided=""{% endif %}>
   <div class="ui-plate-head"><h2 class="ui-plate-title" id="count-{{ forloop.counter }}">{% blocktrans trimmed with location=operation.location.code site=operation.location.site.name date=operation.date|date:"DATE_FORMAT" %}{{ location }} ({{ site }}), {{ date }}{% endblocktrans %}</h2>
     {% if entry.void_url %}<a class="ui-plate-link" href="{{ entry.void_url }}">{% trans "Void" %}</a>{% elif operation.is_deleted %}{% trans "Voided" as voided %}{% include "ui/_chip.html" with kind="neutral" text=voided %}{% endif %}</div>
   <div class="ui-plate-body"><p class="ui-cell-sub">{% blocktrans trimmed with name=operation.created_by.get_username|default:"system" when=operation.created_at|company_clock|date:"DATETIME_FORMAT" %}Counted by {{ name }}, recorded {{ when }}{% endblocktrans %}{% if operation.notes %} · {{ operation.notes }}{% endif %}{% if operation.is_deleted %} · {% blocktrans trimmed with reason=operation.void_reason %}voided: {{ reason }}{% endblocktrans %}{% endif %}</p>

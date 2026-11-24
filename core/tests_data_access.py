@@ -17,6 +17,7 @@ no database, about a second.
   ratchet over what the audit found; any new module or a higher count fails.
 - **Rule P, fish present now.** `Sum('count_delta')` stands only in the stock reader (farm/stock/read.py, `present`) and
   the places of PRESENT_ALLOWED (a different figure, said why).
+- **Rule F, feed given.** `Sum('amount_kg')` stands only in the feeding reader (farm/feeding/read.py, `given`).
 
 The scan is by name: it sees the usual spellings (a write through `getattr` or a variable holding a manager is not
 seen). It keeps developers inside the layers; the database's roles keep a mistake or a compromise from rewriting
@@ -112,8 +113,7 @@ READS_ALLOWED = {
     ('farm/stock/integrity.py', 'WithdrawalAcknowledgement'): 2,
     ('farm/stock/services.py', 'HealthEvent'): 2,
     ('farm/stock/views.py', 'HealthEvent'): 4,
-    ('inventory/read.py', 'FeedingRecord'): 11,
-    ('inventory/views.py', 'FeedingRecord'): 1,
+    ('inventory/read.py', 'FeedingRecord'): 6,
     ('reports/compute/biomass.py', 'FeedingRecord'): 1,
     ('reports/compute/cleaner.py', 'FeedingRecord'): 1,
     ('reports/compute/lice.py', 'StockOperation'): 2,
@@ -132,6 +132,7 @@ READS_ALLOWED = {
 }
 
 # ---- rule P ------------------------------------------------------------------------------------------------------------
+GIVEN_HOME = 'farm/feeding/read.py'
 PRESENT_HOME = 'farm/stock/read.py'
 PRESENT_ALLOWED = {
     'farm/stock/integrity.py': 'every (unit, batch) sum, zero and negative ones too, set against the fold: a check of '
@@ -177,7 +178,7 @@ def _literal(node):
 
 class _Scan(ast.NodeVisitor):
     def __init__(self, module):
-        self.module, self.writes, self.reads, self.present = module, [], [], []
+        self.module, self.writes, self.reads, self.present, self.given = module, [], [], [], []
 
     def visit_Call(self, node):
         func = node.func
@@ -194,9 +195,11 @@ class _Scan(ast.NodeVisitor):
                         'objects', 'all_objects', '_base_manager'):
                     self.reads.append((node.lineno, name))
                     break
-        if (isinstance(func, ast.Name) and func.id == 'Sum' and node.args and isinstance(node.args[0], ast.Constant)
-                and node.args[0].value == 'count_delta'):
-            self.present.append(node.lineno)
+        if isinstance(func, ast.Name) and func.id == 'Sum' and node.args and isinstance(node.args[0], ast.Constant):
+            if node.args[0].value == 'count_delta':
+                self.present.append(node.lineno)
+            elif node.args[0].value == 'amount_kg':
+                self.given.append(node.lineno)
         self.generic_visit(node)
 
     def _is_write(self, name, receiver, node):
@@ -226,7 +229,7 @@ def scan():
                     model_writes.update(child.lineno for child in ast.walk(node) if isinstance(child, ast.Call))
         writes = [(line, call) for line, call in visitor.writes if line not in model_writes]
         found[module] = {'writes': writes, 'reads': Counter(model for _line, model in visitor.reads),
-                         'present': visitor.present}
+                         'present': visitor.present, 'given': visitor.given}
     return found
 
 
@@ -301,3 +304,11 @@ class FishPresentNowTests(SimpleTestCase):
         for module in PRESENT_ALLOWED:
             with self.subTest(module=module):
                 self.assertTrue(found[module]['present'], f'{module} sums no more: take it off PRESENT_ALLOWED.')
+
+
+class FeedGivenTests(SimpleTestCase):
+    def test_feed_given_is_summed_by_the_feeding_reader_only(self):
+        found = scan()
+        elsewhere = {module: data['given'] for module, data in found.items() if data['given'] and module != GIVEN_HOME}
+        self.assertEqual(elsewhere, {}, 'Feed given is farm.feeding.read.given: use it, never sum amount_kg.')
+        self.assertTrue(found[GIVEN_HOME]['given'])

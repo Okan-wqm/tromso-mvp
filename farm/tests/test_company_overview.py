@@ -118,11 +118,12 @@ class CompanyOverviewPageTests(CompanyFixture):
             with self.subTest(language=language):
                 self.client.cookies['django_language'] = language
                 old = self.client.get(reverse('home'), {'ui': 'classic'}).content.decode()
-                props = props_of(self.client.get(reverse('home'), {'ui': 'next'}).content.decode(), 'company')
+                new = self.client.get(reverse('home'), {'ui': 'next'}).content.decode()
+                props = props_of(new, 'company')
                 with translation.override(language):
                     # The classic page's line promising "the company's figures will appear here": the new page shows them.
                     placeholder = _('Welcome, %(name)s. The company’s figures will appear here.') % {'name': 'boss'}
-                self.assertEqual(unsaid(old, props, ignore={placeholder}), [])
+                self.assertEqual(unsaid(old, props, ignore={placeholder}, new_html=new), [])
 
     def test_every_block_is_there_for_who_may_read_it(self):
         props = props_of(self.client.get(reverse('home'), {'ui': 'next'}).content.decode(), 'company')

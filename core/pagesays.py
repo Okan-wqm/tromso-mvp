@@ -89,10 +89,12 @@ def strings(payload):
     return found
 
 
-def unsaid(old_html, payload, ignore=()):
-    """The items of the old page that the payload does not carry: [] when the new page can say all the old one said.
-    `ignore` are texts the new page says by design in another way, each named with its reason by the caller's test."""
-    carried = strings(payload)
+def unsaid(old_html, payload, ignore=(), new_html=None):
+    """The items of the old page that the new page does not carry: [] when the new page can say all the old one said.
+    The new page is its island's payload and, given `new_html`, what its own server-rendered <main> says around the island
+    (the page head: its heading). `ignore` are texts the new page says by design in another way, each named with its
+    reason by the caller's test."""
+    carried = strings(payload) + ([value for _kind, value in says(new_html)] if new_html is not None else [])
     left = Counter(carried)
     missing = []
     for kind, value in says(old_html):

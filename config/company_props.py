@@ -117,6 +117,13 @@ def _tiles(found, now):
                       'href': reverse('messaging:inbox'),
                       'sub': count_of(ngettext('in %(count)s conversation', 'in %(count)s conversations', messages['conversations']), messages['conversations'])
                       if messages['unread'] else None})
+    # Each figure says where it comes from and when it was read (the design's tile foot): the page it is read from, by the
+    # menu's own name, and the moment, on the company's clock. The stock tile already names the ledger.
+    time = formats.time_format(timezone.localtime(now, company_zone()), 'TIME_FORMAT')
+    sources = {'sites': str(_('Sites')), 'alarms': f"{_('Alarms')} · {time}", 'on_site': f"{_('Today & attendance')} · {time}",
+               'reports': f"{_('Regulatory reports')} · {time}", 'messages': f"{_('Messages')} · {time}"}
+    for tile in tiles:
+        tile.setdefault('source', sources.get(tile['key']))
     return tiles
 
 

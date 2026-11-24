@@ -48,3 +48,8 @@ class SaysTests(SimpleTestCase):
 
     def test_an_ignored_text_is_left_out_by_name(self):
         self.assertEqual(unsaid('<main><p>Filter</p></main>', {}, ignore={'Filter'}), [])
+
+    def test_the_new_pages_own_markup_around_its_island_counts_too(self):
+        old = '<main><h1>Overview</h1><p>2</p></main>'
+        self.assertEqual(unsaid(old, {'figure': '2'}), [('text', 'Overview')])
+        self.assertEqual(unsaid(old, {'figure': '2'}, new_html='<main><h1>Overview</h1><div data-island="x"></div></main>'), [])

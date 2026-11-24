@@ -21,6 +21,8 @@ built and read.
       feeding_world(admin, tank)      a feeding of TT-01 the day before
       limits_world(tank)              the fish's NH₃-N and CO₂ limits, so the Deffeyes chart draws its regions
     roster_world(admin, client)       today's roster of the hall: one planned person in each state of the board
+    stale_water_world(admin)          after world(), for Production units' test only: TM-01's oxygen stale and critical when
+                                      taken (80 hours back)
     sensors_world(admin)              after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat"""
 import math
@@ -163,6 +165,16 @@ def limits_world(tank):
                               ('co2_mg_l', {'warning_high': '10', 'critical_high': '15'})):
         WaterLimit.objects.create(species=species, parameter=parameter, water_type='any',
                                   **{key: D(value) for key, value in bounds.items()})
+
+
+def stale_water_world(admin):
+    """TM-01's oxygen gone stale while it was critical (F-244): a meter sample 80 hours before MOMENT, 5.2 mg/L under the
+    salmon's critical 6. Production units must say it is stale AND what it was (the classic `wq-was-critical`)."""
+    from farm.models import Tank
+    from farm.tests.helpers import point_of
+    from farm.water import services as water
+    water.record(admin, point=point_of(Tank.objects.get(code='TM-01')), measured_at=MOMENT - timedelta(hours=80),
+                 source='manual', values={'oxygen_mg_l': D('5.2')}, notes='')
 
 
 def channel_states(channels):

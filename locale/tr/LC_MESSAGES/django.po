@@ -17312,6 +17312,12 @@ msgstr "Kabul edilen uyarılar"
 msgid "Warranty end date"
 msgstr "Garanti bitiş tarihi"
 
+msgid "Was critical"
+msgstr "Kritikti"
+
+msgid "Was warning"
+msgstr "Uyarıydı"
+
 msgid "Water"
 msgstr "Su"
 

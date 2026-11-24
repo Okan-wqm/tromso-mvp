@@ -1,10 +1,12 @@
 """Production › Production units in the new look (?ui=next, farm.stock.views.production_units): the table on the shared
 list page (farm/stock/units_next.py) and the unit's drawer as the server draws it. On THE test world (core/test_world.py,
 clock at MOMENT) the page says everything the classic page says in three languages (core.pagesays), with and without a
-drawer open; two things it says another way, each named: the classic filter buttons' links are the toolbar's selects
-(the same values, the server reads the same address), a water value's title (its status, moment and age) is its
-status chip and its origin-and-age line, and the density with its share of capacity are two lines (the design's). A row opens its drawer, Edit opens the unit's form; the props and the page are
-kept for the browser test (frontend/test/prodrest.pages.ts)."""
+drawer open; the things it says another way, each named: the classic filter buttons' links are the toolbar's selects
+(the same values, the server reads the same address; the kind and fish selects' first options say what they are where
+the buttons say "All"), a water value's title (its status, moment and age) is its status chip and its origin-and-age
+line, and the density with its share of capacity are two lines (the design's). Never a value that was critical or a
+warning when it went stale (`wq-was-…`, F-244): its title is held to the new cell's words. A row opens its drawer, Edit
+opens the unit's form; the props and the page are kept for the browser test (frontend/test/prodrest.pages.ts)."""
 import html as htmllib
 import re
 from pathlib import Path
@@ -12,29 +14,33 @@ from pathlib import Path
 from django.contrib.auth import get_user_model
 from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+from django.utils import translation
 from django.utils.translation import gettext
 
 from core import listprops as L
 from core.island_props import keep, props_of
 from core.pagesays import unsaid
-from core.test_world import MOMENT, world
+from core.test_world import MOMENT, stale_water_world, world
 from core.testing import FrozenClock
 
 from ..models import Tank
 
 MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
 BUTTON = re.compile(r'<a href="([^"]+)" aria-pressed="(?:true|false)">')
-VALUE_TITLE = re.compile(r'class="(?:num )?wq wq-[^"]*" title="([^"]*)"')
+# a water value's title, but never one of a value that was critical or a warning before it went stale (wq-was-…)
+VALUE_TITLE = re.compile(r'class="(?:num )?wq wq-(?:(?!wq-was-)[^"])*" title="([^"]*)"')
 DENSITY = re.compile(r'<span class="ui-gauge-text">([^<]*)</span>')
 
 
-def said_another_way(old):
-    """The classic page's filter buttons' addresses and its water values' titles and densities (see the
-    module's docstring), and the kind and fish buttons' bare "All": the selects' first options say "All kinds" and
-    "Stocked and empty"."""
+def said_another_way(old, language='en'):
+    """The classic page's filter buttons' addresses and its water values' titles (not of a value that was critical or a
+    warning) and densities (see the module's docstring), and the kind and fish buttons' bare "All" in `language`: the
+    selects' first options say "All kinds" and "Stocked and empty"."""
+    with translation.override(language):
+        everything = gettext('All')
     return {htmllib.unescape(each) for each in BUTTON.findall(old)} | \
         {' '.join(htmllib.unescape(each).split()) for each in VALUE_TITLE.findall(old)} | \
-        {' '.join(htmllib.unescape(each).split()) for each in DENSITY.findall(old)} | {gettext('All')}
+        {' '.join(htmllib.unescape(each).split()) for each in DENSITY.findall(old)} | {everything}
 
 
 @override_settings(ISLANDS_MANIFEST=MANIFEST)
@@ -45,6 +51,7 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
         world(cls.admin, Client())
+        stale_water_world(cls.admin)
         cls.unit = Tank.objects.get(code='TT-01')
 
     def setUp(self):
@@ -68,7 +75,7 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
                     old, new = self.pages(language, **query)
                     props = props_of(new, 'list-page')
                     self.assertTrue(props['table']['rows'])
-                    self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old)), [])
+                    self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old, language)), [])
             old, new = self.pages(language)
             keep(f'production-units-{language}', {'island': 'list-page', 'props': props_of(new, 'list-page')})
         old, new = self.pages('en', unit=str(self.unit.pk))
@@ -104,6 +111,20 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
         self.assertIn('aria-labelledby="drawer-title"', new)
         self.assertIn(reverse('farm:tank_water', args=[self.unit.pk]), new)          # History: Tank › Water
         self.assertEqual(old.count('class="drawer-section"'), new.count('class="drawer-section"'))
+
+    def test_a_stale_value_that_was_critical_says_so_in_words(self):
+        """F-244: TM-01's oxygen (5.2 mg/L, under the critical 6, taken 80 hours back) is stale now; its cell keeps the
+        stale chip and says it was critical, with the classic title's words (held by unsaid, not ignored)."""
+        old, new = self.pages('en')
+        self.assertIn('wq-stale wq-was-critical', old)
+        row = next(each for each in props_of(new, 'list-page')['table']['rows']
+                   if each['cells']['unit']['text'] == 'TM-01')
+        oxygen = row['cells']['oxygen']
+        self.assertEqual(oxygen['chip'], {'kind': 'stale', 'text': '5.20'})
+        self.assertRegex(oxygen['sub'][0], r'^Was critical: Stale · Critical · \d{2}\.\d{2}\.\d{4} \d{2}:\d{2} · 3 days ago$')
+        title = re.search(r'wq-was-critical" title="([^"]*)"', old).group(1)
+        self.assertIn(htmllib.unescape(title), oxygen['sub'][0])
+        self.assertNotIn(htmllib.unescape(title), said_another_way(old))
 
     def test_a_water_value_is_never_drawn_as_ok_when_it_is_not(self):
         _old, new = self.pages('en')

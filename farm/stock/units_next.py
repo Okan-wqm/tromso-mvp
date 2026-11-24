@@ -8,13 +8,14 @@ A row's code opens the unit's drawer (`?unit=`, the filters kept), its Edit the 
 the right to change units; the design opens the drawer for both). A water value is said with its origin and age
 (owner rule A1), a warning or critical one in its status chip, a stale one as stale: never as OK."""
 from django.urls import reverse
+from django.utils import formats
 from django.utils.translation import gettext as _
 
 from core import listprops as L
 from farm.templatetags.feeding import fcr, fed_on
 from farm.templatetags.health import harvest_from
 from farm.templatetags.stock import density, fish, grams, join_codes, kilos, percent
-from farm.templatetags.water import reading_figure, source, status_label
+from farm.templatetags.water import age, reading_figure, sample_clock, source, status_label
 
 FCR_SAID = ('Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the '
             'last weighing')
@@ -30,17 +31,38 @@ def point_said(water):
     return str(status_label(water.status))
 
 
+WAS = {'critical': lambda: _('Was critical'), 'warning': lambda: _('Was warning')}
+
+
+def value_title(reading):
+    """The classic value's title (farm/_water_value.html, `latest`): its status, what an old value was, the moment and
+    age of its sample, how it was worked out, its provenance and its note."""
+    parts = [str(status_label(reading.status))]
+    if reading.old_alert:
+        parts.append(str(status_label(reading.old_alert)))
+    parts += [formats.date_format(sample_clock(reading.sample), 'DATETIME_FORMAT'),
+              _('%(age)s ago') % {'age': age(reading.at)}]
+    if reading.derived:
+        parts.append(_('worked out from the sensors') if reading.sample.live else _('worked out from the sample'))
+    parts += [str(each) for each in (reading.provenance, reading.note) if each]
+    return ' · '.join(parts)
+
+
 def value_cell(reading):
     """One latest water value (farm/_water_face.html): its figure (in its status's chip when it is a warning, critical
     or stale), what was measured when it is stored converted, the unit's own older value a status keeps, and where it
-    came from and how old it is. No value is "no data", never a dash."""
+    came from and how old it is. No value is "no data", never a dash. A stale value that was critical or a warning when
+    it was taken (Reading.old_alert, F-244) keeps its stale chip and says in words what it was, with the classic title's
+    words (status, what it was, moment, age): never only "stale"."""
     if reading is None:
         return L.cell(_('no data'))
     said = source(reading)
     figure = '?' if reading.value is None else str(reading_figure(reading))
     sub = [reading.measured or '', getattr(reading, 'last_own_said', '') if reading.last_own else '',
            f"{said['origin']} · {said['age']}"]
-    tone = VALUE_CHIP.get(reading.status) or VALUE_CHIP.get(reading.old_alert or '')
+    if reading.old_alert:
+        sub.insert(0, f'{WAS[reading.old_alert]()}: {value_title(reading)}')
+    tone = VALUE_CHIP.get(reading.status)
     return L.cell(chip=L.chip(tone, figure), sub=sub) if tone else L.cell(figure, sub=sub)
 
 

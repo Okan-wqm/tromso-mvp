@@ -17274,6 +17274,12 @@ msgstr "Anerkjente advarsler"
 msgid "Warranty end date"
 msgstr "Garantien utløper"
 
+msgid "Was critical"
+msgstr "Var kritisk"
+
+msgid "Was warning"
+msgstr "Var advarsel"
+
 msgid "Water"
 msgstr "Vann"
 

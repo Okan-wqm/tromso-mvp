@@ -2164,6 +2164,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/__init__.py",
@@ -40482,6 +40483,7 @@
       "tests": [
         "core/test_datamap.py",
         "core/test_text.py",
+        "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_bound_text.py",
         "farm/tests/test_nh3_unrounded.py",

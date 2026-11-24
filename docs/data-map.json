@@ -769,6 +769,7 @@
         "alarms/tests/test_cleared_criticals.py",
         "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py",
         "alarms/tests/test_review_recheck.py"
@@ -1132,6 +1133,7 @@
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_snooze.py"
       ]
@@ -1196,6 +1198,7 @@
       },
       "tests": [
         "alarms/tests/test_cleared_criticals.py",
+        "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py",
         "alarms/tests/test_review_recheck.py"
@@ -3086,6 +3089,7 @@
         "alarms/tests/test_reference.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_review_final.py",
         "alarms/tests/test_review_fixes.py",
         "alarms/tests/test_review_followup.py",
         "alarms/tests/test_review_recheck.py",

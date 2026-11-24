@@ -4488,27 +4488,30 @@ from which device, how late) is logged. The server side is built; the push trans
   worker's sender thread goes through the outbox every tick (`alarms/outbox.py`), outside any pass, transaction or
   lock, so a transport that is slow or down never delays an alarm: critical first, then the oldest. A round reads the
   outbox's queue (`alarm_outbox`, `alarms` 0019: the notifications still to be sent, removed once sent, covered or given
-  up), never the whole history. **A critical is never given up while it matters** (the review, F1): a critical alarm's
-  notification is tried again until it is sent or its alarm is acknowledged or cleared, the wait doubling from the
-  severity's retry time up to its escalation time; once its alarm is acknowledged or cleared it has its delivery attempts
-  like a warning's, which are tried their retry time apart and then failed (its alarm's page says so). A critical
-  notification of an open, unacknowledged alarm that has failed for longer than the escalation time cannot be
-  delivered: a critical alarm of the alarm system says so ("notifications_undeliverable"; a snoozed alarm's never counts), and the pages' notice and the
+  up), never the whole history. **A critical is never given up until someone has seen it** (the review, F1; N7 of the
+  last recheck): a critical alarm's notification is tried again until it is sent or its alarm is acknowledged, the wait
+  doubling from the severity's retry time up to its escalation time; clearing does not end it (a critical that came and
+  went while the push service failed is told once it answers, "Critical, now cleared"). Once its alarm is acknowledged
+  it has its delivery attempts like a warning's, which are tried their retry time apart and then failed (its alarm's
+  page says so). A critical notification of an unacknowledged alarm (open or cleared) that has failed for longer than
+  the escalation time cannot be delivered: a critical alarm of the alarm system says so ("notifications_undeliverable"; a snoozed alarm's never counts), and the pages' notice and the
   health check too. **A critical is never behind a round of warnings** (F5): a round ends at `ALARM_WORKER_SEND_ROUND`
   (5 s), and before a warning's group when a critical was queued since it began; the next round, a tick later, starts
-  with it (a critical that joins the queue during the round, whatever time it is stamped with). Each send gets
-  `send_timeout` seconds (no answer or a raise is a failed attempt). Each notification goes with its text in the
+  with it (a critical that joins the queue during the round, whatever time it is stamped with). A round sends the
+  criticals first, then the summaries below, then the warnings (D8c). Each send gets `send_timeout` seconds (no answer
+  or a raise is a failed attempt). A notification whose own handling raises (its text, its kind, its due check, its
+  group's plan) gets a failed attempt, at most one per its severity's retry time, so it is retried and said
+  undeliverable like any failure; one that went before the error gets none. Each notification goes with its text in the
   person's language (`outbox.text`). A critical alarm that opened and cleared before it could be sent (the transport
-  down through an oxygen crash or a power cut) is still sent, never dropped (the coordinator's decision of 2026-11-24):
-  one message saying it was critical and has cleared, when it opened and when it cleared, through the same grouping and
-  flood rules (cleared criticals of one kind go as one flood message). A warning, or a word about a snooze, whose alarm
+  down or failing through an oxygen crash or a power cut) is still sent, never dropped (the coordinator's decision of
+  2026-11-24): one message saying it was critical and has cleared, when it opened and when it cleared, through the same
+  flood rules (cleared criticals of one kind go as the first and one follow-up naming each, below). A warning, or a word about a snooze, whose alarm
   cleared before it was ever tried is given up, its attempt saying so, so a backlog of cleared warnings never goes out
   when a transport is first connected. They are given up after the round's sending, never before it, a chunk a
   round (`outbox.GIVE_UP_CHUNK`, 100, each chunk one transaction): 20,000 of them never delay a critical, and drain
   over a few hundred rounds, a few minutes at a round a tick. So is a word about a snooze whose alarm has cleared since
   (it would no longer be true). A round sends the criticals of open, unacknowledged alarms first, then the other
-  criticals, then the rest. A flood of cleared criticals says so: how many (only its own alarms, every one cleared),
-  the first opening and the last clearing; such a message covers nothing, so the next real alarm of its kind is sent.
+  criticals, then the rest.
   **Connecting a transport** (the go-live runbook's step): criticals that cleared more than 24 h before they could
   first be sent (`outbox.SUMMARY_AFTER`: a channel's first connection, a long outage) are not told one by one: each
   person gets ONE summary, "N critical alarms happened and cleared while no message could be sent; see the alarm log",
@@ -4537,10 +4540,18 @@ from which device, how late) is logged. The server side is built; the push trans
   (critical for a critical alarm) and listed on Alarm snoozes; the Alarms list says "Snoozed until".
 - **Alarm floods** (ISA-18.2; the owner's burst requirement; `alarms/floods.py`): the kind of an alarm is its site, its
   severity and what it is about (a water quantity, the oxygen in mg/L and % one; a sensor rule; a check of the alarm
-  system, each failed step its own). In a round of the outbox, the due notifications of one person, channel and kind go out as one flood message
-  when, with the ones of that kind sent to them within the severity's flood window, they reach its flood count; the
-  ones within the window after a flood message of open alarms are covered by it (outcome "grouped", never sent on
-  their own); a flood message that said its alarms had cleared covers nothing. Grouping
+  system, each failed step its own). **Warnings**: in a round of the outbox, the due warnings of one person, channel and
+  kind go out as one flood message when, with the ones of that kind sent to them within the flood window, they reach
+  the flood count; the ones within the window after a flood message of open alarms are covered by it (outcome
+  "grouped", never sent on their own); a flood message that said its alarms had cleared covers nothing. **Criticals:
+  batched, never covered** (the coordinator's bar on the last recheck: no known way to drop or delay an open or newly
+  cleared critical on a connected transport). The first critical of a kind for a person goes at once, on its own. The
+  next ones of that kind for that person are collected while a message of the kind went to them less than 15 s ago
+  (`floods.FOLLOW_UP_AFTER`; at most 30 s, the coordinator's bound), then go as ONE follow-up message, "N more
+  critical alarms of one kind since ..., M open now: ...", naming each (its summary names the unit, a cleared one
+  "(cleared ...)"); one alone goes with its own text. Ones due in the same round as the first go with it, the rest as
+  the follow-up. So every critical reaches the person by name within 15 s of being queued, and a person gets at most one
+  message of a kind in that time. For criticals the flood count and window only mark a flood on the Alarms page. Grouping
   is the outbox's only: every alarm is raised in its own pass, kept, acknowledged and escalated on its own. The Alarms
   page names a flood of open alarms above the list; an alarm's history says "in a flood message of N alarms".
 - **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the

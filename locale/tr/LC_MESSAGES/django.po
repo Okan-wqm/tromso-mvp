@@ -235,14 +235,6 @@ msgstr ""
 
 #, python-format
 msgid ""
-"%(count)d critical alarms, all now cleared: first opened %(opened)s, last cleared %(cleared)s. "
-"For example: %(summary)s"
-msgstr ""
-"%(count)d kritik alarm, hepsi kapandı: ilki %(opened)s açıldı, sonuncusu %(cleared)s kapandı. "
-"Örneğin: %(summary)s"
-
-#, python-format
-msgid ""
 "%(count)d critical notification(s) cannot be delivered, the oldest queued %(since)s: the people "
 "of those alarms are not reached, nor would the next level be. Look at the alarms and tell them "
 "another way."
@@ -358,6 +350,12 @@ msgstr[1] "%(count)d ilacı o üretiyor: “%(category)s” işaretli kalsın."
 #, python-format
 msgid "%(count)d min"
 msgstr "%(count)d dk"
+
+#, python-format
+msgid "%(count)d more critical alarms of one kind since %(since)s, %(open)d open now: %(alarms)s"
+msgstr ""
+"%(since)s itibarıyla aynı türden %(count)d kritik alarm daha, şu anda %(open)d tanesi açık: "
+"%(alarms)s"
 
 #, python-format
 msgid "%(count)d open health event"
@@ -1432,6 +1430,10 @@ msgstr "%(start)s – %(end)s"
 #, python-format
 msgid "%(status)s, no recent data"
 msgstr "%(status)s, güncel veri yok"
+
+#, python-format
+msgid "%(summary)s (cleared %(cleared)s)"
+msgstr "%(summary)s (%(cleared)s kapandı)"
 
 #, python-format
 msgid "%(supplier)s is deleted."
@@ -7576,12 +7578,15 @@ msgid "From then"
 msgstr "O andan itibaren"
 
 msgid ""
-"From this many alarms of one kind (one site, this severity, one quantity, rule or check) within "
-"the flood window, a person gets one flood message for them. 2 to 1000."
+"From this many warnings of one kind (one site, one quantity, rule or check) within the flood "
+"window, a person gets one flood message for them. Criticals are never grouped this way: the first"
+" of a kind goes at once, the next ones within 15 s as one message naming each; for them it marks "
+"a flood on the Alarms page. 2 to 1000."
 msgstr ""
-"Sel penceresi içinde aynı türden (tek tesis, bu önem düzeyi, tek bir büyüklük, kural ya da "
-"denetim) bu kadar alarmdan itibaren bir kişi bunlar için tek bir sel mesajı alır. 2 ile 1000 "
-"arası."
+"Sel penceresi içinde aynı türden (tek tesis, tek bir büyüklük, kural ya da denetim) bu kadar "
+"uyarıdan itibaren bir kişi bunlar için tek bir sel mesajı alır. Kritik alarmlar asla böyle "
+"gruplanmaz: bir türün ilki hemen gider, sonrakiler 15 s içinde her birini adıyla sayan tek bir "
+"mesajla gider; onlar için bu değer Alarmlar sayfasında bir seli işaretler. 2 ile 1000 arası."
 
 msgid "Frozen at"
 msgstr "Dondurulma zamanı"
@@ -8167,11 +8172,12 @@ msgstr ""
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
 
 msgid ""
-"How long the alarms of a flood are counted together, and how long a flood message covers the ones"
-" that come after it. 10 to 3600."
+"How long the alarms of a flood are counted together, and how long a flood message of warnings "
+"covers the warnings that come after it (a critical is never covered). 10 to 3600."
 msgstr ""
-"Bir selin alarmlarının ne kadar süre birlikte sayılacağı ve bir sel mesajının kendisinden sonra "
-"gelenleri ne kadar süre kapsayacağı. 10 ile 3600 arası."
+"Bir selin alarmlarının ne kadar süre birlikte sayılacağı ve uyarılardan oluşan bir sel mesajının "
+"kendisinden sonra gelen uyarıları ne kadar süre kapsayacağı (kritik bir alarm asla kapsanmaz). 10"
+" ile 3600 arası."
 
 msgid ""
 "How long the condition must hold, counted from the first value past the limit, before the alarm "

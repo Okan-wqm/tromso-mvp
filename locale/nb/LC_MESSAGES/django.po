@@ -232,14 +232,6 @@ msgstr ""
 
 #, python-format
 msgid ""
-"%(count)d critical alarms, all now cleared: first opened %(opened)s, last cleared %(cleared)s. "
-"For example: %(summary)s"
-msgstr ""
-"%(count)d kritiske alarmer, alle nå avsluttet: den første åpnet %(opened)s, den siste avsluttet "
-"%(cleared)s. For eksempel: %(summary)s"
-
-#, python-format
-msgid ""
 "%(count)d critical notification(s) cannot be delivered, the oldest queued %(since)s: the people "
 "of those alarms are not reached, nor would the next level be. Look at the alarms and tell them "
 "another way."
@@ -355,6 +347,10 @@ msgstr[1] "%(count)d legemidler er laget av den: la «%(category)s» være kryss
 #, python-format
 msgid "%(count)d min"
 msgstr "%(count)d min"
+
+#, python-format
+msgid "%(count)d more critical alarms of one kind since %(since)s, %(open)d open now: %(alarms)s"
+msgstr "%(count)d kritiske alarmer til av samme slag siden %(since)s, %(open)d åpne nå: %(alarms)s"
 
 #, python-format
 msgid "%(count)d open health event"
@@ -1429,6 +1425,10 @@ msgstr "%(start)s – %(end)s"
 #, python-format
 msgid "%(status)s, no recent data"
 msgstr "%(status)s, ingen nye data"
+
+#, python-format
+msgid "%(summary)s (cleared %(cleared)s)"
+msgstr "%(summary)s (avsluttet %(cleared)s)"
 
 #, python-format
 msgid "%(supplier)s is deleted."
@@ -7552,11 +7552,15 @@ msgid "From then"
 msgstr "Fra da av"
 
 msgid ""
-"From this many alarms of one kind (one site, this severity, one quantity, rule or check) within "
-"the flood window, a person gets one flood message for them. 2 to 1000."
+"From this many warnings of one kind (one site, one quantity, rule or check) within the flood "
+"window, a person gets one flood message for them. Criticals are never grouped this way: the first"
+" of a kind goes at once, the next ones within 15 s as one message naming each; for them it marks "
+"a flood on the Alarms page. 2 to 1000."
 msgstr ""
-"Fra så mange alarmer av samme slag (ett anlegg, denne alvorligheten, én størrelse, regel eller "
-"kontroll) innenfor flomvinduet får en person én flommelding for dem. 2 til 1000."
+"Fra så mange advarsler av samme slag (ett anlegg, én størrelse, regel eller kontroll) innenfor "
+"flomvinduet får en person én flommelding for dem. Kritiske alarmer grupperes aldri slik: den "
+"første av et slag går med en gang, de neste innen 15 s som én melding som nevner hver av dem; for"
+" dem markerer den en flom på alarmsiden. 2 til 1000."
 
 msgid "Frozen at"
 msgstr "Frosset"
@@ -8140,11 +8144,11 @@ msgstr ""
 "kontrolleres med veterinæren din."
 
 msgid ""
-"How long the alarms of a flood are counted together, and how long a flood message covers the ones"
-" that come after it. 10 to 3600."
+"How long the alarms of a flood are counted together, and how long a flood message of warnings "
+"covers the warnings that come after it (a critical is never covered). 10 to 3600."
 msgstr ""
-"Hvor lenge alarmene i en flom telles sammen, og hvor lenge en flommelding dekker dem som kommer "
-"etter den. 10 til 3600."
+"Hvor lenge alarmene i en flom telles sammen, og hvor lenge en flommelding om advarsler dekker "
+"advarslene som kommer etter den (en kritisk alarm dekkes aldri). 10 til 3600."
 
 msgid ""
 "How long the condition must hold, counted from the first value past the limit, before the alarm "

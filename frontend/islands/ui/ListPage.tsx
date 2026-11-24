@@ -11,6 +11,7 @@ import { tidy } from '../../date-input.js';
 import { Button, LinkButton } from './Button.js';
 import { CellLines, Table } from './Table.js';
 import { Chip, type ChipKind } from './Chip.js';
+import { Gauge, type GaugeProps } from './Gauge.js';
 import { Icon, type IconName } from './Icon.js';
 import { EmptyState, Notice, type NoticeTone } from './States.js';
 import { LinkTabs, type LinkTab } from './Tabs.js';
@@ -26,6 +27,8 @@ export interface ListCell {
   /** chips after the text (a "Platform admin" mark), each a word of its own */
   chips?: { kind: ChipKind; text: string }[];
   sub?: string[];
+  /** a share drawn as a bar with the share in words beside it (a unit's capacity), under the text and its sub-lines */
+  gauge?: GaugeProps | null;
 }
 
 export interface ListAction {
@@ -87,7 +90,9 @@ function Cell({ cell }: { cell: ListCell }) {
     : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.text;
   const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);
   const sub = cell.sub && cell.sub.length ? cell.sub.join(' · ') : undefined;
-  return <CellLines strong={Boolean(cell.strong)} main={chips && chips.length ? <>{main} {chips}</> : main} sub={sub} />;
+  const lines = <CellLines strong={Boolean(cell.strong)} main={chips && chips.length ? <>{main} {chips}</> : main} sub={sub} />;
+  if (!cell.gauge) return lines;
+  return <>{lines}<span className="ui-cell-sub"><Gauge {...cell.gauge} /></span></>;
 }
 
 function Action({ action, csrfToken }: { action: ListAction; csrfToken: string }) {

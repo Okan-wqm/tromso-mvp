@@ -236,6 +236,27 @@ test('a list page: one GET form for the search and the filters, the table with i
   assert.doesNotMatch(empty, /ui-table|list-pager|Showing 2 of 3/, 'no table, pager or line over an empty list');
 });
 
+test('a gauge: the bar as long as the share (full from 100), the share in words beside it, the bar hidden, no style', async () => {
+  const { Gauge } = await import('./index.js');
+  const gauge = html(<Gauge value={12.5} text="12 % of capacity" />);
+  assert.match(gauge, /^<span class="ui-gauge"><svg class="ui-gauge-track" viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="ui-gauge-fill" width="12\.5" height="1"><\/rect><\/svg><span class="ui-gauge-text">12 % of capacity<\/span><\/span>$/);
+  const over = html(<Gauge value={124} text="124 % of capacity" status="critical" />);
+  assert.match(over, /<span class="ui-gauge" data-status="critical">/);
+  assert.match(over, /width="100"/, 'a share above the whole fills the bar; its text says it whole');
+  assert.match(html(<Gauge value={-3} text="0 %" />), /width="0"/);
+  assert.doesNotMatch(gauge + over, /style=/);
+});
+
+test('a list cell with a gauge draws its text and sub-lines, then the gauge under them', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const rows = [{ key: '1', cells: { name: { text: 'TT-01', strong: true },
+    density: { text: '7.4 kg/m³', sub: ['Over'], gauge: { value: 12, text: '12 % of capacity', status: null } } }, actions: [] }];
+  const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows,
+    columns: [{ key: 'name', label: 'Unit' }, { key: 'density', label: 'Density · capacity' }] }} />);
+  assert.match(page, /<td><span>7\.4 kg\/m³<\/span><span class="ui-cell-sub">Over<\/span><span class="ui-cell-sub"><span class="ui-gauge">[^]*?<span class="ui-gauge-text">12 % of capacity<\/span><\/span><\/span><\/td>/);
+});
+
 test('a stacked bar: each part a segment as long as its share on the whole, every part in words, no style', async () => {
   const { StackedBar } = await import('./index.js');
   const bar = html(<StackedBar label="Planned today: 6" parts={[

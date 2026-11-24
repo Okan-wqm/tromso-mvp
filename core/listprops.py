@@ -41,10 +41,23 @@ def chip(kind, text):
     return {'kind': kind, 'text': str(text)}
 
 
-def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=()):
-    """One cell: its text (a link to `href`), a sub-line per item of `sub` (empty items left out), or a `chip`."""
-    return {'text': None if text is None else str(text), 'href': href or None, 'strong': bool(strong),
+def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=(), gauge=None):
+    """One cell: its text (a link to `href`), a sub-line per item of `sub` (empty items left out), or a `chip`; a `gauge`
+    (below) is drawn under the text."""
+    said = {'text': None if text is None else str(text), 'href': href or None, 'strong': bool(strong),
             'chip': chip, 'chips': list(chips), 'sub': [str(item) for item in sub if item not in (None, '')]}
+    if gauge is not None:
+        said['gauge'] = gauge
+    return said
+
+
+def gauge(share, text, status=None):
+    """A share of a whole as a bar and in words (frontend/islands/ui/Gauge.tsx): `share` in % (None is 0; the bar is full
+    from 100), `text` the share said ("12 % of capacity": the bar is never the only cue), `status` critical or warning."""
+    if status not in (None, 'critical', 'warning'):
+        raise ValueError(f'no gauge status {status!r}')
+    value = 0.0 if share in (None, '') else max(0.0, min(float(share), 100.0))
+    return {'value': round(value, 1), 'text': str(text), 'status': status}
 
 
 def link(href, label, icon, danger=False):

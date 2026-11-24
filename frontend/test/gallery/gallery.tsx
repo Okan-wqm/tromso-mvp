@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
-  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
+  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, Gauge, IconButton, LinkButton,
   LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
@@ -197,6 +197,13 @@ function Gallery({ rows, errors }: GalleryProps) {
           <StackedBar label="Planned today: 0" empty="Nobody is expected today" parts={[
             { key: 'here', label: 'Here now', value: 0, figure: '0', tone: 'ok' },
           ]} />
+        </div>
+      </Plate>
+      <Plate title="Capacity" span={6}>
+        <div className="ui-plate-body" id="gauges">
+          <CellLines main="7.4 kg/m³" sub={undefined} /><Gauge value={12} text="12 % of capacity" />
+          <CellLines main="96.1 kg/m³" sub={undefined} /><Gauge value={124} text="124 % of capacity" status="critical" />
+          <CellLines main="0.0 kg/m³" sub={undefined} /><Gauge value={0} text="0 % of capacity" />
         </div>
       </Plate>
     </Plates>

@@ -21,4 +21,5 @@ export { mount, readProps, PRESSABLE_STYLE_ID } from './mount.js';
 export {
   ListPage, type ListPageProps, type ListRow, type ListCell, type ListAction, type ListColumn, type ListFilter,
 } from './ListPage.js';
+export { Gauge, type GaugeProps } from './Gauge.js';
 export { StackedBar, type StackedBarProps, type StackPart, type StackTone } from './StackedBar.js';

@@ -63,7 +63,14 @@ test('a plate has its head, its safety line and its span; a tile its status edge
   assert.match(plate, /class="ui-notice" data-tone="warning"/);
   const tile = html(<Tiles><Tile label="Open alarms" figure="3" status="critical" statusLabel="Critical" href="/alarms/" /></Tiles>);
   assert.match(tile, /<a class="ui-tile" href="\/alarms\/" data-status="critical">/);
-  assert.match(tile, /<span class="sr-only">Critical: <\/span>Open alarms/);
+  assert.match(tile, /<span class="sr-only">Critical: <\/span><span class="ui-tile-label-text" title="Open alarms">Open alarms<\/span>/);
+});
+
+test('a tile label sits in its own slot and keeps its whole text as its title, so a clamped label is never lost', () => {
+  const label = 'QoS 0 messages dropped on a full queue of the ingest';
+  const tile = html(<Tile label={label} figure="0" />);
+  assert.match(tile, new RegExp(`<span class="ui-tile-label"><span class="ui-tile-label-text" title="${label}">${label}</span></span>`));
+  assert.match(tile, /<span class="ui-tile-figure" data-figure="" title="0">0<\/span>/);
 });
 
 test('a table is a named, scrolling region with its figures right, its row status and its sticky actions', () => {

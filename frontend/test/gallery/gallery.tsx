@@ -50,6 +50,14 @@ function Gallery({ rows, errors }: GalleryProps) {
           <Tile label="Unread messages" figure="4" sub="in 2 conversations" />
         </Tiles>
       </Plate>
+      <Plate title="Label slot" span={12}>
+        <Tiles label="Label slot">
+          <Tile label="Ingest" figure="Alive" sub="Heartbeat 4 s ago" />
+          <Tile label="Channels without a fresh value" figure="2" status="warning" statusLabel="Warning" />
+          <Tile label="QoS 0 messages dropped on a full queue of the ingest, a label far longer than the two lines of its slot, so it is cut with an ellipsis" figure="0" />
+          <Tile label="Devices not placed" figure="1" />
+        </Tiles>
+      </Plate>
       <Plate title="Statuses" badge={<Chip kind="critical">1 overdue</Chip>} span={12} safety="Nothing is sent yet: the push transport is not connected.">
         <div className="ui-plate-body">
           <Chips label="Statuses">

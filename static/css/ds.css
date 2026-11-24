@@ -504,6 +504,12 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-tile-label .icon { flex: none; width: var(--icon-inline); height: var(--icon-inline); }
 .ui-tile[data-status="critical"] .ui-tile-label .icon { color: var(--crit); }
 .ui-tile[data-status="warning"] .ui-tile-label .icon { color: var(--warn); }
+/* The new look's label slot: two lines high whatever the label, so a wrapped label never pushes its figure below its
+   neighbours'; a label longer than two lines ends in an ellipsis (its whole text is the title, Tiles.tsx). */
+[data-ui="next"] .ui-tile > .ui-tile-label { align-items: flex-start; min-height: calc(2em * 1.3); }
+[data-ui="next"] .ui-tile > .ui-tile-label .icon { margin-top: calc((1.3em - var(--icon-inline)) / 2); }
+.ui-tile-label-text { min-width: 0; }
+[data-ui="next"] .ui-tile-label-text { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; }
 /* The classic look's figure is the metric card's as it was: the readout step (28 px) in the text face, never cut. The new
    look's is the design's: Barlow, as large as the cell allows; one too long for its cell ends in an ellipsis and keeps
    its whole value in its title (Tiles.tsx, _metric_card.html). */

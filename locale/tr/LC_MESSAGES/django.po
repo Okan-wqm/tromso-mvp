@@ -704,6 +704,15 @@ msgid "%(dose)s g/m³"
 msgstr "%(dose)s g/m³"
 
 #, python-format
+msgid ""
+"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions and "
+"limits are those of the newest water. A moment without every value is left out, never joined."
+msgstr ""
+"%(total)s andan %(drawn)s tanesi her %(step)s bir çizildi, %(first)s ile %(last)s arası; bölgeler"
+" ve sınırlar en yeni suyunkilerdir. Her değeri olmayan bir an dışarıda bırakılır, asla "
+"birleştirilmez."
+
+#, python-format
 msgid "%(duty)s · %(site)s · %(year)s: record that it was done."
 msgstr "%(duty)s · %(site)s · %(year)s: yapıldığını kaydedin."
 
@@ -5772,6 +5781,9 @@ msgstr "Varsayılanlar"
 msgid "Deffeyes chart"
 msgstr "Deffeyes grafiği"
 
+msgid "Deffeyes chart of the time"
+msgstr "Zaman aralığının Deffeyes grafiği"
+
 #, python-format
 msgid "Deffeyes chart · %(unit)s"
 msgstr "Deffeyes grafiği · %(unit)s"
@@ -7044,6 +7056,9 @@ msgstr "İlk gün"
 
 msgid "First day of the new tank"
 msgstr "Yeni tankın ilk günü"
+
+msgid "First drawn"
+msgstr "İlk çizilen"
 
 msgid "First name"
 msgstr "Ad"
@@ -9981,6 +9996,13 @@ msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
 
 msgid "No flip link"
 msgstr "Geçiş bağlantısı yok"
+
+msgid "No frame of this time has every value the chart needs."
+msgstr "Bu zaman aralığında grafiğin gerektirdiği her değere sahip bir an yok."
+
+#, python-format
+msgid "No frame of this time has every value the chart needs: %(missing)s."
+msgstr "Bu zaman aralığında grafiğin gerektirdiği her değere sahip bir an yok: %(missing)s."
 
 msgid "No fresh value"
 msgstr "Güncel değer yok"
@@ -16012,6 +16034,9 @@ msgstr "Havuz doluyken su yüzeyi."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
+
+msgid "The water through the time"
+msgstr "Zaman boyunca su"
 
 msgid "The week is longer than the standard week."
 msgstr "Hafta, standart haftadan uzun."

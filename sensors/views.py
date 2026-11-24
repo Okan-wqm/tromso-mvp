@@ -15,7 +15,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.gzip import gzip_page
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _, gettext_lazy
 from django.views.decorators.http import require_POST
@@ -28,7 +28,7 @@ from core.models import AuditLog
 from farm.models import Equipment, System, Tank
 from farm.models.site import zone_of
 from farm.water import deffeyes
-from core.widgets import MomentInput
+from core.widgets import EXAMPLE, MomentInput
 
 from . import bindings, chart, credentials, quantities, read, trail
 from .forms import DeviceMoveForm, on_site_clock, place_choices, place_of
@@ -164,6 +164,7 @@ def _charts_props(request, form):
             'start': str(_('Choose a place, a quantity and a time, then Draw.')),
             'gaps': str(_('Times without a value are shaded, never filled.')),
             'noBinding': str(_('Nothing is bound here now.')),
+            'example': formats.localize_input(EXAMPLE),
         },
     }
 

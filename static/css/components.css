@@ -701,6 +701,12 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .deffeyes-omega-aragonite { stroke: var(--chart-s3); }
 .deffeyes-path { fill: none; stroke: var(--line-control); stroke-width: 1.5; stroke-dasharray: 6 4; }
 .deffeyes-target line { stroke: var(--text-1); stroke-width: 2.5; }
+/* Tank › Water's Deffeyes for the range (frontend/islands/lib/deffeyes.tsx): the water's path through the time, broken
+   where a moment has no diagram, and where it was first drawn. */
+.deffeyes-track { fill: none; stroke: var(--chart-ink); stroke-width: 1.5; stroke-linejoin: round; stroke-opacity: .7; }
+.deffeyes-track-start { fill: var(--surface-sheet); stroke: var(--chart-ink); stroke-width: 2; }
+.deffeyes-swatch-track { height: 0; border-top: 2px solid var(--chart-ink); border-radius: 0; }
+.deffeyes-swatch-track-start { width: 10px; height: 10px; border: 2px solid var(--chart-ink); border-radius: 50%; background: var(--surface-sheet); opacity: 1; }
 .deffeyes-point { fill: var(--chart-water); stroke: var(--chart-ink); stroke-width: 1; }
 .deffeyes-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: .375rem 1rem; margin: .75rem 0 0; padding: 0;
   list-style: none; color: var(--text-3); font-size: var(--fs-chart-legend); }

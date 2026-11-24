@@ -556,5 +556,18 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-chart-key[data-series="5"] { color: var(--chart-s5); }
 .ui-chart-key > span { color: var(--text-2); }
 .ui-chart-empty { margin: 0; padding: var(--space-5) var(--space-4); }
-.ui-series { min-height: 160px; }
+.ui-series { position: relative; min-height: 160px; }
+/* A series chart's markers (SeriesChart, Marks): an SVG over the canvas that takes no pointer itself; each mark a line
+   wide enough to hover, reached with Tab, its label shown on hover and on focus. */
+.ui-chart-marks { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+.ui-chart-mark { pointer-events: auto; cursor: default; outline: none; }
+a.ui-chart-mark { cursor: pointer; }
+.ui-chart-mark-hit { stroke: transparent; stroke-width: 12; }
+.ui-chart-mark-label { visibility: hidden; fill: var(--text-1); font-family: var(--font-text); font-size: var(--fs-chart-label);
+  font-weight: 600; paint-order: stroke; stroke: var(--surface-sheet); stroke-width: 4px; stroke-linejoin: round; }
+.ui-chart-mark:hover .ui-chart-mark-label, .ui-chart-mark:focus-visible .ui-chart-mark-label { visibility: visible; }
+.ui-chart-mark:hover .ui-chart-mark-hit, .ui-chart-mark:focus-visible .ui-chart-mark-hit { stroke: var(--chart-tick-ink); stroke-width: 2; }
+.ui-chart-mark[data-status="warning"]:is(:hover, :focus-visible) .ui-chart-mark-hit { stroke: var(--chart-warn); }
+.ui-chart-mark[data-status="critical"]:is(:hover, :focus-visible) .ui-chart-mark-hit { stroke: var(--chart-crit); }
+.ui-chart-mark:focus-visible .ui-chart-mark-label { text-decoration: underline; }
 .ui-chart-caption { margin-top: auto; padding: 6px 14px 10px; color: var(--text-2); font-size: var(--fs-caption); text-wrap: pretty; }

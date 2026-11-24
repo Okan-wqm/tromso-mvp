@@ -34,6 +34,7 @@ from django.utils.translation import gettext as _, ngettext
 from core import navigation
 from core.crud import done, render_page
 from core.dates import on_clock, read_day, read_moment
+from core.widgets import EXAMPLE
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
                            find_owner, find_point, point_order)
@@ -553,6 +554,73 @@ def _history_of(user, place, start, end, now, title):
     return {'charts': charts, 'worked': worked}
 
 
+RANGE_FRAMES = 120     # about this many Deffeyes frames over a window (the step snapped up the replay's ladder)
+
+
+def range_deffeyes(user, owner, start, end):
+    """Deffeyes for the range (Tank › Water, owner-approved): the replay's frames of the window
+    (`sensors.read.deffeyes_frames`, about RANGE_FRAMES of them, so one page) drawn as one chart: the newest frame's
+    diagram (the regions and the fish's limits of that water; the server's figure, its pH labels placed by the server)
+    and the path of the water's point through the window, broken where a frame has no diagram (never bridged). None for a
+    person who may not read the sensors (the frames join them with the samples). Without any frame with a diagram, the
+    newest frame's reason: the inputs it lacks, or why its pH and alkalinity cannot go together."""
+    from sensors import read as sensor_read
+
+    from .deffeyes import Box, as_props, pixel, render
+    if not user.has_perm(SENSOR_READ):
+        return None
+    step = sensor_read.replay_step((end - start) / RANGE_FRAMES)
+    found = sensor_read.deffeyes_frames(owner, start, end, step, size=sensor_read.PAGE)
+    drawn = [frame for frame in found.frames if frame.figure is not None]
+    zone = zone_of(site_of(owner))
+    words = {'title': _('Deffeyes chart of the time'), 'water': _('The water'), 'path': _('The water through the time'),
+             'first': _('First drawn'), 'dic': _('DIC (mmol/L)'), 'alkalinity': _('Alkalinity (meq/L)'),
+             'isolines': _('pH isolines')}
+    if not drawn:
+        last = found.frames[-1]
+        missing = ', '.join(str(parameters.get(code).label) for code in last.missing)
+        reason = last.impossible or (_('No frame of this time has every value the chart needs: %(missing)s.') % {
+            'missing': missing} if missing else _('No frame of this time has every value the chart needs.'))
+        return {'chart': None, 'reason': str(reason), 'words': {key: str(value) for key, value in words.items()}}
+    newest = drawn[-1]
+    box = Box(*found.figures[newest.figure]['box'])
+    runs, run = [], []
+    for frame in found.frames:
+        if frame.point is None:
+            if run:
+                runs.append(run)
+            run = []
+            continue
+        x, y = pixel(box, frame.point.dic, frame.point.alkalinity_meq)
+        run.append(f'{x:.2f},{y:.2f}')
+    if run:
+        runs.append(run)
+    first = drawn[0]
+    fx, fy = pixel(box, first.point.dic, first.point.alkalinity_meq)
+
+    def shown(at):
+        return formats.date_format(timezone.localtime(at, zone), 'DATETIME_FORMAT')
+    caption = _('%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions and limits '
+                'are those of the newest water. A moment without every value is left out, never joined.') % {
+        'drawn': len(drawn), 'total': len(found.frames), 'step': _step_text(found.step),
+        'first': shown(first.at), 'last': shown(newest.at)}
+    return {'chart': as_props(render(found.figures[newest.figure])), 'path': [' '.join(each) for each in runs],
+            'first': {'x': f'{fx:.2f}', 'y': f'{fy:.2f}', 'at': int(first.at.timestamp())},
+            'at': int(newest.at.timestamp()), 'caption': str(caption), 'reason': '',
+            'words': {key: str(value) for key, value in words.items()}}
+
+
+def _step_text(step):
+    """A replay step in words: 15 min, 3 h, 1 day, 7 days."""
+    minutes = int(step.total_seconds() // 60)
+    if minutes < 60:
+        return _('%(count)d min') % {'count': minutes}
+    if minutes < 24 * 60:
+        return _('%(count)d h') % {'count': minutes // 60}
+    days = minutes // (24 * 60)
+    return ngettext('%(count)d day', '%(count)d days', days) % {'count': days}
+
+
 def history_data(request, owner, now=None):
     """A unit's water history (Tank › Water) or a system's (System › Water: each of its points side by side), as data:
     the window, the charts, the values worked out, the events and the address of the Deffeyes replay of the window."""
@@ -570,6 +638,7 @@ def history_data(request, owner, now=None):
     return {
         'range': key, 'start': int(start.timestamp()), 'end': int(end.timestamp()),
         'zone': zone_of(site_of(owner)).key, 'places': places, 'events': history_events(user, owner, start, end),
+        'range_chart': range_deffeyes(user, owner, start, end),
         'deffeyes': f'{reverse("sensors:deffeyes_frames")}?{query}' if user.has_perm(SENSOR_READ) else '',
         'record': _dialog_url('farm:water_record', request, owner) if user.has_perm(RECORD) else '',
         'samples': history_url(owner)}
@@ -614,9 +683,11 @@ def tank_water(request, pk):
         'unit': {'code': unit.code, 'name': unit.name, 'place': str(unit.production_department)},
         'ranges': [{'key': key, 'label': key, 'href': f'{here}?{urlencode({"range": key})}',
                     'current': data['range'] == key} for key in HISTORY_RANGES],
+        # the window's ends as the date box shows them (core.widgets.MomentInput): dd.mm.yyyy HH:MM in every language
         'custom': {'action': here, 'current': data['range'] == 'custom',
-                   'start': datetime.fromtimestamp(data['start'], tz=zone).strftime('%Y-%m-%dT%H:%M'),
-                   'end': datetime.fromtimestamp(data['end'], tz=zone).strftime('%Y-%m-%dT%H:%M')},
+                   'start': formats.localize_input(datetime.fromtimestamp(data['start'], tz=zone).replace(tzinfo=None)),
+                   'end': formats.localize_input(datetime.fromtimestamp(data['end'], tz=zone).replace(tzinfo=None)),
+                   'example': formats.localize_input(EXAMPLE)},
         'words': {**_history_words(), 'zoneNote': _history_words()['zoneNote'] % {'zone': zone.key}},
         'locale': request.LANGUAGE_CODE,
     })

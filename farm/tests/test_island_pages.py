@@ -3,8 +3,9 @@
 the clock at its MOMENT, through the real views in the new look, kept under .build/island-props/ by core/island_props.py
 for the browser test (frontend/test/production.pages.ts, `npm run test:pages`). Nothing recorded from a real database is
 kept: the repository is public. The pages say the world's facts: a chart per parameter measured or sampled at TT-01,
-the gap of the probe's outage, the meter and lab samples, the fish's limits, the alarm of the window, the compared chart
-on the same window.
+the gap of the probe's outage, the meter and lab samples, the fish's limits, the window's harvest, treatment, feeding and
+alarm, the Deffeyes chart of the window, the window's ends in the date box's shape, the compared chart on the same
+window, the pH's "no recent data" and the temperature's fresh newest value (the ingest's channel state).
 
     water-en, water-nb          Tank › Water of TT-01, 7 days (farm:tank_water)
     sensor-charts-en            Sensors › Charts, TT-01's pH over 7 days compared with its temperature (sensors:charts)"""
@@ -47,8 +48,22 @@ class IslandPagesTests(FrozenClock, TestCase):
                                                      'critical_high': 8.2})
             self.assertEqual(sorted(sample['source'] for sample in charts['tan_mg_l']['samples']), ['lab', 'manual'])
             self.assertEqual(len(props['places'][0]['worked']['nh3_n_mg_l']['values']), 2)
-            self.assertEqual([event['kind'] for event in props['events']], ['alarm'])
+            self.assertEqual(sorted(event['kind'] for event in props['events']),
+                             ['alarm', 'feeding', 'harvest', 'treatment'])
+            self.assertTrue(all(event['url'] for event in props['events']))
+            self.assertRegex(props['custom']['start'], r'^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$')       # the date box's shape
+            self.assertRegex(props['custom']['example'], r'^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$')
+            ranged = props['range_chart']
+            self.assertIsNotNone(ranged['chart'], ranged['reason'])
+            self.assertTrue(ranged['path'] and all(ranged['path']))
+            self.assertTrue(any(isoline['label'] for isoline in ranged['chart']['isolines']))   # placed by the server
             keep(f'water-{language}', props)
+
+    def test_tank_water_reads_a_custom_window_in_the_date_boxs_shape(self):
+        url = reverse('farm:tank_water', args=[self.unit.pk])
+        props = render_island(self.client, url, 'water', {'start': '20.11.2026 06:00', 'end': '21.11.2026 06:00'}, 'en')
+        self.assertEqual((props['range'], props['custom']['start'], props['custom']['end']),
+                         ('custom', '20.11.2026 06:00', '21.11.2026 06:00'))
 
     def test_sensor_charts_say_the_chart_and_the_compared_one_and_their_props_are_kept(self):
         props = render_island(self.client, reverse('sensors:charts'), 'sensor-charts', {
@@ -59,4 +74,13 @@ class IslandPagesTests(FrozenClock, TestCase):
         self.assertEqual((props['compare']['chart']['start'], props['compare']['chart']['end']),
                          (props['chart']['start'], props['chart']['end']))
         self.assertIsNotNone(props['now'])                      # a channel is bound: its newest value is said
+        self.assertFalse(props['now']['fresh'])                 # the pH is silent: no recent data
+        self.assertTrue(props['compare']['now']['fresh'])       # the temperature is fresh
         keep('sensor-charts-en', props)
+
+    def test_sensor_charts_read_from_and_to_in_the_date_boxs_shape(self):
+        props = render_island(self.client, reverse('sensors:charts'), 'sensor-charts', {
+            'target': f'unit:{self.unit.pk}', 'quantity': 'oxygen_mg_l', 'start': '20.11.2026 06:00',
+            'end': '21.11.2026 06:00'}, 'en')
+        self.assertEqual(props['errors'], {})
+        self.assertTrue(props['chart']['buckets']['avg'])

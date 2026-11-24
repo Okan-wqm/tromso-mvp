@@ -10,12 +10,14 @@
 //   - `zones` and `limits`: the fish's limits, the band beyond each bound tinted (warning, critical) and each bound a
 //     line with its label (warning dashed, critical solid);
 //   - `gaps`: the stretches without a value, tinted and named, so a missing stretch is seen, never read as a flat line;
-//   - `markers`: moments (a sensor moved, calibrated; a feeding, a treatment, an alarm), a vertical line each;
+//   - `markers`: moments (a sensor moved, calibrated; a feeding, a treatment, an alarm), a vertical line each, and over
+//     it a mark of its own (an SVG drawn over the canvas, placed by uPlot's valToPos): named by its label for a screen
+//     reader, reached with Tab, its label shown on hover and on focus, a link where the marker has an address;
 //   - a series `dashed` (a line) or `hollow` (points): a value worked out, not measured (NH₃-N);
 //   - `range`: the window's edges, so charts on one time axis line up whatever their values;
 //   - `zone` and `decimals`: the site's clock on the time axis (dd.mm at midnight, HH:MM otherwise) and the quantity's
 //     decimals on the values.
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 
@@ -51,8 +53,25 @@ export interface Limit {
 
 export interface Marker {
   at: number;
+  /** what happened, in words: the mark's accessible name and its hover and focus label */
   label: string;
   status?: Severity;
+  /** where the record is read (a feeding's list, an alarm's detail): the mark is then a link */
+  href?: string;
+}
+
+/** A marker placed on the drawing, in CSS pixels of the chart's box. */
+interface PlacedMark {
+  marker: Marker;
+  x: number;
+}
+
+interface Overlay {
+  width: number;
+  height: number;
+  top: number;
+  bottom: number;
+  marks: PlacedMark[];
 }
 
 export type SeriesColour = 1 | 2 | 3 | 4 | 5;
@@ -109,6 +128,7 @@ export function extent(series: Series[], envelope: SeriesChartProps['envelope'],
 export function SeriesChart({ times, series, unit, emptyLabel, height = 220, envelope, zones = [], limits = [], gaps = [],
   gapLabel = '', markers = [], range, zone, decimals }: SeriesChartProps) {
   const box = useRef<HTMLDivElement>(null);
+  const [overlay, setOverlay] = useState<Overlay | null>(null);
   const empty = !hasValues(series);
   useEffect(() => {
     const element = box.current;
@@ -212,6 +232,23 @@ export function SeriesChart({ times, series, unit, emptyLabel, height = 220, env
         }
       }
       ctx.restore();
+      placeMarks(u);
+    };
+    // The marks over the canvas: each marker inside the drawn time, at uPlot's own position of its moment (CSS pixels,
+    // the plotting area's offset in the box added), redrawn with the chart (a zoom, a resize).
+    const placeMarks = (u: uPlot) => {
+      const host = element.getBoundingClientRect();
+      const area = u.over.getBoundingClientRect();
+      const left = area.left - host.left;
+      const top = area.top - host.top;
+      const [from, to] = [u.scales.x.min ?? -Infinity, u.scales.x.max ?? Infinity];
+      const next: Overlay = {
+        width: Math.round(host.width), height: Math.round(host.height), top: Math.round(top),
+        bottom: Math.round(top + area.height),
+        marks: markers.filter((marker) => marker.at >= from && marker.at <= to)
+          .map((marker) => ({ marker, x: Math.round((left + u.valToPos(marker.at, 'x')) * 10) / 10 })),
+      };
+      setOverlay((was) => (was && JSON.stringify(was) === JSON.stringify(next) ? was : next));
     };
     const chart = new uPlot({
       width: Math.max(element.clientWidth, 200),
@@ -248,5 +285,41 @@ export function SeriesChart({ times, series, unit, emptyLabel, height = 220, env
     resize.observe(element);
     return () => { resize.disconnect(); chart.destroy(); };
   }, [times, series, unit, height, empty, envelope, zones, limits, gaps, gapLabel, markers, range, zone, decimals]);
-  return empty ? <p className="ui-empty-text ui-chart-empty">{emptyLabel}</p> : <div ref={box} className="ui-series" />;
+  if (empty) return <p className="ui-empty-text ui-chart-empty">{emptyLabel}</p>;
+  return (
+    <div className="ui-series">
+      <div ref={box} className="ui-series-plot" />
+      {overlay && overlay.marks.length ? <Marks overlay={overlay} /> : null}
+    </div>
+  );
+}
+
+/** The markers' marks over the canvas: a line to hover or focus (wider than it looks), the label beside it. */
+function Marks({ overlay }: { overlay: Overlay }) {
+  return (
+    <svg className="ui-chart-marks" width={overlay.width} height={overlay.height}
+      viewBox={`0 0 ${overlay.width} ${overlay.height}`}>
+      {overlay.marks.map(({ marker, x }, index) => {
+        const end = x > overlay.width / 2;            // a label in the right half reads to the left of its line
+        const body = (
+          <>
+            <title>{marker.label}</title>
+            <line className="ui-chart-mark-hit" x1={x} y1={overlay.top} x2={x} y2={overlay.bottom} />
+            <text className="ui-chart-mark-label" x={end ? x - 6 : x + 6} y={overlay.top + 14}
+              textAnchor={end ? 'end' : 'start'} aria-hidden="true">{marker.label}</text>
+          </>
+        );
+        const key = `${marker.at}-${index}`;
+        return marker.href ? (
+          <a key={key} className="ui-chart-mark" href={marker.href} aria-label={marker.label} data-status={marker.status}>
+            {body}
+          </a>
+        ) : (
+          <g key={key} className="ui-chart-mark" tabIndex={0} role="img" aria-label={marker.label} data-status={marker.status}>
+            {body}
+          </g>
+        );
+      })}
+    </svg>
+  );
 }

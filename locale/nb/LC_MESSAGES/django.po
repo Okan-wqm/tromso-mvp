@@ -707,6 +707,15 @@ msgid "%(dose)s g/m³"
 msgstr "%(dose)s g/m³"
 
 #, python-format
+msgid ""
+"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions and "
+"limits are those of the newest water. A moment without every value is left out, never joined."
+msgstr ""
+"%(drawn)s av %(total)s tidspunkter hvert %(step)s tegnet, fra %(first)s til %(last)s; områdene og"
+" grensene er de for det nyeste vannet. Et tidspunkt uten alle verdier er utelatt, aldri koblet "
+"sammen."
+
+#, python-format
 msgid "%(duty)s · %(site)s · %(year)s: record that it was done."
 msgstr "%(duty)s · %(site)s · %(year)s: registrer at det er gjort."
 
@@ -5758,6 +5767,9 @@ msgstr "Standardverdier"
 msgid "Deffeyes chart"
 msgstr "Deffeyes-diagram"
 
+msgid "Deffeyes chart of the time"
+msgstr "Deffeyes-diagram for tidsrommet"
+
 #, python-format
 msgid "Deffeyes chart · %(unit)s"
 msgstr "Deffeyes-diagram · %(unit)s"
@@ -7025,6 +7037,9 @@ msgstr "Første dag"
 
 msgid "First day of the new tank"
 msgstr "Det nye karets første dag"
+
+msgid "First drawn"
+msgstr "Først tegnet"
 
 msgid "First name"
 msgstr "Fornavn"
@@ -9959,6 +9974,13 @@ msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
 
 msgid "No flip link"
 msgstr "Ingen byttelenke"
+
+msgid "No frame of this time has every value the chart needs."
+msgstr "Ingen tidspunkt i dette tidsrommet har alle verdiene diagrammet trenger."
+
+#, python-format
+msgid "No frame of this time has every value the chart needs: %(missing)s."
+msgstr "Ingen tidspunkt i dette tidsrommet har alle verdiene diagrammet trenger: %(missing)s."
 
 msgid "No fresh value"
 msgstr "Ingen fersk verdi"
@@ -15977,6 +15999,9 @@ msgstr "Vannflaten når dammen er full."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Vannet mengdene gjelder: et kar eller et kretsløp. Tomt: bare dosene per m³."
+
+msgid "The water through the time"
+msgstr "Vannet gjennom tidsrommet"
 
 msgid "The week is longer than the standard week."
 msgstr "Uken er lengre enn standarduken."

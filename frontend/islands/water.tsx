@@ -2,9 +2,13 @@
 // axis (small multiples), the sensors' lines with their lowest and highest, the meter and lab samples as points on the
 // same chart, the fish's limits as tinted bands with their bound lines, the NH₃-N worked out per sample drawn hollow
 // (worked out, not measured), the gaps shown and named, never bridged, and the window's events (feedings, treatments,
-// harvests, alarms) as marks on every chart and as a list. The window is the address: the presets and the custom form
-// are plain GET forms, so the page works as a link and with the back button. Every word and value comes from the server.
+// harvests, alarms) as marks on every chart (named, reached with Tab, a link to the record) and as a list, and the
+// Deffeyes chart of the window (the server's diagram of the newest water and the water's path through the time). The
+// window is the address: the presets and the custom form (the shared date box, dd.mm.yyyy HH:MM) are plain GET forms, so
+// the page works as a link and with the back button. Every word and value comes from the server.
 import { ChartFrame, EmptyState, Plate, Plates, Table } from './ui/index.js';
+import { useDateInputs } from './lib/dates.js';
+import { DeffeyesChart, DeffeyesLegend, type DeffeyesDrawing, type DeffeyesWords } from './lib/deffeyes.js';
 import { mount } from './ui/mount.js';
 import { SeriesChart, type Marker } from './ui/SeriesChart.js';
 import { keysOf, place, zonesOf, limitsOf, type Bands, type ChartData, type SeriesWords, type Worked } from './lib/series.js';
@@ -23,6 +27,19 @@ interface Place {
   kind: string;
   charts: ChartData[];
   worked: Record<string, { label: string; decimals: number; band: Bands; values: Worked[] }>;
+}
+
+interface RangeChart {
+  chart: DeffeyesDrawing | null;
+  /** the water's point through the window, a polyline's points per run of frames with a diagram (never bridged) */
+  path?: string[];
+  first?: { x: string; y: string; at: number };
+  /** the newest frame with a diagram */
+  at?: number;
+  caption?: string;
+  /** why there is no diagram in the window */
+  reason: string;
+  words: DeffeyesWords & { title: string; path: string; first: string };
 }
 
 interface Words extends SeriesWords {
@@ -52,7 +69,8 @@ export interface WaterProps {
   events: Event[];
   samples: string;
   ranges: { key: string; label: string; href: string; current: boolean }[];
-  custom: { action: string; current: boolean; start: string; end: string };
+  custom: { action: string; current: boolean; start: string; end: string; example: string };
+  range_chart: RangeChart | null;
   words: Words;
   locale: string;
   unit: { code: string; name: string; place: string };
@@ -65,12 +83,14 @@ function when(seconds: number, zone: string): string {
   return `${parts.day ?? ''}.${parts.month ?? ''}.${parts.year ?? ''} ${parts.hour ?? ''}:${parts.minute ?? ''}`;
 }
 
-function markersOf(events: Event[]): Marker[] {
-  return events.map((event) => ({ at: event.at, label: event.label, ...(event.severity ? { status: event.severity } : {}) }));
+function markersOf(events: Event[], zone: string): Marker[] {
+  return events.map((event) => ({ at: event.at, label: `${when(event.at, zone)} · ${event.label}`, href: event.url,
+    ...(event.severity ? { status: event.severity } : {}) }));
 }
 
 function Window({ props }: { props: WaterProps }) {
   const { words } = props;
+  const custom = useDateInputs<HTMLFormElement>();
   return (
     <div className="ui-toolbar">
       <form method="get" action={props.custom.action}>
@@ -82,9 +102,11 @@ function Window({ props }: { props: WaterProps }) {
           ))}
         </span>
       </form>
-      <form method="get" action={props.custom.action}>
-        <label>{words.from}<input type="datetime-local" name="start" defaultValue={props.custom.start} required /></label>
-        <label>{words.to}<input type="datetime-local" name="end" defaultValue={props.custom.end} required /></label>
+      <form ref={custom} method="get" action={props.custom.action}>
+        <label>{words.from}<input type="text" name="start" defaultValue={props.custom.start} required autoComplete="off"
+          data-date-input="moment" placeholder={props.custom.example} /></label>
+        <label>{words.to}<input type="text" name="end" defaultValue={props.custom.end} required autoComplete="off"
+          data-date-input="moment" placeholder={props.custom.example} /></label>
         <button type="submit" className="ui-btn" aria-pressed={props.custom.current}>{words.draw}</button>
       </form>
     </div>
@@ -98,6 +120,7 @@ function ParameterChart({ chart, props, markers }: { chart: ChartData; props: Wa
   return (
     <Plate span={6} label={chart.quantity.label}>
       <ChartFrame title={chart.quantity.label} keys={keysOf(placed)} caption={caption}
+        interactive={markers.length + (placed.markers?.length ?? 0) > 0}
         label={`${chart.quantity.label}, ${props.unit.code}, ${when(props.start, props.zone)} – ${when(props.end, props.zone)}`}>
         <SeriesChart {...placed} markers={[...(placed.markers ?? []), ...markers]} gapLabel={props.words.noValue}
           emptyLabel={chart.empty_text} />
@@ -115,6 +138,7 @@ function WorkedChart({ code, item, props, markers }: { code: string; item: Place
   return (
     <Plate span={6} label={item.label}>
       <ChartFrame title={item.label} keys={[{ label: props.words.worked, series: 5 }]} caption={caption}
+        interactive={markers.length > 0}
         label={`${item.label}, ${props.unit.code}, ${when(props.start, props.zone)} – ${when(props.end, props.zone)}`}>
         <SeriesChart key={code} times={times} unit="mg/L" decimals={item.decimals} zone={props.zone}
           range={[props.start, props.end]} emptyLabel={props.words.noChart} markers={markers}
@@ -125,8 +149,36 @@ function WorkedChart({ code, item, props, markers }: { code: string; item: Place
   );
 }
 
+function RangeDeffeyes({ range, props }: { range: RangeChart; props: WaterProps }) {
+  const { words } = range;
+  const label = `${words.title}, ${props.unit.code}, ${when(props.start, props.zone)} – ${when(props.end, props.zone)}`;
+  return (
+    <Plate span={6} label={words.title}>
+      {range.chart ? (
+        <ChartFrame title={words.title} label={label} now={range.at !== undefined ? `${words.water}: ${when(range.at, props.zone)}` : undefined}
+          caption={[range.caption, ...range.chart.notes, props.words.zoneNote].filter(Boolean).join(' · ')}>
+          <DeffeyesChart chart={range.chart} words={words}>
+            {(range.path ?? []).map((points, index) => <polyline key={index} className="deffeyes-track" points={points} />)}
+            {range.first ? (
+              <circle className="deffeyes-track-start" cx={range.first.x} cy={range.first.y} r="5">
+                <title>{`${words.first}: ${when(range.first.at, props.zone)}`}</title>
+              </circle>
+            ) : null}
+          </DeffeyesChart>
+          <DeffeyesLegend chart={range.chart} words={words} extra={(
+            <>
+              <li><span className="deffeyes-swatch deffeyes-swatch-track" aria-hidden="true" />{words.path}</li>
+              <li><span className="deffeyes-swatch deffeyes-swatch-track-start" aria-hidden="true" />{words.first}</li>
+            </>
+          )} />
+        </ChartFrame>
+      ) : <EmptyState title={words.title}>{range.reason}</EmptyState>}
+    </Plate>
+  );
+}
+
 function Water(props: WaterProps) {
-  const markers = markersOf(props.events);
+  const markers = markersOf(props.events, props.zone);
   const charts = props.places.flatMap((each) => each.charts);
   const worked = props.places.flatMap((each) => Object.entries(each.worked));
   return (
@@ -140,6 +192,7 @@ function Water(props: WaterProps) {
             ...Object.entries(each.worked).map(([code, item]) => <WorkedChart key={`${each.point}-${code}`} code={code}
               item={item} props={props} markers={markers} />),
           ])}
+          {props.range_chart ? <RangeDeffeyes range={props.range_chart} props={props} /> : null}
         </Plates>
       ) : <EmptyState title={props.words.empty} />}
       <Plates>

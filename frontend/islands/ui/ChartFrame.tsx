@@ -18,17 +18,20 @@ export interface ChartFrameProps {
   caption?: ReactNode;
   /** the drawing's name for a screen reader ("Dissolved oxygen, TK-02, last 24 hours") */
   label: string;
+  /** the drawing holds marks of its own to reach (a series chart's markers): it is a named group, not one image, whose
+   *  children a screen reader would never be given (an image's children are presentational) */
+  interactive?: boolean;
   children: ReactNode;
 }
 
-export function ChartFrame({ title, now, nowStatus, keys, caption, label, children }: ChartFrameProps) {
+export function ChartFrame({ title, now, nowStatus, keys, caption, label, interactive, children }: ChartFrameProps) {
   return (
     <figure className="ui-chart">
       <div className="ui-chart-head">
         <h3>{title}</h3>
         {now ? <span className="ui-chart-now" data-status={nowStatus}>{now}</span> : null}
       </div>
-      <div className="ui-chart-draw" role="img" aria-label={label}>{children}</div>
+      <div className="ui-chart-draw" role={interactive ? 'group' : 'img'} aria-label={label}>{children}</div>
       {keys && keys.length ? (
         <ul className="ui-chart-keys">
           {keys.map((key) => <li key={key.series} className="ui-chart-key" data-series={String(key.series)}><span>{key.label}</span></li>)}

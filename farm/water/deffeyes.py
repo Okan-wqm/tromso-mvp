@@ -434,16 +434,22 @@ def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=(), extent=()):
     return render(figure(analysis, geometry(analysis, layers, dosing, simulator, extent)))
 
 
+def pixel(box, dic, alkalinity):
+    """(x, y) in the SVG's pixels of a water (DIC mmol/L, alkalinity meq/L) in a chart's `box`: the one placing of a
+    value on the chart (`render`, and the range's path on Tank › Water)."""
+    return LEFT + dic / box.dic * PLOT, TOP + PLOT - alkalinity / box.alkalinity * PLOT
+
+
 def render(figure):
     """The SVG's parts (Chart) of a figure, from the figure alone: the server draws every chart through here, and the
     replay's player draws the same figures."""
     box = Box(*figure['box'])
 
     def x(dic):
-        return LEFT + dic / box.dic * PLOT
+        return pixel(box, dic, 0)[0]
 
     def y(alkalinity):
-        return TOP + PLOT - alkalinity / box.alkalinity * PLOT
+        return pixel(box, 0, alkalinity)[1]
 
     def points(flat):
         return ' '.join(f'{_fixed(x(dic))},{_fixed(y(alkalinity))}' for dic, alkalinity in _pairs(flat))
@@ -505,6 +511,16 @@ def render(figure):
         notes=list(figure['notes']), box=box, reagent_lines=reagent_lines,
         wedge=points(figure['wedge']) if figure['wedge'] else None,
         dosing_path=[points(line) for line in figure['dosing_path']], waypoint=waypoint, simulator=simulator_drawing)
+
+
+def as_props(chart):
+    """A Chart as an island's props (JSON): its parts in pixels and its words, the box left out (the pixels hold it).
+    Every position is the server's, the pH labels' too (owner's answer, 2026-11-23): the island only draws."""
+    parts = {name: value for name, value in asdict(chart).items() if name != 'box'}
+    for group in ('regions', 'boundaries', 'omega', 'legend'):
+        parts[group] = [{**item, 'name': str(item['name'])} for item in parts[group]]
+    parts['notes'] = [str(note) for note in parts['notes']]
+    return parts
 
 
 def _arrow(x1, y1, x2, y2, size=9):

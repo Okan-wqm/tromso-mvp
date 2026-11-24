@@ -6,6 +6,10 @@
 // Content-Security-Policy. Run by `npm run test:pages` after the Django tests (CI's Django job); a missing build or
 // missing props fail it, never skip it. It holds, at 1440 and 390 px:
 //   - every chart drawn (a canvas per chart with values, words for one without), the window's controls there;
+//   - the window's from and to in the shared date box (a text box, dd.mm.yyyy HH:MM, tidied when left), never the
+//     browser's own date box;
+//   - Tank › Water: every event a mark on the charts, named, reached by Tab, its label shown on focus; the Deffeyes
+//     chart of the window drawn from the server's figure (its pH labels, the water's path);
 //   - no CSP violation, no critical or serious axe finding, every text at 4.5:1;
 //   - nothing scrolls sideways.
 // With SHOTS=<folder> it writes the screenshots.
@@ -98,10 +102,34 @@ test('the Production and Sensors islands in a browser', { skip: skipWithout(BROW
             if (drawn) await tab.waitForSelector('.ui-series canvas');
             assert.equal(await tab.locator('.ui-series canvas').count() >= drawn, true, 'a canvas per chart with values');
             assert.equal(await tab.locator('.ui-seg button[aria-pressed="true"]').count(), 1, 'the window in force is pressed');
+            const events = props.events as { label: string }[];
+            if (drawn && events.length) {
+              await tab.waitForSelector('.ui-chart-mark');
+              const mark = tab.locator('.ui-chart-mark').first();
+              assert.ok((await mark.getAttribute('aria-label'))?.trim(), 'a mark is named');
+              await mark.focus();
+              assert.equal(await mark.locator('.ui-chart-mark-label').evaluate((label) => getComputedStyle(label).visibility),
+                'visible', 'a focused mark shows its label');
+              await tab.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+            }
+            const ranged = props.range_chart as { chart: unknown; path?: string[] } | null;
+            if (ranged?.chart) {
+              assert.ok(await tab.locator('svg.deffeyes-chart .deffeyes-ph').count(), 'the pH labels the server placed');
+              assert.equal(await tab.locator('svg.deffeyes-chart .deffeyes-track').count(), ranged.path?.length ?? 0, 'the path, one line a run');
+            }
           } else {
             assert.ok(await tab.locator('select[name="target"]').count());
             if (props.chart) await tab.waitForSelector('.ui-chart');
           }
+          // the window's from and to: the shared date box, never the browser's own (dd.mm.yyyy HH:MM in every language)
+          assert.equal(await tab.locator('input[type="datetime-local"], input[type="date"]').count(), 0, 'no native date box');
+          const start = tab.locator('input[name="start"][data-date-input="moment"][type="text"]');
+          assert.equal(await start.count(), 1, 'from is the shared date box');
+          const typed = await start.inputValue();
+          await start.fill('1.2.2026 6:05');
+          await start.press('Tab');
+          assert.equal(await start.inputValue(), '01.02.2026 06:05', 'the date box tidies what was typed');
+          await start.fill(typed);
           assert.deepEqual(violations, [], 'CSP violations');
           assert.deepEqual(await lowContrast(tab), [], 'text under 4.5:1');
           assert.deepEqual(await axeFindings(tab, origin), [], 'axe');

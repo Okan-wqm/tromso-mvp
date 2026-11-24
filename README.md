@@ -239,7 +239,9 @@ row. The max biomass is the water volume (else the volume) times the max density
 source's status machine, in one place (`TRANSITIONS`), with one move added: maintenance → active, the way back for
 a unit serviced with its fish in it (F-166); a new unit holds no fish, so it starts as
 preparing, fallow, maintenance or inactive; the form offers the current status and where it can go.
-Every rule that needs the fish in a unit asks `Tank.has_stock()`, which reads the stock ledger: active
+Every rule that needs the fish in a unit asks `Tank.has_stock()`, which asks the stock reader (`farm.stock.read.present`,
+the one definition of "fish present now": every count of fish now, a form's batches in stock, a task's stocked batches,
+the protocols' fish fed today; `core/tests_data_access.py` refuses a second sum of the ledger): active
 and harvesting need fish, preparing, fallow, cleaning and inactive need none (maintenance and
 quarantine can be either), and a unit with fish cannot be deleted or resized. Stocking and emptying a
 unit move its status by themselves (see Production units).
@@ -3062,7 +3064,10 @@ own checklist, copied to each task. The dates are worked out from the first day 
 nothing drifts and a daylight-saving weekend moves nothing (`TaskSeries.dates`). Its tasks are **real tasks**,
 made up to `TASK_HORIZON_DAYS` (14) ahead; the first time, or after a gap, the missed days are made back to
 at most `TASK_BACKFILL_DAYS` (7), and they are overdue (owner decision 3). They are made when a recurring
-task is saved, before the Tasks pages and the overview read, and by `manage.py generate_tasks` for a cron;
+task is saved and by the task job, `manage.py generate_tasks`, which the server's jobs run every hour; the pages only
+read (the data-layering audit, M-3: a page writes nothing, and the overview never fails on the planning). When the job
+is behind, so that a recurring task has its tasks not made up to its site's today (`tasks.read.unplanned`), the Tasks
+and Recurring tasks pages and the production overview say how many, since their counts then miss those tasks;
 one recurring task per transaction, locked, and a unique key per recurring task and day, so each day is made
 once however often and however concurrently. A planned task that nobody touched (open, never edited, no tick,
 no note) is only the rule's projection: **changing, pausing or deleting** the recurring task replaces or
@@ -3788,7 +3793,8 @@ What works:
   age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
   person, logged), Alarm rules and Alarm events (each event is an alarm of Company › Alarms, which notifies its recipients and keeps
-  who acknowledged it; the Acknowledge button here writes that record).
+  who acknowledged it; the Acknowledge button here writes that record, for who may acknowledge the alarm: Alarms: Edit,
+  or a person it was sent to).
 - **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once
   when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
   the activity log).
@@ -4417,7 +4423,9 @@ from which device, how late) is logged. The server side is built; the push trans
   the most attempts) and a critical configuration alarm says so until the row is back (F6). The staleness thresholds the
   alarms depend on are rule data too (F10): how long a water value counts as fresh per parameter (Setup › Reference data ›
   Water freshness, seeded with the hours the code held; the conductivity at 25 °C and the hardness by farm 0042, 7 and 14
-  days), the clock tolerance (Platform settings) and a sensor channel's
+  days; changed, never deleted: farm 0051; a parameter without its row is refused where it is read, so the water step
+  fails and its failure is a critical alarm, never a value judged by the code's own hours), the clock tolerance (Platform
+  settings) and a sensor channel's
   fresh heartbeats; the ingest contract's hour (`evaluate.MAX_AHEAD`) is the contract's and stays. No number in the modules
   an alarm's decision reads is a threshold: a test reads them, each named exception with its reason.
 - **A device clock** that differs from the platform's is an alarm of its own (owner, 2026-11-09): the skew is measured per
@@ -4485,9 +4493,11 @@ from which device, how late) is logged. The server side is built; the push trans
   connected, so nothing is sent anywhere, every notification waits, and the pages say so. A failing transport is tried
   again up to its severity's delivery attempts.
 - **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the
-  notification answered; once per person; the delay is computed from the alarm's opening. Who holds Alarms: Edit may
-  acknowledge, and so may anyone the alarm was sent to. The sensors' Alarm events page acknowledges through the same
-  service: the event's own acknowledgement columns were carried over by a migration and removed.
+  notification answered (without one, the person's own); once per person; the delay is computed from the alarm's
+  opening. Who holds Alarms: Edit may acknowledge, and so may anyone the alarm was sent to: one rule
+  (`alarms.read.may_acknowledge`), asked by the service itself (`alarms.services.acknowledge`), whoever calls it. The
+  sensors' Alarm events page acknowledges through the same service and the same rule (Alarm events has Read only; the
+  data-layering audit, L-5): the event's own acknowledgement columns were carried over by a migration and removed.
 - **Append-only**: alarms, clearances, notifications, delivery attempts, escalations and acknowledgements are never changed
   or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
   a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
@@ -4857,10 +4867,11 @@ there was then (`core_rev_ensure`). A reader ensures its keys, then stamps them,
   fold checkpoint must add them before it relies on `batch`.
 - **Ensure, stamp, then read**, in that order, in one REPEATABLE READ snapshot; `rev.mark_built` runs last, in its own
   short transaction, so the rows it locks are held for no longer than that.
-- **No write on read.** `farm.water.freshness._load()` makes a missing freshness row again and `PlatformSettings.get()`
-  makes the settings row when a restore lost it: both write tracked tables while reading, so they fail in a READ ONLY
-  evaluator and move a key when they do write. The evaluator must read those rows without them (or have them made by a
-  migration or a command first).
+- **No write on read.** The freshness rules, the platform settings and the scheduling settings are seeded by their
+  migrations and kept by the database (`core.operations.KeepRows`: a DELETE refused by a trigger, a soft delete by a
+  check; farm 0051, core 0015, hr 0014), and their readers only read: a lost row is refused loudly where it is read
+  (`freshness.Missing`, `DoesNotExist`), never made again and never stood in for by the code's constants (the
+  data-layering audit, M-1). A READ ONLY evaluator can read them.
 - **What bypasses the triggers**, after which `manage.py core_rev_rebuild` must run: TimescaleDB's `drop_chunks` (it
   drops chunks, no row trigger fires), `session_replication_role = replica`, `ALTER TABLE ... DISABLE TRIGGER ALL` on a
   plain table, a rewrite of a table outside the ORM and SQL (`pg_restore`, a load with `--disable-triggers`, a copy
@@ -5923,12 +5934,12 @@ runs the server:
 | `tasks/` | Tasks and recurring tasks: models (`models.py`), the place as a choice (`places.py`), the one write path and the planned tasks (`services.py`), overdue and the views on read (`read.py`), the tabs (`resources.py`, `forms.py`), the drawer's actions and the overview tiles (`views.py`), `manage.py generate_tasks`, `templates/tasks/`, `static/css/tasks.css` |
 | `experiments/` | Experiments (its own app, reading the farm): the design, the placements and the team (`models.py`), the endpoints (`variables.py`), the tab, its design view and its team list (`resources.py`, `forms.py`), what is wrong with a design (`design.py`), the seeded deal (`allocation.py`), the reads that every figure goes through and the deviations (`read.py`), the check of every started experiment (`integrity.py`, `manage.py check_experiments`), the write path of the design and the places (`services.py`), the constraints and composite keys (`migrations/0001_initial.py`), the triggers that freeze a started design (`migrations/0002_design_frozen.py`), `templates/experiments/`, tests, `docs/experiments.md` |
 | `hr/` | Human resources (Company › HR, its own app): people, departments, placements, shifts, leave and attendance (`models/`), the rules and the scope (`rules.py`, `scope.py`, `roles.py`), the write path (`services.py`), the reads (`read.py`), what the database cannot hold (`checks.py`, `manage.py check_hr`), the tabs (`resources/`, `forms/`), `templates/hr/`, tests (README, Human resources) |
-| `monitoring/` | Operations › Monitoring: the one card read and its state ladder with its words (`read.py`), the band above the cards (`read.band`), the card templates' catalogue, validator, resolution, drawing and the wall's slot rule (`cards/`, `cards/slots.py`), boards and templates (`models.py`, `resources.py`, `forms.py`), the page, the fragment and the designer's preview (`views.py`), `templates/monitoring/`, `static/css/monitor.css`, `frontend/poll.ts`, `frontend/announce.ts`, `frontend/designer.ts`, `frontend/windows.ts`, `frontend/wall.ts`, tests (README, Monitoring) |
-| `sensors/` | The Sensors panel: devices, channels and their bindings (`models/`, `bindings.py`), the live water source the farm reads through `farm/water/sources.py` (`provider.py`, `read.py`), alarms and quality (`alarms.py`, `quality.py`), the charts and the trail (`chart.py`, `trail.py`), `sensors/CONTRACT.md`, tests (README, Sensors) |
+| `monitoring/` | Operations › Monitoring: the one card read and its state ladder with its words (`read.py`), the copy of a card template (`services.py`), the band above the cards (`read.band`), the card templates' catalogue, validator, resolution, drawing and the wall's slot rule (`cards/`, `cards/slots.py`), boards and templates (`models.py`, `resources.py`, `forms.py`), the page, the fragment and the designer's preview (`views.py`), `templates/monitoring/`, `static/css/monitor.css`, `frontend/poll.ts`, `frontend/announce.ts`, `frontend/designer.ts`, `frontend/windows.ts`, `frontend/wall.ts`, tests (README, Monitoring) |
+| `sensors/` | The Sensors panel: devices, channels and their bindings (`models/`, `bindings.py`), the live water source the farm reads through `farm/water/sources.py` (`provider.py`, `read.py`), alarms and quality (`alarms.py`, `quality.py`), a credential's rotation (`credentials.py`) and a dead letter's resolution (`services.py`), the charts and the trail (`chart.py`, `trail.py`), `sensors/CONTRACT.md`, tests (README, Sensors) |
 | `sensors-ingest/` | The ingest service (Rust): reads the broker's sensor messages and writes the readings (`CONTRACT-REQUESTS.md`, `BENCH.md`) |
 | `core/rev.py`, `core/operations.py`, `core/migrations/0014_rev.py`, `farm/migrations/0050_rev_triggers.py`, `sensors/migrations/0014_rev_triggers.py` | Revisions (`core_rev`): the triggers that move a revision per (scope, key) whenever an input of the water's judgement changes, the `TrackRev` migration operation, the presence check (core.W005), `manage.py core_rev_repair` and `manage.py core_rev_rebuild` (README, Revisions) |
 | `core/checks.py`, `core/ranges.py`, `core/text.py` | The system checks run at start (the built catalogs and assets); periods as PostgreSQL compares them, for exclusion constraints; lower case in the person's language |
-| `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
+| `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the review's write (`services.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
 | `core/datamap.py`, `<app>/screens.py`, `core/test_datamap.py`, `docs/data-map.md`, `docs/data-map.json` | The data map: every table's screens, read from the code and the declarations; `manage.py data_map [--check]` |
 | `core/database.py`, `config/database.py` | The database viewer's tables (from the models), their structure (from the database), sections, descriptions and masked columns |
@@ -5975,7 +5986,7 @@ under the wrong kind, fails.
 |---|---|---|---|---|
 | `run_alarms` | alarms | product | One pass of the alarms, or one every `--loop` seconds: opens, clears, notifies, escalates, sends | The deployment, as its loop (Alarms) |
 | `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the deployment runs `run_alarms` instead, which checks these too |
-| `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | A cron job (the Tasks pages do the same before they read) |
+| `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | The server's jobs, every hour (the pages only read and say when it is behind) |
 | `sensors_housekeeping` | sensors | product | Deletes the dead letters last seen more than 90 days ago | A daily job |
 | `sensor_broker_sync` | sensors | product | Writes the MQTT broker's passwd and acl files from the sensors configuration | An operator, after the sensors configuration changed (the broker reloads the files) |
 | `sensors_ingest_role` | sensors | product | Lets the ingest's database role sign in with the password in a file, or stops it | An operator, at set-up |
@@ -6003,6 +6014,25 @@ under the wrong kind, fails.
 
 `fix_seed_size_mix` is a finished one-off on a database it has run on (run again it does nothing), and is kept: every
 development dump taken before it holds the mixed cages, and a restore of one needs it again.
+
+### Who writes and who reads (the layering contract)
+
+One write path and one read API per area, held by a test that reads the code (`core/tests_data_access.py`, the
+data-layering audit of 24.11.2026, M-5; a scan of the production modules, no database, about a second):
+- **Writes.** An ORM write or an SQL INSERT, UPDATE, DELETE or DDL stands only in an area's `services.py`, a declared
+  write-path module (`WRITE_PATHS`: crud, the delete plan, the activity log, the feeding protocols, the sampling points,
+  the sensors' bindings, credentials and rule events, ...), a model's own save and delete, a management command, or
+  `WRITES_ALLOWED` with a ceiling and a reason (six modules today: a person's language, the revisions' repair, the
+  equipment types' seed, an equipment's system links, the role presets, the sensors' demo tool). Never in a view, a
+  reader (`read.py`, `fold.py`) or a template tag. A service that writes for a person asks who may itself
+  (`core.access.require`), so a caller that is not the page cannot skip it.
+- **Reads of the safety data** (`OWNED`: the stock ledger, the feedings, the water samples, the treatments and health
+  events, the alarms, the readings) outside the owning package stand only in `READS_ALLOWED`, frozen per module and
+  model: a ratchet that may only fall.
+- **Fish present now** is `farm.stock.read.present`; no other module sums the ledger for it.
+Each ceiling is the count found: a fix lowers it in the same change, nothing raises it, a new entry needs its reason in
+review. Reference rows the code reads (the freshness rules, the platform and scheduling settings) are kept by the
+database and only read (`core.operations.KeepRows`).
 
 ## Tests
 

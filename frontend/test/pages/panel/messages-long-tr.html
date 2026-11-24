@@ -1,0 +1,1206 @@
+<!doctype html>
+
+
+<html lang="tr" data-theme="industry" data-ui="next">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test long channel · Mesajlar · Suderra</title>
+  <script src="/static/js/nav-boot.js?v=1795522414"></script>
+  <link rel="icon" href="/static/favicon.svg?v=1795521495" type="image/svg+xml">
+  <script type="importmap" nonce="d66DOsMgNI_D8kzBJVMujQ">{"imports": {"/static/js/announce.js": "/static/js/announce.js?v=1795522415", "/static/js/auth.js": "/static/js/auth.js?v=1795522415", "/static/js/collapse.js": "/static/js/collapse.js?v=1795522416", "/static/js/components.js": "/static/js/components.js?v=1795522415", "/static/js/date-input.js": "/static/js/date-input.js?v=1795522414", "/static/js/designer.js": "/static/js/designer.js?v=1795522415", "/static/js/dom.js": "/static/js/dom.js?v=1795522415", "/static/js/grid/history.js": "/static/js/grid/history.js?v=1795522416", "/static/js/grid/keyboard.js": "/static/js/grid/keyboard.js?v=1795522416", "/static/js/grid/layout.js": "/static/js/grid/layout.js?v=1795522416", "/static/js/grid/types.js": "/static/js/grid/types.js?v=1795522416", "/static/js/nav-boot.js": "/static/js/nav-boot.js?v=1795522414", "/static/js/poll.js": "/static/js/poll.js?v=1795522414", "/static/js/roster.js": "/static/js/roster.js?v=1795522415", "/static/js/shell.js": "/static/js/shell.js?v=1795522415", "/static/js/strip.js": "/static/js/strip.js?v=1795522414", "/static/js/wall.js": "/static/js/wall.js?v=1795522415", "/static/js/wall/slots.js": "/static/js/wall/slots.js?v=1795522416", "/static/js/windows.js": "/static/js/windows.js?v=1795522414"}}</script>
+  <link rel="stylesheet" href="/static/css/fonts.css?v=1795521494">
+  <link rel="stylesheet" href="/static/css/tokens.css?v=1795522385">
+  <link rel="stylesheet" href="/static/css/base.css?v=1795521494">
+  <link rel="stylesheet" href="/static/css/ui.css?v=1795521495">
+  
+  <link rel="stylesheet" href="/static/css/ds.css?v=1795521494">
+  <link rel="stylesheet" href="/static/css/app.css?v=1795521494">
+  <link rel="stylesheet" href="/static/css/components.css?v=1795521494">
+  
+  <link rel="stylesheet" href="/static/css/tw.css?v=1795521495">
+  <link rel="stylesheet" href="/static/css/messages.css?v=1795538662">
+</head>
+<body>
+  <a class="skip" href="#content">İçeriğe geç</a>
+  <div class="shell">
+    <aside class="rail" id="rail" aria-label="Ana gezinme">
+      <div class="rail-head ui-rail-head">
+        <a class="rail-brand" href="/">
+          <img class="ui-logo" src="/static/img/suderra-mark-disc.png?v=1795521496" alt=""><span class="ui-wordmark">SU<span>DERRA</span></span>
+          <span class="sr-only">Suderra, ana sayfa</span>
+        </a>
+        <button type="button" class="icon-button rail-toggle" data-nav-toggle aria-controls="rail" aria-expanded="true" title="Menüyü daralt"
+                data-label-collapse="Menüyü daralt" data-label-expand="Menüyü genişlet">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/>
+</svg>
+
+          <span class="sr-only">Menüyü daralt</span>
+        </button>
+      </div>
+
+      
+      <div class="menu workspace-menu" data-menu>
+        <button type="button" class="ui-panel-switch" data-menu-toggle aria-haspopup="true" aria-expanded="false" aria-controls="workspace-panel" title="Paneli değiştir">
+          <span class="workspace-name">Üretim</span>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/>
+</svg>
+
+        </button>
+        <div class="menu-panel" id="workspace-panel" data-menu-panel hidden>
+          <p class="menu-head">Paneller</p>
+          
+          <a class="menu-item" href="/">Şirket</a>
+          
+          <a class="menu-item" href="/production/" aria-current="true">Üretim<span class="menu-badge">4</span></a>
+          
+          <a class="menu-item" href="/sensors/">Sensörler</a>
+          
+        </div>
+      </div>
+      
+
+      <nav class="rail-nav ui-rail-nav">
+        
+        
+        
+        
+        
+        <a class="rail-link" href="/production/" title="Genel bakış" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+</svg>
+<span class="rail-label">Genel bakış</span>
+          
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Operasyonlar</p>
+        
+        
+        
+        <a class="rail-link" href="/operations/units/" title="Üretim birimleri" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
+</svg>
+<span class="rail-label">Üretim birimleri</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/monitoring/" title="İzleme" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+<span class="rail-label">İzleme</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/water/" title="Su kimyası" data-area="water">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+</svg>
+<span class="rail-label">Su kimyası</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/storage/" title="Depo" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>
+</svg>
+<span class="rail-label">Depo</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/tasks/" title="Görevler" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>
+</svg>
+<span class="rail-label">Görevler</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/tasks/recurring/" title="Yinelenen görevler" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>
+</svg>
+<span class="rail-label">Yinelenen görevler</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Yemleme</p>
+        
+        <a class="rail-link" href="/operations/feeding/board/" title="Öğün panosu" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+</svg>
+<span class="rail-label">Öğün panosu</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/feeding/" title="Kayıtlar" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>
+</svg>
+<span class="rail-label">Kayıtlar</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/feeding/protocols/" title="Protokoller" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>
+</svg>
+<span class="rail-label">Protokoller</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/feeding/assignments/" title="Atamalar" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+</svg>
+<span class="rail-label">Atamalar</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Hasat</p>
+        
+        <a class="rail-link" href="/operations/harvests/" title="Hasat edilenler" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 16 2 2 4-4"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/>
+</svg>
+<span class="rail-label">Hasat edilenler</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/harvest-plan/" title="Hasat planı" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+</svg>
+<span class="rail-label">Hasat planı</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/production-plans/" title="Üretim planları" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+</svg>
+<span class="rail-label">Üretim planları</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Sağlık</p>
+        
+        <a class="rail-link" href="/operations/health/treatments/" title="Tedaviler" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/>
+</svg>
+<span class="rail-label">Tedaviler</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/health/events/" title="Sağlık olayları" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/>
+</svg>
+<span class="rail-label">Sağlık olayları</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/health/lice/" title="Deniz biti sayımları" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>
+</svg>
+<span class="rail-label">Deniz biti sayımları</span>
+          
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Araştırma</p>
+        
+        
+        
+        <a class="rail-link" href="/research/experiments/" title="Deneyler" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>
+</svg>
+<span class="rail-label">Deneyler</span>
+          
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Raporlar</p>
+        
+        
+        
+        <a class="rail-link" href="/reports/" title="Yasal raporlar" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+</svg>
+<span class="rail-label">Yasal raporlar</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/authority-questions/" title="Kuruma sorular" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>
+</svg>
+<span class="rail-label">Kuruma sorular</span>
+          
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">İletişim</p>
+        
+        
+        
+        <a class="rail-link" href="/messages/" title="Mesajlar" aria-current="page" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+</svg>
+<span class="rail-label">Mesajlar</span>
+          <span class="rail-badge" data-poll="/messages/unread/" data-poll-every="30">3</span>
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Ekip</p>
+        
+        <p class="rail-group">Zaman ve devam</p>
+        
+        <a class="rail-link" href="/production/team/" title="Bugün ve yoklama" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+</svg>
+<span class="rail-label">Bugün ve yoklama</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/production/team/schedule/" title="Vardiya çizelgesi" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+</svg>
+<span class="rail-label">Vardiya çizelgesi</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/production/team/leave/" title="İzin talepleri" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.18 4.18A2 2 0 0 0 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 1.82-1.18"/><path d="M21 15.5V6a2 2 0 0 0-2-2H9.5"/><path d="M16 2v4"/><path d="M3 10h7"/><path d="M21 10h-5.5"/><path d="m2 2 20 20"/><path d="M8 2v4"/>
+</svg>
+<span class="rail-label">İzin talepleri</span>
+          <span class="rail-badge">1</span>
+        </a>
+        
+        <a class="rail-link" href="/production/team/attendance/" title="Yoklama" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+</svg>
+<span class="rail-label">Yoklama</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/production/team/overview/" title="Ekip özeti" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+</svg>
+<span class="rail-label">Ekip özeti</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Kişiler</p>
+        
+        <a class="rail-link" href="/production/team/people/" title="Ekip listesi" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+</svg>
+<span class="rail-label">Ekip listesi</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/production/team/organization/" title="Organizasyon şeması" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>
+</svg>
+<span class="rail-label">Organizasyon şeması</span>
+          
+        </a>
+        
+        
+        
+        
+        <details class="rail-collapse" data-collapse="production-setup">
+        <summary class="rail-section">Kurulum</summary>
+        
+        
+        <p class="rail-group">Tesis yapısı</p>
+        
+        <a class="rail-link" href="/production-departments/" title="Üretim departmanları" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>
+</svg>
+<span class="rail-label">Üretim departmanları</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/systems/" title="Sistemler" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>
+</svg>
+<span class="rail-label">Sistemler</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/equipment/" title="Ekipman" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+</svg>
+<span class="rail-label">Ekipman</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/tanks/" title="Tanklar, havuzlar ve kafesler" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/>
+</svg>
+<span class="rail-label">Tanklar, havuzlar ve kafesler</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/monitoring-boards/" title="İzleme panoları" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+<span class="rail-label">İzleme panoları</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/sampling-points/" title="Numune noktaları" data-area="water">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+</svg>
+<span class="rail-label">Numune noktaları</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Referans verileri</p>
+        
+        <a class="rail-link" href="/species/" title="Balık türleri" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"/><path d="M18 12v.5"/><path d="M16 17.93a9.77 9.77 0 0 1 0-11.86"/><path d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33"/><path d="M10.46 7.26C10.2 5.88 9.17 4.24 8 3h5.8a2 2 0 0 1 1.98 1.67l.23 1.4"/><path d="m16.01 17.93-.23 1.4A2 2 0 0 1 13.8 21H9.5a5.96 5.96 0 0 0 1.49-3.98"/>
+</svg>
+<span class="rail-label">Balık türleri</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/feeds/" title="Yemler" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/>
+</svg>
+<span class="rail-label">Yemler</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/water-limits/" title="Su sınırları" data-area="water">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>
+</svg>
+<span class="rail-label">Su sınırları</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/water-freshness/" title="Su tazeliği" data-area="water">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>
+</svg>
+<span class="rail-label">Su tazeliği</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/medicines/" title="İlaçlar" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>
+</svg>
+<span class="rail-label">İlaçlar</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/handling-rules/" title="Elleçleme kuralları" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>
+</svg>
+<span class="rail-label">Elleçleme kuralları</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/card-templates/" title="Kart şablonları" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+</svg>
+<span class="rail-label">Kart şablonları</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/card-template-rules/" title="Kart şablonu kuralları" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>
+</svg>
+<span class="rail-label">Kart şablonu kuralları</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/ph-window-scales/" title="pH penceresi ölçekleri" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>
+</svg>
+<span class="rail-label">pH penceresi ölçekleri</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Hasat ve lojistik</p>
+        
+        <a class="rail-link" href="/slaughter-facilities/" title="Kesimhaneler" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>
+</svg>
+<span class="rail-label">Kesimhaneler</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Satın alma</p>
+        
+        <a class="rail-link" href="/suppliers/" title="Tedarikçiler" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>
+</svg>
+<span class="rail-label">Tedarikçiler</span>
+          
+        </a>
+        
+        
+        </details>
+        
+      </nav>
+
+      <div class="rail-foot">Balık çiftliği</div>
+    </aside>
+    <div class="scrim" data-nav-close hidden></div>
+
+    <div class="console">
+      <header class="topbar ui-topbar">
+        <nav class="ui-crumbs" aria-label="Buradasınız">
+          <p class="eyebrow">Üretim<span aria-hidden="true"> › </span>İletişim<span aria-hidden="true"> › </span><span class="ui-crumb-here">Mesajlar</span></p>
+        </nav>
+        <div class="ui-strip" role="group" aria-label="Durum" data-poll="/ui/strip/" data-poll-every="30" data-poll-state="loading" data-poll-stale-after="1" data-poll-if-shown data-unread-text="Güncellenmedi: alarmlar okunamıyor" data-strip-said="ui-strip-said" data-strip-alert="ui-strip-alert"><a class="ui-strip-item" href="/alarms/" data-strip="alarms">Alarmlar okunuyor…</a><a class="ui-strip-item" href="/hr/" data-strip="on_site">Sahada 3 kişi</a><span class="ui-strip-item" data-strip="clock">23.11.2026, 13:42 · Europe/Oslo</span></div>
+        <p class="sr-only" id="ui-strip-said" role="status"></p><p class="sr-only" id="ui-strip-alert" role="alert"></p>
+        <div class="topbar-language">
+<form class="language-switch" method="post" action="/language/">
+  <input type="hidden" name="csrfmiddlewaretoken" value="test-token">
+  <input type="hidden" name="next" value="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/">
+  <div role="group" aria-label="Dil">
+    
+    <button type="submit" name="language" value="en" lang="en" aria-label="English" title="English">EN</button>
+    
+    <button type="submit" name="language" value="tr" lang="tr" aria-label="Türkçe" title="Türkçe" aria-current="true">TR</button>
+    
+    <button type="submit" name="language" value="nb" lang="nb" aria-label="Norsk bokmål" title="Norsk bokmål">NB</button>
+    
+  </div>
+</form>
+</div>
+
+        <div class="menu user-menu" data-menu>
+          <button type="button" class="user-trigger" data-menu-toggle aria-haspopup="true" aria-expanded="false" aria-controls="user-panel">
+            <span class="initials ui-avatar" aria-hidden="true">TE</span>
+            <span class="user-name">test.admin</span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/>
+</svg>
+
+          </button>
+          <div class="menu-panel menu-panel-right" id="user-panel" data-menu-panel hidden>
+            <p class="menu-head">
+              <strong>test.admin</strong>
+              <span>test.admin@example.com</span>
+            </p>
+            <div class="menu-language menu-theme"><span>Tema</span>
+              <form class="theme-switch" method="post" action="/theme/">
+                <input type="hidden" name="csrfmiddlewaretoken" value="test-token">
+                <input type="hidden" name="next" value="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/">
+                <div role="group" aria-label="Tema">
+                  <button type="submit" name="theme" value="industry" aria-pressed="true">Industry</button><button type="submit" name="theme" value="fjord" aria-pressed="false">Fjord</button><button type="submit" name="theme" value="polarnatt" aria-pressed="false">Polarnatt</button><button type="submit" name="theme" value="nordlys" aria-pressed="false">Nordlys</button><button type="submit" name="theme" value="tang" aria-pressed="false">Tang</button><button type="submit" name="theme" value="laks" aria-pressed="false">Laks</button>
+                </div>
+              </form>
+            </div>
+            <a class="menu-item" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/?ui=classic" data-look="classic">Klasik görünüme dön</a>
+            <a class="menu-item" href="/accounts/password_change/">Parolayı değiştir</a>
+            <form method="post" action="/accounts/logout/">
+              <input type="hidden" name="csrfmiddlewaretoken" value="test-token">
+              <button type="submit" class="menu-item">Çıkış yap</button>
+            </form>
+          </div>
+        </div>
+      </header>
+
+      
+      <main class="content" id="content" tabindex="-1" data-measure="fluid">
+        
+        <div class="page-head ui-head" data-area="neutral">
+          <div class="page-title">
+            <span class="ui-head-group">İletişim</span>
+            <span class="ui-area" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+</svg>
+</span>
+            <h1>Mesajlar</h1>
+            
+          </div>
+          
+        </div>
+        
+<div class="ui-toolbar">
+  <a class="ui-btn" data-variant="primary" href="/messages/new/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M12 5v14"/>
+</svg>
+Yeni mesaj</a>
+  <a class="ui-btn" href="/messages/new-channel/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>
+</svg>
+Yeni kanal</a>
+</div>
+<div class="ui-plates" data-chat-open>
+  <section class="ui-plate" data-span="4" aria-labelledby="conversations-title">
+    <div class="ui-plate-head"><h2 class="ui-plate-title" id="conversations-title">Konuşmalar</h2></div>
+    <div class="chat-list" data-poll="/messages/list/?open=3dc048c1-99cd-486c-b8e2-e07d715a69f5" data-poll-every="15">
+
+<ul class="chat-conversations" role="list">
+  
+  
+  <li>
+    <a class="chat-row" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/" aria-current="page">
+      <span class="chat-avatar" aria-hidden="true">#</span>
+      <span class="chat-row-text">
+        <span class="chat-row-title">Test long channel</span>
+        <span class="chat-row-last">Siz: Test message 60 of 60.</span>
+      </span>
+      <span class="chat-row-side">
+        <time datetime="2026-11-24T17:01:29.732946+00:00">24.11.2026</time>
+        
+      </span>
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="chat-row has-unread" href="/messages/1447868b-02c2-41b6-a2db-663fd0c1ec40/">
+      <span class="chat-avatar" aria-hidden="true">#</span>
+      <span class="chat-row-text">
+        <span class="chat-row-title">Test channel</span>
+        <span class="chat-row-last">Test Writer: A test message to the channel.</span>
+      </span>
+      <span class="chat-row-side">
+        <time datetime="2026-11-24T17:01:28.587396+00:00">24.11.2026</time>
+        <span class="chat-unread">1<span class="sr-only"> okunmamış</span></span>
+      </span>
+    </a>
+  </li>
+  
+  
+  
+  <li>
+    <a class="chat-row has-unread" href="/messages/e38af14b-aea5-4974-afb6-ae81f521a10d/">
+      <span class="chat-avatar" aria-hidden="true">T</span>
+      <span class="chat-row-text">
+        <span class="chat-row-title">Test Writer</span>
+        <span class="chat-row-last">Test Writer: A second test answer,
+on two lines.</span>
+      </span>
+      <span class="chat-row-side">
+        <time datetime="2026-11-24T17:01:28.540158+00:00">24.11.2026</time>
+        <span class="chat-unread">2<span class="sr-only"> okunmamış</span></span>
+      </span>
+    </a>
+  </li>
+  
+  
+</ul>
+
+</div>
+  </section>
+
+  <section class="ui-plate" data-span="8" aria-labelledby="pane-title">
+    
+    <div class="ui-plate-head">
+      <h2 class="ui-plate-title" id="pane-title"><span aria-hidden="true">#</span>Test long channel</h2>
+      <span class="ui-plate-meta">2 üye</span>
+      <a class="ui-plate-link" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/members/">Üyeler</a>
+    </div>
+    <div class="ui-plate-body"><a href="/messages/">Tüm konuşmalar</a></div>
+    <ol class="chat-messages" data-poll="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/new/?after=65" data-poll-every="5" data-poll-append data-scroll-end aria-live="polite">
+      <li class="chat-more"><a href="?before=16">Önceki mesajları göster</a></li>
+      
+
+
+<li class="msg" id="m16">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:28.808638+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 11 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m17">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:28.826514+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/17/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 12 of 60.</p>
+</li>
+
+
+<li class="msg" id="m18">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:28.839687+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 13 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m19">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:28.860492+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/19/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 14 of 60.</p>
+</li>
+
+
+<li class="msg" id="m20">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:28.883599+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 15 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m21">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:28.900042+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/21/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 16 of 60.</p>
+</li>
+
+
+<li class="msg" id="m22">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:28.912849+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 17 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m23">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:28.927309+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/23/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 18 of 60.</p>
+</li>
+
+
+<li class="msg" id="m24">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:28.954022+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 19 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m25">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:28.965764+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/25/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 20 of 60.</p>
+</li>
+
+
+<li class="msg" id="m26">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:28.983111+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 21 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m27">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:28.993176+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/27/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 22 of 60.</p>
+</li>
+
+
+<li class="msg" id="m28">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.010817+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 23 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m29">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.027300+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/29/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 24 of 60.</p>
+</li>
+
+
+<li class="msg" id="m30">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.054384+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 25 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m31">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.073374+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/31/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 26 of 60.</p>
+</li>
+
+
+<li class="msg" id="m32">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.087448+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 27 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m33">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.112547+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/33/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 28 of 60.</p>
+</li>
+
+
+<li class="msg" id="m34">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.129794+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 29 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m35">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.148003+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/35/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 30 of 60.</p>
+</li>
+
+
+<li class="msg" id="m36">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.167581+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 31 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m37">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.184666+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/37/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 32 of 60.</p>
+</li>
+
+
+<li class="msg" id="m38">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.196418+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 33 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m39">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.224907+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/39/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 34 of 60.</p>
+</li>
+
+
+<li class="msg" id="m40">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.244679+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 35 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m41">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.257446+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/41/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 36 of 60.</p>
+</li>
+
+
+<li class="msg" id="m42">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.276715+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 37 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m43">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.305128+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/43/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 38 of 60.</p>
+</li>
+
+
+<li class="msg" id="m44">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.318726+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 39 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m45">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.338963+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/45/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 40 of 60.</p>
+</li>
+
+
+<li class="msg" id="m46">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.363366+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 41 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m47">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.400238+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/47/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 42 of 60.</p>
+</li>
+
+
+<li class="msg" id="m48">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.420242+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 43 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m49">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.443694+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/49/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 44 of 60.</p>
+</li>
+
+
+<li class="msg" id="m50">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.464196+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 45 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m51">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.482740+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/51/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 46 of 60.</p>
+</li>
+
+
+<li class="msg" id="m52">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.504567+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 47 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m53">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.516196+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/53/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 48 of 60.</p>
+</li>
+
+
+<li class="msg" id="m54">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.536178+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 49 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m55">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.554130+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/55/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 50 of 60.</p>
+</li>
+
+
+<li class="msg" id="m56">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.573349+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 51 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m57">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.588353+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/57/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 52 of 60.</p>
+</li>
+
+
+<li class="msg" id="m58">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.603074+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 53 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m59">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.617648+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/59/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 54 of 60.</p>
+</li>
+
+
+<li class="msg" id="m60">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.637683+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 55 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m61">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.656697+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/61/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 56 of 60.</p>
+</li>
+
+
+<li class="msg" id="m62">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.674911+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 57 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m63">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.695752+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/63/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 58 of 60.</p>
+</li>
+
+
+<li class="msg" id="m64">
+  <p class="msg-meta">
+    <strong class="msg-author">Test Writer</strong>
+    <time datetime="2026-11-24T17:01:29.715624+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    
+  </p>
+  <p class="msg-body">Test message 59 of 60.</p>
+</li>
+
+
+<li class="msg msg-mine" id="m65">
+  <p class="msg-meta">
+    <strong class="msg-author">test.admin</strong>
+    <time datetime="2026-11-24T17:01:29.732946+00:00" title="24.11.2026 18:01">24.11.2026 18:01</time>
+    <a class="msg-delete" href="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/messages/65/delete/" title="Mesajı sil"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+</svg>
+<span class="sr-only">Mesajı sil</span></a>
+  </p>
+  <p class="msg-body">Test message 60 of 60.</p>
+</li>
+
+
+      
+    </ol>
+    
+    <div class="ui-plate-body">
+      <form method="post" action="/messages/3dc048c1-99cd-486c-b8e2-e07d715a69f5/post/" id="latest" novalidate>
+        <input type="hidden" name="csrfmiddlewaretoken" value="test-token">
+        
+        <div class="field">
+          <label class="sr-only" for="id_body">Mesaj</label>
+          <textarea name="body" cols="40" rows="2" data-submit-on-enter="" maxlength="4000" required id="id_body">
+</textarea>
+          
+        </div>
+        <div class="ui-form-actions"><span class="ui-cell-sub">Enter gönderir, Shift+Enter yeni satıra geçer.</span><button type="submit" class="ui-btn" data-variant="primary"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+</svg>
+Gönder</button></div>
+      </form>
+    </div>
+    
+  </section>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <nav class="ui-bottombar" aria-label="Ana sayfalar">
+    <a class="ui-bottombar-link" href="/operations/feeding/board/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+</svg>
+<span class="ui-bottombar-label">Öğün</span></a>
+    <a class="ui-bottombar-link" href="/operations/water/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+</svg>
+<span class="ui-bottombar-label">Su</span></a>
+    <a class="ui-bottombar-link" href="/operations/units/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
+</svg>
+<span class="ui-bottombar-label">Birimler</span></a>
+    <a class="ui-bottombar-link" href="/operations/storage/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>
+</svg>
+<span class="ui-bottombar-label">Depo</span></a>
+    <button type="button" class="ui-bottombar-link" data-nav-open aria-controls="rail" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+</svg>
+<span class="ui-bottombar-label">Diğer</span></button>
+  </nav>
+  <dialog class="modal" id="modal" closedby="any" aria-labelledby="modal-title" data-forbidden="Bunu yapma izniniz yok."><div data-modal-content></div></dialog>
+  <script type="module" src="/static/js/shell.js?v=1795522415"></script>
+  <script type="module" src="/static/js/components.js?v=1795522415"></script>
+  <script type="module" src="/static/js/poll.js?v=1795522414"></script>
+  <script type="module" src="/static/js/strip.js?v=1795522414"></script>
+</body>
+</html>

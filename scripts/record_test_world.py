@@ -5,7 +5,9 @@
                                                reading), and the handling acknowledgement;
     frontend/test/pages/company-props-<language>.json   Company › Overview's props (config/company_props.py) in en, nb, tr;
     frontend/test/pages/list-props-<language>.json      the list pages' props (core/listprops.py) in en, nb, tr;
-    frontend/test/pages/panel-props-<language>.json     the same of the production panel's list pages.
+    frontend/test/pages/panel-props-<language>.json     the same of the production panel's list pages;
+    frontend/test/pages/panel/<page>-<language>.html    the production panel's pages drawn by the server (Tasks with its
+                                               drawer, Regulatory reports, Storage, Messages), whole, in the new look.
 
 Every person, address and name in them is a fixture value (names "Test …", addresses @example.com); the guard
 core/tests_fixture_privacy.py fails on any other e-mail domain under frontend/test and core/testdata.
@@ -112,6 +114,38 @@ PANEL_LISTS = {
 }
 
 
+def panel_pages():
+    """{name: address} of the production panel's pages the server draws in the new look (core/tests_panel_next.py holds
+    them to their classic pages; frontend/test/panelpages.browser.test.ts lays them out in a browser)."""
+    from django.urls import reverse
+    from messaging.models import Conversation
+    from tasks.models import Task
+    late = Task.objects.get(title='Test net check')
+    storage = reverse('inventory:storage')
+    return {'tasks': f"{reverse('tasks:task_list')}?task={late.pk}", 'reports': reverse('reports:report_list'),
+            'storage': storage, 'storage-movements': f'{storage}?tab=movements&voided=1',
+            'messages-long': reverse('messaging:conversation',
+                                     args=[Conversation.objects.get(name='Test long channel').pk])}
+
+
+def record_panel_pages(admin):
+    """Writes the server's answer of every page of panel_pages() in the new look, in en, nb and tr: a session's token
+    replaced by a fixed word, nothing else changed."""
+    import re
+    from django.test import Client
+    client = Client(HTTP_HOST='localhost')
+    client.force_login(admin)
+    client.cookies['ui'] = 'next'
+    os.makedirs(f'{OUT}/panel', exist_ok=True)
+    for language in ('en', 'nb', 'tr'):
+        client.cookies['django_language'] = language
+        for name, address in panel_pages().items():
+            html = client.get(address).content.decode()
+            html = re.sub(r'(name="csrfmiddlewaretoken" value=")[^"]+', lambda found: found.group(1) + 'test-token', html)
+            with open(f'{OUT}/panel/{name}-{language}.html', 'w', encoding='utf-8') as out:
+                out.write(html)
+
+
 def record_lists(admin, lists=LISTS):
     """{language: {name: the list-page island's props}} of every list in `lists`, as the test world's admin sees it."""
     import re
@@ -162,6 +196,7 @@ try:
             with open(f'{OUT}/panel-props-{language}.json', 'w', encoding='utf-8') as out:
                 json.dump(pages, out, ensure_ascii=False, indent=1)
                 out.write(chr(10))
+        record_panel_pages(admin)
         raise Rollback
 except Rollback:
     pass

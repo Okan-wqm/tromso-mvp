@@ -108,13 +108,13 @@
    ],
    "rows": [
     {
-     "key": "5ba1db07-f39c-4807-ba54-4791df20769a",
+     "key": "928f472a-2f4c-4bef-820b-971517b90038",
      "status": null,
      "voided": false,
      "cells": {
       "title": {
        "text": "Test filter wash",
-       "href": "/operations/tasks/recurring/5ba1db07-f39c-4807-ba54-4791df20769a/",
+       "href": "/operations/tasks/recurring/928f472a-2f4c-4bef-820b-971517b90038/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -177,7 +177,7 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/operations/tasks/recurring/5ba1db07-f39c-4807-ba54-4791df20769a/delete/",
+       "href": "/operations/tasks/recurring/928f472a-2f4c-4bef-820b-971517b90038/delete/",
        "label": "Sil: Test filter wash",
        "icon": "trash",
        "danger": true
@@ -185,19 +185,23 @@
      ]
     },
     {
-     "key": "44d0ccfb-c214-4da9-984c-6a0510edca31",
+     "key": "3fd543ec-2540-4905-ab8e-fbfe06a303c9",
      "status": null,
      "voided": false,
      "cells": {
       "title": {
        "text": "Test oxygen round",
-       "href": "/operations/tasks/recurring/44d0ccfb-c214-4da9-984c-6a0510edca31/",
+       "href": "/operations/tasks/recurring/3fd543ec-2540-4905-ab8e-fbfe06a303c9/",
        "strong": true,
        "chip": null,
-       "chips": [],
+       "chips": [
+        {
+         "kind": "warning",
+         "text": "Yüksek"
+        }
+       ],
        "sub": [
-        "Su kalitesi",
-        "Yüksek"
+        "Su kalitesi"
        ]
       },
       "repeats": {
@@ -251,7 +255,7 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/operations/tasks/recurring/44d0ccfb-c214-4da9-984c-6a0510edca31/delete/",
+       "href": "/operations/tasks/recurring/3fd543ec-2540-4905-ab8e-fbfe06a303c9/delete/",
        "label": "Sil: Test oxygen round",
        "icon": "trash",
        "danger": true
@@ -362,13 +366,13 @@
    ],
    "rows": [
     {
-     "key": "add77f7a-b0ad-4fef-9392-3cf4c0e95c44",
+     "key": "903f347a-753c-47e6-9197-3cc9ab1f3053",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q1",
-       "href": "/authority-questions/add77f7a-b0ad-4fef-9392-3cf4c0e95c44/",
+       "href": "/authority-questions/903f347a-753c-47e6-9197-3cc9ab1f3053/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -429,14 +433,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/add77f7a-b0ad-4fef-9392-3cf4c0e95c44/",
+       "href": "/authority-questions/903f347a-753c-47e6-9197-3cc9ab1f3053/",
        "label": "Düzenle: Q1",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/add77f7a-b0ad-4fef-9392-3cf4c0e95c44/delete/",
+       "href": "/authority-questions/903f347a-753c-47e6-9197-3cc9ab1f3053/delete/",
        "label": "Sil: Q1",
        "icon": "trash",
        "danger": true
@@ -444,13 +448,13 @@
      ]
     },
     {
-     "key": "757febe4-462e-4d46-9441-575ab0869848",
+     "key": "83bee669-c91d-4bbe-98dd-dd98e3fa50e7",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q10",
-       "href": "/authority-questions/757febe4-462e-4d46-9441-575ab0869848/",
+       "href": "/authority-questions/83bee669-c91d-4bbe-98dd-dd98e3fa50e7/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -511,14 +515,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/757febe4-462e-4d46-9441-575ab0869848/",
+       "href": "/authority-questions/83bee669-c91d-4bbe-98dd-dd98e3fa50e7/",
        "label": "Düzenle: Q10",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/757febe4-462e-4d46-9441-575ab0869848/delete/",
+       "href": "/authority-questions/83bee669-c91d-4bbe-98dd-dd98e3fa50e7/delete/",
        "label": "Sil: Q10",
        "icon": "trash",
        "danger": true
@@ -526,13 +530,13 @@
      ]
     },
     {
-     "key": "056e2453-2f57-477c-b3b9-68da79db6505",
+     "key": "aeca9829-b864-45e2-8bf5-030df5ef528e",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q11",
-       "href": "/authority-questions/056e2453-2f57-477c-b3b9-68da79db6505/",
+       "href": "/authority-questions/aeca9829-b864-45e2-8bf5-030df5ef528e/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -593,14 +597,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/056e2453-2f57-477c-b3b9-68da79db6505/",
+       "href": "/authority-questions/aeca9829-b864-45e2-8bf5-030df5ef528e/",
        "label": "Düzenle: Q11",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/056e2453-2f57-477c-b3b9-68da79db6505/delete/",
+       "href": "/authority-questions/aeca9829-b864-45e2-8bf5-030df5ef528e/delete/",
        "label": "Sil: Q11",
        "icon": "trash",
        "danger": true
@@ -608,13 +612,13 @@
      ]
     },
     {
-     "key": "d95c6f32-9040-4cb6-9d35-341eb77fde46",
+     "key": "d28f504f-3cac-42f8-a2a0-270ba2660bcc",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q12",
-       "href": "/authority-questions/d95c6f32-9040-4cb6-9d35-341eb77fde46/",
+       "href": "/authority-questions/d28f504f-3cac-42f8-a2a0-270ba2660bcc/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -675,14 +679,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/d95c6f32-9040-4cb6-9d35-341eb77fde46/",
+       "href": "/authority-questions/d28f504f-3cac-42f8-a2a0-270ba2660bcc/",
        "label": "Düzenle: Q12",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/d95c6f32-9040-4cb6-9d35-341eb77fde46/delete/",
+       "href": "/authority-questions/d28f504f-3cac-42f8-a2a0-270ba2660bcc/delete/",
        "label": "Sil: Q12",
        "icon": "trash",
        "danger": true
@@ -690,13 +694,13 @@
      ]
     },
     {
-     "key": "4221e930-80fe-4a19-80af-3d516116d287",
+     "key": "32624033-5021-460c-bd28-35a26bf3cf21",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q2",
-       "href": "/authority-questions/4221e930-80fe-4a19-80af-3d516116d287/",
+       "href": "/authority-questions/32624033-5021-460c-bd28-35a26bf3cf21/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -757,14 +761,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/4221e930-80fe-4a19-80af-3d516116d287/",
+       "href": "/authority-questions/32624033-5021-460c-bd28-35a26bf3cf21/",
        "label": "Düzenle: Q2",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/4221e930-80fe-4a19-80af-3d516116d287/delete/",
+       "href": "/authority-questions/32624033-5021-460c-bd28-35a26bf3cf21/delete/",
        "label": "Sil: Q2",
        "icon": "trash",
        "danger": true
@@ -772,13 +776,13 @@
      ]
     },
     {
-     "key": "b7a032b7-9d58-43eb-9c93-91c2629ca6fe",
+     "key": "7f46b77f-8d52-4ba9-bc06-278c28fc1299",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q3",
-       "href": "/authority-questions/b7a032b7-9d58-43eb-9c93-91c2629ca6fe/",
+       "href": "/authority-questions/7f46b77f-8d52-4ba9-bc06-278c28fc1299/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -839,14 +843,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/b7a032b7-9d58-43eb-9c93-91c2629ca6fe/",
+       "href": "/authority-questions/7f46b77f-8d52-4ba9-bc06-278c28fc1299/",
        "label": "Düzenle: Q3",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/b7a032b7-9d58-43eb-9c93-91c2629ca6fe/delete/",
+       "href": "/authority-questions/7f46b77f-8d52-4ba9-bc06-278c28fc1299/delete/",
        "label": "Sil: Q3",
        "icon": "trash",
        "danger": true
@@ -854,13 +858,13 @@
      ]
     },
     {
-     "key": "1d2ab21e-c4a5-4dd1-affb-19ded1fde5a1",
+     "key": "a63664e1-0242-48b1-a715-e1c313691366",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q4",
-       "href": "/authority-questions/1d2ab21e-c4a5-4dd1-affb-19ded1fde5a1/",
+       "href": "/authority-questions/a63664e1-0242-48b1-a715-e1c313691366/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -921,14 +925,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/1d2ab21e-c4a5-4dd1-affb-19ded1fde5a1/",
+       "href": "/authority-questions/a63664e1-0242-48b1-a715-e1c313691366/",
        "label": "Düzenle: Q4",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/1d2ab21e-c4a5-4dd1-affb-19ded1fde5a1/delete/",
+       "href": "/authority-questions/a63664e1-0242-48b1-a715-e1c313691366/delete/",
        "label": "Sil: Q4",
        "icon": "trash",
        "danger": true
@@ -936,13 +940,13 @@
      ]
     },
     {
-     "key": "c677e053-1004-46eb-98d6-81100dde2208",
+     "key": "39ce58a0-d03e-4c3b-8a4f-5a2d6ed0b98c",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q5",
-       "href": "/authority-questions/c677e053-1004-46eb-98d6-81100dde2208/",
+       "href": "/authority-questions/39ce58a0-d03e-4c3b-8a4f-5a2d6ed0b98c/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1003,14 +1007,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/c677e053-1004-46eb-98d6-81100dde2208/",
+       "href": "/authority-questions/39ce58a0-d03e-4c3b-8a4f-5a2d6ed0b98c/",
        "label": "Düzenle: Q5",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/c677e053-1004-46eb-98d6-81100dde2208/delete/",
+       "href": "/authority-questions/39ce58a0-d03e-4c3b-8a4f-5a2d6ed0b98c/delete/",
        "label": "Sil: Q5",
        "icon": "trash",
        "danger": true
@@ -1018,13 +1022,13 @@
      ]
     },
     {
-     "key": "8153bc6b-dbdf-4a92-80ff-7ea1d41b7e94",
+     "key": "587bc670-eabc-42ee-a412-50a1aedada59",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q6",
-       "href": "/authority-questions/8153bc6b-dbdf-4a92-80ff-7ea1d41b7e94/",
+       "href": "/authority-questions/587bc670-eabc-42ee-a412-50a1aedada59/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1085,14 +1089,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/8153bc6b-dbdf-4a92-80ff-7ea1d41b7e94/",
+       "href": "/authority-questions/587bc670-eabc-42ee-a412-50a1aedada59/",
        "label": "Düzenle: Q6",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/8153bc6b-dbdf-4a92-80ff-7ea1d41b7e94/delete/",
+       "href": "/authority-questions/587bc670-eabc-42ee-a412-50a1aedada59/delete/",
        "label": "Sil: Q6",
        "icon": "trash",
        "danger": true
@@ -1100,13 +1104,13 @@
      ]
     },
     {
-     "key": "f49e1b85-a20f-4c6f-9c96-1f288206e290",
+     "key": "83812585-d9b8-4ab4-884b-6f010de32f07",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q7",
-       "href": "/authority-questions/f49e1b85-a20f-4c6f-9c96-1f288206e290/",
+       "href": "/authority-questions/83812585-d9b8-4ab4-884b-6f010de32f07/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1167,14 +1171,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/f49e1b85-a20f-4c6f-9c96-1f288206e290/",
+       "href": "/authority-questions/83812585-d9b8-4ab4-884b-6f010de32f07/",
        "label": "Düzenle: Q7",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/f49e1b85-a20f-4c6f-9c96-1f288206e290/delete/",
+       "href": "/authority-questions/83812585-d9b8-4ab4-884b-6f010de32f07/delete/",
        "label": "Sil: Q7",
        "icon": "trash",
        "danger": true
@@ -1182,13 +1186,13 @@
      ]
     },
     {
-     "key": "705405df-2b7a-4d24-b2aa-15080480c01b",
+     "key": "af4eae18-160e-43dc-bf30-d50271dce352",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q8",
-       "href": "/authority-questions/705405df-2b7a-4d24-b2aa-15080480c01b/",
+       "href": "/authority-questions/af4eae18-160e-43dc-bf30-d50271dce352/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1249,14 +1253,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/705405df-2b7a-4d24-b2aa-15080480c01b/",
+       "href": "/authority-questions/af4eae18-160e-43dc-bf30-d50271dce352/",
        "label": "Düzenle: Q8",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/705405df-2b7a-4d24-b2aa-15080480c01b/delete/",
+       "href": "/authority-questions/af4eae18-160e-43dc-bf30-d50271dce352/delete/",
        "label": "Sil: Q8",
        "icon": "trash",
        "danger": true
@@ -1264,13 +1268,13 @@
      ]
     },
     {
-     "key": "41ded219-96e3-439a-bfff-03145f6c8cfc",
+     "key": "ccd7ee02-97dd-4529-9ac0-c3cc5170785a",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "Q9",
-       "href": "/authority-questions/41ded219-96e3-439a-bfff-03145f6c8cfc/",
+       "href": "/authority-questions/ccd7ee02-97dd-4529-9ac0-c3cc5170785a/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1331,14 +1335,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/41ded219-96e3-439a-bfff-03145f6c8cfc/",
+       "href": "/authority-questions/ccd7ee02-97dd-4529-9ac0-c3cc5170785a/",
        "label": "Düzenle: Q9",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/41ded219-96e3-439a-bfff-03145f6c8cfc/delete/",
+       "href": "/authority-questions/ccd7ee02-97dd-4529-9ac0-c3cc5170785a/delete/",
        "label": "Sil: Q9",
        "icon": "trash",
        "danger": true
@@ -1346,13 +1350,13 @@
      ]
     },
     {
-     "key": "e60e46bb-c5e6-441c-a879-f626ab0d6dc5",
+     "key": "c524a776-88fe-4d8e-8430-1f458ef9bf08",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "TQ1",
-       "href": "/authority-questions/e60e46bb-c5e6-441c-a879-f626ab0d6dc5/",
+       "href": "/authority-questions/c524a776-88fe-4d8e-8430-1f458ef9bf08/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1413,14 +1417,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/e60e46bb-c5e6-441c-a879-f626ab0d6dc5/",
+       "href": "/authority-questions/c524a776-88fe-4d8e-8430-1f458ef9bf08/",
        "label": "Düzenle: TQ1",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/e60e46bb-c5e6-441c-a879-f626ab0d6dc5/delete/",
+       "href": "/authority-questions/c524a776-88fe-4d8e-8430-1f458ef9bf08/delete/",
        "label": "Sil: TQ1",
        "icon": "trash",
        "danger": true
@@ -1428,13 +1432,13 @@
      ]
     },
     {
-     "key": "08901673-51f6-4bec-99ca-bb3c754ce46b",
+     "key": "45177a38-8972-41fa-a81b-83c62963a43f",
      "status": null,
      "voided": false,
      "cells": {
       "number": {
        "text": "TQ2",
-       "href": "/authority-questions/08901673-51f6-4bec-99ca-bb3c754ce46b/",
+       "href": "/authority-questions/45177a38-8972-41fa-a81b-83c62963a43f/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1499,14 +1503,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/authority-questions/08901673-51f6-4bec-99ca-bb3c754ce46b/",
+       "href": "/authority-questions/45177a38-8972-41fa-a81b-83c62963a43f/",
        "label": "Düzenle: TQ2",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/authority-questions/08901673-51f6-4bec-99ca-bb3c754ce46b/delete/",
+       "href": "/authority-questions/45177a38-8972-41fa-a81b-83c62963a43f/delete/",
        "label": "Sil: TQ2",
        "icon": "trash",
        "danger": true
@@ -1595,7 +1599,7 @@
        "label": "Tüm sahalar"
       },
       {
-       "value": "3bde1f29-eb2e-4ffc-b880-c3745fd74f83",
+       "value": "94d07521-34a0-488e-a217-d5e1f37d5a44",
        "label": "Test Site North"
       }
      ],
@@ -1612,7 +1616,7 @@
        "label": "Tüm balık türleri"
       },
       {
-       "value": "03b30ca1-36e6-47b5-9d90-1d57d3430576",
+       "value": "c5063896-8dcd-471b-8380-891d77572314",
        "label": "Atlantic salmon"
       }
      ],
@@ -1679,13 +1683,13 @@
    ],
    "rows": [
     {
-     "key": "1eeab5c6-f1db-4762-9305-f3343acdce76",
+     "key": "81f32a94-ba06-4ded-a392-ffdebebd4da5",
      "status": null,
      "voided": false,
      "cells": {
       "experiment": {
        "text": "Test light trial",
-       "href": "/research/experiments/1eeab5c6-f1db-4762-9305-f3343acdce76/view/",
+       "href": "/research/experiments/81f32a94-ba06-4ded-a392-ffdebebd4da5/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1756,14 +1760,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/research/experiments/1eeab5c6-f1db-4762-9305-f3343acdce76/",
+       "href": "/research/experiments/81f32a94-ba06-4ded-a392-ffdebebd4da5/",
        "label": "Düzenle: Test light trial",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/research/experiments/1eeab5c6-f1db-4762-9305-f3343acdce76/delete/",
+       "href": "/research/experiments/81f32a94-ba06-4ded-a392-ffdebebd4da5/delete/",
        "label": "Sil: Test light trial",
        "icon": "trash",
        "danger": true
@@ -1771,13 +1775,13 @@
      ]
     },
     {
-     "key": "88187abe-9002-40d6-a8cb-ea1bfd9d9bd6",
+     "key": "a1a3b4f3-7501-420e-b171-7446f12c65cc",
      "status": null,
      "voided": false,
      "cells": {
       "experiment": {
        "text": "Test diet trial",
-       "href": "/research/experiments/88187abe-9002-40d6-a8cb-ea1bfd9d9bd6/view/",
+       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1794,9 +1798,7 @@
         "text": "Taslak"
        },
        "chips": [],
-       "sub": [
-        "0. güne 10 gün var"
-       ]
+       "sub": []
       },
       "site": {
        "text": "Test Site North",
@@ -1850,14 +1852,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/research/experiments/88187abe-9002-40d6-a8cb-ea1bfd9d9bd6/",
+       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/",
        "label": "Düzenle: Test diet trial",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/research/experiments/88187abe-9002-40d6-a8cb-ea1bfd9d9bd6/delete/",
+       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/delete/",
        "label": "Sil: Test diet trial",
        "icon": "trash",
        "danger": true
@@ -1951,7 +1953,7 @@
        "label": "Tüm sahalar"
       },
       {
-       "value": "3bde1f29-eb2e-4ffc-b880-c3745fd74f83",
+       "value": "94d07521-34a0-488e-a217-d5e1f37d5a44",
        "label": "Test Site North"
       }
      ],
@@ -1968,7 +1970,7 @@
        "label": "Tüm balık türleri"
       },
       {
-       "value": "03b30ca1-36e6-47b5-9d90-1d57d3430576",
+       "value": "c5063896-8dcd-471b-8380-891d77572314",
        "label": "Atlantic salmon"
       }
      ],
@@ -2035,13 +2037,13 @@
    ],
    "rows": [
     {
-     "key": "88187abe-9002-40d6-a8cb-ea1bfd9d9bd6",
+     "key": "a1a3b4f3-7501-420e-b171-7446f12c65cc",
      "status": null,
      "voided": false,
      "cells": {
       "experiment": {
        "text": "Test diet trial",
-       "href": "/research/experiments/88187abe-9002-40d6-a8cb-ea1bfd9d9bd6/view/",
+       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -2058,9 +2060,7 @@
         "text": "Taslak"
        },
        "chips": [],
-       "sub": [
-        "0. güne 10 gün var"
-       ]
+       "sub": []
       },
       "site": {
        "text": "Test Site North",
@@ -2114,14 +2114,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/research/experiments/88187abe-9002-40d6-a8cb-ea1bfd9d9bd6/",
+       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/",
        "label": "Düzenle: Test diet trial",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/research/experiments/88187abe-9002-40d6-a8cb-ea1bfd9d9bd6/delete/",
+       "href": "/research/experiments/a1a3b4f3-7501-420e-b171-7446f12c65cc/delete/",
        "label": "Sil: Test diet trial",
        "icon": "trash",
        "danger": true
@@ -2215,7 +2215,7 @@
        "label": "Tüm sahalar"
       },
       {
-       "value": "3bde1f29-eb2e-4ffc-b880-c3745fd74f83",
+       "value": "94d07521-34a0-488e-a217-d5e1f37d5a44",
        "label": "Test Site North"
       }
      ],
@@ -2232,7 +2232,7 @@
        "label": "Tüm balık türleri"
       },
       {
-       "value": "03b30ca1-36e6-47b5-9d90-1d57d3430576",
+       "value": "c5063896-8dcd-471b-8380-891d77572314",
        "label": "Atlantic salmon"
       }
      ],
@@ -2299,13 +2299,13 @@
    ],
    "rows": [
     {
-     "key": "213292f1-a8df-45ac-8035-d588ba2e6e5f",
+     "key": "6f9c10cb-3ac1-43c5-ac8f-c657e6baac9f",
      "status": null,
      "voided": false,
      "cells": {
       "experiment": {
        "text": "Test design kept",
-       "href": "/research/experiments/213292f1-a8df-45ac-8035-d588ba2e6e5f/view/",
+       "href": "/research/experiments/6f9c10cb-3ac1-43c5-ac8f-c657e6baac9f/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -2381,14 +2381,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/research/experiments/213292f1-a8df-45ac-8035-d588ba2e6e5f/",
+       "href": "/research/experiments/6f9c10cb-3ac1-43c5-ac8f-c657e6baac9f/",
        "label": "Düzenle: Test design kept",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/research/experiments/213292f1-a8df-45ac-8035-d588ba2e6e5f/delete/",
+       "href": "/research/experiments/6f9c10cb-3ac1-43c5-ac8f-c657e6baac9f/delete/",
        "label": "Sil: Test design kept",
        "icon": "trash",
        "danger": true

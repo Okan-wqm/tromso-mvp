@@ -5436,9 +5436,17 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `core/formprops.py` decides which forms the island draws (`drawable`: the shared crud/form.html and every widget kind
   drawn); a tab with a form template of its own, and a request for a dialog, keep the classic page. Held: the props say
   what the classic page says (`core/tests_formprops.py`, three languages); every field of every tab's form, new, refused
-  and editing a record, posts what the old page posts (`frontend/islands/pages/RecordForm.test.tsx` against
-  `frontend/test/pages/form-oracle.json`, recorded from the dev database by the notes' `dump_form_oracle.py`); the tabs,
-  focus, busy state, CSP and axe in a browser (`frontend/test/recordform.browser.test.ts`).
+  and editing a record, its row lists' rows and the handling acknowledgement, posts what the old page posts
+  (`frontend/islands/pages/RecordForm.test.tsx` against `frontend/test/pages/form-oracle.json`); the tabs, focus, busy
+  state, CSP and axe in a browser (`frontend/test/recordform.browser.test.ts`). A help built with links travels as its
+  words and its links to the application's own pages (`segments`, never markup); a stored file links to its own
+  permission-checked view (a widget's `current_url`).
+- **The browser tests' fixtures come from the test world, never from the development database.**
+  `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
+  migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture
+  names "Test …", addresses @example.com) in a transaction it rolls back, and writes `form-oracle.json` and
+  `company-props-<language>.json`. `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
+  `frontend/islands` and `core/testdata` outside example.com and the `.example` domains.
 
 ## One format for every tab
 

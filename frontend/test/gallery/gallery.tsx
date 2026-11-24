@@ -106,13 +106,13 @@ function Gallery({ rows, errors }: GalleryProps) {
       </Plate>
       <Plate title="Lists" span={4} link={{ href: '#reports', label: 'All reports' }}>
         <List label="Upcoming reports">
-          <ListItem main="Planned slaughter · Fjord Seafood Processing (N1234) · Week 45 of 2026" sub="29.10.2026 · Overdue" status="critical" />
-          <ListItem main="Kari Nordmann" sub="Could Jakob Fossum get an account?" meta="13:40" />
+          <ListItem main="Planned slaughter · Test Facility (N0000) · Week 45 of 2026" sub="29.10.2026 · Overdue" status="critical" />
+          <ListItem main="Test Person" sub="Could the new colleague get an account?" meta="13:40" />
           <ListItem main="CO₂ above 15 mg/L leads to nephrocalcinosis." sub="Fivelstad & Olsen (2003)" chip={<Chip kind="ok">Reviewed</Chip>} />
         </List>
         <List ordered label="Recent activity">
-          <AuditItem action="Changed" record="Task · Clean the settling pond" who={<>by <strong>bjorn.eriksen</strong> · 23.11.2026 09:05</>} />
-          <AuditItem action="Acknowledged a warning" status="critical" critical={<Chip kind="critical">Critical</Chip>} record="Harvest · TG-M01" who={<>by <strong>kari.nordmann</strong> · 23.11.2026 08:41</>} />
+          <AuditItem action="Changed" record="Task · Clean the settling pond" who={<>by <strong>test.person</strong> · 23.11.2026 09:05</>} />
+          <AuditItem action="Acknowledged a warning" status="critical" critical={<Chip kind="critical">Critical</Chip>} record="Harvest · TT-01" who={<>by <strong>test.admin</strong> · 23.11.2026 08:41</>} />
         </List>
       </Plate>
       <Plate title="Form parts" span={12}>
@@ -121,13 +121,13 @@ function Gallery({ rows, errors }: GalleryProps) {
             <Checkbox name="only_on_shift" label="Only while on shift" mark="optional" defaultChecked />
             <RadioGroup name="placement" label="Placement" options={[{ value: 'random', label: 'Randomise' }, { value: 'hand', label: 'By hand' }]} defaultValue="random" />
             <FileField name="file" label="PDF" help="One PDF, up to 50 MB." current={{ name: 'fivelstad-2003.pdf', href: '#file', intro: 'Currently', clearName: 'file-clear', clearLabel: 'Remove the file', changeLabel: 'Change' }} />
-            <Acknowledge name="ack" title="Before handling" label="I have read this and go on" value="f00d">HA-K01 is on withdrawal to 24.11.2026.</Acknowledge>
+            <Acknowledge name="ack" title="Before handling" label="I have read this and go on" value="f00d">TT-01 is on withdrawal to 24.11.2026.</Acknowledge>
             <PermissionMatrix name="permissions" label="Rights" areaLabel="Area" columns={['Read', 'Create']}
               sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: [], cells: [{ action: 'Read', value: '1', checked: true, id: 'p-1' }, { action: 'Create', value: '2', checked: false, id: 'p-2', requires: 'p-1' }] }] }]} />
             <LinkList name="systems" label="Systems" columns={['Role']} primary primaryLabel="Primary" primaryWords="%(record)s is the primary one" emptyText="No system on this site."
               rows={[{ pk: '7', label: 'RAS-1', checked: true, primary: true, details: <input name="systems-7-role" aria-label="Role" defaultValue="Filtration" /> }]} />
             <RowList prefix="contacts" management={[{ name: 'contacts-TOTAL_FORMS', value: '1' }, { name: 'contacts-INITIAL_FORMS', value: '1' }]}
-              rows={[{ key: '1', content: <input name="contacts-0-name" aria-label="Name" defaultValue="Kari Nordmann" /> }]}
+              rows={[{ key: '1', content: <input name="contacts-0-name" aria-label="Name" defaultValue="Test Person" /> }]}
               newRow={(index) => <input name={`contacts-${index}-name`} aria-label="Name" />} columns={['Name']} legend="Contact"
               addLabel="Add contact" removeLabel="Remove this contact" emptyText="No contacts yet." />
           </ServerForm>

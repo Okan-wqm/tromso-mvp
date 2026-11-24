@@ -23,7 +23,7 @@ const PROPS = {
       ] }] },
       { key: 'where', label: 'Where', help: null, hasErrors: true, fieldsets: [{ label: '', help: null, fields: [
         { ...field('site', 'Site', 'select'), errors: ['Choose a site.'], widget: { kind: 'select', name: 'site', value: [''], attrs: { required: true },
-          groups: [{ label: null, options: [{ value: '', label: '---------', selected: true, attrs: {} }, { value: '1', label: 'Bergen Hatchery', selected: false, attrs: {} }] }] } },
+          groups: [{ label: null, options: [{ value: '', label: '---------', selected: true, attrs: {} }, { value: '1', label: 'Test Site North', selected: false, attrs: {} }] }] } },
       ] }] },
     ],
   },

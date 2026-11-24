@@ -81,9 +81,9 @@ class WorldTestCase(TestCase):
         """What a test puts back before each look's page is read (nothing here)."""
 
     def assertDrawnByTheServer(self, old, new):
-        """A server-drawn page: the design system's plates, no classic table, all the classic page says, no style
-        attribute (the policy refuses it) and no link to the classic dialog."""
-        self.assertIn('class="ui-plates"', new)
+        """A server-drawn page: the design system's plates (or its empty state), no classic table, all the classic page
+        says, no style attribute (the policy refuses it) and no link to the classic dialog."""
+        self.assertRegex(new, r'class="ui-(plates|empty)"')
         self.assertNotIn('class="data-table', new)
         self.assertEqual(unsaid(old, {}, new_html=new), [])
         main = main_of(new)
@@ -191,7 +191,7 @@ class TasksPageTests(WorldTestCase):
         self.assertIn(f'href="{reverse("tasks:task_complete", args=[late.pk])}?next=', new)
         # the overdue task is marked on its row (warning) and counted above the table
         self.assertRegex(new, r'<tr data-status="warning"[^>]*>\s*<th scope="row"><span class="ui-row-status">')
-        self.assertRegex(new, r'<strong>d+ overdue tasks?</strong>')
+        self.assertRegex(new, r'<strong>\d+ overdue tasks?</strong>')
 
 
 class ReportsPageTests(WorldTestCase):

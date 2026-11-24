@@ -13,7 +13,7 @@ import { tidy } from '../../date-input.js';
 import {
   Acknowledge, AuditItem, Button, Checkbox, CheckboxGroup, Chip, type ChipKind, EmptyState, FileField, FixedField, type IconName,
   LinkButton, LinkList, List, ListCellView, type ListColumn, ListItem, type ListRow, Notice, PermissionMatrix, RadioGroup,
-  SelectField, ServerForm, Table, Tabs, TextField, Icon,
+  RemoveBox, RowGrid, type GridRowOf, SelectField, ServerForm, Table, Tabs, TextField,
 } from '../ui/index.js';
 
 type Value = string | number | boolean | null | string[];
@@ -63,13 +63,8 @@ export interface Question {
   title: string; messages: string[]; secondPerson: string | null;
   box: { name: string; value: string; label: string; help: string } | null;
 }
-interface RowOf { fields: Field[]; hidden: { name: string; value: Value }[]; errors?: string[] }
 /** A list of rows saved as a whole (core.crud.RowList), its own form posted to its own address. */
-export interface RowsBlock {
-  kind: 'rows'; action: string; version: Value; columns: string[]; legend: string; empty: string;
-  add: string; save: string; remove: string; question: Question | null;
-  formset: { prefix: string; management: { name: string; value: Value }[]; errors: string[]; rows: RowOf[]; empty: RowOf };
-}
+export interface RowsBlock { kind: 'rows'; action: string; version: Value; save: string; question: Question | null; grid: GridPart }
 export type Block =
   | { kind: 'help'; text: string }
   | { kind: 'notice'; tone: 'info' | 'warning'; text: string }
@@ -261,16 +256,12 @@ export function QuestionBox({ question }: { question: Question }) {
   );
 }
 
-/** A row of a list as a row of the one grid of rows (the design's drawer rows): a field a cell. */
-const asGridRow = (row: RowOf): GridRow => ({ head: null, hidden: row.hidden, errors: row.errors ?? [],
-  cells: row.fields.map((field) => [field]) });
-
 /** A list of rows saved as a whole, its own form (crud/_row_list.html): the record's version travels with it, so a save
  * based on an outdated record is refused; one row of a list may be its primary one (a contact), ticking it unticks the
  * others, as on the old page. */
 function RowsForm({ block, label, csrfToken, optional }: { block: RowsBlock; label: string; csrfToken: string; optional: string }) {
-  const { formset } = block;
-  const primary = formset.empty.fields.filter((field) => field.widget.attrs['data-primary'] !== undefined)
+  const { grid } = block;
+  const primary = (grid.empty?.cells.flat() ?? []).filter((field) => field.widget.attrs['data-primary'] !== undefined)
     .map((field) => field.widget.name.slice(field.widget.name.lastIndexOf('-')));
   const ticked = (event: FormEvent<HTMLDivElement>) => {
     const box = event.target as HTMLInputElement;
@@ -286,9 +277,7 @@ function RowsForm({ block, label, csrfToken, optional }: { block: RowsBlock; lab
       <div className="ui-form-rows" data-wide="" onChange={ticked} onBlur={tidied}>
         {block.version !== null ? <input type="hidden" name="version" value={str(block.version)} /> : null}
         {block.question ? <QuestionBox question={block.question} /> : null}
-        <GridOf optional={optional} part={{ kind: 'grid', prefix: formset.prefix, legend: block.legend, columns: block.columns,
-          management: formset.management, errors: formset.errors, emptyText: block.empty, add: block.add, addDisabled: false,
-          rows: formset.rows.map(asGridRow), empty: asGridRow(formset.empty) }} />
+        <GridOf optional={optional} part={grid} />
       </div>
     </ServerForm>
   );
@@ -299,68 +288,23 @@ const buttonOf = (part: ButtonPart) => (
     {...(part.name ? { name: part.name, value: part.value } : {})} isDisabled={part.disabled}>{part.label}</Button>
 );
 
-/** A row's Remove box drawn as the design's remove button (an x in the row's last column): still the formset's DELETE box,
- * so the row goes when the list is saved, and the row fades while it is ticked; its name ("Remove") for a screen reader. */
-function RemoveBox({ field }: { field: Field }) {
-  return (
-    <label className="icon-button icon-button-danger ui-row-remove" title={field.label}>
-      <input type="checkbox" className="sr-only" name={field.widget.name} defaultChecked={Boolean(field.widget.attrs.checked)} />
-      <Icon name="x" /><span className="sr-only">{field.label}</span>
-    </label>
-  );
-}
-
-/** A formset as a table (farm/_band_row.html, experiments/_group_row.html): its management form kept true (the rows
- * drawn are counted), each row's hidden fields and errors, a cell a column, a row's own heading where it has one, and a
- * row added from the empty form (its __prefix__ put to its position), which takes the focus. */
+/** A formset of the payload (core.formpanels.grid) drawn by the library's one list of rows (ui/RowGrid.tsx): each cell's
+ * fields by the form layer, a row's DELETE field as the design's remove button. */
 function GridOf({ part, optional }: { part: GridPart; optional: string }) {
-  const [added, setAdded] = useState(0);
-  const body = useRef<HTMLTableSectionElement>(null);
-  const grown = useRef(false);
-  useEffect(() => {
-    if (!grown.current) return;
-    grown.current = false;
-    body.current?.lastElementChild?.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea')?.focus();
-  }, [added]);
-  const rows = [...part.rows, ...(part.empty ? Array.from({ length: added }, (_each, index) => JSON.parse(JSON.stringify(part.empty)
-    .replace(/__prefix__/g, String(part.rows.length + index))) as GridRow) : [])];
-  const total = `${part.prefix}-TOTAL_FORMS`;
-  const remove = rows[0]?.cells.at(-1)?.[0]?.label ?? '';
+  const rowOf = (row: GridRow): GridRowOf => ({
+    head: row.head, errors: row.errors,
+    hidden: row.hidden.map((each) => ({ name: each.name, value: str(each.value) })),
+    cells: row.cells.map((cell) => cell.map((field) => (field.widget.name.endsWith('-DELETE')
+      ? <RemoveBox key={field.name} name={field.widget.name} label={field.label} defaultChecked={Boolean(field.widget.attrs.checked)} />
+      : <FieldOf key={field.name} field={field} optional={optional} source={() => undefined} inRow />))),
+  });
+  const { empty } = part;
   return (
-    <div className="ui-form-grid-rows" data-wide="">
-      {part.errors.length ? <Notice tone="critical"><ul className="errorlist">{part.errors.map((each) => <li key={each}>{each}</li>)}</ul></Notice> : null}
-      {part.management.map((each) => <input key={each.name} type="hidden" name={each.name} value={each.name === total ? String(rows.length) : str(each.value)} />)}
-      {rows.length ? (
-        <div className="ui-table-wrap" tabIndex={0} role="region" aria-label={part.legend}>
-          <table className="ui-table grid-table">
-            <thead><tr>{part.columns.map((column) => <th key={column} scope="col">{column}</th>)}
-              {part.columns.length < (rows[0]?.cells.length ?? 0) + (rows[0]?.head !== null ? 1 : 0)
-                ? <th scope="col"><span className="sr-only">{remove}</span></th> : null}</tr></thead>
-            <tbody ref={body}>
-              {rows.map((row, index) => (
-                <tr key={`row-${index}`}>
-                  {row.head !== null ? <th scope="row">{row.hidden.map((hidden) => <input key={hidden.name} type="hidden" name={hidden.name} value={str(hidden.value)} />)}{row.head}</th> : null}
-                  {row.cells.map((cell, at) => (
-                    <td key={cell.map((field) => field.name).join(' ') || at}>
-                      {at === 0 && row.head === null ? row.hidden.map((hidden) => <input key={hidden.name} type="hidden" name={hidden.name} value={str(hidden.value)} />) : null}
-                      {at === 0 && row.errors.length ? <ul className="errorlist row-error">{row.errors.map((each) => <li key={each}>{each}</li>)}</ul> : null}
-                      {cell.map((field) => (field.widget.name.endsWith('-DELETE') ? <RemoveBox key={field.name} field={field} />
-                        : <FieldOf key={field.name} field={field} optional={optional} source={() => undefined} inRow />))}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (part.emptyText ? <p className="contact-empty">{part.emptyText}</p> : null)}
-      {part.add !== null ? (
-        <div className="ui-form-actions">
-          <button type="button" className="ui-btn" disabled={part.addDisabled || !part.empty}
-            onClick={() => { grown.current = true; setAdded(added + 1); }}><Icon name="plus" />{part.add}</button>
-        </div>
-      ) : null}
-    </div>
+    <RowGrid prefix={part.prefix} legend={part.legend} columns={part.columns} errors={part.errors} emptyText={part.emptyText}
+      management={part.management.map((each) => ({ name: each.name, value: str(each.value) }))}
+      removeLabel={part.rows[0]?.cells.at(-1)?.[0]?.label ?? empty?.cells.at(-1)?.[0]?.label}
+      rows={part.rows.map(rowOf)} addLabel={part.add} addDisabled={part.addDisabled}
+      newRow={empty ? (index) => rowOf(JSON.parse(JSON.stringify(empty).replace(/__prefix__/g, String(index))) as GridRow) : null} />
   );
 }
 

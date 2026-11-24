@@ -19,7 +19,7 @@ the record's tab it stands on, a site's contacts on Contact). Its blocks, in ord
     link        a link drawn as a button (Move device)."""
 from django.utils.translation import gettext as _
 
-from .formpayload import formset_payload, plain
+from .formpayload import plain
 
 
 def said(text):
@@ -168,23 +168,32 @@ def question(change):
 QUESTIONS = {'farm/_withdrawal_change.html'}
 
 
+def list_words(row_list, obj):
+    """A RowList's words for `obj` (RowList.words), said: the one source of them for both looks (the classic templates read
+    them as `row_words`, core.crud.FormView.page)."""
+    return {**{key: said(text) if text else '' for key, text in row_list.words(obj).items()},
+            'fields': {name: said(text) for name, text in row_list.field_words().items()}}
+
+
+def template_words(words):
+    """Words of the project's own msgids for a classic template, as its trans tag gave them (a msgid is the project's text,
+    so the tag marks it safe): the page's bytes stay what they were when the template said them itself."""
+    from django.utils.safestring import mark_safe
+    return {key: template_words(value) if isinstance(value, dict) else mark_safe(value) for key, value in words.items()}
+
+
 def rows(view, obj, row_list, formset, extra):
     """A RowList's own form (crud/_row_list.html, farm/_contacts.html): where it is saved, the record's version that travels
     with it, its rows with their fields under the list's words, an empty row to add, and what its save asked first (the
     withdrawal guard's question, on a refused save of a medicine's withdrawal)."""
-    words = row_list.words(obj)
-    named = {name: str(text) for name, text in row_list.field_words().items()}
-    payload = formset_payload(formset)
-    for row in [*payload['rows'], payload['empty']]:
-        for field in row['fields']:
-            if field['name'].rsplit('-', 1)[-1] in named:
-                field['label'] = named[field['name'].rsplit('-', 1)[-1]]
+    words = list_words(row_list, obj)
+    named = words['fields']
     heads = [str(named.get(bound.name, bound.label)) for bound in formset.empty_form.visible_fields()
              if bound.name != 'DELETE']
     return {'kind': 'rows', 'action': view.url(row_list.key, obj.pk), 'version': plain(getattr(obj, 'version', None)),
-            'columns': heads,
-            'legend': said(words['legend']), 'empty': said(words['empty']), 'add': said(words['add']),
-            'save': said(words['save']), 'remove': _('Remove'), 'formset': payload,
+            'save': words['save'],
+            'grid': grid(formset, heads, lambda row: [[bound] for bound in row.visible_fields()], legend=words['legend'],
+                         empty_text=words['empty'], add=words['add'], label_of=lambda bound: named.get(bound.name, bound.label)),
             'question': question(extra.get('withdrawal_change')) if row_list.question_field else None}
 
 
@@ -192,7 +201,7 @@ def row_list_panel(view, obj, row_list, extra):
     """The panel of one RowList: its help and its rows once the record can have them, else its `pending` sentence (a new
     record; a piece of equipment of a type without calibrations). None when the list says nothing then (a report's)."""
     formset = extra.get(row_list.key) if obj is not None else None
-    words = row_list.words(obj)
+    words = list_words(row_list, obj)
     if formset is not None:
         blocks = [help_text(words['help']), rows(view, obj, row_list, formset, extra)]
         errors = bool(formset.non_form_errors()) or any(formset.errors)

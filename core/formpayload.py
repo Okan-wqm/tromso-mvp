@@ -302,24 +302,6 @@ def unshown_visible_fields(form):
     return [bound.name for bound in form if not bound.is_hidden and bound.name not in shown]
 
 
-def formset_payload(formset):
-    """A formset (a RowList's rows): its management form and each row's fields, by row."""
-    return {
-        'prefix': formset.prefix,
-        'management': [{'name': bound.html_name, 'value': plain(widget_payload(bound)['value'])}
-                       for bound in formset.management_form],
-        'errors': [str(error) for error in formset.non_form_errors()],
-        'rows': [{'fields': [field_payload(bound) for bound in row.visible_fields()],
-                  'hidden': [{'name': bound.html_name, 'value': plain(widget_payload(bound)['value'])}
-                             for bound in row.hidden_fields()],
-                  'errors': [str(error) for error in row.non_field_errors()]}
-                 for row in formset.forms],
-        'empty': {'fields': [field_payload(bound) for bound in formset.empty_form.visible_fields()],
-                  'hidden': [{'name': bound.html_name, 'value': plain(widget_payload(bound)['value'])}
-                             for bound in formset.empty_form.hidden_fields()]},
-    }
-
-
 def delete_payload(obj, plan, name, *, action, cancel):
     """The delete confirmation (crud/confirm_delete.html) as the native dialog draws it: the question, what is in the way,
     what goes with the record, what loses its link, what is kept and what stays linked, and what deleting does. Every

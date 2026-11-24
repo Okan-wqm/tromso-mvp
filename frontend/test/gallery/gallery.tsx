@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
-  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
+  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RemoveBox, RowGrid, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
   LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
@@ -131,10 +131,12 @@ function Gallery({ rows, errors }: GalleryProps) {
               sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: [], cells: [{ action: 'Read', said: 'Sites: Read', value: '1', checked: true, id: 'p-1' }, { action: 'Create', said: 'Sites: Create', value: '2', checked: false, id: 'p-2', requires: 'p-1' }] }] }]} />
             <LinkList name="systems" label="Systems" columns={['Role']} primary primaryLabel="Primary" primaryWords="%(record)s is the primary one" emptyText="No system on this site."
               rows={[{ pk: '7', label: 'RAS-1', checked: true, primary: true, details: <input name="systems-7-role" aria-label="Role" defaultValue="Filtration" /> }]} />
-            <RowList prefix="contacts" management={[{ name: 'contacts-TOTAL_FORMS', value: '1' }, { name: 'contacts-INITIAL_FORMS', value: '1' }]}
-              rows={[{ key: '1', content: <input name="contacts-0-name" aria-label="Name" defaultValue="Test Person" /> }]}
-              newRow={(index) => <input name={`contacts-${index}-name`} aria-label="Name" />} columns={['Name']} legend="Contact"
-              addLabel="Add contact" removeLabel="Remove this contact" emptyText="No contacts yet." />
+            <RowGrid prefix="contacts" management={[{ name: 'contacts-TOTAL_FORMS', value: '1' }, { name: 'contacts-INITIAL_FORMS', value: '1' }]}
+              rows={[{ head: null, hidden: [], errors: [], cells: [<input key="n" name="contacts-0-name" aria-label="Name" defaultValue="Test Person" />,
+                <RemoveBox key="d" name="contacts-0-DELETE" label="Remove" />] }]}
+              newRow={(index) => ({ head: null, hidden: [], errors: [], cells: [<input key="n" name={`contacts-${index}-name`} aria-label="Name" />,
+                <RemoveBox key="d" name={`contacts-${index}-DELETE`} label="Remove" />] })} columns={['Name']} removeLabel="Remove"
+              legend="Contact" addLabel="Add contact" emptyText="No contacts yet." errors={[]} />
           </ServerForm>
         </div>
       </Plate>

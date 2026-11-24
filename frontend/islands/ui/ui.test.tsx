@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
-  Acknowledge, AuditItem, Button, ChartFrame, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, CheckboxGroup, Chip, EmptyState, ErrorState, Icon, IconButton, LinkButton, LinkTabs, List, ListItem, LoadingState,
+  Acknowledge, AuditItem, Button, ChartFrame, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RemoveBox, RowGrid, CheckboxGroup, Chip, EmptyState, ErrorState, Icon, IconButton, LinkButton, LinkTabs, List, ListItem, LoadingState,
   Notice, Plate, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
 } from './index.js';
 import { ICONS } from './icon-shapes.js';
@@ -197,11 +197,17 @@ test('the form parts draw the old page\'s markup, post the old names, and take e
   assert.match(links, /name="systems-primary"(?: checked="")? value="7"/);
   assert.equal((links.match(/checked=""/g) ?? []).length, 2);
   assert.match(links, /RAS-1 is the primary one/);
-  const rows = html(<RowList prefix="c" management={[{ name: 'c-TOTAL_FORMS', value: '9' }, { name: 'c-INITIAL_FORMS', value: '1' }]}
-    rows={[{ key: '1', content: <input name="c-0-name" /> }]} newRow={(index) => <input name={`c-${index}-name`} />} columns={['Name']}
-    legend="Contact" addLabel="Add contact" removeLabel="Remove" emptyText="None" />);
+  const rows = html(<RowGrid prefix="c" management={[{ name: 'c-TOTAL_FORMS', value: '9' }, { name: 'c-INITIAL_FORMS', value: '1' }]}
+    rows={[{ head: null, hidden: [{ name: 'c-0-id', value: '4' }], errors: ['Test row error.'], cells: [<input key="n" name="c-0-name" />,
+      <RemoveBox key="d" name="c-0-DELETE" label="Remove" />] }]}
+    newRow={(index) => ({ head: null, hidden: [], errors: [], cells: [<input key="n" name={`c-${index}-name`} />] })} columns={['Name']}
+    legend="Contact" addLabel="Add contact" removeLabel="Remove" emptyText="None" errors={[]} />);
   assert.match(rows, /name="c-TOTAL_FORMS" value="1"/);           // the count is what is drawn, not what was given
   assert.match(rows, /name="c-INITIAL_FORMS" value="1"/);
+  assert.ok(rows.includes('<th scope="col">Name</th><th scope="col"><span class="sr-only">Remove</span></th>'), 'the Remove column, named');
+  assert.match(rows, /name="c-0-id" value="4"/);
+  assert.ok(rows.includes('Test row error.'));
+  assert.match(rows, /<label class="icon-button icon-button-danger ui-row-remove" title="Remove"><input type="checkbox" class="sr-only" name="c-0-DELETE"/);
   assert.doesNotMatch(box + radios + file + ack + matrix + links + rows, /style=/);
 });
 

@@ -10,7 +10,7 @@ export { Table, CellLines, type Column, type TableProps } from './Table.js';
 export { Tabs, LinkTabs, type TabItem, type LinkTab } from './Tabs.js';
 export { TextField, SelectField, CheckboxGroup, FixedField, ServerForm, FieldMark } from './Field.js';
 export {
-  Checkbox, RadioGroup, FileField, Acknowledge, PermissionMatrix, LinkList, RowList, type ChoiceOption, type MatrixArea,
+  Checkbox, RadioGroup, FileField, Acknowledge, PermissionMatrix, LinkList, type ChoiceOption, type MatrixArea,
   type MatrixCell, type LinkRow,
 } from './FormParts.js';
 export { List, ListItem, AuditItem, type ListItemProps, type AuditItemProps } from './List.js';
@@ -22,3 +22,4 @@ export {
   ListPage, Cell as ListCellView, type ListPageProps, type ListRow, type ListCell, type ListAction, type ListColumn, type ListFilter,
 } from './ListPage.js';
 export { StackedBar, type StackedBarProps, type StackPart, type StackTone } from './StackedBar.js';
+export { RowGrid, RemoveBox, type RowGridProps, type GridRowOf } from './RowGrid.js';

@@ -41,13 +41,15 @@ def chip(kind, text):
     return {'kind': kind, 'text': str(text)}
 
 
-def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=(), gauge=None):
+def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=(), gauge=None, details=None):
     """One cell: its text (a link to `href`), a sub-line per item of `sub` (empty items left out), or a `chip`; a `gauge`
-    (below) is drawn under the text."""
+    (below) is drawn under the text; `details` (below) is drawn in place of the text, closed."""
     said = {'text': None if text is None else str(text), 'href': href or None, 'strong': bool(strong),
             'chip': chip, 'chips': list(chips), 'sub': [str(item) for item in sub if item not in (None, '')]}
     if gauge is not None:
         said['gauge'] = gauge
+    if details is not None:
+        said['details'] = details
     return said
 
 
@@ -65,10 +67,19 @@ def link(href, label, icon, danger=False):
     return {'kind': 'link', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger)}
 
 
-def post(href, label, icon, fields=(), danger=False):
-    """A row action that posts at once (with the page's CSRF token), as the classic page's small form does."""
-    return {'kind': 'post', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger),
+def post(href, label, icon, fields=(), danger=False, labelled=False):
+    """A row action that posts at once (with the page's CSRF token), as the classic page's small form does; `labelled`
+    draws its word beside the icon (an action that changes a safety state: Acknowledge, Resolve)."""
+    said = {'kind': 'post', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger),
             'fields': [{'name': name, 'value': str(value)} for name, value in fields]}
+    if labelled:
+        said['labelled'] = True
+    return said
+
+
+def details(summary, lines):
+    """A cell's closed disclosure: its summary, and its lines (empty ones left out) shown when it is opened."""
+    return {'summary': str(summary), 'lines': [str(line) for line in lines if line not in (None, '')]}
 
 
 def row(key, cells, actions=(), status=None, voided=False):

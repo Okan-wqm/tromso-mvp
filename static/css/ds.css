@@ -445,6 +445,10 @@
 tr[data-status="critical"] .ui-row-status { color: var(--crit); }
 tr[data-status="warning"] .ui-row-status { color: var(--warn); }
 .ui-cell-sub { display: block; color: var(--text-3); font-size: var(--fs-small); font-weight: 400; white-space: normal; }
+/* a cell's closed disclosure (a dead letter's payload): the summary in the cell's text, the lines when opened, a long
+   run without spaces (hex) broken anywhere so it never widens the table */
+.ui-cell-details > summary { cursor: pointer; overflow-wrap: anywhere; }
+.ui-cell-details > .ui-cell-sub { margin-top: var(--space-1); overflow-wrap: anywhere; white-space: pre-wrap; }
 .ui-cell-strong { font-weight: 600; }
 /* a row's name stays readable on a phone: the table scrolls inside its frame rather than squeeze it to a word a line */
 .ui-table tbody th[scope="row"] { min-width: 10rem; }

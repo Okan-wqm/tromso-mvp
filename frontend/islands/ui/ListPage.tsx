@@ -32,6 +32,8 @@ export interface ListCell {
   sub?: string[];
   /** a share drawn as a bar with the share in words beside it (a unit's capacity), under the text and its sub-lines */
   gauge?: GaugeProps | null;
+  /** a closed disclosure in place of the text: its summary, and its lines shown when opened (a dead letter's payload) */
+  details?: { summary: string; lines: string[] } | null;
 }
 
 export interface ListAction {
@@ -42,6 +44,8 @@ export interface ListAction {
   danger?: boolean;
   /** a post's own fields besides the CSRF token (`next`) */
   fields?: { name: string; value: string }[];
+  /** the word beside the icon (an action that changes a safety state: Acknowledge, Resolve), not the icon alone */
+  labelled?: boolean;
 }
 
 export interface ListRow {
@@ -102,6 +106,14 @@ export interface ListPageProps {
 }
 
 function Cell({ cell }: { cell: ListCell }) {
+  if (cell.details) {
+    return (
+      <details className="ui-cell-details">
+        <summary>{cell.details.summary}</summary>
+        {cell.details.lines.map((line, index) => <span key={index} className="ui-cell-sub">{line}</span>)}
+      </details>
+    );
+  }
   const main = cell.chip ? <Chip kind={cell.chip.kind}>{cell.chip.text}</Chip>
     : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.text;
   const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);
@@ -118,9 +130,14 @@ function Action({ action, csrfToken }: { action: ListAction; csrfToken: string }
       <form method="post" action={action.href}>
         <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />
         {action.fields?.map((field) => <input key={field.name} type="hidden" name={field.name} value={field.value} />)}
-        <button type="submit" className={className} aria-label={action.label} title={action.label}><Icon name={action.icon} /></button>
+        {action.labelled
+          ? <button type="submit" className="ui-btn" data-variant={action.danger ? 'danger-text' : undefined}><Icon name={action.icon} />{action.label}</button>
+          : <button type="submit" className={className} aria-label={action.label} title={action.label}><Icon name={action.icon} /></button>}
       </form>
     );
+  }
+  if (action.labelled) {
+    return <a className="ui-btn" data-variant={action.danger ? 'danger-text' : undefined} href={action.href}><Icon name={action.icon} />{action.label}</a>;
   }
   return <a className={className} href={action.href} aria-label={action.label} title={action.label}><Icon name={action.icon} /></a>;
 }

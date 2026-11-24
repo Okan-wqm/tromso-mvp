@@ -287,6 +287,24 @@ test('a list page notice may end in a link; one without is as before', async () 
   assert.match(page, /A plain line\.<\/div>/);
 });
 
+test('a list cell may be a closed disclosure; a labelled action shows its word beside its icon', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const rows = [{ key: '1', cells: {
+    topic: { text: 'test/probe' },
+    payload: { text: null, details: { summary: '{"ts":17954…', lines: ['{"ts":1795440480000}', '7b227473', '21 bytes'] } },
+  }, actions: [
+    { kind: 'post' as const, href: '/sensors/dead/1/resolve/', label: 'Resolve', icon: 'check-circle' as const, labelled: true },
+    { kind: 'link' as const, href: '/x/', label: 'Edit x', icon: 'pencil' as const },
+  ] }];
+  const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows,
+    columns: [{ key: 'topic', label: 'Topic' }, { key: 'payload', label: 'Payload' }] }} />);
+  assert.match(page, /<details class="ui-cell-details"><summary>\{&quot;ts&quot;:17954…<\/summary><span class="ui-cell-sub">\{&quot;ts&quot;:1795440480000\}<\/span><span class="ui-cell-sub">7b227473<\/span><span class="ui-cell-sub">21 bytes<\/span><\/details>/);
+  assert.doesNotMatch(page, /<details[^>]* open/, 'closed');
+  assert.match(page, /<button type="submit" class="ui-btn"><svg[^]*?<\/svg>Resolve<\/button>/);
+  assert.match(page, /<a class="icon-button" href="\/x\/" aria-label="Edit x"/, 'an unlabelled action is the icon button as before');
+});
+
 test('a stacked bar: each part a segment as long as its share on the whole, every part in words, no style', async () => {
   const { StackedBar } = await import('./index.js');
   const bar = html(<StackedBar label="Planned today: 6" parts={[

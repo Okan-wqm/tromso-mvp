@@ -356,7 +356,8 @@ class SmallTemplateMigrationTests(TestCase):
         self.assertEqual(CardTemplate.objects.get(pk=mine.pk).name, 'small (3)')            # (2) was taken
         self.assertEqual(CardTemplate.objects.get(pk=taken.pk).name, 'Small (2)')
         self.assertEqual(CardTemplate.all_objects.get(pk=gone.pk).name, 'SMALL')
-        self.assertEqual(MonitorBoard.objects.get(pk=board.pk).default_template_id, mine.pk)
+        # (only the column it asks for: the board's later columns, 0008's screen, are not there at 0005)
+        self.assertEqual(MonitorBoard.objects.values_list('default_template_id', flat=True).get(pk=board.pk), mine.pk)
         self.assertEqual(CardTemplateAssignment.objects.get(unit=unit).template_id, mine.pk)
         # back: the built-in goes, the farm's template keeps the name it was given (nothing guesses it back)
         back = self.migrate('0004_backfill_modes')

@@ -105,7 +105,7 @@ A transport took a notification (sent) or failed to (failed, with what it said),
 - **read**: alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_delivery_attempts
 - **constraints**: chk_alarm_delivery_attempts_outcome (check); uq_alarm_delivery_attempts_sent_once (unique: notification)
-- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_floods.py` and 3 more
+- **tests that mention it**: `alarms/tests/test_alarms.py`, `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_floods.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -172,7 +172,7 @@ A notification still to be sent: the outbox's queue (alarms/outbox.py), written 
 - **delete**: none, by design: removed by the outbox once the notification is sent, covered by a flood message or given up
 - **read**: none, by design: the outbox's own queue (alarms/outbox.py); the notifications are on their alarm's page
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_outbox
-- **tests that mention it**: `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_review_fixes.py`, `alarms/tests/test_review_followup.py`
+- **tests that mention it**: `alarms/tests/test_cleared_criticals.py`, `alarms/tests/test_review_fixes.py`, `alarms/tests/test_review_followup.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -359,7 +359,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 17 more
+- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/__init__.py` and 18 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

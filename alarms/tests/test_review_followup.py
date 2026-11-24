@@ -173,12 +173,13 @@ class KindTests(Case):
 
     def test_alarms_about_the_farm_are_snoozed_those_about_the_alarm_systems_own_health_never(self):
         snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
-        for parameter in ('no_fresh_oxygen', 'sensors_failed', 'unit_unevaluated'):
+        for parameter in ('no_fresh_oxygen', 'unit_unevaluated', 'value_unevaluated'):
             with self.subTest(parameter=parameter):
                 alarm = services.open_alarm(source='system', parameter=parameter, severity='critical', at=self.now,
                                             summary=parameter)
                 self.assertEqual(services.shelve(alarm, snoozer, 30, 'probe cleaned', at=self.at(1)).alarm, alarm)
-        for parameter in ('alarms_unchecked', 'step_failed', 'notifications_undeliverable', 'alarm_rules'):
+        for parameter in ('alarms_unchecked', 'step_failed', 'notifications_undeliverable', 'alarm_rules',
+                          'sensors_failed'):
             with self.subTest(parameter=parameter):
                 alarm = services.open_alarm(source='system', parameter=parameter, severity='critical', at=self.now,
                                             summary=parameter)

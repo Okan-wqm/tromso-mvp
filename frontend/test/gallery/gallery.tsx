@@ -38,15 +38,17 @@ function Gallery({ rows, errors }: GalleryProps) {
           <IconButton icon="trash" label="Delete Bergen Hatchery" tone="danger" />
         </div>
       </Plate>
-      <Plate title="Company today" meta="Worked out 23.11.2026, 13:42" link={{ href: '#alarms', label: 'Alarms' }} span={8}>
+      <Plate title="Company today" meta="Worked out 23.11.2026, 13:42" link={{ href: '#alarms', label: 'Alarms' }} span={12}>
         <Tiles label="Company today">
           <Tile label="Sites" figure="12" sub="11 active" source="Sites · 13:42" href="#sites" />
           <Tile label="Open alarms" figure="3" sub="2 critical" source="Alarms · 13:42" status="critical" statusLabel="Critical" href="#alarms" />
           <Tile label="Reports due" figure="3" sub="1 overdue" status="warning" statusLabel="Warning" />
           <Tile label="On site now" figure="31" sub="of 38 planned today" />
+          <Tile label="Biomass" figure="1,252.6 t" sub="89 units stocked" source="Stock ledger · 13:42" />
+          <Tile label="Unread messages" figure="4" sub="in 2 conversations" />
         </Tiles>
       </Plate>
-      <Plate title="Statuses" badge={<Chip kind="critical">1 overdue</Chip>} span={4} safety="Nothing is sent yet: the push transport is not connected.">
+      <Plate title="Statuses" badge={<Chip kind="critical">1 overdue</Chip>} span={12} safety="Nothing is sent yet: the push transport is not connected.">
         <div className="ui-plate-body">
           <Chips label="Statuses">
             <Chip kind="ok">Active</Chip><Chip kind="warning">Warning</Chip><Chip kind="critical">Critical</Chip>

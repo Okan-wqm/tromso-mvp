@@ -473,8 +473,10 @@
    the figure (as large as the cell allows, never wrapped), a sub-line, a source and time. The whole tile is the link to
    where the figure comes from. Grey; only an abnormal figure gets its 4 px edge, its glyph and the status's text colour.
    data-size="small" on the grid: breakdown cells. */
-.ui-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); margin: 0 -1px -1px 0; }
-.ui-tiles[data-size="small"] { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+/* at least 160 px a tile, the row shared out (auto-fit): six in one row of a whole-width plate at 1440 px, two on a 390 px
+   phone */
+.ui-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); margin: 0 -1px -1px 0; }
+.ui-tiles[data-size="small"] { grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr)); }
 [data-wall] .ui-tiles { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 .ui-tile {
   container-type: inline-size;

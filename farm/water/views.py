@@ -16,7 +16,7 @@ person cannot use are not shown, and the views refuse them too. The page judges 
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone as dt_timezone
 from decimal import Decimal
 
 from django.contrib import messages
@@ -33,7 +33,7 @@ from django.utils.translation import gettext as _, ngettext
 
 from core import navigation, ui
 from core.crud import done, render_page
-from core.dates import on_clock, read_day, read_moment
+from core.dates import on_clock, on_clock_or_earlier, read_day, read_moment
 from core.widgets import EXAMPLE
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
@@ -469,13 +469,14 @@ def history_window(request, owner, now):
         if wall is None:
             raise BadRequest(name)
         try:
-            return on_site_clock(wall, zone)
-        except ValidationError as error:
             # `around` (an alarm's opening, as its link writes it): a time the autumn night shows twice is the earlier of
             # the two; the 12 hours each side hold the opening either way (review C4). A from or a to stays refused.
-            if repeated and error.code == 'repeated':
-                return wall.replace(fold=0, tzinfo=zone)
+            found = on_clock_or_earlier(wall, zone) if repeated else on_site_clock(wall, zone)
+        except ValidationError:
             raise BadRequest(name)
+        # in UTC: arithmetic on a moment that keeps its zone is wall-clock arithmetic, 12 hours back over a change of
+        # the clocks would be 11 or 13
+        return found.astimezone(dt_timezone.utc)
 
     if request.GET.get('around'):
         middle = moment('around', repeated=True)

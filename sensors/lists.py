@@ -11,7 +11,7 @@ from django.utils import formats, timezone
 from django.utils.translation import gettext as _
 
 from core import listprops as L
-from core.templatetags.dates import company_clock, site_clock
+from core.templatetags.dates import company_clock, site_clock, zone_for
 
 from .templatetags.sensors import measured
 
@@ -195,10 +195,11 @@ def binding_timeline(rows, now):
         lane['spans'].append({'key': str(row.pk), 'x': at(row.valid_from),
                               'width': round(at(row.valid_to or end) - at(row.valid_from), 2), 'tone': row.role,
                               'open': row.valid_to is None, 'label': label})
-    clock = rows[0].clock
-    local_start, local_end = site_clock(start, clock), site_clock(end, clock)
+    zone = zone_for(rows[0].clock)
+    local_start, local_end = timezone.localtime(start, zone), timezone.localtime(end, zone)
     step = timedelta(days=max(1, round(seconds / 86400 / 5)))
     ticks = [{'x': 0, 'label': formats.date_format(local_start, 'd.m')}]
+    # midnights on the place's clock, aware, so they are placed on the same axis as the bindings' moments
     day = local_start.replace(hour=0, minute=0, second=0, microsecond=0) + step
     while day < local_end:
         x = at(day)

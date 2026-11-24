@@ -55,3 +55,35 @@ def slots(count, width, height, gap, mw, mh, min_u=FLOOR, pad_x=0, pad_y=0):
 def fill_unit(width, height, mw, mh, pad_x=0, pad_y=0):
     """The smallest unit (`min_u`) of a wall of full-height cards: FILL of the unit one card alone would have."""
     return FILL * max(min((width - pad_x) / mw, (height - pad_y) / mh), 0)
+
+
+# ---- how large a wall's type must be to be read from where it is watched (frontend-redesign CONSENSUS §9) -----------
+# A board may say which screen it is shown on (its diagonal) and from how far it is read; the browser knows the screen's
+# size in px. The character height a text subtends at that distance must be at least
+#   - ARCMIN_CRITICAL for a critical value or a state's word (FHWA-RD-98-057, ch. 3: 20 arcmin for critical elements);
+#   - ARCMIN_SECONDARY for every other text (MIL-STD-1472H §5.17.18.2: 15 arcmin "should").
+# These are the standards' figures, not a farm's preference (a farm chooses its screen and its distance). On a fitted card
+# the state's word is the step 1.25 of the unit (tw:text-u-l) and the smallest text 0.8 of it (tw:text-u-s); a
+# character's height is the cap height of the text face, CAP of its size (Atkinson Hyperlegible Next, measured).
+ARCMIN_CRITICAL, ARCMIN_SECONDARY = 20, 15
+CAP = 0.67
+STEP_STATE, STEP_SMALLEST = 1.25, 0.8
+MM_PER_INCH = 25.4
+
+
+def text_px(arcmin, inches, distance_m, screen_w, screen_h):
+    """The font size (CSS px) whose characters subtend `arcmin` at `distance_m` on a screen of `inches` diagonal that is
+    `screen_w` by `screen_h` CSS px (the device's pixel ratio cancels out: a CSS px is the diagonal over the CSS px)."""
+    px_mm = inches * MM_PER_INCH / math.hypot(screen_w, screen_h)
+    height_mm = 2 * distance_m * 1000 * math.tan(math.radians(arcmin / 60) / 2)
+    return height_mm / CAP / px_mm
+
+
+def legible_unit(inches, distance_m, screen_w, screen_h, critical_step=STEP_STATE):
+    """The smallest unit (`min_u`) of a wall read from `distance_m` on that screen: its state words at ARCMIN_CRITICAL and
+    its smallest text at ARCMIN_SECONDARY, never under FLOOR; FLOOR when the board says no screen or no distance.
+    `critical_step`: the step of the unit its critical words are set in (a card's state word; the band's tally, 1)."""
+    if not (inches and distance_m and screen_w and screen_h):
+        return FLOOR
+    return max(FLOOR, text_px(ARCMIN_CRITICAL, inches, distance_m, screen_w, screen_h) / critical_step,
+               text_px(ARCMIN_SECONDARY, inches, distance_m, screen_w, screen_h) / STEP_SMALLEST)

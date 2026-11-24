@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { FLOOR, dock, fillUnit, pageOf, slots, worst, worstPage } from './slots.js';
+import { FLOOR, dock, fillUnit, legibleUnit, pageOf, slots, worst, worstPage } from './slots.js';
 import { mulberry32 } from '../test/random.js';
 
 interface Case {
@@ -107,4 +107,24 @@ test('the worst card, its page and its state', () => {
   assert.deepEqual(worst(['ok', 'ok', 'warning', 'ok', 'ok', 'critical', 'ok'], 2, order), { index: 5, page: 3, state: 'critical' });
   assert.deepEqual(worst(['ok', 'blind', 'warning'], 2, order), { index: 2, page: 2, state: 'warning' });
   assert.equal(worst(['ok', 'note'], 2, order), null);
+});
+
+test('the legible unit: the vectors shared with the Python rule', () => {
+  const cases = (JSON.parse(readFileSync('monitoring/tests/slot_vectors.json', 'utf8')) as {
+    legible: { inches: number; distance_m: number; screen_w: number; screen_h: number; u: number }[] }).legible;
+  assert.ok(cases.length >= 10);
+  for (const each of cases) {
+    const found = legibleUnit(each.inches, each.distance_m, each.screen_w, each.screen_h);
+    assert.ok(Math.abs(found - each.u) < 1e-5, `${JSON.stringify(each)}: ${found}`);
+  }
+  // the same TV at a pixel ratio of 2 gets half the CSS px: the same millimetres
+  assert.ok(Math.abs(legibleUnit(55, 3, 3840, 2160) - 2 * legibleUnit(55, 3, 1920, 1080)) < 1e-9);
+  assert.equal(legibleUnit(0, 3, 1920, 1080), FLOOR);
+});
+
+test('the pane stands beside the cards only where its card can be read at the wall\'s distance', () => {
+  // 55" Full HD TV at 3 m: a Big card's unit there is far over 14 px but under the legible one: over the cards
+  const floor = legibleUnit(55, 3, 1920, 1080);
+  assert.equal(dock(1920, 1000, 8, 48, 61, 0, 0).beside, true);
+  assert.equal(dock(1920, 1000, 8, 48, 61, 0, 0, floor).beside, false);
 });

@@ -978,5 +978,99 @@
    "pages": 1,
    "u": 20.578933
   }
+ ],
+ "legible_about": "The smallest unit a wall read from a distance may use (slots.legible_unit, slots.ts legibleUnit): the board's screen diagonal `inches` and viewing distance `distance_m`, the screen `screen_w` x `screen_h` CSS px; `u` to 1e-6. No screen or no distance (0): the floor.",
+ "legible": [
+  {
+   "inches": 55,
+   "distance_m": 3,
+   "screen_w": 3840,
+   "screen_h": 2160,
+   "u": 77.020142
+  },
+  {
+   "inches": 55,
+   "distance_m": 3,
+   "screen_w": 1920,
+   "screen_h": 1080,
+   "u": 38.510071
+  },
+  {
+   "inches": 55,
+   "distance_m": 2,
+   "screen_w": 3840,
+   "screen_h": 2160,
+   "u": 51.346761
+  },
+  {
+   "inches": 65,
+   "distance_m": 3,
+   "screen_w": 3840,
+   "screen_h": 2160,
+   "u": 65.17089
+  },
+  {
+   "inches": 24,
+   "distance_m": 1,
+   "screen_w": 1920,
+   "screen_h": 1080,
+   "u": 29.417415
+  },
+  {
+   "inches": 27,
+   "distance_m": 1,
+   "screen_w": 2560,
+   "screen_h": 1440,
+   "u": 34.865085
+  },
+  {
+   "inches": 34,
+   "distance_m": 1,
+   "screen_w": 3440,
+   "screen_h": 1440,
+   "u": 35.152846
+  },
+  {
+   "inches": 49,
+   "distance_m": 1,
+   "screen_w": 5120,
+   "screen_h": 1440,
+   "u": 34.787611
+  },
+  {
+   "inches": 32,
+   "distance_m": 0.7,
+   "screen_w": 1920,
+   "screen_h": 1080,
+   "u": 15.444143
+  },
+  {
+   "inches": 24,
+   "distance_m": 0.6,
+   "screen_w": 1920,
+   "screen_h": 1080,
+   "u": 17.650449
+  },
+  {
+   "inches": 24,
+   "distance_m": 0.5,
+   "screen_w": 1920,
+   "screen_h": 1080,
+   "u": 14.708708
+  },
+  {
+   "inches": 0,
+   "distance_m": 3,
+   "screen_w": 1920,
+   "screen_h": 1080,
+   "u": 14
+  },
+  {
+   "inches": 55,
+   "distance_m": 0,
+   "screen_w": 1920,
+   "screen_h": 1080,
+   "u": 14
+  }
  ]
 }

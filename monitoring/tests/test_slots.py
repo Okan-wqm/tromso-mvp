@@ -88,3 +88,39 @@ class SlotRuleTests(SimpleTestCase):
         self.assertEqual(slots.slots(0, 1900, 900, 8, 31, 10).pages, 1)
         tiny = slots.slots(8, 200, 100, 6, 31, 10)
         self.assertGreaterEqual(tiny.cols * tiny.rows * tiny.pages, 8)
+
+
+class LegibleUnitTests(SimpleTestCase):
+    """How large a wall's type must be to be read from where it is watched (slots.legible_unit, CONSENSUS §9)."""
+
+    def test_the_vectors_shared_with_the_browsers_rule(self):
+        self.assertGreaterEqual(len(VECTORS['legible']), 10)
+        for case in VECTORS['legible']:
+            with self.subTest(case=case):
+                self.assertAlmostEqual(slots.legible_unit(case['inches'], case['distance_m'], case['screen_w'],
+                                                          case['screen_h']), case['u'], places=5)
+
+    def test_the_state_word_and_the_smallest_text_subtend_what_the_standards_ask(self):
+        import math
+        for inches, distance, width, height in ((55, 3, 3840, 2160), (24, 1, 1920, 1080), (65, 5, 1920, 1080)):
+            unit = slots.legible_unit(inches, distance, width, height)
+            px_mm = inches * 25.4 / math.hypot(width, height)
+
+            def arcmin(font):
+                return math.degrees(2 * math.atan(font * slots.CAP * px_mm / 2 / (distance * 1000))) * 60
+            self.assertGreaterEqual(arcmin(unit * slots.STEP_STATE), slots.ARCMIN_CRITICAL - 1e-6)
+            self.assertGreaterEqual(arcmin(unit * slots.STEP_SMALLEST), slots.ARCMIN_SECONDARY - 1e-6)
+            # and not a pixel more than the larger of the two asks (the wall keeps as many cards as it can)
+            self.assertTrue(math.isclose(arcmin(unit * slots.STEP_SMALLEST), slots.ARCMIN_SECONDARY, rel_tol=1e-9)
+                            or math.isclose(arcmin(unit * slots.STEP_STATE), slots.ARCMIN_CRITICAL, rel_tol=1e-9)
+                            or unit == slots.FLOOR)
+
+    def test_the_same_physical_screen_gives_the_same_physical_type_at_any_pixel_ratio(self):
+        # a 4K TV whose browser says 1920 x 1080 CSS px (a pixel ratio of 2) gets half the CSS px: the same millimetres
+        self.assertAlmostEqual(slots.legible_unit(55, 3, 3840, 2160), 2 * slots.legible_unit(55, 3, 1920, 1080))
+
+    def test_a_farther_wall_needs_larger_type_and_a_board_that_says_nothing_keeps_the_floor(self):
+        near, far = slots.legible_unit(55, 2, 1920, 1080), slots.legible_unit(55, 4, 1920, 1080)
+        self.assertAlmostEqual(far, 2 * near, places=6)
+        for missing in ((None, 3), (55, None), (0, 3)):
+            self.assertEqual(slots.legible_unit(*missing, 1920, 1080), slots.FLOOR)

@@ -35,7 +35,8 @@ BLANK = [(re.compile(r'(name="csrfmiddlewaretoken" value=")[^"]*'), r'\1-'),
          (re.compile(r'(id="[^"]*?)[0-9a-f]{32}'), r'\1-'),
          (re.compile(r'nonce="[^"]*"'), 'nonce="-"'),
          (re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'), 'UUID'),
-         (re.compile(r'(name="seed" value=")[0-9]*'), r'\1-')]     # a random seed offered each time
+         (re.compile(r'(name="seed" value=")[0-9]*'), r'\1-'),     # a random seed offered each time
+         (re.compile(r'\?v=\d+'), '?v=-')]                          # a static file's version (its build time)
 
 
 class Rollback(Exception):

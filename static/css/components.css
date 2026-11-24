@@ -646,7 +646,11 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .report-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin-bottom: 1rem; }
 .report-table { font-size: var(--fs-small); }
 .report-table caption { padding-bottom: .25rem; font-weight: 700; text-align: left; }
-.report-table th[scope="row"] { font-weight: 500; }
+.report-table th[scope="row"] { width: 45%; font-weight: 500; }
+/* a value with its judgement in words (the best estimate's note: "0.0015 mg/L · NH₃ judged on the safe side …") wraps
+   inside its column: kept on one line (the figure rule's nowrap) it pushed every value of the table past the page's edge,
+   on the screen and on paper (frontend/test/calculator.pages.ts holds it) */
+.report-table td.num { white-space: normal; overflow-wrap: anywhere; }
 .report-charts { margin-bottom: 1rem; }
 .report .calc-results, .report .calc-simulator { margin-bottom: 1rem; }
 @media print {
@@ -658,6 +662,181 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
   .report .calc-results { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .report .calc-card { break-inside: avoid; padding: .5rem; }
   body.report { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* The calculator and its printed report in the new look ([data-ui="next"], core/ui.py): the design console's calculator
+   (Suderra Console.dc.html, the calculator block) drawn on the SAME server parts as the classic page: the same GET form,
+   the same live parts (frontend/poll.ts), the same server-drawn charts; only these rules differ. The values plate (where
+   the values come from as its head, the tabs, a field a row: label, value at the right, help under it; Defaults and
+   Print report), the charts' row [two small | the Water Quality Management Chart, wider | two small] on plates with
+   the layers as chips under the chart, the results plate (ammonia, hydrogen sulfide and the values worked out side by
+   side, the judged value as the figure, the recipes across) and the simulator's steps last. A wrapper the new look
+   frames (.calc-values-plate) is no box in the classic look (display: contents), and the registration marks
+   (.ui-marks) are drawn only in the new look, so the classic page is drawn as it was. */
+.calc-values-plate { display: contents; }
+[data-ui="next"] .calc { gap: var(--gap); }
+[data-ui="next"] .calc-plate-title { margin: 0 auto 0 0; font-size: var(--fs-h2); line-height: 1.2; }
+[data-ui="next"] :is(.calc-values-plate, .calc-plot, .calc-deffeyes, .calc-results, .calc-simulator) {
+  min-width: 0; border: 1px solid var(--line-hair); border-radius: 0; background: var(--plate);
+}
+/* the values plate */
+[data-ui="next"] .calc-values-plate { display: flex; flex-direction: column; }
+[data-ui="next"] .calc-source { align-items: flex-end; gap: 10px 16px; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--line-hair);
+  border-radius: 0; background: none; }
+[data-ui="next"] .calc-source-pick { flex: 0 1 20rem; min-width: min(100%, 220px); }
+[data-ui="next"] .calc-source-pick label { color: var(--text-2); font-size: var(--fs-caption); }
+[data-ui="next"] .calc-source-values { order: 2; flex: 1 1 100%; margin: 0 -16px -12px; padding: 8px 16px; background: var(--action-tint);
+  color: var(--text-1); font-size: var(--fs-small); }
+[data-ui="next"] .calc-source-values:not(:has(*)) { display: none; }
+[data-ui="next"] .calc-source-head { color: var(--text-1); }
+[data-ui="next"] .calc-offers { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 2px 16px; }
+[data-ui="next"] .calc-offer { padding: 2px 0; border: 0; border-radius: 0; background: none; }
+[data-ui="next"] .calc-offer.is-changed .calc-offer-label { color: var(--action); }
+[data-ui="next"] .calc-offer-from { color: var(--text-2); }
+[data-ui="next"] .calc-bar { padding: 0; border: 0; border-radius: 0; background: none; }
+[data-ui="next"] .calc-bar .ui-tabs { margin: 0; padding: 0 12px; }
+[data-ui="next"] .calc-panel { padding: 4px 16px 14px; }
+[data-ui="next"] .calc-panel + .calc-panel { margin-top: 0; }
+[data-ui="next"] .calc-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 0 28px; }
+[data-ui="next"] .calc-fields > .field { display: grid; grid-template-columns: minmax(0, 1fr) 7rem; align-items: center; gap: 2px 10px;
+  min-width: 0; margin: 0; padding: 7px 0; border-bottom: 1px solid var(--line-hair); }
+[data-ui="next"] .calc-fields > .field > :not(label, input, .field-head) { grid-column: 1 / -1; }
+[data-ui="next"] .calc-fields > .field > label { margin: 0; font-size: var(--fs-label); }
+[data-ui="next"] .calc-fields > .field > input:not([type="checkbox"], [type="radio"]) { min-height: 34px; padding: 0 8px; text-align: right;
+  font-weight: 700; font-variant-numeric: tabular-nums; }
+[data-ui="next"] .calc-fields > .field:has(> select) { grid-template-columns: minmax(0, 1fr); }
+[data-ui="next"] .calc-fields > .field-set { display: block; grid-column: 1 / -1; }
+/* a field's help: a short hint stays under it, whole; a long reference note is a tooltip (the field-note pattern,
+   ds.css and frontend/field-note.ts) */
+[data-ui="next"] .calc-fields > .field .help:not(.ui-note) { color: var(--text-3); }
+[data-ui="next"] .calc-actions { justify-content: flex-start; margin: 0; padding: 0 16px 16px; }
+/* the charts' row: the chart first on a phone, then the four small ones; three columns at the desk */
+[data-ui="next"] .calc-charts { gap: var(--gap); align-items: stretch; }
+[data-ui="next"] .calc-column { gap: var(--gap); }
+@media (min-width: 1100px) {
+  [data-ui="next"] .calc-charts { grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) minmax(0, 1fr); }
+  [data-ui="next"] .calc-deffeyes { grid-column: 2; grid-row: 1; }
+  [data-ui="next"] .calc-column { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+}
+/* a small chart: its title and, at the right, the figure it is about (in its status's colour); the drawing, its keys,
+   and its facts at the foot */
+[data-ui="next"] .calc-plot { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto 1fr; padding: 0; }
+[data-ui="next"] .calc-plot > * { grid-column: 1 / -1; }
+[data-ui="next"] .calc-plot > .calc-card-title { grid-column: 1; grid-row: 1; margin: 0; padding: 10px 14px 4px; font-size: var(--fs-tab); line-height: 1.2; }
+[data-ui="next"] .calc-plot > .calc-plot-now { grid-column: 2; grid-row: 1; padding: 12px 14px 4px 0; color: var(--text-1);
+  font-size: var(--fs-small); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+[data-ui="next"] .calc-plot-now[data-status="critical"] { color: var(--crit-text); }
+/* the status said once: the head's figure in its colour; the chip in the title stays its word for a screen reader */
+[data-ui="next"] .calc-plot:has(> .calc-plot-now) > .calc-card-title .wq-status {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+[data-ui="next"] .calc-plot-now[data-status="warning"] { color: var(--warn-text); }
+[data-ui="next"] .calc-plot .ph-chart { order: 1; max-width: calc(100% - 20px); border: 1px solid var(--line-hair); background: var(--surface-sheet); }
+[data-ui="next"] .calc-plot .ph-legend { order: 2; margin: 0; padding: 6px 14px 0; }
+[data-ui="next"] .calc-plot-facts { order: 3; align-self: end; margin: 0; padding: 6px 14px 10px; color: var(--text-2); font-size: var(--fs-caption); }
+@media (max-width: 479px) { [data-ui="next"] .calc-plot > .calc-plot-now { grid-column: 1 / -1; grid-row: 2; padding: 0 14px 4px; white-space: normal; } }
+/* the chart's water in one line under it, in the worst status's colour */
+[data-ui="next"] .calc-chart-words { margin: 0; padding: 8px 16px 0; color: var(--text-2); font-size: var(--fs-small); font-weight: 600; font-variant-numeric: tabular-nums; }
+[data-ui="next"] .calc-chart-words[data-status="critical"] { color: var(--crit-text); }
+[data-ui="next"] .calc-chart-words[data-status="warning"] { color: var(--warn-text); }
+[data-ui="next"] .calc-deffeyes { display: flex; flex-direction: column; padding: 0; }
+[data-ui="next"] .calc-deffeyes-chart { display: flex; flex-direction: column; flex: 1; }
+[data-ui="next"] .calc-deffeyes .deffeyes { display: flex; flex-direction: column; flex: 1; padding: 0 16px; }
+[data-ui="next"] .calc-deffeyes .deffeyes-title { margin: 0 -16px 12px; padding: 12px 16px; border-bottom: 1px solid var(--line-hair);
+  font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.2; text-align: left; }
+[data-ui="next"] .calc-deffeyes .deffeyes-chart { max-width: 100%; border: 1px solid var(--line-hair); background: var(--surface-sheet); }
+[data-ui="next"] .calc-deffeyes .calc-not-ready { margin: 16px; }
+/* the layers: chips under the chart, a chosen one in the action colour; the box stays, the chip is its label */
+[data-ui="next"] .calc-layers { order: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 6px;
+  margin: 0; padding: 10px 16px 14px; border: 0; }
+[data-ui="next"] .calc-layers legend { float: left; width: auto; margin: 0 4px 0 0; color: var(--text-3); font-size: var(--fs-caption);
+  font-weight: 400; text-align: left; }
+[data-ui="next"] .calc-layers .check { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; margin: 0; padding: 0 8px;
+  border: 1px solid var(--line-control); color: var(--text-1); font-size: var(--fs-caption); font-weight: 600; cursor: pointer; }
+[data-ui="next"] .calc-layers .check:has(input:checked) { border-color: var(--action); background: var(--action-tint); color: var(--action); }
+[data-ui="next"] .calc-layers .check input { width: 14px; height: 14px; }
+/* a judged status: glyph and word on a square chip, as the design system's chip */
+[data-ui="next"] :is(.calc, .report) .wq-status { gap: 4px; min-height: 24px; padding: 0 8px; border: 1px solid var(--line-control);
+  color: var(--text-2); font-family: var(--font-text); font-size: var(--fs-small); font-weight: 600; white-space: nowrap; }
+[data-ui="next"] :is(.calc, .report) .wq-status.wq-critical { border-color: var(--crit); background: var(--crit); color: var(--on-crit); }
+[data-ui="next"] :is(.calc, .report) .wq-status.wq-critical .wq-dot { background: var(--on-crit); }
+[data-ui="next"] :is(.calc, .report) .wq-status.wq-warning { border-color: var(--warn); background: var(--warn-tint); color: var(--warn-text); }
+[data-ui="next"] :is(.calc, .report) .wq-status.wq-ok { padding: 0; border: 0; color: var(--ok-text); }
+/* the results plate: three judged columns at the desk, the recipes across under them */
+[data-ui="next"] .calc-results { order: 1; gap: 0; grid-template-columns: minmax(0, 1fr); }
+[data-ui="next"] .calc-results:not(:has(*)) { display: none; }
+@media (min-width: 1100px) { [data-ui="next"] .calc-results { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+[data-ui="next"] .calc-results > .calc-plate-title { grid-column: 1 / -1; padding: 10px 16px; border-bottom: 1px solid var(--line-hair); }
+[data-ui="next"] .calc-results > .calc-card { padding: 12px 16px 14px; border: 0; border-right: 1px solid var(--line-hair);
+  border-bottom: 1px solid var(--line-hair); border-radius: 0; background: none; }
+[data-ui="next"] .calc-results > .calc-recipes { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
+[data-ui="next"] .calc-results > .wq-card-critical { box-shadow: var(--edge-crit); }
+[data-ui="next"] .calc-results > .wq-card-warning { box-shadow: var(--edge-warn); }
+[data-ui="next"] .calc-results .calc-card-title { min-height: 26px; margin: 0; font-size: var(--fs-tab); line-height: 1.2; }
+[data-ui="next"] .calc-results :is(.calc-values, .calc-values > tbody) { display: block; }
+[data-ui="next"] .calc-results .calc-values { margin-top: 8px; border-top: 1px solid var(--line-hair); font-size: var(--fs-small); }
+[data-ui="next"] .calc-results .calc-values tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; border-bottom: 1px solid var(--line-hair); }
+[data-ui="next"] .calc-results .calc-values :is(th, td) { padding: 6px 0; border: 0; }
+[data-ui="next"] .calc-results .calc-values th { color: var(--text-2); font-weight: 400; }
+[data-ui="next"] .calc-results .calc-values td { font-weight: 700; white-space: nowrap; }
+/* the judged value of ammonia and hydrogen sulfide is the card's figure, its name under it */
+[data-ui="next"] .calc-results .calc-status .calc-values { margin-top: 0; border-top: 0; }
+[data-ui="next"] .calc-results .calc-status .calc-values tr:first-child { grid-template-columns: minmax(0, 1fr); padding: 8px 0 10px; }
+[data-ui="next"] .calc-results .calc-status .calc-values tr:first-child td { order: -1; padding: 0; font-family: var(--font-display);
+  font-size: var(--fs-readout); line-height: 1; text-align: left; white-space: normal; }
+[data-ui="next"] .calc-results .calc-status .calc-values tr:first-child th { padding: 4px 0 0; }
+[data-ui="next"] .calc-results .wq-value:not(.wq-critical, .wq-warning) { color: var(--text-1); }
+/* the third judged card: the values worked out, CO₂ first as its figure and its status beside the title; its other
+   rows (alkalinity, DIC, the target, oxygen) stand as tiles under the three cards (.calc-tiles, the same labels and
+   values, data-tile on the rows they replace) */
+[data-ui="next"] .calc-results > .calc-worked { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start; }
+[data-ui="next"] .calc-results > .calc-worked > * { grid-column: 1 / -1; }
+[data-ui="next"] .calc-results > .calc-worked > .calc-card-title { grid-column: 1; }
+[data-ui="next"] .calc-results > .calc-worked > .wq-status { grid-column: 2; grid-row: 1; align-self: center; }
+[data-ui="next"] .calc-results tr[data-tile] { display: none; }
+[data-ui="next"] .calc-tiles { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
+  margin: 0; border-bottom: 1px solid var(--line-hair); }
+[data-ui="next"] .calc-tiles > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 16px; border-right: 1px solid var(--line-hair);
+  border-bottom: 1px solid var(--line-hair); background: var(--surface-sheet); }
+[data-ui="next"] .calc-tiles dt { color: var(--text-2); font-size: var(--fs-caption); }
+/* a long text under a closed summary (a card's method notes, the fish's limits, the references): there, one click away,
+   never a status, a value or a warning */
+[data-ui="next"] .calc-more { margin: 8px 0 0; }
+[data-ui="next"] .calc-more > summary { width: fit-content; color: var(--action); font-size: var(--fs-small); font-weight: 600; cursor: pointer; }
+[data-ui="next"] .calc-more > summary:hover { text-decoration: underline; }
+[data-ui="next"] .calc-more[open] > summary { margin-bottom: 4px; }
+[data-ui="next"] .calc-sources { margin: var(--gap) 0 0; }
+[data-ui="next"] .calc-tiles dd { margin: 0; font-size: var(--fs-tab); font-weight: 700; font-variant-numeric: tabular-nums; }
+[data-ui="next"] .calc-recipe-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; margin-top: 10px;
+  padding: 0; list-style: none; }
+[data-ui="next"] .calc-recipe { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line-hair); }
+[data-ui="next"] .calc-recipe-name { font-family: var(--font-display); font-size: var(--fs-body); font-weight: 600; }
+[data-ui="next"] .calc-recipe.is-flagged { box-shadow: var(--edge-warn); }
+[data-ui="next"] :is(.calc-dose-rate, .calc-dose-move, .calc-note, .calc-card-help) { color: var(--text-2); }
+/* the simulator: last, its steps a table across the plate */
+[data-ui="next"] .calc-simulator { order: 2; padding: 0; }
+[data-ui="next"] .calc-simulator .calc-card-title { margin: 0; padding: 10px 14px 0; font-size: var(--fs-tab); }
+[data-ui="next"] .calc-simulator > :is(.calc-card-help, .calc-note, .calc-change) { margin: 4px 0 0; padding: 0 14px; }
+[data-ui="next"] .calc-simulator .table-wrap { margin-top: 10px; border-top: 1px solid var(--line-hair); }
+[data-ui="next"] .calc-simulator > :last-child { padding-bottom: 10px; }
+[data-ui="next"] .calc-steps td { font-weight: 600; }
+/* the printed report in the new look: the same parts on plates, the title in the display face */
+[data-ui="next"] .report { background: var(--surface-canvas); }
+[data-ui="next"] .report-head { border-bottom-width: 1px; }
+[data-ui="next"] .report-title { font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600; }
+[data-ui="next"] .report-table caption { font-family: var(--font-display); font-size: var(--fs-tab); font-weight: 600; }
+[data-ui="next"] .report .calc-charts { margin-bottom: var(--gap); }
+[data-ui="next"] .report :is(.calc-results, .calc-simulator) { margin-bottom: var(--gap); }
+@media print {
+  /* on paper the new look's sizes at about the classic report's 10 px body: every size is a token times --k */
+  html[data-ui="next"]:has(> body.report) { --k: .72; --gap: 10px; }
+  [data-ui="next"] .report { background: var(--surface-sheet); }
+  [data-ui="next"] .report :is(.calc-plate-title, .report-head) { break-after: avoid; }
+  [data-ui="next"] .report .calc-charts { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr); }
+  [data-ui="next"] .report .calc-results { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  [data-ui="next"] .report :is(.calc-plot, .calc-deffeyes, .calc-status) { break-inside: avoid; }
+  [data-ui="next"] .report :is(.calc-note, .calc-card-help, .calc-plot-facts, .deffeyes-notes, .ph-legend, .deffeyes-legend) { font-size: var(--fs-caption); }
+  [data-ui="next"] .report .calc-results .calc-status .calc-values tr:first-child td { font-size: var(--fs-tile); }
+  [data-ui="next"] .report .ui-marks::before { content: none; }
 }
 
 /* The Water Quality Management Chart (_deffeyes_chart.html) itself, an inline SVG drawn on the server; its
@@ -706,14 +885,15 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .deffeyes-track { fill: none; stroke: var(--chart-ink); stroke-width: 1.5; stroke-linejoin: round; stroke-opacity: .7; }
 .deffeyes-track-start { fill: var(--surface-sheet); stroke: var(--chart-ink); stroke-width: 2; }
 .deffeyes-track-dot { fill: var(--chart-ink); fill-opacity: .7; }
-/* Deffeyes in a chart frame (Tank › Water): under about 480 px its labels would be about 6 px (the viewBox is 600 wide),
-   so the pH labels, the ticks and the axis titles are not drawn there, and what they say stands under it as text
-   (`.deffeyes-scale`, the server's sentence; review of batch 1, S4). Scaling them up would undo the server's placing. */
+/* Deffeyes in a chart frame (Tank › Water) and the calculator's in the new look: a chart under about 440 px wide would
+   draw its labels at about 9 px or less (the viewBox is 600 wide), so the pH labels, the ticks and the axis titles are not
+   drawn there, and what they say stands with it as text (`.deffeyes-scale`, the server's sentence, views.deffeyes_scale;
+   review of batch 1, S4, and of the calculator, C7). Scaling them up would undo the server's placing. */
 .ui-chart-draw:has(> .deffeyes-chart) { container-type: inline-size; }
 .deffeyes-scale { display: none; margin: 0; padding: var(--space-2) var(--space-3); color: var(--text-2); font-size: var(--fs-caption); }
-@container (max-width: 479px) {
-  .ui-chart-draw > .deffeyes-chart :is(.deffeyes-ph, .deffeyes-ticks, .deffeyes-axis) { display: none; }
-  .ui-chart-draw > .deffeyes-scale { display: block; }
+@container (max-width: 439px) {
+  :is(.ui-chart-draw > .deffeyes-chart, [data-ui="next"] .calc .calc-deffeyes .deffeyes-chart) :is(.deffeyes-ph, .deffeyes-ticks, .deffeyes-axis) { display: none; }
+  :is(.ui-chart-draw > .deffeyes-scale, [data-ui="next"] .calc .calc-deffeyes .deffeyes-scale) { display: block; }
 }
 .deffeyes-swatch-track { height: 0; border-top: 2px solid var(--chart-ink); border-radius: 0; }
 .deffeyes-swatch-track-start { width: 10px; height: 10px; border: 2px solid var(--chart-ink); border-radius: 50%; background: var(--surface-sheet); opacity: 1; }

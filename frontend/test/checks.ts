@@ -49,12 +49,13 @@ export async function lowContrast(tab: Page): Promise<string[]> {
   });
 }
 
-/** The critical and serious axe findings of the page (axe-core served from `origin`/axe.js, as the policy allows). */
-export async function axeFindings(tab: Page, origin: string): Promise<string[]> {
+/** The critical and serious axe findings of the page (axe-core served from `origin`/axe.js, as the policy allows); `within`:
+ *  a selector, the part of the page held to it (a server page's own content, not the shell around it, whose own tests hold it). */
+export async function axeFindings(tab: Page, origin: string, within?: string): Promise<string[]> {
   await tab.addScriptTag({ url: `${origin}/axe.js` });
-  return tab.evaluate(async () => {
+  return tab.evaluate(async (selector) => {
     const axe = (window as unknown as { axe: { run: (context: unknown, options: unknown) => Promise<{ violations: { id: string; impact: string; nodes: unknown[] }[] }> } }).axe;
-    const result = await axe.run(document, { resultTypes: ['violations'] });
+    const result = await axe.run(selector ? document.querySelector(selector) : document, { resultTypes: ['violations'] });
     return result.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious').map((v) => `${v.id} (${v.nodes.length})`);
-  });
+  }, within);
 }

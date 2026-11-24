@@ -3108,6 +3108,10 @@ msgstr "API kimliği"
 msgid "Abnormal swimming"
 msgstr "Anormal yüzme"
 
+#, python-format
+msgid "About %(field)s"
+msgstr "%(field)s hakkında"
+
 msgid "Above"
 msgstr "Üstünde"
 
@@ -8428,6 +8432,9 @@ msgstr ""
 msgid "How rations are worked out"
 msgstr "Rasyonlar nasıl hesaplanır"
 
+msgid "How this was worked out"
+msgstr "Bu nasıl hesaplandı"
+
 msgid "How values are judged"
 msgstr "Değerler nasıl değerlendirilir"
 
@@ -9246,6 +9253,9 @@ msgstr "Sınırlar"
 
 msgid "Limits of the fish in the unit"
 msgstr "Birimdeki balıkların sınırları"
+
+msgid "Limits of these fish"
+msgstr "Bu balıkların sınırları"
 
 msgid "Line"
 msgstr "Satır"
@@ -12914,6 +12924,9 @@ msgstr "Geri yüklendi"
 msgid "Result"
 msgstr "Sonuç"
 
+msgid "Results"
+msgstr "Sonuçlar"
+
 msgid "Retired"
 msgstr "Kullanımdan kaldırıldı"
 
@@ -14037,6 +14050,9 @@ msgstr "Değerlerin kaynağı"
 #, python-format
 msgid "Source: %(kind)s"
 msgstr "Kaynak: %(kind)s"
+
+msgid "Sources"
+msgstr "Kaynaklar"
 
 msgid "Sources fingerprint"
 msgstr "Kaynakların parmak izi"
@@ -16517,6 +16533,9 @@ msgstr "Garanti satın alma tarihinden önce bitemez."
 
 msgid "The water"
 msgstr "Su"
+
+msgid "The water 12 hours each side of the alarm"
+msgstr "Alarmın 12 saat öncesi ve sonrasındaki su"
 
 msgid ""
 "The water after each amount, added in the order of the list, mixed through and closed to the air "

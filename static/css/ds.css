@@ -117,6 +117,23 @@
   background: var(--crit-tint); color: var(--crit-text); font-size: var(--fs-body);
 }
 .form-error .errorlist { margin: 0; }
+/* A field's long reference note (registration/_field.html with `notes`; frontend/field-note.ts): the server's help text, the
+   control's description whether shown or not; with the script a tooltip that the mouse resting on the field for a second, the
+   control's focus or the ⓘ button beside the label shows, Esc closes; wrapped at a reading width, never cut, kept inside the
+   window. Without the script it stays text under the field and the button is not shown. */
+.field-head { display: inline-flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.ui-note-toggle { display: none; place-items: center; flex: none; width: 24px; height: 24px; margin: 0; padding: 0;
+  border: 0; border-radius: var(--radius-pill); background: none; color: var(--text-2); cursor: pointer; }
+.is-noted .ui-note-toggle { display: inline-grid; }
+.ui-note-toggle:hover, .ui-note-toggle[aria-expanded="true"] { color: var(--action); }
+.ui-note-toggle .icon { width: var(--icon-inline); height: var(--icon-inline); }
+.is-noted .ui-note { display: none; }
+.is-noted .ui-note.is-open {
+  display: block; position: fixed; z-index: 60; width: max-content; max-width: min(32rem, calc(100vw - 16px)); margin: 0;
+  padding: var(--space-2) var(--space-3); border: 1px solid var(--line-control); border-radius: var(--radius-control);
+  background: var(--surface-sheet); color: var(--text-1); box-shadow: var(--shadow-raised);
+  font-size: var(--fs-small); line-height: 1.45; white-space: normal; overflow-wrap: anywhere; text-wrap: pretty;
+}
 @media (pointer: coarse) {
   :is(.field input:not([type="checkbox"], [type="radio"]), .field select, .ui-control, .ui-select, .search input, .ui-toolbar :is(input, select)) { min-height: var(--control-h-coarse); }
 }

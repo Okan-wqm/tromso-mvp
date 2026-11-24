@@ -16,7 +16,7 @@ person cannot use are not shown, and the views refuse them too. The page judges 
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone as dt_timezone
 from decimal import Decimal
 
 from django.contrib import messages
@@ -31,9 +31,9 @@ from django.utils import formats, timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, ngettext
 
-from core import navigation
+from core import navigation, ui
 from core.crud import done, render_page
-from core.dates import on_clock, read_day, read_moment
+from core.dates import on_clock, on_clock_or_earlier, read_day, read_moment
 from core.widgets import EXAMPLE
 
 from ..forms.water import (CalculatorForm, RoundForm, RoundRowForm, RoundScopeForm, SampleVoidForm, WaterSampleForm,
@@ -162,7 +162,7 @@ def water_page(request):
         record_url=_dialog_url('farm:water_record', request, place.target),
         round_url=reverse('farm:water_round') + (f'?{urlencode({"site": site.pk})}' if site else ''),
     )
-    context.update(_history(request, site, place) if showing_history else _latest(site))
+    context.update(_history(request, site, place) if showing_history else _latest(site, ui.is_next(request)))
     return render_page(request, 'farm/water.html', context)
 
 
@@ -174,9 +174,11 @@ def _dialog_url(name, request, target=None, args=()):
     return f'{reverse(name, args=args)}?{urlencode(query)}'
 
 
-def _latest(site):
+def _latest(site, next_look=False):
     """One row per point: the middle point of every unit (a unit without one is a row of its own, to say so), and
-    every other point of an owner that has a sample within the window (loops and equipment show only then)."""
+    every other point of an owner that has a sample within the window (loops and equipment show only then). Each row's
+    history: in the new look a unit's is Tank › Water (`farm:tank_water`, the one home of a tank's water history), a
+    loop's and a piece of equipment's the history page; in the classic look the history page for all."""
     units = Tank.objects.select_related('production_department__site', 'system')
     if site is not None:
         units = units.filter(production_department__site=site)
@@ -204,7 +206,8 @@ def _latest(site):
     for owner, point in entries:
         point_water = water[point.pk] if point is not None else read.PointWater(None)
         rows.append({'owner': owner, 'point': point, 'loop': isinstance(owner, System), 'water': point_water,
-                     'history_url': history_url(point or owner)})
+                     'history_url': reverse('farm:tank_water', args=[owner.pk]) if next_look and isinstance(owner, Tank)
+                     else history_url(point or owner)})
     columns = _columns([row['water'].readings for row in rows])
     for row in rows:
         row['cells'] = [row['water'].get(parameter.code) for parameter in columns]
@@ -337,11 +340,15 @@ def _source(form, owner):
         sample = getattr(getattr(offer.reading, 'sample', None), 'sample', None)
         rows.append({'label': field.label, 'value': value, 'decimals': field.decimal_places, 'offer': offer,
                      'changed': entered.get(name) != value,
+                     # a limit of the fish, not a measured value (the new look puts these under a summary)
+                     'limit': offer.reading is None and name != 'altitude_m',
                      # a pH measured on another scale, a phosphate entered as PO₄: what was measured, and that the value
                      # here is the stored one (NBS, as P)
                      'measured': STORED[name](sample) if name in STORED and sample is not None else ''})
     missing = [form.fields[name].label for name in calculation.MEASURED_FIELDS if name not in offers]
-    return {'point': owner, 'rows': rows, 'missing': missing}
+    limits = [row for row in rows if row['limit']]
+    return {'point': owner, 'rows': rows, 'missing': missing, 'limits': bool(limits),
+            'limits_changed': any(row['changed'] for row in limits)}
 
 
 def _calculator_context(request, data, all_layers=False):
@@ -355,6 +362,7 @@ def _calculator_context(request, data, all_layers=False):
     query = data.urlencode() if data else ''
     return _context(
         form=form, result=result, analysis=result.analysis if result else None,
+        chart_scale=deffeyes_scale(result.chart.isolines, result.chart.box) if result else '',
         ph_conversion=form.ph_conversion if result else None,
         chart=result.chart if result else None, source=_source(form, owner) if owner is not None else None,
         point_gone=bool(chosen) and owner is None, query=query,
@@ -394,6 +402,7 @@ def calculator_report(request):
     data, _filled = _calculator_data(request.GET)
     context = _calculator_context(request, data, all_layers=True)
     context['generated_at'] = timezone.now()
+    context['printing'] = True        # on paper nothing is folded away (the new look's <details> stay out)
     return render(request, 'farm/water_calculator_report.html', context)
 
 
@@ -455,17 +464,22 @@ def history_window(request, owner, now):
 
     zone = zone_of(site_of(owner))
 
-    def moment(name):
+    def moment(name, repeated=False):
         wall = read_moment(request.GET.get(name, ''))
         if wall is None:
             raise BadRequest(name)
         try:
-            return on_site_clock(wall, zone)
+            # `around` (an alarm's opening, as its link writes it): a time the autumn night shows twice is the earlier of
+            # the two; the 12 hours each side hold the opening either way (review C4). A from or a to stays refused.
+            found = on_clock_or_earlier(wall, zone) if repeated else on_site_clock(wall, zone)
         except ValidationError:
             raise BadRequest(name)
+        # in UTC: arithmetic on a moment that keeps its zone is wall-clock arithmetic, 12 hours back over a change of
+        # the clocks would be 11 or 13
+        return found.astimezone(dt_timezone.utc)
 
     if request.GET.get('around'):
-        middle = moment('around')
+        middle = moment('around', repeated=True)
         start, end = middle - timedelta(hours=12), min(middle + timedelta(hours=12), now)
         if end <= start:                        # 12 h or more after now: no window at all, refused (never a 500)
             raise BadRequest('around')
@@ -587,11 +601,7 @@ def range_deffeyes(user, owner, start, end):
             'at': int(newest.at.timestamp()), 'now': str(stale or words['water']), 'now_status': 'warning' if stale else '',
             'stale': str(stale), 'caption': str(caption), 'reason': '',
             # what the chart's labels say, in words: shown in their place where the chart is too narrow for them
-            'scale': str(_('Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, '
-                           'up to %(alkalinity)s meq/L') % {
-                'low': next((line['label']['text'] for line in chart['isolines'] if line['label']), ''),
-                'high': next((line['label']['text'] for line in reversed(chart['isolines']) if line['label']), ''),
-                'dic': formats.number_format(box.dic), 'alkalinity': formats.number_format(box.alkalinity)}),
+            'scale': deffeyes_scale(chart['isolines'], box),
             'said': [[str(words['water']), str(_('pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ '
                                                   '%(co2)s mg/L') % {
                 'ph': formats.number_format(newest.point.ph, 2), 'dic': formats.number_format(newest.point.dic, 3),
@@ -599,6 +609,17 @@ def range_deffeyes(user, owner, start, end):
                 'co2': formats.number_format(newest.point.co2_mg_l, 1)})]]
                     + ([[str(_('No diagram')), str(stale)]] if stale else []),
             'words': {key: str(value) for key, value in words.items()}}
+
+
+def deffeyes_scale(isolines, box):
+    """What a Deffeyes chart's labels say, in words (the pH lines' range, the axes' ends): shown in their place where the
+    chart is too narrow for them (under 480 px; Tank › Water's chart of the time and the calculator's, one rule in
+    static/css/components.css). `isolines` are the chart's (`render`, or `as_props` of it), `box` its axes' ends."""
+    labelled = [line['label']['text'] for line in isolines if line['label']]
+    return str(_('Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, '
+                 'up to %(alkalinity)s meq/L') % {
+        'low': labelled[0] if labelled else '', 'high': labelled[-1] if labelled else '',
+        'dic': formats.number_format(box.dic), 'alkalinity': formats.number_format(box.alkalinity)})
 
 
 def _step_text(step):
@@ -681,8 +702,6 @@ def tank_water(request, pk):
     axis, the sensors' lines and the samples on the same chart, the fish's limits as bands, the NH₃-N worked out per
     sample, gaps shown, the events of the window (`history_data`). Without the new look the address is the unit's
     history on Water chemistry, today's page for it."""
-    from core import ui
-
     unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
     if not ui.is_next(request):
         return redirect(history_url(unit))

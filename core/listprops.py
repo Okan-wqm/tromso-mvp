@@ -91,7 +91,10 @@ def notice(key, tone, text):
     return {'key': key, 'tone': tone, 'text': str(text)}
 
 
-def _pager(page, pager_query):
+def pager(page, pager_query):
+    """The pager of a list page (crud/_pager.html's words): None for one page; else the range, the page and the
+    previous/next links, each keeping the query (`pager_query`, without page=). Every list-page island's props use it: a
+    tab's (list_props) and a page's that is not a tab (sensors/pages.py)."""
     if page is None or page.paginator.num_pages <= 1:
         return None
     at = f'?{pager_query}&page=' if pager_query else '?page='
@@ -103,6 +106,9 @@ def _pager(page, pager_query):
         'previous': {'href': f'{at}{page.previous_page_number()}', 'label': _('Previous')} if page.has_previous() else None,
         'next': {'href': f'{at}{page.next_page_number()}', 'label': _('Next')} if page.has_next() else None,
     }
+
+
+_pager = pager     # the earlier private name, kept for branches that still call it
 
 
 def list_props(view, objects, context):
@@ -138,7 +144,7 @@ def list_props(view, objects, context):
         'table': {'label': str(r.title(view.mount)), 'columns': table['columns'], 'rows': table['rows'],
                   'actionsLabel': _('Actions')},
         'empty': empty,
-        'pager': _pager(context.get('page'), context.get('pager_query', '')),
+        'pager': pager(context.get('page'), context.get('pager_query', '')),
     }
 
 

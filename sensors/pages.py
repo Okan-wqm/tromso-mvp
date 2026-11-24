@@ -33,7 +33,7 @@ def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, 
         'lines': [],
         'table': {'label': label, 'columns': columns, 'rows': rows, 'actionsLabel': _('Actions')},
         'empty': {'title': empty, 'text': None, 'link': None, 'add': None},
-        'pager': L._pager(page, pager_query),     # the tabs' pager (core/listprops.py), the one wording of it
+        'pager': L.pager(page, pager_query),     # the tabs' pager (core/listprops.py), the one wording of it
     }
 
 

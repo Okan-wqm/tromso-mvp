@@ -563,19 +563,36 @@ def void_operation(request, pk):
     return render_page(request, 'farm/stock_void.html', {**context, 'form': StockVoidForm()})
 
 
-def overview_tiles(user):
-    """The production overview's stock figures: units with fish, fish, biomass (for people who may
-    read the stock)."""
+def overview_tiles(user, units=None, stock=None):
+    """The production overview's stock figures: units with fish, fish (with the number of batches they are in), biomass
+    (for people who may read the stock). `units` and `stock`: the read already made (`overview`)."""
     if not user.has_perm(VIEW):
         return []
-    units = list(Tank.objects.all())
-    stock = read.stock_of(units)
+    units = list(Tank.objects.all()) if units is None else units
+    stock = read.stock_of(units) if stock is None else stock
     url = reverse('farm:production_units')
     return [
         {'key': 'stocked', 'label': _('Stocked units'), 'count': len(stock), 'of': len(units),
          'url': f'{url}?occupancy={STOCKED}'},
-        {'key': 'fish', 'label': _('Fish'), 'count': fish(sum(item.count for item in stock.values())), 'url': url},
+        {'key': 'fish', 'label': _('Fish'), 'count': fish(sum(item.count for item in stock.values())), 'url': url,
+         'batches': len({share.batch.pk for item in stock.values() for share in item.shares})},
         {'key': 'biomass', 'label': _('Biomass'),
          'count': tonnes(sum((item.biomass_kg for item in stock.values()), start=0)),
          'url': url},
     ]
+
+
+def overview(user):
+    """The redesigned overview's stock part, from ONE read of the stock: the tiles (`overview_tiles`) and the units whose
+    fish are under a medicine withdrawal today (`holds`: [(unit, [WithdrawalBlock])] in the units' order, each a link to
+    its drawer), what Production units marks on the row (harvest.views.withdrawals). None for a person who may not read
+    the stock."""
+    if not user.has_perm(VIEW):
+        return None
+    units = list(Tank.objects.select_related('production_department__site').order_by('code'))
+    stock = read.stock_of(units)
+    stocked = [unit for unit in units if unit.pk in stock]
+    blocks = harvest_views.withdrawals(stocked)
+    return {'tiles': overview_tiles(user, units, stock),
+            'holds': [{'unit': unit, 'blocks': blocks[unit.pk], 'url': page_url({}, unit=str(unit.pk))}
+                      for unit in stocked if unit.pk in blocks]}

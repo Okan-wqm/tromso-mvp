@@ -8,6 +8,7 @@ from farm.models import Equipment, ProductionDepartment, Site, System, Tank
 from farm.feeding.views import overview_tiles as feeding_tiles
 from farm.stock.views import overview_tiles
 from farm.water.views import RECORD as WATER_RECORD, overview as water_overview
+from hr import read as hr_read, scope as hr_scope
 from reports import duties
 from reports.views import overview_upcoming
 from tasks.views import overview_tiles as task_tiles
@@ -49,6 +50,33 @@ def _upcoming(user):
             'due': [row for row in upcoming['rows'] if not row.overdue],
             'late_duties': [line for line in upcoming['duties'] if line.status == duties.OVERDUE],
             'due_duties': [line for line in upcoming['duties'] if line.status != duties.OVERDUE]}
+
+
+# The words of the HR board's tiles (templates/hr/_board.html says the same), by Board.tiles key.
+TEAM_WORDS = {'upcoming': _('Upcoming'), 'here': _('Here now'), 'not_in': _('Not in yet'), 'absent': _('Absent'),
+              'on_leave': _('On leave'), 'done': _('Done'), 'forgotten': _('Clock-out forgotten')}
+
+
+def team_today(user):
+    """The production team today, for the redesigned overview: hr.read.board of the production people the person may
+    reach (realm production), as its tiles say it on Production › Team › Today & attendance. Each person planned today is
+    in exactly one tile, so the tiles add up to `planned`:
+    - upcoming: the shift has not begun;
+    - here: clocked in, late ones included (`late` says how many);
+    - not_in: the shift has begun, within HR's absent-after time, not clocked in;
+    - absent: past that time, not clocked in, not on leave;
+    - on_leave: approved leave today;
+    - done: clocked out after the shift;
+    - forgotten: a clock-in left open longer than HR's setting (never counted as here or done).
+    Beside them: `unplanned` (here without a plan) and `on_site`, the muster count of every open clock-in on the farm
+    (a number, whoever looks). None for a person who may not read attendance."""
+    if not user.has_perm('hr.view_attendancerecord'):
+        return None
+    board = hr_read.board(user, realm=hr_scope.PRODUCTION)
+    return {'tiles': [{'key': tile.key, 'label': TEAM_WORDS[tile.key], 'count': tile.count} for tile in board.tiles
+                      if tile.key != 'forgotten' or tile.count or board.unplanned_forgotten],
+            'planned': board.planned, 'late': board.late, 'unplanned': board.unplanned, 'on_site': board.on_site,
+            'url': reverse('hr:production_today')}
 
 
 def production_home(request):

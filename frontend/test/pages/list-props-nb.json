@@ -28,11 +28,11 @@
        "label": "Kontoravdelinger",
        "options": [
         {
-         "value": "office:34142bac-03b2-4cba-b165-446f7e619383",
+         "value": "office:98e364e0-2a49-4db9-bea1-3b479f16c7fb",
          "label": "Test Accounts (TAC)"
         },
         {
-         "value": "office:e7176674-24d4-49a3-9df4-23c2ca53fe3f",
+         "value": "office:485b7a93-e64b-4023-8a91-49f4efc72312",
          "label": "Test Office (TOF)"
         }
        ]
@@ -146,13 +146,13 @@
    ],
    "rows": [
     {
-     "key": "9c8d63c9-0056-490d-9a5d-6802c00f6ca4",
+     "key": "52d9b1c8-a209-4d65-b3cb-aa6612634c44",
      "status": null,
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Former",
-       "href": "/hr/team/9c8d63c9-0056-490d-9a5d-6802c00f6ca4/",
+       "href": "/hr/team/52d9b1c8-a209-4d65-b3cb-aa6612634c44/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -210,14 +210,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/team/9c8d63c9-0056-490d-9a5d-6802c00f6ca4/view/",
+       "href": "/hr/team/52d9b1c8-a209-4d65-b3cb-aa6612634c44/view/",
        "label": "Vis Test Former",
        "icon": "search",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/team/9c8d63c9-0056-490d-9a5d-6802c00f6ca4/",
+       "href": "/hr/team/52d9b1c8-a209-4d65-b3cb-aa6612634c44/",
        "label": "Rediger Test Former",
        "icon": "pencil",
        "danger": false
@@ -225,13 +225,13 @@
      ]
     },
     {
-     "key": "b562a6ee-b003-495f-8b6a-4621c6cb94d3",
+     "key": "06156749-9530-48f8-8070-dd8d067efcf2",
      "status": null,
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Person",
-       "href": "/hr/team/b562a6ee-b003-495f-8b6a-4621c6cb94d3/",
+       "href": "/hr/team/06156749-9530-48f8-8070-dd8d067efcf2/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -286,14 +286,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/team/b562a6ee-b003-495f-8b6a-4621c6cb94d3/view/",
+       "href": "/hr/team/06156749-9530-48f8-8070-dd8d067efcf2/view/",
        "label": "Vis Test Person",
        "icon": "search",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/team/b562a6ee-b003-495f-8b6a-4621c6cb94d3/",
+       "href": "/hr/team/06156749-9530-48f8-8070-dd8d067efcf2/",
        "label": "Rediger Test Person",
        "icon": "pencil",
        "danger": false
@@ -343,11 +343,11 @@
        "label": "Produksjonsavdelinger",
        "options": [
         {
-         "value": "production:58329b6f-ad2a-495b-9191-acd52f313c9e",
+         "value": "production:7b4ada65-b2c9-4479-a6b4-94a7c2e18d50",
          "label": "Test Cages (TCG)"
         },
         {
-         "value": "production:b8f5fdf8-1a3c-4bd0-b13c-9f4cd3eb3580",
+         "value": "production:4c95aeef-8c4c-409e-a852-0c373b549e81",
          "label": "Test Hall A (THA)"
         }
        ]
@@ -461,13 +461,13 @@
    ],
    "rows": [
     {
-     "key": "b03565c8-d724-4871-a64b-141c6c674f24",
+     "key": "9cfe2c0d-43e8-4822-83b8-f1f6e525b974",
      "status": null,
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Second",
-       "href": "/production/team/people/b03565c8-d724-4871-a64b-141c6c674f24/",
+       "href": "/production/team/people/9cfe2c0d-43e8-4822-83b8-f1f6e525b974/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -522,14 +522,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/production/team/people/b03565c8-d724-4871-a64b-141c6c674f24/view/",
+       "href": "/production/team/people/9cfe2c0d-43e8-4822-83b8-f1f6e525b974/view/",
        "label": "Vis Test Second",
        "icon": "search",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/production/team/people/b03565c8-d724-4871-a64b-141c6c674f24/",
+       "href": "/production/team/people/9cfe2c0d-43e8-4822-83b8-f1f6e525b974/",
        "label": "Rediger Test Second",
        "icon": "pencil",
        "danger": false
@@ -624,13 +624,13 @@
    ],
    "rows": [
     {
-     "key": "e7176674-24d4-49a3-9df4-23c2ca53fe3f",
+     "key": "485b7a93-e64b-4023-8a91-49f4efc72312",
      "status": null,
      "voided": false,
      "cells": {
       "department": {
        "text": "Test Office",
-       "href": "/hr/departments/e7176674-24d4-49a3-9df4-23c2ca53fe3f/",
+       "href": "/hr/departments/485b7a93-e64b-4023-8a91-49f4efc72312/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -677,14 +677,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/departments/e7176674-24d4-49a3-9df4-23c2ca53fe3f/",
+       "href": "/hr/departments/485b7a93-e64b-4023-8a91-49f4efc72312/",
        "label": "Rediger Test Office",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/departments/e7176674-24d4-49a3-9df4-23c2ca53fe3f/delete/",
+       "href": "/hr/departments/485b7a93-e64b-4023-8a91-49f4efc72312/delete/",
        "label": "Slett Test Office",
        "icon": "trash",
        "danger": true
@@ -692,19 +692,18 @@
      ]
     },
     {
-     "key": "34142bac-03b2-4cba-b165-446f7e619383",
+     "key": "98e364e0-2a49-4db9-bea1-3b479f16c7fb",
      "status": null,
      "voided": false,
      "cells": {
       "department": {
        "text": "Test Accounts",
-       "href": "/hr/departments/34142bac-03b2-4cba-b165-446f7e619383/",
+       "href": "/hr/departments/98e364e0-2a49-4db9-bea1-3b479f16c7fb/",
        "strong": true,
        "chip": null,
        "chips": [],
        "sub": [
-        "TAC",
-        "i Test Office"
+        "TAC · i Test Office"
        ]
       },
       "status": {
@@ -752,14 +751,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/departments/34142bac-03b2-4cba-b165-446f7e619383/",
+       "href": "/hr/departments/98e364e0-2a49-4db9-bea1-3b479f16c7fb/",
        "label": "Rediger Test Accounts",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/departments/34142bac-03b2-4cba-b165-446f7e619383/delete/",
+       "href": "/hr/departments/98e364e0-2a49-4db9-bea1-3b479f16c7fb/delete/",
        "label": "Slett Test Accounts",
        "icon": "trash",
        "danger": true
@@ -846,13 +845,13 @@
    ],
    "rows": [
     {
-     "key": "dcb65920-dcc9-4613-8198-80334b823169",
+     "key": "66097f0d-b42a-48cb-9c74-1910b98050ce",
      "status": "warning",
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Person",
-       "href": "/hr/time/attendance/dcb65920-dcc9-4613-8198-80334b823169/",
+       "href": "/hr/time/attendance/66097f0d-b42a-48cb-9c74-1910b98050ce/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -889,14 +888,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/time/attendance/dcb65920-dcc9-4613-8198-80334b823169/",
+       "href": "/hr/time/attendance/66097f0d-b42a-48cb-9c74-1910b98050ce/",
        "label": "Rett",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/time/attendance/dcb65920-dcc9-4613-8198-80334b823169/delete/",
+       "href": "/hr/time/attendance/66097f0d-b42a-48cb-9c74-1910b98050ce/delete/",
        "label": "Annuller",
        "icon": "trash",
        "danger": true
@@ -1104,13 +1103,13 @@
    ],
    "rows": [
     {
-     "key": "e10ac639-0040-4eca-b401-f6eeb07dbd07",
+     "key": "83274ea7-b550-4df2-95cc-35b691e38ded",
      "status": null,
      "voided": false,
      "cells": {
       "employee": {
        "text": "Test Person",
-       "href": "/hr/leave/e10ac639-0040-4eca-b401-f6eeb07dbd07/view/",
+       "href": "/hr/leave/83274ea7-b550-4df2-95cc-35b691e38ded/view/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1163,7 +1162,7 @@
      "actions": [
       {
        "kind": "post",
-       "href": "/hr/leave/e10ac639-0040-4eca-b401-f6eeb07dbd07/cancel/",
+       "href": "/hr/leave/83274ea7-b550-4df2-95cc-35b691e38ded/cancel/",
        "label": "Kanseller søknaden",
        "icon": "calendar-off",
        "danger": true,
@@ -1242,13 +1241,13 @@
    ],
    "rows": [
     {
-     "key": "1183b6c0-8d94-4549-a9d2-e86c442a5857",
+     "key": "53fdc28e-6de3-48cd-adf2-c65db3958233",
      "status": null,
      "voided": false,
      "cells": {
       "shift": {
        "text": "Test day shift",
-       "href": "/hr/settings/shifts/1183b6c0-8d94-4549-a9d2-e86c442a5857/",
+       "href": "/hr/settings/shifts/53fdc28e-6de3-48cd-adf2-c65db3958233/",
        "strong": true,
        "chip": null,
        "chips": [
@@ -1298,14 +1297,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/settings/shifts/1183b6c0-8d94-4549-a9d2-e86c442a5857/",
+       "href": "/hr/settings/shifts/53fdc28e-6de3-48cd-adf2-c65db3958233/",
        "label": "Rediger Test day shift",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/settings/shifts/1183b6c0-8d94-4549-a9d2-e86c442a5857/delete/",
+       "href": "/hr/settings/shifts/53fdc28e-6de3-48cd-adf2-c65db3958233/delete/",
        "label": "Slett Test day shift",
        "icon": "trash",
        "danger": true
@@ -1313,13 +1312,13 @@
      ]
     },
     {
-     "key": "5af0fc1a-f860-4982-b108-480004900e9b",
+     "key": "3750ff66-af08-4d9d-9818-4399578027d6",
      "status": null,
      "voided": false,
      "cells": {
       "shift": {
        "text": "Test night shift",
-       "href": "/hr/settings/shifts/5af0fc1a-f860-4982-b108-480004900e9b/",
+       "href": "/hr/settings/shifts/3750ff66-af08-4d9d-9818-4399578027d6/",
        "strong": true,
        "chip": null,
        "chips": [
@@ -1371,14 +1370,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/settings/shifts/5af0fc1a-f860-4982-b108-480004900e9b/",
+       "href": "/hr/settings/shifts/3750ff66-af08-4d9d-9818-4399578027d6/",
        "label": "Rediger Test night shift",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/settings/shifts/5af0fc1a-f860-4982-b108-480004900e9b/delete/",
+       "href": "/hr/settings/shifts/3750ff66-af08-4d9d-9818-4399578027d6/delete/",
        "label": "Slett Test night shift",
        "icon": "trash",
        "danger": true
@@ -1441,7 +1440,7 @@
    ],
    "rows": [
     {
-     "key": "171f64ae-499f-49fb-82d2-3a7ff931cfa9",
+     "key": "335d8383-e197-4113-8aaa-b1f8446e162f",
      "status": null,
      "voided": false,
      "cells": {
@@ -1457,7 +1456,7 @@
       },
       "holiday": {
        "text": "Test holiday",
-       "href": "/hr/settings/holidays/171f64ae-499f-49fb-82d2-3a7ff931cfa9/",
+       "href": "/hr/settings/holidays/335d8383-e197-4113-8aaa-b1f8446e162f/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1475,14 +1474,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/settings/holidays/171f64ae-499f-49fb-82d2-3a7ff931cfa9/",
+       "href": "/hr/settings/holidays/335d8383-e197-4113-8aaa-b1f8446e162f/",
        "label": "Rediger Test holiday",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/settings/holidays/171f64ae-499f-49fb-82d2-3a7ff931cfa9/delete/",
+       "href": "/hr/settings/holidays/335d8383-e197-4113-8aaa-b1f8446e162f/delete/",
        "label": "Slett Test holiday",
        "icon": "trash",
        "danger": true
@@ -1550,13 +1549,13 @@
    ],
    "rows": [
     {
-     "key": "2fa91399-fa6f-46d8-98a4-b52546132b77",
+     "key": "5fb7992d-075d-4b09-8061-7366085c78ec",
      "status": null,
      "voided": false,
      "cells": {
       "type": {
        "text": "Test annual leave",
-       "href": "/hr/settings/leave-types/2fa91399-fa6f-46d8-98a4-b52546132b77/",
+       "href": "/hr/settings/leave-types/5fb7992d-075d-4b09-8061-7366085c78ec/",
        "strong": true,
        "chip": null,
        "chips": [],
@@ -1595,14 +1594,14 @@
      "actions": [
       {
        "kind": "link",
-       "href": "/hr/settings/leave-types/2fa91399-fa6f-46d8-98a4-b52546132b77/",
+       "href": "/hr/settings/leave-types/5fb7992d-075d-4b09-8061-7366085c78ec/",
        "label": "Rediger Test annual leave",
        "icon": "pencil",
        "danger": false
       },
       {
        "kind": "link",
-       "href": "/hr/settings/leave-types/2fa91399-fa6f-46d8-98a4-b52546132b77/delete/",
+       "href": "/hr/settings/leave-types/5fb7992d-075d-4b09-8061-7366085c78ec/delete/",
        "label": "Slett Test annual leave",
        "icon": "trash",
        "danger": true

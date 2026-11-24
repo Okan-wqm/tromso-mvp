@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "7c8c0a0e-5523-42d0-95f6-20edd045e92b",
+    "key": "e1c92060-f99f-46b7-81a4-4c4e90217b39",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/7c8c0a0e-5523-42d0-95f6-20edd045e92b/",
+    "href": "/sites/e1c92060-f99f-46b7-81a4-4c4e90217b39/",
     "type": "Landbasert anlegg",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "11d712dc-f092-4c77-b9d8-76031080013b",
+    "key": "f0b6751c-2631-4806-8d5b-0968df43101f",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/11d712dc-f092-4c77-b9d8-76031080013b/",
+    "href": "/sites/f0b6751c-2631-4806-8d5b-0968df43101f/",
     "type": "Merd",
     "status": null,
     "units": "1",
@@ -244,7 +244,7 @@
   "critical": "Kritisk",
   "entries": [
    {
-    "key": "1703064b-e330-475f-b472-b752ec9cb65d",
+    "key": "569caf37-f44e-4da3-9222-613de96092db",
     "action": "Opprettet",
     "critical": false,
     "record": "Kunnskapsoppføring · A test statement.",
@@ -256,7 +256,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "1cd73f8f-5833-4dde-80a7-4205e8030be8",
+    "key": "9a8d3ce3-6740-42a0-99a1-032ec6c0873a",
     "action": "Opprettet",
     "critical": false,
     "record": "Dokument · Test document",
@@ -268,7 +268,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "bf8c890c-dff3-4c2b-8f3f-e65886ead0a5",
+    "key": "85576856-75ba-42da-b461-2c7ff3547de8",
     "action": "Opprettet",
     "critical": false,
     "record": "Lagerplass · Test Store (TS-01)",
@@ -280,7 +280,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "bfacee2d-7047-4e46-aba5-4f762b5d0deb",
+    "key": "b6882f1f-32a9-4649-91a3-7fd178bbf78a",
     "action": "Opprettet",
     "critical": false,
     "record": "Vannprøve · Water sample · TT-01 › Middle · 2026-11-23 12:42",
@@ -292,7 +292,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "e794db26-b486-48e8-9f65-db4cdcd9d8c4",
+    "key": "19158ea9-2513-453a-b1f2-e5ca6c6d0eeb",
     "action": "Endret",
     "critical": false,
     "record": "Enhet · Unit TM-01 (TM-01)",
@@ -314,10 +314,10 @@
   },
   "rows": [
    {
-    "key": "548e50c2-6b65-4dd2-9e98-523d64ea1435",
+    "key": "ae67faa2-ff38-4c19-8463-0684de563de5",
     "text": "A test statement.",
     "source": "Test document (u.å.)",
-    "href": "/knowledge/entries/548e50c2-6b65-4dd2-9e98-523d64ea1435/view/",
+    "href": "/knowledge/entries/ae67faa2-ff38-4c19-8463-0684de563de5/view/",
     "kind": "neutral",
     "chip": "Utkast"
    }

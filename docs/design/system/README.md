@@ -168,6 +168,32 @@ Neither `form` nor `prose` leaves a dead band: what a wider window adds becomes 
 `frontend/test/layout.browser.test.ts` holds a fluid page's content to the window's right edge less the gutter at 390,
 1024, 1280, 1440, 1920, 2560, 3440, 3840 and 5120 px.
 
+## The new look
+
+The Claude Design console of 2026-11-23 (the Industry design system; the exported project is in
+`F:\dev\balik-notes\design-in`, its main file `Suderra Console.dc.html`, direction B) is the same patterns in another shape,
+behind `?ui=next` (`core/ui.py`, `<html data-ui="next">`) until the owner switches:
+
+- **Shape.** Square: `radius-chip`, `radius-control` and `radius-object` are 0 (only avatars and status dots stay round).
+  Plates (`ui-plate`) and the one primary button carry the `+` registration marks at their corners, drawn by one
+  pseudo-element; nothing else does. The page lies on grid paper (24 px, the hairline at 45 %).
+- **Type.** Barlow 600 (`--font-display`) for headings, plate titles, buttons, tabs, the rail's section names and
+  readouts; Atkinson Hyperlegible Next stays the data face. Sizes scale with `--k`: 1.04 on a phone, 1.08 at the desk,
+  1.15 from 1800 px, 1.55 on the wall (`--fs-h1` 30, `--fs-h2` 19, `--fs-body` 15, `--fs-cell` 14, `--fs-label` 13,
+  `--fs-head` 12, all × k). Column heads and group names are sentence case, 12/600, +0.04em (never upper case).
+- **Density.** Controls `--h` 40 (48 on a coarse pointer, 56 on the wall); cells 7 × 12 px; plates 16 px apart; the page's
+  gutter `--edge` 32 (24 under 1100 px, 16 on a phone, 48 on the wall); table rows 44 · 56 · 64.
+- **Shell.** The rail is the flat `surface-rail` with the brand stripe; its icons take the rail's ink (the area hue stays
+  on the page head); the active line is the rail-active fill with a 3 px brand bar. The top bar adds the status strip
+  (open alarms, filled critical when one is critical; people on site; the company's clock) from 1100 px. Over the title,
+  the menu group (Facility, Operations); the page icon in a 40 px hairline square.
+- **Patterns added for it** (`ds.css`, and the same classes in the islands, `frontend/islands/ui`): `ui-plate` and
+  `ui-plates` (a 12-column grid, `data-span` 4, 6, 8, 12), `ui-tile` and `ui-tiles` (a stat tile: label, figure, sub-line,
+  source; a 4 px edge and a glyph only when abnormal), `ui-notice` (safety, flash, error), `ui-empty`, `ui-loading`,
+  `ui-error`, `ui-chart` (the chart frame), `ui-unit` (a unit inside a field's frame), `ui-fixed`, `ui-checks`,
+  `ui-form-grid`, `ui-seg`, `ui-strip`; button variants `ghost` and `danger-text`, and busy (`data-pending` or
+  `aria-busy`, a turning ring in place of the icon).
+
 ## Components
 
 One rule set per pattern, in `static/css/ds.css`, read by every page; it reads only tokens. Each pattern's name is the
@@ -188,7 +214,7 @@ links `base.css` and not `ds.css` in this place.
 | Filter bar | `ui-toolbar` | one wrapping row, a labelled control's label above it, the last button at the right | `toolbar`, `filter-bar`, `monitor-filters`, `feeding-filters`, `water-filters` |
 | Table | `ui-table` in `ui-table-wrap` | sunken head, rows with hover, `.num` right-aligned on one line; the frame scrolls and shades the side that goes on | `data-table` in `table-wrap` |
 | Tabs | `ui-tabs` of `ui-tab` | a button tab (`aria-selected`) and a link tab (`aria-current="page"`) look alike: the action underline; `ui-count` beside a name; `tab-error`; a strip longer than its row wraps onto rows, so every tab, the current one first of all, is on the screen at any width (it used to scroll sideways, and on a phone the current tab of `/reports/?kind=smolt` lay out of sight) | `tabs`/`tab`, `view-tabs`/`view-tab`, `view-count` (every template migrated) |
-| Badge | `ui-chip` with `data-status` (ok, note, warning, critical, hold, neutral) or `data-state` (nodata, stale) | glyph and word, a ladder of fill weight | `badge` with `badge-<status>` (each mapped to a tone) |
+| Badge | `ui-chip` with `data-status` (ok, note, warning, critical, hold, neutral, accent) or `data-state` (nodata, stale) | glyph and word, a ladder of fill weight | `badge` with `badge-<status>` (each mapped to a tone) |
 | Card | `ui-card` (`ui-sheet` for a frame without padding) | flat; raised one step when it is a link, and a link card keeps the page's focus ring beside that shadow (`:focus-visible`, WCAG 2.4.7; a `tw:` utility that sets a `box-shadow` on a link, like a metric card's status edge, adds its own focus variant) | `card`, `tile`, `calc-card` |
 | Page head | `ui-head` | area chip, `h1`, status line, actions | (one, in `app_base.html`) |
 

@@ -73,7 +73,7 @@ class FrameTests(MonitoringCase):
 
 
 # ---- the colours --------------------------------------------------------------------------------------------------
-# The design system's themes (static/css/tokens.css): the default block (:root, Industry) and each theme's own.
+# The design system's themes (static/css/tokens.css): the default block (:root, Fjord) and each theme's own.
 THEMES = ('industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks')
 
 

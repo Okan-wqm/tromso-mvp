@@ -11,9 +11,10 @@ import { createServer, type Server } from 'node:http';
 import { extname, join, resolve } from 'node:path';
 
 import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
+import { policy } from './csp.js';
 import { linksOf, mirrors } from './sheets.js';
 
-const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'";
+const CSP = policy();                    // config/settings.py's, read by frontend/test/csp.ts
 const OPEN = '<span class="ui-strip-poll" data-poll="{{ item.poll }}" data-poll-every="30" data-poll-state="loading" data-unread-text="';
 const FRAGMENT = '<a class="ui-strip-item" href="/alarms/" data-strip="alarms" data-status="critical">1 unit critical</a>';
 

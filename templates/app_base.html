@@ -2,7 +2,7 @@
 {# The signed-in console (docs/design/system): the rail, the top bar, the page head and, below 1024 px, the bottom bar. #}
 {% comment %} In the new look (data-ui="next", core/ui.py: ?ui=next) the same markup is drawn as the design console draws it
    (the ds and app style sheets), with the status strip in the top bar and the menu group over the title. {% endcomment %}
-<html lang="{{ LANGUAGE_CODE }}" data-theme="{{ THEME|default:"industry" }}"{% if UI_NEXT %} data-ui="next"{% endif %}{% block html_attrs %}{% endblock %}>
+<html lang="{{ LANGUAGE_CODE }}" data-theme="{{ THEME|default:"fjord" }}"{% if UI_NEXT %} data-ui="next"{% endif %}{% block html_attrs %}{% endblock %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">

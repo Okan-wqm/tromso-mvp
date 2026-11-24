@@ -374,10 +374,11 @@
 .ui-row-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
 [data-ui="next"] .ui-row-actions .icon-button { width: 36px; height: 36px; }
 
-/* A segmented choice (Open alarms | Every alarm): the pressed one is outlined twice in the action colour, with a check. */
-.ui-seg { display: inline-flex; }
-.ui-seg > * { margin-right: -1px; }
-.ui-seg > [aria-pressed="true"] { position: relative; z-index: 1; border: 2px solid var(--action); background: var(--action-tint); color: var(--action); }
+/* A segmented choice of the new look (Open alarms | Every alarm): the pressed one is outlined twice in the action colour,
+   with a check. Its own name: the classic look's .ui-seg (ui.css, Production units' filters) is another control. */
+.ui-segmented { display: inline-flex; }
+.ui-segmented > * { margin-right: -1px; }
+.ui-segmented > [aria-pressed="true"] { position: relative; z-index: 1; border: 2px solid var(--action); background: var(--action-tint); color: var(--action); }
 
 /* Fields: label above (13/600), help below (12, text-3), the unit inside the control's frame, the error in words with
    the octagon and a 2 px critical edge. */
@@ -483,7 +484,7 @@
   display: flex; flex-direction: column; gap: 2px; min-width: 0;
   padding: var(--cell-py, var(--space-3)) var(--cell-px, var(--space-4));
   border-right: 1px solid var(--line-hair); border-bottom: 1px solid var(--line-hair);
-  color: var(--text-1); text-decoration: none;
+  background: var(--plate, var(--surface-sheet)); color: var(--text-1); text-decoration: none;
 }
 a.ui-tile:hover { background: var(--surface-sunken); color: var(--text-1); }
 .ui-tile[data-status="critical"] { box-shadow: var(--edge-crit); }
@@ -495,8 +496,12 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-tile-label .icon { flex: none; width: var(--icon-inline); height: var(--icon-inline); }
 .ui-tile[data-status="critical"] .ui-tile-label .icon { color: var(--crit); }
 .ui-tile[data-status="warning"] .ui-tile-label .icon { color: var(--warn); }
-.ui-tile-figure { overflow: hidden; font-family: var(--font-display); font-size: clamp(var(--fs-figure), 14cqi, var(--fs-tile)); font-weight: 600; line-height: 1.05; white-space: nowrap; text-overflow: ellipsis; }
-.ui-tiles[data-size="small"] .ui-tile-figure { font-size: clamp(var(--fs-figure), 14cqi, var(--fs-h1)); }
+/* The classic look's figure is the metric card's as it was: the readout step (28 px) in the text face, never cut. The new
+   look's is the design's: Barlow, as large as the cell allows; one too long for its cell ends in an ellipsis and keeps
+   its whole value in its title (Tiles.tsx, _metric_card.html). */
+.ui-tile-figure { font-size: var(--fs-readout); font-weight: 600; line-height: 1.2; white-space: nowrap; }
+[data-ui="next"] .ui-tile-figure { overflow: hidden; font-family: var(--font-display); font-size: clamp(var(--fs-figure), 14cqi, var(--fs-tile)); line-height: 1.05; text-overflow: ellipsis; }
+[data-ui="next"] .ui-tiles[data-size="small"] .ui-tile-figure { font-size: clamp(var(--fs-figure), 14cqi, var(--fs-h1)); }
 .ui-tile[data-status="critical"] .ui-tile-figure { color: var(--crit-text); }
 .ui-tile[data-status="warning"] .ui-tile-figure { color: var(--warn-text); }
 .ui-tile-sub { color: var(--text-2); font-size: var(--fs-small); }

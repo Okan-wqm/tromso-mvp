@@ -758,7 +758,8 @@ holding "Loading the cards…" (`templates/monitoring/_loading.html`), the pane'
 windows' place. It has no band, no tally, no card, no state word and no state colour, so a page whose cards have not come
 never reads as all is well, and it reads no card source (no stock, feeding or water read, no change token): it costs the same
 few queries whatever the farm. The grid is drawn with `data-poll-state="loading"` and its address carries no token, so
-`frontend/poll.ts` asks for the fragment at once and its first answer is always the cards (200), with the next address
+`frontend/poll.ts` asks for the fragment at once (as soon as every script of the page has run, so `announce.ts` is in
+place to hear a first failure) and its first answer is always the cards (200), with the next address
 (`X-Poll-Next`), from which the polls go on as below; the fragment replaces the placeholder by key, and that first fill says
 nothing aloud (it is the first load); then the page goes to the card a `#card-<unit>` address names, as a page drawn
 whole does. A first answer that fails (the 503 of a source the cards need, a server error, no answer within 35 s, a 204,
@@ -5290,7 +5291,9 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   draws again as it is filled in (`data-live`: its `data-live-part`s are swapped, its fields' errors put
   under them, the address kept in step; the water calculator), a list that follows new rows
   (`data-scroll-end`) and a text box sent with Enter (`data-submit-on-enter`). It is THE one polling
-  implementation, and `watch(element)` is what other scripts import. Every request has a 20 s timeout, each
+  implementation, and `watch(element)` is what other scripts import. Nothing is asked before every module script
+  of the page has run (DOMContentLoaded): an element watched earlier waits, a `poll:now` sent to it meanwhile kept, so
+  a script that listens (announce.ts) never misses the first answer whatever the scripts' order. Every request has a 20 s timeout, each
   wait a few per cent shorter or longer by chance (screens never line up), a failure doubles the wait up to
   a minute, nothing is asked while the page is hidden, one shared listener serves every element and an
   element that left the page is let go. The element carries `data-poll-state` (`live`, `stale` after two

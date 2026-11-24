@@ -29,7 +29,10 @@ def props_of(html):
 class TeamListNextTests(PeopleTestCase):
     def setUp(self):
         super().setUp()
+        # Company › HR lists the office's people (Cy Charlie in Finance, and those placed nowhere); Production › Team the
+        # production departments' (Ann Alfa, Bob Bravo): the realm (hr.scope)
         self.left = employee('E-9', 'Delta', 'Dag', left_on='2026-01-31')
+        self.unplaced = employee('E-10', 'Echo', 'Eve')
         self.client.force_login(self.hr)
 
     def pages(self, url, **query):
@@ -56,13 +59,16 @@ class TeamListNextTests(PeopleTestCase):
                          [reverse('hr:production_employee_detail', args=[self.in_a.pk]),
                           reverse('hr:production_employee_edit', args=[self.in_a.pk])])
         self.assertEqual(props['toolbar']['add']['href'], reverse('hr:production_employee_create'))
+        _old, _new, props = self.pages(reverse('hr:employee_list'))
+        rows = {row['cells']['employee']['text']: row for row in props['table']['rows']}
+        self.assertEqual(rows['Cy Charlie']['cells']['employee']['href'], reverse('hr:employee_edit', args=[self.in_fin.pk]))
         self.assertEqual(rows['Dag Delta']['cells']['status']['chip']['kind'], 'neutral')
         self.assertEqual(rows['Dag Delta']['cells']['department']['chip']['kind'], 'warning')
 
     def test_the_search_and_the_filters_are_the_addresss_read_by_the_server(self):
-        old, new, props = self.pages(reverse('hr:employee_list'), q='Alfa', status='current', tab='x')
-        self.assertEqual([row['cells']['employee']['text'] for row in props['table']['rows']], ['Ann Alfa'])
-        self.assertEqual(props['toolbar']['search']['value'], 'Alfa')
+        old, new, props = self.pages(reverse('hr:employee_list'), q='e', status='current', tab='x')
+        self.assertEqual(sorted(row['cells']['employee']['text'] for row in props['table']['rows']), ['Cy Charlie', 'Eve Echo'])
+        self.assertEqual(props['toolbar']['search']['value'], 'e')
         filters = {each['name']: each for each in props['toolbar']['filters']}
         self.assertEqual(filters['status']['value'], 'current')
         self.assertEqual(props['toolbar']['keep'], [{'name': 'tab', 'value': 'x'}])
@@ -75,10 +81,11 @@ class TeamListNextTests(PeopleTestCase):
 
     def test_the_pager_keeps_the_search_and_the_filters(self):
         with mock.patch.object(EmployeeResource, 'page_size', 1):
-            old, new, props = self.pages(reverse('hr:employee_list'), status='current', page='2')
+            old, new, props = self.pages(reverse('hr:employee_list'), q='e', page='2')
         pager = props['pager']
-        self.assertEqual(pager['previous']['href'], '?status=current&ui=next&page=1')
-        self.assertEqual(pager['next']['href'], '?status=current&ui=next&page=3')
+        self.assertEqual(len(props['table']['rows']), 1)
+        self.assertEqual(pager['previous']['href'], '?q=e&ui=next&page=1')
+        self.assertEqual(pager['next']['href'], '?q=e&ui=next&page=3')
         self.assertEqual(unsaid(old.replace('ui=classic', 'ui=next'), props, new_html=new), [])
 
     def test_a_tab_without_its_new_list_keeps_the_classic_list(self):
@@ -114,7 +121,7 @@ LISTS = {
 }
 
 
-@override_settings(ISLANDS_MANIFEST=MANIFEST)
+@override_settings(ISLANDS_MANIFEST=MANIFEST, ALLOWED_HOSTS=['localhost', 'testserver'])
 class EveryListOnTheTestWorldTests(TestCase):
     """The test world (core/test_world.py), its clock pinned: every HR list in the new look says all its classic page says,
     in three languages, and a row's links are the record's own pages (no dialog)."""

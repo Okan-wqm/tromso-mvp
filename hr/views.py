@@ -13,9 +13,10 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.http import require_POST
 
-from core import navigation, query
+from core import navigation, query, stack
 from core.crud import done, mount_of, mounted_name, render_page
 from core.dates import read_day
+from core.ui import is_next
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
@@ -184,19 +185,46 @@ def _today_context(request):
             'can_enter': request.user.has_perm('hr.add_attendancerecord'), 'states': rules.STATES}
 
 
+# The board's tiles as the parts of the people planned today (each such person in exactly one: read.TILES), in the new
+# look's stacked bar: their words (the tiles' msgids) and tones.
+PLANNED_PARTS = (('upcoming', 'hold'), ('here', 'ok'), ('not_in', 'warning'), ('absent', 'critical'),
+                 ('on_leave', 'note'), ('done', 'neutral'), ('forgotten', 'warning'))
+
+
+def _tile_words():
+    return {'upcoming': _('Upcoming'), 'here': _('Here now'), 'not_in': _('Not in yet'), 'absent': _('Absent'),
+            'on_leave': _('On leave'), 'done': _('Done'), 'forgotten': _('Clock-out forgotten')}
+
+
+def _today_next(request, context):
+    """The new look's board (hr/_board_next.html): the classic board's context and the people planned today as a stacked
+    bar of the board's own tiles, which add up to Planned today."""
+    counts, words = {tile.key: tile.count for tile in context['board'].tiles}, _tile_words()
+    tones = dict(PLANNED_PARTS)
+    return {**context, 'planned_stack': stack.stack(
+        _('Planned today'), [stack.part(key, words[key], counts.get(key, 0), tones[key]) for key, _tone in PLANNED_PARTS])}
+
+
 def today(request):
-    """Today & attendance: who is where now, worked out on each site's clock, with the person's own clock in and out."""
+    """Today & attendance: who is where now, worked out on each site's clock, with the person's own clock in and out. The
+    new look (core.ui.is_next) is drawn by the server too (hr/today_next.html), so the one poll draws its board again."""
     if not request.user.has_perm('hr.view_attendancerecord'):
         raise PermissionDenied
     place = navigation.page(mounted_name('hr:today', mount_of(request)))
-    return render(request, 'hr/today.html', {'title': place.entry.label, 'eyebrow': place.heading,
-                                             'base_template': 'app_base.html', **_today_context(request)})
+    context = {'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html',
+               **_today_context(request)}
+    if is_next(request):
+        return render(request, 'hr/today_next.html', _today_next(request, context))
+    return render(request, 'hr/today.html', context)
 
 
 def today_board(request):
-    """The board alone, as the page polls it (frontend/poll.ts): the server draws every figure again."""
+    """The board alone, as the page polls it (frontend/poll.ts): the server draws every figure again, in the look the page
+    is in (the cookie the poll sends)."""
     if not request.user.has_perm('hr.view_attendancerecord'):
         raise PermissionDenied
+    if is_next(request):
+        return render(request, 'hr/_board_next.html', _today_next(request, _today_context(request)))
     return render(request, 'hr/_board.html', _today_context(request))
 
 
@@ -225,7 +253,7 @@ def team_overview(request):
     page = query.number(request.GET.get('page', ''), least=1) or 1
     searched = request.GET.get('q', '').strip()
     place = navigation.page(mounted_name('hr:overview', mount_of(request)))
-    return render(request, 'hr/overview.html', {
+    return render(request, 'hr/overview_next.html' if is_next(request) else 'hr/overview.html', {
         'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': searched,
         'overview': read.overview(request.user, start, department, page, query=searched, realm=scope.realm_for(request)),
         'departments': units.choices(kinds=[scope.realm_for(request)]),

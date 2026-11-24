@@ -74,6 +74,7 @@ class SchedulingSettingsResource(Resource):
     url_prefix = 'hr/settings/scheduling'
     actions = ('change',)
     list_template = 'hr/settings_list.html'
+    list_template_next = 'hr/settings_next.html'
     icon = 'settings'
 
     @classmethod

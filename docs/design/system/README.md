@@ -1,4 +1,4 @@
-Suderra Platform is the design system of the Suderra fish-farm platform: a fish farm's whole day in one calm, legible console that a newcomer reads at a glance and an operator trusts with wet hands at the tank side. Its colour comes from the Claude Design console of 2026-11-23 — Industry, steel on a light technical ground, the default — and from the Norwegian coast — fjord water, the polar night, the northern lights, kelp and salmon — as six themes that share one grammar: a dark rail, a pale or deep canvas, slate greys, and a single brand accent on the rail. Colour runs in two channels that never mix: the area hues say where you are (navigation, page heads, module icons), the status colours say what is wrong (and only that).
+Suderra Platform is the design system of the Suderra fish-farm platform: a fish farm's whole day in one calm, legible console that a newcomer reads at a glance and an operator trusts with wet hands at the tank side. Its colour comes from the design console of 2026-11-23 — Industry, steel on a light technical ground, the default — and from the Norwegian coast — fjord water, the polar night, the northern lights, kelp and salmon — as six themes that share one grammar: a dark rail, a pale or deep canvas, slate greys, and a single brand accent on the rail. Colour runs in two channels that never mix: the area hues say where you are (navigation, page heads, module icons), the status colours say what is wrong (and only that).
 
 This release covers the **shell** (rail sidebar and top bar) and three **Production** screens: Meal board, Production units and Water chemistry. Login and the other panels are out of scope for now.
 
@@ -35,7 +35,7 @@ Use the files in **Logos**: `suderra-mark-disc.png` (the fish on a white disc) i
 
 ## Colour
 
-Six themes, the design's set (Claude Design project `Suderra Console`, 2026-11-23, approved by the owner), chosen per person with a cookie (never from the OS). Industry is the default; the other five are each one place on the Norwegian coast, with the design's values unchanged from tokens v2. All share the same role tokens, so a template written once looks right in every theme.
+Six themes, the design's set (the design project `Suderra Console`, 2026-11-23, approved by the owner), chosen per person with a cookie (never from the OS). Industry is the default; the other five are each one place on the Norwegian coast, with the design's values unchanged from tokens v2. All share the same role tokens, so a template written once looks right in every theme.
 
 | Theme | `data-theme` | Kind | The picture | Accent (`brand`) |
 |---|---|---|---|---|
@@ -170,7 +170,7 @@ Neither `form` nor `prose` leaves a dead band: what a wider window adds becomes 
 
 ## The new look
 
-The Claude Design console of 2026-11-23 (the Industry design system; the exported project is in
+The design console of 2026-11-23 (the Industry design system; the exported project is in
 `F:\dev\balik-notes\design-in`, its main file `Suderra Console.dc.html`, direction B) is the same patterns in another shape,
 behind `?ui=next` (`core/ui.py`, `<html data-ui="next">`) until the owner switches:
 

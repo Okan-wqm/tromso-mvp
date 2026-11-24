@@ -1,4 +1,4 @@
-"""The console's look (docs/design/system/README.md, "The new look"): the classic look, or the new one of the Claude Design
+"""The console's look (docs/design/system/README.md, "The new look"): the classic look, or the new one of the the design project
 console of 2026-11-23 (the Industry design system: square hairline plates with registration marks, Barlow headings, the
 status strip in the top bar). The new look is previewed, page by page, behind `?ui=next`; the classic look stays the
 default until the owner switches (frontend redesign, slice S8).

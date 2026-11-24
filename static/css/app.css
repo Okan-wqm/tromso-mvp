@@ -539,7 +539,7 @@
 .content[data-measure="form"] .field textarea { max-width: 75ch; }
 
 /* ---------- The shell in the new look (data-ui="next", core/ui.py) ----------
-   The same markup as above, drawn as the Claude Design console draws it (F:\dev\balik-notes\design-in, "Suderra
+   The same markup as above, drawn as the design console draws it (F:\dev\balik-notes\design-in, "Suderra
    Console.dc.html", direction B): a flat steel rail with the brand stripe and square lines, Barlow for the wordmark, the
    panel switch and the section names; rail icons in the rail's ink (the area hue stays on the page head's chip); a top
    bar with the status strip; the page on grid paper with the menu group over its title. Sizes are the look's tokens. */
@@ -583,7 +583,7 @@
 [data-ui="next"] .user-trigger { min-height: var(--control-h); font-size: var(--fs-body); }
 
 [data-ui="next"] .content {
-  display: flex; flex-direction: column; gap: var(--gap);
+  display: flex; flex-direction: column; flex: 1; gap: var(--gap);
   padding: var(--space-5) var(--edge) var(--space-7);
   background-image: linear-gradient(var(--grid-paper) 1px, transparent 1px), linear-gradient(90deg, var(--grid-paper) 1px, transparent 1px);
   background-size: 24px 24px; background-position: -1px -1px;
@@ -603,3 +603,4 @@
   [data-ui="next"] .ui-bottombar { border-top: 1px solid var(--line-hair); }
   [data-ui="next"] .ui-bottombar-link[aria-current="page"]::before { left: 0; right: 0; }
 }
+[data-ui="next"] :is(.rail-badge, .menu-badge) { border-radius: 0; }

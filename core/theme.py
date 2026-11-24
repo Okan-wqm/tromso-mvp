@@ -1,4 +1,4 @@
-"""The console's colour theme (docs/design/system/README.md, Colour): the six themes of the design (Claude Design, Suderra
+"""The console's colour theme (docs/design/system/README.md, Colour): the six themes of the design (the design project Suderra
 Console, 2026-11-23): Industry (the default, day: steel on a light technical ground) and five places on the Norwegian
 coast, Fjord (day), Polarnatt (night), Nordlys (night, for the monitoring wall), Tang (day) and Laks (warm day). The person
 picks one in the user menu; a cookie keeps it and the server writes it on <html data-theme>, so the first paint already

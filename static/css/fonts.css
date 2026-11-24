@@ -1,7 +1,7 @@
 /* The typefaces, served from this server (static/fonts, SIL Open Font License 1.1, THIRD_PARTY.md): no request
    leaves the farm's network and the console reads the same offline on site. Latin and Latin Extended (Turkish ğ ş ı İ,
    Norwegian æ ø å). Atkinson Hyperlegible Next is variable 400–700; Bricolage Grotesque 600 with its optical size axis (the display face of
-   the classic look); Barlow 600 and 700, the headings and readouts of the new look (Claude Design console, data-ui="next"). */
+   the classic look); Barlow 600 and 700, the headings and readouts of the new look (the design console, data-ui="next"). */
 @font-face {
   font-family: "Atkinson Hyperlegible Next";
   font-style: normal;

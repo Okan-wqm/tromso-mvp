@@ -289,7 +289,7 @@
 :is(.tile, a.ui-card):hover { border-color: var(--action); }
 
 /* ============================================================================================ The new look ===
-   The Claude Design console of 2026-11-23 (F:\dev\balik-notes\design-in, "Suderra Console.dc.html", direction B, the
+   The design console of 2026-11-23 (F:\dev\balik-notes\design-in, "Suderra Console.dc.html", direction B, the
    design's default; docs/design/system/README.md, "The new look"): the same patterns, drawn as the Industry design
    system draws them. <html data-ui="next"> turns it on (core/ui.py: ?ui=next, kept in a cookie); its tokens are the
    `look` block of tokens.json (square objects, Barlow headings, sizes that scale with --k). The rules below are only what
@@ -317,8 +317,8 @@
 
 /* The registration marks: a "+" at each corner of a plate and of the one primary button, drawn outside the box by one
    pseudo-element (no extra markup). ui-marks puts them on anything else the design frames. */
-[data-ui="next"] :is(.ui-plate, .ui-marks, .ui-btn[data-variant="primary"]) { position: relative; }
-[data-ui="next"] :is(.ui-plate, .ui-marks, .ui-btn[data-variant="primary"])::before {
+[data-ui="next"] :is(.ui-plate, .ui-marks, .ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger)) { position: relative; }
+[data-ui="next"] :is(.ui-plate, .ui-marks, .ui-btn[data-variant="primary"], .button:not(.button-ghost, .button-danger))::before {
   content: ""; position: absolute; inset: -6px; pointer-events: none;
   background:
     linear-gradient(var(--mark), var(--mark)) left 5px top 0 / 1px 11px no-repeat,

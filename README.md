@@ -5402,7 +5402,7 @@ validation and every chemistry judgement; the island draws the finished values i
 
 ### The new look (`?ui=next`)
 
-The Claude Design console of 2026-11-23 (`F:\dev\balik-notes\design-in`; docs/design/system/README.md, The new look) is
+The design console of 2026-11-23 (`F:\dev\balik-notes\design-in`; docs/design/system/README.md, The new look) is
 previewed on every page behind `?ui=next`: `core/ui.py` keeps it in a cookie (`ui`) until `?ui=classic`, and
 `app_base.html` writes `data-ui="next"` on `<html>`. The same markup is drawn square and hairline-framed with Barlow
 headings (the `look` block of tokens.json, ds.css and app.css under `[data-ui="next"]`), with the status strip in the

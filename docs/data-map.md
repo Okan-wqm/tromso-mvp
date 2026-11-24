@@ -1789,7 +1789,7 @@ A production system of a site: a RAS, a pond, a cage line, a hatchery.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › systems
 - **forms**: `SystemForm`
 - **constraints**: uq_systems_site_code_live (unique: site, code); chk_systems_total_volume (check); chk_systems_max_biomass (check); chk_systems_not_its_own_parent (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 36 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 37 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3393,7 +3393,7 @@ Where a channel's values belong over a time range: a sampling point or a system 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_binding
 - **forms**: `BindForm`, `BindingForm`, `DeviceMoveForm`
 - **constraints**: chk_sensors_binding_one_target (check); chk_sensors_binding_period (check); chk_sensors_binding_role (check); ex_sensors_binding_channel_period (exclusion: channel, valid_from, valid_to)
-- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 5 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3453,7 +3453,7 @@ One value a device sends: what it measures (a quantity of sensors/quantities.py)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_channel
 - **forms**: `ChannelForm`
 - **constraints**: uq_sensors_channel_code_live (unique: device, code); chk_sensors_channel_code (check); chk_sensors_channel_name (check); chk_sensors_channel_quantity (check); chk_sensors_channel_unit_factor (check); chk_sensors_channel_unit_offset (check); chk_sensors_channel_fresh_heartbeats (check); chk_sensors_channel_source (check); chk_sensors_channel_value_path (check); chk_sensors_channel_protocol (check); chk_sensors_channel_address (check); chk_sensors_channel_reduction (check); chk_sensors_channel_deadband (check); chk_sensors_channel_heartbeat (check); chk_sensors_channel_range (check); chk_sensors_channel_state (check); chk_sensors_channel_ph_scale (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 12 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3713,7 +3713,7 @@ The ingest service’s heartbeat per broker connection: connected or not, messag
 - **read**: sensors.views.home (`/sensors/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_ingest_status
 - **constraints**: chk_sensors_ingest_status_queue (check)
-- **tests that mention it**: `core/test_world.py`, `sensors/tests/test_contract.py`, `sensors/tests/test_operations.py` and 1 more
+- **tests that mention it**: `core/test_world.py`, `sensors/tests/test_contract.py`, `sensors/tests/test_operations.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

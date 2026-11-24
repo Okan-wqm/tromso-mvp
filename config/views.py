@@ -11,6 +11,7 @@ from farm.water.views import RECORD as WATER_RECORD, overview as water_overview
 from core.stack import part, stack
 from core.ui import is_next
 from hr import read as hr_read, scope as hr_scope
+from hr.views import PLANNED_PARTS
 from reports import duties
 from reports.views import overview_upcoming
 from tasks.views import overview_tiles as task_tiles
@@ -84,18 +85,17 @@ def team_today(user):
             'url': reverse('hr:production_today')}
 
 
-TEAM_TONES = {'upcoming': 'hold', 'here': 'ok', 'not_in': 'warning', 'absent': 'critical', 'on_leave': 'note',
-              'done': 'neutral', 'forgotten': 'warning'}       # the HR board's bar's (hr.views.PLANNED_PARTS)
+TEAM_TONES = dict(PLANNED_PARTS)        # the HR board's bar's tones, one list (hr.views.PLANNED_PARTS)
 
 
 def _next_parts(user, stock_part):
     """What the new look's Production › Overview says beyond the classic page (templates/_production_overview.html under
-    `next`): the fish's batch count on its card, the units under a medicine withdrawal today in Needs attention (each a
+    `new_look`): the fish's batch count on its card, the units under a medicine withdrawal today in Needs attention (each a
     link to its drawer), and the production team today as the HR board's bar (`team_today`, its tiles adding up to the
     people planned today)."""
     team = team_today(user)
     return {
-        'next': True,
+        'new_look': True,
         'holds': stock_part['holds'] if stock_part else [],
         'team': team,
         'team_stack': stack(_('Planned today'), [part(tile['key'], tile['label'], tile['count'], TEAM_TONES[tile['key']])

@@ -19031,6 +19031,7 @@
         "farm/tests/test_suppliers.py",
         "farm/tests/test_system_water_next.py",
         "farm/tests/test_systems.py",
+        "farm/tests/test_systems_next.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_history_page.py",
@@ -36808,6 +36809,7 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_portable.py"
       ]
     },
@@ -37759,6 +37761,7 @@
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
@@ -39905,6 +39908,7 @@
         "core/test_world.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py",
+        "sensors/tests/test_pages_next.py",
         "alarms/tests/test_clock.py"
       ]
     },

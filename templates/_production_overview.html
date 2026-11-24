@@ -23,7 +23,7 @@
       {% if stock %}
       {% blocktrans trimmed asvar source %}Stock records at {{ clock }}{% endblocktrans %}
       {% blocktrans trimmed count total=stock.stocked.of asvar of_units %}of {{ total }} unit{% plural %}of {{ total }} units{% endblocktrans %}
-      {% if next %}{% blocktrans trimmed count count=stock.fish.batches asvar in_batches %}in {{ count }} batch{% plural %}in {{ count }} batches{% endblocktrans %}{% endif %}{% include "_metric_card.html" with key="stock-fish" url=stock.fish.url label=stock.fish.label figure=stock.fish.count sub=in_batches source=source only %}
+      {% if new_look %}{% blocktrans trimmed count count=stock.fish.batches asvar in_batches %}in {{ count }} batch{% plural %}in {{ count }} batches{% endblocktrans %}{% endif %}{% include "_metric_card.html" with key="stock-fish" url=stock.fish.url label=stock.fish.label figure=stock.fish.count sub=in_batches source=source only %}
       {% include "_metric_card.html" with key="stock-biomass" url=stock.biomass.url label=stock.biomass.label figure=stock.biomass.count source=source only %}
       {% include "_metric_card.html" with key="stock-stocked" url=stock.stocked.url label=stock.stocked.label figure=stock.stocked.count sub=of_units source=source only %}
       {% endif %}

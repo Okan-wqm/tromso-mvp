@@ -27,6 +27,18 @@ const PROPS = resolve('.build/island-props');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 // the pages of this test: the props files their Django tests keep, by name
 const PREFIXES = ['sensors-', 'production-'];
+// The keys each Django test keeps, by test: a test that ran keeps all of its keys (a renamed or lost page fails here,
+// never passes silently); a test left out of a labels run keeps none.
+const EXPECTED: Record<string, string[]> = {
+  'sensors.tests.test_pages_next': ['bindings', 'channels', 'connections', 'credentials', 'dead-all', 'devices', 'events',
+    'formats', 'home', 'live', 'rules'].map((name) => `sensors-${name}-en`)
+    .concat(['sensors-devices-nb', 'sensors-devices-tr', 'sensors-live-nb', 'sensors-live-tr']),
+  'farm.tests.test_production_overview_next': ['en', 'nb', 'tr'].map((language) => `production-overview-${language}`),
+  'farm.tests.test_production_units_next': ['en', 'nb', 'tr'].map((language) => `production-units-${language}`)
+    .concat(['production-units-drawer-en']),
+  'farm.tests.test_system_water_next': ['production-system-water-en'],
+  'farm.tests.test_systems_next': ['production-systems-en'],
+};
 
 /** an island's page ({island, props}), or a page the server draws in the new look ({html}: its <main>, scripts left out) */
 interface Kept { island?: string; props?: unknown; html?: string }
@@ -94,6 +106,12 @@ test('the rest of Production and Sensors in a browser', { skip: skipWithout(BROW
   assert.ok(existsSync(join(ISLANDS, 'manifest.json')), 'static/islands has no build: run npm run build');
   const keys = pages();
   assert.ok(keys.some((key) => key.startsWith('sensors-')), 'no Sensors props: sensors.tests.test_pages_next writes them');
+  for (const [source, wanted] of Object.entries(EXPECTED)) {
+    if (wanted.some((key) => keys.includes(key))) {
+      assert.deepEqual(wanted.filter((key) => !keys.includes(key)), [], `${source} kept only part of its pages`);
+    }
+  }
+  assert.deepEqual(keys.filter((key) => !Object.values(EXPECTED).flat().includes(key)), [], 'a page no test is known to keep');
   const server = await serve();
   const address = server.address();
   const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;

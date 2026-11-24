@@ -10,7 +10,7 @@
   {% if result.steps and result.phosphate_note %}<p class="calc-note wq-value wq-warning" data-phosphate-used>{{ result.phosphate_note }}</p>{% endif %}
   {% if result.steps %}
   {% with tan=analysis.water.tan_mg_l sulfide=analysis.water.total_sulfide_ug_l %}
-  <div class="table-wrap">
+  <div class="table-wrap"{% if UI_NEXT %} tabindex="0" role="region" aria-labelledby="calc-simulator-title"{% endif %}>
     <table class="data-table calc-steps">
       <thead>
         <tr>

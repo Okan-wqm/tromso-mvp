@@ -12540,6 +12540,9 @@ msgstr "Gjenopprettet"
 msgid "Result"
 msgstr "Resultat"
 
+msgid "Results"
+msgstr "Resultater"
+
 msgid "Retired"
 msgstr "Utfaset"
 
@@ -15988,6 +15991,9 @@ msgstr "Garantien kan ikke slutte før kjøpsdatoen."
 
 msgid "The water"
 msgstr "Vannet"
+
+msgid "The water 12 hours each side of the alarm"
+msgstr "Vannet 12 timer på hver side av alarmen"
 
 msgid ""
 "The water after each amount, added in the order of the list, mixed through and closed to the air "

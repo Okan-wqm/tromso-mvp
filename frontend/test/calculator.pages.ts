@@ -117,7 +117,8 @@ test('the water calculator and its report in the new look, in a browser', { skip
           assert.equal(await field.inputValue(), '13.5', 'the field is never in a part: what was typed stays');
           assert.deepEqual(violations, [], 'CSP violations');
           assert.deepEqual(await lowContrast(tab), [], 'text under 4.5:1');
-          assert.deepEqual(await axeFindings(tab, origin), [], 'axe');
+          // the page's own content; the shell around it (the language buttons, the user menu) is the foundation's
+          assert.deepEqual(await axeFindings(tab, origin, '#content'), [], 'axe');
           assert.deepEqual(violations, [], 'CSP violations after axe');
           assert.equal(await tab.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), 0);
           if (process.env.SHOTS) {

@@ -12566,6 +12566,9 @@ msgstr "Geri yüklendi"
 msgid "Result"
 msgstr "Sonuç"
 
+msgid "Results"
+msgstr "Sonuçlar"
+
 msgid "Retired"
 msgstr "Kullanımdan kaldırıldı"
 
@@ -16019,6 +16022,9 @@ msgstr "Garanti satın alma tarihinden önce bitemez."
 
 msgid "The water"
 msgstr "Su"
+
+msgid "The water 12 hours each side of the alarm"
+msgstr "Alarmın 12 saat öncesi ve sonrasındaki su"
 
 msgid ""
 "The water after each amount, added in the order of the list, mixed through and closed to the air "

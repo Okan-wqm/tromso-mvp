@@ -553,4 +553,6 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-chart-key[data-series="4"] { color: var(--chart-s4); }
 .ui-chart-key[data-series="5"] { color: var(--chart-s5); }
 .ui-chart-key > span { color: var(--text-2); }
+.ui-chart-empty { margin: 0; padding: var(--space-5) var(--space-4); }
+.ui-series { min-height: 160px; }
 .ui-chart-caption { margin-top: auto; padding: 6px 14px 10px; color: var(--text-2); font-size: var(--fs-caption); text-wrap: pretty; }

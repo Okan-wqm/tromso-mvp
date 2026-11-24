@@ -10,7 +10,7 @@
 // With SHOTS=<folder> it also writes screenshots of the gallery at 1440 and 390 px. Test code only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { extname, join, resolve } from 'node:path';
 
@@ -26,19 +26,24 @@ export const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img
   + "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
-function galleryFile(): string {
-  const file = existsSync(GALLERY) ? readdirSync(GALLERY).find((name) => /^gallery-.*\.js$/.test(name)) : undefined;
-  if (!file) throw new Error('.build/gallery has no gallery: run `npm run build:gallery` (npm test does)');
-  return file;
+// The gallery's entry in the build's manifest, as {% island %} reads it: its module and its stylesheets (uPlot's).
+function galleryEntry(): { file: string; css: string[] } {
+  const manifest = join(GALLERY, '.vite', 'manifest.json');
+  if (!existsSync(manifest)) throw new Error('.build/gallery has no gallery: run `npm run build:gallery` (npm test does)');
+  const entry = Object.values(JSON.parse(readFileSync(manifest, 'utf8')) as Record<string, { file: string; css?: string[]; name?: string }>)
+    .find((chunk) => chunk.name === 'gallery');
+  if (!entry) throw new Error('the gallery is not in .build/gallery/.vite/manifest.json');
+  return { file: entry.file, css: entry.css ?? [] };
 }
 
 export function page(theme: string, props: unknown): string {
+  const entry = galleryEntry();
   return `<!doctype html><html lang="en" data-theme="${theme}" data-ui="next"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Gallery</title>${linksOf('app_base.html')}</head>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Gallery</title>${linksOf('app_base.html')}${entry.css.map((css) => `<link rel="stylesheet" href="/gallery/${css}">`).join('')}</head>
 <body><main class="content" id="content" data-measure="fluid"><div class="page-head ui-head"><div class="page-title"><h1>Gallery</h1></div></div>
 <div class="ui-island" data-island="gallery" data-props="island-gallery-1"></div>
 <script id="island-gallery-1" type="application/json">${JSON.stringify(props).replaceAll('<', '\\u003C')}</script>
-<script type="module" src="/gallery/${galleryFile()}"></script></main></body></html>`;
+<script type="module" src="/gallery/${entry.file}"></script></main></body></html>`;
 }
 
 const PROPS = {
@@ -153,6 +158,9 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
       assert.equal(await tab.getAttribute('#b-busy', 'data-pending'), 'true');
       assert.equal(await tab.getAttribute('#b-busy', 'aria-disabled'), 'true');
       assert.equal(await tab.locator('#b-busy .ui-spinner').count(), 1);
+      // the series is drawn by uPlot on a canvas; a frame without values says so in words
+      await tab.waitForSelector('.ui-series canvas');
+      assert.equal(await tab.locator('.ui-chart-empty').first().textContent(), 'No values in this range.');
       for (const selector of ['#b-primary', '#b-secondary', '#b-ghost', '#b-danger', 'input[name="name"]', 'select[name="site"]']) {
         await tab.focus(selector);
         await tab.keyboard.press('Shift+Tab');
@@ -166,6 +174,17 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
       // the registration marks of the new look: a plate and the primary button draw them, a secondary does not
       const marks = await tab.evaluate(() => ['.ui-plate', '#b-primary', '#b-secondary'].map((s) => getComputedStyle(document.querySelector(s) as Element, '::before').backgroundImage.includes('linear-gradient')));
       assert.deepEqual(marks, [true, true, false]);
+      await tab.close();
+    });
+
+    await t.test('the watch sees a violation: an inline style, as React Aria would add without its marker, is refused and reported', async () => {
+      const tab = await browser.newPage();
+      const violations = await watchCsp(tab);
+      await tab.goto(`${origin}/page/industry`);
+      await tab.waitForSelector('[data-mounted] .ui-plate');
+      await tab.evaluate(() => { const style = document.createElement('style'); style.textContent = '[data-x] { color: red; }'; document.head.append(style); });
+      await tab.waitForTimeout(200);
+      assert.ok(violations.some((line) => line.includes('style-src')), violations.join('\n'));
       await tab.close();
     });
 

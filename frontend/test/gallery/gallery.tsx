@@ -5,6 +5,7 @@
 import { useState } from 'react';
 
 import { mount } from '../../islands/ui/mount.js';
+import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
   Button, CellLines, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
   LinkTabs, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
@@ -107,6 +108,17 @@ function Gallery({ rows, errors }: GalleryProps) {
         <ChartFrame title="Dissolved oxygen" now="6.50 mg/L" nowStatus="warning" label="Dissolved oxygen, last 24 hours"
           keys={[{ label: 'Sensor', series: 1 }, { label: 'Manual', series: 2 }]} caption="Stored values, 5 min means">
           <svg viewBox="0 0 200 80" aria-hidden="true"><polyline points="0,60 50,40 100,50 150,30 200,35" fill="none" stroke="currentColor" /></svg>
+        </ChartFrame>
+      </Plate>
+      <Plate title="Series" span={12}>
+        <ChartFrame title="Dissolved oxygen, HA-K02" now="6.50 mg/L" nowStatus="warning" label="Dissolved oxygen, HA-K02, a gap at 03:00"
+          keys={[{ label: 'Sensor', series: 1 }, { label: 'Manual', series: 2 }]} caption="Stored values; a gap is never bridged">
+          <SeriesChart unit="mg/L" emptyLabel="No values in this range." times={[0, 3600, 7200, 10800, 14400, 18000, 21600]}
+            series={[{ label: 'Sensor', series: 1, values: [9.1, 8.8, null, null, 7.2, 6.9, 6.5] },
+              { label: 'Manual', series: 2, points: true, values: [null, 8.9, null, null, null, 7.0, null] }]} />
+        </ChartFrame>
+        <ChartFrame title="Temperature" label="Temperature, no values" caption="Sensor">
+          <SeriesChart unit="°C" emptyLabel="No values in this range." times={[]} series={[]} />
         </ChartFrame>
       </Plate>
     </Plates>

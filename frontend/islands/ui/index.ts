@@ -11,4 +11,5 @@ export { Tabs, LinkTabs, type TabItem, type LinkTab } from './Tabs.js';
 export { TextField, SelectField, CheckboxGroup, FixedField, ServerForm } from './Field.js';
 export { Notice, EmptyState, LoadingState, ErrorState, type NoticeTone } from './States.js';
 export { ChartFrame, type ChartKey } from './ChartFrame.js';
+// SeriesChart (uPlot) is imported from './SeriesChart.js' on its own, so an island without a series does not bundle uPlot.
 export { mount, readProps, PRESSABLE_STYLE_ID } from './mount.js';

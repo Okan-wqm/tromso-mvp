@@ -5375,7 +5375,8 @@ validation and every chemistry judgement; the island draws the finished values i
 - **Source.** `frontend/islands/<name>.tsx` is one island; it calls `mount('<name>', Component)`. The one component
   library is `frontend/islands/ui/` (import from `./ui/index.js`): Button, LinkButton, IconButton, Chip, Plate and
   Plates, Tile and Tiles, Table, Tabs and LinkTabs, TextField, SelectField, CheckboxGroup, FixedField, ServerForm, Notice,
-  EmptyState, LoadingState, ErrorState, ChartFrame, Icon. They draw the design system's classes (`static/css/ds.css`):
+  EmptyState, LoadingState, ErrorState, ChartFrame, Icon, and SeriesChart (uPlot, imported on its own from
+  `./ui/SeriesChart.js`: an interactive series, gaps never bridged, colours from the chart roles). They draw the design system's classes (`static/css/ds.css`):
   a server-rendered page writes the same classes, so both look the same from one rule set. React Aria where a control
   needs behaviour (buttons, tabs); native `<select>`, `<dialog>` otherwise (no popover that would lock the scroll).
   Icons come from `templates/icons/` (`scripts/icons.mjs` builds `ui/icon-shapes.ts`; `npm test` fails when it is stale).

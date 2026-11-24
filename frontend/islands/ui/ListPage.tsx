@@ -4,7 +4,9 @@
 // the server words every label, every cell and every address, and this component only draws them with the library.
 // A row's title opens the record's own page (the new record form), never the classic dialog. A row action is a link or a
 // small POST form with the page's CSRF token (cancelling a request): the server checks it like the classic page's.
-import { useId } from 'react';
+import { useId, type FocusEvent, type FormEvent } from 'react';
+
+import { tidy } from '../../date-input.js';
 
 import { Button, LinkButton } from './Button.js';
 import { CellLines, Table } from './Table.js';
@@ -102,13 +104,21 @@ function Action({ action, csrfToken }: { action: ListAction; csrfToken: string }
   return <a className={className} href={action.href} aria-label={action.label} title={action.label}><Icon name={action.icon} /></a>;
 }
 
+/** The shared date box's rule (frontend/date-input.ts): a day typed the European way is put dd.mm.yyyy. */
+function tidied(input: EventTarget | null) {
+  if (input instanceof HTMLInputElement && input.dataset.dateInput) input.value = tidy(input.value, input.dataset.dateInput === 'moment');
+}
+
 function Toolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) {
   const { search, filters, keep } = toolbar;
   const searchId = useId();
   if (!search && !filters.length) return toolbar.add ? <div className="ui-toolbar"><LinkButton href={toolbar.add.href} variant="primary" icon="plus">{toolbar.add.label}</LinkButton></div> : null;
   return (
     <div className="ui-toolbar">
-      <form method="get" role="search" aria-label={toolbar.label} className="ui-list-filters">
+      {/* a day box is tidied when it is left, and before the form goes (Enter sends it without leaving the box) */}
+      <form method="get" role="search" aria-label={toolbar.label} className="ui-list-filters"
+        onBlur={(event: FocusEvent<HTMLFormElement>) => tidied(event.target)}
+        onSubmit={(event: FormEvent<HTMLFormElement>) => { for (const box of event.currentTarget.querySelectorAll('input[data-date-input]')) tidied(box); }}>
         {keep.map((each) => <input key={each.name} type="hidden" name={each.name} value={each.value} />)}
         {search ? (
           // the frame is a div (ds.css draws a label holding its control as a labelled filter, label above it)

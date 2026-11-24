@@ -13,6 +13,7 @@ export const LIST_PROPS = {
     filters: [
       { name: 'department', label: 'Department', value: '', options: [{ value: '', label: 'All departments' }],
         groups: [{ label: 'Production departments', options: [{ value: 'p:1', label: 'Hatchery A' }] }] },
+      { kind: 'day' as const, name: 'from', label: 'From', value: '', placeholder: '26.10.2026', options: [] },
       { name: 'status', label: 'Status', value: 'current', options: [
         { value: '', label: 'Any status' }, { value: 'current', label: 'Working here' }, { value: 'left', label: 'Left' }] },
     ],

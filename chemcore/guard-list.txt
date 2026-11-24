@@ -342,7 +342,6 @@ number 771.54
 number 772.483
 number 999.83952
 number 999.842594
-number 1000.0
 number 1023.343
 number 1023.34306
 number 1027.67547

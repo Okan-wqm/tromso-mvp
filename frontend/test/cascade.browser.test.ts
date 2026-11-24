@@ -2,7 +2,7 @@
 // where there is none, never under CI=1), on the sheets in the order the templates link them (frontend/test/sheets.ts) and
 // on what the real templates print (frontend/test/pages/*.html, core/layout_pages.py) or, where no part is drawn yet, on a
 // copy of a template's markup that is checked against the template. It holds what review of slice 1a found lost when the
-// patterns moved into ds.css: the rail's collapse button (hidden on a phone, readable on the rail in all five themes), a
+// patterns moved into ds.css: the rail's collapse button (hidden on a phone, readable on the rail in all six themes), a
 // link card's focus ring, a tab strip that keeps its current tab on a phone, the charts' text size, and the rules of a
 // page for one element of a pattern that must still win over the pattern (the printed report's Print button and tables, a
 // chip's size and link colour, a toolbar control's weight, the search icon). Test code only.
@@ -18,7 +18,7 @@ import { BROWSERS, skipWithout } from './browsers.js';
 import { linksOf, mirrors } from './sheets.js';
 
 const PAGES = resolve('frontend/test/pages');
-const THEMES = ['fjord', 'polarnatt', 'nordlys', 'tang', 'laks'];
+const THEMES = ['industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks'];
 const part = (name: string): string => readFileSync(join(PAGES, `${name}.html`), 'utf8');
 const ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
 
@@ -125,7 +125,7 @@ test('the cascade of the product\'s sheets', { skip: skipWithout(BROWSERS) }, as
       await document.fonts.ready;
     });
 
-    await t.test('the rail\'s collapse button is hidden below 1024 px and readable on the rail at 1280 px in all five themes, at rest and hovered', async () => {
+    await t.test('the rail\'s collapse button is hidden below 1024 px and readable on the rail at 1280 px in all six themes, at rest and hovered', async () => {
       await tab.setViewportSize({ width: 390, height: 900 });
       assert.equal(await tab.locator('.rail-toggle').evaluate((button) => getComputedStyle(button).display), 'none', 'the rail is a sheet on a phone: no collapse button');
       await tab.setViewportSize({ width: 1280, height: 900 });

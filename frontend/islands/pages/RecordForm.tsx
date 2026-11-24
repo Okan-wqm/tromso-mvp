@@ -4,7 +4,7 @@
 // validator and its errors come back in the next payload. Two behaviours of the old page are kept: a field whose value
 // changes the form (`data-refresh`) posts the form again with the draft marker, and a select whose options belong to
 // another field's value (`data-depends-on`) offers only those.
-import { type FocusEvent, type FormEvent, Fragment, type ReactNode, useRef, useState } from 'react';
+import { type FocusEvent, type FormEvent, Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { tidy } from '../../date-input.js';
 import {
@@ -18,10 +18,11 @@ interface Option { value: string; label: string; selected: boolean; attrs: Recor
 interface Widget {
   kind: string; name: string; value: Value; attrs: Record<string, Value>;
   groups?: { label: string | null; options: Option[] }[];
-  columns?: string[]; sections?: { label: string; areas: { label: string; notes: string[]; cells: { action: string; option: Option | null }[] }[] }[];
+  columns?: string[]; sections?: { label: string; areas: { label: string; notes: string[]; cells: { action: string; said: string; option: Option | null }[] }[] }[];
   rows?: { pk: string; label: string; group: string; id: string; checked: boolean; primary: boolean; details: Field[] }[];
   primary?: boolean; dependsOn?: string; emptyText?: string; areaLabel?: string; shown?: string;
-  current?: { name: string; href: string | null; clearName: string | null; clearId: string | null; clearLabel: string } | null;
+  current?: { name: string; href: string | null; clearName: string | null; clearId: string | null; clearLabel: string;
+    intro?: string; changeLabel?: string } | null;
 }
 export interface Field {
   name: string; label: string; help: Said | null; required: boolean; disabled: boolean; fieldset: boolean; errors: string[];
@@ -39,6 +40,8 @@ export interface RecordFormProps {
   optional: string;
   tabsLabel: string;
   hasErrors: string;
+  /** the tab to open: the tab of the field whose change asked for a draft refresh (a tab with an error comes first) */
+  openTab?: string | null;
   delete: { href: string; label: string } | null;
   history: { label: string; intro: string; link: { href: string; label: string }; empty: string; critical: string;
     empty_value: string; entries: Entry[] } | null;
@@ -83,11 +86,14 @@ export function FieldOf({ field, optional, source }: { field: Field; optional: s
     case 'select': {
       const follows = widget.attrs['data-depends-on'];
       const chosen = follows ? source(String(follows)) : undefined;
-      const shown = options(widget).filter((option) => !follows || !option.attrs['data-group'] || chosen === undefined
-        || String(option.attrs['data-group']).split(' ').includes(chosen));
-      control = <SelectField {...base} key={follows ? `${widget.name}-${chosen ?? ''}` : widget.name}
-        options={shown.map((option) => ({ value: option.value, label: option.label }))}
-        defaultValue={shown.find((option) => option.selected)?.value ?? ''} />;
+      const offered = (option: Option) => !follows || !option.attrs['data-group'] || chosen === undefined
+        || String(option.attrs['data-group']).split(' ').includes(chosen);
+      // each group under its heading, as the old page draws it; an option the server switched off stays off
+      const groups = (widget.groups ?? []).map((group) => ({ label: group.label, options: group.options.filter(offered)
+        .map((option) => ({ value: option.value, label: option.label, disabled: Boolean(option.attrs.disabled) })) }))
+        .filter((group) => group.options.length);
+      control = <SelectField {...base} key={follows ? `${widget.name}-${chosen ?? ''}` : widget.name} options={[]} groups={groups}
+        defaultValue={options(widget).filter(offered).find((option) => option.selected)?.value ?? ''} />;
       break;
     }
     case 'multiselect':
@@ -109,14 +115,15 @@ export function FieldOf({ field, optional, source }: { field: Field; optional: s
       break;
     case 'file':
       control = <FileField {...base} wide accept={attr(widget, 'accept')} current={widget.current ? {
-        name: widget.current.name, href: widget.current.href ?? undefined, intro: field.label, clearName: widget.current.clearName ?? undefined,
+        name: widget.current.name, href: widget.current.href ?? undefined, intro: widget.current.intro ?? field.label,
+        changeLabel: widget.current.changeLabel, clearName: widget.current.clearName ?? undefined,
         clearLabel: widget.current.clearLabel } : null} />;
       break;
     case 'matrix':
       control = <PermissionMatrix {...base} areaLabel={widget.areaLabel ?? ''} columns={widget.columns ?? []}
         sections={(widget.sections ?? []).map((section) => ({ label: section.label, areas: section.areas.map((area) => ({
           label: area.label, notes: area.notes, cells: area.cells.map((cell) => (cell.option ? {
-            action: cell.action, value: cell.option.value, checked: cell.option.selected, id: String(cell.option.attrs.id ?? ''),
+            action: cell.action, said: cell.said, value: cell.option.value, checked: cell.option.selected, id: String(cell.option.attrs.id ?? ''),
             requires: cell.option.attrs['data-requires'] ? String(cell.option.attrs['data-requires']) : undefined } : null)) })) }))} />;
       break;
     case 'links':
@@ -136,15 +143,23 @@ export function FieldOf({ field, optional, source }: { field: Field; optional: s
         type={(['email', 'url', 'password'] as const).find((kind) => kind === widget.kind) ?? 'text'}
         numeric={widget.kind === 'number'} min={attr(widget, 'min')} max={attr(widget, 'max')} step={attr(widget, 'step')}
         maxLength={attr(widget, 'maxlength') ? Number(attr(widget, 'maxlength')) : undefined}
-        autoComplete={attr(widget, 'autocomplete')}
+        autoComplete={attr(widget, 'autocomplete')} uppercase={widget.attrs['data-uppercase'] !== undefined}
         dateInput={widget.kind === 'day' ? 'day' : moment ? 'moment' : undefined} />;
     }
   }
   return <>{control}{initial}</>;
 }
 
-export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabel, hasErrors, delete: remove, history }: RecordFormProps) {
+export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabel, hasErrors, openTab, delete: remove, history }: RecordFormProps) {
   const holder = useRef<HTMLDivElement>(null);
+  // Back from the browser's history (bfcache) after a draft refresh, the draft marker must not go with the next Save.
+  useEffect(() => {
+    const back = (event: PageTransitionEvent) => {
+      if (event.persisted) holder.current?.closest('form')?.querySelectorAll('input[name="_draft"]').forEach((marker) => marker.remove());
+    };
+    window.addEventListener('pageshow', back);
+    return () => window.removeEventListener('pageshow', back);
+  }, []);
   const fields = form.tabs.flatMap((tab) => tab.fieldsets.flatMap((fieldset) => fieldset.fields));
   const initialValues: Record<string, string> = {};
   for (const field of fields) {
@@ -215,7 +230,7 @@ export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabe
       </>
     ) });
   }
-  const firstWithErrors = form.tabs.find((tab) => tab.hasErrors)?.key;
+  const firstWithErrors = form.tabs.find((tab) => tab.hasErrors)?.key ?? (form.tabs.some((tab) => tab.key === openTab) ? openTab : undefined);
   return (
     <ServerForm action={form.action} csrfToken={csrfToken} formErrors={form.errors} label={submit} multipart={form.multipart} noValidate
       actions={<>

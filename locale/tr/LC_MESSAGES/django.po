@@ -10670,6 +10670,15 @@ msgstr ""
 "gelecek). Her bildirim, alıcısı ve seviyesiyle aşağıdaki giden kutusunda bekler ve aktarım "
 "bağlandığında gönderilir."
 
+msgid ""
+"Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
+"notification waits in the outbox on the Alarms page, with its recipient and level, and is sent "
+"once it is."
+msgstr ""
+"Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra "
+"gelecek). Her bildirim, alıcısı ve seviyesiyle Alarmlar sayfasındaki giden kutusunda bekler ve "
+"aktarım bağlandığında gönderilir."
+
 msgid "Nothing needs attention"
 msgstr "Dikkat gerektiren bir şey yok"
 

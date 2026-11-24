@@ -168,7 +168,7 @@ test('the form parts draw the old page\'s markup, post the old names, and take e
   assert.match(radios, /<legend>Placement<\/legend>/);
   assert.match(radios, /name="placement"(?: checked="")? value="b"(?: checked="")?/);
   assert.equal((radios.match(/checked=""/g) ?? []).length, 1);
-  const file = html(<FileField name="file" label="PDF" current={{ name: 'x.pdf', href: '/f/', intro: 'Currently', clearName: 'file-clear', clearLabel: 'Remove the file' }} />);
+  const file = html(<FileField name="file" label="PDF" current={{ name: 'x.pdf', href: '/f/', intro: 'Currently:', clearName: 'file-clear', clearLabel: 'Remove the file' }} />);
   assert.match(file, /<p class="file-current">Currently: <a href="\/f\/"[^>]*>x\.pdf<\/a><\/p>/);
   assert.match(file, /name="file-clear"/);
   assert.match(file, /type="file"[^>]*name="file"/);
@@ -176,7 +176,7 @@ test('the form parts draw the old page\'s markup, post the old names, and take e
   assert.match(ack, /class="ui-notice ui-ack" data-tone="critical"/);
   assert.match(ack, /type="checkbox"[^>]*name="ack"[^>]*value="f00d"/);
   const matrix = html(<PermissionMatrix name="permissions" label="Rights" areaLabel="Area" columns={['Read', 'Create']}
-    sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: ['Note'], cells: [{ action: 'Read', value: '1', checked: true, id: 'p-1' }, null] }] }]} />);
+    sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: ['Note'], cells: [{ action: 'Read', said: 'Sites: Read', value: '1', checked: true, id: 'p-1' }, null] }] }]} />);
   assert.match(matrix, /<table class="matrix">/);
   assert.match(matrix, /name="permissions"[^>]*value="1"/);
   assert.match(matrix, /id="p-1"[^>]*checked=""|checked=""[^>]*id="p-1"/);
@@ -277,4 +277,25 @@ test('a roster: a week of people, a cell its plan as a link, an empty day "+", f
   assert.match(page, /<td class="num">45<span class="ui-roster-finding">.*More than the standard week/);
   assert.doesNotMatch(page, /ui-roster-pick/, 'cells are links until a paint is chosen');
   assert.doesNotMatch(page, /style=/);
+});
+
+test('a server form posts the CSRF token, says the form\'s errors in an alert, and its submit is ready until it posts', () => {
+  const form = html(<ServerForm action="/x/" csrfToken="t" label="Save" formErrors={['Choose a site.']}
+    actions={<Button type="submit" variant="primary">Save</Button>} noValidate>x</ServerForm>);
+  assert.match(form, /<form aria-label="Save" noValidate="" action="\/x\/" method="post">/);
+  assert.match(form, /<input type="hidden" name="csrfmiddlewaretoken" value="t"\/>/);
+  assert.match(form, /<div class="ui-notice" data-tone="critical" role="alert">.*<li>Choose a site\.<\/li>/);
+  assert.doesNotMatch(form, /disabled/);
+  const get = html(<ServerForm action="/x/" csrfToken="t" label="Find" method="get" actions={null}>x</ServerForm>);
+  assert.doesNotMatch(get, /csrfmiddlewaretoken/, 'a GET form never carries the token into the address');
+});
+
+test('a blocked delete: the plan\'s reasons are said and its Delete button is off (review F4); an open plan\'s is on', async () => {
+  const { ConfirmDelete } = await import('../pages/ConfirmDelete.js');
+  const { BLOCKED_PROPS, OPEN_PROPS } = await import('../../test/pages/delete-props.js');
+  const blocked = html(<ConfirmDelete {...BLOCKED_PROPS} />);
+  assert.match(blocked, /<button[^>]*type="submit"[^>]*disabled=""[^>]*>Delete leave type<\/button>|<button[^>]*disabled=""[^>]*type="submit"[^>]*>Delete leave type<\/button>/);
+  assert.match(blocked, /This leave type cannot be deleted yet\..*2 leave requests use it\./);
+  const open = html(<ConfirmDelete {...OPEN_PROPS} />);
+  assert.doesNotMatch(open, /<button[^>]*disabled/);
 });

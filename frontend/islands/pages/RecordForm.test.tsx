@@ -1,6 +1,6 @@
-// The record form's fields against the old page (the form oracle: frontend/test/pages/form-oracle.json, recorded from
-// the dev database by F:\dev\balik-notes\ui-company\dump_form_oracle.py: every visible field of every tab's form, new,
-// sent empty and editing a record, with the controls the server's own field template draws for it, read as
+// The record form's fields against the old page (the form oracle: frontend/test/pages/form-oracle.json, recorded from the
+// test world by scripts/record_test_world.py in a throwaway database: every visible field of every tab's form, new, sent
+// empty and editing a record, with the controls the server's own field template draws for it, read as
 // core/tests_formpayload.py reads them). Each payload is drawn by FieldOf (react-dom/server) and must post what the old
 // markup posts: the same names, the same values ticked, chosen or typed, nothing more and nothing less; and offer the same
 // choices with the same words. A control switched off posts nothing on either page. Test code only.
@@ -13,7 +13,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { type Field, FieldOf } from './RecordForm.js';
 
-interface Control { name: string | null; value: string; on: boolean; type: string; disabled: boolean; label?: string }
+interface Control { name: string | null; value: string; on: boolean; type: string; disabled: boolean; label?: string; off?: boolean; group?: string }
 interface Case { case: string; field: Field; controls: Control[] }
 
 const ORACLE = JSON.parse(readFileSync(resolve('frontend/test/pages/form-oracle.json'), 'utf8')) as { cases: Case[] };
@@ -39,10 +39,15 @@ function controlsOf(html: string): Control[] {
   }
   for (const match of html.matchAll(/<select\b([^>]*)>([\s\S]*?)<\/select>/g)) {
     const head = `<select${match[1] ?? ''}>`;
-    for (const option of (match[2] ?? '').matchAll(/<option\b([^>]*)>([\s\S]*?)<\/option>/g)) {
-      const tag = `<option${option[1] ?? ''}>`;
-      found.push({ name: attr(head, 'name'), value: attr(tag, 'value') ?? '', on: attr(tag, 'selected') !== null, type: 'option',
-        disabled: attr(head, 'disabled') !== null, label: squash(option[2] ?? '') });
+    let group = '';
+    for (const part of (match[2] ?? '').matchAll(/<optgroup\b([^>]*)>|<\/optgroup>|<option\b([^>]*)>([\s\S]*?)<\/option>/g)) {
+      if (part[0].startsWith('<optgroup')) group = attr(`<optgroup${part[1] ?? ''}>`, 'label') ?? '';
+      else if (part[0] === '</optgroup>') group = '';
+      else {
+        const tag = `<option${part[2] ?? ''}>`;
+        found.push({ name: attr(head, 'name'), value: attr(tag, 'value') ?? '', on: attr(tag, 'selected') !== null, type: 'option',
+          disabled: attr(head, 'disabled') !== null, label: squash(part[3] ?? ''), off: attr(tag, 'disabled') !== null, group });
+      }
     }
   }
   for (const match of html.matchAll(/<textarea\b([^>]*)>([\s\S]*?)<\/textarea>/g)) {
@@ -58,10 +63,11 @@ function posted(controls: Control[]): string[] {
   return controls.filter((c) => c.name && !c.disabled && c.on && c.type !== 'file').map((c) => `${c.name}=${c.value}`).sort();
 }
 
-/** The choices offered: (name, value, words) of every enabled option and box. */
+/** The choices offered: (name, value, words; for an option the heading it is under and whether it is switched off) of
+ *  every enabled option and box. */
 function offered(controls: Control[]): string[] {
   return controls.filter((c) => c.name && !c.disabled && (c.type === 'option' || c.type === 'checkbox' || c.type === 'radio'))
-    .map((c) => `${c.name}|${c.value}${c.label !== undefined ? `|${c.label}` : ''}`).sort();
+    .map((c) => `${c.name}|${c.value}${c.label !== undefined ? `|${c.label}` : ''}${c.type === 'option' ? `|${c.group ?? ''}|${c.off ? 'off' : ''}` : ''}`).sort();
 }
 
 test('every field of every tab form posts what the old page posts', () => {
@@ -89,6 +95,22 @@ test('every choice is offered with the old page\'s words', () => {
     }
   }
   assert.deepEqual(failures.slice(0, 20), [], `${failures.length} fields differ`);
+});
+
+test('a select offers every option with its words, under its group\'s heading, and an option switched off stays off', () => {
+  const failures: string[] = [];
+  let grouped = 0;
+  for (const { case: name, field, controls } of ORACLE.cases) {
+    if (field.widget.kind !== 'select' || field.disabled) continue;
+    const drawn = controlsOf(renderToStaticMarkup(<FieldOf field={field} optional="optional" source={() => undefined} />));
+    if (controls.some((c) => c.type === 'option' && c.group)) grouped += 1;
+    const said = (list: Control[]) => list.filter((c) => c.type === 'option').map((c) => `${c.value}|${c.label}|${c.group ?? ''}|${c.off ? 'off' : ''}`);
+    if (JSON.stringify(said(controls)) !== JSON.stringify(said(drawn))) {
+      failures.push(`${name}: offers ${JSON.stringify(said(drawn)).slice(0, 240)}, the old page ${JSON.stringify(said(controls)).slice(0, 240)}`);
+    }
+  }
+  assert.ok(grouped > 0, 'the oracle has a select with groups (the employee\'s department)');
+  assert.deepEqual(failures.slice(0, 20), [], `${failures.length} selects differ`);
 });
 
 test('a field\'s label, help, errors and its required or optional mark are drawn', () => {

@@ -12,7 +12,7 @@ from django.utils import formats, timezone
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 
-from .formpayload import form_payload, delete_payload, kind_of
+from .formpayload import UnknownWidget, form_payload, delete_payload, kind_of
 
 
 def when(moment):
@@ -32,12 +32,24 @@ DRAWN = {'hidden', 'unshown', 'text', 'email', 'url', 'number', 'password', 'tex
          'select', 'multiselect', 'checks', 'radio', 'checkbox', 'file', 'output', 'matrix', 'links', 'acknowledge'}
 
 
-def drawable(resource, form):
-    """Whether the record-form island can draw this tab's form: the shared template, and every field's kind drawn."""
-    return resource.form_template == 'crud/form.html' and all(kind_of(bound.field.widget) in DRAWN for bound in form)
+# What the island draws of a page's own context besides the form: the tab to open after a draft refresh.
+DRAWN_EXTRAS = {'open_tab'}
 
 
-def record_form_props(request, form, *, action, name, obj, list_url, delete_url, history, history_url):
+def drawable(resource, form, extra=()):
+    """Whether the record-form island can draw this tab's form, whole: the shared template, no question the page asks
+    before a save (`question_template`: the withdrawal guard's box and its text, which the island does not draw yet), no
+    other context of the page's own (`extra`'s keys besides DRAWN_EXTRAS: a row list's formset, a refusal's question),
+    and every field's kind drawn. Anything else keeps the classic page; an unknown widget too, never a server error."""
+    if resource.form_template != 'crud/form.html' or resource.question_template or set(extra) - DRAWN_EXTRAS:
+        return False
+    try:
+        return all(kind_of(bound.field.widget) in DRAWN for bound in form)
+    except UnknownWidget:
+        return False
+
+
+def record_form_props(request, form, *, action, name, obj, list_url, delete_url, history, history_url, open_tab=''):
     """Everything the record-form island draws: the form, its submit and cancel, the History tab, the delete link."""
     from django.middleware.csrf import get_token
 
@@ -49,6 +61,7 @@ def record_form_props(request, form, *, action, name, obj, list_url, delete_url,
         'optional': _('optional'),
         'tabsLabel': _('%(kind)s form sections') % {'kind': str(name)[:1].upper() + str(name)[1:]},
         'hasErrors': _('(has errors)'),
+        'openTab': open_tab or None,     # the tab of the field whose change asked for a draft refresh
         'delete': {'href': delete_url, 'label': _('Delete %(name)s') % {'name': name}} if delete_url else None,
         'history': None if obj is None else {
             'label': _('History'),

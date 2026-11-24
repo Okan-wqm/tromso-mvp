@@ -135,21 +135,27 @@ def _alarm_counts(found):
 
 
 def units_said(found):
-    """What the stocked units' water says now (alarms.read.Attention, the cards' ladder), worst first, in the status strip's
-    own words (core.ui.alarms_item), each figure counting units, never sampling points."""
-    counts = (
-        (found.critical, lambda n: ngettext('%(count)d unit critical', '%(count)d units critical', n)),
-        (found.unreadable, lambda n: ngettext('%(count)d unit cannot be read', '%(count)d units cannot be read', n)),
-        (found.warning, lambda n: ngettext('%(count)d unit with a warning', '%(count)d units with a warning', n)),
-        (found.blind, lambda n: ngettext('%(count)d unit with no recent data', '%(count)d units with no recent data', n)),
-        (found.unjudged, lambda n: ngettext('%(count)d unit with no limit', '%(count)d units with no limit', n)))
-    return [words(count) % {'count': count} for count, words in counts if count]
+    """The units' line of an Attention: the one wording (core.ui.attention_said) without the alarms, whose count is the
+    figure it stands under."""
+    from core.ui import attention_said
+    return attention_said(found, alarms=False)
 
 
 def farm_wide_said(found):
     """A site's open alarms hold the farm-wide ones (they are about every site): how many of its figure they are."""
     return [ngettext('%(count)s of them for the whole farm', '%(count)s of them for the whole farm', found.farm_wide)
             % {'count': found.farm_wide}] if found.farm_wide else []
+
+
+def _site_water(row, now):
+    """A site's water in one judgement: the points' chip (_water_chip) unless it would say OK while the site's stocked units
+    are flagged on the cards' ladder (alarms.read.attention: critical, cannot be read, warning, no recent data, no limit);
+    then the units' line in the worst status, so the row never says "OK" beside a critical unit."""
+    chip, found = _water_chip(row['water'], now), row['attention']
+    flagged = units_said(found) if found is not None else []
+    if flagged and (chip is None or chip['kind'] == 'ok'):
+        return {'kind': 'critical' if found.critical or found.unreadable else 'warning', 'text': ' · '.join(flagged)}
+    return chip
 
 
 def _sites(user, sites, now):
@@ -166,10 +172,10 @@ def _sites(user, sites, now):
                       else None,
             'units': None if row['units_stocked'] is None else whole(row['units_stocked']),
             'biomass': None if row['biomass_kg'] is None else tonnes(row['biomass_kg']),
-            'water': _water_chip(row['water'], now),
+            'water': _site_water(row, now),
             'alarms': None if row['attention'] is None else {
                 'figure': whole(row['attention'].alarms),
-                'sub': ' · '.join([*farm_wide_said(row['attention']), *units_said(row['attention'])]) or None},
+                'sub': ' · '.join(farm_wide_said(row['attention'])) or None},
             'onSite': None if row['on_site'] is None else whole(row['on_site']),
         } for row in sites['rows']],
         'none': '—',
@@ -179,9 +185,10 @@ def _sites(user, sites, now):
 def _alarms(alarms):
     return {
         'title': _('Open alarms'), 'link': {'href': reverse('alarms:alarm_list'), 'label': _('Alarms')},
-        'safety': None if any(alarms['connected'].values()) else _(
+        # the classic page's test (alarms/_not_sent.html: connected.push), in words for a page with no outbox under it
+        'safety': None if alarms['connected'].get('push') else _(
             'Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every notification '
-            'waits in the outbox below, with its recipient and level, and is sent once it is.'),
+            'waits in the outbox on the Alarms page, with its recipient and level, and is sent once it is.'),
         'columns': {'severity': _('Severity'), 'what': _('What')},
         'rows': [{'key': str(alarm.pk), 'severity': str(alarm.get_severity_display()),
                   'kind': 'critical' if alarm.severity == 'critical' else 'warning', 'what': alarm.summary,
@@ -190,7 +197,11 @@ def _alarms(alarms):
                                                     alarm.site.name if alarm.site_id else '', when(alarm.opened_at)]))}
                  for alarm in alarms['rows']],
         'more': (_('and %(count)s more: all alarms') % {'count': alarms['more']}) if alarms['more'] else None,
-        'empty': _('No alarm is open.') if not alarms['attention'].alarms else None}
+        # "No alarm is open." only when nothing needs a look (Attention.quiet, the strip's rule); with no alarm row but a
+        # unit flagged, the plate says the units' line instead of an empty state
+        'empty': _('No alarm is open.') if alarms['attention'].quiet else None,
+        'units': {'tone': 'critical' if alarms['attention'].critical or alarms['attention'].unreadable else 'warning',
+                  'text': ' · '.join(units_said(alarms['attention']))} if units_said(alarms['attention']) else None}
 
 
 def _people(people):

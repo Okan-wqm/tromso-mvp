@@ -120,11 +120,11 @@ export function FileField({ name, label, accept, required, disabled, wide, curre
       <label htmlFor={id}>{label}<FieldMark mark={mark} /></label>
       {current ? (
         <>
-          <p className="file-current">{current.intro}: {current.href ? <a href={current.href} target="_blank" rel="noopener">{current.name}</a> : current.name}</p>
+          <p className="file-current">{current.intro} {current.href ? <a href={current.href} target="_blank" rel="noopener">{current.name}</a> : current.name}</p>
           {current.clearName && !required ? (
             <label className="check"><input type="checkbox" name={current.clearName} disabled={disabled} /> {current.clearLabel}</label>
           ) : null}
-          {current.changeLabel ? <p className="file-change">{current.changeLabel}:</p> : null}
+          {current.changeLabel ? <p className="file-change">{current.changeLabel}</p> : null}
         </>
       ) : null}
       <input type="file" id={id} name={name} accept={accept} required={required} disabled={disabled}
@@ -168,7 +168,8 @@ export function Acknowledge({ name, title, children, label, value, defaultChecke
   );
 }
 
-export interface MatrixCell { action: string; value: string; checked: boolean; requires?: string | undefined; id: string }
+/** `said`: the box's name for a screen reader, as the server words it ("Sites: Read") */
+export interface MatrixCell { action: string; said: string; value: string; checked: boolean; requires?: string | undefined; id: string }
 export interface MatrixArea { label: string; notes: string[]; cells: (MatrixCell | null)[] }
 
 export interface PermissionMatrixProps extends Said {
@@ -224,7 +225,7 @@ export function PermissionMatrix({ name, label, areaLabel, columns, sections, he
                         <label className="matrix-check">
                           <input type="checkbox" name={name} value={cell.value} id={cell.id} checked={Boolean(ticked[cell.id])}
                             onChange={(event) => toggle(cell, event.currentTarget.checked)} />
-                          <span className="sr-only">{area.label}: {cell.action}</span>
+                          <span className="sr-only">{cell.said}</span>
                         </label>
                       ) : null}
                     </td>

@@ -63,3 +63,14 @@ class SaysTests(SimpleTestCase):
         self.assertEqual([value for _kind, value in says(old)], ['Silo 2', '—', 'Area', '–'])
         self.assertEqual(unsaid(old, {'name': 'Silo 2', 'area': 'Area'}), [('text', '—'), ('text', '–')])
         self.assertEqual(unsaid(old, {'name': 'Silo 2', 'cover': '—', 'area': 'Area', 'value': '–'}), [])
+
+    def test_a_group_of_boxes_is_one_control_carried_not_counted(self):
+        old = '<main><input type="checkbox" name="topics" value="1"><input type="checkbox" name="topics" value="2"></main>'
+        self.assertEqual(unsaid(old, {'name': 'topics'}), [])
+        self.assertEqual(unsaid(old, {'name': 'other'}), [('control', 'topics'), ('control', 'topics')])
+
+    def test_a_layout_repeat_named_once_must_be_said_once_at_least(self):
+        old = '<main><button>Who</button><h3>Who</h3></main>'
+        self.assertEqual(unsaid(old, {'tabs': ['Who']}), [('text', 'Who')])            # counted: said twice, carried once
+        self.assertEqual(unsaid(old, {'tabs': ['Who']}, once={'Who'}), [])
+        self.assertEqual(unsaid(old, {'tabs': ['When']}, once={'Who'}), [('text', 'Who'), ('text', 'Who')])

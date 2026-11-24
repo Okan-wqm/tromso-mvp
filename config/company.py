@@ -30,7 +30,7 @@ def _site_of_point(point):
         return None
 
 
-def _sites(user, now, attention):
+def _sites(user, now, attention, asked=None):
     if not user.has_perm('farm.view_site'):
         return None
     sites = list(Site.objects.order_by('name'))
@@ -83,7 +83,7 @@ def _sites(user, now, attention):
         from alarms import read as alarms
         by_site = attention[1]
         for site_id, row in rows.items():
-            row['attention'] = by_site[site_id] if site_id in by_site else alarms.attention(now, site=site_id)
+            row['attention'] = by_site[site_id] if site_id in by_site else alarms.attention(asked, site=site_id)
     return {'rows': list(rows.values()), 'count': len(sites),
             'by_status': [(label, sum(1 for site in sites if site.status == value)) for value, label in Site.Status.choices
                           if any(site.status == value for site in sites)]}
@@ -144,13 +144,15 @@ def _knowledge(user):
 def overview(user, moment=None):
     """Every block of the company overview, read now (`moment` for the people's board)."""
     from .views import _upcoming
-    moment = moment or timezone.now()
+    asked, moment = moment, moment or timezone.now()
     # the farm and its sites from ONE reading of the water (alarms.read.attention_all), for the tile and the sites' rows
     attention = None
     if user.has_perm('alarms.view_alarm'):
         from alarms import read as alarms
-        attention = alarms.attention_all(moment)
-    sites = _sites(user, moment, attention)
+        # a page load reads it as the strip does, through the shared cache (now=None); a given moment (a test, a recorder)
+        # reads it at that moment
+        attention = alarms.attention_all(asked)
+    sites = _sites(user, moment, attention, asked)
     people = _people(user, moment)
     if sites is not None and people is not None:
         by_name = people['on_site_by_site']

@@ -10647,6 +10647,14 @@ msgstr ""
 "Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert "
 "varsel venter i utboksen nedenfor, med mottaker og nivå, og sendes når den er det."
 
+msgid ""
+"Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
+"notification waits in the outbox on the Alarms page, with its recipient and level, and is sent "
+"once it is."
+msgstr ""
+"Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert "
+"varsel venter i utboksen på Alarmer-siden, med mottaker og nivå, og sendes når den er det."
+
 msgid "Nothing needs attention"
 msgstr "Ingenting trenger oppfølging"
 

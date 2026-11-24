@@ -5454,26 +5454,36 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   (`alarms.read.attention_all`): the figure counts open alarms (a site's holds the farm-wide ones too, and says how many
   of them are for the whole farm); the line under it counts stocked units on the monitoring cards' ladder, in the strip's
   words ("2 units critical", "1 unit with no recent data", "1 unit with no limit", "1 unit cannot be read"), so a
-  critical unit shows before its alarm is raised; the water chip says a value of a sampling point, never a count. Held
+  critical unit shows before its alarm is raised (one wording, `core.ui.attention_said`, the strip's and the Overview's). The Open alarms plate says "No alarm is open." only when nothing needs a look (`Attention.quiet`); else it says the units' line. A site's water chip says a value of a sampling point, never a count, and never "OK" while the site's units are flagged: then it says their line. A page load reads the shared, cached reading the strip reads. Held
   to the classic page
   by `core.pagesays` in three languages (`farm/tests/test_company_overview.py`); its island is checked in a browser in
   every theme and language for CSP, axe and contrast (`frontend/test/company.browser.test.ts`).
-- **Every tab's create, edit and delete page** (`core.crud.FormView.page`, `DeleteView`; `templates/crud/form_next.html`,
+- **The create, edit and delete page of every tab on the shared `crud/form.html`** (`core.crud.FormView.page`, `DeleteView`; `templates/crud/form_next.html`,
   `confirm_delete_next.html`; islands `record-form` and `confirm-delete`, `frontend/islands/pages/RecordForm.tsx` and
   `ConfirmDelete.tsx`): the same view, form and address; the island draws `core.formpayload`'s form with the library's
   form components (Field.tsx and FormParts.tsx: text, number, date and moment boxes tidied by `frontend/date-input.ts`,
-  selects that follow another field, box groups, radios, a single box, files with the stored one, the role matrix, link
-  lists, the handling acknowledgement, row lists with their management form), the required fields unmarked and the
+  selects that follow another field and keep their groups' headings and switched-off options, box groups, radios, a
+  single box, files with the stored one, the role matrix, link lists, the handling acknowledgement), the required fields
+  unmarked and the
   others marked "optional", the server's errors on their fields and the tab that holds them open, a submit busy until
   the answer, the History tab and the delete link; the delete confirmation says the delete plan in the old page's words.
-  `core/formprops.py` decides which forms the island draws (`drawable`: the shared crud/form.html and every widget kind
-  drawn); a tab with a form template of its own, and a request for a dialog, keep the classic page. Held: the props say
+  `core/formprops.py` decides which forms the island draws (`drawable`: the shared crud/form.html, no question asked
+  before a save (`question_template`: the withdrawal guard), no context of the page's own besides the tab to open, and
+  every widget kind drawn; an unknown widget or several hidden values in one field keep the classic page, never an
+  error); a tab with a form template of its own, and a request for a dialog, keep the classic page. Row lists (formsets,
+  `RowList`, `core.formpayload.formset_payload`) are built and tested but not drawn yet: every tab with row lists has a
+  form template of its own. A delete the plan blocks keeps its button off (`ServerForm` switches on only what it
+  switched off). Held: the props say
   what the classic page says (`core/tests_formprops.py`, three languages); every field of every tab's form, new, refused
   and editing a record, its row lists' rows and the handling acknowledgement, posts what the old page posts
   (`frontend/islands/pages/RecordForm.test.tsx` against `frontend/test/pages/form-oracle.json`); the tabs, focus, busy
   state, CSP and axe in a browser (`frontend/test/recordform.browser.test.ts`). A help built with links travels as its
   words and its links to the application's own pages (`segments`, never markup); a stored file links to its own
-  permission-checked view (a widget's `current_url`).
+  permission-checked view (a widget's `current_url`); a link is the application's own only as a plain path
+  (`core.formpayload.own_path`: no scheme, host, backslash or control character). Every drawn tab, new and editing a
+  record of the test world, is held to its classic page (`core/tests_formprops.py`, EveryDrawableTabTests). The browser
+  tests run on props recorded from the test world; the Python tests (`unsaid`) are what link those props to the real
+  pages. In CI (CI=1 or CI=true) a missing browser fails the browser tests instead of skipping them.
 - **Every tab's list page** (`core.crud.ListView`; `templates/crud/list_next.html`, island `list-page`,
   `frontend/islands/ui/ListPage.tsx`, built once for every list): the same view reads the same rows; `core/listprops.py`
   words them: the search and the filters as one GET form (the server reads the address and is the only source of what is

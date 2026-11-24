@@ -4,7 +4,7 @@
 // validator and its errors come back in the next payload. Two behaviours of the old page are kept: a field whose value
 // changes the form (`data-refresh`) posts the form again with the draft marker, and a select whose options belong to
 // another field's value (`data-depends-on`) offers only those.
-import { type FocusEvent, type FormEvent, type ReactNode, useRef, useState } from 'react';
+import { type FocusEvent, type FormEvent, Fragment, type ReactNode, useRef, useState } from 'react';
 
 import { tidy } from '../../date-input.js';
 import {
@@ -163,21 +163,19 @@ export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabe
     const kind = target.dataset?.dateInput;
     if (kind) target.value = tidy(target.value.trim(), kind === 'moment');
   };
+  const fieldOf = (field: Field) => <FieldOf key={field.name} field={field} optional={optional} source={(name) => values[name]} />;
+  // A tab is the design's two-column field grid; a group of fields (Fieldset) heads its fields across the grid.
   const panel = (tab: Tab) => (
-    <>
-      {tab.help ? <p className="help">{text(tab.help)}</p> : null}
-      {tab.fieldsets.map((fieldset, index) => (fieldset.label ? (
-        <fieldset key={fieldset.label} className="ui-form-group">
-          <legend>{fieldset.label}</legend>
-          {fieldset.help ? <p className="help">{text(fieldset.help)}</p> : null}
-          {fieldset.fields.map((field) => <FieldOf key={field.name} field={field} optional={optional} source={(name) => values[name]} />)}
-        </fieldset>
-      ) : (
-        <div key={`plain-${index}`} className="ui-form-group">
-          {fieldset.fields.map((field) => <FieldOf key={field.name} field={field} optional={optional} source={(name) => values[name]} />)}
-        </div>
-      )))}
-    </>
+    <div className="ui-form-grid">
+      {tab.help ? <p className="help" data-wide="">{text(tab.help)}</p> : null}
+      {tab.fieldsets.map((fieldset, index) => (
+        <Fragment key={fieldset.label || `plain-${index}`}>
+          {fieldset.label ? <h3 className="ui-form-group">{fieldset.label}</h3> : null}
+          {fieldset.help ? <p className="help" data-wide="">{text(fieldset.help)}</p> : null}
+          {fieldset.fields.map(fieldOf)}
+        </Fragment>
+      ))}
+    </div>
   );
   const items = form.tabs.map((tab) => ({ id: tab.key, label: tab.hasErrors ? <>{tab.label}<span className="sr-only"> {hasErrors}</span></> : tab.label,
     content: panel(tab), ...(tab.hasErrors ? { count: <Chip kind="critical">!</Chip> } : {}) }));
@@ -218,7 +216,7 @@ export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabe
         <Button variant="primary" type="submit">{submit}</Button>
       </>}>
       {form.hidden.map((hidden) => <input key={hidden.name} type="hidden" name={hidden.name} value={str(hidden.value)} />)}
-      <div className="ui-form-body" ref={holder} onChange={changed} onBlur={left}>
+      <div className="ui-form-body" data-wide="" ref={holder} onChange={changed} onBlur={left}>
         {items.length > 1 ? <Tabs label={tabsLabel} items={items} keepMounted {...(firstWithErrors ? { defaultSelected: firstWithErrors } : {})} />
           : items[0]?.content}
       </div>

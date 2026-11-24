@@ -53,3 +53,7 @@ class SaysTests(SimpleTestCase):
         old = '<main><h1>Overview</h1><p>2</p></main>'
         self.assertEqual(unsaid(old, {'figure': '2'}), [('text', 'Overview')])
         self.assertEqual(unsaid(old, {'figure': '2'}, new_html='<main><h1>Overview</h1><div data-island="x"></div></main>'), [])
+
+    def test_a_run_of_only_punctuation_is_layout_not_a_fact(self):
+        old = '<main><p>by admin <span>·</span> 24.11.2026</p><p><del>14</del> <span>→</span> <ins>31</ins></p></main>'
+        self.assertEqual([value for _kind, value in says(old)], ['by admin', '24.11.2026', '14', '31'])

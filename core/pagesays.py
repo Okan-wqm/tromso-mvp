@@ -57,7 +57,9 @@ class _Main(HTMLParser):
             pass
 
     def handle_data(self, data):
-        if self.depth and not self.silent and squash(data):
+        # A run of only punctuation or symbols ("·" between two facts, "→" from an old value to a new one) is layout, not a
+        # fact: the new page draws its own; a run with a letter or a digit is said.
+        if self.depth and not self.silent and any(char.isalnum() for char in data):
             self.items.append(('text', squash(data)))
 
 

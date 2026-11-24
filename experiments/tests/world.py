@@ -187,13 +187,14 @@ def build_sealed(cls):
     # The rows that hang on X's records: a task's note, checklist and assignee; an alarm at its point and who was told.
     from alarms.models import Alarm, Notification
     from tasks.models import TaskAssignee, TaskChecklistItem, TaskNote
-    cls.task_note = TaskNote.objects.create(task=cls.task, author=cls.lead, body='XQZ note on the weighing')
-    cls.checklist = TaskChecklistItem.objects.create(task=cls.task, text='XQZ weigh twenty fish')
+    # Numbered high, as a page is compared with an unknown number's: the walk takes ids out only when they are long.
+    cls.task_note = TaskNote.objects.create(id=987600003, task=cls.task, author=cls.lead, body='XQZ note on the weighing')
+    cls.checklist = TaskChecklistItem.objects.create(id=987600004, task=cls.task, text='XQZ weigh twenty fish')
     TaskAssignee.objects.create(task=cls.task, user=cls.lead)
-    cls.alarm = Alarm.objects.create(source='water_limit', point=cls.sealed_point, parameter='oxygen_mg_l',
+    cls.alarm = Alarm.objects.create(id=987600001, source='water_limit', point=cls.sealed_point, parameter='oxygen_mg_l',
                                      severity='critical', site=cls.site, production_department=cls.hall,
                                      opened_at=timezone.now() - timedelta(hours=1), summary='XQZ-1 oxygen 4.0 below 6.0')
-    cls.notification = Notification.objects.create(alarm=cls.alarm, recipient=cls.lead, channel='push', level=0,
+    cls.notification = Notification.objects.create(id=987600002, alarm=cls.alarm, recipient=cls.lead, channel='push', level=0,
                                                    queued_at=timezone.now())
 
 

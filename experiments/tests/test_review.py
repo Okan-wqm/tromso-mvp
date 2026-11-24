@@ -94,8 +94,8 @@ class WithdrawalTests(ReviewCase):
         from unittest import mock
         from farm.health import withdrawal
         with withdrawal_gate.opened('test fixture: an old course without a rule'):
-            Treatment.objects.filter(pk=self.treatment.pk).update(start_date=self.today - timedelta(days=12),
-                                                                    end_date=self.today - timedelta(days=10))
+            Treatment.objects.filter(pk=self.treatment.pk).update(start_date=self.today - timedelta(days=4),
+                                                                    end_date=self.today - timedelta(days=3))
         days = mock.patch.object(withdrawal, 'unknown_withdrawal_days', return_value=1)
         days.start()
         self.addCleanup(days.stop)

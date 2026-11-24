@@ -438,7 +438,7 @@ class PermissionTests(PageTestCase):
         self.assertEqual(student['team post'], 403)          # the team is its lead's alone (review F3)
         researcher = self.statuses(person('researcher', *RESEARCHER))
         self.assertEqual({researcher[name] for name in ('list', 'detail', 'create', 'edit', 'delete')}, {200})
-        self.assertEqual((researcher['team post'], researcher['delete post']), (200, 302))
+        self.assertEqual((researcher['team post'], researcher['delete post']), (403, 302))    # the team: its lead's
         self.assertTrue(Experiment.all_objects.filter(pk=self.trial.pk, is_deleted=True).exists())
 
     def test_signed_out_everything_asks_to_sign_in(self):

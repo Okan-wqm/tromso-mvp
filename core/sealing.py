@@ -514,7 +514,7 @@ def _paths(value):
     return (value,) if isinstance(value, str) and value else tuple(value or ())
 
 
-def hidden(seal, part=None):
+def hidden(seal, part=None, depth=None):
     """The condition (a Q) that is true for the rows of `seal.model` hidden from whoever is looking when the query runs;
     None when the seal hides nothing. Nothing here knows the person: who is looking and what they are granted are
     read inside the statement when it is compiled (Viewing, the provider's subqueries)."""
@@ -534,16 +534,16 @@ def hidden(seal, part=None):
                     conditions.append(Q(Exists(cells.filter(days, **{lookup: ref}))))
     for link in seal.via:
         parent = seal.model._meta.get_field(link).related_model
-        shown = parent._default_manager.filter(pk=OuterRef(link))
+        shown = _shown(parent, part, depth).filter(pk=OuterRef(link))
         conditions.append(Q(**{f'{link}__isnull': False}) & ~Q(Exists(shown)))
     if seal.any_of:
         child, link = _child(seal.any_of)
         children = child._base_manager.filter(**{link: OuterRef('pk')})
-        shown = child._default_manager.filter(**{link: OuterRef('pk')})
+        shown = _shown(child, part, depth).filter(**{link: OuterRef('pk')})
         conditions.append(Q(Exists(children)) & ~Q(Exists(shown)))
     if seal.hidden_with:
         child, link = _child(seal.hidden_with)
-        child_hidden = hidden(seal_of(child), part)
+        child_hidden = None if depth == 0 else hidden(seal_of(child), part, None if depth is None else depth - 1)
         if child_hidden is not None:
             conditions.append(Q(Exists(child._base_manager.filter(child_hidden, **{link: OuterRef('pk')}))))
     if not conditions:
@@ -556,6 +556,17 @@ def hidden(seal, part=None):
         result &= ~Q(Exists(_provider.oversees()))
     # The system (a command, a named system read) hides nothing, and its read is not made longer by the condition.
     return Q(Sealed(result))
+
+
+def _shown(model, part, depth):
+    """The rows of a parent or child model the person may see: its sealed manager (`depth` None), or, for a bounded
+    reading (the activity log's exclusion, `depth` levels of parents and children), its own condition that far."""
+    if depth is None:
+        return model._default_manager.all()
+    seal = seal_of(model)
+    condition = None if depth == 0 or seal is None or not seal.filters else hidden(seal, None, depth - 1)
+    rows = model._base_manager.all()
+    return rows if condition is None else rows.exclude(condition)
 
 
 def _child(spec):

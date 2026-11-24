@@ -59,7 +59,9 @@ def sealed_out(entries):
     for seal in sealing.registry():
         if not seal.filters:
             continue
-        condition = sealing.hidden(seal)
+        # Two levels of parents and children: what an entry is about and the records it hangs on (a bounded statement,
+        # read on every poll of a screen through the change token).
+        condition = sealing.hidden(seal, depth=2)
         if condition is None:
             continue
         ids = seal.model._base_manager.filter(condition).annotate(log_id=Cast('pk', models.CharField())).values('log_id')

@@ -252,6 +252,8 @@ export interface LinkRow {
   group?: string | undefined;
   checked: boolean;
   primary: boolean;
+  /** the primary mark's words for a screen reader, as the server said them for this row (else `primaryWords`) */
+  said?: string | undefined;
   /** the inputs of the link's details, drawn by the caller with the field components */
   details?: ReactNode;
 }
@@ -297,7 +299,7 @@ export function LinkList({ name, label, rows, columns, primary, primaryLabel, pr
             {primary ? (
               <label className="check link-primary">
                 <input type="radio" name={`${name}-primary`} value={row.pk} defaultChecked={row.primary} />
-                <span className="sr-only">{(primaryWords ?? '%(record)s').replace('%(record)s', row.label)}</span>
+                <span className="sr-only">{row.said ?? (primaryWords ?? '%(record)s').replace('%(record)s', row.label)}</span>
               </label>
             ) : null}
             {row.details}

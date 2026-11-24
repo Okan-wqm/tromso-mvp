@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+    "key": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5/",
+    "href": "/sites/14ef6d2b-8881-41d0-90b3-2adec649fbe6/",
     "type": "Kara tesisi",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+    "key": "8ff91311-7674-4594-9986-15ea1ecbe432",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/0e440c3c-e3cc-43df-beba-ed85bb2bcccd/",
+    "href": "/sites/8ff91311-7674-4594-9986-15ea1ecbe432/",
     "type": "Deniz kafesi",
     "status": "warning",
     "units": "1",
@@ -248,7 +248,7 @@
   "critical": "Kritik",
   "entries": [
    {
-    "key": "0b5ce764-ba74-4ddd-81d4-8b2660fff08a",
+    "key": "d1dd06de-5550-48a3-b371-a00b8e9496f9",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Deney · E-2026-001 · Test trial",
@@ -260,7 +260,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "6c929c9a-86fb-4574-8837-af78b5797935",
+    "key": "0d39e4f0-ed03-4ab0-9327-8cce0dc87e35",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Deney · E-2026-001 · Test trial",
@@ -272,7 +272,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "b2b837a6-498d-4ef6-9eee-3b99760db3c8",
+    "key": "2ff249f6-cb3b-4ae4-8b38-7fc1a38d4aa3",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Deney · E-2026-001 · Test trial",
@@ -284,7 +284,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "b3fdbce7-2b3a-4d26-ab9d-cf6b952cb9ed",
+    "key": "3dcf0dda-9f74-4a51-9e24-cd0326c481ba",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Yemleme protokolü · Test grow-out",
@@ -296,7 +296,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "7438bdb5-8ca1-4ae2-928a-f0d309c22ff3",
+    "key": "e4640251-0247-4d72-88ce-42e10e16a312",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Kanal · TEST-1 › TEST-T",
@@ -318,10 +318,10 @@
   },
   "rows": [
    {
-    "key": "38adae63-15e0-4e81-ab23-04551512699e",
+    "key": "76126549-6cc9-4587-afa7-201a63231fda",
     "text": "A test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/38adae63-15e0-4e81-ab23-04551512699e/view/",
+    "href": "/knowledge/entries/76126549-6cc9-4587-afa7-201a63231fda/view/",
     "kind": "neutral",
     "chip": "Taslak"
    }

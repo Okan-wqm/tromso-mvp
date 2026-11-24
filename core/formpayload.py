@@ -218,6 +218,9 @@ def widget_payload(bound):
                      dependsOn=plain(context['depends_on']), emptyText=plain(context['empty_text']),
                      rows=[{'pk': row['pk'], 'label': row['label'], 'group': row['group'], 'id': row['id'],
                             'checked': row['checked'], 'primary': row['primary'],
+                            # its primary mark's words for a screen reader, said with the record (link_list.html)
+                            'primarySaid': gettext('%(record)s is the primary one') % {'record': row['label']}
+                            if primary else None,
                             'details': [field_payload(detail) for detail in row['details']] if row['details'] else []}
                            for row in context['rows']])
     elif kind == 'designer':

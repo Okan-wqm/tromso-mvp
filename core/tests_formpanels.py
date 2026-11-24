@@ -353,6 +353,8 @@ class GuardQuestionSavesTests(GuardTestCase):
 
     def setUp(self):
         super().setUp()
+        # a person who may edit feeds and medicines (the guard's own tests' user records fish, not reference data)
+        self.client.force_login(get_user_model().objects.create_superuser('test.keeper', 'test.keeper@example.com', 'x'))
         self.client.get(reverse('home'), {'ui': 'next'})
 
     def test_a_feed_made_medicated_asks_on_its_own_form_and_saves_past_the_box(self):

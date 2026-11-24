@@ -11,7 +11,7 @@
     },
     {
      "name": "entry_key",
-     "value": "4c2f24ad-e912-4fcd-89b9-29f98c46d78d",
+     "value": "074c63e3-4833-4e11-838b-5b4115d523c0",
      "kind": "hidden"
     }
    ],
@@ -778,7 +778,7 @@
             "label": null,
             "options": [
              {
-              "value": "879fcd7a-b0f6-4442-8b90-9d07ff17806d",
+              "value": "598e3886-0056-415c-a66a-f9056ba225ac",
               "label": "Test Site North · Test Hall A",
               "selected": false,
               "attrs": {}
@@ -789,7 +789,7 @@
             "label": null,
             "options": [
              {
-              "value": "765d36aa-c1c9-467a-9dd6-a4c1ead4806d",
+              "value": "4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
               "label": "Test Site South · Test Cages",
               "selected": false,
               "attrs": {}
@@ -830,15 +830,16 @@
           "emptyText": "No system to choose: the production department’s site has none, or no production department is chosen.",
           "rows": [
            {
-            "pk": "3226200f-d134-4cc3-a888-72e042efa799",
+            "pk": "d88a04b1-ff96-4660-9661-4188e2536554",
             "label": "Test Loop 1 (TL1)",
-            "group": "879fcd7a-b0f6-4442-8b90-9d07ff17806d",
+            "group": "598e3886-0056-415c-a66a-f9056ba225ac",
             "id": "id_systems_0",
             "checked": false,
             "primary": false,
+            "primarySaid": "Test Loop 1 (TL1) is the primary one",
             "details": [
              {
-              "name": "systems-3226200f-d134-4cc3-a888-72e042efa799-role",
+              "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-role",
               "label": "Role",
               "help": null,
               "required": false,
@@ -847,17 +848,17 @@
               "errors": [],
               "widget": {
                "kind": "text",
-               "name": "systems-3226200f-d134-4cc3-a888-72e042efa799-role",
+               "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-role",
                "value": null,
                "attrs": {
                 "maxlength": "50",
-                "id": "id_systems-3226200f-d134-4cc3-a888-72e042efa799-role"
+                "id": "id_systems-d88a04b1-ff96-4660-9661-4188e2536554-role"
                }
               },
               "initial": null
              },
              {
-              "name": "systems-3226200f-d134-4cc3-a888-72e042efa799-criticality",
+              "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality",
               "label": "Criticality",
               "help": null,
               "required": true,
@@ -866,12 +867,12 @@
               "errors": [],
               "widget": {
                "kind": "select",
-               "name": "systems-3226200f-d134-4cc3-a888-72e042efa799-criticality",
+               "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality",
                "value": [
                 "3"
                ],
                "attrs": {
-                "id": "id_systems-3226200f-d134-4cc3-a888-72e042efa799-criticality"
+                "id": "id_systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality"
                },
                "groups": [
                 {
@@ -980,11 +981,11 @@
             "label": null,
             "options": [
              {
-              "value": "94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {
-               "data-group": "879fcd7a-b0f6-4442-8b90-9d07ff17806d"
+               "data-group": "598e3886-0056-415c-a66a-f9056ba225ac"
               }
              }
             ]
@@ -1240,7 +1241,7 @@
  },
  "EquipmentResource edit": {
   "form": {
-   "action": "/equipment/94e6b0f4-0bf5-4aff-b3fd-442439d9678f/",
+   "action": "/equipment/8556e2b1-2cc2-4a1b-b4e9-16fad711aef4/",
    "multipart": false,
    "hidden": [
     {
@@ -1986,7 +1987,7 @@
           "kind": "select",
           "name": "production_department",
           "value": [
-           "879fcd7a-b0f6-4442-8b90-9d07ff17806d"
+           "598e3886-0056-415c-a66a-f9056ba225ac"
           ],
           "attrs": {
            "required": true,
@@ -2009,7 +2010,7 @@
             "label": null,
             "options": [
              {
-              "value": "879fcd7a-b0f6-4442-8b90-9d07ff17806d",
+              "value": "598e3886-0056-415c-a66a-f9056ba225ac",
               "label": "Test Site North · Test Hall A",
               "selected": true,
               "attrs": {
@@ -2022,7 +2023,7 @@
             "label": null,
             "options": [
              {
-              "value": "765d36aa-c1c9-467a-9dd6-a4c1ead4806d",
+              "value": "4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
               "label": "Test Site South · Test Cages",
               "selected": false,
               "attrs": {}
@@ -2063,15 +2064,16 @@
           "emptyText": "No system to choose: the production department’s site has none, or no production department is chosen.",
           "rows": [
            {
-            "pk": "3226200f-d134-4cc3-a888-72e042efa799",
+            "pk": "d88a04b1-ff96-4660-9661-4188e2536554",
             "label": "Test Loop 1 (TL1)",
-            "group": "879fcd7a-b0f6-4442-8b90-9d07ff17806d",
+            "group": "598e3886-0056-415c-a66a-f9056ba225ac",
             "id": "id_systems_0",
             "checked": false,
             "primary": false,
+            "primarySaid": "Test Loop 1 (TL1) is the primary one",
             "details": [
              {
-              "name": "systems-3226200f-d134-4cc3-a888-72e042efa799-role",
+              "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-role",
               "label": "Role",
               "help": null,
               "required": false,
@@ -2080,17 +2082,17 @@
               "errors": [],
               "widget": {
                "kind": "text",
-               "name": "systems-3226200f-d134-4cc3-a888-72e042efa799-role",
+               "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-role",
                "value": null,
                "attrs": {
                 "maxlength": "50",
-                "id": "id_systems-3226200f-d134-4cc3-a888-72e042efa799-role"
+                "id": "id_systems-d88a04b1-ff96-4660-9661-4188e2536554-role"
                }
               },
               "initial": null
              },
              {
-              "name": "systems-3226200f-d134-4cc3-a888-72e042efa799-criticality",
+              "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality",
               "label": "Criticality",
               "help": null,
               "required": true,
@@ -2099,12 +2101,12 @@
               "errors": [],
               "widget": {
                "kind": "select",
-               "name": "systems-3226200f-d134-4cc3-a888-72e042efa799-criticality",
+               "name": "systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality",
                "value": [
                 "3"
                ],
                "attrs": {
-                "id": "id_systems-3226200f-d134-4cc3-a888-72e042efa799-criticality"
+                "id": "id_systems-d88a04b1-ff96-4660-9661-4188e2536554-criticality"
                },
                "groups": [
                 {
@@ -2628,7 +2630,7 @@
      },
      {
       "kind": "rows",
-      "action": "/equipment/94e6b0f4-0bf5-4aff-b3fd-442439d9678f/calibrations/",
+      "action": "/equipment/8556e2b1-2cc2-4a1b-b4e9-16fad711aef4/calibrations/",
       "version": 2,
       "rowKind": "calibration-row",
       "columns": [
@@ -2792,7 +2794,7 @@
           },
           {
            "name": "calibrations-0-equipment",
-           "value": "94e6b0f4-0bf5-4aff-b3fd-442439d9678f"
+           "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4"
           }
          ],
          "errors": []
@@ -2925,7 +2927,7 @@
          },
          {
           "name": "calibrations-__prefix__-equipment",
-          "value": "94e6b0f4-0bf5-4aff-b3fd-442439d9678f"
+          "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4"
          }
         ]
        }
@@ -2936,7 +2938,7 @@
    }
   ],
   "delete": {
-   "href": "/equipment/94e6b0f4-0bf5-4aff-b3fd-442439d9678f/delete/",
+   "href": "/equipment/8556e2b1-2cc2-4a1b-b4e9-16fad711aef4/delete/",
    "label": "Delete equipment"
   },
   "history": {
@@ -2951,7 +2953,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "64ce1626-0168-43ba-9c26-e84405a7feac",
+     "key": "80524a2d-e5be-4f1e-b5be-5e75e4403096",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -2983,7 +2985,7 @@
     },
     {
      "name": "entry_key",
-     "value": "f0f0a8bd-5378-4aa9-9858-8aaccad31654",
+     "value": "bc2813aa-2334-4742-9fdb-aa4ddab2719f",
      "kind": "hidden"
     }
    ],
@@ -3086,7 +3088,7 @@
             "label": null,
             "options": [
              {
-              "value": "b81326eb-9c3d-42b0-8df6-84126bc21070",
+              "value": "963c845f-59b8-49a6-84a1-8d7ac46054fc",
               "label": "Test Supplier (TSU)",
               "selected": false,
               "attrs": {}
@@ -3746,7 +3748,7 @@
  },
  "FeedResource edit": {
   "form": {
-   "action": "/feeds/3d91dd4b-295d-42ce-9f7e-15faed233ade/",
+   "action": "/feeds/96ea51db-ff70-479e-be66-8d070d774e24/",
    "multipart": false,
    "hidden": [
     {
@@ -3830,7 +3832,7 @@
           "kind": "select",
           "name": "manufacturer",
           "value": [
-           "b81326eb-9c3d-42b0-8df6-84126bc21070"
+           "963c845f-59b8-49a6-84a1-8d7ac46054fc"
           ],
           "attrs": {
            "aria-describedby": "id_manufacturer_helptext",
@@ -3852,7 +3854,7 @@
             "label": null,
             "options": [
              {
-              "value": "b81326eb-9c3d-42b0-8df6-84126bc21070",
+              "value": "963c845f-59b8-49a6-84a1-8d7ac46054fc",
               "label": "Test Supplier (TSU)",
               "selected": true,
               "attrs": {
@@ -4508,7 +4510,7 @@
      },
      {
       "kind": "rows",
-      "action": "/feeds/3d91dd4b-295d-42ce-9f7e-15faed233ade/suitability/",
+      "action": "/feeds/96ea51db-ff70-479e-be66-8d070d774e24/suitability/",
       "version": 2,
       "rowKind": "suitability-row",
       "columns": [
@@ -4559,7 +4561,7 @@
             "kind": "select",
             "name": "suitability-0-species",
             "value": [
-             "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f"
+             "381ee422-e01a-4993-819b-ace98caff58e"
             ],
             "attrs": {
              "id": "id_suitability-0-species"
@@ -4580,7 +4582,7 @@
               "label": null,
               "options": [
                {
-                "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+                "value": "381ee422-e01a-4993-819b-ace98caff58e",
                 "label": "Atlantic salmon (SAL)",
                 "selected": true,
                 "attrs": {
@@ -4812,7 +4814,7 @@
           },
           {
            "name": "suitability-0-feed",
-           "value": "3d91dd4b-295d-42ce-9f7e-15faed233ade"
+           "value": "96ea51db-ff70-479e-be66-8d070d774e24"
           }
          ],
          "errors": []
@@ -4855,7 +4857,7 @@
              "label": null,
              "options": [
               {
-               "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+               "value": "381ee422-e01a-4993-819b-ace98caff58e",
                "label": "Atlantic salmon (SAL)",
                "selected": false,
                "attrs": {}
@@ -5085,7 +5087,7 @@
          },
          {
           "name": "suitability-__prefix__-feed",
-          "value": "3d91dd4b-295d-42ce-9f7e-15faed233ade"
+          "value": "96ea51db-ff70-479e-be66-8d070d774e24"
          }
         ]
        }
@@ -5096,7 +5098,7 @@
    }
   ],
   "delete": {
-   "href": "/feeds/3d91dd4b-295d-42ce-9f7e-15faed233ade/delete/",
+   "href": "/feeds/96ea51db-ff70-479e-be66-8d070d774e24/delete/",
    "label": "Delete feed"
   },
   "history": {
@@ -5111,7 +5113,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "c22abf6c-46de-4aa9-a76a-33060b513474",
+     "key": "2c4ace73-b452-4a00-a93c-9b8642cf2c4d",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -5143,7 +5145,7 @@
     },
     {
      "name": "entry_key",
-     "value": "2e10941a-a768-4e31-a855-b71c086e9dcb",
+     "value": "066b9447-0c61-4d07-b055-276805aa4452",
      "kind": "hidden"
     }
    ],
@@ -5219,7 +5221,7 @@
             "label": null,
             "options": [
              {
-              "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+              "value": "381ee422-e01a-4993-819b-ace98caff58e",
               "label": "Atlantic salmon (SAL)",
               "selected": false,
               "attrs": {}
@@ -5349,7 +5351,7 @@
  },
  "FeedingProtocolResource edit": {
   "form": {
-   "action": "/operations/feeding/protocols/01b0ad0f-5ad3-4675-8b8d-c99bce3aa146/",
+   "action": "/operations/feeding/protocols/1a9712a2-5cb4-4bdd-9e01-ea0c8aa5355f/",
    "multipart": false,
    "hidden": [
     {
@@ -5405,7 +5407,7 @@
           "kind": "select",
           "name": "species",
           "value": [
-           "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f"
+           "381ee422-e01a-4993-819b-ace98caff58e"
           ],
           "attrs": {
            "required": true,
@@ -5428,7 +5430,7 @@
             "label": null,
             "options": [
              {
-              "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+              "value": "381ee422-e01a-4993-819b-ace98caff58e",
               "label": "Atlantic salmon (SAL)",
               "selected": true,
               "attrs": {
@@ -5576,7 +5578,7 @@
      },
      {
       "kind": "form",
-      "action": "/operations/feeding/protocols/01b0ad0f-5ad3-4675-8b8d-c99bce3aa146/table/",
+      "action": "/operations/feeding/protocols/1a9712a2-5cb4-4bdd-9e01-ea0c8aa5355f/table/",
       "label": "Feeding table",
       "hidden": [
        {
@@ -5709,7 +5711,7 @@
               "kind": "select",
               "name": "bands-0-feed",
               "value": [
-               "3d91dd4b-295d-42ce-9f7e-15faed233ade"
+               "96ea51db-ff70-479e-be66-8d070d774e24"
               ],
               "attrs": {
                "id": "id_bands-0-feed"
@@ -5730,7 +5732,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "3d91dd4b-295d-42ce-9f7e-15faed233ade",
+                  "value": "96ea51db-ff70-479e-be66-8d070d774e24",
                   "label": "Test Feed (TFE)",
                   "selected": true,
                   "attrs": {
@@ -5911,7 +5913,7 @@
               "kind": "select",
               "name": "bands-1-feed",
               "value": [
-               "3d91dd4b-295d-42ce-9f7e-15faed233ade"
+               "96ea51db-ff70-479e-be66-8d070d774e24"
               ],
               "attrs": {
                "id": "id_bands-1-feed"
@@ -5932,7 +5934,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "3d91dd4b-295d-42ce-9f7e-15faed233ade",
+                  "value": "96ea51db-ff70-479e-be66-8d070d774e24",
                   "label": "Test Feed (TFE)",
                   "selected": true,
                   "attrs": {
@@ -6137,7 +6139,7 @@
                "label": null,
                "options": [
                 {
-                 "value": "3d91dd4b-295d-42ce-9f7e-15faed233ade",
+                 "value": "96ea51db-ff70-479e-be66-8d070d774e24",
                  "label": "Test Feed (TFE)",
                  "selected": false,
                  "attrs": {}
@@ -6284,7 +6286,7 @@
      },
      {
       "kind": "post",
-      "action": "/operations/feeding/protocols/01b0ad0f-5ad3-4675-8b8d-c99bce3aa146/duplicate/",
+      "action": "/operations/feeding/protocols/1a9712a2-5cb4-4bdd-9e01-ea0c8aa5355f/duplicate/",
       "label": "Duplicate",
       "primary": false,
       "fields": []
@@ -6297,7 +6299,7 @@
    }
   ],
   "delete": {
-   "href": "/operations/feeding/protocols/01b0ad0f-5ad3-4675-8b8d-c99bce3aa146/delete/",
+   "href": "/operations/feeding/protocols/1a9712a2-5cb4-4bdd-9e01-ea0c8aa5355f/delete/",
    "label": "Delete feeding protocol"
   },
   "history": {
@@ -6312,7 +6314,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "b3fdbce7-2b3a-4d26-ab9d-cf6b952cb9ed",
+     "key": "3dcf0dda-9f74-4a51-9e24-cd0326c481ba",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -6344,7 +6346,7 @@
     },
     {
      "name": "entry_key",
-     "value": "4d868df3-a395-41c7-af6e-cfd109a85063",
+     "value": "eaee6019-c22f-4f69-aba6-bf7bc47d7440",
      "kind": "hidden"
     }
    ],
@@ -7049,7 +7051,7 @@
  },
  "MedicineResource edit": {
   "form": {
-   "action": "/medicines/c76668c4-8d86-4f76-b4f0-2d634e409748/",
+   "action": "/medicines/769bce64-aa3d-4f96-9ed9-6c4dfc7934fb/",
    "multipart": false,
    "hidden": [
     {
@@ -7753,7 +7755,7 @@
      },
      {
       "kind": "rows",
-      "action": "/medicines/c76668c4-8d86-4f76-b4f0-2d634e409748/withdrawals/",
+      "action": "/medicines/769bce64-aa3d-4f96-9ed9-6c4dfc7934fb/withdrawals/",
       "version": 2,
       "rowKind": "withdrawal-row",
       "columns": [
@@ -7827,7 +7829,7 @@
               "label": null,
               "options": [
                {
-                "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+                "value": "381ee422-e01a-4993-819b-ace98caff58e",
                 "label": "Atlantic salmon (SAL)",
                 "selected": false,
                 "attrs": {}
@@ -7943,7 +7945,7 @@
           },
           {
            "name": "withdrawals-0-medicine",
-           "value": "c76668c4-8d86-4f76-b4f0-2d634e409748"
+           "value": "769bce64-aa3d-4f96-9ed9-6c4dfc7934fb"
           }
          ],
          "errors": []
@@ -7986,7 +7988,7 @@
              "label": null,
              "options": [
               {
-               "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+               "value": "381ee422-e01a-4993-819b-ace98caff58e",
                "label": "Atlantic salmon (SAL)",
                "selected": false,
                "attrs": {}
@@ -8102,7 +8104,7 @@
          },
          {
           "name": "withdrawals-__prefix__-medicine",
-          "value": "c76668c4-8d86-4f76-b4f0-2d634e409748"
+          "value": "769bce64-aa3d-4f96-9ed9-6c4dfc7934fb"
          }
         ]
        }
@@ -8113,7 +8115,7 @@
    }
   ],
   "delete": {
-   "href": "/medicines/c76668c4-8d86-4f76-b4f0-2d634e409748/delete/",
+   "href": "/medicines/769bce64-aa3d-4f96-9ed9-6c4dfc7934fb/delete/",
    "label": "Delete medicine"
   },
   "history": {
@@ -8128,7 +8130,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "7e724795-3a92-403b-82c2-3a85667c7a9b",
+     "key": "8a12963f-e1e2-4f55-a6e0-4b03edd59d37",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -8160,7 +8162,7 @@
     },
     {
      "name": "entry_key",
-     "value": "1236d697-e779-4399-bb18-7f07ed50c915",
+     "value": "b3e1e37b-274a-40d7-9d5e-5b1ceb007136",
      "kind": "hidden"
     }
    ],
@@ -9048,7 +9050,7 @@
  },
  "SiteResource edit": {
   "form": {
-   "action": "/sites/c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5/",
+   "action": "/sites/14ef6d2b-8881-41d0-90b3-2adec649fbe6/",
    "multipart": false,
    "hidden": [
     {
@@ -9935,7 +9937,7 @@
      },
      {
       "kind": "rows",
-      "action": "/sites/c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5/contacts/",
+      "action": "/sites/14ef6d2b-8881-41d0-90b3-2adec649fbe6/contacts/",
       "version": 2,
       "rowKind": "",
       "columns": [],
@@ -10090,11 +10092,11 @@
          "hidden": [
           {
            "name": "contacts-0-id",
-           "value": "4858eb7c-60e7-4bbc-bfe4-e23960d77ce1"
+           "value": "fe8e5afe-3738-4bfa-9906-25fb2c7f1093"
           },
           {
            "name": "contacts-0-site",
-           "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+           "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
           }
          ],
          "errors": []
@@ -10227,7 +10229,7 @@
          },
          {
           "name": "contacts-__prefix__-site",
-          "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+          "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
          }
         ]
        }
@@ -10238,7 +10240,7 @@
    }
   ],
   "delete": {
-   "href": "/sites/c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5/delete/",
+   "href": "/sites/14ef6d2b-8881-41d0-90b3-2adec649fbe6/delete/",
    "label": "Delete site"
   },
   "history": {
@@ -10253,7 +10255,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "379c5cd7-643d-409c-bdbb-2753f34612bf",
+     "key": "95f3e206-a206-4a5a-aeae-9cbf8d86d080",
      "action": "Created",
      "critical": false,
      "by": {
@@ -10306,7 +10308,7 @@
      ]
     },
     {
-     "key": "b240858b-1882-4251-87b4-0f707d4cf89f",
+     "key": "666834f6-90bf-41b5-a3d0-1657dac87419",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -10338,7 +10340,7 @@
     },
     {
      "name": "entry_key",
-     "value": "4bc2feaa-78d4-43e9-9e92-8b6ac308f8e0",
+     "value": "68cf02aa-656b-40c5-a1ba-2443920da4a8",
      "kind": "hidden"
     }
    ],
@@ -11019,7 +11021,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {
@@ -11033,7 +11035,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {
@@ -11139,7 +11141,7 @@
  },
  "SupplierResource edit": {
   "form": {
-   "action": "/suppliers/b81326eb-9c3d-42b0-8df6-84126bc21070/",
+   "action": "/suppliers/963c845f-59b8-49a6-84a1-8d7ac46054fc/",
    "multipart": false,
    "hidden": [
     {
@@ -11830,7 +11832,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {
@@ -11844,7 +11846,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {
@@ -11944,7 +11946,7 @@
      },
      {
       "kind": "rows",
-      "action": "/suppliers/b81326eb-9c3d-42b0-8df6-84126bc21070/contacts/",
+      "action": "/suppliers/963c845f-59b8-49a6-84a1-8d7ac46054fc/contacts/",
       "version": 2,
       "rowKind": "",
       "columns": [],
@@ -12099,11 +12101,11 @@
          "hidden": [
           {
            "name": "contacts-0-id",
-           "value": "d8be094c-4880-4daa-b0ac-43c1443fde6d"
+           "value": "9c4f78aa-0308-4d33-a096-dafd3f3f21d3"
           },
           {
            "name": "contacts-0-supplier",
-           "value": "b81326eb-9c3d-42b0-8df6-84126bc21070"
+           "value": "963c845f-59b8-49a6-84a1-8d7ac46054fc"
           }
          ],
          "errors": []
@@ -12236,7 +12238,7 @@
          },
          {
           "name": "contacts-__prefix__-supplier",
-          "value": "b81326eb-9c3d-42b0-8df6-84126bc21070"
+          "value": "963c845f-59b8-49a6-84a1-8d7ac46054fc"
          }
         ]
        }
@@ -12247,7 +12249,7 @@
    }
   ],
   "delete": {
-   "href": "/suppliers/b81326eb-9c3d-42b0-8df6-84126bc21070/delete/",
+   "href": "/suppliers/963c845f-59b8-49a6-84a1-8d7ac46054fc/delete/",
    "label": "Delete supplier"
   },
   "history": {
@@ -12262,7 +12264,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "80fa534b-5519-40a3-92c5-7479647abdb3",
+     "key": "34d99ff4-ce34-4236-b0a2-2f287486fb39",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -12294,7 +12296,7 @@
     },
     {
      "name": "entry_key",
-     "value": "9b7e59eb-e866-4fb2-951b-4d74f7bbc23c",
+     "value": "bb980400-65fa-410e-b45d-3831e3c27d44",
      "kind": "hidden"
     }
    ],
@@ -12524,7 +12526,7 @@
             "label": null,
             "options": [
              {
-              "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+              "value": "381ee422-e01a-4993-819b-ace98caff58e",
               "label": "Atlantic salmon (SAL)",
               "selected": false,
               "attrs": {
@@ -12666,7 +12668,7 @@
             "label": null,
             "options": [
              {
-              "value": "e7a298ab-1430-43b7-ab06-698ec9da1e92",
+              "value": "17d7f131-6c99-4d22-a0ff-f3f7a89e9394",
               "label": "Test document (n.d.) · Test document",
               "selected": false,
               "attrs": {}
@@ -12770,7 +12772,7 @@
  },
  "KnowledgeEntryResource edit": {
   "form": {
-   "action": "/knowledge/entries/38adae63-15e0-4e81-ab23-04551512699e/",
+   "action": "/knowledge/entries/76126549-6cc9-4587-afa7-201a63231fda/",
    "multipart": false,
    "hidden": [
     {
@@ -13010,7 +13012,7 @@
             "label": null,
             "options": [
              {
-              "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+              "value": "381ee422-e01a-4993-819b-ace98caff58e",
               "label": "Atlantic salmon (SAL)",
               "selected": false,
               "attrs": {
@@ -13128,7 +13130,7 @@
           "kind": "select",
           "name": "document",
           "value": [
-           "e7a298ab-1430-43b7-ab06-698ec9da1e92"
+           "17d7f131-6c99-4d22-a0ff-f3f7a89e9394"
           ],
           "attrs": {
            "aria-describedby": "id_document_helptext",
@@ -13150,7 +13152,7 @@
             "label": null,
             "options": [
              {
-              "value": "e7a298ab-1430-43b7-ab06-698ec9da1e92",
+              "value": "17d7f131-6c99-4d22-a0ff-f3f7a89e9394",
               "label": "Test document (n.d.) · Test document",
               "selected": true,
               "attrs": {
@@ -13267,7 +13269,7 @@
      },
      {
       "kind": "post",
-      "action": "/knowledge/entries/38adae63-15e0-4e81-ab23-04551512699e/review/",
+      "action": "/knowledge/entries/76126549-6cc9-4587-afa7-201a63231fda/review/",
       "label": "Mark as reviewed",
       "primary": true,
       "fields": [
@@ -13289,7 +13291,7 @@
    }
   ],
   "delete": {
-   "href": "/knowledge/entries/38adae63-15e0-4e81-ab23-04551512699e/delete/",
+   "href": "/knowledge/entries/76126549-6cc9-4587-afa7-201a63231fda/delete/",
    "label": "Delete knowledge entry"
   },
   "history": {
@@ -13304,7 +13306,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "8170394e-a191-4b26-ba73-16359b4f046b",
+     "key": "897a59c2-3160-40ed-9f88-23b08cf84ac4",
      "action": "Created",
      "critical": false,
      "by": {
@@ -13356,7 +13358,7 @@
     },
     {
      "name": "entry_key",
-     "value": "ed18f2a6-2a50-48d7-bc5f-72a18b29bcc1",
+     "value": "fb663626-b44e-4f16-bef4-240064769df3",
      "kind": "hidden"
     }
    ],
@@ -13411,7 +13413,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -13422,7 +13424,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -13669,11 +13671,11 @@
             "label": null,
             "options": [
              {
-              "value": "94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -13838,7 +13840,7 @@
  },
  "StorageLocationResource edit": {
   "form": {
-   "action": "/storage-locations/52e419d7-a870-4985-aea3-cd801d27473d/",
+   "action": "/storage-locations/53fbe9db-8d12-471c-a4e3-372ffae43b7c/",
    "multipart": false,
    "hidden": [
     {
@@ -13873,7 +13875,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
           ],
           "attrs": {
            "required": true,
@@ -13897,7 +13899,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": true,
               "attrs": {
@@ -13910,7 +13912,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -14157,11 +14159,11 @@
             "label": null,
             "options": [
              {
-              "value": "94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -14320,7 +14322,7 @@
      },
      {
       "kind": "rows",
-      "action": "/storage-locations/52e419d7-a870-4985-aea3-cd801d27473d/reorder/",
+      "action": "/storage-locations/53fbe9db-8d12-471c-a4e3-372ffae43b7c/reorder/",
       "version": 2,
       "rowKind": "reorder-row",
       "columns": [
@@ -14368,7 +14370,7 @@
             "kind": "select",
             "name": "reorder-0-feed",
             "value": [
-             "3d91dd4b-295d-42ce-9f7e-15faed233ade"
+             "96ea51db-ff70-479e-be66-8d070d774e24"
             ],
             "attrs": {
              "id": "id_reorder-0-feed"
@@ -14389,7 +14391,7 @@
               "label": null,
               "options": [
                {
-                "value": "3d91dd4b-295d-42ce-9f7e-15faed233ade",
+                "value": "96ea51db-ff70-479e-be66-8d070d774e24",
                 "label": "Test Feed (TFE)",
                 "selected": true,
                 "attrs": {
@@ -14448,7 +14450,7 @@
           },
           {
            "name": "reorder-0-location",
-           "value": "52e419d7-a870-4985-aea3-cd801d27473d"
+           "value": "53fbe9db-8d12-471c-a4e3-372ffae43b7c"
           }
          ],
          "errors": []
@@ -14491,7 +14493,7 @@
              "label": null,
              "options": [
               {
-               "value": "3d91dd4b-295d-42ce-9f7e-15faed233ade",
+               "value": "96ea51db-ff70-479e-be66-8d070d774e24",
                "label": "Test Feed (TFE)",
                "selected": false,
                "attrs": {}
@@ -14548,7 +14550,7 @@
          },
          {
           "name": "reorder-__prefix__-location",
-          "value": "52e419d7-a870-4985-aea3-cd801d27473d"
+          "value": "53fbe9db-8d12-471c-a4e3-372ffae43b7c"
          }
         ]
        }
@@ -14559,7 +14561,7 @@
    }
   ],
   "delete": {
-   "href": "/storage-locations/52e419d7-a870-4985-aea3-cd801d27473d/delete/",
+   "href": "/storage-locations/53fbe9db-8d12-471c-a4e3-372ffae43b7c/delete/",
    "label": "Delete storage location"
   },
   "history": {
@@ -14574,7 +14576,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "8b740749-5570-4836-8c36-fe1507792527",
+     "key": "6e8f36fc-0c4e-4a49-a73f-5a4fe675c37d",
      "action": "Created",
      "critical": false,
      "by": {
@@ -14612,7 +14614,7 @@
      ]
     },
     {
-     "key": "c1fd2cc2-6c2c-47f7-9f21-3b334ea61b17",
+     "key": "120b3008-75ae-40f1-a458-50d7da13c571",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -14644,7 +14646,7 @@
     },
     {
      "name": "entry_key",
-     "value": "bcc7883c-1202-4de1-8f58-aed7ce957698",
+     "value": "09ddfe1b-f6d6-4fe3-8127-f27dd7816c0a",
      "kind": "hidden"
     }
    ],
@@ -14853,7 +14855,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -14864,7 +14866,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -15358,7 +15360,7 @@
  },
  "ReportResource edit": {
   "form": {
-   "action": "/reports/901d7221-7e2d-442c-9c06-012b59b5c52f/",
+   "action": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/",
    "multipart": false,
    "hidden": [
     {
@@ -15549,7 +15551,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+           "8ff91311-7674-4594-9986-15ea1ecbe432"
           ],
           "attrs": {
            "disabled": true,
@@ -15571,7 +15573,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -15582,7 +15584,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": true,
               "attrs": {
@@ -15767,7 +15769,7 @@
      },
      {
       "kind": "rows",
-      "action": "/reports/901d7221-7e2d-442c-9c06-012b59b5c52f/treatments/",
+      "action": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/treatments/",
       "version": 1,
       "rowKind": "treatment-answer-row",
       "columns": [
@@ -15902,7 +15904,7 @@
          },
          {
           "name": "treatments-__prefix__-report",
-          "value": "901d7221-7e2d-442c-9c06-012b59b5c52f"
+          "value": "d3d5f0c6-1a4c-49bb-b280-9042f163f484"
          }
         ]
        }
@@ -15923,7 +15925,7 @@
      },
      {
       "kind": "rows",
-      "action": "/reports/901d7221-7e2d-442c-9c06-012b59b5c52f/resistance/",
+      "action": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/resistance/",
       "version": 1,
       "rowKind": "resistance-row",
       "columns": [
@@ -16249,7 +16251,7 @@
          },
          {
           "name": "resistance-__prefix__-report",
-          "value": "901d7221-7e2d-442c-9c06-012b59b5c52f"
+          "value": "d3d5f0c6-1a4c-49bb-b280-9042f163f484"
          }
         ]
        }
@@ -16270,7 +16272,7 @@
      },
      {
       "kind": "rows",
-      "action": "/reports/901d7221-7e2d-442c-9c06-012b59b5c52f/sensitivity/",
+      "action": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/sensitivity/",
       "version": 1,
       "rowKind": "sensitivity-row",
       "columns": [
@@ -16607,7 +16609,7 @@
          },
          {
           "name": "sensitivity-__prefix__-report",
-          "value": "901d7221-7e2d-442c-9c06-012b59b5c52f"
+          "value": "d3d5f0c6-1a4c-49bb-b280-9042f163f484"
          }
         ]
        }
@@ -16618,7 +16620,7 @@
    }
   ],
   "delete": {
-   "href": "/reports/901d7221-7e2d-442c-9c06-012b59b5c52f/delete/",
+   "href": "/reports/d3d5f0c6-1a4c-49bb-b280-9042f163f484/delete/",
    "label": "Delete regulatory report"
   },
   "history": {
@@ -16646,7 +16648,7 @@
     },
     {
      "name": "entry_key",
-     "value": "01291f95-106c-4ff2-aca7-c4e637870ec4",
+     "value": "6874ec93-ba5d-469d-933e-972c25318ace",
      "kind": "hidden"
     }
    ],
@@ -16947,7 +16949,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North",
               "selected": false,
               "attrs": {}
@@ -16958,7 +16960,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South",
               "selected": false,
               "attrs": {}
@@ -17009,19 +17011,19 @@
             "label": "Whole site",
             "options": [
              {
-              "value": "site:c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "site:14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "site:0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "site:8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -17030,19 +17032,19 @@
             "label": "Production departments",
             "options": [
              {
-              "value": "department:879fcd7a-b0f6-4442-8b90-9d07ff17806d",
+              "value": "department:598e3886-0056-415c-a66a-f9056ba225ac",
               "label": "Test Hall A — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "department:765d36aa-c1c9-467a-9dd6-a4c1ead4806d",
+              "value": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
               "label": "Test Cages — Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -17051,11 +17053,11 @@
             "label": "Systems",
             "options": [
              {
-              "value": "system:3226200f-d134-4cc3-a888-72e042efa799",
+              "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
               "label": "TL1 · Test Loop 1 — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -17064,19 +17066,19 @@
             "label": "Units",
             "options": [
              {
-              "value": "unit:7962b636-4091-405c-9d43-e9cb072630e3",
+              "value": "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
               "label": "TT-01 · Unit TT-01 — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "unit:7d40382f-7b46-4879-b85d-395ea911ebde",
+              "value": "unit:b174ad91-982a-487c-b86a-a73294845477",
               "label": "TM-01 · Unit TM-01 — Test Cages · Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -17085,11 +17087,11 @@
             "label": "Equipment",
             "options": [
              {
-              "value": "equipment:94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "equipment:8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD) — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -17137,11 +17139,11 @@
             "label": null,
             "options": [
              {
-              "value": "f7b5dc94-91ce-48be-acec-d498497a8a80",
+              "value": "8598f81d-3fdb-4c2a-bdea-0ffc65bc0b01",
               "label": "B-2026-002 · Atlantic salmon",
               "selected": false,
               "attrs": {
-               "data-group": "department:765d36aa-c1c9-467a-9dd6-a4c1ead4806d site:0e440c3c-e3cc-43df-beba-ed85bb2bcccd unit:7d40382f-7b46-4879-b85d-395ea911ebde"
+               "data-group": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3 site:8ff91311-7674-4594-9986-15ea1ecbe432 unit:b174ad91-982a-487c-b86a-a73294845477"
               }
              }
             ]
@@ -17150,11 +17152,11 @@
             "label": null,
             "options": [
              {
-              "value": "13755898-721b-4469-9336-6c5993874e82",
+              "value": "04290815-1f14-4f38-b6ad-64626f8fd270",
               "label": "B-2026-001 · Atlantic salmon",
               "selected": false,
               "attrs": {
-               "data-group": "department:879fcd7a-b0f6-4442-8b90-9d07ff17806d site:c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5 system:3226200f-d134-4cc3-a888-72e042efa799 unit:7962b636-4091-405c-9d43-e9cb072630e3"
+               "data-group": "department:598e3886-0056-415c-a66a-f9056ba225ac site:14ef6d2b-8881-41d0-90b3-2adec649fbe6 system:d88a04b1-ff96-4660-9661-4188e2536554 unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df"
               }
              }
             ]
@@ -17295,7 +17297,7 @@
  },
  "TaskResource edit": {
   "form": {
-   "action": "/operations/tasks/7d6162f0-2a8e-4273-b059-86de20902d5d/",
+   "action": "/operations/tasks/de10c57d-6c29-4cbd-8165-ab5bf40b777e/",
    "multipart": false,
    "hidden": [
     {
@@ -17576,7 +17578,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
           ],
           "attrs": {
            "required": true,
@@ -17599,7 +17601,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North",
               "selected": true,
               "attrs": {
@@ -17612,7 +17614,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South",
               "selected": false,
               "attrs": {}
@@ -17637,7 +17639,7 @@
           "kind": "select",
           "name": "location",
           "value": [
-           "unit:7962b636-4091-405c-9d43-e9cb072630e3"
+           "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df"
           ],
           "attrs": {
            "data-depends-on": "site",
@@ -17661,19 +17663,19 @@
             "label": "Whole site",
             "options": [
              {
-              "value": "site:c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "site:14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "site:0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "site:8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -17682,19 +17684,19 @@
             "label": "Production departments",
             "options": [
              {
-              "value": "department:879fcd7a-b0f6-4442-8b90-9d07ff17806d",
+              "value": "department:598e3886-0056-415c-a66a-f9056ba225ac",
               "label": "Test Hall A — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "department:765d36aa-c1c9-467a-9dd6-a4c1ead4806d",
+              "value": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
               "label": "Test Cages — Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -17703,11 +17705,11 @@
             "label": "Systems",
             "options": [
              {
-              "value": "system:3226200f-d134-4cc3-a888-72e042efa799",
+              "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
               "label": "TL1 · Test Loop 1 — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -17716,20 +17718,20 @@
             "label": "Units",
             "options": [
              {
-              "value": "unit:7962b636-4091-405c-9d43-e9cb072630e3",
+              "value": "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
               "label": "TT-01 · Unit TT-01 — Test Hall A · Test Site North",
               "selected": true,
               "attrs": {
                "selected": true,
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "unit:7d40382f-7b46-4879-b85d-395ea911ebde",
+              "value": "unit:b174ad91-982a-487c-b86a-a73294845477",
               "label": "TM-01 · Unit TM-01 — Test Cages · Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -17738,11 +17740,11 @@
             "label": "Equipment",
             "options": [
              {
-              "value": "equipment:94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "equipment:8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD) — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -17790,11 +17792,11 @@
             "label": null,
             "options": [
              {
-              "value": "f7b5dc94-91ce-48be-acec-d498497a8a80",
+              "value": "8598f81d-3fdb-4c2a-bdea-0ffc65bc0b01",
               "label": "B-2026-002 · Atlantic salmon",
               "selected": false,
               "attrs": {
-               "data-group": "department:765d36aa-c1c9-467a-9dd6-a4c1ead4806d site:0e440c3c-e3cc-43df-beba-ed85bb2bcccd unit:7d40382f-7b46-4879-b85d-395ea911ebde"
+               "data-group": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3 site:8ff91311-7674-4594-9986-15ea1ecbe432 unit:b174ad91-982a-487c-b86a-a73294845477"
               }
              }
             ]
@@ -17803,11 +17805,11 @@
             "label": null,
             "options": [
              {
-              "value": "13755898-721b-4469-9336-6c5993874e82",
+              "value": "04290815-1f14-4f38-b6ad-64626f8fd270",
               "label": "B-2026-001 · Atlantic salmon",
               "selected": false,
               "attrs": {
-               "data-group": "department:879fcd7a-b0f6-4442-8b90-9d07ff17806d site:c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5 system:3226200f-d134-4cc3-a888-72e042efa799 unit:7962b636-4091-405c-9d43-e9cb072630e3"
+               "data-group": "department:598e3886-0056-415c-a66a-f9056ba225ac site:14ef6d2b-8881-41d0-90b3-2adec649fbe6 system:d88a04b1-ff96-4660-9661-4188e2536554 unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df"
               }
              }
             ]
@@ -17942,7 +17944,7 @@
      },
      {
       "kind": "rows",
-      "action": "/operations/tasks/7d6162f0-2a8e-4273-b059-86de20902d5d/checklist/",
+      "action": "/operations/tasks/de10c57d-6c29-4cbd-8165-ab5bf40b777e/checklist/",
       "version": 2,
       "rowKind": "checklist-row",
       "columns": [
@@ -18023,7 +18025,7 @@
           },
           {
            "name": "checklist-0-task",
-           "value": "7d6162f0-2a8e-4273-b059-86de20902d5d"
+           "value": "de10c57d-6c29-4cbd-8165-ab5bf40b777e"
           }
          ],
          "errors": []
@@ -18076,7 +18078,7 @@
           },
           {
            "name": "checklist-1-task",
-           "value": "7d6162f0-2a8e-4273-b059-86de20902d5d"
+           "value": "de10c57d-6c29-4cbd-8165-ab5bf40b777e"
           }
          ],
          "errors": []
@@ -18130,7 +18132,7 @@
          },
          {
           "name": "checklist-__prefix__-task",
-          "value": "7d6162f0-2a8e-4273-b059-86de20902d5d"
+          "value": "de10c57d-6c29-4cbd-8165-ab5bf40b777e"
          }
         ]
        }
@@ -18141,7 +18143,7 @@
    }
   ],
   "delete": {
-   "href": "/operations/tasks/7d6162f0-2a8e-4273-b059-86de20902d5d/delete/",
+   "href": "/operations/tasks/de10c57d-6c29-4cbd-8165-ab5bf40b777e/delete/",
    "label": "Delete task"
   },
   "history": {
@@ -18156,7 +18158,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "3baabcb6-2126-4227-a0f1-43bc9abd0ea8",
+     "key": "828a86a9-5804-42ac-b33d-ded3cf3a0bd7",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -18188,7 +18190,7 @@
     },
     {
      "name": "entry_key",
-     "value": "09217454-f342-4087-8fff-3d62cad4f46e",
+     "value": "2cfa5b5a-1f1f-492c-ab70-18f8a085e5e5",
      "kind": "hidden"
     }
    ],
@@ -18489,7 +18491,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North",
               "selected": false,
               "attrs": {}
@@ -18500,7 +18502,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South",
               "selected": false,
               "attrs": {}
@@ -18551,19 +18553,19 @@
             "label": "Whole site",
             "options": [
              {
-              "value": "site:c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "site:14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "site:0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "site:8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -18572,19 +18574,19 @@
             "label": "Production departments",
             "options": [
              {
-              "value": "department:879fcd7a-b0f6-4442-8b90-9d07ff17806d",
+              "value": "department:598e3886-0056-415c-a66a-f9056ba225ac",
               "label": "Test Hall A — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "department:765d36aa-c1c9-467a-9dd6-a4c1ead4806d",
+              "value": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
               "label": "Test Cages — Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -18593,11 +18595,11 @@
             "label": "Systems",
             "options": [
              {
-              "value": "system:3226200f-d134-4cc3-a888-72e042efa799",
+              "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
               "label": "TL1 · Test Loop 1 — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -18606,19 +18608,19 @@
             "label": "Units",
             "options": [
              {
-              "value": "unit:7962b636-4091-405c-9d43-e9cb072630e3",
+              "value": "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
               "label": "TT-01 · Unit TT-01 — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "unit:7d40382f-7b46-4879-b85d-395ea911ebde",
+              "value": "unit:b174ad91-982a-487c-b86a-a73294845477",
               "label": "TM-01 · Unit TM-01 — Test Cages · Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -18627,11 +18629,11 @@
             "label": "Equipment",
             "options": [
              {
-              "value": "equipment:94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "equipment:8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD) — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -19030,7 +19032,7 @@
  },
  "TaskSeriesResource edit": {
   "form": {
-   "action": "/operations/tasks/recurring/96c80ffa-38ed-4de7-89be-04f3782c93a5/",
+   "action": "/operations/tasks/recurring/47410fad-a4fe-4093-8630-457704a35aee/",
    "multipart": false,
    "hidden": [
     {
@@ -19311,7 +19313,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
           ],
           "attrs": {
            "required": true,
@@ -19334,7 +19336,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North",
               "selected": true,
               "attrs": {
@@ -19347,7 +19349,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South",
               "selected": false,
               "attrs": {}
@@ -19372,7 +19374,7 @@
           "kind": "select",
           "name": "location",
           "value": [
-           "unit:7962b636-4091-405c-9d43-e9cb072630e3"
+           "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df"
           ],
           "attrs": {
            "data-depends-on": "site",
@@ -19396,19 +19398,19 @@
             "label": "Whole site",
             "options": [
              {
-              "value": "site:c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "site:14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "site:0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "site:8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -19417,19 +19419,19 @@
             "label": "Production departments",
             "options": [
              {
-              "value": "department:879fcd7a-b0f6-4442-8b90-9d07ff17806d",
+              "value": "department:598e3886-0056-415c-a66a-f9056ba225ac",
               "label": "Test Hall A — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "department:765d36aa-c1c9-467a-9dd6-a4c1ead4806d",
+              "value": "department:4d4dc6c7-57b9-4815-803b-cc15ba8c8ae3",
               "label": "Test Cages — Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -19438,11 +19440,11 @@
             "label": "Systems",
             "options": [
              {
-              "value": "system:3226200f-d134-4cc3-a888-72e042efa799",
+              "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
               "label": "TL1 · Test Loop 1 — Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -19451,20 +19453,20 @@
             "label": "Units",
             "options": [
              {
-              "value": "unit:7962b636-4091-405c-9d43-e9cb072630e3",
+              "value": "unit:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
               "label": "TT-01 · Unit TT-01 — Test Hall A · Test Site North",
               "selected": true,
               "attrs": {
                "selected": true,
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              },
              {
-              "value": "unit:7d40382f-7b46-4879-b85d-395ea911ebde",
+              "value": "unit:b174ad91-982a-487c-b86a-a73294845477",
               "label": "TM-01 · Unit TM-01 — Test Cages · Test Site South",
               "selected": false,
               "attrs": {
-               "data-group": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd"
+               "data-group": "8ff91311-7674-4594-9986-15ea1ecbe432"
               }
              }
             ]
@@ -19473,11 +19475,11 @@
             "label": "Equipment",
             "options": [
              {
-              "value": "equipment:94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "equipment:8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD) — Test Hall A · Test Site North",
               "selected": false,
               "attrs": {
-               "data-group": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+               "data-group": "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
               }
              }
             ]
@@ -19754,7 +19756,7 @@
      },
      {
       "kind": "rows",
-      "action": "/operations/tasks/recurring/96c80ffa-38ed-4de7-89be-04f3782c93a5/checklist/",
+      "action": "/operations/tasks/recurring/47410fad-a4fe-4093-8630-457704a35aee/checklist/",
       "version": 2,
       "rowKind": "checklist-row",
       "columns": [
@@ -19835,7 +19837,7 @@
           },
           {
            "name": "checklist-0-series",
-           "value": "96c80ffa-38ed-4de7-89be-04f3782c93a5"
+           "value": "47410fad-a4fe-4093-8630-457704a35aee"
           }
          ],
          "errors": []
@@ -19889,7 +19891,7 @@
          },
          {
           "name": "checklist-__prefix__-series",
-          "value": "96c80ffa-38ed-4de7-89be-04f3782c93a5"
+          "value": "47410fad-a4fe-4093-8630-457704a35aee"
          }
         ]
        }
@@ -19900,7 +19902,7 @@
    }
   ],
   "delete": {
-   "href": "/operations/tasks/recurring/96c80ffa-38ed-4de7-89be-04f3782c93a5/delete/",
+   "href": "/operations/tasks/recurring/47410fad-a4fe-4093-8630-457704a35aee/delete/",
    "label": "Delete recurring task"
   },
   "history": {
@@ -19915,7 +19917,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "48fc8a0b-ccf4-4a12-ace2-263efffcfe7e",
+     "key": "2642b00c-4e86-48d4-9be2-590c280627fd",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -19947,7 +19949,7 @@
     },
     {
      "name": "entry_key",
-     "value": "a688cb3b-4d42-4f28-9a0b-896bf32100e9",
+     "value": "e06a6ce7-1bd2-4287-b65f-fda2930e86f2",
      "kind": "hidden"
     }
    ],
@@ -20022,7 +20024,7 @@
             "label": null,
             "options": [
              {
-              "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+              "value": "381ee422-e01a-4993-819b-ace98caff58e",
               "label": "Atlantic salmon (SAL)",
               "selected": false,
               "attrs": {}
@@ -20072,7 +20074,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -20083,7 +20085,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -20306,7 +20308,7 @@
  },
  "ExperimentResource edit": {
   "form": {
-   "action": "/research/experiments/25decf12-c19a-4c4d-9073-33e557393d1a/",
+   "action": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/",
    "multipart": false,
    "hidden": [
     {
@@ -20361,7 +20363,7 @@
           "kind": "select",
           "name": "species",
           "value": [
-           "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f"
+           "381ee422-e01a-4993-819b-ace98caff58e"
           ],
           "attrs": {
            "disabled": true,
@@ -20384,7 +20386,7 @@
             "label": null,
             "options": [
              {
-              "value": "ef7ff11b-bc30-4791-acf5-2e93ca8f1d5f",
+              "value": "381ee422-e01a-4993-819b-ace98caff58e",
               "label": "Atlantic salmon (SAL)",
               "selected": true,
               "attrs": {
@@ -20411,7 +20413,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
           ],
           "attrs": {
            "disabled": true,
@@ -20434,7 +20436,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": true,
               "attrs": {
@@ -20447,7 +20449,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -20679,19 +20681,19 @@
      },
      {
       "kind": "link",
-      "href": "/research/experiments/25decf12-c19a-4c4d-9073-33e557393d1a/start/",
+      "href": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/start/",
       "label": "Start the experiment",
       "icon": null
      },
      {
       "kind": "link",
-      "href": "/research/experiments/25decf12-c19a-4c4d-9073-33e557393d1a/copy/",
+      "href": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/copy/",
       "label": "Copy as a new experiment",
       "icon": null
      },
      {
       "kind": "link",
-      "href": "/research/experiments/25decf12-c19a-4c4d-9073-33e557393d1a/copy/?as=template",
+      "href": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/copy/?as=template",
       "label": "Save as a template",
       "icon": null
      },
@@ -20701,7 +20703,7 @@
      },
      {
       "kind": "form",
-      "action": "/research/experiments/25decf12-c19a-4c4d-9073-33e557393d1a/design/",
+      "action": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/design/",
       "label": "Design",
       "hidden": [
        {
@@ -20749,7 +20751,7 @@
           "hidden": [
            {
             "name": "factors-0-id",
-            "value": "3ee07b3c-7ac6-4ba6-9489-023da5c616e9"
+            "value": "1ae2a533-e807-4cf0-9540-43afcb3f90ce"
            }
           ],
           "errors": [],
@@ -20922,7 +20924,7 @@
           "hidden": [
            {
             "name": "groups-0-id",
-            "value": "e6a300aa-9c6f-4ee8-9a8d-18092dba59fb"
+            "value": "e139999a-e78b-4055-9d0b-7243647d9a29"
            }
           ],
           "errors": [],
@@ -21318,7 +21320,7 @@
      },
      {
       "kind": "form",
-      "action": "/research/experiments/25decf12-c19a-4c4d-9073-33e557393d1a/places/",
+      "action": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/places/",
       "label": "Places",
       "hidden": [
        {
@@ -21364,7 +21366,7 @@
              "label": "Tanks",
              "options": [
               {
-               "value": "tank:7962b636-4091-405c-9d43-e9cb072630e3",
+               "value": "tank:91b0eb55-e980-41b1-9c3e-a4ae28d336df",
                "label": "TT-01 · Unit TT-01",
                "selected": false,
                "attrs": {}
@@ -21375,7 +21377,7 @@
              "label": "Systems",
              "options": [
               {
-               "value": "system:3226200f-d134-4cc3-a888-72e042efa799",
+               "value": "system:d88a04b1-ff96-4660-9661-4188e2536554",
                "label": "TL1 · Test Loop 1",
                "selected": false,
                "attrs": {}
@@ -21399,7 +21401,7 @@
           "widget": {
            "kind": "number",
            "name": "seed",
-           "value": "657961034",
+           "value": "87466755",
            "attrs": {
             "min": 0,
             "max": 9223372036854775807,
@@ -21459,7 +21461,7 @@
           "hidden": [
            {
             "name": "places-0-replicate",
-            "value": "13ffef88-461c-40d6-99bb-847a85279edf"
+            "value": "f0aff4ff-038e-472f-8a8c-ac473eb0bd2c"
            }
           ],
           "errors": [],
@@ -21487,7 +21489,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "7962b636-4091-405c-9d43-e9cb072630e3",
+                  "value": "91b0eb55-e980-41b1-9c3e-a4ae28d336df",
                   "label": "TT-01 · Unit TT-01 · Test Loop 1",
                   "selected": false,
                   "attrs": {}
@@ -21535,7 +21537,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "3226200f-d134-4cc3-a888-72e042efa799",
+                  "value": "d88a04b1-ff96-4660-9661-4188e2536554",
                   "label": "TL1 · Test Loop 1",
                   "selected": false,
                   "attrs": {}
@@ -21600,7 +21602,7 @@
           "hidden": [
            {
             "name": "places-1-replicate",
-            "value": "a819c9d6-9d58-4469-bd80-9413d055bb9e"
+            "value": "2926d29d-c5d3-44a1-8a40-755798c5dbaf"
            }
           ],
           "errors": [],
@@ -21628,7 +21630,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "7962b636-4091-405c-9d43-e9cb072630e3",
+                  "value": "91b0eb55-e980-41b1-9c3e-a4ae28d336df",
                   "label": "TT-01 · Unit TT-01 · Test Loop 1",
                   "selected": false,
                   "attrs": {}
@@ -21676,7 +21678,7 @@
                 "label": null,
                 "options": [
                  {
-                  "value": "3226200f-d134-4cc3-a888-72e042efa799",
+                  "value": "d88a04b1-ff96-4660-9661-4188e2536554",
                   "label": "TL1 · Test Loop 1",
                   "selected": false,
                   "attrs": {}
@@ -21793,7 +21795,7 @@
      },
      {
       "kind": "rows",
-      "action": "/research/experiments/25decf12-c19a-4c4d-9073-33e557393d1a/team/",
+      "action": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/team/",
       "version": 2,
       "rowKind": "team-row",
       "columns": [
@@ -21980,7 +21982,7 @@
           },
           {
            "name": "team-0-experiment",
-           "value": "25decf12-c19a-4c4d-9073-33e557393d1a"
+           "value": "8cb38c19-4f6a-4696-810f-be8536660726"
           }
          ],
          "errors": []
@@ -22139,7 +22141,7 @@
          },
          {
           "name": "team-__prefix__-experiment",
-          "value": "25decf12-c19a-4c4d-9073-33e557393d1a"
+          "value": "8cb38c19-4f6a-4696-810f-be8536660726"
          }
         ]
        }
@@ -22150,7 +22152,7 @@
    }
   ],
   "delete": {
-   "href": "/research/experiments/25decf12-c19a-4c4d-9073-33e557393d1a/delete/",
+   "href": "/research/experiments/8cb38c19-4f6a-4696-810f-be8536660726/delete/",
    "label": "Delete experiment"
   },
   "history": {
@@ -22165,7 +22167,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "b2b837a6-498d-4ef6-9eee-3b99760db3c8",
+     "key": "2ff249f6-cb3b-4ae4-8b38-7fc1a38d4aa3",
      "action": "Created",
      "critical": false,
      "by": {
@@ -22208,7 +22210,7 @@
      ]
     },
     {
-     "key": "6c929c9a-86fb-4574-8837-af78b5797935",
+     "key": "0d39e4f0-ed03-4ab0-9327-8cce0dc87e35",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -22226,7 +22228,7 @@
      ]
     },
     {
-     "key": "0b5ce764-ba74-4ddd-81d4-8b2660fff08a",
+     "key": "d1dd06de-5550-48a3-b371-a00b8e9496f9",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -22258,7 +22260,7 @@
     },
     {
      "name": "entry_key",
-     "value": "2dc8ff4f-12c7-4024-a494-45d9327c6f40",
+     "value": "5780c3bd-1686-4b1f-9147-de9cb50abb15",
      "kind": "hidden"
     }
    ],
@@ -22530,7 +22532,7 @@
  },
  "MonitorBoardResource edit": {
   "form": {
-   "action": "/monitoring-boards/0ed3dd8b-8202-4a53-b304-6d0b714cb444/",
+   "action": "/monitoring-boards/c0610ef1-c2be-4418-bb6a-2c6802429cb3/",
    "multipart": false,
    "hidden": [
     {
@@ -22801,7 +22803,7 @@
      },
      {
       "kind": "rows",
-      "action": "/monitoring-boards/0ed3dd8b-8202-4a53-b304-6d0b714cb444/units/",
+      "action": "/monitoring-boards/c0610ef1-c2be-4418-bb6a-2c6802429cb3/units/",
       "version": 2,
       "rowKind": "monitor-board-row",
       "columns": [
@@ -22849,7 +22851,7 @@
             "kind": "select",
             "name": "units-0-unit",
             "value": [
-             "7962b636-4091-405c-9d43-e9cb072630e3"
+             "91b0eb55-e980-41b1-9c3e-a4ae28d336df"
             ],
             "attrs": {
              "id": "id_units-0-unit"
@@ -22870,7 +22872,7 @@
               "label": null,
               "options": [
                {
-                "value": "7d40382f-7b46-4879-b85d-395ea911ebde",
+                "value": "b174ad91-982a-487c-b86a-a73294845477",
                 "label": "Unit TM-01 (TM-01)",
                 "selected": false,
                 "attrs": {}
@@ -22881,7 +22883,7 @@
               "label": null,
               "options": [
                {
-                "value": "7962b636-4091-405c-9d43-e9cb072630e3",
+                "value": "91b0eb55-e980-41b1-9c3e-a4ae28d336df",
                 "label": "Unit TT-01 (TT-01)",
                 "selected": true,
                 "attrs": {
@@ -23010,7 +23012,7 @@
           },
           {
            "name": "units-0-board",
-           "value": "0ed3dd8b-8202-4a53-b304-6d0b714cb444"
+           "value": "c0610ef1-c2be-4418-bb6a-2c6802429cb3"
           }
          ],
          "errors": []
@@ -23053,7 +23055,7 @@
              "label": null,
              "options": [
               {
-               "value": "7d40382f-7b46-4879-b85d-395ea911ebde",
+               "value": "b174ad91-982a-487c-b86a-a73294845477",
                "label": "Unit TM-01 (TM-01)",
                "selected": false,
                "attrs": {}
@@ -23064,7 +23066,7 @@
              "label": null,
              "options": [
               {
-               "value": "7962b636-4091-405c-9d43-e9cb072630e3",
+               "value": "91b0eb55-e980-41b1-9c3e-a4ae28d336df",
                "label": "Unit TT-01 (TT-01)",
                "selected": false,
                "attrs": {}
@@ -23191,7 +23193,7 @@
          },
          {
           "name": "units-__prefix__-board",
-          "value": "0ed3dd8b-8202-4a53-b304-6d0b714cb444"
+          "value": "c0610ef1-c2be-4418-bb6a-2c6802429cb3"
          }
         ]
        }
@@ -23202,7 +23204,7 @@
    }
   ],
   "delete": {
-   "href": "/monitoring-boards/0ed3dd8b-8202-4a53-b304-6d0b714cb444/delete/",
+   "href": "/monitoring-boards/c0610ef1-c2be-4418-bb6a-2c6802429cb3/delete/",
    "label": "Delete monitoring board"
   },
   "history": {
@@ -23217,7 +23219,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "7bee9ea4-8da0-40c0-b1f2-485015aef7f5",
+     "key": "c617f22c-357f-4b81-841b-bdab646d7a82",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -23249,7 +23251,7 @@
     },
     {
      "name": "entry_key",
-     "value": "13ce86e1-0bee-4a40-ae77-3b0c4400f9fc",
+     "value": "3a81ee3b-8ae4-475e-b575-27bf33ccfc2e",
      "kind": "hidden"
     }
    ],
@@ -23301,7 +23303,7 @@
             "label": null,
             "options": [
              {
-              "value": "97bb9e65-71a1-4cde-bef0-78652c1cddc0",
+              "value": "933cf3c5-810d-4e7f-aac9-7c75c00fcbc1",
               "label": "Test broker",
               "selected": false,
               "attrs": {}
@@ -23388,7 +23390,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": false,
               "attrs": {}
@@ -23399,7 +23401,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -23448,7 +23450,7 @@
             "label": null,
             "options": [
              {
-              "value": "94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {}
@@ -23607,7 +23609,7 @@
             "label": null,
             "options": [
              {
-              "value": "a8b383f6-36ba-4f64-acb4-63d2b3fa10a1",
+              "value": "ae7bf4a0-2085-45ef-8f01-ecec0bb0c7a4",
               "label": "Test format",
               "selected": false,
               "attrs": {}
@@ -23716,7 +23718,7 @@
             "label": null,
             "options": [
              {
-              "value": "4ee85c29-e597-484b-bfc1-1a08681bad12",
+              "value": "450bc34b-c28e-4b7c-988c-f57f5b42b45e",
               "label": "test-gateway",
               "selected": false,
               "attrs": {}
@@ -23751,7 +23753,7 @@
  },
  "DeviceResource edit": {
   "form": {
-   "action": "/sensors/devices/95ddf506-2a7f-4c3b-a50c-11e57ae95cde/",
+   "action": "/sensors/devices/748aef17-7ad2-48a4-892c-99c236ba7dbc/",
    "multipart": false,
    "hidden": [
     {
@@ -23784,7 +23786,7 @@
           "kind": "select",
           "name": "connection",
           "value": [
-           "97bb9e65-71a1-4cde-bef0-78652c1cddc0"
+           "933cf3c5-810d-4e7f-aac9-7c75c00fcbc1"
           ],
           "attrs": {
            "disabled": true,
@@ -23806,7 +23808,7 @@
             "label": null,
             "options": [
              {
-              "value": "97bb9e65-71a1-4cde-bef0-78652c1cddc0",
+              "value": "933cf3c5-810d-4e7f-aac9-7c75c00fcbc1",
               "label": "Test broker",
               "selected": true,
               "attrs": {
@@ -23871,7 +23873,7 @@
           "kind": "select",
           "name": "site",
           "value": [
-           "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5"
+           "14ef6d2b-8881-41d0-90b3-2adec649fbe6"
           ],
           "attrs": {
            "required": true,
@@ -23893,7 +23895,7 @@
             "label": null,
             "options": [
              {
-              "value": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
+              "value": "14ef6d2b-8881-41d0-90b3-2adec649fbe6",
               "label": "Test Site North (TSN)",
               "selected": true,
               "attrs": {
@@ -23906,7 +23908,7 @@
             "label": null,
             "options": [
              {
-              "value": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
+              "value": "8ff91311-7674-4594-9986-15ea1ecbe432",
               "label": "Test Site South (TSS)",
               "selected": false,
               "attrs": {}
@@ -23955,7 +23957,7 @@
             "label": null,
             "options": [
              {
-              "value": "94e6b0f4-0bf5-4aff-b3fd-442439d9678f",
+              "value": "8556e2b1-2cc2-4a1b-b4e9-16fad711aef4",
               "label": "Test Feeder (TFD)",
               "selected": false,
               "attrs": {}
@@ -24090,7 +24092,7 @@
           "kind": "select",
           "name": "payload_format",
           "value": [
-           "a8b383f6-36ba-4f64-acb4-63d2b3fa10a1"
+           "ae7bf4a0-2085-45ef-8f01-ecec0bb0c7a4"
           ],
           "attrs": {
            "required": true,
@@ -24112,7 +24114,7 @@
             "label": null,
             "options": [
              {
-              "value": "a8b383f6-36ba-4f64-acb4-63d2b3fa10a1",
+              "value": "ae7bf4a0-2085-45ef-8f01-ecec0bb0c7a4",
               "label": "Test format",
               "selected": true,
               "attrs": {
@@ -24223,7 +24225,7 @@
             "label": null,
             "options": [
              {
-              "value": "4ee85c29-e597-484b-bfc1-1a08681bad12",
+              "value": "450bc34b-c28e-4b7c-988c-f57f5b42b45e",
               "label": "test-gateway",
               "selected": false,
               "attrs": {}
@@ -24291,13 +24293,13 @@
       ],
       "rows": [
        {
-        "key": "16b1d4c9-087f-4031-a44f-cdf0e59dda0f",
+        "key": "81c54c3a-5ec5-4a0c-95cf-3702f8302369",
         "status": null,
         "voided": false,
         "cells": {
          "channel": {
           "text": "TEST-T",
-          "href": "/sensors/channels/16b1d4c9-087f-4031-a44f-cdf0e59dda0f/",
+          "href": "/sensors/channels/81c54c3a-5ec5-4a0c-95cf-3702f8302369/",
           "strong": true,
           "chip": null,
           "chips": [],
@@ -24356,7 +24358,7 @@
      },
      {
       "kind": "link",
-      "href": "/sensors/devices/move/?device=95ddf506-2a7f-4c3b-a50c-11e57ae95cde",
+      "href": "/sensors/devices/move/?device=748aef17-7ad2-48a4-892c-99c236ba7dbc",
       "label": "Move device",
       "icon": "target"
      },
@@ -24368,7 +24370,7 @@
    }
   ],
   "delete": {
-   "href": "/sensors/devices/95ddf506-2a7f-4c3b-a50c-11e57ae95cde/delete/",
+   "href": "/sensors/devices/748aef17-7ad2-48a4-892c-99c236ba7dbc/delete/",
    "label": "Delete device"
   },
   "history": {
@@ -24396,7 +24398,7 @@
     },
     {
      "name": "entry_key",
-     "value": "d44b7486-de8e-46f9-9beb-89da00355947",
+     "value": "7590a67f-f37b-4d54-a87b-136a255411fd",
      "kind": "hidden"
     }
    ],
@@ -24448,7 +24450,7 @@
             "label": null,
             "options": [
              {
-              "value": "95ddf506-2a7f-4c3b-a50c-11e57ae95cde",
+              "value": "748aef17-7ad2-48a4-892c-99c236ba7dbc",
               "label": "Probe TEST-1 (TEST-1)",
               "selected": false,
               "attrs": {}
@@ -25392,7 +25394,7 @@
  },
  "ChannelResource edit": {
   "form": {
-   "action": "/sensors/channels/16b1d4c9-087f-4031-a44f-cdf0e59dda0f/",
+   "action": "/sensors/channels/81c54c3a-5ec5-4a0c-95cf-3702f8302369/",
    "multipart": false,
    "hidden": [
     {
@@ -25425,7 +25427,7 @@
           "kind": "select",
           "name": "device",
           "value": [
-           "95ddf506-2a7f-4c3b-a50c-11e57ae95cde"
+           "748aef17-7ad2-48a4-892c-99c236ba7dbc"
           ],
           "attrs": {
            "disabled": true,
@@ -25447,7 +25449,7 @@
             "label": null,
             "options": [
              {
-              "value": "95ddf506-2a7f-4c3b-a50c-11e57ae95cde",
+              "value": "748aef17-7ad2-48a4-892c-99c236ba7dbc",
               "label": "Probe TEST-1 (TEST-1)",
               "selected": true,
               "attrs": {
@@ -26330,7 +26332,7 @@
      },
      {
       "kind": "rows",
-      "action": "/sensors/channels/16b1d4c9-087f-4031-a44f-cdf0e59dda0f/calibrations/",
+      "action": "/sensors/channels/81c54c3a-5ec5-4a0c-95cf-3702f8302369/calibrations/",
       "version": 2,
       "rowKind": "calibration-row",
       "columns": [
@@ -26492,7 +26494,7 @@
           },
           {
            "name": "calibrations-0-channel",
-           "value": "16b1d4c9-087f-4031-a44f-cdf0e59dda0f"
+           "value": "81c54c3a-5ec5-4a0c-95cf-3702f8302369"
           }
          ],
          "errors": []
@@ -26623,7 +26625,7 @@
          },
          {
           "name": "calibrations-__prefix__-channel",
-          "value": "16b1d4c9-087f-4031-a44f-cdf0e59dda0f"
+          "value": "81c54c3a-5ec5-4a0c-95cf-3702f8302369"
          }
         ]
        }
@@ -26634,7 +26636,7 @@
    }
   ],
   "delete": {
-   "href": "/sensors/channels/16b1d4c9-087f-4031-a44f-cdf0e59dda0f/delete/",
+   "href": "/sensors/channels/81c54c3a-5ec5-4a0c-95cf-3702f8302369/delete/",
    "label": "Delete channel"
   },
   "history": {
@@ -26649,7 +26651,7 @@
    "empty_value": "empty",
    "entries": [
     {
-     "key": "7438bdb5-8ca1-4ae2-928a-f0d309c22ff3",
+     "key": "e4640251-0247-4d72-88ce-42e10e16a312",
      "action": "Changed",
      "critical": false,
      "by": {
@@ -26681,7 +26683,7 @@
     },
     {
      "name": "entry_key",
-     "value": "8f03041a-c429-4f01-8dad-84eb42e2318c",
+     "value": "e9fc8524-1ad8-49dd-a1ef-45f2ef3a1790",
      "kind": "hidden"
     }
    ],
@@ -26766,7 +26768,7 @@
  },
  "CredentialResource edit": {
   "form": {
-   "action": "/sensors/credentials/4ee85c29-e597-484b-bfc1-1a08681bad12/",
+   "action": "/sensors/credentials/450bc34b-c28e-4b7c-988c-f57f5b42b45e/",
    "multipart": false,
    "hidden": [
     {
@@ -26863,7 +26865,7 @@
      },
      {
       "kind": "post",
-      "action": "/sensors/credentials/4ee85c29-e597-484b-bfc1-1a08681bad12/rotate/",
+      "action": "/sensors/credentials/450bc34b-c28e-4b7c-988c-f57f5b42b45e/rotate/",
       "label": "Replace the secret",
       "primary": false,
       "fields": [
@@ -26877,7 +26879,7 @@
    }
   ],
   "delete": {
-   "href": "/sensors/credentials/4ee85c29-e597-484b-bfc1-1a08681bad12/delete/",
+   "href": "/sensors/credentials/450bc34b-c28e-4b7c-988c-f57f5b42b45e/delete/",
    "label": "Delete sensor credential"
   },
   "history": {

@@ -23,7 +23,8 @@ interface Widget {
   kind: string; name: string; value: Value; attrs: Record<string, Value>;
   groups?: { label: string | null; options: Option[] }[];
   columns?: string[]; sections?: { label: string; areas: { label: string; notes: string[]; cells: { action: string; said: string; option: Option | null }[] }[] }[];
-  rows?: { pk: string; label: string; group: string; id: string; checked: boolean; primary: boolean; details: Field[] }[];
+  rows?: { pk: string; label: string; group: string; id: string; checked: boolean; primary: boolean; details: Field[];
+    primarySaid?: string | null }[];
   primary?: boolean; dependsOn?: string; emptyText?: string; areaLabel?: string; shown?: string;
   primaryLabel?: string | null; primaryWords?: string | null; primaryName?: string | null;
   current?: { name: string; href: string | null; clearName: string | null; clearId: string | null; clearLabel: string;
@@ -186,7 +187,7 @@ export function FieldOf({ field, optional, source, inRow = false }: { field: Fie
         primaryLabel={widget.primaryLabel ?? undefined} primaryWords={widget.primaryWords ?? undefined}
         group={widget.dependsOn ? source(widget.dependsOn) : undefined}
         rows={(widget.rows ?? []).map((row) => ({ pk: row.pk, label: row.label, group: row.group, checked: row.checked,
-          primary: row.primary, details: row.details.map((detail) => <FieldOf key={detail.name} field={detail} optional={optional} source={source} />) }))} />;
+          primary: row.primary, said: row.primarySaid ?? undefined, details: row.details.map((detail) => <FieldOf key={detail.name} field={detail} optional={optional} source={source} />) }))} />;
       break;
     case 'hidden':
     case 'unshown':

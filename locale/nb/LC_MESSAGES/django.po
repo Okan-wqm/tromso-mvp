@@ -675,6 +675,12 @@ msgstr[0] "%(count)s enhet med fisk"
 msgstr[1] "%(count)s enheter med fisk"
 
 #, python-format
+msgid "%(count)s unit with critical or warning water has no open alarm."
+msgid_plural "%(count)s units with critical or warning water have no open alarm."
+msgstr[0] "%(count)s enhet med kritisk vann eller vann over et varsel har ingen åpen alarm."
+msgstr[1] "%(count)s enheter med kritisk vann eller vann over et varsel har ingen åpen alarm."
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s advarsel"
@@ -11007,6 +11013,10 @@ msgstr "På permisjon"
 msgid "On site now"
 msgstr "På lokaliteten nå"
 
+#, python-format
+msgid "On the Monitoring screen: %(units)s."
+msgstr "På Overvåking-skjermen: %(units)s."
+
 msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
 msgstr "Etter klokken på stedets lokalitet. Hver kanals tilknytning til nå slutter da."
 
@@ -13295,6 +13305,9 @@ msgstr "Se registeret dag for dag"
 
 msgid "See the feedings"
 msgstr "Se fôringene"
+
+msgid "See them on Monitoring"
+msgstr "Se dem under Overvåking"
 
 msgid "Seed"
 msgstr "Frø"
@@ -16249,6 +16262,9 @@ msgstr ""
 #, python-format
 msgid "The units take %(placed)s fish, but %(count)s arrive: the split must add up."
 msgstr "Enhetene tar %(placed)s fisk, men %(count)s kommer: fordelingen må gå opp."
+
+msgid "The units that need a look could not be read here."
+msgstr "Enhetene som trenger tilsyn, kunne ikke leses her."
 
 msgid "The units the fish go into and how many each takes; together they take every fish arriving."
 msgstr "Enhetene fisken skal i og hvor mange hver tar; til sammen tar de all fisken som kommer."

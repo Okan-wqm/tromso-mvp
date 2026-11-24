@@ -2,6 +2,7 @@
 escalated, acknowledged, snoozed, cleared), the console's Acknowledge and Snooze; Company › Alarms › Alarm snoozes: every
 snooze, newest first, and whether it is in force. The pages say plainly that nothing is sent while no transport is
 connected."""
+import logging
 from datetime import timedelta
 
 from django.contrib import messages
@@ -28,12 +29,33 @@ from .models import Alarm, AlarmShelve
 READ = 'alarms.view_alarm'
 SNOOZES = 'alarms.view_alarmshelve'
 STATES = ('open', 'all')
+logger = logging.getLogger(__name__)
 
 
 def _context(**extra):
     place = navigation.place(READ)
     return {'title': place.entry.label, 'eyebrow': place.heading,
             'connected': read.connected(), **extra}
+
+
+def units_note(user):
+    """What the Alarms page says of the units that need a look on the Monitoring screen, from the strip's own reading
+    (alarms.read.attention, in core.ui.attention_words: no second judgement), so a person who comes from a red strip
+    never finds an empty page: {'text', 'status', 'url' (Monitoring, '' for a person who may not open it), 'unalarmed'
+    (how many of them have critical or warning water and no open water alarm at their own points: Attention.unalarmed;
+    nothing is said of the rungs the engine never raises an alarm for)}; {'failed': True} when the reading fails
+    (logged); None when no unit needs a look."""
+    from core import ui
+    try:
+        found = read.attention()
+    except Exception:
+        logger.exception('The units that need a look could not be read for the Alarms page.')
+        return {'failed': True, 'url': reverse(ui.MONITORING) if ui.may_open(user, ui.MONITORING) else ''}
+    words = [text for what, text in ui.attention_words(found) if what == ui.UNITS]
+    if not words:
+        return None
+    return {'text': ' · '.join(words), 'status': 'critical' if found.critical else 'warning', 'unalarmed': found.unalarmed,
+            'url': reverse(ui.MONITORING) if ui.may_open(user, ui.MONITORING) else ''}
 
 
 @permission_required(READ, raise_exception=True)
@@ -43,6 +65,7 @@ def alarm_list(request):
     page = Paginator(read.listing(state), PAGE_SIZE).get_page(request.GET.get('page'))
     return render_page(request, 'alarms/alarm_list.html', _context(page=page, alarms=page.object_list, state=state,
                                                                    pager_query=f'state={state}',
+                                                                   units_note=units_note(request.user),
                                                                    floods=floods.open_floods(current_rules()),
                                                                    worker=watch.state(), timings=settings.ALARM_WORKER))
 

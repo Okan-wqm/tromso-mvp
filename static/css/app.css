@@ -584,6 +584,11 @@
 [data-ui="next"] .ui-strip:is([data-poll-state="unread"], [data-poll-state="stale"], [data-poll-state="gone"]) > :first-child { border-left: 1px solid var(--line-hair); }
 [data-ui="next"] a.ui-strip-item { color: var(--text-1); font-family: var(--font-display); font-size: var(--fs-cell); font-weight: 600; letter-spacing: .02em; }
 [data-ui="next"] a.ui-strip-item:hover { background: var(--surface-sunken); }
+/* an alarms item whose counts are listed on two pages (open alarms, units: core/ui.py alarms_item) is one item with a link
+   per part, underlined so each reads as its own link; or plain words for a person who may not open Monitoring */
+[data-ui="next"] span.ui-strip-item[data-strip="alarms"] { font-family: var(--font-display); font-size: var(--fs-cell); font-weight: 600; letter-spacing: .02em; }
+[data-ui="next"] .ui-strip-link { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+[data-ui="next"] .ui-strip-link:hover { text-decoration-thickness: 2px; }
 [data-ui="next"] .ui-strip-item .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 1.75; }
 [data-ui="next"] .ui-strip-item[data-status="critical"] { background: var(--crit); color: var(--on-crit); }
 [data-ui="next"] .ui-strip-item[data-status="critical"]:hover { background: var(--crit-text); }

@@ -1678,8 +1678,11 @@ without values it shows its defaults.
   under it), the results plate (ammonia and hydrogen sulfide with the judged value as the figure, the values worked out,
   the recipes across) and the simulator's steps last. Its only additions are the plates' titles "Values" and "Results"
   (`UI_NEXT`) and wrappers that are no box in the classic look (`.calc-values-plate`, display: contents; `.ui-marks`
-  draws nothing there). The printed report takes the look too (`data-ui` on its own page; on paper at the classic
-  report's size, every row's value wrapped inside its column). `farm/tests/test_calculator_said.py` holds the new look
+  draws nothing there). The long texts (a card's method notes, the unit's fish limits, the references) stand under
+  closed `<details>` there, never on paper; a field's help two lines (whole for the pH and phosphate fields, and while
+  a field is filled in); under 440 px the chart's labels give way to their words (`views.deffeyes_scale`, the rule
+  Tank › Water uses). The printed report takes the look too (`data-ui` on its own page, always on a day theme,
+  `PAPER_THEME`; on paper at the classic report's size, every row's value wrapped inside its column, in both looks). `farm/tests/test_calculator_said.py` holds the new look
   to the classic one for every case on the page, the live parts and the report (`says_missing` empty), and
   `farm.tests.test_island_pages` does so for the calculator from the test world's TT-01 and keeps the three pages for
   `frontend/test/calculator.pages.ts` (`npm run test:pages`: the live update in a browser under the server's policy and

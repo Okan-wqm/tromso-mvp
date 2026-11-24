@@ -106,6 +106,14 @@ test('the water calculator and its report in the new look, in a browser', { skip
           assert.equal(await tab.locator('.calc-plot').count(), 4, 'the four small charts');
           assert.ok(await tab.locator('svg.deffeyes-chart .deffeyes-ph').count(), 'the pH labels the server placed');
           assert.ok(await tab.locator('.calc-layers input[type="checkbox"]').count(), 'the layers, each a box');
+          // under 480 px the chart's labels give way to their words, one rule with Tank › Water's (review C7)
+          assert.equal(await tab.locator('.calc-deffeyes .deffeyes-ph').first().isVisible(), width >= 1440, 'the pH labels only where they can be read');
+          assert.equal(await tab.locator('.calc-deffeyes .deffeyes-scale').isVisible(), width < 1440, 'their words where they are not drawn');
+          // a help that changes the number typed is never folded (review C6)
+          for (const name of ['ph', 'ph_scale', 'phosphate_p_mg_l', 'phosphate_unit']) {
+            const help = tab.locator(`.calc-fields > .field:has([name="${name}"]) .help`);
+            if (await help.count()) assert.ok(await help.evaluate((each) => each.scrollHeight <= each.clientHeight + 1), `${name}: its help whole`);
+          }
           assert.ok(await tab.locator('.calc-simulator:not([hidden]) table.calc-steps tbody tr').count() >= 2, 'the simulator\'s steps');
           assert.equal(await tab.locator('.calc-results .calc-status').count(), 3, 'ammonia, hydrogen sulfide and the CO₂ judged');
           assert.ok(await tab.locator('.calc-results .calc-tiles dd').count() >= 6, 'the values worked out as tiles');

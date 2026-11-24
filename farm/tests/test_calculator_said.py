@@ -111,3 +111,14 @@ class CalculatorSaysTests(TestCase):
                 self.assertEqual('<details class="calc-more"><summary>How this was worked out</summary>' in parts, expected)
                 self.assertEqual('<summary>Sources</summary>' in page, expected)
                 self.assertNotIn('<details', report)
+
+    def test_the_printed_report_is_on_a_day_theme_whatever_the_screens(self):
+        """Review C2: paper is light. A night theme (Polarnatt, Nordlys) on the screen prints the new look's report on its day
+        theme (Industry); a day theme chosen is kept."""
+        from core import theme
+        self.client.cookies[ui.COOKIE] = ui.NEXT
+        for chosen, printed in (('polarnatt', 'industry'), ('nordlys', 'industry'), ('tang', 'tang'), ('fjord', 'fjord')):
+            with self.subTest(theme=chosen):
+                self.client.cookies[theme.COOKIE] = chosen
+                report = self.client.get(REPORT, CASES['filled']).content.decode()
+                self.assertIn(f'data-theme="{printed}" data-ui="next"', report)

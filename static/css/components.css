@@ -706,10 +706,13 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
   font-weight: 700; font-variant-numeric: tabular-nums; }
 [data-ui="next"] .calc-fields > .field:has(> select) { grid-template-columns: minmax(0, 1fr); }
 [data-ui="next"] .calc-fields > .field-set { display: block; grid-column: 1 / -1; }
-/* a field's help: one line under it, the whole of it while the field is being filled in (the design's short help;
+/* a field's help: two lines under it (its scale or unit first), the whole of it while the field is being filled in (the design's short help;
    the full text stays the field's description for a screen reader, aria-describedby) */
 [data-ui="next"] .calc-fields > .field .help { display: -webkit-box; overflow: hidden; color: var(--text-3);
-  -webkit-box-orient: vertical; -webkit-line-clamp: 1; line-clamp: 1; }
+  -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+/* a help that changes the number typed (which pH scale, phosphate as P or as PO₄) is never folded (review C6) */
+[data-ui="next"] .calc-fields > .field:has(:is([name="ph"], [name="ph_scale"], [name="phosphate_p_mg_l"], [name="phosphate_unit"])) .help {
+  display: block; overflow: visible; -webkit-line-clamp: unset; line-clamp: none; }
 [data-ui="next"] .calc-fields > .field:focus-within .help { display: block; overflow: visible; -webkit-line-clamp: unset; line-clamp: none; }
 [data-ui="next"] .calc-actions { justify-content: flex-start; margin: 0; padding: 0 16px 16px; }
 /* the charts' row: the chart first on a phone, then the four small ones; three columns at the desk */
@@ -887,14 +890,15 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .deffeyes-track { fill: none; stroke: var(--chart-ink); stroke-width: 1.5; stroke-linejoin: round; stroke-opacity: .7; }
 .deffeyes-track-start { fill: var(--surface-sheet); stroke: var(--chart-ink); stroke-width: 2; }
 .deffeyes-track-dot { fill: var(--chart-ink); fill-opacity: .7; }
-/* Deffeyes in a chart frame (Tank › Water): under about 480 px its labels would be about 6 px (the viewBox is 600 wide),
-   so the pH labels, the ticks and the axis titles are not drawn there, and what they say stands under it as text
-   (`.deffeyes-scale`, the server's sentence; review of batch 1, S4). Scaling them up would undo the server's placing. */
+/* Deffeyes in a chart frame (Tank › Water) and the calculator's in the new look: a chart under about 440 px wide would
+   draw its labels at about 9 px or less (the viewBox is 600 wide), so the pH labels, the ticks and the axis titles are not
+   drawn there, and what they say stands with it as text (`.deffeyes-scale`, the server's sentence, views.deffeyes_scale;
+   review of batch 1, S4, and of the calculator, C7). Scaling them up would undo the server's placing. */
 .ui-chart-draw:has(> .deffeyes-chart) { container-type: inline-size; }
 .deffeyes-scale { display: none; margin: 0; padding: var(--space-2) var(--space-3); color: var(--text-2); font-size: var(--fs-caption); }
-@container (max-width: 479px) {
-  .ui-chart-draw > .deffeyes-chart :is(.deffeyes-ph, .deffeyes-ticks, .deffeyes-axis) { display: none; }
-  .ui-chart-draw > .deffeyes-scale { display: block; }
+@container (max-width: 439px) {
+  :is(.ui-chart-draw > .deffeyes-chart, [data-ui="next"] .calc .calc-deffeyes .deffeyes-chart) :is(.deffeyes-ph, .deffeyes-ticks, .deffeyes-axis) { display: none; }
+  :is(.ui-chart-draw > .deffeyes-scale, [data-ui="next"] .calc .calc-deffeyes .deffeyes-scale) { display: block; }
 }
 .deffeyes-swatch-track { height: 0; border-top: 2px solid var(--chart-ink); border-radius: 0; }
 .deffeyes-swatch-track-start { width: 10px; height: 10px; border: 2px solid var(--chart-ink); border-radius: 50%; background: var(--surface-sheet); opacity: 1; }

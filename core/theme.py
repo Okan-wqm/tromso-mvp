@@ -16,6 +16,7 @@ DEFAULT_NEXT = 'industry'     # the new look's (core/ui.py)
 # The themes' names are names (Nordlys stays Nordlys in Turkish), as the design system gives them.
 THEMES = (('industry', 'Industry'), ('fjord', 'Fjord'), ('polarnatt', 'Polarnatt'), ('nordlys', 'Nordlys'), ('tang', 'Tang'), ('laks', 'Laks'))
 KEYS = {key for key, _name in THEMES}
+NIGHT = {'polarnatt', 'nordlys'}      # dark grounds: never on paper (a printed page takes the new look's day theme)
 YEAR = 365 * 24 * 3600
 
 
@@ -30,8 +31,10 @@ def chosen(request):
 
 
 def context(request):
-    """THEME for <html data-theme>, THEMES for the user menu's choice (context processor)."""
-    return {'THEME': chosen(request), 'THEMES': THEMES}
+    """THEME for <html data-theme>, THEMES for the user menu's choice, PAPER_THEME for a page made to be printed (the
+    calculator's report): the chosen theme, or for a night one the new look's day theme (context processor)."""
+    found = chosen(request)
+    return {'THEME': found, 'THEMES': THEMES, 'PAPER_THEME': DEFAULT_NEXT if found in NIGHT else found}
 
 
 @login_not_required

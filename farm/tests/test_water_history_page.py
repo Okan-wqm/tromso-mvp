@@ -3,6 +3,7 @@
 each side of an alarm), one chart per parameter on that window with the fish's limit bands, the NH₃-N worked out per
 sample, the events each for the person who may read them, the Deffeyes replay of the same window; a system's points
 side by side. A time that is not one is refused, never read as another window; the old fragment is unchanged."""
+import re
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -149,3 +150,50 @@ class LinksIntoTankWaterTests(WaterTestCase):
                                     site=self.bergen, opened_at=opened, summary='O₂ 5.9 mg/L')
         self.look('next')
         self.assertNotContains(self.client.get(reverse('alarms:alarm_detail', args=[loop.pk])), 'around=')
+
+
+class AroundOnAClockThatChangesTests(WaterTestCase):
+    """Review C4: an alarm's link carries its opening on the site's clock as a wall time (dd.mm.yyyy HH:MM). In the autumn
+    night the clocks show 02:00 to 03:00 twice: such a time is read as the earlier of the two (the window, 12 hours each
+    side, holds the opening either way), never refused. The spring night has no 02:00 to 03:00: no alarm opens at such a
+    wall time, so its link never names one; typed by hand it is refused (400)."""
+
+    look = LinksIntoTankWaterTests.look
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+        self.bergen.timezone = 'Europe/Oslo'
+        self.bergen.save()
+        self.user.groups.add(role('Alarm reader', 'view_alarm'))
+        self.user = get_user_model().objects.get(pk=self.user.pk)
+        self.client.force_login(self.user)
+        self.look('next')
+
+    def window_of_alarm_opened(self, opened):
+        alarm = Alarm.objects.create(source='water_limit', point=self.mid1, parameter='oxygen_mg_l', severity='critical',
+                                     site=self.bergen, opened_at=opened, summary='O₂ 5.9 mg/L')
+        page = self.client.get(reverse('alarms:alarm_detail', args=[alarm.pk])).content.decode()
+        link = re.search(r'href="([^"]*around=[^"]*)"', page).group(1).replace('&amp;', '&')
+        response = self.client.get(link)
+        self.assertEqual(response.status_code, 200, link)
+        props = response.context['props']
+        return link, props['start'], props['end']
+
+    def test_an_alarm_in_the_autumn_nights_repeated_hour_gets_a_working_link(self):
+        from datetime import datetime, timezone as tz
+        for opened in (datetime(2026, 10, 25, 0, 30, tzinfo=tz.utc), datetime(2026, 10, 25, 1, 30, tzinfo=tz.utc)):
+            with self.subTest(opened=opened):                       # 02:30 CEST, then 02:30 CET: the same wall time
+                link, start, end = self.window_of_alarm_opened(opened)
+                self.assertIn('around=25.10.2026+02%3A30', link)
+                self.assertLessEqual(start, opened.timestamp())
+                self.assertGreaterEqual(end, opened.timestamp())
+
+    def test_an_alarm_after_the_spring_nights_skipped_hour_gets_its_own_time(self):
+        from datetime import datetime, timezone as tz
+        opened = datetime(2026, 3, 29, 1, 30, tzinfo=tz.utc)                  # 03:30 CEST, the hour after the gap
+        link, start, end = self.window_of_alarm_opened(opened)
+        self.assertIn('around=29.03.2026+03%3A30', link)
+        self.assertEqual(start, int(opened.timestamp()) - 12 * 3600)
+        skipped = reverse('farm:tank_water', args=[self.t1.pk]) + '?around=29.03.2026+02%3A30'
+        self.assertEqual(self.client.get(skipped).status_code, 400)

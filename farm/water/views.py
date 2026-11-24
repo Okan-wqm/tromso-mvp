@@ -362,6 +362,7 @@ def _calculator_context(request, data, all_layers=False):
     query = data.urlencode() if data else ''
     return _context(
         form=form, result=result, analysis=result.analysis if result else None,
+        chart_scale=deffeyes_scale(result.chart.isolines, result.chart.box) if result else '',
         ph_conversion=form.ph_conversion if result else None,
         chart=result.chart if result else None, source=_source(form, owner) if owner is not None else None,
         point_gone=bool(chosen) and owner is None, query=query,
@@ -463,17 +464,21 @@ def history_window(request, owner, now):
 
     zone = zone_of(site_of(owner))
 
-    def moment(name):
+    def moment(name, repeated=False):
         wall = read_moment(request.GET.get(name, ''))
         if wall is None:
             raise BadRequest(name)
         try:
             return on_site_clock(wall, zone)
-        except ValidationError:
+        except ValidationError as error:
+            # `around` (an alarm's opening, as its link writes it): a time the autumn night shows twice is the earlier of
+            # the two; the 12 hours each side hold the opening either way (review C4). A from or a to stays refused.
+            if repeated and error.code == 'repeated':
+                return wall.replace(fold=0, tzinfo=zone)
             raise BadRequest(name)
 
     if request.GET.get('around'):
-        middle = moment('around')
+        middle = moment('around', repeated=True)
         start, end = middle - timedelta(hours=12), min(middle + timedelta(hours=12), now)
         if end <= start:                        # 12 h or more after now: no window at all, refused (never a 500)
             raise BadRequest('around')
@@ -595,11 +600,7 @@ def range_deffeyes(user, owner, start, end):
             'at': int(newest.at.timestamp()), 'now': str(stale or words['water']), 'now_status': 'warning' if stale else '',
             'stale': str(stale), 'caption': str(caption), 'reason': '',
             # what the chart's labels say, in words: shown in their place where the chart is too narrow for them
-            'scale': str(_('Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, '
-                           'up to %(alkalinity)s meq/L') % {
-                'low': next((line['label']['text'] for line in chart['isolines'] if line['label']), ''),
-                'high': next((line['label']['text'] for line in reversed(chart['isolines']) if line['label']), ''),
-                'dic': formats.number_format(box.dic), 'alkalinity': formats.number_format(box.alkalinity)}),
+            'scale': deffeyes_scale(chart['isolines'], box),
             'said': [[str(words['water']), str(_('pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ '
                                                   '%(co2)s mg/L') % {
                 'ph': formats.number_format(newest.point.ph, 2), 'dic': formats.number_format(newest.point.dic, 3),
@@ -607,6 +608,17 @@ def range_deffeyes(user, owner, start, end):
                 'co2': formats.number_format(newest.point.co2_mg_l, 1)})]]
                     + ([[str(_('No diagram')), str(stale)]] if stale else []),
             'words': {key: str(value) for key, value in words.items()}}
+
+
+def deffeyes_scale(isolines, box):
+    """What a Deffeyes chart's labels say, in words (the pH lines' range, the axes' ends): shown in their place where the
+    chart is too narrow for them (under 480 px; Tank › Water's chart of the time and the calculator's, one rule in
+    static/css/components.css). `isolines` are the chart's (`render`, or `as_props` of it), `box` its axes' ends."""
+    labelled = [line['label']['text'] for line in isolines if line['label']]
+    return str(_('Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, '
+                 'up to %(alkalinity)s meq/L') % {
+        'low': labelled[0] if labelled else '', 'high': labelled[-1] if labelled else '',
+        'dic': formats.number_format(box.dic), 'alkalinity': formats.number_format(box.alkalinity)})
 
 
 def _step_text(step):

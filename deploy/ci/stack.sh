@@ -142,6 +142,23 @@ except OSError as error:                                  # no name, no route, n
     if [ "${got%% *}" = "$5" ]; then echo "ok    $1 -> $2 $3:$4 $got"
     else echo "FAIL  $1 -> $2 $3:$4 $got (expected $5)"; failures=$((failures + 1)); fi
   }
+  # The two DOCKER-USER rules of docs/ops/install.md, typed as written there (the subnets are its defaults, which the
+  # stack uses), then a capture on the runner's own uplink of everything sent from the proxy's and the broker's networks
+  # while every probe runs. Those networks are not masqueraded, so a packet of theirs would leave with its own source
+  # address: "unreachable" below says no answer came back, the empty capture says no packet even left.
+  local uplink front edge capture=$T/egress.pcap rules=$T/docker-user.rules
+  uplink=$(ip -4 route show default | awk '{print $5; exit}')
+  front=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_front)
+  edge=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_mqtt-edge)
+  grep -E '^  iptables -I DOCKER-USER ' docs/ops/install.md | sed 's/#.*//' > "$rules"
+  cat "$rules"
+  [ "$(wc -l < "$rules")" = 2 ] && grep -q "$front" "$rules" && grep -q "$edge" "$rules" \
+    || { echo "FAIL: install.md does not hold the two rules for $front and $edge"; exit 1; }
+  while read -r rule; do sudo $rule; done < "$rules"
+  sudo tcpdump -i "$uplink" -n -U -w "$capture" "src net $front or src net $edge" > "$T/tcpdump.log" 2>&1 &
+  local capturing=$!
+  for _ in $(seq 1 20); do grep -q 'listening on' "$T/tcpdump.log" && break; sleep 0.5; done
+  cat "$T/tcpdump.log"
   # between the services
   probe web tcp db 5432 open
   probe web tcp ingest 8080 closed
@@ -166,17 +183,7 @@ except OSError as error:                                  # no name, no route, n
   for service in web backup; do probe "$service" name example.com 443 open; done
   for service in db jobs proxy mosquitto ingest; do probe "$service" name example.com 443 unreachable; done
   # the way out, TCP, UDP and IPv6, for every running service: only the web server (mail) and the backup agent
-  # (the repository) have one. "unreachable" says no answer came back; that no packet even LEFT the runner is shown
-  # by a capture on the runner's own uplink of everything sent from the proxy's and the broker's networks (they are
-  # not masqueraded, so their packets would leave with their own source address)
-  local uplink front edge capture=$T/egress.pcap
-  uplink=$(ip -4 route show default | awk '{print $5; exit}')
-  front=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_front)
-  edge=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_mqtt-edge)
-  sudo tcpdump -i "$uplink" -n -U -w "$capture" "src net $front or src net $edge" > "$T/tcpdump.log" 2>&1 &
-  local capturing=$!
-  for _ in $(seq 1 20); do grep -q 'listening on' "$T/tcpdump.log" && break; sleep 0.5; done
-  cat "$T/tcpdump.log"
+  # (the repository) have one
   for service in web backup; do
     probe "$service" tcp 1.1.1.1 443 open
     probe "$service" udp 1.1.1.1 53 open
@@ -195,6 +202,12 @@ except OSError as error:                                  # no name, no route, n
   sudo tcpdump -r "$capture" -n 2>/dev/null | head -n 10
   if [ "$left" = 0 ]; then echo "ok    no packet from $front (proxy) or $edge (broker) left by $uplink"
   else echo "FAIL  $left packet(s) from $front (proxy) or $edge (broker) left by $uplink"; failures=$((failures + 1)); fi
+  sudo iptables -L DOCKER-USER -v -n -x
+  for net in "$front" "$edge"; do
+    dropped=$(sudo iptables -L DOCKER-USER -v -n -x | awk -v net="$net" '$3 == "DROP" && $8 == net {print $1}')
+    if [ "${dropped:-0}" -gt 0 ]; then echo "ok    the rule for $net dropped $dropped packet(s): the probes did try"
+    else echo "FAIL  the rule for $net dropped nothing: the probes did not try"; failures=$((failures + 1)); fi
+  done
   [ "$failures" = 0 ] || { echo "network: $failures probe(s) failed"; exit 1; }
   echo "network: every probe as expected"
 }

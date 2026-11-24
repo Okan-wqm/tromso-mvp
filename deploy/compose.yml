@@ -273,6 +273,10 @@ services:
           memory: 512m
           cpus: "1"
     logging: *logging
+    # Docker answers the names of the stack (web) itself and sends every other name on to these servers, from the
+    # container's own network: 192.0.2.1 (TEST-NET-1, RFC 5737) answers nobody, so no outside name resolves and DNS is
+    # no way out either. Without it Docker asks the host's resolver for them, which has a way out (docs/ops/install.md).
+    dns: [192.0.2.1]
     networks: [front]
 
   mosquitto:
@@ -321,6 +325,8 @@ services:
           memory: 1g
           cpus: "1"
     logging: *logging
+    # as the proxy's: no outside name, no way out by DNS
+    dns: [192.0.2.1]
     # broker: to the ingest only (internal); mqtt-edge: where its TLS port is published from
     networks: [broker, mqtt-edge]
 

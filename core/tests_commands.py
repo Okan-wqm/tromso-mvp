@@ -80,6 +80,21 @@ class DevCommandTests(SimpleTestCase):
             command('seed_hr_demo', 'hr')().execute(force=True, stdout=StringIO(), stderr=StringIO(), no_color=True,
                                                     force_color=False, skip_checks=True)
 
+    databases = {'default'}           # the guard's second fact is the database role's (L-15)
+
+    def test_with_debug_on_a_role_that_is_no_superuser_is_refused_too(self):
+        """The data-layering audit, L-15: DEBUG defaults on, so it is not proof enough of a developer's database. A
+        developer's and a test run's database role is a superuser; the server's roles are not (the app and the owner
+        role of the go-live roles), so a dev tool on a server whose DEBUG was left on is still refused, unless forced."""
+        from unittest import mock
+
+        from core.management import devtool
+        self.assertTrue(devtool.superuser())                   # the test database's role, as a developer's
+        with override_settings(DEBUG=True), mock.patch.object(devtool, 'superuser', return_value=False):
+            with self.assertRaisesMessage(CommandError, 'is not a superuser'):
+                command('sensors_demo_setup', 'sensors')().execute(force=False, stdout=StringIO(), stderr=StringIO(),
+                                                                   no_color=True, force_color=False, skip_checks=True)
+
     def test_with_debug_on_the_guard_lets_the_command_do_its_own_refusing(self):
         with override_settings(DEBUG=True), self.assertRaisesMessage(CommandError, 'Say what to do'):
             call_command('sensors_demo_setup', stdout=StringIO())

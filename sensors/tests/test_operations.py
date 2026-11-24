@@ -102,6 +102,35 @@ class IngestRoleTests(TransactionTestCase):
         call_command('sensors_ingest_role', '--role', self.ROLE, '--disable', stdout=StringIO())
         self.assertFalse(self.can_login())
 
+    def test_the_password_never_reaches_the_server_as_text(self):
+        """The data-layering audit, L-15: the statement carries libpq's SCRAM-SHA-256 verifier of the password, never the
+        password, so a server that logs DDL logs no secret."""
+        from unittest import mock
+        secret = Path(tempfile.mkdtemp()) / 'pw'
+        secret.write_text('plain-s3cret-never-logged\n')
+        sent = []
+        real = psycopg.Connection.execute
+
+        def seen(conn, statement, *args, **kwargs):
+            sent.append(statement.as_string(conn) if hasattr(statement, 'as_string') else str(statement))
+            return real(conn, statement, *args, **kwargs)
+        with mock.patch.object(psycopg.Connection, 'execute', seen):
+            call_command('sensors_ingest_role', '--role', self.ROLE, '--password-file', str(secret), stdout=StringIO())
+        alter = [text for text in sent if 'ALTER ROLE' in text]
+        self.assertEqual(len(alter), 1)
+        self.assertNotIn('plain-s3cret-never-logged', alter[0])
+        self.assertIn('SCRAM-SHA-256$', alter[0])
+        self.assertTrue(self.can_login())
+
+    def test_a_privileged_role_is_never_opened(self):
+        """--role names the role to open; a superuser, a role that may create roles or databases, or one that owns
+        tables is refused (L-15): the command opens a least-privilege service role, never the database's owner."""
+        current = connection.get_connection_params()['user']
+        secret = Path(tempfile.mkdtemp()) / 'pw'
+        secret.write_text('x\n')
+        with self.assertRaisesMessage(CommandError, 'least-privilege'):
+            call_command('sensors_ingest_role', '--role', current, '--password-file', str(secret), stdout=StringIO())
+
     def test_an_empty_password_file_is_refused(self):
         secret = Path(tempfile.mkdtemp()) / 'pw'
         secret.write_text('\n')

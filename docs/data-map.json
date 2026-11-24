@@ -20002,6 +20002,7 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_replay.py",

@@ -49,5 +49,6 @@
     {% if chart.dosing_path %}<li><span class="deffeyes-swatch deffeyes-swatch-dosing" aria-hidden="true"></span>{% trans "Dosing path" %}</li>{% endif %}
     {% if chart.simulator %}<li><span class="deffeyes-swatch deffeyes-swatch-simulator" aria-hidden="true"></span>{% trans "Simulator path" %}</li>{% endif %}
   </ul>
+  {% if UI_NEXT and chart_scale %}<p class="deffeyes-scale">{{ chart_scale }}</p>{% endif %}{# the calculator's, new look: its labels in words, shown where the chart is too narrow for them #}
   {% if chart.notes %}<ul class="deffeyes-notes">{% for note in chart.notes %}<li>{{ note }}</li>{% endfor %}</ul>{% endif %}
 </figure>

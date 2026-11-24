@@ -2,8 +2,9 @@
    each with its status, the values worked out, and the dosing recipes from the water to the target
    (farm/water/calculation.py). A status follows the source: past the border critical, within 0.2 pH a
    warning. {% endcomment %}
-<div class="calc-results" data-live-part="results">
+<div class="calc-results ui-marks" data-live-part="results">
   {% if result %}
+  {% if UI_NEXT %}<h2 class="calc-plate-title">{% trans "Results" %}</h2>{% endif %}
   <section class="calc-card calc-status wq-card-{{ analysis.nh3.status }}" aria-labelledby="calc-nh3-title">
     <h3 class="calc-card-title" id="calc-nh3-title">{% trans "Ammonia" %}{% include "farm/_water_status.html" with status=analysis.nh3.status %}</h3>
     <div class="table-wrap table-wrap-bare">
@@ -15,7 +16,7 @@
         <tr><th scope="row">{% trans "NH₃ share of TAN at the border" %}</th><td class="num">{{ analysis.nh3_share_at_border_pct|percent:3 }}</td></tr>
       </table>
     </div>
-    {% if analysis.nh3_judged %}<p class="calc-note" data-nh3-basis="{{ analysis.nh3_basis }}">{{ analysis.nh3_judged }}</p>{% endif %}
+    {% if analysis.nh3_judged %}{% if UI_NEXT and not printing %}<details class="calc-more"><summary>{% trans "How this was worked out" %}</summary>{% endif %}<p class="calc-note" data-nh3-basis="{{ analysis.nh3_basis }}">{{ analysis.nh3_judged }}</p>{% if UI_NEXT and not printing %}</details>{% endif %}{% endif %}
   </section>
 
   <section class="calc-card calc-status wq-card-{{ analysis.h2s.status }}" aria-labelledby="calc-h2s-title">
@@ -28,32 +29,48 @@
         {% include "farm/_deffeyes_border.html" with border=analysis.h2s %}
       </table>
     </div>
-    {% include "farm/calculator/_h2s_basis.html" %}
+    {% if analysis.h2s_ug_l is not None or analysis.safe_total_sulfide_ug_l is not None %}{% if UI_NEXT and not printing %}<details class="calc-more"><summary>{% trans "How this was worked out" %}</summary>{% endif %}{% include "farm/calculator/_h2s_basis.html" %}{% if UI_NEXT and not printing %}</details>{% endif %}{% endif %}
   </section>
 
-  <section class="calc-card" aria-labelledby="calc-values-title">
+  <section class="calc-card calc-worked{% if UI_NEXT %} calc-status wq-card-{{ analysis.co2.status }}{% endif %}" aria-labelledby="calc-values-title">
     <h3 class="calc-card-title" id="calc-values-title">{% trans "Worked out from the values" %}</h3>
+    {% if UI_NEXT %}{% include "farm/_water_status.html" with status=analysis.co2.status %}{% endif %}
     <div class="table-wrap table-wrap-bare">
       <table class="calc-values">
         <tr><th scope="row">{% trans "Carbon dioxide (CO₂)" %}</th><td class="num wq-value wq-{{ analysis.co2.status }}">{{ analysis.co2_mg_l|amount:2 }} mg/L<span class="sr-only"> ({{ analysis.co2.status|status_label }})</span></td></tr>
         {% if analysis.co2_judged %}<tr><th scope="row">{% trans "CO₂ best estimate (information, not judged)" %}</th><td class="num">{{ analysis.co2_corrected_mg_l|amount:2 }} mg/L</td></tr>{% endif %}
         {% include "farm/_deffeyes_border.html" with border=analysis.co2 %}
         <tr><th scope="row">{% trans "CO₂ the air leaves in it" %}</th><td class="num">{{ result.air_co2_mg_l|amount:2 }} mg/L</td></tr>
-        <tr><th scope="row">{% trans "Alkalinity" %}</th><td class="num">{{ analysis.alkalinity_meq|amount:3 }} meq/L</td></tr>
-        <tr><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td></tr>
-        <tr><th scope="row">{% trans "Ionic strength" %}</th><td class="num">{{ analysis.equilibria.ionic_strength|amount:4 }} {{ analysis.equilibria|ionic_strength_unit }}</td></tr>
+        <tr data-tile><th scope="row">{% trans "Alkalinity" %}</th><td class="num">{{ analysis.alkalinity_meq|amount:3 }} meq/L</td></tr>
+        <tr data-tile><th scope="row">{% trans "Dissolved inorganic carbon (DIC)" %}</th><td class="num">{{ analysis.dic|amount:3 }} mmol/L</td></tr>
+        <tr data-tile><th scope="row">{% trans "Ionic strength" %}</th><td class="num">{{ analysis.equilibria.ionic_strength|amount:4 }} {{ analysis.equilibria|ionic_strength_unit }}</td></tr>
         {% if analysis.target %}
-        <tr><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td></tr>
-        <tr><th scope="row">{% trans "Target CO₂" %}</th><td class="num">{{ analysis.target_co2_mg_l|amount:2 }} mg/L</td></tr>
+        <tr data-tile><th scope="row">{% trans "Target DIC" %}</th><td class="num">{{ analysis.target_dic|amount:3 }} mmol/L</td></tr>
+        <tr data-tile><th scope="row">{% trans "Target CO₂" %}</th><td class="num">{{ analysis.target_co2_mg_l|amount:2 }} mg/L</td></tr>
         {% endif %}
-        <tr><th scope="row">{% trans "Oxygen solubility (air)" %}</th><td class="num">{{ analysis.oxygen_solubility_mg_l|amount:2 }} mg/L</td></tr>
-        <tr><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
+        <tr data-tile><th scope="row">{% trans "Oxygen solubility (air)" %}</th><td class="num">{{ analysis.oxygen_solubility_mg_l|amount:2 }} mg/L</td></tr>
+        <tr data-tile><th scope="row">{% trans "Oxygen saturation" %}</th><td class="num">{{ analysis.oxygen_saturation_pct|percent:1 }}</td></tr>
       </table>
     </div>
     {% include "farm/calculator/_ph_scale.html" %}
-    <p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
-    {% if analysis.co2_judged %}<p class="calc-note" data-co2-basis="{{ analysis.co2_basis }}">{{ analysis.co2_judged }}</p>{% endif %}
+    {% if UI_NEXT and not printing %}<details class="calc-more"><summary>{% trans "How this was worked out" %}</summary>{% endif %}<p class="calc-note" data-formula="{{ analysis.equilibria.formula }}">{{ analysis.provenance }}</p>
+    {% if analysis.co2_judged %}<p class="calc-note" data-co2-basis="{{ analysis.co2_basis }}">{{ analysis.co2_judged }}</p>{% endif %}{% if UI_NEXT and not printing %}</details>{% endif %}
   </section>
+
+  {% if UI_NEXT %}{% comment %} The new look's strip of the values worked out (the design's facts): the card's own rows marked
+     data-tile, the same labels and values, here instead of there (static/css/components.css). {% endcomment %}
+  <dl class="calc-tiles">
+    <div><dt>{% trans "Alkalinity" %}</dt><dd>{{ analysis.alkalinity_meq|amount:3 }} meq/L</dd></div>
+    <div><dt>{% trans "Dissolved inorganic carbon (DIC)" %}</dt><dd>{{ analysis.dic|amount:3 }} mmol/L</dd></div>
+    <div><dt>{% trans "Ionic strength" %}</dt><dd>{{ analysis.equilibria.ionic_strength|amount:4 }} {{ analysis.equilibria|ionic_strength_unit }}</dd></div>
+    {% if analysis.target %}<div><dt>{% trans "Target DIC" %}</dt><dd>{{ analysis.target_dic|amount:3 }} mmol/L</dd></div>
+    <div><dt>{% trans "Target CO₂" %}</dt><dd>{{ analysis.target_co2_mg_l|amount:2 }} mg/L</dd></div>{% endif %}
+    <div><dt>{% trans "Oxygen solubility (air)" %}</dt><dd>{{ analysis.oxygen_solubility_mg_l|amount:2 }} mg/L</dd></div>
+    <div><dt>{% trans "Oxygen saturation" %}</dt><dd>{{ analysis.oxygen_saturation_pct|percent:1 }}</dd></div>
+    {% if result.volume_m3 is not None %}<div><dt>{% trans "Volume (m³)" %}</dt><dd>{{ result.volume_m3|amount:1 }}</dd></div>{% endif %}
+    <div><dt>{% trans "Temperature (°C)" %}</dt><dd>{{ analysis.water.temperature_c|amount:1 }}</dd></div>
+  </dl>
+  {% endif %}
 
   <section class="calc-card calc-recipes" aria-labelledby="calc-recipes-title">
     <h3 class="calc-card-title" id="calc-recipes-title">{% trans "Dosing recipes" %}{% if result.recipes %} ({{ result.recipes|length }}){% endif %}</h3>

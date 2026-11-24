@@ -4,6 +4,7 @@ snooze, newest first, and whether it is in force. The pages say plainly that not
 connected."""
 import logging
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
@@ -83,7 +84,27 @@ def alarm_detail(request, pk):
         can_acknowledge=not mine and read.may_acknowledge(request.user, alarm),
         snooze=read.snoozes([alarm.pk], now).get(alarm.pk), can_snooze=request.user.has_perm(read.SHELVE),
         may_snooze=read.may_snooze(request.user, alarm, now),
-        longest_snooze=current_rules().shelve_max(alarm.severity) // timedelta(minutes=1)))
+        longest_snooze=current_rules().shelve_max(alarm.severity) // timedelta(minutes=1),
+        water_url=_water_around(request, alarm)))
+
+
+def _water_around(request, alarm):
+    """In the new look, the water of the alarm's unit 12 hours each side of its opening (Tank › Water,
+    `farm:tank_water?around=` the opening moment on the site's clock, dd.mm.yyyy HH:MM as the date box writes it), for a
+    person who may read the water; '' for an alarm at no unit (a loop's, a device's) and in the classic look."""
+    from django.utils import formats, timezone
+
+    from core import ui
+    from farm.models.site import zone_of
+    from farm.models.water_point import site_of
+
+    if not ui.is_next(request) or not request.user.has_perm('farm.view_watermeasurement'):
+        return ''
+    point = alarm.point or getattr(getattr(alarm.sensor_event, 'binding', None), 'point', None)
+    if point is None or not point.unit_id:
+        return ''
+    opened = timezone.localtime(alarm.opened_at, zone_of(site_of(point.unit))).replace(tzinfo=None)
+    return f"{reverse('farm:tank_water', args=[point.unit_id])}?{urlencode({'around': formats.localize_input(opened)})}"
 
 
 @require_POST

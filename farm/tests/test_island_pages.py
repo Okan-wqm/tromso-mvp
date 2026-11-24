@@ -8,15 +8,20 @@ alarm, the Deffeyes chart of the window, the window's ends in the date box's sha
 window, the pH's "no recent data" and the temperature's fresh newest value (the ingest's channel state).
 
     water-en, water-nb          Tank › Water of TT-01, 7 days (farm:tank_water)
-    sensor-charts-en            Sensors › Charts, TT-01's pH over 7 days compared with its temperature (sensors:charts)"""
+    sensor-charts-en            Sensors › Charts, TT-01's pH over 7 days compared with its temperature (sensors:charts)
+    calculator-en, -nb (.html)  the water calculator with TT-01's latest values, a dose for the simulator, its live
+                                parts and its printed report, whole pages as Django printed them (farm:water_calculator);
+                                the new look says all the classic look says (monitoring.tests.golden.says_missing)"""
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from core.island_props import keep, render_island
+from core import ui
+from core.island_props import keep, keep_page, render_island, render_next
 from core.testing import FrozenClock
 from core.test_world import MOMENT, world
 from core.tests_islands import FIXTURE
+from monitoring.tests.golden import page_says, says_missing, squash
 from farm.models import Tank
 
 
@@ -98,3 +103,38 @@ class IslandPagesTests(FrozenClock, TestCase):
             'end': '21.11.2026 06:00'}, 'en')
         self.assertEqual(props['errors'], {})
         self.assertTrue(props['chart']['buckets']['avg'])
+
+    def test_the_calculator_with_tt01s_values_says_all_the_classic_look_says_and_its_pages_are_kept(self):
+        """The calculator from TT-01 (its latest values put in, the source part with their ages), a dose of NaHCO₃ for the
+        simulator: in the new look the page, its live parts and its report say every item the classic look says, and
+        the three are kept whole for the browser test (frontend/test/calculator.pages.ts)."""
+        page_url, parts_url, report_url = (reverse(name) for name in (
+            'farm:water_calculator', 'farm:water_calculator_results', 'farm:water_calculator_report'))
+        for language in ('en', 'nb'):
+            self.client.cookies.pop(ui.COOKIE, None)
+            render_next(self.client, page_url, {'point': f'tank:{self.unit.pk}'}, language)    # in this language
+            # the unit's values, as the redirect put them in the address, and a dose for the simulator
+            response = self.client.get(page_url, {'point': f'tank:{self.unit.pk}'})
+            self.assertEqual(response.status_code, 302)
+            query = response.url.partition('?')[2] + '&dose_nahco3=40'
+            pages = {}
+            for name, url in (('page', page_url), ('parts', parts_url), ('report', report_url)):
+                said = {}
+                for look in (ui.CLASSIC, ui.NEXT):
+                    self.client.cookies[ui.COOKIE] = look
+                    answer = self.client.get(f'{url}?{query}')
+                    self.assertEqual(answer.status_code, 200)
+                    said[look] = answer.content.decode()
+                with self.subTest(language=language, view=name):
+                    old, new = (page_says(said[look], squash) for look in (ui.CLASSIC, ui.NEXT))
+                    self.assertEqual(says_missing(old, new), {})
+                pages[name] = said[ui.NEXT]
+                if name == 'report':                 # the classic report too: its rows must stay inside the page
+                    keep_page(f'calculator-report-classic-{language}', said[ui.CLASSIC])
+            self.assertIn('data-live-part="source"', pages['page'])
+            self.assertIn('TT-01', pages['page'])                                   # where the values come from
+            self.assertIn('class="deffeyes-ph"', pages['page'])                     # the chart, its pH labels placed
+            self.assertIn('class="calc-card calc-simulator ui-marks"', pages['parts'])
+            self.assertIn('data-ui="next"', pages['report'])
+            for name, html in pages.items():
+                keep_page(f'calculator-{name}-{language}', html)

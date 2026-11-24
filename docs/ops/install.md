@@ -25,19 +25,44 @@ From an empty server to the sign-in page of one farm. Each farm gets its own ser
   (`deploy/compose.yml`), so a packet from them to the internet has no return path; the web server's mail and the
   backup leave by `egress`. **No masquerade alone stops only the return path, not the sending:** their packets still
   leave the server with their private source address (seen in the go-live stack: DNS questions from both reached the
-  uplink), so one-way exfiltration is stopped only by the provider's filtering. The two `DOCKER-USER` rules below are
-  what stops their egress; they are not optional (with the subnets of `farm.env`):
+  uplink), so one-way exfiltration is stopped only by the provider's filtering. Two `DOCKER-USER` rules are what stops
+  their egress; they are not optional. `deploy/scripts/docker-user-rules.sh` puts them in, with the subnets of
+  `farm.env` (`EDGE_SUBNET`, `MQTT_EDGE_SUBNET`):
   ```
-  iptables -I DOCKER-USER -s 172.31.250.0/24 ! -d 172.31.250.0/24 -m conntrack --ctstate NEW -j DROP   # front
-  iptables -I DOCKER-USER -s 172.31.252.0/24 ! -d 172.31.252.0/24 -m conntrack --ctstate NEW -j DROP   # mqtt-edge
+  iptables -C DOCKER-USER -s <subnet> ! -d <subnet> -m conntrack --ctstate NEW -j DROP \
+    || iptables -I DOCKER-USER -s <subnet> ! -d <subnet> -m conntrack --ctstate NEW -j DROP     # front, then mqtt-edge
   ```
-  (answers to connections coming in are not NEW, so the published ports keep working), made permanent with
-  `iptables-persistent` (`netfilter-persistent save`). The networks have no IPv6. Their names: the proxy and the broker
+  Answers to connections coming in are not NEW, so the published ports keep working. `-C` before `-I`: a rule that is
+  there is never put in twice, so the script runs at every Docker start. After step 2 (the code is on the server), as
+  a unit that runs after Docker and again whenever Docker restarts:
+  ```
+  # /etc/systemd/system/balik-docker-user.service
+  [Unit]
+  Description=DOCKER-USER rules of the farm stack (docs/ops/install.md)
+  After=docker.service
+  Requires=docker.service
+  PartOf=docker.service
+  [Service]
+  Type=oneshot
+  RemainAfterExit=yes
+  ExecStart=/bin/sh /opt/balik/deploy/scripts/docker-user-rules.sh /opt/balik/deploy/farm.env
+  [Install]
+  WantedBy=docker.service
+  ```
+  then `systemctl daemon-reload && systemctl enable --now balik-docker-user`, and
+  `sh scripts/docker-user-rules.sh --check farm.env` names both rules (it is in the reboot test, [upgrade.md](upgrade.md),
+  and the [GO-LIVE-CHECKLIST.md](GO-LIVE-CHECKLIST.md)). Why not `iptables-persistent`: `netfilter-persistent save` stores
+  the whole ruleset of that moment (`iptables-save`: ufw's chains, Docker's chains with that day's container addresses,
+  and DOCKER-USER) in `/etc/iptables/rules.v4` and loads it at boot before ufw and Docker start, which then put their own
+  chains in again over it; and installing it can remove ufw (Ubuntu may mark the two as conflicting: `apt-get -s install
+  iptables-persistent` shows it first). The unit holds only
+  these two rules and needs neither. A Docker restart keeps DOCKER-USER (Docker never flushes it); a reboot empties it,
+  and the unit puts the rules back. The networks have no IPv6. Their names: the proxy and the broker
   ask Docker's resolver, which answers the stack's own names and sends the rest to `dns: [192.0.2.1]`, an address that
-  answers nobody, from their own network: no outside name resolves for them. The go-live stack workflow types these
-  two rules as written here, then probes every service's way out (TCP, UDP, IPv6 and outside names: only the web server
-  and the backup agent have one) while it captures the runner's uplink: no packet from `front` or `mqtt-edge` leaves,
-  and the rules' counters show the drops.
+  answers nobody, from their own network: no outside name resolves for them. The go-live stack workflow runs the script
+  twice (no duplicate; `--check` fails before and passes after), then probes every service's way out (TCP, UDP, IPv6 and
+  outside names: only the web server and the backup agent have one) while it captures the runner's uplink: no packet
+  from `front` or `mqtt-edge` leaves, and the rules' counters show the drops.
 - **Check from outside** after the start (another machine, not on the VPN):
   `nmap -Pn -p 22,80,443,1883,5432,8000,8080,8883 <public address>`: only 22 (from the operators' addresses) is
   open, and 80/443 only when public access was chosen.

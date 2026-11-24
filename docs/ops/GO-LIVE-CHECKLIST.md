@@ -90,7 +90,10 @@ Farm: ____________________  Server: ____________________  Release: ____________ 
 
 - [ ] The off-server secret inventory in the owner's safe, each entry opened once to check it
       ([rotate-secrets.md](rotate-secrets.md)); the break-glass items prepared and sealed ([incident.md](incident.md)).
-- [ ] The reboot test passed: WireGuard, every service and the heartbeat back by themselves ([upgrade.md](upgrade.md)).
+- [ ] The reboot test passed: WireGuard, every service, the heartbeat and both DOCKER-USER rules
+      (`sh scripts/docker-user-rules.sh --check farm.env`) back by themselves ([upgrade.md](upgrade.md)).
+- [ ] `balik-docker-user` enabled (`systemctl is-enabled balik-docker-user`), and `iptables -S DOCKER-USER` shows each
+      of the two rules once ([install.md](install.md)).
 - [ ] The MQTT certificates' end dates in the farm's record, with a reminder a month before.
 
 - [ ] The farm's record complete ([per-farm.md](per-farm.md)).

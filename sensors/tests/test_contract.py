@@ -285,6 +285,20 @@ class RoleTests(TestCase):
         for table in (*CONFIG_TABLES, 'sensors_credential', 'auth_user', 'audit_log'):
             self.assertFalse(self.privilege(table, 'SELECT'), table)
 
+    def test_it_holds_no_right_on_any_other_relation(self):
+        """Every table and view of the schema, not a list (the data-layering audit, L-14): the role holds exactly the
+        rights its migrations grant (sensors 0001, 0002, 0006) and nothing on anything else, so a new table is never
+        readable or writable by the ingest unless a migration says so."""
+        granted = {'sensors_ingest_config': {'SELECT'}, 'sensors_contract': {'SELECT'},
+                   'sensors_quality_flag': {'SELECT'}, 'sensors_reading': {'INSERT'},
+                   **{table: {'SELECT', 'INSERT', 'UPDATE'} for table in RUNTIME_TABLES}}
+        kinds = ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER')
+        relations = [name for name, in rows("SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = "
+                                            "c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN "
+                                            "('r', 'v', 'm', 'p')")]
+        held = {name: {kind for kind in kinds if self.privilege(name, kind)} for name in relations}
+        self.assertEqual({name: rights for name, rights in held.items() if rights}, granted)
+
 
 class IngestSqlTests(TestCase):
     """The ingest's tests, bench and end-to-end runs make their configuration in SQL of their own, on the schema these

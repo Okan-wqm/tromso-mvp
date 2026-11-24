@@ -504,3 +504,42 @@ async fn statistics_oracle_through_the_database() {
     }
     let _ = DeadReason::ALL;
 }
+
+#[tokio::test]
+async fn the_ingest_writes_only_as_its_own_role() {
+    let Some(url) = url() else { return };
+    let _g = serial();
+    // the tests' owner connection (a superuser that owns the schema) is refused; the ingest's role is not
+    let a = admin(&url).await;
+    assert!(db::refused_role(&a).await.unwrap().is_some());
+    let c = ingest(&url).await;
+    assert_eq!(db::refused_role(&c).await.unwrap(), None);
+}
+
+#[tokio::test]
+async fn a_resolved_dead_letter_opens_again_when_its_message_comes_back_later() {
+    let Some(url) = url() else { return };
+    let _g = serial();
+    let a = admin(&url).await;
+    let s = setup(&a).await;
+    let mut c = ingest(&url).await;
+    let cfg = config::load(&mut c).await.unwrap();
+    let t = t0();
+    let bad = |at: Ts| Msg {
+        connection_id: s.fx.connection,
+        topic: "zz/plc".into(),
+        payload: b"{bad".to_vec(),
+        received_at: at,
+    };
+    let out = |msgs: Vec<Msg>| pipeline::process(&cfg, &HashMap::new(), &mut DeadLimiter::new(100), &msgs);
+    db::write_batch(&mut c, &out(vec![bad(t)]), &status(&s.fx)).await.unwrap();
+    a.batch_execute("UPDATE sensors_dead_letter SET resolved_at = last_at").await.unwrap();
+    let resolved = "SELECT count(*) FROM sensors_dead_letter WHERE resolved_at IS NOT NULL";
+    // the same message delivered again (received when it first was): it was dealt with, it stays resolved
+    db::write_batch(&mut c, &out(vec![bad(t)]), &status(&s.fx)).await.unwrap();
+    assert_eq!(count(&a, resolved).await, 1);
+    // it comes back after the resolution: its cause is not dealt with, the letter is open again (the default list)
+    db::write_batch(&mut c, &out(vec![bad(t + Duration::seconds(60))]), &status(&s.fx)).await.unwrap();
+    assert_eq!(count(&a, resolved).await, 0);
+    assert_eq!(count(&a, "SELECT count::int8 FROM sensors_dead_letter").await, 3);
+}

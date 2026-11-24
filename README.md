@@ -552,7 +552,7 @@ Feeding records) and the operations, **Record feeding** first; for an empty unit
 and max biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit,
 with the water read, its **Water**: the latest value of every parameter with its age, status and limits,
 the worked-out NH₃-N and O₂ saturation, **Record water sample** (the unit fixed, back to the drawer) and
-its water history; for every unit its last 20 operations and 10 feedings, voided ones struck through with
+**History**, the unit's Tank › Water (`farm:tank_water`; in the classic look that address redirects to the unit's history on Water chemistry); for every unit its last 20 operations and 10 feedings, voided ones struck through with
 their reason, each with **Void** while it may be voided.
 
 **Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock

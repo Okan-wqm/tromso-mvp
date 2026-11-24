@@ -233,7 +233,9 @@ class StripAlarmsTests(AlarmsCase):
         for look in ('classic', 'next'):                                 # the Alarms page is not empty in either look
             listing = self.client.get(reverse('alarms:alarm_list'), {'ui': look}).content.decode()
             self.assertIn('No alarm is open.', listing)
-            self.assertIn('On the Monitoring screen: 1 unit critical. No alarm is open for them yet.', listing)
+            self.assertIn('On the Monitoring screen: 1 unit critical. 1 unit with critical or warning water has no open '
+                          'alarm.', listing)
+            self.assertNotIn('yet', listing[listing.index('data-units-note'):listing.index('</p>', listing.index('data-units-note'))])
             self.assertIn(f'<a href="{monitor}">See them on Monitoring</a>', listing)
 
     def test_the_alarms_page_says_nothing_of_units_when_none_needs_a_look(self):
@@ -242,13 +244,37 @@ class StripAlarmsTests(AlarmsCase):
         listing = self.client.get(reverse('alarms:alarm_list')).content.decode()
         self.assertNotIn('data-units-note', listing)
 
+    def test_the_alarms_page_promises_nothing_for_a_rung_the_engine_never_alarms_on(self):
+        """Review of the follow-up, M1: a unit with no limit (or blind, over capacity, weigh now) never gets an alarm, so
+        the page names it and says nothing of alarms."""
+        self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)            # no temperature or oxygen limit: unjudged
+        self.assertFalse(Alarm.objects.exists())
+        found = alarms_read.attention()
+        self.assertEqual((found.unjudged, found.unalarmed, found.alarms), (1, 0, 0))
+        listing = self.client.get(reverse('alarms:alarm_list')).content.decode()
+        note = listing[listing.index('data-units-note'):listing.index('</p>', listing.index('data-units-note'))]
+        self.assertIn('On the Monitoring screen: 1 unit with no limit.', note)
+        self.assertNotIn('alarm', note)                                  # no sentence about alarms at all
+
+    def test_the_unalarmed_units_are_counted_by_their_own_alarms_not_the_farms(self):
+        """An open alarm elsewhere (a farm-wide system alarm) does not hide that a critical unit has none of its own."""
+        self.limits()
+        self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)
+        Alarm.objects.create(source='system', parameter='sensors_failed', severity='critical', opened_at=self.now,
+                             summary='The live water values (the sensors) cannot be read.')
+        found = alarms_read.attention()
+        self.assertEqual((found.alarms, found.critical, found.unalarmed), (1, 1, 1))
+        listing = self.client.get(reverse('alarms:alarm_list')).content.decode()
+        self.assertIn('1 unit with critical or warning water has no open alarm.', listing)
+
     def test_the_alarms_page_with_an_open_alarm_does_not_say_none_is_open(self):
         self.limits()
         self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)
         self.loop()
         listing = self.client.get(reverse('alarms:alarm_list')).content.decode()
         self.assertIn('On the Monitoring screen: 1 unit critical.', listing)
-        self.assertNotIn('No alarm is open for them yet.', listing)
+        self.assertNotIn('has no open alarm', listing)                      # the alarm is at T-01's point
+        self.assertEqual(alarms_read.attention().unalarmed, 0)
         html = self.fragment()                                           # one item, one link per page
         self.assertIn('class="ui-strip-item ui-strip-split" data-strip="alarms" data-status="critical"', html)
         self.assertRegex(html, rf'<a class="ui-strip-link" href="{reverse("alarms:alarm_list")}" data-strip-part="alarms">'
@@ -393,24 +419,24 @@ class StripAlarmsTests(AlarmsCase):
     def test_a_unit_whose_state_cannot_be_worked_out_is_counted_and_the_strip_still_answers(self):
         """Review M1 residual: the read was isolated per unit, the evaluation was not, so one unit whose evaluation
         raised made the whole fragment 500. Each unit is worked out on its own now and counted unreadable."""
+        from farm.stock import dates
         from monitoring import read as monitoring_read
         self.limits()
         t2 = make_unit('T-02', self.hall)                    # no point, no system: blind
         stock_fish(self.keeper, t2, 500, '50', 10, species=self.salmon)
         self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)
-        real = monitoring_read.upper_state
-        calls = []
+        real = dates.local_today
 
-        def failing(rungs, *args, **kwargs):
-            calls.append(rungs)
-            if len(calls) == 2:
+        def failing(unit=None):                              # T-02's evaluation raises, T-01's does not
+            if unit is not None and unit.pk == t2.pk:
                 raise RuntimeError('broken evaluation')
-            return real(rungs, *args, **kwargs)
+            return real(unit)
 
-        with mock.patch.object(monitoring_read, 'upper_state', side_effect=failing):
+        with mock.patch.object(dates, 'local_today', side_effect=failing):
             found = alarms_read.attention()
-        self.assertEqual(len(calls), 2)
-        self.assertEqual((found.critical, found.unreadable, found.blind), (1, 1, 0) if calls[0].critical else (0, 1, 1))
+            html = self.fragment()
+        self.assertEqual(dict(found.units), {self.t1.pk: 'critical', t2.pk: alarms_read.UNREADABLE})
+        self.assertIn('1 unit critical · 1 unit cannot be read', html)
         with mock.patch.object(monitoring_read, 'water_rungs', side_effect=RuntimeError('broken evaluation')):
             found = alarms_read.attention()
             html = self.fragment()                                    # 200 (fragment() checks it)

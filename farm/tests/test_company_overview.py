@@ -59,7 +59,8 @@ class CompanyOverviewTests(CompanyFixture):
         self.assertEqual(sum(row['water']['critical'] for row in rows.values()), water['critical'])
         self.assertEqual(sum(row['water']['warning'] for row in rows.values()), water['warning'])
         self.assertEqual((rows['BG']['water']['critical'], rows['BG']['water']['warning']), (1, 1))
-        self.assertEqual(rows['AL']['water'], {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0})
+        self.assertEqual(rows['AL']['water'], {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0, 'worst': None,
+                                              'stale_since': None})
 
     def test_the_sites_are_counted_by_status_with_the_statuses_they_have(self):
         found = overview(self.admin)['sites']

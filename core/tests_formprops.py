@@ -46,37 +46,49 @@ class RecordFormNextTests(TestCase):
                 self.assertNotIn('class="record-form"', new)
                 self.assertEqual(unsaid(old, props, new_html=new), [])
 
+    def edit_url(self):
+        """The deadband of the pH (one per parameter is seeded by the migrations: a new one would clash)."""
+        self.record = ParameterDeadband.objects.get(parameter='ph')
+        return reverse('alarms:parameterdeadband_edit', args=[self.record.pk])
+
     def test_a_refused_form_comes_back_with_the_servers_errors_and_saves_nothing(self):
         self.client.get(LIST, {'ui': 'next'})                       # the cookie keeps the look
+        before = ParameterDeadband.objects.count()
         response = self.client.post(CREATE, {'parameter': '', 'deadband': 'abc'})
         props = props_of(response.content.decode(), 'record-form')
         fields = {field['name']: field for tab in props['form']['tabs'] for fieldset in tab['fieldsets']
                   for field in fieldset['fields']}
         self.assertTrue(fields['parameter']['errors'])
         self.assertTrue(fields['deadband']['errors'])
-        self.assertEqual(ParameterDeadband.objects.count(), 0)
+        self.assertEqual(ParameterDeadband.objects.count(), before)
 
     def test_a_good_form_saves_through_the_same_view_and_is_logged(self):
         self.client.get(LIST, {'ui': 'next'})
+        url = self.edit_url()
         before = AuditLog.objects.count()
-        response = self.client.post(CREATE, {'parameter': 'ph', 'deadband': '0.1'})
+        props = props_of(self.page(url, 'next'), 'record-form')
+        version = next(each['value'] for each in props['form']['hidden'] if each['name'] == 'version')
+        response = self.client.post(url, {'parameter': 'ph', 'deadband': '0.25', 'version': version})
         self.assertEqual(response.status_code, 302)
-        record = ParameterDeadband.objects.get()
-        self.assertEqual(record.deadband, Decimal('0.1'))
+        self.record.refresh_from_db()
+        self.assertEqual(self.record.deadband, Decimal('0.25'))
         self.assertEqual(AuditLog.objects.count(), before + 1)
-        edit = self.page(reverse('alarms:parameterdeadband_edit', args=[record.pk]), 'next')
+        edit = self.page(url, 'next')
         props = props_of(edit, 'record-form')
-        self.assertEqual(props['delete']['href'], reverse('alarms:parameterdeadband_delete', args=[record.pk]))
-        self.assertEqual(props['history']['entries'][0]['action'], 'Created')
-        old = self.page(reverse('alarms:parameterdeadband_edit', args=[record.pk]), 'classic')
+        self.assertEqual(props['delete']['href'], reverse('alarms:parameterdeadband_delete', args=[self.record.pk]))
+        self.assertEqual(props['history']['entries'][0]['action'], 'Changed')
+        old = self.page(url, 'classic')
         self.assertEqual(unsaid(old, props, new_html=edit), [])
 
     def test_the_csrf_check_holds_and_the_props_token_passes_it(self):
+        url = self.edit_url()
         guarded = Client(enforce_csrf_checks=True)
         guarded.force_login(self.admin)
-        self.assertEqual(guarded.post(CREATE, {'parameter': 'ph', 'deadband': '0.1'}).status_code, 403)
-        token = props_of(guarded.get(CREATE, {'ui': 'next'}).content.decode(), 'record-form')['csrfToken']
-        response = guarded.post(CREATE, {'parameter': 'ph', 'deadband': '0.1', 'csrfmiddlewaretoken': token})
+        props = props_of(guarded.get(url, {'ui': 'next'}).content.decode(), 'record-form')
+        version = next(each['value'] for each in props['form']['hidden'] if each['name'] == 'version')
+        sent = {'parameter': 'ph', 'deadband': '0.3', 'version': version}
+        self.assertEqual(guarded.post(url, sent).status_code, 403)
+        response = guarded.post(url, {**sent, 'csrfmiddlewaretoken': props['csrfToken']})
         self.assertEqual(response.status_code, 302)
 
     def test_a_person_without_the_right_is_refused_in_both_looks(self):
@@ -93,11 +105,11 @@ class RecordFormNextTests(TestCase):
         self.assertIsNone(props_of(site_form, 'record-form'))
 
     def test_the_delete_confirmation_says_what_the_classic_one_says_and_deletes_through_the_same_view(self):
-        record = ParameterDeadband.objects.create(parameter='ph', deadband=Decimal('0.1'))
+        record = ParameterDeadband.objects.get(parameter='ph')
         url = reverse('alarms:parameterdeadband_delete', args=[record.pk])
         old, new = self.page(url, 'classic'), self.page(url, 'next')
         props = props_of(new, 'confirm-delete')
         self.assertTrue(props['canDelete'])
         self.assertEqual(unsaid(old, props, new_html=new), [])
         self.assertEqual(self.client.post(url).status_code, 302)
-        self.assertFalse(ParameterDeadband.objects.filter(pk=record.pk).exists())
+        self.assertFalse(ParameterDeadband.objects.filter(pk=record.pk).exists())    # gone from every list (soft or hard)

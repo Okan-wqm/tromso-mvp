@@ -110,6 +110,33 @@ class CompanyOverviewTests(CompanyFixture):
         self.assertEqual(plate['units'], {'tone': 'critical', 'text': ' · '.join(attention_said(farm, alarms=False))})
         self.assertNotIn(str(_('No alarm is open.')), json.dumps(props, ensure_ascii=False))
 
+    def test_an_alarm_opened_while_the_reading_is_cached_as_quiet_is_listed_never_hidden(self):
+        """Review N1: the strip's reading is cached for a few seconds; an alarm opened in that time is in the live list the
+        plate shows: the plate lists it and never says "No alarm is open." over it."""
+        from unittest import mock
+
+        from alarms.read import Attention
+        Alarm.objects.create(source=Source.WATER_LIMIT, point=self.mid1, parameter='oxygen_mg_l',
+                             severity=Severity.CRITICAL, site=self.bergen, opened_at=timezone.now(),
+                             summary='Dissolved oxygen 5 mg/L, below 6')
+        quiet = (Attention(), {})
+        with mock.patch('alarms.read.attention_all', return_value=quiet),                 mock.patch('alarms.read.attention', return_value=Attention()):
+            plate = overview_props(self.admin)['alarms']
+        self.assertEqual(len(plate['rows']), 1)
+        self.assertIsNone(plate['empty'])
+
+    def test_a_sites_open_alarms_cell_says_its_units_line_whatever_its_water_chip(self):
+        """Review N2: a row's edge is critical or warning for its units: the row says why, in its Open alarms cell, also
+        when the water chip says a point's value or "Not measured"."""
+        moment = timezone.now()
+        found = {row['site'].code: row['attention'] for row in overview(self.admin, moment)['sites']['rows']}
+        rows = {row['code']: row for row in overview_props(self.admin, moment)['sites']['rows']}
+        for code, row in rows.items():
+            said = attention_said(found[code], alarms=False)
+            if said:
+                self.assertIn(' · '.join(said), row['alarms']['sub'] or '', code)
+        self.assertTrue(any(attention_said(each, alarms=False) for each in found.values()), 'the fixture flags a unit')
+
     def test_a_site_row_says_one_judgement_of_its_water(self):
         """Review F5: the points' chip would say OK while the site's stocked units are flagged: the row says the units' line
         in the worst status instead, never "OK" beside a critical unit."""

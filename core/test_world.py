@@ -10,6 +10,7 @@ built and read.
                                       library document, a knowledge entry, a person, a role and an employee
     hr_world(admin, client)           the people's: office departments, employees placed and one who left, shifts, a
                                       holiday, a leave type, leave requests and attendance
+    roster_world(admin, client)       today's roster of the hall: one planned person in each state of the board
     forms_world(admin, client)        the rows of the forms with lists of their own: a site's and a supplier's contacts,
                                       a feeder's calibration, a feed's suitability, a medicine's withdrawal, a reorder
                                       level, a board's card, a task's and a recurring task's checklist, a device with a
@@ -29,7 +30,8 @@ def world(admin):
     """The test world, built through a client signed in as `admin`; [what was made: its answer] of the parts posted."""
     client = Client(HTTP_HOST='localhost')
     client.force_login(admin)
-    return company_world(admin, client) + hr_world(admin, client) + forms_world(admin, client)
+    return (company_world(admin, client) + hr_world(admin, client) + roster_world(admin, client)
+            + forms_world(admin, client))
 
 
 def company_world(admin, client):
@@ -235,3 +237,47 @@ def refused_rows_data(rows, record):
     return {f'{rows.key}-TOTAL_FORMS': '1', f'{rows.key}-INITIAL_FORMS': '0', f'{rows.key}-MIN_NUM_FORMS': '0',
             f'{rows.key}-MAX_NUM_FORMS': '1000', 'version': str(version),
             **{f'{rows.key}-0-{bound.name}': wrong(bound) for bound in empty.visible_fields() if bound.name != 'DELETE'}}
+
+
+def roster_world(admin, client):
+    """Today's roster of the production hall (Test Site North, on Oslo's clock: MOMENT is 13:42 there): one planned
+    person in each state of the board (hr.rules.status), so Today and the Shift schedule have planned people and the
+    stacked bar has parts: upcoming (an evening shift), present (in since before the day shift), late (in 30 minutes
+    after the start), not in yet (a shift that began 12 minutes ago), absent (the day shift, no clock-in), on leave (an
+    approved leave over a planned day) and done (an early shift, clocked in and out)."""
+    from datetime import date, time, timedelta
+    from zoneinfo import ZoneInfo
+
+    from farm.models import ProductionDepartment
+    from hr.models import AttendanceRecord, LeaveRequest, LeaveType, Shift, ShiftAssignment
+    from hr.models.leave import LeaveStatus
+    from hr.tests.helpers_people import employee, place
+    hall, today, oslo = ProductionDepartment.objects.get(code='THA'), MOMENT.date(), ZoneInfo('Europe/Oslo')
+
+    def at(hour, minute=0):
+        return datetime(today.year, today.month, today.day, hour, minute, tzinfo=oslo)
+
+    def shift(code, name, start, end):
+        return Shift.objects.create(name=name, code=code, starts_at=start, ends_at=end, break_minutes=0, grace_minutes=0)
+    early, day = shift('TE1', 'Test early shift', time(6), time(10)), shift('TD1', 'Test morning shift', time(7), time(15))
+    midday, later = shift('TM1', 'Test midday shift', time(12), time(20)), shift('TL1', 'Test later shift', time(13, 30), time(21))
+    evening = shift('TV1', 'Test evening shift', time(18), time(23))
+    annual = LeaveType.objects.filter(code='TAL').first() or LeaveType.objects.create(name='Test annual leave', code='TAL')
+    made = {}
+    for number, last, plan in (('E-9101', 'Upcoming', evening), ('E-9102', 'Present', day), ('E-9103', 'Late', midday),
+                               ('E-9104', 'Waiting', later), ('E-9105', 'Absent', day), ('E-9106', 'Away', day),
+                               ('E-9107', 'Done', early)):
+        person = employee(number, last=last, first='Test', on=date(2026, 1, 1))
+        place(person, hall, title='Test operator')
+        ShiftAssignment.objects.create(employee=person, day=today, shift=plan)
+        made[last] = person
+
+    def punch(person, clock_in, clock_out=None):
+        AttendanceRecord.objects.create(employee=person, clock_in=clock_in, clock_out=clock_out,
+                                        via=AttendanceRecord.Via.ENTERED, note='Test roster punch')
+    punch(made['Present'], at(6, 55))
+    punch(made['Late'], at(12, 30))
+    punch(made['Done'], at(5, 58), at(10, 2))
+    LeaveRequest.objects.create(employee=made['Away'], leave_type=annual, first_day=today, last_day=today,
+                                status=LeaveStatus.APPROVED, decided_by=admin, decided_at=MOMENT - timedelta(days=3))
+    return [f'roster: {len(made)} planned today']

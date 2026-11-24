@@ -879,28 +879,58 @@ updated), an optional one says "Could not be read: Tasks" on the frame, where no
 announcer): the new look is a skin, and the cards' markup is byte for byte the same in both looks
 (`monitoring/tests/test_next_pages.py`), so the change token does not need to know the look. `templates/monitoring/monitor.html`
 loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new look, and every rule of the second is under
-`html[data-ui="next"]`, so the classic page reads none of it. What it draws, from the design console: the state's glyph as the design's icons (critical the octagon,
-warning the triangle, no recent data the clock, no limit the gauge, note the bell, OK the check, empty the grid), a
-mask of the one icon source (`scripts/icons.mjs` builds `glyphs.css` from `templates/icons` beside the islands' set,
-`npm run check:icons` holds both), so the glyph a script sets (the band's "page of the worst card") follows; every rung
-keeps a glyph of its own and its word. The frame a square hairline plate with the state's edge on the left (dashed for
-no recent data and no limit, as in the classic look), a critical card framed in the critical colour, the head of a card
-with no recent data hatched (the design's "not known": it never looks like an OK card); the code in the text face, the
-figures in Barlow, OK in its green; the band a plate on the desk page with the switch of the cards as a segmented control;
-a card that flows (Simple, Detailed) with its state as a chip and its figures in hairline cells; the Big card's chart and
-its three boxes framed. Nothing is cut, hidden or faded that the classic card shows: the fitted cards keep their unit
-and measure, and the wall's browser test runs every case again in the new look (`frontend/test/wall.browser.test.ts`, the same parts of
-`manage.py layout_pages` under the new look's sheets). **Every card links its tank's water history**, in both looks and
-the pane's included (`templates/monitoring/_water_link.html`, `farm:tank_water`: the chart icon, and "Water history" in
-words on a full-height card and a card that flows; on the Small card its words are for a screen reader): Tank › Water in
-the new look, the unit's history on Water chemistry in the classic look (the address redirects there). Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py`
-`monitoring_world`: a unit in each of the seven states): each card says in the new look what it says in the classic one
-(the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on the Small,
-Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish, and the link resolves in both looks; and by `frontend/test/monitoring.pages.ts`
-(`npm run test:pages`, on the pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the
-product's policy and nonce, its polls answered with the real fragments, at 1440 and 390 px (no CSP violation, no serious
-axe finding, card text at 4.5:1, no sideways scroll, a glyph and a link on every card), the pane, the wall at 1920×1080
-and 3840×2160, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that
+`html[data-ui="next"]`, so the classic page reads none of it. What it draws, from the design console:
+- **The state's glyph** as the design's icons (critical the octagon, warning the triangle, no recent data the clock, no
+  limit the gauge, note the bell, OK the check, empty the grid): `monitor-next.css` names each state's icon, and
+  `glyphs.css` (built by `scripts/icons.mjs` from `templates/icons` beside the islands' set; `npm run check:icons`)
+  draws it as a mask, under `@supports` with the `-webkit-` form: a page that lacks that sheet, or a browser without
+  masks, keeps the classic shapes, never seven identical squares. The glyph a script sets (the band's "page of the worst
+  card") follows; every rung keeps a glyph of its own and its word.
+- **The frame**: a square hairline plate (border longhands only: the classic look's edge STYLE of each state stays, dashed
+  for no recent data and no limit, dotted for empty, and the hatch strip of a card whose value is old, `ds.css`
+  `.monitor-card[data-stale]`), a critical card framed in the critical colour, the head of a card with no recent data
+  hatched (its stripe the control line half way to the plate: 1.5:1 or more in all six themes, measured by the page
+  test); on a wall the frame and the edge grow with the type; in forced colours a critical or warning edge is 10 px, as
+  classic. The code in the text face, the figures in Barlow, OK in its green.
+- **One size per mode** (owner, 2026-11-24: "a card grows taller when a warning appears"). The Small card on the desk page
+  is the design's: a regular grid of equal cards (three to a row at 1440 px: at four the oxygen's saturation beside its
+  label was cut; four at 1920), with fixed slots: the head (the code, the name cut with an ellipsis and whole in its
+  title, the state's glyph and word, never cut), ONE line of reason (the first in short and "+N"; every reason in full in
+  its title, for a screen reader, in the band's chips and on the pane's card), the link to the water at its end, then the
+  four cells (label; figure never cut, sized to its cell; where it came from and how old, cut with an ellipsis and whole
+  in its title). The pH window is not in the design's Small card: it stays in the markup and on the wall, in the pane and
+  on the Big screen. An empty unit's card says the unit in four cells (status, volume, max density, max biomass:
+  `monitoring/_empty_cells.html`). Big cards on a desk (from 1100 px) are each at the Big template's proportion, as in the
+  pane; Simple and Detailed cards are as tall as the longest of them (rows of one fraction: nothing of a longer card is
+  cut). On a wall the cards are the fitted ones, sized by the slot rule.
+- **The toolbar and the band**: the search first, the filters named for a screen reader only (each select says its
+  choice: "No board", "All sites"), the wall's buttons at the end; the band a plate on the desk page with the switch of
+  the cards as a segmented control on the right, the current one bold and underlined, not only tinted.
+- **The Big card's boxes** (dosing, other points, stock) say their names where their place has the room
+  (`render._titled`, from the validator's `fitted_place`).
+
+Nothing a safety cue needs is cut, hidden or faded: the page test holds every code, state word, figure and "old" whole,
+the cards of one kind one size, and the wall's browser test runs every case again in the new look
+(`frontend/test/wall.browser.test.ts`, the parts of `manage.py layout_pages` under the new look's sheets).
+
+**A card links its tank's water history** (`templates/monitoring/_water_link.html`, `farm:tank_water`) in both looks, the
+pane's included, when its water section is readable: the page needs the right to read water samples, which the cards do
+not (`card.sections`), so a person who may see the cards but not the water gets no link that would answer 403. The chart
+icon, and "Water history" in words on a full-height card and a card that flows; on the Small card its words, for a screen
+reader, name the unit. Tank › Water in the new look, the unit's history on Water chemistry in the classic look (the address
+redirects there).
+
+Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py` `monitoring_world`: a unit in each
+of the seven states and an old critical one, and a wall board read from 2 m): each card says in the new look what it says
+in the classic one (the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on
+the Small, Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish; the link resolves, and is
+absent for a person without the water right. And by `frontend/test/monitoring.pages.ts` (`npm run test:pages`, on the
+pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the product's policy and
+nonce, its polls answered with the real fragments, at 1440, 1920 and 390 px (no CSP violation, no serious axe finding,
+card text at 4.5:1, no sideways scroll, a glyph and a link on every card, nothing safety-relevant cut, one size per mode,
+the rail at its width beside a long strip), each state's edge style, the stale strip, one glyph per state and the classic
+shapes without `glyphs.css`, the hatch in six themes, the pane, the wall at 1920×1080 and 3840×2160 and a board's wall
+read from 2 m, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that
 fails said as "cannot be read".
 
 **Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The

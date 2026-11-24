@@ -33,9 +33,8 @@ class IslandPagesTests(FrozenClock, TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
         made = world(cls.admin, Client())
-        # a part posted through a page says '<what>: <status>' (302: saved); a part made in the models (the people's,
-        # the roster's) says what it made
-        refused = [each for each in made if each.rpartition(': ')[2].isdigit() and not each.endswith(': 302')]
+        # a posted part answers with its status (302: made); hr_world and roster_world say their counts instead
+        refused = [each for each in made if each.rsplit(': ', 1)[-1].isdigit() and not each.endswith(': 302')]
         if refused:
             raise AssertionError(f'the test world was not built: {refused}')
         cls.unit = Tank.objects.get(code='TT-01')

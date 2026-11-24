@@ -5690,7 +5690,7 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   plates around the classic fragments the poll renders again; the open conversation's list is bounded in its plate, so it
   opens at its newest message; on a phone one plate shows, as on the classic page). What opened a dialog on the classic
   page (an action, an edit, a delete, New message, Members, Leave channel, a read page's Edit and Delete) opens its own
-  page; still classic, outside this batch: an experiment's read and edit pages (Start, Release, Replace, Copy). Urgent
+  page; still classic, outside this batch: an experiment's read and edit pages (Start, Release, Replace, Copy) and Feeding records. Urgent
   and high priority are marked as chips, as the classic page marks them in colour. Held: `core/tests_panel_next.py` (each
   page, its views, tabs, kinds and the drawer, against the classic page on the test world in three languages; the
   Experiments list's rows say nothing the classic list does not; no style attribute, no dialog link, in the seven pages

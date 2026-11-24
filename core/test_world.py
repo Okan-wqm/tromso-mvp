@@ -320,7 +320,7 @@ def tasks_world(admin, client):
     done = task('Test sample round', today - timedelta(days=1))
     done.assignees.set([admin])
     services.complete(admin, done)
-    return [f'recurring task: {answer.status_code}', f'tasks: {Task.objects.count()}']
+    return [f'recurring task: {answer.status_code}', f'{Task.objects.count()} tasks']
 
 
 def questions_world(admin, client):
@@ -335,7 +335,7 @@ def questions_world(admin, client):
                                 affects='Test rule two', status=QuestionStatus.ANSWERED, asked_by='Test Person',
                                 asked_on=today - timedelta(days=20), answer='Test answer.',
                                 answered_on=today - timedelta(days=5))
-    return ['questions: 2']
+    return ['2 questions']
 
 
 def experiments_world(admin, client):
@@ -363,7 +363,7 @@ def experiments_world(admin, client):
     # the list is newest first (Meta.ordering): made a minute apart, in the order above, not all on MOMENT
     for minutes, code in enumerate(Experiment.objects.order_by('-code').values_list('code', flat=True)):
         Experiment.objects.filter(code=code).update(created_at=MOMENT - timedelta(minutes=minutes))
-    return [f'experiments: {Experiment.objects.count()}']
+    return [f'{Experiment.objects.count()} experiments']
 
 
 def reports_world(admin, client):
@@ -380,7 +380,7 @@ def reports_world(admin, client):
     Report.objects.create(kind=Report.Kind.BIOMASS, site=south, period_start=date(2026, 10, 1), contact_name='Test Person',
                           contact_email='test.person@example.com', created_by=admin, updated_by=admin)
     filed(Report.Kind.BIOMASS, site=north, period=Period(MONTH, date(2026, 9, 1)), reference='TEST-1', submitted_by=admin)
-    return [f'reports: {Report.objects.count()}']
+    return [f'{Report.objects.count()} reports']
 
 
 def storage_world(admin, client):
@@ -439,7 +439,7 @@ def messages_world(admin, client):
     messages = list(Message.objects.order_by('pk'))
     for index, message in enumerate(messages):
         Message.objects.filter(pk=message.pk).update(created_at=MOMENT - timedelta(minutes=len(messages) - index))
-    return [f'conversations: {Conversation.objects.count()}']
+    return [f'{Conversation.objects.count()} conversations']
 
 
 def roster_world(admin, client):

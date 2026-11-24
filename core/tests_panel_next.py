@@ -286,10 +286,11 @@ class MessagesPageTests(WorldTestCase):
 
 class OpenedPagesTests(WorldTestCase):
     """Every page the seven pages open in the new look (each link of their <main> and of their island's props) opens as a
-    page of its own and opens no classic dialog in its turn. Still classic, by name: an experiment's read page and its
-    edit page (Start, Release, Replace and Copy open dialogs there), outside this batch."""
+    page of its own and opens no classic dialog in its turn. Still classic, by name, outside this batch: an experiment's
+    read page and its edit page (Start, Release, Replace and Copy open dialogs there) and Operations › Feeding records
+    (Storage's "See the feedings" and the feed given's rows lead there)."""
 
-    STILL_CLASSIC = re.compile(r'^/research/experiments/[0-9a-f-]{36}/(view/)?$')
+    STILL_CLASSIC = re.compile(r'^(/research/experiments/[0-9a-f-]{36}/(view/)?|/operations/feeding/)$')
 
     def addresses(self):
         from messaging.models import Conversation

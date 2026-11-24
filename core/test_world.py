@@ -88,7 +88,7 @@ def hr_world(admin, client):
     from hr.tests.helpers_people import employee, place
     north = Site.objects.get(code='TSN')
     office = OfficeDepartment.objects.create(site=north, name='Test Office', code='TOF', manager=admin)
-    finance = OfficeDepartment.objects.create(site=None, name='Test Accounts', code='TAC', parent=office)
+    OfficeDepartment.objects.create(site=None, name='Test Accounts', code='TAC', parent=office)
     hall = ProductionDepartment.objects.get(code='THA')
     person = Employee.objects.get(employee_number='E-9001')
     place(person, office, title='Test coordinator')

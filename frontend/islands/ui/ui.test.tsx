@@ -206,7 +206,7 @@ test('a list page: one GET form for the search and the filters, the table with i
   assert.doesNotMatch(page, /data-modal/, 'a list link opens the record\'s page, never the classic dialog');
   assert.match(page, /<span class="ui-cell-strong"><a href="\/hr\/team\/1\/">Ann Alfa<\/a><\/span><span class="ui-cell-sub">E-1<\/span>/);
   assert.match(page, /<tr data-status="warning">/);
-  assert.match(page, /<td class="num">0\.5<\/td>/);
+  assert.match(page, /<td class="num"><span>0\.5<\/span><\/td>/);
   assert.match(page, /<form action="\/hr\/leave\/1\/cancel\/" method="post"><input type="hidden" name="csrfmiddlewaretoken" value="test-token"\/><input type="hidden" name="next" value="\/hr\/leave\/"\/><button type="submit" class="icon-button icon-button-danger" aria-label="Cancel the request"/);
   assert.match(page, /<a class="icon-button" href="\/hr\/team\/1\/view\/" aria-label="Show Ann Alfa"/);
   assert.match(page, /<nav class="pager list-pager" aria-label="Pages"><span>51–100 of 120<\/span>/);

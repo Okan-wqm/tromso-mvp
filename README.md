@@ -3967,10 +3967,10 @@ the device.
   clocks go back has 25 hours). The rollup refreshes every hour over the last 75 days and is compressed after 90; a daily
   job takes in later readings back to the contract's late limit (728 days). The refresh never reaches back into dropped
   raw data: TimescaleDB 2.17 invalidates a dropped region and a refresh there would empty the rollup.
-- Late or old readings are written one row per statement: TimescaleDB 2.17.2 silently drops the remaining rows of a
-  multi-row `INSERT ... ON CONFLICT` that meets a compressed chunk (`sensors/tests/test_timescale.py` holds the case).
-  A `DELETE` of rows in a compressed chunk fails in 2.17.2 ("btree index keys must be ordered by attribute"); nothing in
-  the application deletes readings (retention drops whole chunks).
+- Late or old readings are written one row per statement. TimescaleDB 2.17.2 silently dropped the remaining rows of a
+  multi-row `INSERT ... ON CONFLICT` that met a compressed chunk; 2.32.1, the release everything runs on now, keeps
+  them (`sensors/tests/test_timescale.py` pins it), and one row per statement stays the ingest's rule. Nothing in the
+  application deletes readings (retention drops whole chunks).
 - A value is fresh while both its device time and its receipt are within the channel's freshness (its fresh heartbeats): a
   gateway replaying an old backlog delivers values received now but measured long ago, which are not fresh.
 - The database viewer counts a hypertable by the database's estimate and leaves the readings out (billions of rows).
@@ -6043,7 +6043,7 @@ WORKERS=1 scripts/test.sh                # one process, without --parallel
 ```
 
 `scripts/test.sh` starts a PostgreSQL server for the run alone (the development database's image,
-`timescale/timescaledb:2.17.2-pg17`, in a container `balik-test-db-<run>` on a network of its own, no host port, its data in
+`timescale/timescaledb:2.32.1-pg17` (pinned by digest), in a container `balik-test-db-<run>` on a network of its own, no host port, its data in
 memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --parallel $WORKERS` in the test runner's
 image, stage `tests` of `docker/testrunner.Dockerfile` (the hashed requirements, the water-chemistry core built from the
 checkout and `tblib`; `scripts/testrunner/image.sh` defines it, its Dockerfile, stage, context and a tag hashed from

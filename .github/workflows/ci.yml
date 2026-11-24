@@ -115,7 +115,7 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      # The database server is the one scripts/test.sh starts (timescale/timescaledb:2.17.2-pg17, data in memory, the
+      # The database server is the one scripts/test.sh starts (the pinned TimescaleDB 2.32.1 image, data in memory, the
       # job scheduler off, fsync off): a GitHub service container cannot be given those server options, and the
       # parallel run needs the scheduler off (README, Tests).
       - name: Project checks, and the whole suite unless SUITE=0 (scripts/test.sh)
@@ -189,7 +189,7 @@ jobs:
         working-directory: sensors-ingest
     services:
       db:
-        image: timescale/timescaledb:2.17.2-pg17
+        image: timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
         env:
           POSTGRES_USER: balik
           POSTGRES_PASSWORD: ci-throwaway-not-a-secret

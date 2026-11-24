@@ -9,7 +9,7 @@
 #   broker-auth/                passwd and acl written by manage.py sensor_broker_sync (the broker reloads them)
 services:
   db:
-    image: timescale/timescaledb:2.17.2-pg17
+    image: timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-balik}

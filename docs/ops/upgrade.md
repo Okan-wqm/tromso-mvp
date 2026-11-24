@@ -82,22 +82,55 @@ it, then the checks of "Steps" 7 and 8 above and `sh scripts/heartbeat.sh`.
 `dc exec db psql -U postgres -d balik -X -c 'ALTER EXTENSION timescaledb UPDATE'` as the first statement of a new
 session, after a backup, with web, jobs and ingest stopped.
 
-**Where it stands (23.11.2026):** production runs **2.32.1** (`deploy/db/Dockerfile`, PostgreSQL 17 of its build); the
-development database and `scripts/test.sh` still run 2.17.2 (PostgreSQL 17.2, never rebuilt by Timescale). What
-changed between them, found by running the whole suite on each release with CI's `pg_image` input:
+**One release everywhere (24.11.2026):** TimescaleDB **2.32.1**, the same image by the same digest
+(`timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969...`), in production (`deploy/db/Dockerfile`), development
+(`docker-compose.yml`), the tests (`scripts/test.sh`) and every CI job that starts a database; this branch
+(`wip/go-live`) made the move, and `sensors.tests.test_timescale` fails when any of them pins another image. What
+changed from 2.17.2, found by running the whole suite on each release with CI's `pg_image` input (kept for the next
+bisect): a conflicting row of a multi-row `INSERT ... ON CONFLICT DO NOTHING` into a compressed chunk no longer drops
+the rest of the statement (the ingest keeps writing one row per statement); a continuous aggregate's jobs are listed
+under the aggregate's own name. The tests pin 2.32.1's behaviour only.
 
-- from 2.18 on, a conflicting row of a multi-row `INSERT ... ON CONFLICT DO NOTHING` into a compressed chunk no longer
-  drops the rest of the statement (the 2.17.2 fault the ingest works around by writing late rows one per statement;
-  the workaround stays, it is right on both): `sensors.tests.test_timescale.CompressedChunkInsertTests` pins each;
-- later releases list a continuous aggregate's jobs under the aggregate's own name as well: the tests find them by
-  either (`AGGREGATE_JOBS`);
-- the extension version test accepts exactly the versions the repository pins (test image and production image).
+**Moving the shared development database at the landing of `wip/go-live`** (the coordinator, nobody else; the same
+major PostgreSQL, so the data volume stays and only the container and the extension move). From the main checkout
+(`F:\dev\balik-ciftligi`, Git Bash), after `main` holds this branch:
 
-The whole suite passes on both (the go-live hand-back names the runs). **Owned plan for the rest:** the coordinator
-moves the shared development database to the production release at the landing of `wip/go-live`, after its backup,
-with `ALTER EXTENSION timescaledb UPDATE`, and then moves `docker-compose.yml`, `scripts/test.sh` and CI's `rust` job to
-the same image, so that one release is tested everywhere again (by 30.11.2026). After that, a TimescaleDB release
-reaches production like any image: Dependabot, the whole suite with `pg_image`, then `deploy/db/Dockerfile`.
+```
+docker stop balik-dev-web                                     # nothing writes
+docker compose --profile sensors stop sensors-ingest node-red
+docker compose exec -T db pg_dump -U balik -Fc balik > "/j/İCLOUD/iCloudDrive/suderra/Programlar/db-backups/balik-$(date +%Y%m%d-%H%M)-before-timescaledb-2.32.1.dump"
+docker compose up -d db                                       # recreates the container on the new image; the volume stays
+docker compose exec -T db pg_isready -U balik                 # until it answers
+# the extension in every database of the server that holds it, each as the first statement of a new session (-X)
+for d in $(docker compose exec -T db psql -U balik -d postgres -XAtc "SELECT datname FROM pg_database WHERE datallowconn"); do
+  docker compose exec -T db psql -U balik -d "$d" -X -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_extension WHERE extname = 'timescaledb') THEN EXECUTE 'ALTER EXTENSION timescaledb UPDATE'; END IF; END \$\$"
+done
+```
+
+Then, in the database `balik` (`docker compose exec -T db psql -U balik -d balik -X -c "..."`), each must hold:
+
+1. the version: `SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'` is `2.32.1`;
+2. compressed chunks readable: `SELECT count(*) FROM timescaledb_information.chunks WHERE hypertable_name =
+   'sensors_reading' AND is_compressed` is what it was before (the backup's), and `SELECT count(*), min(ts), max(ts)
+   FROM sensors_reading WHERE ts < now() - interval '14 days'` answers;
+3. the continuous aggregate's jobs: `SELECT j.proc_name, j.schedule_interval FROM timescaledb_information.jobs j JOIN
+   timescaledb_information.continuous_aggregates c ON j.hypertable_name = c.view_name WHERE c.view_name =
+   'sensors_rollup_1h'` lists `policy_refresh_continuous_aggregate` (1 hour) and `policy_compression`;
+   `SELECT proc_name FROM timescaledb_information.jobs WHERE proc_name = 'sensors_refresh_late'` one row;
+   `SELECT * FROM timescaledb_information.job_errors ORDER BY start_time DESC LIMIT 5` nothing new;
+4. then the landing's own steps (`migrate`, `compile_catalogs`, `npm run build`, the dev server started again,
+   `manage.py check --database default` quiet), `docker compose --profile sensors up -d`, and **the ingest writing**:
+   after two minutes `SELECT max(ts) FROM sensors_reading` is within the last minutes and the ingest's `/healthz`
+   says ok (`docker compose exec sensors-ingest` has no shell: `docker inspect --format '{{json .State.Health}}'
+   balik-ciftligi-sensors-ingest-1`);
+5. the crawl of the pages (`F:\dev\balik-notes\tools\crawl.py`) in EN, NB and TR.
+
+If the extension update or a check fails: stop the dev server and the sensors services, `docker compose down` (the
+volume stays), restore the backup into a new volume on 2.32.1 (`docs/ops/backup-and-restore.md`, "Restore a dump":
+`timescaledb_pre_restore()`, `pg_restore`, `timescaledb_post_restore()`), and only then delete the old volume.
+
+After that, a TimescaleDB release moves like any image: Dependabot, the whole suite with `pg_image`, then every pin
+together in one change.
 
 **The reboot test** (at installation, then after every kernel update): `reboot`, then without touching anything:
 WireGuard up (`wg show`), every service healthy (`dc ps`), the broker listening on the VPN address

@@ -18,29 +18,16 @@ from sensors.models import Contract, Reading
 from . import one, rows
 
 START = datetime(2026, 10, 1, tzinfo=tz.utc)
-# A continuous aggregate's jobs, by the aggregate's view: TimescaleDB 2.17 lists them under the aggregate's internal
-# materialization hypertable, later releases may name the aggregate itself; either is the aggregate's.
+# A continuous aggregate's jobs: TimescaleDB 2.32.1 lists them under the aggregate's own view name.
 AGGREGATE_JOBS = ("FROM timescaledb_information.jobs j JOIN timescaledb_information.continuous_aggregates c "
-                  "ON j.hypertable_name IN (c.materialization_hypertable_name, c.view_name) ")
-
-
-def pinned_versions():
-    """The TimescaleDB releases the repository runs on: the development and test image (scripts/test.sh) and the
-    production one (deploy/db/Dockerfile). The suite runs on either (CI's pg_image input)."""
-    import re
-    from pathlib import Path
-
-    from django.conf import settings
-    base = Path(settings.BASE_DIR)
-    found = set()
-    for path in (base / 'scripts' / 'test.sh', base / 'deploy' / 'db' / 'Dockerfile'):
-        found.update(re.findall(r'timescale/timescaledb:([0-9.]+)-pg17', path.read_text(encoding='utf-8')))
-    return found
+                  "ON j.hypertable_name = c.view_name ")
+# The one TimescaleDB release everything runs on, pinned by digest in the same image line everywhere a database starts.
+PINNED = 'timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c'
 
 
 def insert(rows_):
-    """(channel_no, ts, value, n, quality, run_sum, run_min, run_max) rows, as the ingest writes them: ONE ROW PER
-    STATEMENT (a multi-row statement loses rows once one conflicts in a compressed chunk, CompressedChunkInsertTests)."""
+    """(channel_no, ts, value, n, quality, run_sum, run_min, run_max) rows, as the ingest writes them: one row per
+    statement (CompressedChunkInsertTests)."""
     with connection.cursor() as cursor:
         for row in rows_:
             cursor.execute(
@@ -124,8 +111,17 @@ class HypertableTests(TestCase):
     def test_the_licence_of_the_build_is_timescales_community_licence(self):
         # Compression, continuous aggregates and policies are TSL features: the -oss build lacks them.
         self.assertEqual(one('SHOW timescaledb.license'), 'timescale')
-        # a release nobody pinned (an image moved under the repository) fails here
-        self.assertIn(one("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'"), pinned_versions())
+        self.assertEqual(one("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'"), '2.32.1')
+        # one image everywhere a database starts: development, the tests, CI, production
+        from pathlib import Path
+
+        from django.conf import settings
+        base = Path(settings.BASE_DIR)
+        for path in ('docker-compose.yml', 'scripts/test.sh', '.github/workflows/ci.yml', 'deploy/db/Dockerfile'):
+            with self.subTest(path=path):
+                text = (base / path).read_text(encoding='utf-8')
+                self.assertIn(PINNED, text)
+                self.assertNotRegex(text.replace(PINNED, ''), r'timescale/timescaledb:[0-9]')
 
     def test_the_orm_writes_and_reads_a_reading_by_its_composite_key(self):
         moment = START + timedelta(minutes=5)
@@ -245,13 +241,12 @@ class RollupValueTests(TestCase):
 
 
 class CompressedChunkInsertTests(TestCase):
-    """TimescaleDB 2.17.2: in ONE multi-row INSERT ... ON CONFLICT DO NOTHING, once a row conflicts inside a compressed
-    chunk every later row of the statement is dropped without an error (found by the ingest, CONTRACT-REQUESTS 13); from
-    2.18 on the rest of the statement is kept. This test pins each release's behaviour, so a change shows here; every
-    writer of sensors_reading (the ingest, the tests' helpers, bench_sensors) writes one row per statement or refuses a
-    range that already holds rows, which stores every row on either release."""
+    """In ONE multi-row INSERT ... ON CONFLICT DO NOTHING, a row conflicting inside a compressed chunk is skipped and the
+    rest of the statement is stored (TimescaleDB 2.32.1; 2.17.2 silently dropped the rest, found by the ingest,
+    CONTRACT-REQUESTS 13, which is why every writer of sensors_reading writes one row per statement). This test pins the
+    behaviour, so a release that changes it shows here."""
 
-    def test_a_conflict_in_a_compressed_chunk_drops_the_rest_of_the_statement_on_2_17_only(self):
+    def test_a_conflict_in_a_compressed_chunk_keeps_the_rest_of_the_statement(self):
         old = datetime(2026, 9, 1, 12, tzinfo=tz.utc)
         insert([(31, old, 1.0, 1, 0, None, None, None)])
         chunk = one("SELECT chunk_schema || '.' || chunk_name FROM timescaledb_information.chunks "
@@ -261,15 +256,8 @@ class CompressedChunkInsertTests(TestCase):
         with connection.cursor() as cursor:
             cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (31, %s, 9.0), (31, %s, 2.0) '
                            'ON CONFLICT DO NOTHING', [old, recent])
-        dropped = one("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'") == '2.17.2'
-        self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent]),
-                         0 if dropped else 1)
-        self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [old]), 1)
-        if not dropped:                                                       # the row the statement kept, to write it again
-            with connection.cursor() as cursor:
-                cursor.execute('DELETE FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent])
-        insert([(31, recent, 2.0, 1, 0, None, None, None)])                   # one per statement: stored
-        self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent]), 1)
+        self.assertEqual(rows('SELECT value FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [old]), [(1.0,)])
+        self.assertEqual(rows('SELECT value FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent]), [(2.0,)])
 
 
 class RollupRefreshTests(TransactionTestCase):

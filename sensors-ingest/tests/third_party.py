@@ -31,7 +31,7 @@ print("eclipse-mosquitto 2.0.23        EPL-2.0 OR EDL-1.0 (BSD-3-Clause)   broke
 print("nodered/node-red 4.0.9          Apache-2.0                          field simulator (development only)")
 print("rust 1.88.0-slim-bookworm       MIT OR Apache-2.0 (toolchain); Debian packages, build stage only")
 print("debian bookworm-slim            Debian free software (DFSG); ca-certificates MPL-2.0 data   runtime base")
-print("timescale/timescaledb 2.17.2    Apache-2.0 core; compression, continuous aggregates and policies under the")
+print("timescale/timescaledb 2.32.1    Apache-2.0 core; compression, continuous aggregates and policies under the")
 print("                                Timescale License (TSL), allowed for self-hosted use inside our application")
 print()
 print("## Crates compiled into the ingest binary (%d)" % len(rows))

@@ -134,15 +134,14 @@ html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .
   white-space: normal;
 }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-card-line .monitor-water-link { align-self: flex-start; margin-left: auto; }
-/* a value's label: its name and "old" on the first line, the oxygen's saturation on the second (its dot is the line's
-   break), two lines in every cell, so every card keeps its one size */
+/* a value's label: its name and "old" on the first line, the oxygen's saturation on the second ("· 71.5 %": its dot
+   ties it to the name above), two lines in every cell, so every card keeps its one size */
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 1lh 1lh; column-gap: .3em; align-items: baseline;
 }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt > .monitor-label { grid-area: 1 / 1; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt > [data-old] { grid-area: 1 / 2; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt > .monitor-beside { grid-area: 2 / 1 / 3 / 3; }
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dt .monitor-beside-dot { display: none; }
 /* the cells: four in a row under one hairline, whatever the card's width (a card narrower than 30 rem would stack them) */
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) :is(.card-grid, .monitor-cells) { align-self: stretch; margin-top: .3em; padding-top: .3em; border-top: 1px solid var(--line-hair); }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .card-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); grid-auto-rows: 0; gap: 0; }

@@ -23,7 +23,7 @@ from sensors.models import AlarmEvent, AlarmRule, Channel, ChannelState, DeviceS
 from . import SensorsCase, make_channel, make_device
 
 KEEPER = ('view_alarmrule', 'add_alarmrule', 'change_alarmrule', 'delete_alarmrule', 'view_alarmevent',
-          'change_alarmevent', 'view_channel')
+          'change_alarm', 'view_channel')                  # acknowledging is Alarms: Edit (the data-layering audit, L-5)
 
 
 class AlarmCase(SensorsCase):

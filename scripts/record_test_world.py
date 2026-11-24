@@ -3,7 +3,8 @@
                                                of the test world, the rows of its row lists), with the controls the
                                                server's own field template draws for it (core/tests_formpayload.py's
                                                reading), and the handling acknowledgement;
-    frontend/test/pages/company-props-<language>.json   Company › Overview's props (config/company_props.py) in en, nb, tr.
+    frontend/test/pages/company-props-<language>.json   Company › Overview's props (config/company_props.py) in en, nb, tr;
+    frontend/test/pages/list-props-<language>.json      the list pages' props (core/listprops.py) in en, nb, tr.
 
 Every person, address and name in them is a fixture value (names "Test …", addresses @example.com); the guard
 core/tests_fixture_privacy.py fails on any other e-mail domain under frontend/test and core/testdata.
@@ -95,6 +96,38 @@ def cases_of(admin):
     return cases, missing
 
 
+# The list pages drawn by the list-page island (core/listprops.py) whose props are recorded: {name: address}.
+LISTS = {
+    'team': 'hr:employee_list', 'team-production': 'hr:production_employee_list',
+    'departments': 'hr:officedepartment_list', 'attendance': 'hr:attendancerecord_list',
+    'leave': 'hr:leaverequest_list', 'leave-all': 'hr:leaverequest_list?tab=all', 'shifts': 'hr:shift_list',
+    'holidays': 'hr:holiday_list', 'leave-types': 'hr:leavetype_list',
+}
+
+
+def record_lists(admin):
+    """{language: {name: the list-page island's props}} of every list in LISTS, as the test world's admin sees it."""
+    import re
+    from django.test import Client
+    from django.urls import reverse
+    client = Client(HTTP_HOST='localhost')
+    client.force_login(admin)
+    found = {}
+    for language in ('en', 'nb', 'tr'):
+        client.cookies['django_language'] = language
+        pages = {}
+        for name, route in LISTS.items():
+            url, _sep, query = route.partition('?')
+            html = client.get(f'{reverse(url)}?{query}&ui=next' if query else f'{reverse(url)}?ui=next').content.decode()
+            block = re.search(r'<script id="island-list-page-1" type="application/json">(.*?)</script>', html, re.S)
+            if block is None:
+                sys.exit(f'refused: {route} has no list-page island')
+            pages[name] = json.loads(block.group(1))
+            pages[name]['csrfToken'] = 'test-token'          # a session's token is no fixture
+        found[language] = pages
+    return found
+
+
 try:
     with transaction.atomic(), mock.patch('django.utils.timezone.now', return_value=MOMENT), translation.override('en'):
         admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
@@ -114,6 +147,10 @@ try:
                 with open(f'{OUT}/company-props-{language}.json', 'w', encoding='utf-8') as out:
                     json.dump(overview_props(admin, MOMENT), out, ensure_ascii=False, indent=1)
                     out.write('\n')
+        for language, pages in record_lists(admin).items():
+            with open(f'{OUT}/list-props-{language}.json', 'w', encoding='utf-8') as out:
+                json.dump(pages, out, ensure_ascii=False, indent=1)
+                out.write(chr(10))
         raise Rollback
 except Rollback:
     pass

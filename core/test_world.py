@@ -7,7 +7,9 @@ built and read.
 
     world(admin)                      every part below, in order, through a client signed in as `admin`
     company_world(admin, client)      the company's: sites, a hall, a loop, units with fish, a storage location, a
-                                      library document, a knowledge entry, a person, a role and an employee"""
+                                      library document, a knowledge entry, a person, a role and an employee
+    hr_world(admin, client)           the people's: office departments, employees placed and one who left, shifts, a
+                                      holiday, a leave type, leave requests and attendance"""
 from datetime import datetime
 from decimal import Decimal as D
 
@@ -23,7 +25,7 @@ def world(admin):
     """The test world, built through a client signed in as `admin`; [what was made: its answer] of the parts posted."""
     client = Client(HTTP_HOST='localhost')
     client.force_login(admin)
-    return company_world(admin, client)
+    return company_world(admin, client) + hr_world(admin, client)
 
 
 def company_world(admin, client):
@@ -71,3 +73,42 @@ def company_world(admin, client):
     person.groups.add(group)
     employee('E-9001', last='Person', first='Test')
     return made
+
+
+def hr_world(admin, client):
+    """The people's part of the test world (Company › HR, Production › Team): an office department under another with a
+    manager, the employee of company_world and a second one placed in them, a third who left, a shift, a holiday, a leave
+    type, a pending and an approved leave request, a closed stretch of attendance and one left open (its clock-out
+    forgotten). Made in the models (each list and form reads them), on MOMENT's days."""
+    from datetime import date, time, timedelta
+
+    from farm.models import ProductionDepartment, Site
+    from hr.models import (AttendanceRecord, Employee, Holiday, LeaveRequest, LeaveType, OfficeDepartment, Shift)
+    from hr.models.leave import LeaveStatus
+    from hr.tests.helpers_people import employee, place
+    north = Site.objects.get(code='TSN')
+    office = OfficeDepartment.objects.create(site=north, name='Test Office', code='TOF', manager=admin)
+    finance = OfficeDepartment.objects.create(site=None, name='Test Accounts', code='TAC', parent=office)
+    hall = ProductionDepartment.objects.get(code='THA')
+    person = Employee.objects.get(employee_number='E-9001')
+    place(person, office, title='Test coordinator')
+    second = employee('E-9002', last='Second', first='Test')
+    place(second, hall, title='Test technician')
+    employee('E-9003', last='Former', first='Test', left_on=date(2026, 6, 30))
+    Shift.objects.create(name='Test day shift', code='TD', starts_at=time(7), ends_at=time(15), break_minutes=30,
+                         grace_minutes=10)
+    Shift.objects.create(name='Test night shift', code='TN', starts_at=time(22), ends_at=time(6), break_minutes=30)
+    Holiday.objects.create(day=date(2026, 12, 25), name='Test holiday', site=None)
+    annual = LeaveType.objects.create(name='Test annual leave', code='TAL', annual_days=25)
+    today = MOMENT.date()
+    LeaveRequest.objects.create(employee=second, leave_type=annual, first_day=today + timedelta(days=7),
+                                last_day=today + timedelta(days=9), reason='A test reason.')
+    LeaveRequest.objects.create(employee=person, leave_type=annual, first_day=today - timedelta(days=10),
+                                last_day=today - timedelta(days=8), status=LeaveStatus.APPROVED, decided_by=admin,
+                                decided_at=MOMENT - timedelta(days=12))
+    AttendanceRecord.objects.create(employee=second, clock_in=MOMENT - timedelta(days=1, hours=5),
+                                    clock_out=MOMENT - timedelta(days=1), via=AttendanceRecord.Via.ENTERED,
+                                    note='Test note')
+    AttendanceRecord.objects.create(employee=person, clock_in=MOMENT - timedelta(days=2), via=AttendanceRecord.Via.ENTERED,
+                                    note='Test note, left open')
+    return [f'hr: {Employee.objects.count()} employees, {OfficeDepartment.objects.count()} office departments']

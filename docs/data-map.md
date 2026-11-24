@@ -78,7 +78,7 @@ How far past its limit a water value must come back before an alarm on it clears
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Alarms › alarm_deadbands
 - **forms**: `ParameterDeadbandForm`
 - **constraints**: uq_alarm_deadbands_parameter_live (unique: parameter); chk_alarm_deadbands_parameter (check); chk_alarm_deadbands_not_negative (check); chk_alarm_deadbands_ceiling (check)
-- **tests that mention it**: `core/tests_platform.py`, `core/tests_workspaces.py`, `alarms/tests/test_cross_review.py` and 2 more
+- **tests that mention it**: `core/tests_formprops.py`, `core/tests_platform.py`, `core/tests_workspaces.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -317,7 +317,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 118 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 119 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

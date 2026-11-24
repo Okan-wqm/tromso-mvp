@@ -8962,6 +8962,12 @@ msgstr "Sanntidsverdier"
 msgid "Loading the cards…"
 msgstr "Laster kortene …"
 
+msgid "Loading the confirmation…"
+msgstr "Laster bekreftelsen …"
+
+msgid "Loading the form…"
+msgstr "Laster skjemaet …"
+
 msgid "Loading the overview…"
 msgstr "Laster oversikten …"
 
@@ -19321,6 +19327,9 @@ msgstr "åpningsbalanse"
 
 msgid "opening balances"
 msgstr "åpningsbalanser"
+
+msgid "optional"
+msgstr "valgfritt"
 
 msgid "owed once the month or week now running has closed"
 msgstr "forfaller når måneden eller uken som pågår er over"

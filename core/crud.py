@@ -27,6 +27,7 @@ import copy
 import uuid
 from dataclasses import dataclass, field as dataclass_field
 from functools import wraps
+from urllib.parse import quote
 
 from django import forms
 from django.contrib import messages
@@ -41,9 +42,10 @@ from django.urls import path, reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
-from . import audit, navigation, softdelete
+from . import audit, formprops, navigation, softdelete
 from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
+from .ui import is_next
 from .widgets import NONE
 
 
@@ -723,6 +725,16 @@ class FormView(ResourceView):
             action = self.url('edit', obj.pk)
         else:
             action = self.url('create') if obj is None and r.allows('add') else self.request.path
+        if not is_modal(self.request) and is_next(self.request) and formprops.drawable(r, form):
+            # The new look's record form (core/formprops.py): the same form, view and address, drawn by the island.
+            return render_page(self.request, 'crud/form_next.html', self.context(
+                form=form, object=obj, props=formprops.record_form_props(
+                    self.request, form, action=action, name=r.name, obj=obj, list_url=self.url('list'),
+                    delete_url=self.url('delete', obj.pk) if obj is not None and obj.pk is not None and r.allows('delete')
+                    and self.request.user.has_perm(r.perm('delete')) and r.allowed(self.request, obj, 'delete') else '',
+                    history=history,
+                    history_url=f"{reverse('core:activity_log')}?type={quote(r.entity_type(), safe='/')}&q={quote(str(obj), safe='/')}"
+                    if obj is not None else '')))
         return render_page(self.request, r.form_template, self.context(
             form=form, object=obj, history=history, form_action=action, **extra))
 
@@ -907,6 +919,10 @@ class DeleteView(ResourceView):
     def get(self, request, pk):
         obj = self.get_object(pk)
         plan = plan_delete(obj) if isinstance(obj, AuditedModel) else None
+        if not is_modal(request) and is_next(request):
+            return render_page(request, 'crud/confirm_delete_next.html', self.context(
+                object=obj, props=formprops.confirm_delete_props(request, obj, plan, name=self.resource.name,
+                                                                 action=request.path, cancel=self.url('list'))))
         return render_page(request, 'crud/confirm_delete.html', self.context(object=obj, plan=plan))
 
     def post(self, request, pk):

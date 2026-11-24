@@ -8991,6 +8991,12 @@ msgstr "Canlı değerler"
 msgid "Loading the cards…"
 msgstr "Kartlar yükleniyor…"
 
+msgid "Loading the confirmation…"
+msgstr "Onay yükleniyor…"
+
+msgid "Loading the form…"
+msgstr "Form yükleniyor…"
+
 msgid "Loading the overview…"
 msgstr "Genel bakış yükleniyor…"
 
@@ -19359,6 +19365,9 @@ msgstr "açılış bakiyesi"
 
 msgid "opening balances"
 msgstr "açılış bakiyeleri"
+
+msgid "optional"
+msgstr "isteğe bağlı"
 
 msgid "owed once the month or week now running has closed"
 msgstr "şu an süren ay veya hafta kapandığında gelir"

@@ -18,6 +18,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.forms.models import ModelChoiceIteratorValue
 from django.utils.functional import Promise
 from django.utils.safestring import SafeData
+from django.utils.translation import pgettext
 
 from .widgets import DayInput, DependentSelect, MomentInput, Output
 
@@ -139,13 +140,16 @@ def widget_payload(bound):
     if bound.auto_id and 'id' not in widget.attrs:
         attrs.setdefault('id', bound.auto_id)
     context = widget.get_context(bound.html_name, bound.value(), attrs)['widget']
-    found = {'kind': kind, 'name': context['name'], 'value': plain(context.get('value')),
+    # A file input never carries a value: the stored file is said apart (`current`).
+    value = None if kind == 'file' else context.get('value')
+    found = {'kind': kind, 'name': context['name'], 'value': plain(value),
              'attrs': _attrs(context.get('attrs') or {})}
     if 'optgroups' in context:
         found['groups'] = [{'label': plain(label), 'options': [_option(option) for option in options]}
                            for label, options, _index in context['optgroups']]
     if kind == 'matrix':
         found['columns'] = plain(list(context['columns']))
+        found['areaLabel'] = pgettext('access area', 'Area')
         found['sections'] = [
             {'label': plain(group), 'areas': [
                 {'label': plain(area['label']), 'notes': plain(list(area['notes'])),

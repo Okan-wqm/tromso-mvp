@@ -5422,6 +5422,20 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   records, so a critical water value shows as the site's water chip even while no alarm is open. Held to the classic page
   by `core.pagesays` in three languages (`farm/tests/test_company_overview.py`); its island is checked in a browser in
   every theme and language for CSP, axe and contrast (`frontend/test/company.browser.test.ts`).
+- **Every tab's create, edit and delete page** (`core.crud.FormView.page`, `DeleteView`; `templates/crud/form_next.html`,
+  `confirm_delete_next.html`; islands `record-form` and `confirm-delete`, `frontend/islands/pages/RecordForm.tsx` and
+  `ConfirmDelete.tsx`): the same view, form and address; the island draws `core.formpayload`'s form with the library's
+  form components (Field.tsx and FormParts.tsx: text, number, date and moment boxes tidied by `frontend/date-input.ts`,
+  selects that follow another field, box groups, radios, a single box, files with the stored one, the role matrix, link
+  lists, the handling acknowledgement, row lists with their management form), the required fields unmarked and the
+  others marked "optional", the server's errors on their fields and the tab that holds them open, a submit busy until
+  the answer, the History tab and the delete link; the delete confirmation says the delete plan in the old page's words.
+  `core/formprops.py` decides which forms the island draws (`drawable`: the shared crud/form.html and every widget kind
+  drawn); a tab with a form template of its own, and a request for a dialog, keep the classic page. Held: the props say
+  what the classic page says (`core/tests_formprops.py`, three languages); every field of every tab's form, new, refused
+  and editing a record, posts what the old page posts (`frontend/islands/pages/RecordForm.test.tsx` against
+  `frontend/test/pages/form-oracle.json`, recorded from the dev database by the notes' `dump_form_oracle.py`); the tabs,
+  focus, busy state, CSP and axe in a browser (`frontend/test/recordform.browser.test.ts`).
 
 ## One format for every tab
 

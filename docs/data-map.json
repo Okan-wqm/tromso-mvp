@@ -603,6 +603,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_formprops.py",
         "core/tests_platform.py",
         "core/tests_workspaces.py",
         "alarms/tests/test_cross_review.py",
@@ -2599,6 +2600,7 @@
         "core/tests_crud_mount.py",
         "core/tests_entry_key.py",
         "core/tests_erasure.py",
+        "core/tests_formprops.py",
         "core/tests_platform.py",
         "core/tests_private_log.py",
         "core/tests_scope.py",

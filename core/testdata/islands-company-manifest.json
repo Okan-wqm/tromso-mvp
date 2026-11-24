@@ -4,10 +4,30 @@
     "name": "company",
     "src": "frontend/islands/company.tsx",
     "isEntry": true,
-    "imports": ["_ui-Ef56Gh78.js"]
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
   },
   "_ui-Ef56Gh78.js": {
     "file": "chunks/ui-Ef56Gh78.js",
     "name": "ui"
+  },
+  "frontend/islands/record-form.tsx": {
+    "file": "record-form-Rf12Ab34.js",
+    "name": "record-form",
+    "src": "frontend/islands/record-form.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
+  },
+  "frontend/islands/confirm-delete.tsx": {
+    "file": "confirm-delete-Cd12Ab34.js",
+    "name": "confirm-delete",
+    "src": "frontend/islands/confirm-delete.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
   }
 }

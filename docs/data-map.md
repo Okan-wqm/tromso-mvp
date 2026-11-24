@@ -260,7 +260,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_ui_look.py`, `core/tests_workspaces.py` and 13 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_ui_look.py`, `core/tests_workspaces.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1825,7 +1825,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 56 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 58 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3334,7 +3334,7 @@ A time a rule held for a channel: when it opened and closed and the furthest val
 - **read**: sensors.views.alarm_events (`/sensors/alarm-events/`); sensors.views.home (`/sensors/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_alarm_event
 - **constraints**: uq_sensors_alarm_event_open (unique: rule, channel_no); chk_sensors_alarm_event_period (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `sensors/tests/test_alarms.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3358,7 +3358,7 @@ When a channel needs a look: no fresh value, its device offline, above or below 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_alarm_rule
 - **forms**: `AlarmRuleForm`
 - **constraints**: chk_sensors_alarm_rule_scope (check); chk_sensors_alarm_rule_kind (check); chk_sensors_alarm_rule_severity (check); chk_sensors_alarm_rule_quantity (check); chk_sensors_alarm_rule_threshold (check); chk_sensors_alarm_rule_numbers (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_alarms.py`, `alarms/tests/test_alarms.py` and 4 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `sensors/tests/test_alarms.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3393,7 +3393,7 @@ Where a channel's values belong over a time range: a sampling point or a system 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_binding
 - **forms**: `BindForm`, `BindingForm`, `DeviceMoveForm`
 - **constraints**: chk_sensors_binding_one_target (check); chk_sensors_binding_period (check); chk_sensors_binding_role (check); ex_sensors_binding_channel_period (exclusion: channel, valid_from, valid_to)
-- **tests that mention it**: `core/tests_rev.py`, `core/tests_workspaces.py`, `sensors/tests/test_alarms.py` and 4 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3453,7 +3453,7 @@ One value a device sends: what it measures (a quantity of sensors/quantities.py)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_channel
 - **forms**: `ChannelForm`
 - **constraints**: uq_sensors_channel_code_live (unique: device, code); chk_sensors_channel_code (check); chk_sensors_channel_name (check); chk_sensors_channel_quantity (check); chk_sensors_channel_unit_factor (check); chk_sensors_channel_unit_offset (check); chk_sensors_channel_fresh_heartbeats (check); chk_sensors_channel_source (check); chk_sensors_channel_value_path (check); chk_sensors_channel_protocol (check); chk_sensors_channel_address (check); chk_sensors_channel_reduction (check); chk_sensors_channel_deadband (check); chk_sensors_channel_heartbeat (check); chk_sensors_channel_range (check); chk_sensors_channel_state (check); chk_sensors_channel_ph_scale (check)
-- **tests that mention it**: `core/tests_rev.py`, `core/tests_workspaces.py`, `farm/tests/test_sensor_ph_scale.py` and 11 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3533,7 +3533,7 @@ An MQTT broker the ingest service listens to: where it is, how the service signs
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_connection (never shown: secret_file)
 - **forms**: `ConnectionForm`
 - **constraints**: uq_sensors_connection_name_live (unique: name); uq_sensors_connection_client_live (unique: client_id); chk_sensors_connection_name (check); chk_sensors_connection_host (check); chk_sensors_connection_client_id (check); chk_sensors_connection_port (check); chk_sensors_connection_keepalive (check); chk_sensors_connection_secret_file (check); chk_sensors_connection_secret_dots (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_demo.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `sensors/tests/__init__.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3591,7 +3591,7 @@ A publisher's sign-in at the broker: a user name and the hash of its secret (Mos
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_credential (never shown: password_hash)
 - **forms**: `CredentialForm`
 - **constraints**: uq_sensors_credential_username_live (unique: username); chk_sensors_credential_username (check); chk_sensors_credential_hash (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_demo.py`, `sensors/tests/test_operations.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `sensors/tests/test_demo.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3621,7 +3621,7 @@ Messages the ingest service could not store, kept as evidence and counted.
 - **how it works**: The message is evidence: only its resolution is set, by a person (logged).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_dead_letter (never shown: payload)
 - **constraints**: uq_sensors_dead_letter_message (unique: connection_id, topic, reason, payload_sha256); chk_sensors_dead_letter_reason (check); chk_sensors_dead_letter_hash (check); chk_sensors_dead_letter_payload (check); chk_sensors_dead_letter_len (check); chk_sensors_dead_letter_count (check); chk_sensors_dead_letter_times (check); chk_sensors_dead_letter_resolved (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/test_contract.py`, `sensors/tests/test_operations.py`
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `sensors/tests/test_contract.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3652,7 +3652,7 @@ A field device that publishes on one topic of a connection: a probe, a PLC, a ga
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_device
 - **forms**: `DeviceForm`
 - **constraints**: uq_sensors_device_code_live (unique: connection, code); uq_sensors_device_topic_live (unique: connection, topic); chk_sensors_device_code (check); chk_sensors_device_name (check); chk_sensors_device_interval (check); chk_sensors_device_topic_given (check); chk_sensors_device_topic_hash (check); chk_sensors_device_topic_system (check); chk_sensors_device_topic_plus (check); chk_sensors_device_topic_level (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `sensors/tests/__init__.py`, `sensors/tests/test_chart_data.py` and 8 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `sensors/tests/__init__.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3713,7 +3713,7 @@ The ingest service’s heartbeat per broker connection: connected or not, messag
 - **read**: sensors.views.home (`/sensors/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_ingest_status
 - **constraints**: chk_sensors_ingest_status_queue (check)
-- **tests that mention it**: `sensors/tests/test_contract.py`, `sensors/tests/test_operations.py`, `alarms/tests/test_clock.py`
+- **tests that mention it**: `core/test_world.py`, `sensors/tests/test_contract.py`, `sensors/tests/test_operations.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -2171,6 +2171,7 @@
         "farm/tests/test_company_overview.py",
         "farm/tests/test_water_history_page.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_pages_next.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
@@ -20089,6 +20090,7 @@
         "farm/tests/test_charts_of.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_core_refusal.py",
+        "farm/tests/test_drawer_water_history.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_feeding.py",
@@ -20131,6 +20133,7 @@
         "monitoring/tests/test_token.py",
         "sensors/tests/test_chart_data.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
@@ -35968,6 +35971,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
@@ -36367,6 +36371,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
@@ -36788,6 +36793,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
@@ -37735,6 +37741,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_sensor_ph_scale.py",
@@ -38365,6 +38372,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_demo.py",
@@ -38792,6 +38800,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
@@ -39088,6 +39097,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py"
@@ -39593,6 +39603,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_chart_data.py",
@@ -39883,6 +39894,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py",
         "alarms/tests/test_clock.py"

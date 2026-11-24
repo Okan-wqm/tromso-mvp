@@ -124,7 +124,7 @@ jobs:
           fi
           # The islands' props for the page test below are made by these tests (core/island_props.py): a run with labels
           # makes them too.
-          if [[ -n "$LABELS" ]]; then LABELS="$LABELS farm.tests.test_island_pages"; fi
+          if [[ -n "$LABELS" ]]; then LABELS="$LABELS farm.tests.test_island_pages sensors.tests.test_pages_next"; fi
           mkdir -p .build/island-props        # the runner's own: the container (root) writes into it, npm reads after
           # shellcheck disable=SC2086 # the labels are words, split on purpose
           bash scripts/test.sh $LABELS

@@ -1,0 +1,33 @@
+{
+  "frontend/islands/list-page.tsx": {
+    "file": "list-page-Lp12Ab34.js",
+    "name": "list-page",
+    "src": "frontend/islands/list-page.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
+  },
+  "frontend/islands/sensors-home.tsx": {
+    "file": "sensors-home-Sh12Ab34.js",
+    "name": "sensors-home",
+    "src": "frontend/islands/sensors-home.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
+  },
+  "frontend/islands/water.tsx": {
+    "file": "water-Wa12Ab34.js",
+    "name": "water",
+    "src": "frontend/islands/water.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
+  },
+  "_ui-Ef56Gh78.js": {
+    "file": "chunks/ui-Ef56Gh78.js",
+    "name": "ui"
+  }
+}

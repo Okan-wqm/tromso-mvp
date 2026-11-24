@@ -73,6 +73,7 @@ class IslandPagesTests(FrozenClock, TestCase):
             self.assertTrue(ranged['chart']['regions'])                       # the NH₃-N and CO₂ limits: their regions
             # the window's last day has no diagram (the lab's alkalinity is four days old): said, never a star read as now
             self.assertTrue(ranged['stale'])
+            self.assertNotIn('Temperature', ranged['stale'])        # the live probe seen: frames on the hour (N1)
             self.assertEqual((ranged['now'], ranged['now_status']), (ranged['stale'], 'warning'))
             keep(f'water-{language}', props)
 

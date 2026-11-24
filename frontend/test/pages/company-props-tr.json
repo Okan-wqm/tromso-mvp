@@ -1,0 +1,331 @@
+{
+ "today": {
+  "title": "Bugün şirket",
+  "meta": "Hesaplandı 23.11.2026 13:42 · Europe/Oslo",
+  "tiles": [
+   {
+    "key": "sites",
+    "label": "Sahalar",
+    "figure": "2",
+    "href": "/sites/",
+    "sub": "2 aktif",
+    "source": "Sahalar"
+   },
+   {
+    "key": "biomass",
+    "label": "Biyokütle",
+    "figure": "500 kg",
+    "sub": "2 balıklı birim",
+    "source": "Stok defteri · 13:42",
+    "href": "/operations/units/"
+   },
+   {
+    "key": "alarms",
+    "label": "Açık alarmlar",
+    "figure": "0",
+    "href": "/alarms/",
+    "status": "critical",
+    "statusLabel": "Kritik",
+    "sub": null,
+    "sub2": "1 birim kritik · 1 birimde güncel veri yok",
+    "source": "Alarmlar · 13:42"
+   },
+   {
+    "key": "on_site",
+    "label": "Şu an sahada",
+    "figure": "3",
+    "href": "/hr/",
+    "sub": "Giriş yapan herkes, tüm ekipler",
+    "sub2": null,
+    "source": "Bugün ve yoklama · 13:42"
+   },
+   {
+    "key": "reports",
+    "label": "Verilecek raporlar",
+    "figure": "0",
+    "href": "/reports/",
+    "status": null,
+    "statusLabel": null,
+    "sub": null,
+    "source": "Yasal raporlar · 13:42"
+   },
+   {
+    "key": "messages",
+    "label": "Okunmamış mesajlar",
+    "figure": "0",
+    "href": "/messages/",
+    "sub": null,
+    "source": "Mesajlar · 13:42"
+   }
+  ]
+ },
+ "sites": {
+  "title": "Sahalar",
+  "link": {
+   "href": "/sites/",
+   "label": "Sahalar"
+  },
+  "columns": {
+   "site": "Saha",
+   "type": "Tür",
+   "units": "Balıklı birimler",
+   "biomass": "Biyokütle",
+   "water": "Su",
+   "alarms": "Açık alarmlar",
+   "onSite": "Şu an sahada"
+  },
+  "rows": [
+   {
+    "key": "c20b86a9-be45-4825-9178-0726e8d5b6ca",
+    "name": "Test Site North",
+    "code": "TSN",
+    "href": "/sites/c20b86a9-be45-4825-9178-0726e8d5b6ca/",
+    "type": "Kara tesisi",
+    "status": "critical",
+    "units": "1",
+    "biomass": "50 kg",
+    "water": {
+     "kind": "critical",
+     "text": "O₂ (mg/L) 5,00"
+    },
+    "alarms": {
+     "figure": "0",
+     "sub": "1 birim kritik"
+    },
+    "onSite": null
+   },
+   {
+    "key": "bf77f4b3-b9e2-485a-b7f4-27d0121779db",
+    "name": "Test Site South",
+    "code": "TSS",
+    "href": "/sites/bf77f4b3-b9e2-485a-b7f4-27d0121779db/",
+    "type": "Deniz kafesi",
+    "status": "warning",
+    "units": "1",
+    "biomass": "450 kg",
+    "water": {
+     "kind": "nodata",
+     "text": "Ölçülmedi"
+    },
+    "alarms": {
+     "figure": "0",
+     "sub": "1 birimde güncel veri yok"
+    },
+    "onSite": null
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "alarms": {
+  "title": "Açık alarmlar",
+  "link": {
+   "href": "/alarms/",
+   "label": "Alarmlar"
+  },
+  "safety": "Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra gelecek). Her bildirim, alıcısı ve seviyesiyle Alarmlar sayfasındaki giden kutusunda bekler ve aktarım bağlandığında gönderilir.",
+  "columns": {
+   "severity": "Önem",
+   "what": "Ne"
+  },
+  "rows": [],
+  "more": null,
+  "empty": null,
+  "units": {
+   "tone": "critical",
+   "text": "1 birim kritik · 1 birimde güncel veri yok"
+  }
+ },
+ "people": {
+  "title": "Bugün ofis çalışanları",
+  "link": {
+   "href": "/hr/",
+   "label": "Bugün ve yoklama"
+  },
+  "tiles": [
+   {
+    "key": "planned",
+    "label": "Bugün planlanan",
+    "figure": "0"
+   },
+   {
+    "key": "upcoming",
+    "label": "Yaklaşan",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "here",
+    "label": "Şu an burada",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "not_in",
+    "label": "Henüz gelmedi",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "absent",
+    "label": "Devamsız",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "on_leave",
+    "label": "İzinde",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "done",
+    "label": "Tamamlandı",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "to_decide",
+    "label": "Karar bekleyen izinler",
+    "figure": "0",
+    "href": "/hr/leave/"
+   }
+  ]
+ },
+ "upcoming": {
+  "title": "Yaklaşan raporlar",
+  "items": [],
+  "empty": null,
+  "badge": null,
+  "link": {
+   "href": "/reports/",
+   "label": "Tüm raporlar"
+  },
+  "notSetUp": "Balık bulunan 2 saha raporlar için ayarlanmamış: ne borçlu oldukları bilinmiyor, bu yüzden onlar için vadesi gelen hiçbir şey listelenmiyor."
+ },
+ "feed": {
+  "title": "Eldeki yem",
+  "link": {
+   "href": "/operations/storage/",
+   "label": "Depo"
+  },
+  "columns": {
+   "item": "Tesis · kalem",
+   "onHand": "Eldeki",
+   "cover": "Yeterlilik (gün)"
+  },
+  "rows": [],
+  "none": "—",
+  "empty": "Elde bir şey yok"
+ },
+ "messages": {
+  "title": "Okunmamış mesajlar",
+  "link": {
+   "href": "/messages/",
+   "label": "Mesajlar"
+  },
+  "rows": [],
+  "empty": "Okunmamış mesaj yok"
+ },
+ "activity": {
+  "title": "Son etkinlik",
+  "link": {
+   "href": "/activity/",
+   "label": "Etkinlik günlüğü"
+  },
+  "critical": "Kritik",
+  "entries": [
+   {
+    "key": "fa766943-1e36-4d9d-a023-89f18d1c79cb",
+    "action": "Oluşturuldu",
+    "critical": false,
+    "record": "Bilgi kaydı · A test statement.",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "fffbf3e2-7cb1-4788-8936-53cb36d40548",
+    "action": "Oluşturuldu",
+    "critical": false,
+    "record": "Belge · Test document",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "51cebb53-5dad-4b4d-962d-561af4d067c9",
+    "action": "Oluşturuldu",
+    "critical": false,
+    "record": "Depolama yeri · Test Store (TS-01)",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "30ba1d5c-a02b-4333-b2d3-2375fa9dcb61",
+    "action": "Oluşturuldu",
+    "critical": false,
+    "record": "Su numunesi · Water sample · TT-01 › Middle · 2026-11-23 12:42",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "cdd8ecde-181f-4f1a-ac4d-306ef2451638",
+    "action": "Değiştirildi",
+    "critical": false,
+    "record": "Birim · Unit TM-01 (TM-01)",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   }
+  ],
+  "empty": null
+ },
+ "knowledge": {
+  "title": "Son bilgi kayıtları",
+  "link": {
+   "href": "/knowledge/entries/",
+   "label": "Bilgi kayıtları"
+  },
+  "rows": [
+   {
+    "key": "df3c21be-3fc4-4ede-b78b-531a0fc38eeb",
+    "text": "A test statement.",
+    "source": "Test document (t.y.)",
+    "href": "/knowledge/entries/df3c21be-3fc4-4ede-b78b-531a0fc38eeb/view/",
+    "kind": "neutral",
+    "chip": "Taslak"
+   }
+  ],
+  "empty": null
+ }
+}

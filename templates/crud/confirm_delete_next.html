@@ -1,0 +1,10 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} The delete confirmation of a tab in the new look (core.crud.DeleteView, core/formprops.py): the island draws
+   the old page's question, plan and sentences and posts to the same address. The classic page is crud/confirm_delete.html. {% endcomment %}
+{% block title %}{% blocktrans trimmed %}Delete {{ object }}{% endblocktrans %}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
+{% block heading %}{% blocktrans trimmed %}Delete {{ name }}{% endblocktrans %}{% endblock %}
+{% block content %}
+{% trans "Loading the confirmation…" as loading %}{% island "confirm-delete" props label=loading %}
+{% endblock %}

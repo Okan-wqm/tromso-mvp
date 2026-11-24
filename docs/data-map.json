@@ -603,6 +603,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_formprops.py",
         "core/tests_platform.py",
         "core/tests_workspaces.py",
         "alarms/tests/test_cross_review.py",
@@ -2167,6 +2168,7 @@
         "core/test_world.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_company_overview.py",
         "farm/tests/test_water_history_page.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/__init__.py",
@@ -2601,6 +2603,7 @@
         "core/tests_crud_mount.py",
         "core/tests_entry_key.py",
         "core/tests_erasure.py",
+        "core/tests_formprops.py",
         "core/tests_platform.py",
         "core/tests_private_log.py",
         "core/tests_scope.py",
@@ -10019,6 +10022,7 @@
       "tests": [
         "core/test_world.py",
         "core/tests_erasure.py",
+        "core/tests_pagesays.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
@@ -13719,14 +13723,17 @@
         "core/test_database.py",
         "core/test_languages.py",
         "core/test_world.py",
+        "core/tests_deletepayload.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
+        "core/tests_formpayload.py",
         "core/tests_query_pages.py",
         "core/tests_rev.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_company_overview.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -15428,9 +15435,11 @@
         "core/test_world.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_deletepayload.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
         "core/tests_erasure.py",
+        "core/tests_formpayload.py",
         "core/tests_private_log.py",
         "core/tests_query_pages.py",
         "core/tests_rev.py",
@@ -15442,6 +15451,7 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_clocks.py",
+        "farm/tests/test_company_overview.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_fast_of_the_unit.py",
@@ -19002,6 +19012,8 @@
       "tests": [
         "core/test_languages.py",
         "core/test_world.py",
+        "core/tests_deletepayload.py",
+        "core/tests_formpayload.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
@@ -23494,6 +23506,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -23501,6 +23514,7 @@
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
+        "hr/tests/test_list_next.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
@@ -23860,6 +23874,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
@@ -23873,6 +23888,7 @@
         "hr/tests/test_leave_correction.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_list_next.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_own_record.py",
         "hr/tests/test_production_permissions.py",
@@ -24149,6 +24165,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_leave.py",
@@ -24559,6 +24576,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_after_create.py",
         "hr/tests/test_attendance.py",
@@ -24887,6 +24905,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -25263,6 +25282,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_boundary.py",
@@ -26283,6 +26303,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -26671,6 +26692,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",

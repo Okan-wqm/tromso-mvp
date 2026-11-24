@@ -537,7 +537,11 @@ def range_deffeyes(user, owner, start, end):
     if not user.has_perm(SENSOR_READ):
         return None
     step = sensor_read.replay_step((end - start) / RANGE_FRAMES)
-    found = sensor_read.deffeyes_frames(owner, start, end, step, size=sensor_read.PAGE)
+    # At a step of an hour or more the replay reads the hourly tier: a frame sees the last value of the newest hour that
+    # has ended by it, so a frame at :42 would see a probe's value 42 minutes old, never fresh. The frames start on the
+    # top of the hour then, whatever the minute the page was opened at (review recheck N1).
+    frames_from = start.replace(minute=0, second=0, microsecond=0) if step >= timedelta(hours=1) else start
+    found = sensor_read.deffeyes_frames(owner, frames_from, end, step, size=sensor_read.PAGE)
     drawn = [frame for frame in found.frames if frame.figure is not None]
     zone = zone_of(site_of(owner))
     words = {'title': _('Deffeyes chart of the time'), 'water': _('The water'), 'path': _('The water through the time'),
@@ -657,6 +661,7 @@ def _history_words():
         'notWorked': _('Not worked out'), 'record': _('Record water sample'), 'samples': _('Samples'),
         'deffeyes': _('Deffeyes chart'), 'calculated': _('worked out from each sample, not measured'),
         'zoneNote': _('Times on the site’s clock (%(zone)s).'),
+        'bandsToday': _('The limit bands are the limits of the fish today, over the whole time.'),
     }
 
 

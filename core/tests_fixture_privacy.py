@@ -2,7 +2,7 @@
 of the development database goes to GitHub). Every e-mail address in the browser tests' sources and fixtures
 (frontend/test, frontend/islands) and in core/testdata must be a fixture address: example.com or a .example domain
 (RFC 2606). A file recorded from the development database (form-oracle.json was, once) fails here; fixtures are recorded
-from the test world (core/test_world.py), in a test database."""
+from the test world (scripts/record_test_world.sh)."""
 import re
 from pathlib import Path
 
@@ -39,3 +39,52 @@ class FixturePrivacyTests(SimpleTestCase):
             self.assertTrue(ALLOWED.search(addresses(fixture)[0][1]), fixture)
         for real in ('owner@company.no', 'x@example.com.evil.org', 'y@gmail.com'):
             self.assertFalse(ALLOWED.search(addresses(real)[0][1]), real)
+
+
+# The recorded fixtures (scripts/record_test_world.py) and the fields in them that name a person: every such name is one of
+# the test world's people ("Test …", an account test.…), never anyone else's.
+RECORDED = ROOT / 'frontend' / 'test' / 'pages'
+PERSON_FIELDS = {'employee', 'user', 'manager', 'assignees', 'site_manager', 'examined_by', 'asked_by'}
+TEST_PERSON = re.compile(r'^(?:Test |test\.)')
+
+
+def people_in(value, found=None, person=False):
+    """Every person's name in a recorded payload: the options of a field that chooses a person, a `by` (an activity entry's
+    author), a `manager`, and the first cell of a people list."""
+    found = [] if found is None else found
+    if isinstance(value, dict):
+        widget = value.get('widget')
+        if isinstance(widget, dict) and value.get('name') in PERSON_FIELDS:
+            for group in widget.get('groups') or ():
+                found += [option['label'] for option in group['options'] if option.get('value') not in ('', None)]
+        for key, item in value.items():
+            if key in ('by', 'manager') and isinstance(item, dict) and isinstance(item.get('name'), str):
+                found.append(item['name'])
+            elif key == 'employee' and isinstance(item, dict) and isinstance(item.get('text'), str):
+                found.append(item['text'])
+            else:
+                people_in(item, found)
+    elif isinstance(value, list):
+        for item in value:
+            people_in(item, found)
+    return found
+
+
+class RecordedPeopleTests(SimpleTestCase):
+    def test_every_person_in_the_recorded_fixtures_is_one_of_the_test_worlds(self):
+        import json
+        files = sorted(RECORDED.glob('*.json'))
+        self.assertTrue(any(path.name == 'form-oracle.json' for path in files))
+        strangers, seen = [], 0
+        for path in files:
+            names = people_in(json.loads(path.read_text(encoding='utf-8')))
+            seen += len(names)
+            strangers += [f'{path.name}: {name}' for name in names if not TEST_PERSON.match(name)]
+        self.assertGreater(seen, 0, 'the recorded fixtures name the test world\'s people')
+        self.assertEqual(strangers, [])
+
+    def test_the_name_rule_sees_a_stranger(self):
+        payload = {'fields': [{'name': 'employee', 'widget': {'groups': [{'options': [
+            {'value': '1', 'label': 'Test Person'}, {'value': '2', 'label': 'Kari Nordmann'}]}]}}],
+            'entries': [{'by': {'name': 'test.admin'}}], 'rows': [{'cells': {'employee': {'text': 'Ola Hansen'}}}]}
+        self.assertEqual([name for name in people_in(payload) if not TEST_PERSON.match(name)], ['Kari Nordmann', 'Ola Hansen'])

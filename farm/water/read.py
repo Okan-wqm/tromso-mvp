@@ -803,6 +803,19 @@ class PointWater:
                 found.append((reading, reading.judged, True))
         return found
 
+    @property
+    def worst_alert(self):
+        """The one alert of `alerts` the point says first when it says one (a site's line on the company overview): a
+        critical before a warning, a fresh value before an old one, else in reading order; only a value of its own (a
+        reading without one is judged through another and said there). None when it has none."""
+        found = [alert for alert in self.alerts if alert[0].value is not None]
+        return min(found, key=lambda alert: (alert[1] != Status.CRITICAL, alert[2]), default=None)
+
+    @property
+    def newest_at(self):
+        """When the newest of its values was taken, or None (what "no recent data" is counted from)."""
+        return max((reading.at for reading in self.readings.values() if reading.at is not None), default=None)
+
     def get(self, code):
         return self.readings.get(code)
 

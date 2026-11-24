@@ -1,0 +1,1625 @@
+{
+ "team": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Ara: çalışanlar",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: çalışanlar",
+    "placeholder": "Ada ya da numaraya göre ara"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "department",
+     "label": "Departman",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Tüm departmanlar"
+      }
+     ],
+     "groups": [
+      {
+       "label": "Ofis departmanları",
+       "options": [
+        {
+         "value": "office:b3e09604-ebb4-4a89-9ee5-47b2f4e101cf",
+         "label": "Test Accounts (TAC)"
+        },
+        {
+         "value": "office:ea94f4e6-463b-4d90-a8fc-a2ca2a0fec5c",
+         "label": "Test Office (TOF)"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "select",
+     "name": "type",
+     "label": "İstihdam türü",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Tüm türler"
+      },
+      {
+       "value": "staff",
+       "label": "Personel"
+      },
+      {
+       "value": "student",
+       "label": "Öğrenci"
+      },
+      {
+       "value": "researcher",
+       "label": "Araştırmacı"
+      },
+      {
+       "value": "technician",
+       "label": "Teknisyen"
+      },
+      {
+       "value": "advisor",
+       "label": "Danışman"
+      },
+      {
+       "value": "contractor",
+       "label": "Yüklenici"
+      },
+      {
+       "value": "volunteer",
+       "label": "Gönüllü"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Durum",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Tüm durumlar"
+      },
+      {
+       "value": "current",
+       "label": "Burada çalışıyor"
+      },
+      {
+       "value": "left",
+       "label": "Ayrıldı"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/hr/team/new/",
+    "label": "Yeni çalışan"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Ekip listesi",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Çalışan",
+     "numeric": false
+    },
+    {
+     "key": "type",
+     "label": "Tür",
+     "numeric": false
+    },
+    {
+     "key": "department",
+     "label": "Departman",
+     "numeric": false
+    },
+    {
+     "key": "title",
+     "label": "Başlık",
+     "numeric": false
+    },
+    {
+     "key": "joined",
+     "label": "İşe giriş",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Durum",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "3194df76-6dcc-4f9f-9f29-b93d7f6b8d37",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Former",
+       "href": "/hr/team/3194df76-6dcc-4f9f-9f29-b93d7f6b8d37/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9003"
+       ]
+      },
+      "type": {
+       "text": "Personel",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "Yerleştirilmemiş"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "–",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "neutral",
+        "text": "Ayrıldı 30.06.2026"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/team/3194df76-6dcc-4f9f-9f29-b93d7f6b8d37/view/",
+       "label": "Test Former göster",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/team/3194df76-6dcc-4f9f-9f29-b93d7f6b8d37/",
+       "label": "Düzenle: Test Former",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "9f7a61cd-19a0-41ca-b07d-c8f226e378a4",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Person",
+       "href": "/hr/team/9f7a61cd-19a0-41ca-b07d-c8f226e378a4/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9001"
+       ]
+      },
+      "type": {
+       "text": "Personel",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Office",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test coordinator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Burada çalışıyor"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/team/9f7a61cd-19a0-41ca-b07d-c8f226e378a4/view/",
+       "label": "Test Person göster",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/team/9f7a61cd-19a0-41ca-b07d-c8f226e378a4/",
+       "label": "Düzenle: Test Person",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz çalışanlar yok",
+   "text": "Ekibinizin kişileri burada görünür. Bir departmanı yöneten kişi, o departmana yerleştirilenleri görür.",
+   "link": null,
+   "add": {
+    "href": "/hr/team/new/",
+    "label": "Yeni çalışan"
+   }
+  },
+  "pager": null
+ },
+ "team-production": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Ara: çalışanlar",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: çalışanlar",
+    "placeholder": "Ada ya da numaraya göre ara"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "department",
+     "label": "Departman",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Tüm departmanlar"
+      }
+     ],
+     "groups": [
+      {
+       "label": "Üretim departmanları",
+       "options": [
+        {
+         "value": "production:3f2420da-8d3c-46c0-bc69-5b477b9414b1",
+         "label": "Test Cages (TCG)"
+        },
+        {
+         "value": "production:5a739282-18d5-49f6-9ffd-3536e617818a",
+         "label": "Test Hall A (THA)"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "select",
+     "name": "type",
+     "label": "İstihdam türü",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Tüm türler"
+      },
+      {
+       "value": "staff",
+       "label": "Personel"
+      },
+      {
+       "value": "student",
+       "label": "Öğrenci"
+      },
+      {
+       "value": "researcher",
+       "label": "Araştırmacı"
+      },
+      {
+       "value": "technician",
+       "label": "Teknisyen"
+      },
+      {
+       "value": "advisor",
+       "label": "Danışman"
+      },
+      {
+       "value": "contractor",
+       "label": "Yüklenici"
+      },
+      {
+       "value": "volunteer",
+       "label": "Gönüllü"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Durum",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Tüm durumlar"
+      },
+      {
+       "value": "current",
+       "label": "Burada çalışıyor"
+      },
+      {
+       "value": "left",
+       "label": "Ayrıldı"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/production/team/people/new/",
+    "label": "Yeni çalışan"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Ekip listesi",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Çalışan",
+     "numeric": false
+    },
+    {
+     "key": "type",
+     "label": "Tür",
+     "numeric": false
+    },
+    {
+     "key": "department",
+     "label": "Departman",
+     "numeric": false
+    },
+    {
+     "key": "title",
+     "label": "Başlık",
+     "numeric": false
+    },
+    {
+     "key": "joined",
+     "label": "İşe giriş",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Durum",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "a6e5b4b9-f19d-4be6-9878-abade45909ab",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Second",
+       "href": "/production/team/people/a6e5b4b9-f19d-4be6-9878-abade45909ab/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9002"
+       ]
+      },
+      "type": {
+       "text": "Personel",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test technician",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Burada çalışıyor"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/a6e5b4b9-f19d-4be6-9878-abade45909ab/view/",
+       "label": "Test Second göster",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/a6e5b4b9-f19d-4be6-9878-abade45909ab/",
+       "label": "Düzenle: Test Second",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz çalışanlar yok",
+   "text": "Ekibinizin kişileri burada görünür. Bir departmanı yöneten kişi, o departmana yerleştirilenleri görür.",
+   "link": null,
+   "add": {
+    "href": "/production/team/people/new/",
+    "label": "Yeni çalışan"
+   }
+  },
+  "pager": null
+ },
+ "departments": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Ara: ofis departmanları",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: ofis departmanları",
+    "placeholder": "Ada veya koda göre ara"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Durum",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Tüm durumlar"
+      },
+      {
+       "value": "active",
+       "label": "Aktif"
+      },
+      {
+       "value": "inactive",
+       "label": "Pasif"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/hr/departments/new/",
+    "label": "Yeni ofis departmanı"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Departmanlar",
+   "columns": [
+    {
+     "key": "department",
+     "label": "Departman",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Durum",
+     "numeric": false
+    },
+    {
+     "key": "site",
+     "label": "Saha",
+     "numeric": false
+    },
+    {
+     "key": "manager",
+     "label": "Yönetici",
+     "numeric": false
+    },
+    {
+     "key": "people",
+     "label": "Kişiler",
+     "numeric": true
+    }
+   ],
+   "rows": [
+    {
+     "key": "ea94f4e6-463b-4d90-a8fc-a2ca2a0fec5c",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "department": {
+       "text": "Test Office",
+       "href": "/hr/departments/ea94f4e6-463b-4d90-a8fc-a2ca2a0fec5c/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "TOF"
+       ]
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktif"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "site": {
+       "text": "Test Site North",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "manager": {
+       "text": "test.admin",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "people": {
+       "text": "1",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/departments/ea94f4e6-463b-4d90-a8fc-a2ca2a0fec5c/",
+       "label": "Düzenle: Test Office",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/departments/ea94f4e6-463b-4d90-a8fc-a2ca2a0fec5c/delete/",
+       "label": "Sil: Test Office",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "b3e09604-ebb4-4a89-9ee5-47b2f4e101cf",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "department": {
+       "text": "Test Accounts",
+       "href": "/hr/departments/b3e09604-ebb4-4a89-9ee5-47b2f4e101cf/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "TAC · Test Office içinde"
+       ]
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktif"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "site": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "Saha yok"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "manager": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "Yönetici yok"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "people": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/departments/b3e09604-ebb4-4a89-9ee5-47b2f4e101cf/",
+       "label": "Düzenle: Test Accounts",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/departments/b3e09604-ebb4-4a89-9ee5-47b2f4e101cf/delete/",
+       "label": "Sil: Test Accounts",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz ofis departmanları yok",
+   "text": "Şirketin ofis departmanları, örneğin Finans. Üretim departmanları Üretim altındadır.",
+   "link": null,
+   "add": {
+    "href": "/hr/departments/new/",
+    "label": "Yeni ofis departmanı"
+   }
+  },
+  "pager": null
+ },
+ "attendance": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Ara: yoklama kayıtları",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: yoklama kayıtları",
+    "placeholder": "Ada ya da numaraya göre ara"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "day",
+     "name": "from",
+     "label": "Başlangıç",
+     "value": "09.11.2026",
+     "placeholder": "26.10.2026",
+     "options": [],
+     "groups": []
+    },
+    {
+     "kind": "day",
+     "name": "to",
+     "label": "Bitiş",
+     "value": "23.11.2026",
+     "placeholder": "26.10.2026",
+     "options": [],
+     "groups": []
+    }
+   ],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/hr/time/attendance/new/",
+    "label": "Yeni yoklama kaydı"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Yoklama",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Çalışan",
+     "numeric": false
+    },
+    {
+     "key": "in",
+     "label": "Giriş",
+     "numeric": false
+    },
+    {
+     "key": "out",
+     "label": "Çıkış",
+     "numeric": false
+    },
+    {
+     "key": "how",
+     "label": "Nasıl",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "3e7ee08e-3b5e-4330-b90b-af108de6738d",
+     "status": "warning",
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Person",
+       "href": "/hr/time/attendance/3e7ee08e-3b5e-4330-b90b-af108de6738d/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "in": {
+       "text": "21.11.2026 13:42",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "out": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "Çıkış unutulmuş"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "how": {
+       "text": "Elle girildi",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/time/attendance/3e7ee08e-3b5e-4330-b90b-af108de6738d/",
+       "label": "Düzelt",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/time/attendance/3e7ee08e-3b5e-4330-b90b-af108de6738d/delete/",
+       "label": "İptal et",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz yoklama kayıtları yok",
+   "text": "Ekibinizin bu günlerdeki girişleri burada görünür.",
+   "link": null,
+   "add": {
+    "href": "/hr/time/attendance/new/",
+    "label": "Yeni yoklama kaydı"
+   }
+  },
+  "pager": null
+ },
+ "leave": {
+  "csrfToken": "test-token",
+  "tabs": {
+   "label": "Durum",
+   "tabs": [
+    {
+     "href": "?tab=pending",
+     "label": "Bekleyen",
+     "count": "0",
+     "current": true
+    },
+    {
+     "href": "?tab=approved",
+     "label": "Onaylanan",
+     "count": "1",
+     "current": false
+    },
+    {
+     "href": "?tab=rejected",
+     "label": "Reddedilen",
+     "count": "0",
+     "current": false
+    },
+    {
+     "href": "?tab=all",
+     "label": "Tümü",
+     "count": "1",
+     "current": false
+    }
+   ]
+  },
+  "toolbar": {
+   "label": "Ara: izin talepleri",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: izin talepleri",
+    "placeholder": "Ada ya da türe göre ara"
+   },
+   "keep": [],
+   "filters": [],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/hr/leave/new/",
+    "label": "Yeni izin talebi"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "İzin talepleri",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Çalışan",
+     "numeric": false
+    },
+    {
+     "key": "type",
+     "label": "İzin türü",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Günler",
+     "numeric": false
+    },
+    {
+     "key": "charged",
+     "label": "Sayılan",
+     "numeric": true
+    },
+    {
+     "key": "status",
+     "label": "Durum",
+     "numeric": false
+    },
+    {
+     "key": "decided",
+     "label": "Karar veren",
+     "numeric": false
+    }
+   ],
+   "rows": [],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz izin talepleri yok",
+   "text": "Ekibinizin izin talepleri, onaylayabilecek kişilerle birlikte burada görünür.",
+   "link": null,
+   "add": {
+    "href": "/hr/leave/new/",
+    "label": "Yeni izin talebi"
+   }
+  },
+  "pager": null
+ },
+ "leave-all": {
+  "csrfToken": "test-token",
+  "tabs": {
+   "label": "Durum",
+   "tabs": [
+    {
+     "href": "?tab=pending",
+     "label": "Bekleyen",
+     "count": "0",
+     "current": false
+    },
+    {
+     "href": "?tab=approved",
+     "label": "Onaylanan",
+     "count": "1",
+     "current": false
+    },
+    {
+     "href": "?tab=rejected",
+     "label": "Reddedilen",
+     "count": "0",
+     "current": false
+    },
+    {
+     "href": "?tab=all",
+     "label": "Tümü",
+     "count": "1",
+     "current": true
+    }
+   ]
+  },
+  "toolbar": {
+   "label": "Ara: izin talepleri",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: izin talepleri",
+    "placeholder": "Ada ya da türe göre ara"
+   },
+   "keep": [
+    {
+     "name": "tab",
+     "value": "all"
+    }
+   ],
+   "filters": [],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/hr/leave/new/",
+    "label": "Yeni izin talebi"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "İzin talepleri",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Çalışan",
+     "numeric": false
+    },
+    {
+     "key": "type",
+     "label": "İzin türü",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Günler",
+     "numeric": false
+    },
+    {
+     "key": "charged",
+     "label": "Sayılan",
+     "numeric": true
+    },
+    {
+     "key": "status",
+     "label": "Durum",
+     "numeric": false
+    },
+    {
+     "key": "decided",
+     "label": "Karar veren",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "359c5a31-e780-403b-8298-a571086d39c3",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Person",
+       "href": "/hr/leave/359c5a31-e780-403b-8298-a571086d39c3/view/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "type": {
+       "text": "Test annual leave",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "days": {
+       "text": "13.11.2026 – 15.11.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "charged": {
+       "text": "1",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Onaylandı"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "decided": {
+       "text": "test.admin",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "post",
+       "href": "/hr/leave/359c5a31-e780-403b-8298-a571086d39c3/cancel/",
+       "label": "Talebi iptal et",
+       "icon": "calendar-off",
+       "danger": true,
+       "fields": [
+        {
+         "name": "next",
+         "value": "/hr/leave/?tab=all&ui=next"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz izin talepleri yok",
+   "text": "Ekibinizin izin talepleri, onaylayabilecek kişilerle birlikte burada görünür.",
+   "link": null,
+   "add": {
+    "href": "/hr/leave/new/",
+    "label": "Yeni izin talebi"
+   }
+  },
+  "pager": null
+ },
+ "shifts": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Ara: vardiyalar",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: vardiyalar",
+    "placeholder": "Ada veya koda göre ara"
+   },
+   "keep": [],
+   "filters": [],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/hr/settings/shifts/new/",
+    "label": "Yeni vardiya"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Vardiyalar",
+   "columns": [
+    {
+     "key": "shift",
+     "label": "Vardiya",
+     "numeric": false
+    },
+    {
+     "key": "hours",
+     "label": "Saatler",
+     "numeric": false
+    },
+    {
+     "key": "break",
+     "label": "Mola (dakika)",
+     "numeric": true
+    },
+    {
+     "key": "grace",
+     "label": "Tolerans (dakika)",
+     "numeric": true
+    },
+    {
+     "key": "status",
+     "label": "Durum",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "e67087d3-bc13-4b66-b1b2-3cf9fd7129e3",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test day shift",
+       "href": "/hr/settings/shifts/e67087d3-bc13-4b66-b1b2-3cf9fd7129e3/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TD"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "07:00–15:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "30",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "10",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktif"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/e67087d3-bc13-4b66-b1b2-3cf9fd7129e3/",
+       "label": "Düzenle: Test day shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/e67087d3-bc13-4b66-b1b2-3cf9fd7129e3/delete/",
+       "label": "Sil: Test day shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "7907f330-faec-4a74-943b-a2f5e54da491",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test night shift",
+       "href": "/hr/settings/shifts/7907f330-faec-4a74-943b-a2f5e54da491/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TN"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "22:00–06:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "ertesi gün"
+       ]
+      },
+      "break": {
+       "text": "30",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktif"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/7907f330-faec-4a74-943b-a2f5e54da491/",
+       "label": "Düzenle: Test night shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/7907f330-faec-4a74-943b-a2f5e54da491/delete/",
+       "label": "Sil: Test night shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz vardiyalar yok",
+   "text": "Vardiya, sahanın duvar saatine göre bir başlangıç ve bitiştir; bir mola içerir. Çizelgenin kullandığı vardiyaları ekleyin.",
+   "link": null,
+   "add": {
+    "href": "/hr/settings/shifts/new/",
+    "label": "Yeni vardiya"
+   }
+  },
+  "pager": null
+ },
+ "holidays": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Ara: tatiller",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: tatiller",
+    "placeholder": "Ada göre ara"
+   },
+   "keep": [],
+   "filters": [],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/hr/settings/holidays/new/",
+    "label": "Yeni tatil"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Tatiller",
+   "columns": [
+    {
+     "key": "day",
+     "label": "Gün",
+     "numeric": false
+    },
+    {
+     "key": "holiday",
+     "label": "Tatil",
+     "numeric": false
+    },
+    {
+     "key": "site",
+     "label": "Saha",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "892c6adb-7336-4b81-b0cf-c37d13e49937",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "day": {
+       "text": "25.12.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "Cuma"
+       ]
+      },
+      "holiday": {
+       "text": "Test holiday",
+       "href": "/hr/settings/holidays/892c6adb-7336-4b81-b0cf-c37d13e49937/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "site": {
+       "text": "Tüm sahalar",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/holidays/892c6adb-7336-4b81-b0cf-c37d13e49937/",
+       "label": "Düzenle: Test holiday",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/holidays/892c6adb-7336-4b81-b0cf-c37d13e49937/delete/",
+       "label": "Sil: Test holiday",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz tatiller yok",
+   "text": "Şirketin resmî tatillerini ve diğer tatil günlerini ekleyin; izin talebi bunlar için sayılmaz.",
+   "link": null,
+   "add": {
+    "href": "/hr/settings/holidays/new/",
+    "label": "Yeni tatil"
+   }
+  },
+  "pager": null
+ },
+ "leave-types": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Ara: izin türleri",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Ara: izin türleri",
+    "placeholder": "Ada veya koda göre ara"
+   },
+   "keep": [],
+   "filters": [],
+   "submit": "Filtrele",
+   "add": {
+    "href": "/hr/settings/leave-types/new/",
+    "label": "Yeni izin türü"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "İzin türleri",
+   "columns": [
+    {
+     "key": "type",
+     "label": "İzin türü",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Yıllık gün",
+     "numeric": true
+    },
+    {
+     "key": "approval",
+     "label": "Onay gerekir",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Durum",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "491abc9a-d7e9-4e77-bf5e-a8c244fd7ed1",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "type": {
+       "text": "Test annual leave",
+       "href": "/hr/settings/leave-types/491abc9a-d7e9-4e77-bf5e-a8c244fd7ed1/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "TAL"
+       ]
+      },
+      "days": {
+       "text": "25",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "approval": {
+       "text": "Evet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Aktif"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/leave-types/491abc9a-d7e9-4e77-bf5e-a8c244fd7ed1/",
+       "label": "Düzenle: Test annual leave",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/leave-types/491abc9a-d7e9-4e77-bf5e-a8c244fd7ed1/delete/",
+       "label": "Sil: Test annual leave",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "İşlemler"
+  },
+  "empty": {
+   "title": "Henüz izin türleri yok",
+   "text": "İzin türü, yıllık ya da ebeveyn izni gibi bir izin çeşididir. Şirketin kullandığı türleri ekleyin.",
+   "link": null,
+   "add": {
+    "href": "/hr/settings/leave-types/new/",
+    "label": "Yeni izin türü"
+   }
+  },
+  "pager": null
+ }
+}

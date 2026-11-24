@@ -520,6 +520,12 @@ msgstr[0] "hemen verilmesi gereken %(count)s bildirim"
 msgstr[1] "hemen verilmesi gereken %(count)s bildirim"
 
 #, python-format
+msgid "%(count)s of them for the whole farm"
+msgid_plural "%(count)s of them for the whole farm"
+msgstr[0] "%(count)s tanesi tüm çiftlik için"
+msgstr[1] "%(count)s tanesi tüm çiftlik için"
+
+#, python-format
 msgid "%(count)s overdue"
 msgid_plural "%(count)s overdue"
 msgstr[0] "%(count)s tane gecikmiş"
@@ -616,6 +622,12 @@ msgid "%(count)s unit"
 msgid_plural "%(count)s units"
 msgstr[0] "%(count)s birim"
 msgstr[1] "%(count)s birim"
+
+#, python-format
+msgid "%(count)s unit stocked"
+msgid_plural "%(count)s units stocked"
+msgstr[0] "%(count)s balıklı birim"
+msgstr[1] "%(count)s balıklı birim"
 
 #, python-format
 msgid "%(count)s warning"
@@ -1033,6 +1045,10 @@ msgstr "%(location)s · %(item)s · lot %(lot)s — %(quantity)s %(unit)s"
 #, python-format
 msgid "%(location)s · %(item)s · lot %(lot)s, expires %(date)s — %(quantity)s %(unit)s"
 msgstr "%(location)s · %(item)s · lot %(lot)s, son kullanma %(date)s — %(quantity)s %(unit)s"
+
+#, python-format
+msgid "%(location)s, below the reorder level of %(level)s"
+msgstr "%(location)s, %(level)s yeniden sipariş düzeyinin altında"
 
 #, python-format
 msgid "%(lots)s lot"
@@ -5277,6 +5293,9 @@ msgstr "Şirket"
 msgid "Company overview"
 msgstr "Şirket genel bakışı"
 
+msgid "Company today"
+msgstr "Bugün şirket"
+
 msgid "Compare with"
 msgstr "Karşılaştır"
 
@@ -6892,6 +6911,9 @@ msgstr ""
 
 msgid "Feed in use"
 msgstr "Kullanılan yem"
+
+msgid "Feed on hand"
+msgstr "Eldeki yem"
 
 msgid "Feed per shot (g)"
 msgstr "Atış başına yem (g)"
@@ -8863,6 +8885,9 @@ msgstr "Gecikme sınırı (gün)"
 msgid "Latest"
 msgstr "Son değerler"
 
+msgid "Latest knowledge entries"
+msgstr "Son bilgi kayıtları"
+
 #, python-format
 msgid "Latest sea-lice count %(date)s, %(fish)s fish examined"
 msgstr "Son deniz biti sayımı %(date)s, %(fish)s balık incelendi"
@@ -8915,6 +8940,9 @@ msgstr "Duvar ekranından çık"
 
 msgid "Leave the water depth empty, or give one above 0."
 msgstr "Su derinliğini boş bırakın veya 0’dan büyük bir değer girin."
+
+msgid "Leave to decide"
+msgstr "Karar bekleyen izinler"
 
 msgid "Leave type"
 msgstr "İzin türü"
@@ -9035,6 +9063,18 @@ msgstr "Kartlar yükleniyor…"
 
 msgid "Loading the chart…"
 msgstr "Grafik yükleniyor…"
+
+msgid "Loading the confirmation…"
+msgstr "Onay yükleniyor…"
+
+msgid "Loading the form…"
+msgstr "Form yükleniyor…"
+
+msgid "Loading the list…"
+msgstr "Liste yükleniyor…"
+
+msgid "Loading the overview…"
+msgstr "Genel bakış yükleniyor…"
 
 msgid "Loading the water history…"
 msgstr "Su geçmişi yükleniyor…"
@@ -10070,6 +10110,9 @@ msgstr ""
 msgid "No item name: the device’s payload format is one object."
 msgstr "Öğe adı yok: cihazın mesaj biçimi tek bir nesnedir."
 
+msgid "No knowledge entries yet"
+msgstr "Henüz bilgi kaydı yok"
+
 msgid "No knowledge entry cites it yet."
 msgstr "Henüz hiçbir bilgi kaydı bu belgeye dayanmıyor."
 
@@ -10220,6 +10263,9 @@ msgstr "Hiçbir lokasyon bu sistemin dışındaki yıllık bir yükümlülükle 
 msgid "No site or facility to report for."
 msgstr "Rapor verilecek lokasyon veya tesis yok."
 
+msgid "No sites yet"
+msgstr "Henüz tesis yok"
+
 msgid ""
 "No size check was set: a cleaner fish is topped up with fish of other sizes. Give it a limit on "
 "the Stocking tab if this farm wants one."
@@ -10334,6 +10380,9 @@ msgstr "Bu filtrelere uyan birim yok."
 
 msgid "No units yet"
 msgstr "Henüz birim yok"
+
+msgid "No unread messages"
+msgstr "Okunmamış mesaj yok"
 
 msgid "No value"
 msgstr "Değer yok"
@@ -10671,11 +10720,23 @@ msgstr ""
 "gelecek). Her bildirim, alıcısı ve seviyesiyle aşağıdaki giden kutusunda bekler ve aktarım "
 "bağlandığında gönderilir."
 
+msgid ""
+"Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
+"notification waits in the outbox on the Alarms page, with its recipient and level, and is sent "
+"once it is."
+msgstr ""
+"Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra "
+"gelecek). Her bildirim, alıcısı ve seviyesiyle Alarmlar sayfasındaki giden kutusunda bekler ve "
+"aktarım bağlandığında gönderilir."
+
 msgid "Nothing needs attention"
 msgstr "Dikkat gerektiren bir şey yok"
 
 msgid "Nothing of the sensors is open to you yet: ask for a right on the Roles page."
 msgstr "Sensörlerle ilgili henüz hiçbir şeye erişiminiz yok: Roller sayfasından bir yetki isteyin."
+
+msgid "Nothing on hand"
+msgstr "Elde bir şey yok"
 
 msgid "Nothing recorded for this item yet"
 msgstr "Bu kalem için henüz kayıt yok"
@@ -10770,6 +10831,9 @@ msgstr "Ofis departmanı"
 
 msgid "Office departments"
 msgstr "Ofis departmanları"
+
+msgid "Office people today"
+msgstr "Bugün ofis çalışanları"
 
 msgid "Official code"
 msgstr "Resmî tür kodu"
@@ -12162,6 +12226,9 @@ msgstr "Teslimat al"
 msgid "Receiving site’s lokalitetsnummer"
 msgstr "Alıcı sahanın lokalitetsnummer’ı"
 
+msgid "Recent activity"
+msgstr "Son etkinlik"
+
 msgid "Recent feedings"
 msgstr "Son yemlemeler"
 
@@ -13478,6 +13545,9 @@ msgstr "Saha kullanıma alındı"
 msgid "Site type"
 msgstr "Saha türü"
 
+msgid "Site · item"
+msgstr "Tesis · kalem"
+
 msgid "Sites"
 msgstr "Sahalar"
 
@@ -13799,6 +13869,10 @@ msgstr "Ay sonundaki stok"
 
 msgid "Stock in one line"
 msgstr "Tek satırda stok"
+
+#, python-format
+msgid "Stock ledger · %(time)s"
+msgstr "Stok defteri · %(time)s"
 
 msgid "Stock lines"
 msgstr "Stok satırları"
@@ -16938,11 +17012,17 @@ msgstr ""
 "Yalnızca birimler: protokol, içlerinde ne varsa onu yemler. Bir partiyle: yalnızca bu "
 "birimlerdeki o parti."
 
+msgid "Units stocked"
+msgstr "Balıklı birimler"
+
 msgid "Unknown"
 msgstr "Bilinmiyor"
 
 msgid "Unpaid: it is taken off the planned hours. At most 240, shorter than the shift."
 msgstr "Ücretsiz: planlanan saatlerden düşülür. En çok 240, vardiyadan kısa."
+
+msgid "Unread messages"
+msgstr "Okunmamış mesajlar"
 
 msgid "Unresolved old courses"
 msgstr "Çözülmemiş eski kürler"
@@ -17833,6 +17913,10 @@ msgid "Worked out"
 msgstr "Hesaplandı"
 
 #, python-format
+msgid "Worked out %(when)s · %(zone)s"
+msgstr "Hesaplandı %(when)s · %(zone)s"
+
+#, python-format
 msgid "Worked out from %(temperature)s °C, %(salinity)s ‰ and %(pressure)s atm."
 msgstr "%(temperature)s °C, %(salinity)s ‰ ve %(pressure)s atm ile hesaplandı."
 
@@ -18168,6 +18252,10 @@ msgstr "bilinmeyen bir alıcı"
 
 msgid "and"
 msgstr "ve"
+
+#, python-format
+msgid "and %(count)s more: all alarms"
+msgstr "ve %(count)s tane daha: tüm alarmlar"
 
 #, python-format
 msgid "and %(count)s more: all reports"
@@ -19012,6 +19100,12 @@ msgid "https:// is added when it is left out."
 msgstr "Yazılmazsa https:// eklenir."
 
 #, python-format
+msgid "in %(count)s conversation"
+msgid_plural "in %(count)s conversations"
+msgstr[0] "%(count)s sohbette"
+msgstr[1] "%(count)s sohbette"
+
+#, python-format
 msgid "in %(location)s: %(held)s, expired on %(date)s."
 msgstr "%(location)s içinde: %(held)s, süresi %(date)s tarihinde doldu."
 
@@ -19419,6 +19513,9 @@ msgstr "açılış bakiyesi"
 
 msgid "opening balances"
 msgstr "açılış bakiyeleri"
+
+msgid "optional"
+msgstr "isteğe bağlı"
 
 msgid "owed once the month or week now running has closed"
 msgstr "şu an süren ay veya hafta kapandığında gelir"

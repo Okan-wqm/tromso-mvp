@@ -2,16 +2,17 @@ from datetime import timedelta
 
 from django.db.models import BooleanField, ExpressionWrapper, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce, TruncDate
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.translation import gettext_lazy as _
 
-from core import audit, navigation
+from core import audit, listprops as L, navigation
 from core.crud import Mount, Resource
 from core.dates import company_zone, read_day
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from .. import clock, rules, scope, services
+from ..templatetags.hr import on_clock
 from ..forms.attendance import AttendanceRecordForm
 from ..models import AttendanceRecord, Posting, SchedulingSettings
 
@@ -97,3 +98,38 @@ class AttendanceRecordResource(services.PersonFirst, Resource):
             Subquery(placement.values('production_department__site__timezone')[:1]),
             Subquery(placement.values('office_department__site__timezone')[:1]), Value('')))
         return objects, {'first': first, 'last': last}
+
+    # --- the list in the new look (core/listprops.py), the words of hr/attendance_list.html -------------------------
+    search_placeholder = _('Search by name or number')
+    empty_text = _('The clock-ins of your team in these days appear here.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [L.day('from', _('From'), context['first']), L.day('to', _('To'), context['last'])]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        def moment(value, record):
+            return formats.date_format(on_clock(value, record.zone_name), 'DATETIME_FORMAT')
+
+        def clock_out(record):
+            if record.clock_out:
+                return L.cell(moment(record.clock_out, record))
+            if record.forgotten:
+                return L.cell(chip=L.chip('warning', _('Clock-out forgotten')))
+            return L.cell(chip=L.chip('ok', _('In')))
+
+        rows = []
+        for record in objects:
+            may = lambda action: context.get(f'can_{action}') and cls.allowed(view.request, record, action)  # noqa: E731
+            rows.append(L.row(record.pk, {
+                'employee': L.cell(record.employee.full_name, strong=True,
+                                   href=view.url('edit', record.pk) if may('change') else None),
+                'in': L.cell(moment(record.clock_in, record)),
+                'out': clock_out(record),
+                'how': L.cell(record.get_via_display()),
+            }, [*([L.link(view.url('edit', record.pk), _('Correct'), 'pencil')] if may('change') else []),
+                *([L.link(view.url('delete', record.pk), _('Void'), 'trash', danger=True)] if may('delete') else [])],
+                status='warning' if record.forgotten and not record.clock_out else None))
+        return {'columns': [L.column('employee', _('Employee')), L.column('in', _('Clock in')),
+                            L.column('out', _('Clock out')), L.column('how', _('How'))], 'rows': rows}

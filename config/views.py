@@ -8,6 +8,7 @@ from farm.models import Equipment, ProductionDepartment, Site, System, Tank
 from farm.feeding.views import overview_tiles as feeding_tiles
 from farm.stock.views import overview_tiles
 from farm.water.views import RECORD as WATER_RECORD, overview as water_overview
+from core.ui import is_next
 from hr import read as hr_read, scope as hr_scope
 from reports import duties
 from reports.views import overview_upcoming
@@ -25,7 +26,10 @@ def _counts(user, *tiles):
 
 
 def home(request):
-    """The company's overview."""
+    """The company's overview. In the new look (core.ui.is_next) the island draws the board of config/company_props.py."""
+    if is_next(request):
+        from .company_props import overview_props
+        return render(request, 'home_next.html', {'props': overview_props(request.user)})
     return render(request, 'home.html', {
         'tiles': _counts(request.user, (_('Sites'), Site, 'farm:site_list')),
         'upcoming': overview_upcoming(request.user),

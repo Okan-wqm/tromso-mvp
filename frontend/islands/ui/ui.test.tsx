@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
-  Button, ChartFrame, CheckboxGroup, Chip, EmptyState, ErrorState, Icon, IconButton, LinkButton, LinkTabs, LoadingState,
+  Acknowledge, AuditItem, Button, ChartFrame, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, CheckboxGroup, Chip, EmptyState, ErrorState, Icon, IconButton, LinkButton, LinkTabs, List, ListItem, LoadingState,
   Notice, Plate, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
 } from './index.js';
 import { ICONS } from './icon-shapes.js';
@@ -93,6 +93,18 @@ test('tabs are React Aria\'s, drawn as ui-tabs; link tabs mark the current view'
   assert.match(html(<LinkTabs label="Views" tabs={[{ href: '?s=open', label: 'Open', current: true }]} />), /aria-current="page"/);
 });
 
+test('kept mounted, every panel is in the page and an unselected one is inert (hidden by ds.css)', () => {
+  const items = [{ id: 'a', label: 'General', content: <input name="title" /> }, { id: 'b', label: 'Where', content: <input name="site" /> }];
+  const kept = html(<Tabs label="Task" items={items} keepMounted />);
+  assert.match(kept, /name="title"/);
+  assert.match(kept, /name="site"/);
+  assert.match(kept, /class="ui-tab-panel"[^>]*inert=""[^>]*data-inert="true"|data-inert="true"[^>]*inert=""/);
+  assert.equal((kept.match(/data-inert="true"/g) ?? []).length, 1);
+  assert.doesNotMatch(html(<Tabs label="Task" items={items} />), /name="site"/);
+  const css = readFileSync(resolve('static/css/ds.css'), 'utf8');
+  assert.match(css, /\.ui-tab-panel\[data-inert\] \{ display: none; \}/);
+});
+
 test('a field with the server\'s errors is invalid, says them in words and is described by them', () => {
   const field = html(<TextField name="org" label="Organisation number" help="Nine digits." errors={['Enter nine digits.']} />);
   assert.match(field, /^<div class="field has-error">/);
@@ -131,4 +143,125 @@ test('no component writes a style attribute or a markup string (the islands\' ow
     const source = readFileSync(join(folder, name), 'utf8');
     assert.doesNotMatch(source, /\bstyle=\{|dangerouslySetInnerHTML|innerHTML/, name);
   }
+});
+
+test('a list is the design system\'s ui-list: its rows with their sub-line, meta, chip and status edge', () => {
+  const list = html(<List label="Upcoming reports"><ListItem main="Sea lice" sub="10.11.2026 · Overdue" meta="13:40" status="critical" chip={<Chip kind="critical">Overdue</Chip>} /></List>);
+  assert.match(list, /^<ul class="ui-list" role="list" aria-label="Upcoming reports"><li class="ui-list-item" data-status="critical">/);
+  assert.match(list, /<span class="ui-list-main"><span>Sea lice<\/span><span class="ui-cell-sub">10\.11\.2026 · Overdue<\/span><\/span>/);
+  assert.match(list, /<span class="ui-list-meta">13:40<\/span><span class="ui-chip" data-status="critical">/);
+  assert.match(html(<List ordered><ListItem main="x" /></List>), /^<ol class="ui-list" role="list"><li class="ui-list-item"><span class="ui-list-main"><span>x<\/span><\/span><\/li><\/ol>$/);
+  const entry = html(<AuditItem action="Changed" record="Task · Pond" who="by admin" status="critical" critical={<Chip kind="critical">Critical</Chip>} />);
+  assert.match(entry, /^<li class="ui-list-item ui-audit-item" data-status="critical"><span class="ui-audit-head"><strong class="ui-audit-action">Changed<\/strong><span class="ui-chip"/);
+  assert.match(entry, /<span class="ui-audit-record">Task · Pond<\/span><span class="ui-audit-who">by admin<\/span>/);
+  assert.doesNotMatch(list + entry, /style=/);
+});
+
+
+test('the form parts draw the old page\'s markup, post the old names, and take every word from props', () => {
+  const box = html(<Checkbox name="active" label="Active" mark="optional" defaultChecked />);
+  assert.match(box, /<label class="check"><input type="checkbox"[^>]*name="active"/);
+  assert.match(box, / checked=""/);
+  assert.match(box, / value="on"/);
+  assert.match(box, /<span class="ui-field-mark">optional<\/span>/);
+  const radios = html(<RadioGroup name="placement" label="Placement" options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]} defaultValue="b" />);
+  assert.match(radios, /<legend>Placement<\/legend>/);
+  assert.match(radios, /name="placement"(?: checked="")? value="b"(?: checked="")?/);
+  assert.equal((radios.match(/checked=""/g) ?? []).length, 1);
+  const file = html(<FileField name="file" label="PDF" current={{ name: 'x.pdf', href: '/f/', intro: 'Currently:', clearName: 'file-clear', clearLabel: 'Remove the file' }} />);
+  assert.match(file, /<p class="file-current">Currently: <a href="\/f\/"[^>]*>x\.pdf<\/a><\/p>/);
+  assert.match(file, /name="file-clear"/);
+  assert.match(file, /type="file"[^>]*name="file"/);
+  const ack = html(<Acknowledge name="ack" title="Before handling" label="Go on" value="f00d">Warned.</Acknowledge>);
+  assert.match(ack, /class="ui-notice ui-ack" data-tone="critical"/);
+  assert.match(ack, /type="checkbox"[^>]*name="ack"[^>]*value="f00d"/);
+  const matrix = html(<PermissionMatrix name="permissions" label="Rights" areaLabel="Area" columns={['Read', 'Create']}
+    sections={[{ label: 'Facility', areas: [{ label: 'Sites', notes: ['Note'], cells: [{ action: 'Read', said: 'Sites: Read', value: '1', checked: true, id: 'p-1' }, null] }] }]} />);
+  assert.match(matrix, /<table class="matrix">/);
+  assert.match(matrix, /name="permissions"[^>]*value="1"/);
+  assert.match(matrix, /id="p-1"[^>]*checked=""|checked=""[^>]*id="p-1"/);
+  assert.match(matrix, /<span class="sr-only">Sites: Read<\/span>/);
+  assert.match(matrix, /class="matrix-note"/);
+  const links = html(<LinkList name="systems" label="Systems" columns={['Role']} primary primaryLabel="Primary" primaryWords="%(record)s is the primary one"
+    rows={[{ pk: '7', label: 'RAS-1', checked: true, primary: true }]} />);
+  assert.match(links, /name="systems"(?: checked="")? value="7"/);
+  assert.match(links, /name="systems-primary"(?: checked="")? value="7"/);
+  assert.equal((links.match(/checked=""/g) ?? []).length, 2);
+  assert.match(links, /RAS-1 is the primary one/);
+  const rows = html(<RowList prefix="c" management={[{ name: 'c-TOTAL_FORMS', value: '9' }, { name: 'c-INITIAL_FORMS', value: '1' }]}
+    rows={[{ key: '1', content: <input name="c-0-name" /> }]} newRow={(index) => <input name={`c-${index}-name`} />} columns={['Name']}
+    legend="Contact" addLabel="Add contact" removeLabel="Remove" emptyText="None" />);
+  assert.match(rows, /name="c-TOTAL_FORMS" value="1"/);           // the count is what is drawn, not what was given
+  assert.match(rows, /name="c-INITIAL_FORMS" value="1"/);
+  assert.doesNotMatch(box + radios + file + ack + matrix + links + rows, /style=/);
+});
+
+test('a server form is busy while it posts: its submit is switched off and says so, and ready again from history', () => {
+  const form = html(<ServerForm action="/x/" csrfToken="t" label="Save" actions={<Button type="submit" variant="primary">Save</Button>} noValidate>x</ServerForm>);
+  assert.match(form, /<form[^>]*noValidate=""/i);
+  assert.doesNotMatch(form, /aria-busy/);                           // ready until it posts (the browser test presses it)
+});
+
+test('a list page: one GET form for the search and the filters, the table with its row actions, the pager; empty, its words', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const page = html(<ListPage {...LIST_PROPS} />);
+  const forms = [...page.matchAll(/<form [^>]*>/g)].map((match) => match[0]);
+  assert.equal(forms.filter((form) => /method="get"/.test(form)).length, 1, 'the search and the filters are one GET form');
+  assert.match(page, /<input type="hidden" name="tab" value="pending"\/>/);
+  assert.match(page, /<div class="ui-search"><svg[^]*?<\/svg><label class="sr-only" for="([^"]+)">Search employees<\/label><input id="\1" type="search" placeholder="Search by name or number" name="q" value="Alfa"\/><\/div>/);
+  assert.match(page, /<optgroup label="Production departments"><option value="p:1">Hatchery A<\/option><\/optgroup>/);
+  assert.match(page, /<option value="current" selected="">Working here<\/option>/);
+  assert.match(page, /<a class="ui-tab" href="\?tab=pending" aria-current="page">Pending<span class="ui-count">2<\/span><\/a>/);
+  assert.match(page, /<a class="ui-btn" data-variant="primary" href="\/hr\/team\/new\/">/);
+  assert.doesNotMatch(page, /data-modal/, 'a list link opens the record\'s page, never the classic dialog');
+  assert.match(page, /<span class="ui-cell-strong"><a href="\/hr\/team\/1\/">Ann Alfa<\/a><\/span><span class="ui-cell-sub">E-1<\/span>/);
+  assert.match(page, /<tr data-status="warning">/);
+  assert.match(page, /<td class="num"><span>0\.5<\/span><\/td>/);
+  assert.match(page, /<form action="\/hr\/leave\/1\/cancel\/" method="post"><input type="hidden" name="csrfmiddlewaretoken" value="test-token"\/><input type="hidden" name="next" value="\/hr\/leave\/"\/><button type="submit" class="icon-button icon-button-danger" aria-label="Cancel the request"/);
+  assert.match(page, /<a class="icon-button" href="\/hr\/team\/1\/view\/" aria-label="Show Ann Alfa"/);
+  assert.match(page, /<nav class="pager list-pager" aria-label="Pages"><span>51–100 of 120<\/span>/);
+  assert.match(page, /href="\?q=Alfa&amp;page=3"/);
+  assert.match(page, /role="status"[^>]*>.*Two people have no department\./);
+  assert.doesNotMatch(page, /style=/);
+  const empty = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows: [] }} />);
+  assert.match(empty, /<div class="ui-empty"><p class="ui-empty-title">No employees match “Zed”<\/p><p class="ui-empty-text">Try another search\. <a href="\/hr\/team\/">Show all employees<\/a><\/p><\/div>/);
+  assert.doesNotMatch(empty, /ui-table|list-pager|Showing 2 of 3/, 'no table, pager or line over an empty list');
+});
+
+test('a stacked bar: each part a segment as long as its share on the whole, every part in words, no style', async () => {
+  const { StackedBar } = await import('./index.js');
+  const bar = html(<StackedBar label="Planned today: 6" parts={[
+    { key: 'here', label: 'Here now', value: 3, figure: '3', tone: 'ok' },
+    { key: 'absent', label: 'Absent', value: 0, figure: '0', tone: 'critical' },
+    { key: 'leave', label: 'On leave', value: 3, figure: '3', tone: 'note' },
+  ]} />);
+  assert.match(bar, /<svg class="ui-stack-bar" viewBox="0 0 6 1" preserveAspectRatio="none" role="img" aria-label="Planned today: 6\. Here now 3, Absent 0, On leave 3">/);
+  assert.match(bar, /<rect class="ui-stack-seg" data-tone="ok" x="0" y="0" width="3" height="1"><\/rect><rect class="ui-stack-seg" data-tone="note" x="3" y="0" width="3" height="1"><\/rect><\/svg>/);
+  assert.match(bar, /<li data-tone="critical"><span class="ui-stack-swatch" aria-hidden="true"><\/span><span>Absent<\/span><strong>0<\/strong><\/li>/);
+  assert.doesNotMatch(bar, /style=/);
+  const empty = html(<StackedBar label="Planned today: 0" empty="Nobody is expected today" parts={[{ key: 'here', label: 'Here now', value: 0, figure: '0', tone: 'ok' }]} />);
+  assert.doesNotMatch(empty, /<svg/);
+  assert.match(empty, /<p class="ui-stack-empty">Nobody is expected today<\/p>/);
+});
+
+test('a server form posts the CSRF token, says the form\'s errors in an alert, and its submit is ready until it posts', () => {
+  const form = html(<ServerForm action="/x/" csrfToken="t" label="Save" formErrors={['Choose a site.']}
+    actions={<Button type="submit" variant="primary">Save</Button>} noValidate>x</ServerForm>);
+  assert.match(form, /<form aria-label="Save" noValidate="" action="\/x\/" method="post">/);
+  assert.match(form, /<input type="hidden" name="csrfmiddlewaretoken" value="t"\/>/);
+  assert.match(form, /<div class="ui-notice" data-tone="critical" role="alert">.*<li>Choose a site\.<\/li>/);
+  assert.doesNotMatch(form, /disabled/);
+  const get = html(<ServerForm action="/x/" csrfToken="t" label="Find" method="get" actions={null}>x</ServerForm>);
+  assert.doesNotMatch(get, /csrfmiddlewaretoken/, 'a GET form never carries the token into the address');
+});
+
+test('a blocked delete: the plan\'s reasons are said and its Delete button is off (review F4); an open plan\'s is on', async () => {
+  const { ConfirmDelete } = await import('../pages/ConfirmDelete.js');
+  const { BLOCKED_PROPS, OPEN_PROPS } = await import('../../test/pages/delete-props.js');
+  const blocked = html(<ConfirmDelete {...BLOCKED_PROPS} />);
+  assert.match(blocked, /<button[^>]*type="submit"[^>]*disabled=""[^>]*>Delete leave type<\/button>|<button[^>]*disabled=""[^>]*type="submit"[^>]*>Delete leave type<\/button>/);
+  assert.match(blocked, /This leave type cannot be deleted yet\..*2 leave requests use it\./);
+  const open = html(<ConfirmDelete {...OPEN_PROPS} />);
+  assert.doesNotMatch(open, /<button[^>]*disabled/);
 });

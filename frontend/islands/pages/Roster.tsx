@@ -3,7 +3,7 @@
 // week), the people shown and the pages, the roster grid with its paint (ui/RosterGrid.tsx), or the empty state; and the
 // Crew block for a worker. The server words and decides everything (hr.resources.roster.next_props).
 import {
-  Button, CellLines, Chip, type ChipKind, EmptyState, LinkButton, ListToolbar, type ListPageProps, Plate, RosterGrid,
+  CellLines, Chip, type ChipKind, EmptyState, ListToolbar, type ListPageProps, Plate, RosterGrid,
   type RosterGridProps, Table,
 } from '../ui/index.js';
 
@@ -19,15 +19,10 @@ export interface RosterPageProps {
   crew: { title: string; head: string; days: { key: string; head: string; sub: string }[]; rows: CrewRow[]; text: string | null } | null;
 }
 
-export function Roster({ week, toolbar, line, grid, empty, crew }: RosterPageProps) {
+/** `week` (its links and title) is drawn by the page head (templates/hr/roster_next.html), as the design puts it. */
+export function Roster({ toolbar, line, grid, empty, crew }: RosterPageProps) {
   return (
     <>
-      <nav className="ui-toolbar" aria-label={week.label}>
-        <LinkButton href={week.previous.href} variant="ghost">{week.previous.label}</LinkButton>
-        <strong>{week.title}</strong>
-        <LinkButton href={week.next.href} variant="ghost">{week.next.label}</LinkButton>
-        <Button variant="ghost" icon="printer" onPress={() => window.print()}>{week.print}</Button>
-      </nav>
       <ListToolbar toolbar={toolbar} />
       {empty ? <EmptyState title={empty.title}>{empty.text}</EmptyState> : (
         <>

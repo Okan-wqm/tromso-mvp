@@ -11,7 +11,6 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 
 import { Button } from './Button.js';
-import { Chip, type ChipKind } from './Chip.js';
 import { Icon } from './Icon.js';
 
 export interface RosterDay { key: string; head: string; sub: string }
@@ -19,7 +18,8 @@ export interface RosterDay { key: string; head: string; sub: string }
 export interface RosterCell {
   /** "<employee>:<yyyy-mm-dd>", what the batch route takes; null for a day the viewer does not reach the person on */
   key: string | null;
-  chip?: { kind: ChipKind; text: string; title?: string | null } | null;
+  /** what is planned: a shift (its code, in its tone 1 to 8), planned off, or on leave; its words and its title */
+  chip?: { kind: 'shift' | 'off' | 'leave'; text: string; title?: string | null; tone?: number | null } | null;
   /** the plan's own page (editing it), or null */
   href?: string | null;
   /** an empty plannable day: its new plan's page and the link's words ("Plan this day") */
@@ -46,7 +46,7 @@ export interface RosterPaint {
   /** where the server sends the person back (the page with its week and filters) */
   next: string;
   label: string;
-  choices: { value: string; label: string; title?: string | null }[];
+  choices: { value: string; label: string; title?: string | null; kind?: 'shift' | 'off' | 'clear'; tone?: number | null }[];
   clearSelection: string;
   apply: string;
 }
@@ -105,7 +105,7 @@ export function RosterGrid({ label, employeeHead, hoursHead, days, rows, paint }
   };
 
   const content = (row: RosterRow, cell: RosterCell, day: RosterDay) => {
-    const chip = cell.chip ? <Chip kind={cell.chip.kind}>{cell.chip.text}</Chip> : null;
+    const chip = cell.chip ? <span className="ui-roster-plan" data-kind={cell.chip.kind} data-tone={cell.chip.tone ?? undefined}>{cell.chip.text}</span> : null;
     if (painting && cell.key) {
       const on = selected.includes(cell.key);
       return (
@@ -134,10 +134,11 @@ export function RosterGrid({ label, employeeHead, hoursHead, days, rows, paint }
             <span className="ui-cell-sub" aria-hidden="true">{paint.label}</span>
             {paint.choices.map((choice) => (
               <button key={choice.value} type="button" className="ui-roster-choice" aria-pressed={chosen === choice.value}
+                data-kind={choice.kind ?? 'shift'} data-tone={choice.tone ?? undefined}
                 title={choice.title ?? undefined} onClick={() => choose(choice.value)}>{choice.label}</button>
             ))}
           </div>
-          <Button variant="ghost" isDisabled={!selected.length} onPress={() => setSelected([])}>{paint.clearSelection}</Button>
+          <Button variant="link" isDisabled={!selected.length} onPress={() => setSelected([])}>{paint.clearSelection}</Button>
           <Button type="submit" variant="primary" isDisabled={!chosen || !selected.length}>{paint.apply}</Button>
         </form>
       ) : null}
@@ -162,7 +163,7 @@ export function RosterGrid({ label, employeeHead, hoursHead, days, rows, paint }
                       {cell.key ? content(row, cell, day) : null}
                       {cell.key && cell.holiday ? <span className="ui-cell-sub">{cell.holiday}</span> : null}
                       {cell.key && cell.finding ? (
-                        <span className="ui-roster-finding"><Icon name={cell.blocks ? 'octagon' : 'alert'} /><span className="ui-cell-sub">{cell.finding}</span></span>
+                        <span className="ui-roster-finding" title={cell.finding}><Icon name={cell.blocks ? 'octagon' : 'alert'} /><span className="ui-cell-sub">{cell.finding}</span></span>
                       ) : null}
                     </td>
                   );

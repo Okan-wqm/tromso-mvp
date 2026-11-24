@@ -6,6 +6,7 @@
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ group }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
+{% block head_actions %}{% with week=props.week %}<nav class="ui-head-actions" aria-label="{{ week.label }}"><a class="ui-btn" href="{{ week.previous.href }}">{{ week.previous.label }}</a><strong class="ui-head-range">{{ week.title }}</strong><a class="ui-btn" href="{{ week.next.href }}">{{ week.next.label }}</a><button type="button" class="ui-btn" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{{ week.print }}</button></nav>{% endwith %}{% endblock %}
 {% block content %}
 {% trans "Loading the schedule…" as loading %}{% island "roster" props label=loading %}
 {% endblock %}

@@ -133,13 +133,13 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
                 return {'key': None}
             chip = None
             if item.state == 'leave':
-                chip = {'kind': 'note', 'text': words('On leave'), 'title': (
+                chip = {'kind': 'leave', 'text': words('On leave'), 'tone': None, 'title': (
                     words('%(shift)s planned: to be covered') % {'shift': item.shift.code}) if item.shift else None}
             elif item.state == 'shift':
-                chip = {'kind': 'note', 'text': item.shift.code,
+                chip = {'kind': 'shift', 'text': item.shift.code, 'tone': item.shift.tone,
                         'title': f'{item.shift.name} {hour(item.shift.starts_at)}–{hour(item.shift.ends_at)}'}
             elif item.state == 'off':
-                chip = {'kind': 'neutral', 'text': words('Off'), 'title': None}
+                chip = {'kind': 'off', 'text': words('Off'), 'tone': None, 'title': None}
             found = {'key': f'{row.employee.pk}:{item.day.isoformat()}', 'chip': chip, 'href': None, 'add': None,
                      'holiday': item.holiday.name if item.holiday else None,
                      'finding': item.finding_text or None, 'blocks': bool(item.blocks)}
@@ -157,10 +157,11 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
                  'cells': [cell(row, item) for item in row.cells]} for row in objects]
         paint = None
         if context['can_add'] or context['can_change'] or context['can_delete']:
-            choices = [{'value': str(shift.pk), 'label': shift.code, 'title': shift.name} for shift in context['shifts']]
-            choices.append({'value': 'off', 'label': words('Off'), 'title': None})
+            choices = [{'value': str(shift.pk), 'label': shift.code, 'title': shift.name, 'kind': 'shift', 'tone': shift.tone}
+                       for shift in context['shifts']]
+            choices.append({'value': 'off', 'label': words('Off'), 'title': None, 'kind': 'off', 'tone': None})
             if context['can_delete']:
-                choices.append({'value': 'clear', 'label': words('Clear'), 'title': None})
+                choices.append({'value': 'clear', 'label': words('Clear'), 'title': None, 'kind': 'clear', 'tone': None})
             paint = {'action': mounted('hr:roster_plan'), 'csrfToken': get_token(request), 'next': request.get_full_path(),
                      'label': words('Paint'), 'choices': choices, 'clearSelection': words('Clear selection'),
                      'apply': words('Apply to the selected days')}

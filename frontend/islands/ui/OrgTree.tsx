@@ -35,8 +35,10 @@ function Box({ node }: { node: OrgNode }) {
   return (
     <li className="ui-org-node" data-kind={node.kind}>
       <div className="ui-org-box">
-        <span className="ui-org-name">{node.href ? <a href={node.href}>{node.name}</a> : node.name}</span>
-        <span className="ui-org-kind">{node.kindLabel}</span>
+        <span className="ui-org-head">
+          <span className="ui-org-name">{node.href ? <a href={node.href}>{node.name}</a> : node.name}</span>
+          <span className="ui-org-kind">{node.kindLabel}</span>
+        </span>
         {node.manager ? (
           <span className="ui-org-manager">
             <span className="sr-only">{node.manager.label} </span>{node.manager.name}
@@ -44,20 +46,20 @@ function Box({ node }: { node: OrgNode }) {
           </span>
         ) : null}
         <span className="ui-org-count">{node.count}</span>
+        {node.people && node.people.list.length ? (
+          <details className="ui-org-people">
+            <summary>{node.people.summary}</summary>
+            <ul role="list">
+              {node.people.list.map((person) => (
+                <li key={person.key}>
+                  <span>{person.name}</span>
+                  {person.title ? <span className="ui-cell-sub">{person.title}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
       </div>
-      {node.people && node.people.list.length ? (
-        <details className="ui-org-people">
-          <summary>{node.people.summary}</summary>
-          <ul role="list">
-            {node.people.list.map((person) => (
-              <li key={person.key}>
-                <span>{person.name}</span>
-                {person.title ? <span className="ui-cell-sub">{person.title}</span> : null}
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
       {node.children.length ? <ul className="ui-org-level" role="list">{node.children.map((child) => <Box key={child.key} node={child} />)}</ul> : null}
     </li>
   );

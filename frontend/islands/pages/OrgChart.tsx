@@ -20,7 +20,7 @@ export function OrgChart({ summary, print, cue, label, nodes, empty }: OrgChartP
     <>
       <div className="ui-toolbar">
         <p className="ui-cell-sub" id={`${id}-summary`}>{summary}</p>
-        <Button variant="ghost" icon="printer" onPress={() => window.print()}>{print}</Button>
+        <Button icon="printer" onPress={() => window.print()}>{print}</Button>
       </div>
       {empty ? <EmptyState title={empty.title}>{empty.text}</EmptyState> : (
         <>

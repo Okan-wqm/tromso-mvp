@@ -890,28 +890,37 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
   for no recent data and no limit, dotted for empty, and the hatch strip of a card whose value is old, `ds.css`
   `.monitor-card[data-stale]`), a critical card framed in the critical colour, the head of a card with no recent data
   hatched (its stripe the control line half way to the plate: 1.5:1 or more in all six themes, measured by the page
-  test); on a wall the frame and the edge grow with the type; in forced colours a critical or warning edge is 10 px, as
+  test), every word of that head on a pad of the plate, so no text lies on a stripe (4.5:1 held by the page test against
+  the stripe, in the six themes); on a wall the frame and the edge grow with the type; in forced colours a critical or warning edge is 10 px, as
   classic. The code in the text face, the figures in Barlow, OK in its green.
 - **One size per mode** (owner, 2026-11-24: "a card grows taller when a warning appears"). The Small card on the desk page
   is the design's: a regular grid of equal cards (three to a row at 1440 px: at four the oxygen's saturation beside its
   label was cut; four at 1920), with fixed slots: the head (the code, the name cut with an ellipsis and whole in its
-  title, the state's glyph and word, never cut), ONE line of reason (the first in short and "+N"; every reason in full in
-  its title, for a screen reader, in the band's chips and on the pane's card), the link to the water at its end, then the
-  four cells (label; figure never cut, sized to its cell; where it came from and how old, cut with an ellipsis and whole
-  in its title). The pH window is not in the design's Small card: it stays in the markup and on the wall, in the pane and
+  title, the state's glyph and word, never cut), TWO lines of reason (the first in short and "+N"; the reason's figure
+  and the bound it is past never cut, its own words past two lines end in an ellipsis; every reason in full in its title,
+  for a screen reader, in the band's chips and on the pane's card; the fish line where there is no reason), the link to
+  the water at its end, then the four cells (a label of two lines, its name and "old" then the oxygen's saturation, a
+  figure in a slot of its own in `_value_fit.html`: only the name gives way, whole in its title; the figure never cut,
+  sized to its cell; where it came from and how old, cut with an ellipsis and whole in its title). The pH window is not in the design's Small card: it stays in the markup and on the wall, in the pane and
   on the Big screen. An empty unit's card says the unit in four cells (status, volume, max density, max biomass:
   `monitoring/_empty_cells.html`). Big cards on a desk (from 1100 px) are each at the Big template's proportion, as in the
   pane; Simple and Detailed cards are as tall as the longest of them (rows of one fraction: nothing of a longer card is
   cut). On a wall the cards are the fitted ones, sized by the slot rule.
-- **The toolbar and the band**: the search first, the filters named for a screen reader only (each select says its
-  choice: "No board", "All sites"), the wall's buttons at the end; the band a plate on the desk page with the switch of
+- **The toolbar and the band**: on the desk page the search first, the filters named for a screen reader only (each
+  select says its choice: "No board", "All sites"), the wall's buttons at the end (a wall keeps its own toolbar, the two
+  buttons fixed at the band's end: the page test checks that nothing lies over the band, a state word or the buttons); the band a plate on the desk page with the switch of
   the cards as a segmented control on the right, the current one bold and underlined, not only tinted.
 - **The Big card's boxes** (dosing, other points, stock) say their names where their place has the room
   (`render._titled`, from the validator's `fitted_place`).
 
-Nothing a safety cue needs is cut, hidden or faded: the page test holds every code, state word, figure and "old" whole,
-the cards of one kind one size, and the wall's browser test runs every case again in the new look
-(`frontend/test/wall.browser.test.ts`, the parts of `manage.py layout_pages` under the new look's sheets).
+No safety word or figure is cut or faded: the page test holds every code, state word, figure, saturation, "old", and the
+first reason's figure and bound whole (en, nb, tr at 390, 1440 and 1920 px), the cards of one kind one size, and the wall's
+browser test runs every case again in the new look (`frontend/test/wall.browser.test.ts`, the parts of `manage.py
+layout_pages` under the new look's sheets). What the desk's Small card does NOT show, by the design (owner, 2026-11-24):
+the flip link to the other card, the pH window and its sentences ("The pH window cannot be drawn: ...", "no CO₂ limit"),
+the second and later reasons but for their count ("+N"), and the end of a long name, source line or reason sentence: they
+stay in the markup (so for a screen reader too, but for the flip link and the pH window, which are not displayed), in the
+titles, on the pane's Big card and on the wall.
 
 **A card links its tank's water history** (`templates/monitoring/_water_link.html`, `farm:tank_water`) in both looks, the
 pane's included, when its water section is readable: the page needs the right to read water samples, which the cards do
@@ -956,7 +965,8 @@ rows of equal cells, chosen by the one **slot rule** (`monitoring/cards/slots.py
 `frontend/wall/slots.ts`, where the screen's size is known; both run `monitoring/tests/slot_vectors.json`): of every grid
 whose cells hold all the cards, the one that gives a card its largest unit; when that unit is under 14 px (the smallest
 text would be under 11 px) the wall turns PAGES rather than shrink the type: the grid with the most cells that can still
-be read, PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
+be read (when none can, ONE card a page at the largest unit a cell gives, never the densest grid: review round 2, B3),
+PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
 of its worst card. A card never moves, so a page is always the same cards. Twenty small cards are one page on 3440×1440,
 5120×1440, 2560×1440, 3840×2160 and 1920×1080 (5 by 4 on the two wide screens, 4 by 5 on 16:9); twenty-four are one
 page on the first four and two pages on 1920×1080 (`monitoring/tests/slot_vectors.json`). The line under each figure
@@ -1025,15 +1035,22 @@ board is deleted and restored like any record (nothing depends on it). Its **Wal
 standard screen: 24″, 27″, 32″, 34″ and 49″ monitors, 55″ and 65″ TVs, or another screen with its diagonal typed) and
 from how far it is read (0.5 to 20 m; the owner's presets 1, 2, 3, 5 m in the help) (frontend-redesign CONSENSUS §9). With
 both, a wall of fitted cards never sets its type smaller than can be read from there: a state's word subtends at least
-20 arcmin (FHWA-RD-98-057, ch. 3) and every other text at least 15 (MIL-STD-1472H §5.17.18.2), a character's height the
+20 arcmin (FHWA-RD-98-057, ch. 3) and every other text at least 16 (the least character height of ANSI/HFES 100-2007 and
+ISO 9241-303; 15 before review round 2), a character's height the
 text face's cap height (0.67 of its size); the screen's size in px is the browser's own, so the diagonal gives the
 millimetres of a px (the pixel ratio cancels out). That unit (`monitoring/cards/slots.py legible_unit`, the same rule in
 `frontend/wall/slots.ts legibleUnit`, both held to `slot_vectors.json`) is the slot rule's `min_u`, the cells' least
 height and the pane's: the wall turns pages rather than shrink its type, and the pane lies over the cards when a Big card
-beside them could not be read from there. The band's unit is raised the same way (its tally and chips at 20 arcmin).
-What it costs, measured from the rule: a 55″ Full HD TV read from 3 m gives a unit of 38.5 px, about two Small cards a
-page (twenty cards on ten pages); from 2 m 25.7 px, six a page; a 24″ monitor read from 1 m 29.4 px, four a page (measured
-with the slot rule; the board's distance is how a farm trades cards a page against the distance they are read from). Without a screen or a distance the wall is as it was
+beside them could not be read from there. The band's unit is raised the same way (its tally and chips at 20 arcmin), but
+never so far that the band takes more than a sixth of the screen's height (`frontend/wall.ts` bandUnit: the largest unit
+that fits; its tally wraps into rows rather than run off the screen). What it costs, measured from the rule on a Full HD
+screen: a 55″ TV read from 3 m gives a unit of 41.1 px, one Small card a page (twenty cards on twenty pages); from 2 m
+27.4 px, four a page; a 24″ monitor read from 1 m 31.4 px, two a page (the board's distance is how a farm trades cards a
+page against the distance they are read from). A pair at which not even one card a page can be read (a 24″ monitor from
+3 m, a 55″ TV from 5 m) is refused by the board's form (`MonitorBoard.clean`, `slots.reach` on the preset's resolution,
+another screen taken as 16:9: the answer follows the screen's shape, not its px), which says the farthest distance that
+works (1.9 m and 4.4 m there); a pair that leaves one or two cards a page is saved with a warning that says so. A wall
+whose distance cannot be met all the same (a screen of another shape) shows one card a page at the largest unit it can. Without a screen or a distance the wall is as it was
 (the 14 px floor). The constraints hold every rule a row can state (a preset is its own diagonal, another screen has one
 in range, none has none; the distance in range or empty). Anyone who may read Monitoring may choose a board in the
 picker (a board is configuration, not a record); the area Monitoring boards in the role matrix, after Tanks, ponds & cages, is for

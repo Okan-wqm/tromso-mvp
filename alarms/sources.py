@@ -62,9 +62,14 @@ SUMMARY_LENGTH = Alarm._meta.get_field('summary').max_length
 # ---- the sensor rules ------------------------------------------------------------------------------------------------
 def _department_of(channel, at):
     """The production department of the place the channel was bound to at `at`, or None."""
-    binding = (Binding.all_objects.filter(channel=channel, valid_from__lte=at)
-               .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=at))
-               .select_related('point__unit', 'point__system', 'point__equipment', 'system', 'equipment').first())
+    return _department_at(Binding.all_objects.filter(channel=channel, valid_from__lte=at)
+                          .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=at))
+                          .select_related(*sensor_alarms.PLACE_RELATED).first())
+
+
+def _department_at(binding):
+    """The production department of the place a binding holds its channel at (None without one), from the binding with
+    its place loaded (sensors.alarms.PLACE_RELATED): no query of its own."""
     if binding is None:
         return None
     place = binding.point.owner if binding.point_id else binding.system or binding.equipment
@@ -590,10 +595,12 @@ def _probe_subjects(oxygen_pass, failed, now):
             if holds:
                 summary = _text(_('%(probe)s: the oxygen probe is silent; the oxygen is measured otherwise (by hand or by '
                                   'another probe).'), probe=str(binding))[:SUMMARY_LENGTH]
+            # where it is: read with the probes (sensors.alarms.silent_probes: the device's site, the place's
+            # department), and only for a warning that holds (review 4 of the branch, L2)
             subjects.append(system_subject(
                 f'{PROBE_PREFIX}{channel.channel_no}', holds, Severity.WARNING, summary, now,
                 parameter=OXYGEN_PROBE_SILENT, clear_ok=not failed and not holds,
-                where={'site': channel.device.site, 'production_department': _department_of(channel, now)}))
+                where={'site': channel.device.site, 'production_department': _department_at(binding)} if holds else None))
     for key in AlarmSubjectState.objects.filter(key__startswith=f'system:{PROBE_PREFIX}',
                                                 open_alarm__isnull=False).values_list('key', flat=True):
         if key not in seen:

@@ -215,21 +215,29 @@ def _silent(channel, state, binding, now):
     return now - last > timedelta(seconds=state.fresh_s)
 
 
+# A binding's place and the place's production department (alarms/sources.py `_department_at`: where a probe's alarm is).
+PLACE_RELATED = ('point__unit__production_department', 'point__system__production_department',
+                 'point__equipment__production_department', 'system__production_department',
+                 'equipment__production_department')
+
+
 def silent_probes(codes, now=None):
     """{place (`place_of`): [Binding, its channel loaded]} of the channels of `codes` an active default "No fresh
     value" rule covers (not standing aside for a farm's own rule: `_aside`), active on an active device, bound now, that
     sent no fresh value there (`_silent`): the probes whose silence the alarm system says as a warning where the place's
-    oxygen is fresh all the same (alarms/sources.py; review 2 of the branch, R3 p3). Five queries."""
+    oxygen is fresh all the same (alarms/sources.py; review 2 of the branch, R3 p3). Each binding comes with its place
+    and the place's department, each channel with its device's site (where its warning is: no query a probe). Five
+    queries, whatever the number of probes."""
     now = now or timezone.now()
     defaults = set(AlarmRule.objects.filter(is_default=True, is_active=True, quantity__in=list(codes))
                    .values_list('quantity', flat=True))
     aside_quantities, aside_channels = _aside()
     channels = [channel for channel in Channel.objects.filter(
         quantity__in=defaults - aside_quantities, state=ChannelStatus.ACTIVE, device__is_active=True)
-        .select_related('device') if channel.pk not in aside_channels]
+        .select_related('device__site') if channel.pk not in aside_channels]
     places = {binding.channel_id: binding for binding in Binding.objects.visible().at(now)
               .filter(channel__in=[channel.pk for channel in channels])
-              .select_related('point__unit', 'point__system', 'point__equipment', 'system', 'equipment')}
+              .select_related(*PLACE_RELATED)}
     channels = [channel for channel in channels if channel.pk in places]
     states = read.latest([channel.channel_no for channel in channels], now)
     found = {}

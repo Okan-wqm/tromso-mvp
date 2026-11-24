@@ -646,7 +646,11 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 .report-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; margin-bottom: 1rem; }
 .report-table { font-size: var(--fs-small); }
 .report-table caption { padding-bottom: .25rem; font-weight: 700; text-align: left; }
-.report-table th[scope="row"] { font-weight: 500; }
+.report-table th[scope="row"] { width: 45%; font-weight: 500; }
+/* a value with its judgement in words (the best estimate's note: "0.0015 mg/L · NH₃ judged on the safe side …") wraps
+   inside its column: kept on one line (the figure rule's nowrap) it pushed every value of the table past the page's edge,
+   on the screen and on paper (frontend/test/calculator.pages.ts holds it) */
+.report-table td.num { white-space: normal; overflow-wrap: anywhere; }
 .report-charts { margin-bottom: 1rem; }
 .report .calc-results, .report .calc-simulator { margin-bottom: 1rem; }
 @media print {
@@ -779,10 +783,6 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
 [data-ui="next"] .report { background: var(--surface-canvas); }
 [data-ui="next"] .report-head { border-bottom-width: 1px; }
 [data-ui="next"] .report-title { font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600; }
-/* a row's value with its judgement in words (the best estimate's note) wraps inside its column: on one line it pushed
-   every value of the table past the page's edge */
-[data-ui="next"] .report-table td.num { white-space: normal; overflow-wrap: anywhere; }
-[data-ui="next"] .report-table th[scope="row"] { width: 45%; }
 [data-ui="next"] .report-table caption { font-family: var(--font-display); font-size: var(--fs-tab); font-weight: 600; }
 [data-ui="next"] .report .calc-charts { margin-bottom: var(--gap); }
 [data-ui="next"] .report :is(.calc-results, .calc-simulator) { margin-bottom: var(--gap); }

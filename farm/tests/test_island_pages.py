@@ -127,6 +127,8 @@ class IslandPagesTests(FrozenClock, TestCase):
                     old, new = (page_says(said[look], squash) for look in (ui.CLASSIC, ui.NEXT))
                     self.assertEqual(says_missing(old, new), {})
                 pages[name] = said[ui.NEXT]
+                if name == 'report':                 # the classic report too: its rows must stay inside the page
+                    keep_page(f'calculator-report-classic-{language}', said[ui.CLASSIC])
             self.assertIn('data-live-part="source"', pages['page'])
             self.assertIn('TT-01', pages['page'])                                   # where the values come from
             self.assertIn('class="deffeyes-ph"', pages['page'])                     # the chart, its pH labels placed

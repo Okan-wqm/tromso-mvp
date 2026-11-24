@@ -63,7 +63,7 @@ logger = logging.getLogger(__name__)
 CLAIM = 426_160_720           # the advisory lock class of a notification being sent (with its id): an identity
 # How many cleared warnings a round gives up, after its sending, each chunk one transaction: about 100 ms of work, so a
 # backlog of them never delays a critical (the next round, a tick later, takes what is left).
-GIVE_UP_CHUNK = 400
+GIVE_UP_CHUNK = 100
 
 
 @dataclass

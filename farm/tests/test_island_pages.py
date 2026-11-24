@@ -28,7 +28,8 @@ class IslandPagesTests(FrozenClock, TestCase):
     def setUpTestData(cls):
         cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
         made = world(cls.admin, Client())
-        refused = [each for each in made if not each.endswith(': 302')]
+        # (what was posted answers with its status, 302 when saved; the people's parts say what they made)
+        refused = [each for each in made if each.rpartition(': ')[2].isdigit() and not each.endswith(': 302')]
         if refused:
             raise AssertionError(f'the test world was not built: {refused}')
         cls.unit = Tank.objects.get(code='TT-01')

@@ -85,6 +85,8 @@ MIDDLEWARE = [
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
+    # ?ui=next and ?ui=classic choose the console's look, kept in a cookie (core/ui.py).
+    'core.ui.LookMiddleware',
     # A page whose menu line is left out for the person is refused at its address too.
     'core.middleware.MenuAccessMiddleware',
     # The platform owner's settings are read once per request (core.platform).
@@ -114,6 +116,7 @@ TEMPLATES = [
                 'core.navigation.rail',
                 'core.navigation.page_base',
                 'core.theme.context',
+                'core.ui.context',
             ],
         },
     },

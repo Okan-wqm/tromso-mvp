@@ -22,7 +22,9 @@ ROOT = Path(settings.BASE_DIR)
 GUARD_LIST = ROOT / 'chemcore' / 'guard-list.txt'
 SHIPPED = ['frontend', 'static', 'staticfiles']
 IDENTIFIER = re.compile(r'\b[A-Za-z_][A-Za-z0-9_]*\b')
-NUMBER = re.compile(r'(?<![A-Za-z0-9_.])(?:\d+\.\d+(?:[eE][-+]?\d+)?|\d+[eE][-+]?\d+)')
+# A number as a person or a minifier writes it: 6320.813, 6.320813e3 and the leading dot .0017276 (frontend redesign,
+# decision 7: a minified bundle writes it so, and the scan missed it).
+NUMBER = re.compile(r'(?<![A-Za-z0-9_.])(?:\d+\.\d+(?:[eE][-+]?\d+)?|\d+[eE][-+]?\d+|\.\d+(?:[eE][-+]?\d+)?)')
 SCRIPT = re.compile(r'<script\b[^>]*>(.*?)</script>', re.S | re.I)
 
 
@@ -74,6 +76,23 @@ class DenyListTests(SimpleTestCase):
         self.assertEqual(chemistry_in('const k = k1_sws(t, s) * 6.320813e3; // why_impossible'),
                          ['k1_sws', 'why_impossible', '6.320813e3'])
         self.assertEqual(chemistry_in('width: 520px; x="64.25"; const label = "pH 7.5";'), [])
+
+    def test_the_scan_reads_a_minifiers_spellings(self):
+        """A minified bundle writes 0.0017276 as .0017276 and 0.0017276 as 1.7276e-3; both are found (decision 7)."""
+        _names, numbers = deny_list()
+        self.assertIn(0.0017276, numbers)
+        self.assertEqual(chemistry_in('a=.0017276*b'), ['.0017276'])
+        self.assertEqual(chemistry_in('a=1.7276e-3*b'), ['1.7276e-3'])
+        self.assertEqual(chemistry_in('a=b.0017276'), [])
+
+    def test_a_power_of_ten_is_no_coefficient(self):
+        """1000.0 converts a unit; it is not on the list, so a minifier's 1e3 never fails the guard (decision 7)."""
+        _names, numbers = deny_list()
+        self.assertFalse({number for number in numbers if number > 0 and float(f'{number:e}'.split('e')[0]) == 1.0})
+        self.assertTrue(generator().power_of_ten(1000.0))
+        self.assertTrue(generator().power_of_ten(0.001))
+        self.assertFalse(generator().power_of_ten(1776.0))
+        self.assertTrue({87.74, 1776.0, 2698.0} <= numbers)
 
 
 class ShippedFilesTests(SimpleTestCase):

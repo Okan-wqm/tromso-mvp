@@ -73,8 +73,8 @@ class FrameTests(MonitoringCase):
 
 
 # ---- the colours --------------------------------------------------------------------------------------------------
-# The design system's themes (static/css/tokens.css): the default block (:root, Fjord) and each theme's own.
-THEMES = ('fjord', 'polarnatt', 'nordlys', 'tang', 'laks')
+# The design system's themes (static/css/tokens.css): the default block (:root, Industry) and each theme's own.
+THEMES = ('industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks')
 
 
 def tokens(theme='fjord'):
@@ -114,7 +114,7 @@ def declared(css, selector, prop, theme='fjord'):
 
 
 class ColourTests(SimpleTestCase):
-    """In each of the five themes, against the theme's sheet (the card's ground)."""
+    """In each of the six themes, against the theme's sheet (the card's ground)."""
 
     def css(self, name):
         return (CSS / name).read_text(encoding='utf-8')
@@ -154,7 +154,7 @@ class ColourTests(SimpleTestCase):
 
     def test_the_fitted_card_the_band_and_the_ph_window_say_everything_at_4_5_to_1(self):
         """The pairs of text and ground the fitted card, the band and the pH window use (the final mock-up's
-        measure/contrast.txt, here in all five themes): the three inks on the sheet, the band's inks on the canvas,
+        measure/contrast.txt, here in all six themes): the three inks on the sheet, the band's inks on the canvas,
         the state's text on the sheet and on its tint, a border's number on the grey region, on the safe stretch and
         on the critical tint."""
         pairs = (('--text-1', '--surface-sheet'), ('--text-2', '--surface-sheet'), ('--text-3', '--surface-sheet'),

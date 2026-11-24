@@ -1,6 +1,8 @@
 {% load assets i18n %}<!doctype html>
 {# The signed-in console (docs/design/system): the rail, the top bar, the page head and, below 1024 px, the bottom bar. #}
-<html lang="{{ LANGUAGE_CODE }}" data-theme="{{ THEME|default:"fjord" }}"{% block html_attrs %}{% endblock %}>
+{% comment %} In the new look (data-ui="next", core/ui.py: ?ui=next) the same markup is drawn as the design console draws it
+   (static/css/ds.css, app.css), with the status strip in the top bar and the menu group over the title. {% endcomment %}
+<html lang="{{ LANGUAGE_CODE }}" data-theme="{{ THEME|default:"industry" }}"{% if UI_NEXT %} data-ui="next"{% endif %}{% block html_attrs %}{% endblock %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -80,6 +82,9 @@
         <nav class="ui-crumbs" aria-label="{% trans "You are here" %}">
           <p class="eyebrow">{% block eyebrow %}{% trans "Panel" %}{% endblock %}</p>
         </nav>
+        {% if UI_NEXT and ui_strip %}<div class="ui-strip" role="group" aria-label="{% trans "Status" %}">
+          {% for item in ui_strip %}{% if item.url %}<a class="ui-strip-item" href="{{ item.url }}" data-strip="{{ item.key }}"{% if item.status %} data-status="{{ item.status }}"{% endif %}>{% if item.status == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% elif item.status == "warning" %}{% include "icons/_icon.html" with name="alert" %}{% endif %}{{ item.text }}</a>{% else %}<span class="ui-strip-item" data-strip="{{ item.key }}">{{ item.text }}</span>{% endif %}{% endfor %}
+        </div>{% endif %}
         <div class="topbar-language">{% include "_language_switcher.html" %}</div>
 
         <div class="menu user-menu" data-menu>
@@ -122,6 +127,7 @@
         {% endif %}
         <div class="page-head ui-head" data-area="{{ page_area|default:"neutral" }}">
           <div class="page-title">
+            {% if UI_NEXT and page_group %}<span class="ui-head-group">{{ page_group }}</span>{% endif %}
             {% if page_icon %}<span class="ui-area" aria-hidden="true">{% include "icons/_icon.html" with name=page_icon %}</span>{% endif %}
             <h1>{% block heading %}{% trans "Overview" %}{% endblock %}</h1>
             {% block head_status %}{% endblock %}

@@ -1168,7 +1168,7 @@ dot that carries meaning at least 3:1 (the water page's warning dot moved from #
 sage never carries meaning (a note card's border is the muted green, an empty one's dotted); `@media (forced-colors: active)`
 keeps the shapes, the bands of a bar and the state borders in high-contrast mode (and the pH window's regions and mark).
 The fitted card, the band and the pH window use three inks on three grounds and a colour only for a state; every pair of
-text and ground they use is at least 4.5:1 in all five themes (`test_frame.py`: the inks on the sheet and the canvas, the
+text and ground they use is at least 4.5:1 in all six themes (`test_frame.py`: the inks on the sheet and the canvas, the
 state's text on the sheet and on its tint, a border's number on the grey region, the safe stretch and the critical tint).
 
 **Measured with templates** (2026-11-05, `monitoring/tests/test_load.py`, run with `MONITOR_LOAD=1`; the test database on this
@@ -5364,6 +5364,52 @@ the compiled code is missing.
 
 The browser code has no text of its own: the templates render the texts it shows into data
 attributes (`data-label-show`, `data-forbidden`, ...), already translated.
+
+### Islands (React, built by Vite)
+
+A page whose body needs more than data attributes (the pilot of the frontend redesign:
+`F:\dev\balik-notes\frontend-redesign\CONSENSUS.md`, `live-arch\PLAN-SPEED-FRONTEND.md` B4) draws it as an **island**: a React
+root inside the server-rendered page. Django keeps the view, the shell, auth, CSRF, permissions, the menu, the languages,
+validation and every chemistry judgement; the island draws the finished values it is given.
+
+- **Source.** `frontend/islands/<name>.tsx` is one island; it calls `mount('<name>', Component)`. The one component
+  library is `frontend/islands/ui/` (import from `./ui/index.js`): Button, LinkButton, IconButton, Chip, Plate and
+  Plates, Tile and Tiles, Table, Tabs and LinkTabs, TextField, SelectField, CheckboxGroup, FixedField, ServerForm, Notice,
+  EmptyState, LoadingState, ErrorState, ChartFrame, Icon, and SeriesChart (uPlot, imported on its own from
+  `./ui/SeriesChart.js`: an interactive series, gaps never bridged, colours from the chart roles). They draw the design system's classes (`static/css/ds.css`):
+  a server-rendered page writes the same classes, so both look the same from one rule set. React Aria where a control
+  needs behaviour (buttons, tabs); native `<select>`, `<dialog>` otherwise (no popover that would lock the scroll).
+  Icons come from `templates/icons/` (`scripts/icons.mjs` builds `ui/icon-shapes.ts`; `npm test` fails when it is stale).
+- **Build.** `npm run build` runs `vite build` (`vite.config.mjs`, `scripts/islands.mjs`) into `static/islands/` (not
+  committed): hashed names, no source maps, no inlined assets, no module-preload polyfill. There is **no dev server and
+  no hot reload**: its injected scripts and styles would break the Content-Security-Policy. With no island yet the
+  build writes an empty manifest.
+- **On a page.** `{% load assets %}{% island "units" props label=_("Loading the units…") %}` writes the root (with
+  `label` as its loading line), the props as a JSON data block (`json_script`: never run), and once per page the island's
+  module, its chunks as `modulepreload` and its CSS, read from `static/islands/.vite/manifest.json`
+  (`settings.ISLANDS_MANIFEST` points elsewhere; the tests use `core/testdata/islands-manifest.json`). An unknown island
+  raises; a missing build is core.W001. Props carry finished, translated values only; a form posts back to Django
+  (`ServerForm` with the CSRF token from the props), whose errors come back as props and land on the fields.
+- **Rules** (`npm run check:ds`): an island writes no colour, no `style=` or style object, no markup string
+  (`dangerouslySetInnerHTML`), no old class name and no arbitrary Tailwind size. React Aria's one injected style rule
+  ships in `ds.css` and `mount` puts its marker element in the head, so the page stays at 0 CSP violations.
+- **Licences** (`npm run check:licences`, CI and `npm test`): every installed npm package is MIT, Apache-2.0, ISC,
+  BSD-2/3-Clause or 0BSD, or a reviewed exception in `scripts/licence-gate.mjs` (THIRD_PARTY.md).
+- **Tests.** `frontend/islands/ui/ui.test.tsx` renders each component to markup; `frontend/test/islands.browser.test.ts`
+  mounts the component gallery (`frontend/test/gallery/`, `npm run build:gallery`, never shipped) under the product's
+  policy in all six themes: 0 CSP violations, no critical or serious axe finding, every text at 4.5:1, visible focus, the
+  busy and invalid states, no sideways scroll at 390 px (`SHOTS=<folder>` writes screenshots). `core/tests_islands.py`
+  holds the tag, the build check and the new look's shell.
+
+### The new look (`?ui=next`)
+
+The design console of 2026-11-23 (`F:\dev\balik-notes\design-in`; docs/design/system/README.md, The new look) is
+previewed on every page behind `?ui=next`: `core/ui.py` keeps it in a cookie (`ui`) until `?ui=classic`, and
+`app_base.html` writes `data-ui="next"` on `<html>`. The same markup is drawn square and hairline-framed with Barlow
+headings (the `look` block of tokens.json, ds.css and app.css under `[data-ui="next"]`), with the status strip in the
+top bar (the open alarms, the people on site, the company's clock: each only for who may see it, from
+`alarms.read.listing`, `hr.read.muster` and the company's zone) and the menu group over the page title. The classic look
+stays the default until the owner switches.
 
 ## One format for every tab
 

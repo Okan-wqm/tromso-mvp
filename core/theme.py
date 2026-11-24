@@ -1,5 +1,6 @@
-"""The console's colour theme (docs/design/system/README.md, Colour): five places on the Norwegian coast, Fjord (the
-default, day), Polarnatt (night), Nordlys (night, for the monitoring wall), Tang (day) and Laks (warm day). The person
+"""The console's colour theme (docs/design/system/README.md, Colour): the six themes of the design (the design project Suderra
+Console, 2026-11-23): Industry (the default, day: steel on a light technical ground) and five places on the Norwegian
+coast, Fjord (day), Polarnatt (night), Nordlys (night, for the monitoring wall), Tang (day) and Laks (warm day). The person
 picks one in the user menu; a cookie keeps it and the server writes it on <html data-theme>, so the first paint already
 has it. Never the system's colour scheme: a screen at the tank side looks the same whatever the device prefers."""
 from django.contrib.auth.decorators import login_not_required
@@ -8,15 +9,15 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 COOKIE = 'theme'
-DEFAULT = 'fjord'
+DEFAULT = 'industry'
 # The themes' names are names (Nordlys stays Nordlys in Turkish), as the design system gives them.
-THEMES = (('fjord', 'Fjord'), ('polarnatt', 'Polarnatt'), ('nordlys', 'Nordlys'), ('tang', 'Tang'), ('laks', 'Laks'))
+THEMES = (('industry', 'Industry'), ('fjord', 'Fjord'), ('polarnatt', 'Polarnatt'), ('nordlys', 'Nordlys'), ('tang', 'Tang'), ('laks', 'Laks'))
 KEYS = {key for key, _name in THEMES}
 YEAR = 365 * 24 * 3600
 
 
 def chosen(request):
-    """The theme of the request's cookie, or Fjord for none or one that is not a theme."""
+    """The theme of the request's cookie, or Industry for none or one that is not a theme."""
     value = request.COOKIES.get(COOKIE)
     return value if value in KEYS else DEFAULT
 

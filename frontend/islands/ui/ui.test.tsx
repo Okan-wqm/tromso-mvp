@@ -228,3 +228,19 @@ test('a list page: one GET form for the search and the filters, the table with i
   assert.match(empty, /<div class="ui-empty"><p class="ui-empty-title">No employees match “Zed”<\/p><p class="ui-empty-text">Try another search\. <a href="\/hr\/team\/">Show all employees<\/a><\/p><\/div>/);
   assert.doesNotMatch(empty, /ui-table|list-pager|Showing 2 of 3/, 'no table, pager or line over an empty list');
 });
+
+test('a stacked bar: each part a segment as long as its share on the whole, every part in words, no style', async () => {
+  const { StackedBar } = await import('./index.js');
+  const bar = html(<StackedBar label="Planned today: 6" parts={[
+    { key: 'here', label: 'Here now', value: 3, figure: '3', tone: 'ok' },
+    { key: 'absent', label: 'Absent', value: 0, figure: '0', tone: 'critical' },
+    { key: 'leave', label: 'On leave', value: 3, figure: '3', tone: 'note' },
+  ]} />);
+  assert.match(bar, /<svg class="ui-stack-bar" viewBox="0 0 6 1" preserveAspectRatio="none" role="img" aria-label="Planned today: 6\. Here now 3, Absent 0, On leave 3">/);
+  assert.match(bar, /<rect class="ui-stack-seg" data-tone="ok" x="0" y="0" width="3" height="1"><\/rect><rect class="ui-stack-seg" data-tone="note" x="3" y="0" width="3" height="1"><\/rect><\/svg>/);
+  assert.match(bar, /<li data-tone="critical"><span class="ui-stack-swatch" aria-hidden="true"><\/span><span>Absent<\/span><strong>0<\/strong><\/li>/);
+  assert.doesNotMatch(bar, /style=/);
+  const empty = html(<StackedBar label="Planned today: 0" empty="Nobody is expected today" parts={[{ key: 'here', label: 'Here now', value: 0, figure: '0', tone: 'ok' }]} />);
+  assert.doesNotMatch(empty, /<svg/);
+  assert.match(empty, /<p class="ui-stack-empty">Nobody is expected today<\/p>/);
+});

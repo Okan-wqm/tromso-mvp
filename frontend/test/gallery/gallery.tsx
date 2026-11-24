@@ -8,7 +8,7 @@ import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
   Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
-  LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
+  LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
 interface Row { code: string; name: string; site: string; capacity: string; status: 'ok' | 'warning' | 'neutral'; word: string }
@@ -155,6 +155,20 @@ function Gallery({ rows, errors }: GalleryProps) {
         <ChartFrame title="Temperature" label="Temperature, no values" caption="Sensor">
           <SeriesChart unit="°C" emptyLabel="No values in this range." times={[]} series={[]} />
         </ChartFrame>
+      </Plate>
+      <Plate title="Planned today" span={6}>
+        <div className="ui-plate-body" id="stack">
+          <StackedBar label="Planned today: 12" parts={[
+            { key: 'here', label: 'Here now', value: 7, figure: '7', tone: 'ok' },
+            { key: 'not_in', label: 'Not in yet', value: 2, figure: '2', tone: 'warning' },
+            { key: 'absent', label: 'Absent', value: 1, figure: '1', tone: 'critical' },
+            { key: 'on_leave', label: 'On leave', value: 2, figure: '2', tone: 'note' },
+            { key: 'done', label: 'Done', value: 0, figure: '0', tone: 'neutral' },
+          ]} />
+          <StackedBar label="Planned today: 0" empty="Nobody is expected today" parts={[
+            { key: 'here', label: 'Here now', value: 0, figure: '0', tone: 'ok' },
+          ]} />
+        </div>
       </Plate>
     </Plates>
   );

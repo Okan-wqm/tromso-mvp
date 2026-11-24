@@ -19573,6 +19573,10 @@ msgstr "gjentakende oppgaver"
 msgid "reduced capacity"
 msgstr "redusert kapasitet"
 
+#, python-format
+msgid "refreshed every %(seconds)s s"
+msgstr "oppdatert hvert %(seconds)s s"
+
 msgid "regulatory report"
 msgstr "lovpålagt rapport"
 

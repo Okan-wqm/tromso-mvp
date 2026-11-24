@@ -19612,6 +19612,10 @@ msgstr "yinelenen görevler"
 msgid "reduced capacity"
 msgstr "azaltılmış kapasite"
 
+#, python-format
+msgid "refreshed every %(seconds)s s"
+msgstr "her %(seconds)s sn yenilenir"
+
 msgid "regulatory report"
 msgstr "yasal rapor"
 

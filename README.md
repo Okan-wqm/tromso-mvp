@@ -5509,7 +5509,13 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   the people behind a native disclosure). The Shift schedule is the island `roster` with the library's `RosterGrid`
   (`Resource.list_next_props`): the arrow keys, Home and End move between the cells' controls; the paint works by
   keyboard (toggle buttons choose the paint and select the cells) and posts to the same batch route with the CSRF
-  token, which plans all of them or none. A plan's link and "Plan this day" open the record's own page. Held:
+  token, which plans all of them or none. A plan's link and "Plan this day" open the record's own page. They follow the design (Company Panel v2): a tile grid of one tile size (`data-fixed`: a secondary line too long for its
+  tile ends in an ellipsis and keeps its whole text in its title, never a figure or a state; six to a row on a wide screen,
+  two on a phone, four for the scheduling limits); Today's bar in the design's tones (here now in ink, not in yet dashed,
+  absent in the warning colour, on leave light) with each part's figure before its words; a week's Previous, range, Next
+  and Print in the page head; each shift's code in its own tone (`Shift.tone`, the tokens --tone-1..8); the roster's days
+  as equal columns and a finding on one line in its cell (the whole sentence in its title); the organisation chart's
+  children as a wrapping grid of boxes of one size. Held:
   `hr/tests/test_today_next.py` (each page against its classic page on the test world, three languages, both mounts;
   the paint's post), `frontend/islands/ui/ui.test.tsx`, `frontend/test/roster.browser.test.ts` (keyboard, paint, CSP and
   axe in every theme at 1440 and 390) and the gallery's browser test.

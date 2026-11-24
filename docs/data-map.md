@@ -2402,7 +2402,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/tests_workspaces.py`, `hr/tests/test_attendance.py`, `hr/tests/test_boundary.py` and 16 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

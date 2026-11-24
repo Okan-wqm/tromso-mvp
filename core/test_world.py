@@ -20,6 +20,7 @@ built and read.
       treatment_world(admin, tank)    a thermal delousing of TT-01 five days back
       feeding_world(admin, tank)      a feeding of TT-01 the day before
       limits_world(tank)              the fish's NH₃-N and CO₂ limits, so the Deffeyes chart draws its regions
+    roster_world(admin, client)       today's roster of the hall: one planned person in each state of the board
     sensors_world(admin)              after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat"""
 import math
@@ -41,7 +42,7 @@ def world(admin, client=None):
     from farm.models import Tank
     client = client or Client(HTTP_HOST='localhost')
     client.force_login(admin)
-    made = company_world(admin, client) + hr_world(admin, client)
+    made = company_world(admin, client) + hr_world(admin, client) + roster_world(admin, client)
     water_world(admin, {'tank': Tank.objects.get(code='TT-01')})
     return made
 
@@ -309,3 +310,47 @@ def sensors_world(admin):
                                 version='test')
     return [f'sensors: {Device.objects.count()} devices, {AlarmEvent.objects.count()} alarm events, '
             f'{Connection.objects.count()} connections']
+
+
+def roster_world(admin, client):
+    """Today's roster of the production hall (Test Site North, on Oslo's clock: MOMENT is 13:42 there): one planned
+    person in each state of the board (hr.rules.status), so Today and the Shift schedule have planned people and the
+    stacked bar has parts: upcoming (an evening shift), present (in since before the day shift), late (in 30 minutes
+    after the start), not in yet (a shift that began 12 minutes ago), absent (the day shift, no clock-in), on leave (an
+    approved leave over a planned day) and done (an early shift, clocked in and out)."""
+    from datetime import date, time, timedelta
+    from zoneinfo import ZoneInfo
+
+    from farm.models import ProductionDepartment
+    from hr.models import AttendanceRecord, LeaveRequest, LeaveType, Shift, ShiftAssignment
+    from hr.models.leave import LeaveStatus
+    from hr.tests.helpers_people import employee, place
+    hall, today, oslo = ProductionDepartment.objects.get(code='THA'), MOMENT.date(), ZoneInfo('Europe/Oslo')
+
+    def at(hour, minute=0):
+        return datetime(today.year, today.month, today.day, hour, minute, tzinfo=oslo)
+
+    def shift(code, name, start, end):
+        return Shift.objects.create(name=name, code=code, starts_at=start, ends_at=end, break_minutes=0, grace_minutes=0)
+    early, day = shift('TE1', 'Test early shift', time(6), time(10)), shift('TD1', 'Test morning shift', time(7), time(15))
+    midday, later = shift('TM1', 'Test midday shift', time(12), time(20)), shift('TL1', 'Test later shift', time(13, 30), time(21))
+    evening = shift('TV1', 'Test evening shift', time(18), time(23))
+    annual = LeaveType.objects.filter(code='TAL').first() or LeaveType.objects.create(name='Test annual leave', code='TAL')
+    made = {}
+    for number, last, plan in (('E-9101', 'Upcoming', evening), ('E-9102', 'Present', day), ('E-9103', 'Late', midday),
+                               ('E-9104', 'Waiting', later), ('E-9105', 'Absent', day), ('E-9106', 'Away', day),
+                               ('E-9107', 'Done', early)):
+        person = employee(number, last=last, first='Test', on=date(2026, 1, 1))
+        place(person, hall, title='Test operator')
+        ShiftAssignment.objects.create(employee=person, day=today, shift=plan)
+        made[last] = person
+
+    def punch(person, clock_in, clock_out=None):
+        AttendanceRecord.objects.create(employee=person, clock_in=clock_in, clock_out=clock_out,
+                                        via=AttendanceRecord.Via.ENTERED, note='Test roster punch')
+    punch(made['Present'], at(6, 55))
+    punch(made['Late'], at(12, 30))
+    punch(made['Done'], at(5, 58), at(10, 2))
+    LeaveRequest.objects.create(employee=made['Away'], leave_type=annual, first_day=today, last_day=today,
+                                status=LeaveStatus.APPROVED, decided_by=admin, decided_at=MOMENT - timedelta(days=3))
+    return [f'roster: {len(made)} planned today']

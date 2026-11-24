@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock water dates %}
+{% load alarm_watch i18n stock water dates %}
 {% comment %} Operations › Water chemistry (farm.water.views.water_page): the latest water of every point (a unit's
    middle point, a loop, and the other points that were sampled) with its status, or the history of the samples
    (?view=history, or one owner's with ?unit= / ?system= / ?equipment=, one point's with ?point=), each value judged
@@ -62,7 +62,7 @@
   {% endif %}
 </div>
 
-<p class="ui-safety">{% include "icons/_icon.html" with name="alert" %}{% trans "A warning or a critical value raises an alarm (Company › Alarms); nothing is sent until the push transport is connected." %}</p>
+{% alarm_watch promise=True %}
 <details class="ui-explain">
   <summary>{% trans "How values are judged" %}</summary>
   <p class="panel-help">{% blocktrans trimmed %}Each value is judged on read against the water limits as they are now, for the fish in the unit that day; a sample of a loop for every unit of the loop. A unit without fish shows its values with no limit. Each value says which sampling point it was taken at; the water of a unit is that of its middle point.{% endblocktrans %}</p>

@@ -54,7 +54,9 @@ class BoundsTests(AlarmsCase):
                  (SeverityPolicy, {'escalation_minutes': 0}, {'severity': 'warning'}),
                  (SeverityPolicy, {'escalation_minutes': 1441}, {'severity': 'warning'}),
                  (SeverityPolicy, {'delivery_attempts': 0}, {'severity': 'warning'}),
-                 (SeverityPolicy, {'delivery_attempts': 21}, {'severity': 'warning'})]
+                 (SeverityPolicy, {'delivery_attempts': 21}, {'severity': 'warning'}),
+                 (SeverityPolicy, {'retry_seconds': 0}, {'severity': 'warning'}),
+                 (SeverityPolicy, {'retry_seconds': 3601}, {'severity': 'critical'})]
         for model, values, where in cases:
             with self.subTest(values=values), self.assertRaises(IntegrityError), transaction.atomic():
                 model.objects.filter(**where).update(**values)
@@ -93,11 +95,12 @@ class PageTests(AlarmsCase):
         policy = SeverityPolicy.objects.get(severity='warning')
         self.client.post(reverse('alarms:severitypolicy_edit', args=[policy.pk]), {
             'on_delay_seconds': '60', 'off_delay_seconds': '45', 'escalation_minutes': '20', 'delivery_attempts': '3',
+            'retry_seconds': '90', 'shelve_max_minutes': '120', 'flood_count': '4', 'flood_window_seconds': '60', 'follow_up_seconds': '0',
             'clock_skew_seconds': '90', 'clock_skew_deadband_seconds': '15', 'clock_behind_window_seconds': '600',
             'version': policy.version})
         policy.refresh_from_db()
         self.assertEqual((policy.on_delay_seconds, policy.off_delay_seconds, policy.escalation_minutes,
-                          policy.delivery_attempts), (60, 45, 20, 3))
+                          policy.delivery_attempts, policy.retry_seconds), (60, 45, 20, 3, 90))
         entry = AuditLog.objects.get(entity_type='alarm severity rule', action='update')
         self.assertEqual(entry.changes['Raise after (seconds)'], ['30', '60'])
         self.assertContains(self.client.get(reverse('alarms:severitypolicy_list')), '60')

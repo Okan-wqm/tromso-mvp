@@ -96,6 +96,10 @@ class HeartbeatRuleTests(AlarmsCase):
 SCANNED = ['alarms/*.py', 'farm/water/evaluate.py', 'farm/water/freshness.py', 'sensors/clock.py']
 NAMED = {
     ('alarms/engine.py', 'LOCK'): "the advisory lock's key: an identity, not a threshold",
+    ('alarms/worker.py', 'LOCK'): "the worker's session lock's key: an identity, not a threshold",
+    ('alarms/worker.py', 'MS'): 'milliseconds in a second: a unit, not a threshold',
+    ('alarms/worker.py', 'KEEPALIVE'): "shares of the worker's own stale_after (settings.ALARM_WORKER, the "
+                                       "deployment's): how fast a dead worker's lock is let go, not a farm rule",
     ('alarms/models.py', 'LEVEL_BOUNDS'): 'the escalation levels a rule may name (0 to 9): a schema limit of the rule '
                                           'rows, checked by the database, not a value in force',
     ('alarms/models.py', 'DELAY_BOUNDS'): "the refusal of nonsense of a clear delay (§7c), never the delay in force",
@@ -104,6 +108,19 @@ NAMED = {
     ('alarms/models.py', 'ESCALATION_BOUNDS'): 'the refusal of unsafe escalation times per severity (cross review F9), '
                                                'never the time in force',
     ('alarms/models.py', 'ATTEMPTS_BOUNDS'): 'the refusal of nonsense of delivery attempts (§7c)',
+    ('alarms/models.py', 'RETRY_BOUNDS'): 'the refusal of nonsense of a retry time (a second to an hour), never the '
+                                          'time in force',
+    ('alarms/models.py', 'SHELVE_BOUNDS'): 'the refusal of unsafe snoozes per severity (a critical alarm untold for at '
+                                           'most 8 h), never the longest in force',
+    ('alarms/models.py', 'FLOOD_COUNT_BOUNDS'): 'the refusal of nonsense of a flood count, never the count in force',
+    ('alarms/models.py', 'FLOOD_WINDOW_BOUNDS'): 'the refusal of nonsense of a flood window, never the window in force',
+    ('alarms/models.py', 'FOLLOW_UP_BOUNDS'): "the bound on a critical's follow-up (at most 8 s, inside the owner's "
+                                              '10 s), never the time in force',
+    ('alarms/outbox.py', 'GIVE_UP_CHUNK'): "how many cleared warnings a round gives up after its sending (about 100 "
+                                           "ms of work): a bound on a round's time, not a farm rule",
+    ('alarms/outbox.py', 'SUMMARY_AFTER'): "the coordinator's 24 h after which cleared criticals not yet sent go as one "
+                                           'summary: a bound on what is told one by one, not a farm rule',
+    ('alarms/outbox.py', 'CLAIM'): "the advisory lock class of a notification being sent: an identity, not a threshold",
     ('alarms/models.py', 'CLOCK_SKEW_BOUNDS'): "the refusal of nonsense of a device clock limit: at most the ingest "
                                                "contract's hour",
     ('alarms/models.py', 'CLOCK_WINDOW_BOUNDS'): 'the refusal of nonsense of a device clock window (none to an hour), '

@@ -65,7 +65,7 @@
 .ui-btn[data-variant="link"] { min-height: auto; padding: 0; border: 0; background: none; color: var(--action); text-decoration: underline; text-underline-offset: 3px; }
 .ui-btn[data-size="coarse"] { min-height: var(--control-h-coarse); }
 .ui-btn[data-size="coarse"][data-variant="primary"] { min-height: var(--primary-h-coarse); padding: 0 var(--space-5); }
-:is(.ui-btn, .button, .filter-button):is(:disabled, [disabled], [aria-disabled="true"]) { opacity: .5; cursor: not-allowed; }
+:is(.ui-btn, .button, .filter-button):is(:disabled, [disabled], [aria-disabled="true"]):not([data-pending], [aria-busy="true"]) { opacity: .5; cursor: not-allowed; }
 /* a pressed toggle (a filter's choice) */
 :is(.ui-btn, .filter-button)[aria-pressed="true"] { border-color: var(--action); background: var(--action-tint); color: var(--action); }
 @media (pointer: coarse) { :is(.ui-btn, .button, .filter-button) { min-height: var(--control-h-coarse); } }
@@ -352,11 +352,13 @@
 [data-ui="next"] .ui-btn[data-variant="ghost"]:hover { background: var(--action-tint); color: var(--action); }
 [data-ui="next"] .ui-btn[data-variant="danger-text"] { padding: 0 var(--space-2); border-color: transparent; color: var(--crit-text); }
 [data-ui="next"] .ui-btn[data-variant="danger-text"]:hover { background: var(--crit-tint); color: var(--crit-text); }
-[data-ui="next"] :is(.ui-btn, .button, .filter-button):is(:disabled, [disabled], [aria-disabled="true"]) { opacity: .45; }
+[data-ui="next"] :is(.ui-btn, .button, .filter-button):is(:disabled, [disabled], [aria-disabled="true"]):not([data-pending], [aria-busy="true"]) { opacity: .45; }
 [data-ui="next"] .ui-btn[data-size="coarse"] { min-height: calc(var(--h) + 8px); }
 .ui-btn[data-variant="ghost"] { border-color: transparent; background: none; color: var(--action); }
 .ui-btn[data-variant="danger-text"] { border-color: transparent; background: none; color: var(--crit-text); }
-/* busy: React Aria marks a pending button data-pending (aria-disabled, the press refused); a server-rendered one says aria-busy */
+/* busy: React Aria marks a pending button data-pending (aria-disabled, the press refused); a server-rendered one says
+   aria-busy. Its label is the only progress text, so it keeps full contrast (no disabled fade, review M6): the turning
+   ring says busy, the cursor too. */
 :is(.ui-btn[data-pending], .ui-btn[aria-busy="true"]) { cursor: progress; }
 /* React Aria's one press rule, here instead of the <style> it would add to the page (frontend/islands/ui/mount.tsx) */
 [data-react-aria-pressable] { touch-action: pan-x pan-y pinch-zoom; }
@@ -438,6 +440,10 @@
 .ui-table tr[data-status="critical"] > :first-child { box-shadow: var(--edge-crit); }
 .ui-table tr[data-status="warning"] > :first-child { box-shadow: var(--edge-warn); }
 .ui-table tr[data-voided] > * { opacity: .6; }
+.ui-row-status { display: inline-flex; vertical-align: -2px; margin-right: var(--space-1); }
+.ui-row-status .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 2; }
+tr[data-status="critical"] .ui-row-status { color: var(--crit); }
+tr[data-status="warning"] .ui-row-status { color: var(--warn); }
 .ui-cell-sub { display: block; color: var(--text-3); font-size: var(--fs-small); font-weight: 400; white-space: normal; }
 .ui-cell-strong { font-weight: 600; }
 .ui-table :is(th, td).ui-actions { position: sticky; right: 0; padding-top: var(--space-1); padding-bottom: var(--space-1); background: var(--plate, var(--surface-sheet)); box-shadow: -1px 0 0 var(--line-hair); vertical-align: middle; }
@@ -562,4 +568,7 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-chart-key > span { color: var(--text-2); }
 .ui-chart-empty { margin: 0; padding: var(--space-5) var(--space-4); }
 .ui-series { min-height: 160px; }
+.ui-series .u-select { background: color-mix(in srgb, var(--action) 18%, transparent); }
+.ui-series .uplot :is(.u-cursor-x, .u-cursor-y) { border-color: var(--line-control); }
+.ui-series .uplot { font-family: var(--font-text); }
 .ui-chart-caption { margin-top: auto; padding: 6px 14px 10px; color: var(--text-2); font-size: var(--fs-caption); text-wrap: pretty; }

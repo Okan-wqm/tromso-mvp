@@ -5,6 +5,8 @@
 // foot) comes from the server.
 import type { ReactNode } from 'react';
 
+import { Icon } from './Icon.js';
+
 export interface Column<Row> {
   key: string;
   label: ReactNode;
@@ -21,6 +23,8 @@ export interface TableProps<Row> {
   rows: Row[];
   rowKey: (row: Row) => string;
   rowStatus?: (row: Row) => 'critical' | 'warning' | undefined;
+  /** the words of a row's status, read before its first cell (with rowStatus: its glyph is drawn there too) */
+  statusLabels?: { critical: string; warning: string };
   rowVoided?: (row: Row) => boolean;
   actions?: (row: Row) => ReactNode;
   /** the head of the actions column, for a screen reader ("Actions") */
@@ -34,7 +38,7 @@ function cellText<Row>(column: Column<Row>, row: Row): ReactNode {
   return value === null || value === undefined ? '' : String(value);
 }
 
-export function Table<Row>({ label, columns, rows, rowKey, rowStatus, rowVoided, actions, actionsLabel, foot }: TableProps<Row>) {
+export function Table<Row>({ label, columns, rows, rowKey, rowStatus, statusLabels, rowVoided, actions, actionsLabel, foot }: TableProps<Row>) {
   return (
     <>
       <div className="ui-table-wrap" tabIndex={0} role="region" aria-label={label}>
@@ -48,10 +52,16 @@ export function Table<Row>({ label, columns, rows, rowKey, rowStatus, rowVoided,
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={rowKey(row)} data-status={rowStatus?.(row)} data-voided={rowVoided?.(row) ? '' : undefined}>
-                {columns.map((column) => {
-                  const content = cellText(column, row);
+            {rows.map((row) => {
+              const status = rowStatus?.(row);
+              return (
+              <tr key={rowKey(row)} data-status={status} data-voided={rowVoided?.(row) ? '' : undefined}>
+                {columns.map((column, index) => {
+                  const marked = index === 0 && status ? (
+                    <span className="ui-row-status"><Icon name={status === 'critical' ? 'octagon' : 'alert'} />
+                      {statusLabels ? <span className="sr-only">{statusLabels[status]}: </span> : null}</span>
+                  ) : null;
+                  const content = <>{marked}{cellText(column, row)}</>;
                   const className = column.numeric ? 'num' : undefined;
                   return column.rowHeader
                     ? <th key={column.key} scope="row" className={className}>{content}</th>
@@ -59,7 +69,8 @@ export function Table<Row>({ label, columns, rows, rowKey, rowStatus, rowVoided,
                 })}
                 {actions ? <td className="ui-actions"><div className="ui-row-actions">{actions(row)}</div></td> : null}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

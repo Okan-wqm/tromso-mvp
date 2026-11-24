@@ -43,14 +43,18 @@ export function SeriesChart({ times, series, unit, emptyLabel, height = 220 }: S
     if (!element || empty) return undefined;
     const ink = role(element, '--chart-tick-ink');
     const grid = role(element, '--chart-grid');
+    // the canvas's text in the product's face at the chart steps (--fs-chart-tick, --fs-chart-axis), not uPlot's system font
+    const face = role(element, '--font-text');
+    const tick = `${role(element, '--fs-chart-tick')} ${face}`;
+    const axis = `600 ${role(element, '--fs-chart-axis')} ${face}`;
     const chart = new uPlot({
       width: Math.max(element.clientWidth, 200),
       height,
       legend: { show: false },
       cursor: { drag: { x: true, y: false } },
       axes: [
-        { stroke: ink, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 } },
-        { stroke: ink, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 }, label: unit },
+        { stroke: ink, font: tick, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 } },
+        { stroke: ink, font: tick, labelFont: axis, grid: { stroke: grid, width: 1 }, ticks: { stroke: grid, width: 1 }, label: unit },
       ],
       series: [
         {},

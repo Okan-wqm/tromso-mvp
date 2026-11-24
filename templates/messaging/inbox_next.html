@@ -1,0 +1,58 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Messages in the new look (messaging.views.inbox and conversation behind ?ui=next): the classic page's two panes
+   (messaging/inbox.html, the same context) as two plates, the conversations beside the open one. The list and the open
+   conversation's new messages are the classic fragments the poll renders again (_conversation_list.html, _messages.html,
+   frontend/poll.ts): one poll, one markup. New message, New channel, Members and a message's delete open their own
+   pages, never the classic dialog. {% endcomment %}
+{% block title %}{% if conversation %}{{ heading }} · {% endif %}{{ title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% asset 'css/messages.css' %}">{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<div class="ui-toolbar">
+  <a class="ui-btn" data-variant="primary" href="{% url 'messaging:start' %}">{% include "icons/_icon.html" with name="plus" %}{% trans "New message" %}</a>
+  {% if may_create_channel %}<a class="ui-btn" href="{% url 'messaging:create_channel' %}">{% include "icons/_icon.html" with name="hash" %}{% trans "New channel" %}</a>{% endif %}
+</div>
+<div class="ui-plates">
+  <section class="ui-plate" data-span="4" aria-labelledby="conversations-title">
+    <div class="ui-plate-head"><h2 class="ui-plate-title" id="conversations-title">{% trans "Conversations" %}</h2></div>
+    <div class="chat-list" data-poll="{{ list_url }}" data-poll-every="{{ poll_list }}">{% include "messaging/_conversation_list.html" %}</div>
+  </section>
+
+  <section class="ui-plate" data-span="8" aria-labelledby="pane-title">
+    {% if conversation %}
+    <div class="ui-plate-head">
+      <h2 class="ui-plate-title" id="pane-title">{% if conversation.is_channel %}<span aria-hidden="true">#</span>{% endif %}{{ heading }}</h2>
+      <span class="ui-plate-meta">{% if conversation.is_channel %}{% blocktrans trimmed count count=members|length %}{{ count }} member{% plural %}{{ count }} members{% endblocktrans %}{% else %}{% trans "Direct conversation" %}{% endif %}</span>
+      {% if conversation.is_channel %}<a class="ui-plate-link" href="{% url 'messaging:members' conversation.pk %}">{% trans "Members" %}</a>{% endif %}
+    </div>
+    <div class="ui-plate-body"><a href="{% url 'messaging:inbox' %}">{% trans "All conversations" %}</a></div>
+    <ol class="chat-messages" {% if poll_url %}data-poll="{{ poll_url }}" data-poll-every="{{ poll_messages }}" data-poll-append {% endif %}data-scroll-end aria-live="polite">
+      {% if earlier_url %}<li class="chat-more"><a href="{{ earlier_url }}">{% trans "Show earlier messages" %}</a></li>{% endif %}
+      {% include "messaging/_messages.html" %}
+      {% if not shown %}<li class="chat-empty">{% trans "No messages yet: write the first one." %}</li>{% endif %}
+    </ol>
+    {% if latest_url %}<div class="ui-plate-body"><a href="{{ latest_url }}">{% trans "Back to the latest messages" %}</a></div>{% endif %}
+    <div class="ui-plate-body">
+      <form method="post" action="{% url 'messaging:post' conversation.pk %}" id="latest" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="ui-notice" data-tone="critical" role="alert">{% include "icons/_icon.html" with name="octagon" %}<div class="ui-notice-body">{{ form.non_field_errors }}</div></div>{% endif %}
+        <div class="field{% if form.body.errors %} has-error{% endif %}">
+          <label class="sr-only" for="{{ form.body.id_for_label }}">{{ form.body.label }}</label>
+          {{ form.body }}
+          {{ form.body.errors }}
+        </div>
+        <div class="ui-form-actions"><span class="ui-cell-sub">{% trans "Enter sends, Shift+Enter starts a new line." %}</span><button type="submit" class="ui-btn" data-variant="primary">{% include "icons/_icon.html" with name="send" %}{% trans "Send" %}</button></div>
+      </form>
+    </div>
+    {% else %}
+    <h2 class="sr-only" id="pane-title">{% trans "Conversation" %}</h2>
+    <div class="ui-empty">
+      <p class="ui-empty-title">{% trans "Choose a conversation" %}</p>
+      <p class="ui-empty-text">{% trans "Or start one: New message writes to one person, a channel to a group." %}</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

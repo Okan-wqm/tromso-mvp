@@ -3,10 +3,10 @@ from urllib.parse import urlencode
 
 from django.db.models import Exists, OuterRef
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
-from core import audit
+from core import audit, listprops as L
 from core.crud import Resource, RowList, filter_by
 from core.dates import company_zone
 from farm.health.read import with_deaths
@@ -103,6 +103,38 @@ class OpenQuestionResource(Resource):
             chosen = ''
         return objects, {'statuses': QuestionStatus.choices, 'chosen_status': chosen}
 
+    # The new look (core/listprops.py): the classic list's words (reports/open_question_list.html), its rows as the island's.
+    search_placeholder = _('Search by number, question or answer')
+    empty_text = _('No question for the authority is recorded.')
+    STATUS_CHIPS = {QuestionStatus.OPEN: 'accent', QuestionStatus.ANSWERED: 'ok'}
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']])]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        day = lambda value: formats.date_format(value, 'DATE_FORMAT')     # noqa: E731
+        return {
+            'notices': [L.notice('unverified', 'neutral', _(
+                'What only the authority can answer, and on which a rule of a report rests. Until a question is answered '
+                'the rule is unverified: the report says so when it is filed. Send the questions, write down who asked '
+                'and when, and record the answer here.'))],
+            'columns': [L.column('number', _('Number')), L.column('question', _('Question')),
+                        L.column('authority', _('Asked of')), L.column('affects', _('The report rule it affects')),
+                        L.column('status', _('Status')), L.column('asked', _('Asked')), L.column('answer', _('Answer'))],
+            'rows': [L.row(question.pk, {
+                'number': L.title(view, context, question, question.code),
+                'question': L.cell(question.question),
+                'authority': L.cell(question.authority),
+                'affects': L.cell(question.affects),
+                'status': L.cell(chip=L.chip(cls.STATUS_CHIPS.get(question.status, 'neutral'),
+                                             question.get_status_display())),
+                'asked': L.cell(day(question.asked_on) if question.asked_on else '—', sub=[question.asked_by]),
+                'answer': L.cell(question.answer or '—',
+                                 sub=[day(question.answered_on)] if question.answered_on else []),
+            }, L.edit_delete(view, context, question, question.code)) for question in objects]}
+
 
 class ReportResource(Resource):
     """Production › Reports › Regulatory reports: the reports and notices the farm files with the authorities. A
@@ -115,6 +147,8 @@ class ReportResource(Resource):
     url_prefix = 'reports'
     list_template = 'reports/report_list.html'
     detail_template = 'reports/report_detail.html'
+    # The new look: the same context drawn by the server (every kind, its notices, its due list and its reports)
+    list_template_next = 'reports/report_list_next.html'
     form_template = 'reports/report_form.html'
     icon = 'file-text'
     page_size = 50

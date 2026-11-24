@@ -1,0 +1,255 @@
+{% extends base_template %}
+{% load i18n inventory feeding dates %}
+{% comment %} Operations › Storage in the new look (inventory.views.storage behind ?ui=next): the classic page's four tabs,
+   their filters, warnings, tables and actions (inventory/storage.html and its parts, the same context and the same reads of
+   inventory/read.py), drawn by the server with the design system's classes. Every action is the classic page's address,
+   opened as a page, never the classic dialog. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+<nav class="ui-tabs" aria-label="{{ title }}">
+  {% for item in tabs %}<a class="ui-tab" href="{{ item.url }}"{% if item.current %} aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
+</nav>
+{% if actions %}
+<div class="ui-toolbar">
+  {% for action in actions %}<a class="ui-btn"{% if action.primary %} data-variant="primary"{% endif %} href="{{ action.url }}">{% if action.primary %}{% include "icons/_icon.html" with name="plus" %}{% endif %}{{ action.label }}</a>{% endfor %}
+</div>
+{% endif %}
+
+{% if tab == "overview" %}{% with summary as s %}
+{% for row in s.undelivered %}
+<div class="ui-notice" data-tone="warning" role="status">{% include "icons/_icon.html" with name="alert" %}<div class="ui-notice-body">{% blocktrans trimmed with kilos=row.kilos|quantity feed=row.feed site=row.site.name date=row.since|date:"DATE_FORMAT" %}{{ kilos }} of {{ feed }} fed at {{ site }} since {{ date }}, and none of it was ever delivered to the store: the store is {{ kilos }} short of it. Record its delivery, dated on or before that day.{% endblocktrans %} <a href="{{ feeding_url }}?feed={{ row.feed.pk }}">{% trans "See the feedings" %}</a></div></div>
+{% endfor %}
+{% if not s.site_items and not s.low %}
+<div class="ui-empty"><p class="ui-empty-title">{% trans "Nothing in the store yet" %}</p><p class="ui-empty-text">{% trans "Record a delivery to put feed into a storage location (Company › Facility › Storage locations). The feed fed is read from the feeding records." %}</p></div>
+{% else %}
+{% for record in s.site_items %}{% if record.uncovered %}
+<div class="ui-notice" data-tone="warning" role="status">{% include "icons/_icon.html" with name="alert" %}<div class="ui-notice-body">{% blocktrans trimmed with kilos=record.uncovered|quantity item=record.item site=record.site.name date=record.uncovered_since|date:"DATE_FORMAT" %}{{ kilos }} of {{ item }} fed at {{ site }} beyond the recorded stock since {{ date }}: record the missing delivery, dated on or before that day.{% endblocktrans %} <a href="{% url 'inventory:item' record.item.pk %}?site={{ record.site.pk }}">{% trans "See the day-by-day book" %}</a></div></div>
+{% endif %}{% if record.expired_used %}
+<div class="ui-notice" data-tone="warning" role="status">{% include "icons/_icon.html" with name="alert" %}<div class="ui-notice-body">{% blocktrans trimmed with kilos=record.expired_used|quantity item=record.item site=record.site.name %}The book says {{ kilos }} of {{ item }} of an expired lot were fed at {{ site }}.{% endblocktrans %}</div></div>
+{% endif %}{% endfor %}
+<div class="ui-plates">
+{% if s.low %}
+<section class="ui-plate" data-span="12" aria-labelledby="low-title">
+  <div class="ui-plate-head"><h2 class="ui-plate-title" id="low-title">{% trans "Low stock" %}</h2></div>
+  <ul class="ui-list" role="list">{% for location, item, held, level in s.low %}<li class="ui-list-item" data-status="warning"><span class="ui-list-main"><span>{% blocktrans trimmed with location=location.code site=location.site.name held=held|quantity:item.get_unit_display level=level|quantity:item.get_unit_display %}{{ item }} in {{ location }} ({{ site }}): {{ held }}, below the reorder level of {{ level }}.{% endblocktrans %}</span></span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+<section class="ui-plate" data-span="{% if s.values %}8{% else %}12{% endif %}" aria-labelledby="on-hand-title">
+  <div class="ui-plate-head"><h2 class="ui-plate-title" id="on-hand-title">{% trans "On hand per site" %}</h2></div>
+  <div class="ui-table-wrap" tabindex="0" role="region" aria-labelledby="on-hand-title">
+    <table class="ui-table">
+      <thead><tr><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Item" %}</th><th scope="col" class="num">{% trans "On hand" %}</th><th scope="col" class="num">{% trans "Fed, last 7 days" %}</th><th scope="col" class="num">{% trans "Days of cover" %}</th></tr></thead>
+      <tbody>
+        {% for record in s.site_items %}
+        <tr>
+          <th scope="row">{{ record.site.name }}</th>
+          <td><a href="{% url 'inventory:item' record.item.pk %}?site={{ record.site.pk }}">{{ record.item }}</a></td>
+          <td class="num">{{ record.on_hand|quantity:record.item.get_unit_display }}</td>
+          <td class="num">{% if record.fed_week %}{{ record.fed_week|quantity }}{% else %}—{% endif %}</td>
+          <td class="num">{{ record.cover_days|days }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="ui-table-foot">{% trans "Days of cover: what is on hand at the site divided by the kilos fed a day there over the last 7 days." %}</div>
+</section>
+{% if s.values %}
+<section class="ui-plate" data-span="4" aria-labelledby="value-title">
+  <div class="ui-plate-head"><h2 class="ui-plate-title" id="value-title">{% trans "Value on hand" %}</h2></div>
+  <ul class="ui-list" role="list">{% for site, money in s.values.items %}<li class="ui-list-item"><span class="ui-list-main"><span>{{ site.name }}: {% for currency, value in money.items %}{% if not forloop.first %} · {% endif %}{{ value|money:currency }}{% endfor %}</span></span></li>{% endfor %}</ul>
+  <div class="ui-table-foot">{% trans "On hand times what each lot cost when it was delivered, per currency; lots delivered without a cost are not counted." %}</div>
+</section>
+{% endif %}
+{% if s.over %}
+<section class="ui-plate" data-span="12" aria-labelledby="over-title">
+  <div class="ui-plate-head"><h2 class="ui-plate-title" id="over-title">{% trans "Over capacity" %}</h2></div>
+  <ul class="ui-list" role="list">{% for location, held, capacity in s.over %}<li class="ui-list-item" data-status="warning"><span class="ui-list-main"><span>{% blocktrans trimmed with location=location.code site=location.site.name held=held|quantity:location.get_capacity_unit_display capacity=capacity|quantity:location.get_capacity_unit_display %}{{ location }} ({{ site }}) holds {{ held }}, above its capacity of {{ capacity }}.{% endblocktrans %}</span></span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if s.expired %}
+<section class="ui-plate" data-span="12" aria-labelledby="expired-title">
+  <div class="ui-plate-head"><h2 class="ui-plate-title" id="expired-title">{% trans "Expired lots with stock" %}</h2></div>
+  <ul class="ui-list" role="list">{% for row in s.expired %}<li class="ui-list-item" data-status="critical"><span class="ui-list-main"><span><a href="{% url 'inventory:lot' row.lot.pk %}">{{ row.item }} · {{ row.lot }}</a> {% blocktrans trimmed with location=row.location.code date=row.lot.expiry_date|date:"DATE_FORMAT" held=row.quantity|quantity:row.item.get_unit_display %}in {{ location }}: {{ held }}, expired on {{ date }}.{% endblocktrans %}</span></span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if s.expiring %}
+<section class="ui-plate" data-span="12" aria-labelledby="expiring-title">
+  <div class="ui-plate-head"><h2 class="ui-plate-title" id="expiring-title">{% trans "Expiring within 30 days" %}</h2></div>
+  <ul class="ui-list" role="list">{% for row in s.expiring %}<li class="ui-list-item" data-status="warning"><span class="ui-list-main"><span><a href="{% url 'inventory:lot' row.lot.pk %}">{{ row.item }} · {{ row.lot }}</a> {% blocktrans trimmed with location=row.location.code date=row.lot.expiry_date|date:"DATE_FORMAT" held=row.quantity|quantity:row.item.get_unit_display %}in {{ location }}: {{ held }}, expires on {{ date }}.{% endblocktrans %}</span></span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+</div>
+{% endif %}
+{% endwith %}
+
+{% elif tab == "stock" %}
+<div class="ui-toolbar">
+  <form method="get" role="search" aria-label="{{ title }}" class="ui-list-filters" data-omit-empty>
+    <input type="hidden" name="tab" value="stock">
+    <label><span class="sr-only">{% trans "Site" %}</span><select name="site">
+      <option value="">{% trans "All sites" %}</option>
+      {% for site in sites %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+    </select></label>
+    <label><span class="sr-only">{% trans "Location" %}</span><select name="location">
+      <option value="">{% trans "All locations" %}</option>
+      {% for location in locations %}<option value="{{ location.pk }}"{% if params.location == location.pk|stringformat:"s" %} selected{% endif %}>{{ location.code }} · {{ location.name }}</option>{% endfor %}
+    </select></label>
+    <label><span class="sr-only">{% trans "Item" %}</span><select name="item">
+      <option value="">{% trans "All items" %}</option>
+      {% for item in items %}<option value="{{ item.pk }}"{% if params.item == item.pk|stringformat:"s" %} selected{% endif %}>{{ item }}</option>{% endfor %}
+    </select></label>
+    <label class="ui-check"><input type="checkbox" name="empty" value="1"{% if params.empty %} checked{% endif %}> {% trans "Show empty" %}</label>
+    <button type="submit" class="ui-btn">{% include "icons/_icon.html" with name="search" %}{% trans "Filter" %}</button>
+  </form>
+</div>
+{% if not rows %}
+<div class="ui-empty">
+  {% if filtered %}<p class="ui-empty-title">{% trans "Nothing in stock matches these filters." %}</p><p class="ui-empty-text"><a href="?tab=stock">{% trans "Clear filters" %}</a></p>
+  {% else %}<p class="ui-empty-title">{% trans "Nothing in stock" %}</p><p class="ui-empty-text">{% trans "A delivery puts stock into a location." %}</p>{% endif %}
+</div>
+{% else %}
+<div class="ui-plates">
+<section class="ui-plate" data-span="12" aria-label="{{ title }}">
+  <div class="ui-table-wrap" tabindex="0" role="region" aria-label="{{ title }}">
+    <table class="ui-table">
+      <thead><tr><th scope="col">{% trans "Location" %}</th><th scope="col">{% trans "Item" %}</th><th scope="col">{% trans "Lot" %}</th><th scope="col">{% trans "Expiry date" %}</th><th scope="col" class="num">{% trans "On hand" %}</th><th scope="col">{% trans "Last movement" %}</th><th scope="col" class="num">{% trans "Value" %}</th><th scope="col" class="ui-actions"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+      <tbody>
+        {% for row in rows %}{% with bucket=row.bucket %}
+        <tr{% if row.expired %} data-status="critical"{% endif %}>
+          <th scope="row"><span class="ui-cell-strong">{{ bucket.location.code }}</span><span class="ui-cell-sub">{{ bucket.location.name }} · {{ bucket.site.name }}</span></th>
+          <td><a href="{{ row.item_url }}">{{ bucket.item }}</a></td>
+          <td><a href="{{ row.lot_url }}">{{ bucket.lot }}</a></td>
+          <td class="nowrap">{% if bucket.lot.expiry_date %}{{ bucket.lot.expiry_date|date:"DATE_FORMAT" }}{% if row.expired %} {% trans "Expired" as expired %}{% include "ui/_chip.html" with kind="critical" text=expired %}{% endif %}{% else %}—{% endif %}</td>
+          <td class="num">{{ bucket.quantity|quantity:bucket.item.get_unit_display }}</td>
+          <td class="nowrap">{% if bucket.last_movement %}{{ bucket.last_movement|date:"DATE_FORMAT" }}{% else %}—{% endif %}</td>
+          <td class="num">{% if bucket.value is not None %}{{ bucket.value|money:bucket.cost.1 }}{% else %}—{% endif %}</td>
+          <td class="ui-actions"><div class="ui-row-actions">{% for url, label in row.actions %}<a class="ui-btn" data-variant="link" href="{{ url }}">{{ label }}</a>{% endfor %}</div></td>
+        </tr>
+        {% endwith %}{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<section class="ui-plate" data-span="12" aria-labelledby="totals-title">
+  <div class="ui-plate-head"><h2 class="ui-plate-title" id="totals-title">{% trans "Totals per site and item" %}</h2></div>
+  <ul class="ui-list" role="list">{% for total in totals %}<li class="ui-list-item"><span class="ui-list-main"><span>{{ total.site.name }} · {{ total.item }}: {{ total.quantity|quantity:total.item.get_unit_display }}</span></span></li>{% endfor %}</ul>
+</section>
+</div>
+{% endif %}
+
+{% elif tab == "movements" %}
+<div class="ui-toolbar">
+  <form method="get" role="search" aria-label="{{ title }}" class="ui-list-filters" data-omit-empty>
+    <input type="hidden" name="tab" value="movements">
+    <label><span class="sr-only">{% trans "Site" %}</span><select name="site">
+      <option value="">{% trans "All sites" %}</option>
+      {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
+    </select></label>
+    <label><span class="sr-only">{% trans "Location" %}</span><select name="location">
+      <option value="">{% trans "All locations" %}</option>
+      {% for location in choices.location %}<option value="{{ location.pk }}"{% if params.location == location.pk|stringformat:"s" %} selected{% endif %}>{{ location.code }} · {{ location.name }}</option>{% endfor %}
+    </select></label>
+    <label><span class="sr-only">{% trans "Operation" %}</span><select name="kind">
+      <option value="">{% trans "All operations" %}</option>
+      {% for value, label in kinds %}<option value="{{ value }}"{% if params.kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></label>
+    <label><span class="sr-only">{% trans "Item" %}</span><select name="item">
+      <option value="">{% trans "All items" %}</option>
+      {% for item in choices.item %}<option value="{{ item.pk }}"{% if params.item == item.pk|stringformat:"s" %} selected{% endif %}>{{ item }}</option>{% endfor %}
+    </select></label>
+    <label><span class="sr-only">{% trans "Supplier" %}</span><select name="supplier">
+      <option value="">{% trans "All suppliers" %}</option>
+      {% for supplier in choices.supplier %}<option value="{{ supplier.pk }}"{% if params.supplier == supplier.pk|stringformat:"s" %} selected{% endif %}>{{ supplier }}</option>{% endfor %}
+    </select></label>
+    <label>{% trans "From" %} {% day_input "from" params.from %}</label>
+    <label>{% trans "To" %} {% day_input "to" params.to %}</label>
+    <label class="ui-check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %}> {% trans "Show voided" %}</label>
+    <button type="submit" class="ui-btn">{% include "icons/_icon.html" with name="search" %}{% trans "Filter" %}</button>
+  </form>
+</div>
+{% if feeding_rows is not None %}
+{% if not feeding_rows %}
+<div class="ui-empty"><p class="ui-empty-title">{% trans "No feeding recorded for these filters." %}</p></div>
+{% else %}
+<div class="ui-plates">
+<section class="ui-plate" data-span="12" aria-label="{{ title }}">
+  <div class="ui-plate-body"><p class="ui-cell-sub">{% trans "The feed given, read from the feeding records: the store's book draws it from the site's lots, first expired first out." %}</p></div>
+  <div class="ui-table-wrap" tabindex="0" role="region" aria-label="{{ title }}">
+    <table class="ui-table">
+      <thead><tr><th scope="col">{% trans "Date" %}</th><th scope="col">{% trans "Site" %}</th><th scope="col">{% trans "Feed" %}</th><th scope="col" class="num">{% trans "Feed given" %}</th><th scope="col" class="ui-actions"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+      <tbody>
+        {% for row in feeding_rows %}<tr><th scope="row" class="nowrap">{{ row.date|date:"DATE_FORMAT" }}</th><td>{{ row.site.name }}</td><td>{{ row.feed }}</td><td class="num">{{ row.kilos|feed_kg }}</td><td class="ui-actions"><a href="{{ row.url }}">{% trans "Feeding records" %}</a></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+</div>
+{% endif %}
+{% elif not operations %}
+<div class="ui-empty">
+  {% if filtered %}<p class="ui-empty-title">{% trans "No operation matches these filters." %}</p><p class="ui-empty-text"><a href="?tab=movements">{% trans "Clear filters" %}</a></p>
+  {% else %}<p class="ui-empty-title">{% trans "No operation recorded yet" %}</p>{% endif %}
+</div>
+{% else %}
+<div class="ui-plates">
+<section class="ui-plate" data-span="12" aria-label="{{ title }}">
+  <div class="ui-table-wrap" tabindex="0" role="region" aria-label="{{ title }}">
+    <table class="ui-table">
+      <thead><tr><th scope="col">{% trans "Date" %}</th><th scope="col">{% trans "Operation" %}</th><th scope="col">{% trans "Lines" %}</th><th scope="col">{% trans "Supplier" %}</th><th scope="col">{% trans "Recorded by" %}</th><th scope="col">{% trans "Notes" %}</th><th scope="col" class="ui-actions"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
+      <tbody>
+        {% for row in operations %}{% with operation=row.operation %}
+        <tr{% if operation.is_deleted %} data-voided=""{% endif %}>
+          <th scope="row" class="nowrap">{{ operation.date|date:"DATE_FORMAT" }}</th>
+          <td>{{ operation.get_kind_display }}{% if operation.reason %}<span class="ui-cell-sub">{{ operation.reason_label }}</span>{% endif %}{% if operation.location %}<span class="ui-cell-sub">{{ operation.location.code }}</span>{% endif %}</td>
+          <td>{% for line in row.lines %}<span class="ui-cell-sub">{% include "inventory/_line.html" %}</span>{% empty %}<span class="ui-cell-sub">{% trans "Nothing found" %}</span>{% endfor %}</td>
+          <td>{{ operation.supplier|default:"—" }}{% if operation.reference %}<span class="ui-cell-sub">{{ operation.reference }}</span>{% endif %}</td>
+          <td>{{ operation.created_by.get_username|default:"system" }}<span class="ui-cell-sub">{{ operation.created_at|company_clock|date:"DATETIME_FORMAT" }}</span></td>
+          <td>{{ operation.notes }}{% if operation.is_deleted %}<span class="ui-cell-sub">{% blocktrans trimmed with reason=operation.void_reason name=operation.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+          <td class="ui-actions">{% if row.void_url %}<a class="ui-btn" data-variant="link" href="{{ row.void_url }}">{% trans "Void" %}</a>{% elif operation.is_deleted %}{% trans "Voided" as voided %}{% include "ui/_chip.html" with kind="neutral" text=voided %}{% endif %}</td>
+        </tr>
+        {% endwith %}{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+</section>
+</div>
+{% endif %}
+
+{% else %}
+{% if count_url %}<div class="ui-toolbar"><a class="ui-btn" href="{{ count_url }}">{% include "icons/_icon.html" with name="plus" %}{% trans "Count a location" %}</a></div>{% endif %}
+{% if not counts %}
+<div class="ui-empty">
+  <p class="ui-empty-title">{% trans "No count recorded yet" %}</p>
+  <p class="ui-empty-text">{% trans "A count sets what a location holds at the end of its day; the difference from the book is shown here." %}</p>
+</div>
+{% else %}
+<div class="ui-plates">
+{% for entry in counts %}{% with operation=entry.operation %}
+<section class="ui-plate" data-span="12" aria-labelledby="count-{{ forloop.counter }}"{% if operation.is_deleted %} data-voided=""{% endif %}>
+  <div class="ui-plate-head"><h2 class="ui-plate-title" id="count-{{ forloop.counter }}">{% blocktrans trimmed with location=operation.location.code site=operation.location.site.name date=operation.date|date:"DATE_FORMAT" %}{{ location }} ({{ site }}), {{ date }}{% endblocktrans %}</h2>
+    {% if entry.void_url %}<a class="ui-plate-link" href="{{ entry.void_url }}">{% trans "Void" %}</a>{% elif operation.is_deleted %}{% trans "Voided" as voided %}{% include "ui/_chip.html" with kind="neutral" text=voided %}{% endif %}</div>
+  <div class="ui-plate-body"><p class="ui-cell-sub">{% blocktrans trimmed with name=operation.created_by.get_username|default:"system" when=operation.created_at|company_clock|date:"DATETIME_FORMAT" %}Counted by {{ name }}, recorded {{ when }}{% endblocktrans %}{% if operation.notes %} · {{ operation.notes }}{% endif %}{% if operation.is_deleted %} · {% blocktrans trimmed with reason=operation.void_reason %}voided: {{ reason }}{% endblocktrans %}{% endif %}</p>
+  {% if operation.is_deleted %}{% elif not entry.variances %}<p>{% trans "Nothing was there, and the book had nothing." %}</p>{% endif %}</div>
+  {% if not operation.is_deleted and entry.variances %}
+  <div class="ui-table-wrap" tabindex="0" role="region" aria-labelledby="count-{{ forloop.counter }}">
+    <table class="ui-table">
+      <thead><tr><th scope="col">{% trans "Item" %}</th><th scope="col">{% trans "Lot" %}</th><th scope="col" class="num">{% trans "Book" %}</th><th scope="col" class="num">{% trans "Counted" %}</th><th scope="col" class="num">{% trans "Difference" %}</th></tr></thead>
+      <tbody>
+        {% for lot, book, counted, difference in entry.variances %}
+        <tr{% if difference %} data-status="warning"{% endif %}><th scope="row">{{ lot.item }}</th><td><a href="{% url 'inventory:lot' lot.pk %}">{{ lot }}</a></td><td class="num">{{ book|quantity:lot.item.get_unit_display }}</td><td class="num">{{ counted|quantity:lot.item.get_unit_display }}</td><td class="num">{% if difference %}{{ difference|delta:lot.item.get_unit_display }}{% else %}—{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endwith %}{% endfor %}
+</div>
+{% if page.paginator.num_pages > 1 %}{% include "crud/_pager.html" %}{% endif %}
+{% endif %}
+{% endif %}
+{% endblock %}

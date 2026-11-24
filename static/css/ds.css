@@ -556,3 +556,20 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-chart-empty { margin: 0; padding: var(--space-5) var(--space-4); }
 .ui-series { min-height: 160px; }
 .ui-chart-caption { margin-top: auto; padding: 6px 14px 10px; color: var(--text-2); font-size: var(--fs-caption); text-wrap: pretty; }
+
+/* Lists (the design's "list" and "audit" blocks): rows of a plate on hairlines, a main line, a sub-line, a meta at the
+   right and a chip; a row's status is its 4 px edge, as a table row's. An activity entry heads with its action in the
+   display face, the record and who and when on one line. */
+.ui-list { margin: 0; padding: 0; list-style: none; }
+.ui-list-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: -1px; padding: var(--cell-py, var(--space-2)) var(--cell-px, var(--space-3)); border-bottom: 1px solid var(--line-hair); }
+.ui-list-item[data-status="critical"] { box-shadow: var(--edge-crit); }
+.ui-list-item[data-status="warning"] { box-shadow: var(--edge-warn); }
+.ui-list-main { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; text-wrap: pretty; }
+.ui-list-meta { flex: none; color: var(--text-3); font-size: var(--fs-caption); white-space: nowrap; }
+.ui-list-item > .ui-chip { flex: none; }
+.ui-audit-item { flex-direction: column; gap: 6px; }
+.ui-audit-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.ui-audit-action { font-family: var(--font-display); font-size: var(--fs-tab); font-weight: 600; line-height: 1.2; }
+.ui-audit-record { color: var(--text-2); }
+.ui-audit-who { margin-left: auto; color: var(--text-3); font-size: var(--fs-small); white-space: nowrap; }
+.ui-audit-who strong { color: var(--text-2); }

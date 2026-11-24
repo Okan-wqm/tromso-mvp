@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
-  Button, CellLines, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
-  LinkTabs, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
+  AuditItem, Button, CellLines, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
+  LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
 interface Row { code: string; name: string; site: string; capacity: string; status: 'ok' | 'warning' | 'neutral'; word: string }
@@ -103,6 +103,17 @@ function Gallery({ rows, errors }: GalleryProps) {
             <CheckboxGroup name="supplies" label="Supplies" wide options={[{ value: 'feed', label: 'Feed' }, { value: 'fish', label: 'Live fish and eggs' }]} defaultValues={['feed']} />
           </ServerForm>
         </div>
+      </Plate>
+      <Plate title="Lists" span={4} link={{ href: '#reports', label: 'All reports' }}>
+        <List label="Upcoming reports">
+          <ListItem main="Planned slaughter · Fjord Seafood Processing (N1234) · Week 45 of 2026" sub="29.10.2026 · Overdue" status="critical" />
+          <ListItem main="Kari Nordmann" sub="Could Jakob Fossum get an account?" meta="13:40" />
+          <ListItem main="CO₂ above 15 mg/L leads to nephrocalcinosis." sub="Fivelstad & Olsen (2003)" chip={<Chip kind="ok">Reviewed</Chip>} />
+        </List>
+        <List ordered label="Recent activity">
+          <AuditItem action="Changed" record="Task · Clean the settling pond" who={<>by <strong>bjorn.eriksen</strong> · 23.11.2026 09:05</>} />
+          <AuditItem action="Acknowledged a warning" status="critical" critical={<Chip kind="critical">Critical</Chip>} record="Harvest · TG-M01" who={<>by <strong>kari.nordmann</strong> · 23.11.2026 08:41</>} />
+        </List>
       </Plate>
       <Plate title="Chart frame" span={4}>
         <ChartFrame title="Dissolved oxygen" now="6.50 mg/L" nowStatus="warning" label="Dissolved oxygen, last 24 hours"

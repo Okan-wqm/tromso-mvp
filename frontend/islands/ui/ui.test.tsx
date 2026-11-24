@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
-  Button, ChartFrame, CheckboxGroup, Chip, EmptyState, ErrorState, Icon, IconButton, LinkButton, LinkTabs, LoadingState,
+  AuditItem, Button, ChartFrame, CheckboxGroup, Chip, EmptyState, ErrorState, Icon, IconButton, LinkButton, LinkTabs, List, ListItem, LoadingState,
   Notice, Plate, SelectField, ServerForm, Table, Tabs, TextField, Tile, Tiles,
 } from './index.js';
 import { ICONS } from './icon-shapes.js';
@@ -121,3 +121,16 @@ test('no component writes a style attribute or a markup string (the islands\' ow
     assert.doesNotMatch(source, /\bstyle=\{|dangerouslySetInnerHTML|innerHTML/, name);
   }
 });
+
+test('a list is the design system\'s ui-list: its rows with their sub-line, meta, chip and status edge', () => {
+  const list = html(<List label="Upcoming reports"><ListItem main="Sea lice" sub="10.11.2026 · Overdue" meta="13:40" status="critical" chip={<Chip kind="critical">Overdue</Chip>} /></List>);
+  assert.match(list, /^<ul class="ui-list" role="list" aria-label="Upcoming reports"><li class="ui-list-item" data-status="critical">/);
+  assert.match(list, /<span class="ui-list-main"><span>Sea lice<\/span><span class="ui-cell-sub">10\.11\.2026 · Overdue<\/span><\/span>/);
+  assert.match(list, /<span class="ui-list-meta">13:40<\/span><span class="ui-chip" data-status="critical">/);
+  assert.match(html(<List ordered><ListItem main="x" /></List>), /^<ol class="ui-list" role="list"><li class="ui-list-item"><span class="ui-list-main"><span>x<\/span><\/span><\/li><\/ol>$/);
+  const entry = html(<AuditItem action="Changed" record="Task · Pond" who="by admin" status="critical" critical={<Chip kind="critical">Critical</Chip>} />);
+  assert.match(entry, /^<li class="ui-list-item ui-audit-item" data-status="critical"><span class="ui-audit-head"><strong class="ui-audit-action">Changed<\/strong><span class="ui-chip"/);
+  assert.match(entry, /<span class="ui-audit-record">Task · Pond<\/span><span class="ui-audit-who">by admin<\/span>/);
+  assert.doesNotMatch(list + entry, /style=/);
+});
+

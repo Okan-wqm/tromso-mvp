@@ -717,12 +717,13 @@ msgstr "%(dose)s g/m³"
 
 #, python-format
 msgid ""
-"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions and "
-"limits are those of the newest water. A moment without every value is left out, never joined."
+"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions, the"
+" limits and the pH isolines are those of the newest water drawn. A moment without every value is "
+"left out, never joined."
 msgstr ""
-"%(total)s andan %(drawn)s tanesi her %(step)s bir çizildi, %(first)s ile %(last)s arası; bölgeler"
-" ve sınırlar en yeni suyunkilerdir. Her değeri olmayan bir an dışarıda bırakılır, asla "
-"birleştirilmez."
+"%(total)s andan %(drawn)s tanesi her %(step)s bir çizildi, %(first)s ile %(last)s arası; "
+"bölgeler, sınırlar ve pH eş çizgileri çizilen en yeni suyunkilerdir. Her değeri olmayan bir an "
+"dışarıda bırakılır, asla birleştirilmez."
 
 #, python-format
 msgid "%(duty)s · %(site)s · %(year)s: record that it was done."
@@ -1731,6 +1732,10 @@ msgstr "%(value)s %(unit)s"
 #, python-format
 msgid "%(value)s assumed"
 msgstr "%(value)s varsayıldı"
+
+#, python-format
+msgid "%(value)s at %(time)s"
+msgstr "%(time)s anında %(value)s"
 
 #. Translators: days of cover, e.g. 12.5 days.
 #, python-format
@@ -8021,6 +8026,9 @@ msgstr "Silinmiş satırları gizle"
 msgid "High"
 msgstr "Yüksek"
 
+msgid "Highest"
+msgstr "En yüksek"
+
 msgid "Highest of the open run"
 msgstr "Açık serinin en yükseği"
 
@@ -9003,6 +9011,14 @@ msgstr "Kaplama kalınlığı (mm)"
 msgid "Lines"
 msgstr "Satırlar"
 
+#, python-format
+msgid ""
+"Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, up to "
+"%(alkalinity)s meq/L"
+msgstr ""
+"Eşit pH çizgileri: %(low)s ile %(high)s arası; DIC yatay eksende, en çok %(dic)s mmol/L; "
+"alkalinite dikey eksende, en çok %(alkalinity)s meq/L"
+
 msgid "Link sent to"
 msgstr "Bağlantının gönderildiği adres"
 
@@ -9105,6 +9121,9 @@ msgstr "Düşük basınç"
 
 msgid "Low stock"
 msgstr "Azalan stok"
+
+msgid "Lowest"
+msgstr "En düşük"
 
 msgid "Lowest of the open run"
 msgstr "Açık serinin en düşüğü"
@@ -9912,6 +9931,13 @@ msgstr "Bu konuda yayın yapan cihaz yok"
 
 msgid "No diagnosis"
 msgstr "Tanı yok"
+
+msgid "No diagram"
+msgstr "Diyagram yok"
+
+#, python-format
+msgid "No diagram after %(time)s: %(why)s"
+msgstr "%(time)s sonrasında diyagram yok: %(why)s"
 
 #, python-format
 msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
@@ -16009,6 +16035,10 @@ msgstr ""
 "%(moment)s anındaki su: her değer, kaynağının o zaman verdiği gibi, yaşı o andan itibaren "
 "hesaplanarak."
 
+#, python-format
+msgid "The water at %(time)s"
+msgstr "%(time)s anındaki su"
+
 msgid "The water cannot stand higher than the depth."
 msgstr "Su, derinlikten yüksek olamaz."
 
@@ -18079,6 +18109,9 @@ msgstr "temizleyici balık damızlığı olan bir lokasyon"
 msgid "a unit or a loop"
 msgstr "bir birim veya döngü"
 
+msgid "a value the chart needs is missing"
+msgstr "grafiğin gerektirdiği bir değer eksik"
+
 msgid "activity log"
 msgstr "etkinlik günlüğü"
 
@@ -19252,6 +19285,10 @@ msgstr "%(date)s tarihinden beri %(site)s lokasyonunda balık yok"
 msgid "no fish now"
 msgstr "şu anda balık yok"
 
+#, python-format
+msgid "no fresh value of %(missing)s"
+msgstr "%(missing)s için güncel değer yok"
+
 msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
@@ -19451,6 +19488,10 @@ msgstr ""
 "pH %(ph)s, %(point)s kaynağından yüklenen değerdir: zaten NBS ölçeğinde (saklanan pH her zaman "
 "öyledir) ve yeniden dönüştürülmez. Ölçeği NBS olarak bırakın veya pH’ı ölçüldüğü haliyle, "
 "ölçeğiyle birlikte yazın."
+
+#, python-format
+msgid "pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
+msgstr "pH %(ph)s, DIC %(dic)s mmol/L, alkalinite %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
 
 msgid "pH (NBS scale)"
 msgstr "pH (NBS ölçeği)"

@@ -11,8 +11,12 @@
 //     line with its label (warning dashed, critical solid);
 //   - `gaps`: the stretches without a value, tinted and named, so a missing stretch is seen, never read as a flat line;
 //   - `markers`: moments (a sensor moved, calibrated; a feeding, a treatment, an alarm), a vertical line each, and over
-//     it a mark of its own (an SVG drawn over the canvas, placed by uPlot's valToPos): named by its label for a screen
-//     reader, reached with Tab, its label shown on hover and on focus, a link where the marker has an address;
+//     it a mark of its own (an SVG drawn over the canvas, placed by uPlot's valToPos): a handle at the top of its line,
+//     24 px across (the line under it takes no pointer, so the cursor and the drag-zoom reach the whole plot), its label
+//     shown on hover and on focus; named for a screen reader, reached with Tab and a link where the marker has an
+//     address, unless `marksListed`: the same moments are listed beside the chart (Tank › Water's events, every one a
+//     link there), which is then the keyboard's and the screen reader's path, and the marks are for the pointer only (a
+//     window of many events never fills the Tab order with a stop per event per chart);
 //   - a series `dashed` (a line) or `hollow` (points): a value worked out, not measured (NH₃-N);
 //   - `range`: the window's edges, so charts on one time axis line up whatever their values;
 //   - `zone` and `decimals`: the site's clock on the time axis (dd.mm at midnight, HH:MM otherwise) and the quantity's
@@ -21,60 +25,11 @@ import { useEffect, useRef, useState } from 'react';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 
-export interface Series {
-  label: string;
-  /** the categorical colour 1..5 */
-  series: 1 | 2 | 3 | 4 | 5;
-  /** points only (manual samples), or a line (a sensor) */
-  points?: boolean;
-  /** a value worked out, not measured: a line drawn dashed */
-  dashed?: boolean;
-  /** points drawn hollow (a value worked out per sample, not measured) */
-  hollow?: boolean;
-  /** null: a gap, the line breaks there; undefined: no value of this series at that moment (another series has one) */
-  values: (number | null | undefined)[];
-}
+import { clockText, extent, hasValues, Marks, type Envelope, type Limit, type Marker, type Overlay, type Series,
+  type Zone } from './series-parts.js';
 
-export type Severity = 'warning' | 'critical';
-
-export interface Zone {
-  /** the lower edge (null: the bottom of the chart) */
-  from: number | null;
-  /** the upper edge (null: the top of the chart) */
-  to: number | null;
-  status: Severity;
-}
-
-export interface Limit {
-  value: number;
-  status: Severity;
-  label: string;
-}
-
-export interface Marker {
-  at: number;
-  /** what happened, in words: the mark's accessible name and its hover and focus label */
-  label: string;
-  status?: Severity;
-  /** where the record is read (a feeding's list, an alarm's detail): the mark is then a link */
-  href?: string;
-}
-
-/** A marker placed on the drawing, in CSS pixels of the chart's box. */
-interface PlacedMark {
-  marker: Marker;
-  x: number;
-}
-
-interface Overlay {
-  width: number;
-  height: number;
-  top: number;
-  bottom: number;
-  marks: PlacedMark[];
-}
-
-export type SeriesColour = 1 | 2 | 3 | 4 | 5;
+export { clockText, extent, hasValues, Marks };
+export type { Envelope, Limit, Marker, Overlay, Series, SeriesColour, Severity, Zone } from './series-parts.js';
 
 export interface SeriesChartProps {
   /** the moments, seconds since 1970, shared by every series */
@@ -84,12 +39,14 @@ export interface SeriesChartProps {
   unit: string;
   emptyLabel: string;
   height?: number;
-  envelope?: { low: (number | null | undefined)[]; high: (number | null | undefined)[]; series: SeriesColour };
+  envelope?: Envelope;
   zones?: Zone[];
   limits?: Limit[];
   gaps?: [number, number][];
   gapLabel?: string;
   markers?: Marker[];
+  /** the markers are listed beside the chart, each a link there: the marks are for the pointer only (no Tab stop) */
+  marksListed?: boolean;
   range?: [number, number];
   /** the IANA zone the times are read on (the site's clock) */
   zone?: string;
@@ -100,33 +57,16 @@ function role(element: Element, name: string): string {
   return getComputedStyle(element).getPropertyValue(name).trim();
 }
 
-export function hasValues(series: Series[]): boolean {
-  return series.some((each) => each.values.some((value) => value !== null && value !== undefined));
-}
 
-const two = (value: number): string => String(value).padStart(2, '0');
+// The defaults: one identity each, so a chart without them is not built again on every render (they are in the effect's
+// dependencies).
+const NO_ZONES: Zone[] = [];
+const NO_LIMITS: Limit[] = [];
+const NO_GAPS: [number, number][] = [];
+const NO_MARKERS: Marker[] = [];
 
-/** A tick of the time axis on the site's clock: dd.mm at a midnight, HH:MM at any other time (never one day twice). */
-export function clockText(seconds: number, zone: string | undefined): string {
-  const date = zone ? uPlot.tzDate(new Date(seconds * 1000), zone) : new Date(seconds * 1000);
-  const day = `${two(date.getDate())}.${two(date.getMonth() + 1)}`;
-  const time = `${two(date.getHours())}:${two(date.getMinutes())}`;
-  return time === '00:00' ? day : time;
-}
-
-/** The value axis's extent: the values, and every limit the person must see the values against. */
-export function extent(series: Series[], envelope: SeriesChartProps['envelope'], limits: Limit[]): [number, number] {
-  const values = [...series.flatMap((each) => each.values), ...(envelope ? [...envelope.low, ...envelope.high] : []),
-    ...limits.map((limit) => limit.value)].filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
-  if (!values.length) return [0, 1];
-  const low = Math.min(...values);
-  const high = Math.max(...values);
-  const margin = (high - low) * 0.08 || Math.max(Math.abs(high) * 0.05, 0.5);
-  return [low - margin, high + margin];
-}
-
-export function SeriesChart({ times, series, unit, emptyLabel, height = 220, envelope, zones = [], limits = [], gaps = [],
-  gapLabel = '', markers = [], range, zone, decimals }: SeriesChartProps) {
+export function SeriesChart({ times, series, unit, emptyLabel, height = 220, envelope, zones = NO_ZONES, limits = NO_LIMITS,
+  gaps = NO_GAPS, gapLabel = '', markers = NO_MARKERS, marksListed = false, range, zone, decimals }: SeriesChartProps) {
   const box = useRef<HTMLDivElement>(null);
   const [overlay, setOverlay] = useState<Overlay | null>(null);
   const empty = !hasValues(series);
@@ -293,37 +233,7 @@ export function SeriesChart({ times, series, unit, emptyLabel, height = 220, env
   return (
     <div className="ui-series">
       <div ref={box} className="ui-series-plot" />
-      {overlay && overlay.marks.length ? <Marks overlay={overlay} /> : null}
+      {overlay && overlay.marks.length ? <Marks overlay={overlay} listed={marksListed} /> : null}
     </div>
-  );
-}
-
-/** The markers' marks over the canvas: a line to hover or focus (wider than it looks), the label beside it. */
-function Marks({ overlay }: { overlay: Overlay }) {
-  return (
-    <svg className="ui-chart-marks" width={overlay.width} height={overlay.height}
-      viewBox={`0 0 ${overlay.width} ${overlay.height}`}>
-      {overlay.marks.map(({ marker, x }, index) => {
-        const end = x > overlay.width / 2;            // a label in the right half reads to the left of its line
-        const body = (
-          <>
-            <title>{marker.label}</title>
-            <line className="ui-chart-mark-hit" x1={x} y1={overlay.top} x2={x} y2={overlay.bottom} />
-            <text className="ui-chart-mark-label" x={end ? x - 6 : x + 6} y={overlay.top + 14}
-              textAnchor={end ? 'end' : 'start'} aria-hidden="true">{marker.label}</text>
-          </>
-        );
-        const key = `${marker.at}-${index}`;
-        return marker.href ? (
-          <a key={key} className="ui-chart-mark" href={marker.href} aria-label={marker.label} data-status={marker.status}>
-            {body}
-          </a>
-        ) : (
-          <g key={key} className="ui-chart-mark" tabIndex={0} role="img" aria-label={marker.label} data-status={marker.status}>
-            {body}
-          </g>
-        );
-      })}
-    </svg>
   );
 }

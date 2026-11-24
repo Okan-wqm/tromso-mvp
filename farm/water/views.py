@@ -469,7 +469,10 @@ def history_window(request, owner, now):
 
     if request.GET.get('around'):
         middle = moment('around')
-        return 'custom', middle - timedelta(hours=12), min(middle + timedelta(hours=12), now)
+        start, end = middle - timedelta(hours=12), min(middle + timedelta(hours=12), now)
+        if end <= start:                        # 12 h or more after now: no window at all, refused (never a 500)
+            raise BadRequest('around')
+        return 'custom', start, end
     if request.GET.get('start') or request.GET.get('end'):
         start, end = moment('start'), moment('end')
         if end <= start or end - start > HISTORY_LONGEST:
@@ -479,63 +482,11 @@ def history_window(request, owner, now):
     return key, now - HISTORY_RANGES[key], now
 
 
-def history_events(user, owner, start, end):
-    """[{at, until, kind, label, url}] of what happened to a unit's fish in the window, each from its own area's records
-    and only for a person who may read that area: the feedings (farm/feeding: a record's moment, `fed_moment`), the
-    treatments (farm/health: first to last day), the harvests (farm/stock: the operation's day) and the alarms opened
-    at its points (alarms: a water limit's at the point, a sensor rule's on a channel bound there; a system's own
-    channels too). A water exchange has no record in this product yet: none is shown (a gap the hand-back
-    names). A system's are its alarms only."""
-    from alarms.models import Alarm
-    from farm.feeding.read import fed_moment
-    from farm.models import FeedingRecord, StockOperation, Treatment
-    from farm.models.stock import MovementKind
-    from farm.stock.dates import end_of, start_of
-
-    found = []
-    zone = zone_of(site_of(owner))
-    first, last = start.astimezone(zone).date(), end.astimezone(zone).date()
-    if isinstance(owner, Tank):
-        if user.has_perm('farm.view_feedingrecord'):
-            for record in (FeedingRecord.objects.filter(unit=owner, date__gte=first, date__lte=last)
-                           .select_related('unit__production_department__site', 'feed')):
-                at = fed_moment(record)
-                if start <= at < end:
-                    found.append({'at': at, 'until': None, 'kind': 'feeding',
-                                  'label': _('Fed %(kg)s kg of %(feed)s') % {'kg': formats.localize(record.amount_kg),
-                                                                            'feed': record.feed},
-                                  'url': reverse('farm:feeding_records')})
-        if user.has_perm('farm.view_treatment'):
-            for treatment in Treatment.objects.filter(units=owner, start_date__lte=last).filter(
-                    Q(end_date__isnull=True) | Q(end_date__gte=first)):
-                found.append({'at': max(start_of(treatment.start_date, owner), start),
-                              'until': min(end_of(treatment.end_date, owner), end) if treatment.end_date else None,
-                              'kind': 'treatment', 'label': _('Treatment: %(method)s') % {
-                                  'method': treatment.get_method_display()},
-                              'url': reverse('farm:treatments')})
-        if user.has_perm('farm.view_stockoperation'):
-            for operation in StockOperation.objects.filter(movements__unit=owner, movements__kind=MovementKind.HARVEST,
-                                                           date__gte=first, date__lte=last).distinct():
-                found.append({'at': max(start_of(operation.date, owner), start), 'until': None, 'kind': 'harvest',
-                              'label': _('Harvest'), 'url': reverse('farm:harvests')})
-    if user.has_perm('alarms.view_alarm'):
-        points = calculation.points_for(owner)
-        here = Q(point__in=points) | Q(sensor_event__binding__point__in=points)    # a water limit's, a sensor rule's
-        if isinstance(owner, System):
-            here |= Q(sensor_event__binding__system=owner)
-        for alarm in Alarm.objects.filter(here, opened_at__gte=start, opened_at__lt=end).order_by('opened_at'):
-            found.append({'at': alarm.opened_at, 'until': None, 'kind': 'alarm', 'severity': alarm.severity,
-                          'label': alarm.summary, 'url': reverse('alarms:alarm_detail', args=[alarm.pk])})
-    found.sort(key=lambda event: event['at'])
-    return [{**event, 'at': int(event['at'].timestamp()),
-             'until': int(event['until'].timestamp()) if event['until'] else None, 'label': str(event['label'])}
-            for event in found]
-
-
 def _history_of(user, place, start, end, now, title):
     """One place's water over the window, as data (sensors.read.water_history, sensors.chart.data): every parameter's
-    chart with its limit band, the NH₃-N worked out per sample. The sensors' values only for a person who may read
-    them (otherwise the samples alone, and the chart says why)."""
+    chart with its limit band, each sample with its status as the history page judges it (`status`, and `status_text`
+    in words), the NH₃-N worked out per sample with its status. The sensors' values only for a person who may read them
+    (otherwise the samples alone, and the chart says why)."""
     from sensors import chart as sensor_chart, read as sensor_read
 
     found = sensor_read.water_history(place, start, end, now=now)
@@ -543,6 +494,10 @@ def _history_of(user, place, start, end, now, title):
     charts = []
     for each in found.charts:
         drawn = sensor_chart.data(each, title, found.bands)
+        judged = {int(at.timestamp()): status for at, status in found.judged.get(each.quantity.code, {}).items()}
+        for sample in drawn['samples']:
+            sample['status'] = judged.get(sample['at'], '')
+            sample['status_text'] = str(Status(sample['status']).label) if sample['status'] else ''
         if not sensors:
             drawn['buckets'] = {name: [] for name in drawn['buckets']}
             drawn['gaps'], drawn['markers'], drawn['simulated'], drawn['simulated_text'] = [], [], False, ''
@@ -552,6 +507,7 @@ def _history_of(user, place, start, end, now, title):
     worked = {code: {'label': str(parameters.get(code).short), 'decimals': parameters.get(code).decimals,
                      'band': found.bands.get(code, {}),
                      'values': [{'at': int(item.at.timestamp()), 'value': item.value, 'status': item.status,
+                                 'status_text': str(Status(item.status).label) if item.status else '',
                                  'note': item.note} for item in items]}
               for code, items in found.worked.items()}
     return {'charts': charts, 'worked': worked}
@@ -562,11 +518,14 @@ RANGE_FRAMES = 120     # about this many Deffeyes frames over a window (the step
 
 def range_deffeyes(user, owner, start, end):
     """Deffeyes for the range (Tank › Water, owner-approved): the replay's frames of the window
-    (`sensors.read.deffeyes_frames`, about RANGE_FRAMES of them, so one page) drawn as one chart: the newest frame's
-    diagram (the regions and the fish's limits of that water; the server's figure, its pH labels placed by the server)
-    and the path of the water's point through the window, broken where a frame has no diagram (never bridged). None for a
-    person who may not read the sensors (the frames join them with the samples). Without any frame with a diagram, the
-    newest frame's reason: the inputs it lacks, or why its pH and alkalinity cannot go together."""
+    (`sensors.read.deffeyes_frames`, about RANGE_FRAMES of them, so one page) drawn as one chart: the diagram of the
+    newest frame that has one (its regions, the fish's limits and the pH isolines of that water; the server's figure, its
+    pH labels placed by the server) and the path of the water's point through the window, broken where a frame has no
+    diagram (never bridged; a run of one frame is a dot). The star is that newest water's, named with its time; when the
+    window's last frame has no diagram the chart says so in words ("No diagram after <time>: <why>"), so a water of
+    yesterday is never read as now (review of batch 1, F2). None for a person who may not read the sensors (the frames
+    join them with the samples). Without any frame with a diagram, the newest frame's reason: the inputs it lacks, or why
+    its pH and alkalinity cannot go together."""
     from sensors import read as sensor_read
 
     from .deffeyes import Box, as_props, pixel, render
@@ -579,8 +538,17 @@ def range_deffeyes(user, owner, start, end):
     words = {'title': _('Deffeyes chart of the time'), 'water': _('The water'), 'path': _('The water through the time'),
              'first': _('First drawn'), 'dic': _('DIC (mmol/L)'), 'alkalinity': _('Alkalinity (meq/L)'),
              'isolines': _('pH isolines')}
+
+    def lacks(frame):
+        missing = ', '.join(str(parameters.get(code).label) for code in frame.missing)
+        return frame.impossible or (_('no fresh value of %(missing)s') % {'missing': missing} if missing
+                                    else _('a value the chart needs is missing'))
+
+    def shown(at):
+        return formats.date_format(timezone.localtime(at, zone), 'DATETIME_FORMAT')
+
+    last = found.frames[-1]
     if not drawn:
-        last = found.frames[-1]
         missing = ', '.join(str(parameters.get(code).label) for code in last.missing)
         reason = last.impossible or (_('No frame of this time has every value the chart needs: %(missing)s.') % {
             'missing': missing} if missing else _('No frame of this time has every value the chart needs.'))
@@ -595,23 +563,40 @@ def range_deffeyes(user, owner, start, end):
             run = []
             continue
         x, y = pixel(box, frame.point.dic, frame.point.alkalinity_meq)
-        run.append(f'{x:.2f},{y:.2f}')
+        run.append((f'{x:.2f}', f'{y:.2f}', int(frame.at.timestamp())))
     if run:
         runs.append(run)
     first = drawn[0]
     fx, fy = pixel(box, first.point.dic, first.point.alkalinity_meq)
-
-    def shown(at):
-        return formats.date_format(timezone.localtime(at, zone), 'DATETIME_FORMAT')
-    caption = _('%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions and limits '
-                'are those of the newest water. A moment without every value is left out, never joined.') % {
+    words['water'] = _('The water at %(time)s') % {'time': shown(newest.at)}
+    # the window's end without a diagram: said, never a star read as now
+    stale = '' if last.figure is not None else _('No diagram after %(time)s: %(why)s') % {
+        'time': shown(newest.at), 'why': lacks(last)}
+    caption = _('%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions, the limits '
+                'and the pH isolines are those of the newest water drawn. A moment without every value is left out, '
+                'never joined.') % {
         'drawn': len(drawn), 'total': len(found.frames), 'step': _step_text(found.step),
         'first': shown(first.at), 'last': shown(newest.at)}
     # a page's figure is shared by the frames of the same equilibria, its point left out: the newest frame's own is drawn
     figure = {**found.figures[newest.figure], 'point': [newest.point.dic, newest.point.alkalinity_meq]}
-    return {'chart': as_props(render(figure)), 'path': [' '.join(each) for each in runs],
+    chart = as_props(render(figure))
+    return {'chart': chart, 'path': [' '.join(f'{x},{y}' for x, y, _at in each) for each in runs if len(each) > 1],
+            'dots': [{'x': each[0][0], 'y': each[0][1], 'at': each[0][2]} for each in runs if len(each) == 1],
             'first': {'x': f'{fx:.2f}', 'y': f'{fy:.2f}', 'at': int(first.at.timestamp())},
-            'at': int(newest.at.timestamp()), 'caption': str(caption), 'reason': '',
+            'at': int(newest.at.timestamp()), 'now': str(stale or words['water']), 'now_status': 'warning' if stale else '',
+            'stale': str(stale), 'caption': str(caption), 'reason': '',
+            # what the chart's labels say, in words: shown in their place where the chart is too narrow for them
+            'scale': str(_('Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, '
+                           'up to %(alkalinity)s meq/L') % {
+                'low': next((line['label']['text'] for line in chart['isolines'] if line['label']), ''),
+                'high': next((line['label']['text'] for line in reversed(chart['isolines']) if line['label']), ''),
+                'dic': formats.number_format(box.dic), 'alkalinity': formats.number_format(box.alkalinity)}),
+            'said': [[str(words['water']), str(_('pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ '
+                                                  '%(co2)s mg/L') % {
+                'ph': formats.number_format(newest.point.ph, 2), 'dic': formats.number_format(newest.point.dic, 3),
+                'alkalinity': formats.number_format(newest.point.alkalinity_meq, 3),
+                'co2': formats.number_format(newest.point.co2_mg_l, 1)})]]
+                    + ([[str(_('No diagram')), str(stale)]] if stale else []),
             'words': {key: str(value) for key, value in words.items()}}
 
 
@@ -642,7 +627,7 @@ def history_data(request, owner, now=None):
                        'end': timezone.localtime(end, zone_of(site_of(owner))).strftime('%Y-%m-%dT%H:%M')})
     return {
         'range': key, 'start': int(start.timestamp()), 'end': int(end.timestamp()),
-        'zone': zone_of(site_of(owner)).key, 'places': places, 'events': history_events(user, owner, start, end),
+        'zone': zone_of(site_of(owner)).key, 'places': places, 'events': read.history_events(user, owner, start, end),
         'range_chart': range_deffeyes(user, owner, start, end),
         'deffeyes': f'{reverse("sensors:deffeyes_frames")}?{query}' if user.has_perm(SENSOR_READ) else '',
         'record': _dialog_url('farm:water_record', request, owner) if user.has_perm(RECORD) else '',

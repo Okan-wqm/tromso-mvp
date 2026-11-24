@@ -1,5 +1,5 @@
 """The props of the Production and Sensors islands, made in the test run's own database from THE test world
-(core/test_world.py: the one builder, shared with scripts/record_test_world.py; every name and address a fixture's) with
+(core/test_world.py: the one builder; every name and address a fixture's) with
 the clock at its MOMENT, through the real views in the new look, kept under .build/island-props/ by core/island_props.py
 for the browser test (frontend/test/production.pages.ts, `npm run test:pages`). Nothing recorded from a real database is
 kept: the repository is public. The pages say the world's facts: a chart per parameter measured or sampled at TT-01,
@@ -56,12 +56,24 @@ class IslandPagesTests(FrozenClock, TestCase):
             self.assertEqual(sorted(event['kind'] for event in props['events']),
                              ['alarm', 'feeding', 'harvest', 'treatment'])
             self.assertTrue(all(event['url'] for event in props['events']))
+            # a harvest and a treatment are dated by day: said as the day, never "00:00" (review of batch 1, F5)
+            kinds = {event['kind']: event for event in props['events']}
+            for kind in ('harvest', 'treatment'):
+                self.assertTrue(kinds[kind]['all_day'])
+                self.assertRegex(kinds[kind]['when'], r'^\d{2}\.\d{2}\.\d{4}$')
+            for kind in ('feeding', 'alarm'):
+                self.assertFalse(kinds[kind]['all_day'])
+                self.assertRegex(kinds[kind]['when'], r'^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$')
             self.assertRegex(props['custom']['start'], r'^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$')       # the date box's shape
             self.assertRegex(props['custom']['example'], r'^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$')
             ranged = props['range_chart']
             self.assertIsNotNone(ranged['chart'], ranged['reason'])
             self.assertTrue(ranged['path'] and all(ranged['path']))
             self.assertTrue(any(isoline['label'] for isoline in ranged['chart']['isolines']))   # placed by the server
+            self.assertTrue(ranged['chart']['regions'])                       # the NH₃-N and CO₂ limits: their regions
+            # the window's last day has no diagram (the lab's alkalinity is four days old): said, never a star read as now
+            self.assertTrue(ranged['stale'])
+            self.assertEqual((ranged['now'], ranged['now_status']), (ranged['stale'], 'warning'))
             keep(f'water-{language}', props)
 
     def test_tank_water_reads_a_custom_window_in_the_date_boxs_shape(self):

@@ -844,6 +844,16 @@ polygon.deffeyes-arrow.deffeyes-reagent-hcl { fill: var(--chart-s3); }
    where a moment has no diagram, and where it was first drawn. */
 .deffeyes-track { fill: none; stroke: var(--chart-ink); stroke-width: 1.5; stroke-linejoin: round; stroke-opacity: .7; }
 .deffeyes-track-start { fill: var(--surface-sheet); stroke: var(--chart-ink); stroke-width: 2; }
+.deffeyes-track-dot { fill: var(--chart-ink); fill-opacity: .7; }
+/* Deffeyes in a chart frame (Tank › Water): under about 480 px its labels would be about 6 px (the viewBox is 600 wide),
+   so the pH labels, the ticks and the axis titles are not drawn there, and what they say stands under it as text
+   (`.deffeyes-scale`, the server's sentence; review of batch 1, S4). Scaling them up would undo the server's placing. */
+.ui-chart-draw:has(> .deffeyes-chart) { container-type: inline-size; }
+.deffeyes-scale { display: none; margin: 0; padding: var(--space-2) var(--space-3); color: var(--text-2); font-size: var(--fs-caption); }
+@container (max-width: 479px) {
+  .ui-chart-draw > .deffeyes-chart :is(.deffeyes-ph, .deffeyes-ticks, .deffeyes-axis) { display: none; }
+  .ui-chart-draw > .deffeyes-scale { display: block; }
+}
 .deffeyes-swatch-track { height: 0; border-top: 2px solid var(--chart-ink); border-radius: 0; }
 .deffeyes-swatch-track-start { width: 10px; height: 10px; border: 2px solid var(--chart-ink); border-radius: 50%; background: var(--surface-sheet); opacity: 1; }
 .deffeyes-point { fill: var(--chart-water); stroke: var(--chart-ink); stroke-width: 1; }

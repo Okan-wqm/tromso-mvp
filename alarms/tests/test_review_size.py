@@ -1,7 +1,7 @@
 """The recheck of 2a2c8451 (REVIEW4.md), each held by a test that fails without its fix:
 
-- F-A (probe SZ2): a message is never longer than its transport's payload limit (`max_chars`: a push payload about
-  4,000 characters, an SMS 160). `outbox.text` builds to it: the open alarms first, the names that fit, "and K more",
+- F-A (probe SZ2): a message is never longer than its transport's payload limit (`max_bytes`: a push payload about
+  4,000 bytes, an SMS 160). `outbox.text` builds to it: the open alarms first, the names that fit, "and K more",
   how many are open now, "see the alarm list"; a word or a number is never cut in half. 200 criticals of one kind
   through a push service that refuses over 4,000 characters are all told, none left;
 - the critical follow-up time is at most 8 s, so a user cannot break the owner's 10 s from a value to its message;

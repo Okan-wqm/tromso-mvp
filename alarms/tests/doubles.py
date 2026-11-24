@@ -12,7 +12,6 @@ class RecordingTransport(Transport):
 
     channel = 'push'
     max_bytes = 4000
-    max_chars = max_bytes            # the interface before the fix (REVIEW4 addendum); goes with it
     sent = []
     floods = []
 
@@ -30,7 +29,6 @@ class SmsTransport(RecordingTransport):
     """An SMS gateway: 160 bytes a message, the rest as the recording transport."""
 
     max_bytes = 160
-    max_chars = max_bytes
 
 
 class UndeclaredTransport(Transport):
@@ -55,7 +53,6 @@ class FailingTransport(Transport):
 
     channel = 'push'
     max_bytes = 4000
-    max_chars = max_bytes
     reason = 'the push service did not answer'
 
     def send(self, notification, flood=None):

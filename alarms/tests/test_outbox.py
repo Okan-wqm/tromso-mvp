@@ -36,7 +36,6 @@ class HangingTransport(Transport):
 
     channel = 'push'
     max_bytes = 4000
-    max_chars = max_bytes
     release = threading.Event()
     entered = threading.Event()
 
@@ -49,7 +48,6 @@ class HangingTransport(Transport):
 class RaisingTransport(Transport):
     channel = 'push'
     max_bytes = 4000
-    max_chars = max_bytes
 
     def send(self, notification):
         raise RuntimeError('the push library broke')

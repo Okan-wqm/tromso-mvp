@@ -239,19 +239,29 @@ def _summary_due(row, began):
             and not row.failures and began - row.cleared_at > SUMMARY_AFTER)
 
 
+CUT = '…'
+
+
+def _bytes(said):
+    """How long a text is as a transport counts it: its UTF-8 bytes (a push payload's limit is in bytes; a Norwegian or
+    Turkish letter is two)."""
+    return len(said.encode('utf-8'))
+
+
 def _within(said, limit):
-    """`said` in at most `limit` characters (None: as it is): cut at the last space before the limit and marked "…", so
-    a word or a number is never cut in half (only a single word longer than the limit can be)."""
-    if limit is None or len(said) <= limit:
+    """`said` in at most `limit` UTF-8 bytes (None: as it is): the whole characters that fit with the mark "…", cut back
+    to the last space, so a letter, a word or a number is never cut in half (only a single word longer than the limit
+    can be)."""
+    if limit is None or _bytes(said) <= limit:
         return said
-    cut = said[:limit - 1]
-    if said[limit - 1] != ' ' and ' ' in cut:
+    cut = said.encode('utf-8')[:max(0, limit - _bytes(CUT))].decode('utf-8', 'ignore')
+    if said[len(cut):len(cut) + 1] != ' ' and ' ' in cut:
         cut = cut[:cut.rindex(' ')]
-    return cut.rstrip(' ;,:') + '…'
+    return cut.rstrip(' ;,:') + CUT
 
 
 def _listing(flood, limit, moment):
-    """The criticals' follow-up within `limit`: how many, since when, how many are open now, then the names that fit,
+    """The criticals' follow-up within `limit` bytes: how many, since when, how many are open now, then the names that fit,
     the open ones first (the order of `flood.listed`), each whole; "and K more, see the alarm list" for the rest, or
     "see the alarm list" when no name fits."""
     names = [summary if cleared is None else _('%(summary)s (cleared %(cleared)s)') % {
@@ -271,18 +281,18 @@ def _listing(flood, limit, moment):
         return said(len(names))
     best, used = said(0), 0
     for shown in range(1, len(names) + 1):         # the names alone past the limit: no more can fit
-        used += len(names[shown - 1]) + (len('; ') if shown > 1 else 0)
+        used += _bytes(names[shown - 1]) + (_bytes('; ') if shown > 1 else 0)
         if used > limit:
             break
         each = said(shown)
-        if len(each) <= limit:
+        if _bytes(each) <= limit:
             best = each
     return best
 
 
 def text(notification, flood=None, limit=None):
     """What the person is told, in their language (their profile's, else the platform's), on the site's clock, in at
-    most `limit` characters (the transport's `max_chars`; F-A: a message over a push service's or an SMS gateway's
+    most `limit` UTF-8 bytes (the transport's `max_bytes`; F-A: a message over a push service's or an SMS gateway's
     payload limit is refused for ever): the alarm's severity and summary; a critical alarm that has cleared by the time
     it is sent says it was critical and has cleared, when it opened and when it cleared (the decision of 2026-11-24: a
     critical that came and went while the transport was down is still said); a word about a snooze says so. With `flood` (alarms/floods.py): the follow-up
@@ -324,13 +334,13 @@ def _said(notification, flood, clearance, moment):
 def _call(transport, notification, timeout, flood=None):
     """The transport's answer, within `timeout` seconds (None: as long as it takes); a raise is a Failed. `flood`: the
     notification is the first of a flood message (alarms/floods.py). The notification carries its `text`, within the
-    transport's `max_chars`; a transport that declares none is a failed attempt, said why (never an unbounded text)."""
+    transport's `max_bytes`; a transport that declares none is a failed attempt, said why (never an unbounded text)."""
     answer = {}
-    limit = getattr(transport, 'max_chars', None)
+    limit = getattr(transport, 'max_bytes', None)
     if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
-        logger.error('The %s transport declares no max_chars; notification %s is not sent.', notification.channel,
+        logger.error('The %s transport declares no max_bytes; notification %s is not sent.', notification.channel,
                      notification.pk)
-        return Failed(f'not sent: the {notification.channel} transport declares no max_chars')
+        return Failed(f'not sent: the {notification.channel} transport declares no max_bytes')
     try:
         notification.text = text(notification, flood, limit)
     except Exception as error:                    # its own handling failed: a failed attempt, retried and counted (N5)

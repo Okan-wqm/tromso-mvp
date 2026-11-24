@@ -42,14 +42,16 @@ class Transport:
     its own with a time limit, outside any transaction: it must not use the database. A notification can come twice (a
     sender that died after the transport took it and before its attempt was written sends it again): its id
     (`notification.pk`) is the key the push service collapses on, so the person sees it once. `notification.text` is what
-    the person is told, in their language (alarms/outbox.py text), never longer than `max_chars`.
+    the person is told, in their language (alarms/outbox.py text), never longer than `max_bytes`.
 
-    `max_chars`: the longest text its service takes (a push payload about 4,000 characters, an SMS 160), declared by
-    each transport as the service's own limit; the outbox builds every text to it (F-A: a longer one would be refused
-    for ever). A transport that declares none sends nothing: each attempt fails, said why."""
+    `max_bytes`: the longest text its service takes, in UTF-8 bytes (a push payload's limit is in bytes and covers the
+    envelope too, so a real push transport declares well under its 4,096, about 3,000; an SMS 160), declared by each
+    transport as a whole number of at least 1; the outbox builds every text to it (F-A: a longer one would be refused
+    for ever). `manage.py check --deploy` refuses a configured transport without one (alarms/checks.py); one that
+    reaches a round all the same sends nothing: each attempt fails, said why."""
 
     channel = ''
-    max_chars = None
+    max_bytes = None
 
     def send(self, notification, flood=None):
         """`flood`: send one message for the whole flood instead of the notification's own (alarms/floods.py)."""

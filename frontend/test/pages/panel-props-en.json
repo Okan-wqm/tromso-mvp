@@ -1,0 +1,2412 @@
+{
+ "recurring-tasks": {
+  "csrfToken": "test-token",
+  "tabs": {
+   "label": "Tasks",
+   "tabs": [
+    {
+     "href": "/operations/tasks/",
+     "label": "Today",
+     "current": false
+    },
+    {
+     "href": "/operations/tasks/?view=open",
+     "label": "Open",
+     "current": false
+    },
+    {
+     "href": "/operations/tasks/?view=completed",
+     "label": "Completed",
+     "current": false
+    },
+    {
+     "href": "/operations/tasks/recurring/",
+     "label": "Recurring tasks",
+     "current": true
+    }
+   ]
+  },
+  "toolbar": {
+   "label": "Search recurring tasks",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search recurring tasks",
+    "placeholder": "Search recurring tasks"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "state",
+     "label": "Status",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Active and paused"
+      },
+      {
+       "value": "active",
+       "label": "Active"
+      },
+      {
+       "value": "paused",
+       "label": "Paused"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/operations/tasks/recurring/new/",
+    "label": "Add recurring task"
+   }
+  },
+  "notices": [
+   {
+    "key": "plan",
+    "tone": "neutral",
+    "text": "A recurring task plans its tasks up to two weeks ahead; they are on the Tasks page. Changing or pausing it plans the tasks from today on that nobody has touched again; the others stay as they are."
+   }
+  ],
+  "lines": [],
+  "table": {
+   "label": "Recurring tasks",
+   "columns": [
+    {
+     "key": "title",
+     "label": "Recurring task",
+     "numeric": false
+    },
+    {
+     "key": "repeats",
+     "label": "Repeats",
+     "numeric": false
+    },
+    {
+     "key": "place",
+     "label": "Location",
+     "numeric": false
+    },
+    {
+     "key": "assignees",
+     "label": "Assignees",
+     "numeric": false
+    },
+    {
+     "key": "next",
+     "label": "Next",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "ad549521-bdf3-462d-b232-2e25e31e3f77",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "title": {
+       "text": "Test filter wash",
+       "href": "/operations/tasks/recurring/ad549521-bdf3-462d-b232-2e25e31e3f77/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "Cleaning · Medium"
+       ]
+      },
+      "repeats": {
+       "text": "Every week on Tuesday at 07:30",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "from 23.11.2026"
+       ]
+      },
+      "place": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "Test Site North"
+       ]
+      },
+      "assignees": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "Nobody"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "next": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "neutral",
+        "text": "Paused"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/operations/tasks/recurring/ad549521-bdf3-462d-b232-2e25e31e3f77/delete/",
+       "label": "Delete Test filter wash",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "51272fef-1383-47de-9e42-29458ad2e991",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "title": {
+       "text": "Test oxygen round",
+       "href": "/operations/tasks/recurring/51272fef-1383-47de-9e42-29458ad2e991/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "Water quality · High"
+       ]
+      },
+      "repeats": {
+       "text": "Every day at 10:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "from 20.11.2026"
+       ]
+      },
+      "place": {
+       "text": "TT-01 · Unit TT-01",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "Test Hall A · Test Site North"
+       ]
+      },
+      "assignees": {
+       "text": "test.admin",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "next": {
+       "text": "23.11.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/operations/tasks/recurring/51272fef-1383-47de-9e42-29458ad2e991/delete/",
+       "label": "Delete Test oxygen round",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "empty": {
+   "title": "No recurring tasks yet",
+   "text": "A job that comes back: every day, on chosen weekdays, or on a day of the month.",
+   "link": null,
+   "add": {
+    "href": "/operations/tasks/recurring/new/",
+    "label": "Add recurring task"
+   }
+  },
+  "pager": null
+ },
+ "questions": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Search open questions",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search open questions",
+    "placeholder": "Search by number, question or answer"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Status",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All statuses"
+      },
+      {
+       "value": "open",
+       "label": "Open"
+      },
+      {
+       "value": "answered",
+       "label": "Answered"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/authority-questions/new/",
+    "label": "Add open question"
+   }
+  },
+  "notices": [
+   {
+    "key": "unverified",
+    "tone": "neutral",
+    "text": "What only the authority can answer, and on which a rule of a report rests. Until a question is answered the rule is unverified: the report says so when it is filed. Send the questions, write down who asked and when, and record the answer here."
+   }
+  ],
+  "lines": [],
+  "table": {
+   "label": "Questions for the authority",
+   "columns": [
+    {
+     "key": "number",
+     "label": "Number",
+     "numeric": false
+    },
+    {
+     "key": "question",
+     "label": "Question",
+     "numeric": false
+    },
+    {
+     "key": "authority",
+     "label": "Asked of",
+     "numeric": false
+    },
+    {
+     "key": "affects",
+     "label": "The report rule it affects",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    },
+    {
+     "key": "asked",
+     "label": "Asked",
+     "numeric": false
+    },
+    {
+     "key": "answer",
+     "label": "Answer",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "6e91f279-aa92-455e-86e3-38f0c0aae441",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q1",
+       "href": "/authority-questions/6e91f279-aa92-455e-86e3-38f0c0aae441/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "In virkestoff.mengde, is the amount the amount of the product or of the active substance? What does styrke multiply?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Sea-lice report: the amount of an active substance (virkestoff.mengde, coverage R03)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/6e91f279-aa92-455e-86e3-38f0c0aae441/",
+       "label": "Edit Q1",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/6e91f279-aa92-455e-86e3-38f0c0aae441/delete/",
+       "label": "Delete Q1",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "a36442cc-5b98-4379-9363-46e6b882aace",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q10",
+       "href": "/authority-questions/a36442cc-5b98-4379-9363-46e6b882aace/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "How is a land research site (annen produksjon, § 3 l) classified, and which duties follow?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Fiskeridirektoratet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "A land research site (R32)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/a36442cc-5b98-4379-9363-46e6b882aace/",
+       "label": "Edit Q10",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/a36442cc-5b98-4379-9363-46e6b882aace/delete/",
+       "label": "Delete Q10",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "34a395bc-c3d8-4a1c-a929-74d78f60cf47",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q11",
+       "href": "/authority-questions/34a395bc-c3d8-4a1c-a929-74d78f60cf47/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Is Arctic char \"laksefisk\" for the lice duty (lakselusforskriften § 2)?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Sea-lice duty: which species (R33)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/34a395bc-c3d8-4a1c-a929-74d78f60cf47/",
+       "label": "Edit Q11",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/34a395bc-c3d8-4a1c-a929-74d78f60cf47/delete/",
+       "label": "Delete Q11",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "4c30efc4-6efa-4c90-a305-1542fbe5f211",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q12",
+       "href": "/authority-questions/4c30efc4-6efa-4c90-a305-1542fbe5f211/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Does the 7th, or the Tuesday, shift when it falls on a weekend or a holiday? Which year applies to a week that crosses 1 January?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Deadlines that fall on a weekend or a holiday, and the week-year (C10)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/4c30efc4-6efa-4c90-a305-1542fbe5f211/",
+       "label": "Edit Q12",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/4c30efc4-6efa-4c90-a305-1542fbe5f211/delete/",
+       "label": "Delete Q12",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "7c6847fc-0158-4e70-9f4e-98b4cfda4f01",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q2",
+       "href": "/authority-questions/7c6847fc-0158-4e70-9f4e-98b4cfda4f01/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Definitions of FORBEHANDLING, BADEBEHANDLING and ANNEN_BEHANDLING: is an injection ANNEN_BEHANDLING, is a medicated feed FORBEHANDLING?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Sea-lice report: the type of a treatment (R04)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/7c6847fc-0158-4e70-9f4e-98b4cfda4f01/",
+       "label": "Edit Q2",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/7c6847fc-0158-4e70-9f4e-98b4cfda4f01/delete/",
+       "label": "Delete Q2",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "92131def-efc3-40ab-9910-bbe9f0222103",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q3",
+       "href": "/authority-questions/92131def-efc3-40ab-9910-bbe9f0222103/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Settefisk: what is the month-end count of a unit emptied during the month, and may one karId appear twice for two species?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Smolt report: a unit emptied in the month, and two species in one tank (R07)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/92131def-efc3-40ab-9910-bbe9f0222103/",
+       "label": "Edit Q3",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/92131def-efc3-40ab-9910-bbe9f0222103/delete/",
+       "label": "Delete Q3",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "bac102d7-2693-46b6-b7ca-1afb380dd84d",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q4",
+       "href": "/authority-questions/bac102d7-2693-46b6-b7ca-1afb380dd84d/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Rensefisk: where do fish delivered out of the company or sent to slaughter go (antallFlyttetUt or antallKanIkkeGjøresRedeFor)? Is the feed the cleaner-fish batches only, or all feed of the unit?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Cleaner-fish report: fish delivered out, and the feed (R10, R11)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/bac102d7-2693-46b6-b7ca-1afb380dd84d/",
+       "label": "Edit Q4",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/bac102d7-2693-46b6-b7ca-1afb380dd84d/delete/",
+       "label": "Delete Q4",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "f036201b-3307-4ac2-93c4-3d4afcd360b8",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q5",
+       "href": "/authority-questions/f036201b-3307-4ac2-93c4-3d4afcd360b8/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Is a farm accepted as the reporter of a planned slaughter, and is the kilo basis round or gutted weight? Does the weekday mean the slaughter day?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Planned slaughter: who reports, and the kilo basis (R14)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/f036201b-3307-4ac2-93c4-3d4afcd360b8/",
+       "label": "Edit Q5",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/f036201b-3307-4ac2-93c4-3d4afcd360b8/delete/",
+       "label": "Delete Q5",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "d93f1f94-baa5-4de9-9896-95d940fb34fc",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q6",
+       "href": "/authority-questions/d93f1f94-baa5-4de9-9896-95d940fb34fc/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Are the driftsplan and the lakselusforskriften § 4 plan filed only in Altinn 3, or also through the API? Is a late 2027-28 plan still accepted, and what is the consequence?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Driftsplan and the lice coordination plan (R16, R17)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/d93f1f94-baa5-4de9-9896-95d940fb34fc/",
+       "label": "Edit Q6",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/d93f1f94-baa5-4de9-9896-95d940fb34fc/delete/",
+       "label": "Delete Q6",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "73ac3a92-cf25-4bc9-8d32-064059b3927d",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q7",
+       "href": "/authority-questions/73ac3a92-cf25-4bc9-8d32-064059b3927d/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Are the monthly biomass report, the land yearly stock and the escape notice still filed through Altinn, or through an API only? Where is the escape form now?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Fiskeridirektoratet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Monthly biomass, yearly stock of a land site and the escape notice (R20, R21, R24)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/73ac3a92-cf25-4bc9-8d32-064059b3927d/",
+       "label": "Edit Q7",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/73ac3a92-cf25-4bc9-8d32-064059b3927d/delete/",
+       "label": "Delete Q7",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "fed86ee2-a12c-4c33-a0ec-949239a2df82",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q8",
+       "href": "/authority-questions/fed86ee2-a12c-4c33-a0ec-949239a2df82/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "The annual report on cleaner-fish broodstock (stamfisk): form, deadline and channel.",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Mattilsynet",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Cleaner-fish broodstock annual report (R29)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/fed86ee2-a12c-4c33-a0ec-949239a2df82/",
+       "label": "Edit Q8",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/fed86ee2-a12c-4c33-a0ec-949239a2df82/delete/",
+       "label": "Delete Q8",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "3834ba01-dcfc-4350-a2da-d51efdb57119",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "Q9",
+       "href": "/authority-questions/3834ba01-dcfc-4350-a2da-d51efdb57119/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Does the Statsforvalter annual report apply to our permit and county, and by when?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Statsforvalteren",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "The county report of a land site with a discharge permit (R31)",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/3834ba01-dcfc-4350-a2da-d51efdb57119/",
+       "label": "Edit Q9",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/3834ba01-dcfc-4350-a2da-d51efdb57119/delete/",
+       "label": "Delete Q9",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "55e1ddd4-5adb-49ae-baac-103367b2b292",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "TQ1",
+       "href": "/authority-questions/55e1ddd4-5adb-49ae-baac-103367b2b292/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Test question one?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Test authority",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Test rule one",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "accent",
+        "text": "Open"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "answer": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/55e1ddd4-5adb-49ae-baac-103367b2b292/",
+       "label": "Edit TQ1",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/55e1ddd4-5adb-49ae-baac-103367b2b292/delete/",
+       "label": "Delete TQ1",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "60e9d08b-786f-4d7f-a9cd-fb6801c04a9f",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "number": {
+       "text": "TQ2",
+       "href": "/authority-questions/60e9d08b-786f-4d7f-a9cd-fb6801c04a9f/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "question": {
+       "text": "Test question two?",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "authority": {
+       "text": "Test authority",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "affects": {
+       "text": "Test rule two",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Answered"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "asked": {
+       "text": "03.11.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "Test Person"
+       ]
+      },
+      "answer": {
+       "text": "Test answer.",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "18.11.2026"
+       ]
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/authority-questions/60e9d08b-786f-4d7f-a9cd-fb6801c04a9f/",
+       "label": "Edit TQ2",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/authority-questions/60e9d08b-786f-4d7f-a9cd-fb6801c04a9f/delete/",
+       "label": "Delete TQ2",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "empty": {
+   "title": "No open questions yet",
+   "text": "No question for the authority is recorded.",
+   "link": null,
+   "add": {
+    "href": "/authority-questions/new/",
+    "label": "Add open question"
+   }
+  },
+  "pager": null
+ },
+ "experiments": {
+  "csrfToken": "test-token",
+  "tabs": {
+   "label": "Experiments",
+   "tabs": [
+    {
+     "href": "?",
+     "label": "Experiments",
+     "current": true
+    },
+    {
+     "href": "?view=mine",
+     "label": "Mine",
+     "current": false
+    },
+    {
+     "href": "?view=templates",
+     "label": "Templates",
+     "current": false
+    }
+   ]
+  },
+  "toolbar": {
+   "label": "Search experiments",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search experiments",
+    "placeholder": "Search by number, name or hypothesis"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Status",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All statuses"
+      },
+      {
+       "value": "draft",
+       "label": "Draft"
+      },
+      {
+       "value": "running",
+       "label": "Running"
+      },
+      {
+       "value": "closed",
+       "label": "Closed"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "site",
+     "label": "Site",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All sites"
+      },
+      {
+       "value": "9a849682-59f1-4b40-8a0d-27080298f320",
+       "label": "Test Site North"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "species",
+     "label": "Species",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All species"
+      },
+      {
+       "value": "4430d291-a90b-4bd3-9db3-bf09470fa87b",
+       "label": "Atlantic salmon"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/research/experiments/new/",
+    "label": "Add experiment"
+   }
+  },
+  "notices": [
+   {
+    "key": "trial",
+    "tone": "neutral",
+    "text": "A trial of one species on one site: its groups, their replicates and the tanks and days each is booked to. A draft reserves its tanks; starting it fixes its design, and the figures are read from the farm’s own records."
+   }
+  ],
+  "lines": [],
+  "table": {
+   "label": "Experiments",
+   "columns": [
+    {
+     "key": "experiment",
+     "label": "Experiment",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    },
+    {
+     "key": "site",
+     "label": "Site",
+     "numeric": false
+    },
+    {
+     "key": "species",
+     "label": "Species",
+     "numeric": false
+    },
+    {
+     "key": "day0",
+     "label": "Day 0",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Days",
+     "numeric": true
+    },
+    {
+     "key": "groups",
+     "label": "Groups",
+     "numeric": true
+    },
+    {
+     "key": "replicates",
+     "label": "Replicates",
+     "numeric": true
+    }
+   ],
+   "rows": [
+    {
+     "key": "48ca73bc-56d9-4bbf-8d6f-7b74565c7480",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "experiment": {
+       "text": "Test diet trial",
+       "href": "/research/experiments/48ca73bc-56d9-4bbf-8d6f-7b74565c7480/view/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-2026-001",
+        "Biological FCR"
+       ]
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "note",
+        "text": "Draft"
+       },
+       "chips": [],
+       "sub": [
+        "Day 0 is in 10 days"
+       ]
+      },
+      "site": {
+       "text": "Test Site North",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "species": {
+       "text": "Atlantic salmon",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "day0": {
+       "text": "03.12.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "days": {
+       "text": "56",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "groups": {
+       "text": "2",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "replicates": {
+       "text": "4",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/research/experiments/48ca73bc-56d9-4bbf-8d6f-7b74565c7480/",
+       "label": "Edit Test diet trial",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/research/experiments/48ca73bc-56d9-4bbf-8d6f-7b74565c7480/delete/",
+       "label": "Delete Test diet trial",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "7bfbf883-f17c-4f9a-89af-7a512ad98922",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "experiment": {
+       "text": "Test light trial",
+       "href": "/research/experiments/7bfbf883-f17c-4f9a-89af-7a512ad98922/view/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-2026-002"
+       ]
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "note",
+        "text": "Draft"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "site": {
+       "text": "Test Site North",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "species": {
+       "text": "Atlantic salmon",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "day0": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "days": {
+       "text": "84",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "groups": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "replicates": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/research/experiments/7bfbf883-f17c-4f9a-89af-7a512ad98922/",
+       "label": "Edit Test light trial",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/research/experiments/7bfbf883-f17c-4f9a-89af-7a512ad98922/delete/",
+       "label": "Delete Test light trial",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "empty": {
+   "title": "No experiments yet",
+   "text": "Plan a trial: its hypothesis, its groups and the tanks they get.",
+   "link": null,
+   "add": {
+    "href": "/research/experiments/new/",
+    "label": "Add experiment"
+   }
+  },
+  "pager": null
+ },
+ "experiments-mine": {
+  "csrfToken": "test-token",
+  "tabs": {
+   "label": "Experiments",
+   "tabs": [
+    {
+     "href": "?",
+     "label": "Experiments",
+     "current": false
+    },
+    {
+     "href": "?view=mine",
+     "label": "Mine",
+     "current": true
+    },
+    {
+     "href": "?view=templates",
+     "label": "Templates",
+     "current": false
+    }
+   ]
+  },
+  "toolbar": {
+   "label": "Search experiments",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search experiments",
+    "placeholder": "Search by number, name or hypothesis"
+   },
+   "keep": [
+    {
+     "name": "view",
+     "value": "mine"
+    }
+   ],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Status",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All statuses"
+      },
+      {
+       "value": "draft",
+       "label": "Draft"
+      },
+      {
+       "value": "running",
+       "label": "Running"
+      },
+      {
+       "value": "closed",
+       "label": "Closed"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "site",
+     "label": "Site",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All sites"
+      },
+      {
+       "value": "9a849682-59f1-4b40-8a0d-27080298f320",
+       "label": "Test Site North"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "species",
+     "label": "Species",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All species"
+      },
+      {
+       "value": "4430d291-a90b-4bd3-9db3-bf09470fa87b",
+       "label": "Atlantic salmon"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/research/experiments/new/",
+    "label": "Add experiment"
+   }
+  },
+  "notices": [
+   {
+    "key": "trial",
+    "tone": "neutral",
+    "text": "A trial of one species on one site: its groups, their replicates and the tanks and days each is booked to. A draft reserves its tanks; starting it fixes its design, and the figures are read from the farm’s own records."
+   }
+  ],
+  "lines": [],
+  "table": {
+   "label": "Experiments",
+   "columns": [
+    {
+     "key": "experiment",
+     "label": "Experiment",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    },
+    {
+     "key": "site",
+     "label": "Site",
+     "numeric": false
+    },
+    {
+     "key": "species",
+     "label": "Species",
+     "numeric": false
+    },
+    {
+     "key": "day0",
+     "label": "Day 0",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Days",
+     "numeric": true
+    },
+    {
+     "key": "groups",
+     "label": "Groups",
+     "numeric": true
+    },
+    {
+     "key": "replicates",
+     "label": "Replicates",
+     "numeric": true
+    }
+   ],
+   "rows": [
+    {
+     "key": "48ca73bc-56d9-4bbf-8d6f-7b74565c7480",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "experiment": {
+       "text": "Test diet trial",
+       "href": "/research/experiments/48ca73bc-56d9-4bbf-8d6f-7b74565c7480/view/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-2026-001",
+        "Biological FCR"
+       ]
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "note",
+        "text": "Draft"
+       },
+       "chips": [],
+       "sub": [
+        "Day 0 is in 10 days"
+       ]
+      },
+      "site": {
+       "text": "Test Site North",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "species": {
+       "text": "Atlantic salmon",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "day0": {
+       "text": "03.12.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "days": {
+       "text": "56",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "groups": {
+       "text": "2",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "replicates": {
+       "text": "4",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/research/experiments/48ca73bc-56d9-4bbf-8d6f-7b74565c7480/",
+       "label": "Edit Test diet trial",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/research/experiments/48ca73bc-56d9-4bbf-8d6f-7b74565c7480/delete/",
+       "label": "Delete Test diet trial",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "empty": {
+   "title": "No experiments yet",
+   "text": "Plan a trial: its hypothesis, its groups and the tanks they get.",
+   "link": null,
+   "add": {
+    "href": "/research/experiments/new/",
+    "label": "Add experiment"
+   }
+  },
+  "pager": null
+ },
+ "experiments-templates": {
+  "csrfToken": "test-token",
+  "tabs": {
+   "label": "Experiments",
+   "tabs": [
+    {
+     "href": "?",
+     "label": "Experiments",
+     "current": false
+    },
+    {
+     "href": "?view=mine",
+     "label": "Mine",
+     "current": false
+    },
+    {
+     "href": "?view=templates",
+     "label": "Templates",
+     "current": true
+    }
+   ]
+  },
+  "toolbar": {
+   "label": "Search experiments",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search experiments",
+    "placeholder": "Search by number, name or hypothesis"
+   },
+   "keep": [
+    {
+     "name": "view",
+     "value": "templates"
+    }
+   ],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Status",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All statuses"
+      },
+      {
+       "value": "draft",
+       "label": "Draft"
+      },
+      {
+       "value": "running",
+       "label": "Running"
+      },
+      {
+       "value": "closed",
+       "label": "Closed"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "site",
+     "label": "Site",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All sites"
+      },
+      {
+       "value": "9a849682-59f1-4b40-8a0d-27080298f320",
+       "label": "Test Site North"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "species",
+     "label": "Species",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All species"
+      },
+      {
+       "value": "4430d291-a90b-4bd3-9db3-bf09470fa87b",
+       "label": "Atlantic salmon"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/research/experiments/new/",
+    "label": "Add experiment"
+   }
+  },
+  "notices": [
+   {
+    "key": "trial",
+    "tone": "neutral",
+    "text": "A trial of one species on one site: its groups, their replicates and the tanks and days each is booked to. A draft reserves its tanks; starting it fixes its design, and the figures are read from the farm’s own records."
+   }
+  ],
+  "lines": [],
+  "table": {
+   "label": "Experiments",
+   "columns": [
+    {
+     "key": "experiment",
+     "label": "Experiment",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    },
+    {
+     "key": "site",
+     "label": "Site",
+     "numeric": false
+    },
+    {
+     "key": "species",
+     "label": "Species",
+     "numeric": false
+    },
+    {
+     "key": "day0",
+     "label": "Day 0",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Days",
+     "numeric": true
+    },
+    {
+     "key": "groups",
+     "label": "Groups",
+     "numeric": true
+    },
+    {
+     "key": "replicates",
+     "label": "Replicates",
+     "numeric": true
+    }
+   ],
+   "rows": [
+    {
+     "key": "7371cd45-3c23-4139-afcd-10a6506a3ad8",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "experiment": {
+       "text": "Test design kept",
+       "href": "/research/experiments/7371cd45-3c23-4139-afcd-10a6506a3ad8/view/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-2026-003"
+       ]
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "note",
+        "text": "Draft"
+       },
+       "chips": [
+        {
+         "kind": "note",
+         "text": "Template"
+        }
+       ],
+       "sub": []
+      },
+      "site": {
+       "text": "Test Site North",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "species": {
+       "text": "Atlantic salmon",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "day0": {
+       "text": "—",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "days": {
+       "text": "56",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "groups": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "replicates": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/research/experiments/7371cd45-3c23-4139-afcd-10a6506a3ad8/",
+       "label": "Edit Test design kept",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/research/experiments/7371cd45-3c23-4139-afcd-10a6506a3ad8/delete/",
+       "label": "Delete Test design kept",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "empty": {
+   "title": "No experiments yet",
+   "text": "Plan a trial: its hypothesis, its groups and the tanks they get.",
+   "link": null,
+   "add": {
+    "href": "/research/experiments/new/",
+    "label": "Add experiment"
+   }
+  },
+  "pager": null
+ }
+}

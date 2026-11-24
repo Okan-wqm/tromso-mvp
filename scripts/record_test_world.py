@@ -4,7 +4,8 @@
                                                server's own field template draws for it (core/tests_formpayload.py's
                                                reading), and the handling acknowledgement;
     frontend/test/pages/company-props-<language>.json   Company › Overview's props (config/company_props.py) in en, nb, tr;
-    frontend/test/pages/list-props-<language>.json      the list pages' props (core/listprops.py) in en, nb, tr.
+    frontend/test/pages/list-props-<language>.json      the list pages' props (core/listprops.py) in en, nb, tr;
+    frontend/test/pages/panel-props-<language>.json     the same of the production panel's list pages.
 
 Every person, address and name in them is a fixture value (names "Test …", addresses @example.com); the guard
 core/tests_fixture_privacy.py fails on any other e-mail domain under frontend/test and core/testdata.
@@ -103,10 +104,16 @@ LISTS = {
     'leave': 'hr:leaverequest_list', 'leave-all': 'hr:leaverequest_list?tab=all', 'shifts': 'hr:shift_list',
     'holidays': 'hr:holiday_list', 'leave-types': 'hr:leavetype_list',
 }
+# The production panel's list pages (core/test_world.py panel_world), recorded to panel-props-<language>.json.
+PANEL_LISTS = {
+    'recurring-tasks': 'tasks:taskseries_list', 'questions': 'reports:openquestion_list',
+    'experiments': 'experiments:experiment_list', 'experiments-mine': 'experiments:experiment_list?view=mine',
+    'experiments-templates': 'experiments:experiment_list?view=templates',
+}
 
 
-def record_lists(admin):
-    """{language: {name: the list-page island's props}} of every list in LISTS, as the test world's admin sees it."""
+def record_lists(admin, lists=LISTS):
+    """{language: {name: the list-page island's props}} of every list in `lists`, as the test world's admin sees it."""
     import re
     from django.test import Client
     from django.urls import reverse
@@ -116,7 +123,7 @@ def record_lists(admin):
     for language in ('en', 'nb', 'tr'):
         client.cookies['django_language'] = language
         pages = {}
-        for name, route in LISTS.items():
+        for name, route in lists.items():
             url, _sep, query = route.partition('?')
             html = client.get(f'{reverse(url)}?{query}&ui=next' if query else f'{reverse(url)}?ui=next').content.decode()
             block = re.search(r'<script id="island-list-page-1" type="application/json">(.*?)</script>', html, re.S)
@@ -149,6 +156,10 @@ try:
                     out.write('\n')
         for language, pages in record_lists(admin).items():
             with open(f'{OUT}/list-props-{language}.json', 'w', encoding='utf-8') as out:
+                json.dump(pages, out, ensure_ascii=False, indent=1)
+                out.write(chr(10))
+        for language, pages in record_lists(admin, PANEL_LISTS).items():
+            with open(f'{OUT}/panel-props-{language}.json', 'w', encoding='utf-8') as out:
                 json.dump(pages, out, ensure_ascii=False, indent=1)
                 out.write(chr(10))
         raise Rollback

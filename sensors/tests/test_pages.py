@@ -206,6 +206,8 @@ class DevicePageTests(PagesCase):
         from core.management.commands.check_pending_constraints import pending_checks
         migration = MigrationLoader(connection).graph.nodes[('sensors', '0015_broker_lines_plain')]
         with connection.cursor() as cursor:
+            # the deferred triggers of the rows the test made fire first: a table with pending trigger events is not altered
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
             cursor.execute('ALTER TABLE sensors_device DROP CONSTRAINT chk_sensors_device_topic_plain')
             cursor.execute("UPDATE sensors_device SET topic = 'farm/o 2' WHERE id = %s", [self.device.pk])
         found = {name: count for _migration, name, count in pending_checks(connection, [(migration, False)])}

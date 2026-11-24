@@ -2,7 +2,7 @@
    (frontend/islands/ui/StackedBar.tsx; static/css/ds.css, Stacked bar). {% endcomment %}<figure class="ui-stack">
   {% if stack.total %}<svg class="ui-stack-bar" viewBox="0 0 {{ stack.total }} 1" preserveAspectRatio="none" role="img" aria-label="{{ stack.said }}">{% for each in stack.segments %}<rect class="ui-stack-seg" data-tone="{{ each.tone }}" x="{{ each.x }}" y="0" width="{{ each.value }}" height="1"></rect>{% endfor %}</svg>{% else %}<p class="ui-stack-empty">{{ stack.empty }}</p>{% endif %}
   <figcaption>
-    <span class="ui-stack-title">{{ stack.label }}</span>
-    <ul class="ui-stack-legend" role="list">{% for each in stack.parts %}<li data-tone="{{ each.tone }}"><span class="ui-stack-swatch" aria-hidden="true"></span><span>{{ each.label }}</span> <strong>{{ each.figure }}</strong></li>{% endfor %}</ul>
+    <span class="ui-stack-title{% if not stack.titled %} sr-only{% endif %}">{{ stack.label }}</span>
+    <ul class="ui-stack-legend" role="list">{% for each in stack.parts %}<li data-tone="{{ each.tone }}"><span class="ui-stack-swatch" aria-hidden="true"></span><strong class="ui-stack-figure">{{ each.figure }}</strong> <span>{{ each.label }}</span></li>{% endfor %}</ul>
   </figcaption>
 </figure>

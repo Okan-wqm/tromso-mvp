@@ -5,7 +5,8 @@
 // every part in words; the legend under it says each part, its figure and its tone's mark, so nothing is told by colour
 // alone. Every word and figure comes from the server; a part of 0 is in the legend and draws no segment.
 
-export type StackTone = 'ok' | 'warning' | 'critical' | 'hold' | 'neutral' | 'note';
+// ink: the main part (here now), hold: a dashed outline (not in yet), light: the sunken ground (on leave)
+export type StackTone = 'ink' | 'ok' | 'warning' | 'critical' | 'hold' | 'light' | 'neutral' | 'note';
 
 export interface StackPart {
   key: string;
@@ -46,8 +47,8 @@ export function StackedBar({ label, parts, empty }: StackedBarProps) {
           {parts.map((part) => (
             <li key={part.key} data-tone={part.tone}>
               <span className="ui-stack-swatch" aria-hidden="true" />
+              <strong className="ui-stack-figure">{part.figure}</strong>
               <span>{part.label}</span>
-              <strong>{part.figure}</strong>
             </li>
           ))}
         </ul>

@@ -10,25 +10,24 @@
 <div class="ui-plates">
 {% for settings in objects %}
 <section class="ui-plate" data-span="12" aria-labelledby="limits">
-  <div class="ui-plate-head"><h2 id="limits">{% trans "Limits" %}</h2>{% if can_change %}<a class="ui-plate-link" href="{% url 'hr:schedulingsettings_edit' settings.pk %}">{% trans "Edit the limits" %} <span aria-hidden="true">→</span></a>{% endif %}</div>
-  <div class="ui-plate-body">
-    <div class="ui-notice" role="status">{% include "icons/_icon.html" with name="hourglass" %}<div class="ui-notice-body">{% trans "These are defaults the company can change, not the law: confirm them with your agreements. A limit may only be set stricter than the statute." %}</div></div>
-    <dl class="facts">
-      <div><dt>{% trans "Standard week (minutes)" %}</dt><dd>{{ settings.standard_week_minutes }}</dd></div>
-      <div><dt>{% trans "Minimum rest between shifts (minutes)" %}</dt><dd>{{ settings.min_rest_minutes }}</dd></div>
-      <div><dt>{% trans "Most working days in a row" %}</dt><dd>{{ settings.max_consecutive_days }}</dd></div>
-      <div><dt>{% trans "A short rest, a long week or too many days in a row" %}</dt><dd>{{ settings.get_rest_rule_display }}</dd></div>
-      <div><dt>{% trans "Working weekdays" %}</dt><dd>{{ settings.weekday_labels|join:", " }}</dd></div>
-      <div><dt>{% trans "Punch window (minutes)" %}</dt><dd>{{ settings.punch_window_minutes }}</dd></div>
-      <div><dt>{% trans "Absent after (minutes)" %}</dt><dd>{{ settings.absent_after_minutes }}</dd></div>
-      <div><dt>{% trans "A clock-in counts as forgotten after (hours)" %}</dt><dd>{{ settings.forgotten_after_hours }}</dd></div>
-    </dl>
+  <div class="ui-plate-head"><h2 id="limits">{% trans "Limits" %}</h2></div>
+  <div class="ui-plate-body"><p class="ui-empty-text">{% trans "These are defaults the company can change, not the law: confirm them with your agreements. A limit may only be set stricter than the statute." %}</p></div>
+  <div class="ui-tiles" data-fixed data-columns="4" role="group" aria-labelledby="limits">
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Standard week (minutes)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.standard_week_minutes }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Minimum rest between shifts (minutes)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.min_rest_minutes }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Most working days in a row" %}</span><span class="ui-tile-figure" data-figure>{{ settings.max_consecutive_days }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "A short rest, a long week or too many days in a row" %}</span><span class="ui-tile-value">{{ settings.get_rest_rule_display }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Working weekdays" %}</span><span class="ui-tile-value">{{ settings.weekday_labels|join:", " }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Punch window (minutes)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.punch_window_minutes }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "Absent after (minutes)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.absent_after_minutes }}</span></div>
+    <div class="ui-tile"><span class="ui-tile-label">{% trans "A clock-in counts as forgotten after (hours)" %}</span><span class="ui-tile-figure" data-figure>{{ settings.forgotten_after_hours }}</span></div>
   </div>
+  {% if can_change %}<div class="ui-plate-body"><a class="ui-btn" href="{% url 'hr:schedulingsettings_edit' settings.pk %}">{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit the limits" %}</a></div>{% endif %}
 </section>
 {% endfor %}
 <section class="ui-plate" data-span="4" aria-labelledby="shifts">
   <div class="ui-plate-head"><h2 id="shifts">{% trans "Shifts" %}</h2>{% if perms.hr.view_shift %}<a class="ui-plate-link" href="{% url 'hr:shift_list' %}">{% trans "Manage shifts" %} <span aria-hidden="true">→</span></a>{% endif %}</div>
-  {% if shifts %}<ul class="ui-list" role="list">{% for shift in shifts %}<li class="ui-list-item">{% include "ui/_chip.html" with kind="note" text=shift.code %}<span class="ui-list-main"><span>{{ shift.name }} · {{ shift.starts_at|time:"TIME_FORMAT" }}–{{ shift.ends_at|time:"TIME_FORMAT" }}</span></span></li>{% endfor %}</ul>
+  {% if shifts %}<ul class="ui-list" role="list">{% for shift in shifts %}<li class="ui-list-item"><span class="ui-shift-code" data-tone="{{ shift.tone }}">{{ shift.code }}</span><span class="ui-list-main"><span>{{ shift.name }} · {{ shift.starts_at|time:"TIME_FORMAT" }}–{{ shift.ends_at|time:"TIME_FORMAT" }}</span></span></li>{% endfor %}</ul>
   {% else %}<div class="ui-plate-body"><p class="ui-empty-text">{% trans "No shifts yet." %}</p></div>{% endif %}
 </section>
 <section class="ui-plate" data-span="4" aria-labelledby="holidays">

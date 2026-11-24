@@ -187,8 +187,13 @@ def _today_context(request):
 
 # The board's tiles as the parts of the people planned today (each such person in exactly one: read.TILES), in the new
 # look's stacked bar: their words (the tiles' msgids) and tones.
-PLANNED_PARTS = (('upcoming', 'hold'), ('here', 'ok'), ('not_in', 'warning'), ('absent', 'critical'),
-                 ('on_leave', 'note'), ('done', 'neutral'), ('forgotten', 'warning'))
+# The design's (Company Panel v2, Today & attendance): here now in ink, not in yet as a dashed outline, absent in the warning
+# colour, on leave on the sunken ground; the four always in the legend, the others when someone is in them.
+PLANNED_PARTS = (('here', 'ink'), ('not_in', 'hold'), ('absent', 'warning'), ('on_leave', 'light'),
+                 ('upcoming', 'neutral'), ('done', 'note'), ('forgotten', 'critical'))
+ALWAYS_SAID = {'here', 'not_in', 'absent', 'on_leave'}
+# The tiles in the design's order (on site now and planned today come first)
+TILE_ORDER = ('done', 'here', 'upcoming', 'not_in', 'absent', 'on_leave', 'forgotten')
 
 
 def _tile_words():
@@ -199,10 +204,14 @@ def _tile_words():
 def _today_next(request, context):
     """The new look's board (hr/_board_next.html): the classic board's context and the people planned today as a stacked
     bar of the board's own tiles, which add up to Planned today."""
-    counts, words = {tile.key: tile.count for tile in context['board'].tiles}, _tile_words()
-    tones = dict(PLANNED_PARTS)
-    return {**context, 'planned_stack': stack.stack(
-        _('Planned today'), [stack.part(key, words[key], counts.get(key, 0), tones[key]) for key, _tone in PLANNED_PARTS])}
+    board = context['board']
+    counts, words = {tile.key: tile.count for tile in board.tiles}, _tile_words()
+    tiles = sorted(board.tiles, key=lambda tile: TILE_ORDER.index(tile.key))
+    return {**context, 'tiles_next': tiles, 'poll_seconds': 30,
+            'planned_people': ngettext('%(total)s person', '%(total)s people', board.planned) % {'total': board.planned},
+            'planned_stack': stack.stack(_('Planned today'), [
+                stack.part(key, words[key], counts.get(key, 0), tone) for key, tone in PLANNED_PARTS
+                if key in ALWAYS_SAID or counts.get(key, 0)], titled=False)}     # the plate's heading says it
 
 
 def today(request):
@@ -253,11 +262,22 @@ def team_overview(request):
     page = query.number(request.GET.get('page', ''), least=1) or 1
     searched = request.GET.get('q', '').strip()
     place = navigation.page(mounted_name('hr:overview', mount_of(request)))
-    return render(request, 'hr/overview_next.html' if is_next(request) else 'hr/overview.html', {
-        'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': searched,
-        'overview': read.overview(request.user, start, department, page, query=searched, realm=scope.realm_for(request)),
-        'departments': units.choices(kinds=[scope.realm_for(request)]),
-        'chosen_department': units.token(department)})
+    found = read.overview(request.user, start, department, page, query=searched, realm=scope.realm_for(request))
+    context = {'title': place.entry.label, 'eyebrow': place.heading, 'base_template': 'app_base.html', 'query': searched,
+               'overview': found, 'departments': units.choices(kinds=[scope.realm_for(request)]),
+               'chosen_department': units.token(department)}
+    if is_next(request):
+        return render(request, 'hr/overview_next.html', {**context, 'rows_next': [(row, _meter(row, found.standard_minutes))
+                                                                                  for row in found.rows]})
+    return render(request, 'hr/overview.html', context)
+
+
+def _meter(row, standard):
+    """A row's planned hours as the design's small bar (Team overview): the planned minutes on a scale a quarter longer
+    than the larger of them and the standard week, with a tick at the standard week; numbers only (an SVG's viewBox and
+    attributes, no style)."""
+    scale = max(row.planned_minutes, standard, 1) * 5 // 4
+    return {'scale': scale, 'planned': max(row.planned_minutes, 0), 'standard': standard}
 
 
 def organisation_chart(request):

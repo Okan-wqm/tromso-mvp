@@ -4,7 +4,7 @@ parts out once (each segment's start on the whole), so the template only prints 
 the Content-Security-Policy to refuse. A part of 0 stays in the legend and draws no segment."""
 from django.utils.formats import number_format
 
-TONES = {'ok', 'warning', 'critical', 'hold', 'neutral', 'note'}
+TONES = {'ink', 'ok', 'warning', 'critical', 'hold', 'light', 'neutral', 'note'}
 
 
 def part(key, label, value, tone):
@@ -14,7 +14,7 @@ def part(key, label, value, tone):
     return {'key': key, 'label': str(label), 'value': int(value), 'figure': number_format(int(value)), 'tone': tone}
 
 
-def stack(label, parts, empty=None):
+def stack(label, parts, empty=None, titled=True):
     """The bar's context: its label, its parts with their segments laid out, the whole, the sentence a screen reader
     hears, and what is said when the whole is 0. The same props the island's StackedBar takes (`props`)."""
     total, at, segments = sum(max(each['value'], 0) for each in parts), 0, []
@@ -22,7 +22,7 @@ def stack(label, parts, empty=None):
         if each['value'] > 0:
             segments.append({**each, 'x': at})
             at += each['value']
-    return {'label': str(label), 'parts': parts, 'segments': segments, 'total': total,
+    return {'label': str(label), 'titled': titled, 'parts': parts, 'segments': segments, 'total': total,
             'said': f"{label}. {', '.join(f'{each['label']} {each['figure']}' for each in parts)}",
             'empty': str(empty) if empty else str(label),
             'props': {'label': str(label), 'parts': parts, 'empty': str(empty) if empty else None}}

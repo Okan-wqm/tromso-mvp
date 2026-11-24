@@ -611,8 +611,10 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
    as long as its share (an SVG whose viewBox is the whole), its tone's colour; a hairline of the sheet between two
    segments. The legend under it says each part in words with its figure and the same colour as a square mark. */
 .ui-stack { display: grid; gap: var(--space-2); margin: 0; }
-.ui-stack-bar { display: block; width: 100%; height: var(--space-4); }
+.ui-stack-bar { display: block; width: 100%; height: var(--space-5); border: 1px solid var(--line-control); }
 .ui-stack-seg { stroke: var(--surface-sheet); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+:is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="ink"] { --stack-tone: var(--text-1); }
+:is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="light"] { --stack-tone: var(--line-hair); }
 :is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="ok"] { --stack-tone: var(--ok); }
 :is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="warning"] { --stack-tone: var(--warn); }
 :is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="critical"] { --stack-tone: var(--crit); }
@@ -620,6 +622,10 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 :is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="neutral"] { --stack-tone: var(--stale); }
 :is(.ui-stack-seg, .ui-stack-legend > li)[data-tone="note"] { --stack-tone: var(--note); }
 .ui-stack-seg { fill: var(--stack-tone, var(--stale)); }
+/* hold (not in yet): an outline, dashed, on the sheet: the part is planned and not there */
+.ui-stack-seg[data-tone="hold"] { fill: var(--surface-sheet); stroke: var(--text-2); stroke-dasharray: 3 2; }
+.ui-stack-legend > li[data-tone="hold"] .ui-stack-swatch { background: none; border: 1px dashed var(--text-2); }
+.ui-stack-figure { font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1; }
 .ui-stack figcaption { display: grid; gap: var(--space-1); }
 .ui-stack-title { color: var(--text-2); font-size: var(--fs-small); font-weight: 600; }
 .ui-stack-legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: 0; list-style: none; font-size: var(--fs-small); }
@@ -627,25 +633,29 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-stack-swatch { width: var(--space-3); height: var(--space-3); background: var(--stack-tone, var(--stale)); }
 .ui-stack-empty { margin: 0; color: var(--text-2); font-size: var(--fs-small); }
 
-/* Organisation tree (frontend/islands/ui/OrgTree.tsx): nested lists, each level indented under its box with a hairline
-   from the parent down its children and a tick to each child; a box is a square sheet on a hairline, its kind in the
-   caption type, a site or the Production box on the sunken ground. A wide tree scrolls inside its frame. */
+/* Organisation tree (frontend/islands/ui/OrgTree.tsx), as the design draws it (Company Panel v2, Organization chart): a
+   top box with a heavy top edge; its children in a wrapping grid of boxes of one size under a line from the parent; a box
+   is a square sheet on a hairline: its name and, at its top right, its kind; its manager and their title; its head
+   count; the people behind a disclosure. A wide tree scrolls inside its frame. */
 .ui-org-frame { overflow-x: auto; padding: var(--space-2) 0; }
 .ui-org-frame:focus-visible { outline: none; box-shadow: var(--ring-focus); }
 .ui-org-tree, .ui-org-level { margin: 0; padding: 0; list-style: none; }
-.ui-org-level { margin-left: var(--space-5); padding-left: var(--space-4); border-left: 1px solid var(--line-control); }
-.ui-org-node { position: relative; padding-top: var(--space-2); }
-.ui-org-level > .ui-org-node::before { content: ""; position: absolute; top: calc(var(--space-2) + var(--space-4)); left: calc(-1 * var(--space-4)); width: var(--space-4); border-top: 1px solid var(--line-control); }
-.ui-org-box { display: inline-grid; gap: 2px; min-width: min(16rem, 100%); max-width: 28rem; padding: var(--space-2) var(--space-3); border: 1px solid var(--line-hair); background: var(--surface-sheet); }
-.ui-org-node:is([data-kind="site"], [data-kind="production_root"]) > .ui-org-box { background: var(--surface-sunken); }
-.ui-org-name { font-weight: 600; overflow-wrap: anywhere; }
-.ui-org-kind { color: var(--text-3); font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: .04em; }
+.ui-org-tree { display: grid; gap: var(--space-4); }
+.ui-org-level { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr)); gap: var(--space-3);
+  margin: var(--space-4) 0 0 var(--space-5); padding-left: var(--space-5); border-left: 1px solid var(--line-control); }
+.ui-org-node { display: flex; flex-direction: column; min-width: 0; }
+.ui-org-box { display: grid; align-content: start; gap: 2px; flex: 1; min-width: min(15rem, 100%); padding: var(--space-3) var(--space-4); border: 1px solid var(--line-hair); background: var(--surface-sheet); }
+.ui-org-tree > .ui-org-node > .ui-org-box { max-width: 20rem; border-top: 2px solid var(--text-1); }
+.ui-org-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.ui-org-name { font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.ui-org-kind { flex: none; color: var(--text-2); font-size: var(--fs-caption); }
 .ui-org-manager, .ui-org-count { color: var(--text-2); font-size: var(--fs-small); }
-.ui-org-people { margin: var(--space-1) 0 0; font-size: var(--fs-small); }
-.ui-org-people > summary { cursor: pointer; color: var(--action); }
+.ui-org-manager { color: var(--text-1); }
+.ui-org-people { margin: var(--space-2) 0 0; font-size: var(--fs-small); }
+.ui-org-people > summary { cursor: pointer; color: var(--action); font-weight: 600; text-decoration: underline; }
 .ui-org-people > summary:focus-visible { outline: none; box-shadow: var(--ring-focus); }
 .ui-org-people > ul { margin: var(--space-1) 0 0; padding-left: var(--space-4); }
-@media print { .ui-org-frame { overflow: visible; } .ui-org-people:not([open]) > ul { display: block; } }
+@media print { .ui-org-frame { overflow: visible; } }
 
 /* Roster (frontend/islands/ui/RosterGrid.tsx): a week of people on a ui-table; a day's cell holds its plan's chip (a link
    to the plan), a "+" for an empty day, a holiday's name and the rules' findings in words (a warning or a blocking
@@ -658,11 +668,71 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-roster-choice[aria-pressed="true"], .ui-roster-pick[aria-pressed="true"] { border-color: var(--action); background: var(--action-tint); box-shadow: inset 0 0 0 1px var(--action); }
 :is(.ui-roster-choice, .ui-roster-pick, .ui-roster-link, .ui-roster-add):focus-visible { outline: none; box-shadow: var(--ring-focus); }
 .ui-roster-pick { width: 100%; text-align: left; }
-.ui-roster-table td[data-roster-cell] { min-width: 6.5rem; vertical-align: top; }
+/* the days share the width evenly (the design's grid of equal cells); the person's column and the hours keep theirs */
+.ui-roster-table { table-layout: fixed; min-width: 56rem; }
+.ui-roster-table thead th:first-child { width: 14rem; }
+.ui-roster-table thead th:last-child { width: 6.5rem; }
+.ui-roster-table td[data-roster-cell] { vertical-align: top; overflow-wrap: anywhere; }
 .ui-roster-table td[data-finding="warning"] { box-shadow: inset 4px 0 0 var(--warn); }
 .ui-roster-table td[data-finding="block"] { box-shadow: inset 4px 0 0 var(--crit); }
 .ui-roster-table td[data-selected] { background: var(--action-tint); }
 .ui-roster-link, .ui-roster-add { display: inline-flex; align-items: center; min-height: var(--control-h); color: var(--action); text-decoration: none; }
-.ui-roster-add { justify-content: center; width: var(--control-h); border: 1px dashed var(--line-control); }
-.ui-roster-finding { display: flex; align-items: flex-start; gap: var(--space-1); color: var(--warn-text); }
+.ui-roster-add { justify-content: center; width: 100%; color: var(--text-3); }
+.ui-roster-add:hover { color: var(--action); }
+/* a finding keeps its cell the size of the others: one line, the whole sentence in its title and read out */
+.ui-roster-finding { display: flex; align-items: center; gap: var(--space-1); min-width: 0; color: var(--warn-text); }
+.ui-roster-finding > .ui-cell-sub { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: inherit; }
 .ui-roster-table td[data-finding="block"] .ui-roster-finding { color: var(--crit-text); }
+
+/* A tile grid whose tiles are all the same size (data-fixed): a secondary line too long for its tile ends in an ellipsis
+   and keeps its whole text in its title; the label, the figure and a state are never cut (owner, 2026-11-24). */
+.ui-tiles[data-fixed] { grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); }
+.ui-tiles[data-fixed][data-columns="4"] { grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); }
+@media (max-width: 40rem) { .ui-tiles[data-fixed] { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ui-tiles[data-fixed] :is(.ui-tile-sub, .ui-tile-sub2, .ui-tile-source) { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* A shift's code (Today, the Shift schedule, Scheduling settings): its tone from the shift (Shift.tone, 1 to 6, the
+   tokens --tone-1..6 the classic schedule uses), the code in capitals on a hairline. */
+.ui-shift-code { display: inline-flex; align-items: center; justify-content: center; min-width: 3.5rem; padding: 1px var(--space-2); border: 1px solid var(--line-hair); background: var(--surface-sunken); color: var(--text-1); font-size: var(--fs-caption); font-weight: 600; letter-spacing: .04em; white-space: nowrap; }
+.ui-shift-code[data-tone="1"] { background: var(--tone-1); }
+.ui-shift-code[data-tone="2"] { background: var(--tone-2); }
+.ui-shift-code[data-tone="3"] { background: var(--tone-3); }
+.ui-shift-code[data-tone="4"] { background: var(--tone-4); }
+.ui-shift-code[data-tone="5"] { background: var(--tone-5); }
+.ui-shift-code[data-tone="6"] { background: var(--tone-6); }
+.ui-shift-code[data-tone="7"] { background: var(--tone-7); }
+.ui-shift-code[data-tone="8"] { background: var(--tone-8); }
+/* A tile whose value is words, not a figure (a rule's setting, the working weekdays): wrapped, never cut. */
+.ui-tile-value { font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+
+/* The roster as the design draws it (Company Panel v2, Shift schedule): the paint bar in a dashed frame, its choices in
+   their shifts' tones; a day's plan a block across its cell (a shift in its tone, planned off dashed, on leave on the
+   sunken ground). */
+.ui-roster-paint { padding: var(--space-2) var(--space-3); border: 1px dashed var(--line-control); background: var(--surface-sheet); }
+.ui-roster-paint > .ui-btn:first-of-type { margin-left: auto; }
+.ui-roster-plan { display: block; padding: var(--space-1) var(--space-2); border: 1px solid var(--line-hair); background: var(--surface-sunken); color: var(--text-1); font-size: var(--fs-caption); font-weight: 600; letter-spacing: .04em; text-align: center; white-space: nowrap; }
+.ui-roster-plan[data-kind="off"] { border-style: dashed; border-color: var(--line-control); background: none; font-weight: 400; }
+.ui-roster-plan[data-kind="leave"] { color: var(--text-2); font-weight: 400; }
+:is(.ui-roster-plan, .ui-roster-choice)[data-tone="1"] { background: var(--tone-1); }
+:is(.ui-roster-plan, .ui-roster-choice)[data-tone="2"] { background: var(--tone-2); }
+:is(.ui-roster-plan, .ui-roster-choice)[data-tone="3"] { background: var(--tone-3); }
+:is(.ui-roster-plan, .ui-roster-choice)[data-tone="4"] { background: var(--tone-4); }
+:is(.ui-roster-plan, .ui-roster-choice)[data-tone="5"] { background: var(--tone-5); }
+:is(.ui-roster-plan, .ui-roster-choice)[data-tone="6"] { background: var(--tone-6); }
+:is(.ui-roster-plan, .ui-roster-choice)[data-tone="7"] { background: var(--tone-7); }
+:is(.ui-roster-plan, .ui-roster-choice)[data-tone="8"] { background: var(--tone-8); }
+.ui-roster-choice[data-kind="off"], .ui-roster-choice[data-kind="clear"] { border-style: dashed; }
+.ui-roster-link { display: block; text-decoration: none; }
+.ui-roster-link:hover .ui-roster-plan { border-color: var(--action); }
+/* The range a page's head steps through (a week), between its Previous and Next. */
+.ui-head-range { font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; white-space: nowrap; }
+
+/* A small meter under a figure (Team overview's planned hours against the standard week): the track, the bar (warning
+   when over), a tick at the mark. An SVG of numbers only; the figure above it says the value in words. */
+.ui-meter-figure { display: block; }
+.ui-meter { display: block; width: 6rem; height: var(--space-2); margin: var(--space-1) 0 0 auto; overflow: visible; }
+.ui-meter-track { fill: var(--surface-sheet); stroke: var(--line-control); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.ui-meter-bar { fill: var(--text-2); }
+.ui-meter-bar[data-status="warning"] { fill: var(--warn); }
+.ui-meter-tick { stroke: var(--text-1); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+td[data-status="warning"] { color: var(--warn-text); font-weight: 600; }

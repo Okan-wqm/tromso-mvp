@@ -3988,7 +3988,9 @@ the device.
 ### Running it
 
 - `manage.py sensors_ingest_role --password-file FILE` lets the ingest's database role (NOLOGIN after the migration) sign
-  in; `--disable` closes it.
+  in; `--disable` closes it. Only the password's SCRAM-SHA-256 verifier, made by libpq on this side, reaches the server
+  (a server that logs DDL logs no secret), and a privileged role (a superuser, one that may create roles or databases,
+  a table owner) is refused: `--role` opens a least-privilege service role only (L-15).
 - `manage.py sensor_broker_sync [--passwd PATH] [--acl PATH] [--extra OPS_LINES] [--check]` writes Mosquitto's files from
   the credentials and devices (atomic replace; by default into `SENSORS_BROKER_AUTH_DIR`, `.sensors/broker-auth`), then
   `docker compose kill -s HUP mosquitto` makes the broker read them. Replacing a credential's secret (Credentials, Replace the secret)
@@ -6051,10 +6053,12 @@ under the wrong kind, fails.
   no farm's data is read or written. Run by a developer and by CI.
 - **dev**: made-up or development-only data: a demonstration seeder, a benchmark, a repair of the development seed.
   Each is built on `core.management.devtool.DevCommand`: **with `DEBUG` off it refuses to run** unless `--force` is
-  given too (`seed_hr_demo` never runs with `DEBUG` off: it makes accounts with a known password). A developer's
-  machine and the scripts' throwaway databases run with `DEBUG` on (the default) and are not asked. **The guard judges
-  the process, not the database**: a process started with `DEBUG` on and pointed at a farm's database is not stopped by
-  it (each of these commands still has its own check: a confirmed database name, a flag, the seed's marker).
+  given too (`seed_hr_demo` never runs with `DEBUG` off: it makes accounts with a known password). `DEBUG` defaults on,
+  so the guard asks the database too (the data-layering audit, L-15): without `--force` it runs only as a database
+  superuser, which a developer's machine and the scripts' and tests' throwaway databases are and a farm's server is not
+  (its app and owner roles are no superusers), so a process started with `DEBUG` on and pointed at a farm's database is
+  stopped as well (each command still has its own check besides: a confirmed database name, a flag, the seed's marker).
+  `sensors_demo_setup --remove` logs every row it takes away.
 
 | Command | App | Kind | What it does | Who runs it |
 |---|---|---|---|---|

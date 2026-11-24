@@ -503,9 +503,10 @@ SQL
   MANAGE=$(ts_manage tsmove)
 
   say "another database of the server with a water chunk (a stale copy): the move refuses it by name, writing nothing"
-  ts_sql tsmove -c 'SELECT _timescaledb_functions.stop_background_workers()' > /dev/null   # a template has no users
-  ts_sql tsmove -d postgres -c 'CREATE DATABASE stale_copy TEMPLATE balik' > /dev/null
-  ts_sql tsmove -c 'SELECT _timescaledb_functions.start_background_workers()' > /dev/null
+  # a template has no other session: none may come in (the job scheduler would), the ones there are ended
+  ts_sql tsmove -d postgres -c 'ALTER DATABASE balik WITH ALLOW_CONNECTIONS false' \
+    -c "SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE datname = 'balik'" \
+    -c 'CREATE DATABASE stale_copy TEMPLATE balik' -c 'ALTER DATABASE balik WITH ALLOW_CONNECTIONS true' > /dev/null
   if sh "$TS_MOVE" move "$T/tsmove" dev > "$T/tsmove-other.out" 2>&1; then
     cat "$T/tsmove-other.out"; echo "FAIL: a move ran with another database holding revision triggers"; exit 1
   fi

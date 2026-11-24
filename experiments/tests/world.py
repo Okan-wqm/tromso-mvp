@@ -22,12 +22,14 @@ from django.utils import timezone
 from core.access import areas
 from core.codes import next_code
 from farm import withdrawal_gate
+from farm.handling import check
+from farm.stock import services as stock_services
 from farm.models import (
     Feed, FeedingRecord, HealthEvent, LiceCount, Medicine, ProductionDepartment, Site, Species, System, Tank,
     Treatment, WaterMeasurement,
 )
 from farm.stock.dates import site_today
-from farm.tests.helpers import make_species, point_of, stock_fish
+from farm.tests.helpers import make_facility, make_species, point_of, stock_fish
 from farm.tests.test_stock import make_unit
 from sensors.tests import make_channel, make_connection, make_device, make_format
 from tasks.models import Task
@@ -180,6 +182,23 @@ def build_sealed(cls):
     cls.system_task = Task(title='XQZ backwash the trial loop', due_date=cls.today)
     cls.system_task.set_place(cls.sealed_system)
     cls.system_task.save()
+    # A second batch in the system's other tank, with an escape and a harvest (their records hang on the operation:
+    # sealed with it, `via`), each with the canary in what the record keeps.
+    second = cls.sealed_tanks[1]
+    cls.second_batch = stock_fish(cls.boss, second, 400, '45', days_ago=BEGAN - 1, species=cls.salmon,
+                                  name='XQZ second batch')
+    cls.escape = stock_services.record_escape(cls.boss, unit=second, batch=cls.second_batch,
+                                              day=cls.today - timedelta(days=2), count=3, cause='XQZ net torn')
+    cls.harvest = stock_services.record_harvest(
+        cls.boss, unit=second, batch=cls.second_batch, day=cls.today - timedelta(days=1), count=20,
+        measured_weight_kg=Decimal('1.1'), facility=make_facility(), vessel='XQZ wellboat',
+        handling_ack=check.assess('harvest', second, cls.today - timedelta(days=1), cls.second_batch).fingerprint)
+    # A mixed batch: the open batch, part of it moved into X's third tank inside the trial. The batch and the operation
+    # stay visible with the open tank's line (any_of); the line into the sealed tank is X's.
+    day = cls.today - timedelta(days=2)
+    cls.mixed_transfer = stock_services.record_transfer(
+        cls.boss, source=cls.open_tank, batch=cls.open_batch, day=day, legs=[(cls.sealed_tanks[2], 100)],
+        reason='density', handling_ack=check.assess('transport', cls.open_tank, day, cls.open_batch).fingerprint)
     cls.sealed_channel = make_channel(cls.device, 'oxygen_mg_l', name='XQZ oxygen')
     from sensors.models import Binding
     cls.binding = Binding.objects.create(channel=cls.sealed_channel, point=cls.sealed_point,
@@ -204,8 +223,9 @@ def sealed_ids(cls):
             *cls.sealed_tanks,
             cls.sealed_system, cls.sealed_batch, cls.feeding, cls.sealed_point, cls.sample, cls.lice, cls.event,
             cls.treatment, cls.task, cls.system_task, cls.sealed_channel, cls.binding, cls.task_note, cls.checklist,
-            cls.alarm, cls.notification,
-            *cls.sealed_batch.movements.values_list('operation', flat=True).distinct()]
+            cls.alarm, cls.notification, cls.second_batch, cls.escape.escape_record, cls.harvest.harvest_record,
+            *cls.sealed_batch.movements.values_list('operation', flat=True).distinct(),
+            *cls.second_batch.movements.values_list('operation', flat=True).distinct()]
     found = {}
     from farm.models import StockOperation
     for row in rows:

@@ -92,6 +92,20 @@ class ShareTests(AccessCase):
         self.give('design', valid_from=timezone.now() - timedelta(days=3), valid_until=timezone.now() - timedelta(days=1))
         self.assertEqual(self.detail(self.researcher).status_code, 404)
 
+    def test_a_copy_takes_the_design_so_only_who_reads_the_design_copies(self):
+        """A copy carries the hypothesis, the notes and the factors: a grantee of the water alone (who reads the
+        shell) is refused the dialog and the copy, and nothing of the design reaches a new experiment (review M3)."""
+        self.give('water')
+        self.client.force_login(self.researcher)
+        url = reverse('experiments:experiment_copy', args=[self.experiment.pk])
+        self.assertEqual(self.client.get(url).status_code, 403)
+        response = self.client.post(url, {'name': 'Mine now', 'kind': 'experiment', 'token': 'm3-copy'})
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(Experiment.all_objects.filter(hypothesis__contains=world.DESIGN)
+                         .exclude(pk=self.experiment.pk).exists())
+        self.give('design')
+        self.assertEqual(self.client.get(url).status_code, 200)               # the positive control
+
     def test_a_grantee_never_edits(self):
         self.give('results')
         self.client.force_login(self.researcher)

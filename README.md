@@ -5418,7 +5418,8 @@ may see it. The alarms item is `alarms.read.attention`: the open alarms and ever
 the monitoring cards judge it now (`farm.water.read.unit_water`, the one judge), so it never says "No open alarms" while a
 unit is critical whose alarm is not raised yet, or a unit with fish has no recent value ("1 unit critical", "2 units
 without recent data", "Live values cannot be read"). It reads every unit's water, so it is not drawn with the page: the
-page says "Reading the alarms…" and the fragment (`core:ui_strip_alarms`) is polled every 30 s (`frontend/poll.ts`).
+page says "Reading the alarms…" and the fragment (`core:ui_strip_alarms`) is polled every 30 s (`frontend/poll.ts`, after
+its start-up gate); no answer, an old one or a refusal says "The alarms cannot be read" (`frontend/test/strip.browser.test.ts`).
 
 ## One format for every tab
 

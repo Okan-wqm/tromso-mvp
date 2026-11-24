@@ -14168,6 +14168,9 @@ msgstr ""
 msgid "The alarm system itself"
 msgstr "Alarm sisteminin kendisi"
 
+msgid "The alarms cannot be read"
+msgstr "Alarmlar okunamıyor"
+
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "
 "amount of the active substance: confirm which it wants."

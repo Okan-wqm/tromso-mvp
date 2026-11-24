@@ -312,3 +312,17 @@ class FeedGivenTests(SimpleTestCase):
         elsewhere = {module: data['given'] for module, data in found.items() if data['given'] and module != GIVEN_HOME}
         self.assertEqual(elsewhere, {}, 'Feed given is farm.feeding.read.given: use it, never sum amount_kg.')
         self.assertTrue(found[GIVEN_HOME]['given'])
+
+
+class HealthEventsOfAUnitTests(SimpleTestCase):
+    """The data-layering audit, L-9: which health events concern a unit (of its site, naming it or no unit) is written in
+    farm/health/read.py only (`concerns`, `concerning`): no other module spells the "names no unit" half."""
+
+    def test_the_rule_is_spelled_by_the_health_reader_only(self):
+        spelled = {}
+        for module, tree in production_modules():
+            lines = [node.lineno for node in ast.walk(tree) if isinstance(node, ast.keyword)
+                     and node.arg in ('units__isnull', 'health_event__units__isnull')]
+            if lines:
+                spelled[module] = lines
+        self.assertEqual(set(spelled), {'farm/health/read.py'})

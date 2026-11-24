@@ -639,6 +639,16 @@ class BulkHealthReadTests(HealthTestCase):
         events = HealthEvent.objects.filter(site=site, closed_on__isnull=True).prefetch_related('units')
         return [event for event in events if not event.units.all() or unit in event.units.all()]
 
+    def test_one_rule_says_which_events_concern_a_unit(self):
+        """The data-layering audit, L-9: read.concerning (the query the mortality, cull and treatment choices read) and
+        read.open_events (the drawer) give the same events for each unit as the per-unit rule did."""
+        for unit in self.units:
+            with self.subTest(unit=unit.code):
+                expected = {event.pk for event in self.old_events(unit)}
+                self.assertEqual({event.pk for event in read.concerning([unit.pk])}, expected)
+                self.assertEqual({event.pk for event in read.open_events([unit])[unit.pk]}, expected)
+        self.assertNotIn(self.named.pk, {event.pk for event in read.concerning([self.t1.pk])})
+
     def old_latest(self, unit_ids):
         found = {}
         for count in LiceCount.objects.filter(unit_id__in=unit_ids).order_by('date', 'created_at'):

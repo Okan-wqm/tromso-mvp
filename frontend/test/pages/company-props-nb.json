@@ -14,7 +14,7 @@
    {
     "key": "biomass",
     "label": "Biomasse",
-    "figure": "500 kg",
+    "figure": "495 kg",
     "sub": "2 enheter med fisk",
     "source": "Beholdningsboken · 13:42",
     "href": "/operations/units/"
@@ -22,11 +22,11 @@
    {
     "key": "alarms",
     "label": "Åpne alarmer",
-    "figure": "0",
+    "figure": "1",
     "href": "/alarms/",
     "status": "critical",
     "statusLabel": "Kritisk",
-    "sub": null,
+    "sub": "1 kritisk",
     "sub2": "1 enhet kritisk · 1 enhet uten nye data",
     "source": "Alarmer · 13:42"
    },
@@ -76,29 +76,29 @@
   },
   "rows": [
    {
-    "key": "4979fab4-6a7f-407b-b34b-0a119327f00d",
+    "key": "55bb583e-adef-411a-b506-5300361c690b",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/4979fab4-6a7f-407b-b34b-0a119327f00d/",
+    "href": "/sites/55bb583e-adef-411a-b506-5300361c690b/",
     "type": "Landbasert anlegg",
     "status": "critical",
     "units": "1",
-    "biomass": "50 kg",
+    "biomass": "45 kg",
     "water": {
      "kind": "critical",
-     "text": "O₂ (mg/L) 5,00"
+     "text": "O₂ (mg/L) 8,40"
     },
     "alarms": {
-     "figure": "0",
+     "figure": "1",
      "sub": "1 enhet kritisk"
     },
     "onSite": null
    },
    {
-    "key": "3fb08c38-1de7-4c5e-852a-c6b254d28884",
+    "key": "074e4ca0-3b1c-43b3-ac88-543cdcabbb7b",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/3fb08c38-1de7-4c5e-852a-c6b254d28884/",
+    "href": "/sites/074e4ca0-3b1c-43b3-ac88-543cdcabbb7b/",
     "type": "Merd",
     "status": "warning",
     "units": "1",
@@ -128,7 +128,16 @@
    "severity": "Alvorlighet",
    "what": "Hva"
   },
-  "rows": [],
+  "rows": [
+   {
+    "key": "1",
+    "severity": "Kritisk",
+    "kind": "critical",
+    "what": "O₂ 5.8 mg/L, below 6.00 (critical)",
+    "href": "/alarms/1/",
+    "where": "TT-01 › Middle · Test Site North · 20.11.2026 13:42"
+   }
+  ],
   "more": null,
   "empty": null,
   "units": {
@@ -228,7 +237,7 @@
   },
   "rows": [
    {
-    "key": "4979fab4-6a7f-407b-b34b-0a119327f00d-49c52e90-c675-4d80-b31e-035f89dbe373",
+    "key": "55bb583e-adef-411a-b506-5300361c690b-7d115690-8571-4719-b0c5-99c199a137a4",
     "item": "Test Grower 4 (TG-4)",
     "site": "Test Site North",
     "onHand": "1 475 kg",
@@ -248,23 +257,23 @@
   },
   "rows": [
    {
-    "key": "db3de927-b660-4cb3-8fe9-ebf24cb0e662",
+    "key": "2cf04e93-a3f1-48ec-b4de-397788485a32",
     "title": "Test long channel",
-    "href": "/messages/db3de927-b660-4cb3-8fe9-ebf24cb0e662/",
+    "href": "/messages/2cf04e93-a3f1-48ec-b4de-397788485a32/",
     "text": "Test message 60 of 60.",
     "when": "23.11.2026 13:41"
    },
    {
-    "key": "36509f3f-522b-4d55-a514-cd6c53abb3aa",
+    "key": "5c18d858-9605-49cf-abc0-a3fb7daec5b3",
     "title": "Test channel",
-    "href": "/messages/36509f3f-522b-4d55-a514-cd6c53abb3aa/",
+    "href": "/messages/5c18d858-9605-49cf-abc0-a3fb7daec5b3/",
     "text": "A test message to the channel.",
     "when": "23.11.2026 12:41"
    },
    {
-    "key": "d5977784-adfb-4d47-8315-2daae26ef552",
+    "key": "8a559dce-092a-4f3e-baae-207b6b7c982e",
     "title": "Test Writer",
-    "href": "/messages/d5977784-adfb-4d47-8315-2daae26ef552/",
+    "href": "/messages/8a559dce-092a-4f3e-baae-207b6b7c982e/",
     "text": "A second test answer,\non two lines.",
     "when": "23.11.2026 12:40"
    }
@@ -280,7 +289,7 @@
   "critical": "Kritisk",
   "entries": [
    {
-    "key": "d0c3c935-5fdc-48e1-bbbc-3527fdce9d07",
+    "key": "89c5a63a-bbb4-470e-a30f-51bffb42a5aa",
     "action": "Opprettet",
     "critical": false,
     "record": "Kanal · Test long channel",
@@ -292,7 +301,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "2a7dab24-3ece-4563-afd6-de47e45ac977",
+    "key": "6cdfb16f-a6d1-47f7-9837-7369607d32f6",
     "action": "Opprettet",
     "critical": false,
     "record": "Kanal · Test channel",
@@ -304,7 +313,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "5525080e-812a-4579-b9cd-4da22b0a9528",
+    "key": "3c991915-3734-4aba-988c-db8034107f1a",
     "action": "Opprettet",
     "critical": false,
     "record": "Lageroperasjon · Count · TS-01 · TG-4 TL-1, TG-4 TL-2 · 2026-11-21",
@@ -316,7 +325,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "792ae8a0-cf2a-46aa-b3a0-600ad4dfd8eb",
+    "key": "2ef59ef8-7ac5-4f9f-9f69-e65bf68269e2",
     "action": "Annullert",
     "critical": false,
     "record": "Lageroperasjon · Write-off · TS-01 · TG-4 TL-2 · 2026-11-19",
@@ -328,7 +337,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "fec35fcb-7ea6-4345-abb9-b0e2e24cbf7e",
+    "key": "d7209ae6-2a5a-4fa1-ad67-bbee3de3f537",
     "action": "Opprettet",
     "critical": false,
     "record": "Lageroperasjon · Write-off · TS-01 · TG-4 TL-2 · 2026-11-19",
@@ -350,10 +359,10 @@
   },
   "rows": [
    {
-    "key": "4dcea08d-c2be-4bc6-95f5-6dfbe9f42dd8",
+    "key": "9ae7c8ce-5b2e-4c9e-abca-ec6f99272895",
     "text": "A test statement.",
     "source": "Test document (u.å.)",
-    "href": "/knowledge/entries/4dcea08d-c2be-4bc6-95f5-6dfbe9f42dd8/view/",
+    "href": "/knowledge/entries/9ae7c8ce-5b2e-4c9e-abca-ec6f99272895/view/",
     "kind": "neutral",
     "chip": "Utkast"
    }

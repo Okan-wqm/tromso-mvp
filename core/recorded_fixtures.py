@@ -279,6 +279,7 @@ _VARIES = (
     (re.compile(r'/static/islands/[^"\'\s]+'), '/static/islands/I'),    # a build's file names
     (re.compile(r'(?<=/)\d+(?=/)'), 'N'),                               # a numbered record in an address
     (re.compile(r'\b(id="m|href="#m|after=|before=)\d+'), r'\1N'),      # a message's number
+    (re.compile(r'("key": ")\d+"'), r'\1N"'),                            # a numbered record's row key
     (re.compile(r'(\d\d:\d\d:\d\d)\.\d+'), r'\1'),                      # the world's clock's microseconds
 )
 # a record's id, with or without its dashes (a stored file is named by one)

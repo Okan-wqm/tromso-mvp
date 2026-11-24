@@ -21,10 +21,13 @@ class Failed:
 @dataclass(frozen=True)
 class Flood:
     """A flood message (alarms/floods.py): `size` alarms of one kind for the person, the oldest opened at `since`, one
-    of them `example` (an alarm's summary). The notification handed with it is the first of them."""
+    of them `example` (an alarm's summary); `cleared`: all of them have cleared, the last at `last_cleared`. The
+    notification handed with it is the first of them, its `text` the flood's (alarms/outbox.py text)."""
     size: int
     since: object
     example: str
+    cleared: bool = False
+    last_cleared: object = None
 
 
 class Transport:

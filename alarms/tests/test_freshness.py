@@ -114,6 +114,8 @@ NAMED = {
                                            'most 8 h), never the longest in force',
     ('alarms/models.py', 'FLOOD_COUNT_BOUNDS'): 'the refusal of nonsense of a flood count, never the count in force',
     ('alarms/models.py', 'FLOOD_WINDOW_BOUNDS'): 'the refusal of nonsense of a flood window, never the window in force',
+    ('alarms/outbox.py', 'GIVE_UP_CHUNK'): "how many cleared warnings a round gives up after its sending (about 100 "
+                                           "ms of work): a bound on a round's time, not a farm rule",
     ('alarms/outbox.py', 'CLAIM'): "the advisory lock class of a notification being sent: an identity, not a threshold",
     ('alarms/models.py', 'CLOCK_SKEW_BOUNDS'): "the refusal of nonsense of a device clock limit: at most the ingest "
                                                "contract's hour",

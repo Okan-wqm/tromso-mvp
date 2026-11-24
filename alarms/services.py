@@ -128,7 +128,8 @@ def queue_many(notifications):
 
 def give_up_said(notifications, detail, now):
     """The notifications leave the outbox's queue unsent, each with a failed attempt saying `detail` and its log entry:
-    one transaction, three statements however many (a backlog of cleared warnings at a first connection)."""
+    one transaction, three statements however many. The outbox hands it one chunk a round (outbox.GIVE_UP_CHUNK), so
+    a failure between two chunks leaves the queue consistent and the next round goes on."""
     with transaction.atomic():
         made = DeliveryAttempt.objects.bulk_create([
             DeliveryAttempt(notification=notification, attempted_at=now, outcome=Outcome.FAILED,

@@ -96,6 +96,7 @@ def stock_fish(user, unit, count=1000, weight='50', days_ago=10, species=None, *
     from ..stock import services
     species = species or Species.objects.first() or make_species()
     values = {'input_stage': 'fry', 'origin': 'own_hatchery', **fields}
+    may_record(user, 'add_stockoperation')         # the stock service asks (the data-layering audit, L-6)
     operation = services.record_input(user, species=species, day=services.local_today(unit) - timedelta(days=days_ago),
                                       lines=[(unit, count, Decimal(weight))], **values)
     return operation.movements.get().batch
@@ -156,7 +157,10 @@ RECORDER = ('add_stockoperation', 'delete_stockoperation', 'add_watermeasurement
 
 def may_record(user, *codenames):
     """`user` given the rights a fixture records with (RECORDER, or `codenames`), as rights of the person (no role, so
-    no role name to clash); returns the user read again, since Django keeps a person's rights once it has read them."""
+    no role name to clash), on this very object: the rights Django keeps once it has read them are dropped, so the
+    caller's object and every later check see them. Returns the user."""
     from django.contrib.auth.models import Permission
     user.user_permissions.add(*Permission.objects.filter(codename__in=codenames or RECORDER))
-    return type(user).objects.get(pk=user.pk)
+    for cached in ('_perm_cache', '_user_perm_cache', '_group_perm_cache'):
+        user.__dict__.pop(cached, None)
+    return user

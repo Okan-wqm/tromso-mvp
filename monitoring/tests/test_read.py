@@ -76,6 +76,9 @@ def card(**changes):
 
 
 class LadderTests(SimpleTestCase):
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
     def key(self, **changes):
         return card(**changes).state.key
 

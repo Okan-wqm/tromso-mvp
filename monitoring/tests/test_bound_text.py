@@ -132,6 +132,9 @@ class NeverInsideItsBoundTests(SimpleTestCase):
 
 class WorkedOutCardTests(SimpleTestCase):
     """On hand-made cards: the card's reason, the band's chip and the bar's name."""
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
 
     ROW = dict(critical_low='60.0', warning_low='70.0', warning_high='110.0', critical_high='120.0')
 

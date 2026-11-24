@@ -7,6 +7,9 @@ from . import layout_pages
 
 
 class LayoutPagesTests(SimpleTestCase):
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
     def test_the_committed_parts_are_what_the_templates_print_now(self):
         self.assertEqual(layout_pages.stale(), [], 'run `manage.py layout_pages` and commit the result')
         call_command('layout_pages', '--check', verbosity=0)

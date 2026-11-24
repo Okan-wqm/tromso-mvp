@@ -9,7 +9,7 @@ from django.test import TestCase
 from core.testing import StartedClock
 from farm.models import ProductionDepartment, Site
 from farm.stock import services
-from farm.tests.helpers import correction_window, make_facility, make_species, role
+from farm.tests.helpers import correction_window, make_facility, make_species, may_record, role
 from farm.tests.test_stock import make_unit
 
 from .. import compute, integrity
@@ -79,6 +79,7 @@ class ReportTestCase(StartedClock, TestCase):
         self.assertEqual(integrity.problems(), [])
 
     def stock(self, unit, count, weight, on):
+        may_record(self.user, 'add_stockoperation')       # the stock service asks (the data-layering audit, L-6)
         operation = services.record_input(self.user, species=self.salmon, input_stage='smolt', origin='own_hatchery',
                                           day=on, lines=[(unit, count, Decimal(weight))])
         return operation.movements.get().batch

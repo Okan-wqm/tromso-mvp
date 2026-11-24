@@ -18,6 +18,9 @@ from .text import lower
 
 
 class LowerTests(SimpleTestCase):
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
     def test_turkish_capitals_lower_as_turkish_writes_them_and_other_languages_as_python_does(self):
         with translation.override('tr'):
             self.assertEqual(lower('İtlaf'), 'itlaf')

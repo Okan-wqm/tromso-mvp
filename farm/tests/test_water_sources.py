@@ -220,6 +220,9 @@ class DerivedTests(SourcesCase):
 
 
 class FreshnessTests(SimpleTestCase):
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
     def test_fresh_for_seconds_overrides_the_parameters_hours(self):
         from datetime import datetime, timezone
         now = datetime(2026, 11, 4, 12, tzinfo=timezone.utc)

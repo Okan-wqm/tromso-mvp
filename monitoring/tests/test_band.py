@@ -37,6 +37,9 @@ def critical(code, parameter='oxygen_mg_l'):
 
 class BandReadTests(SimpleTestCase):
     """On hand-made cards: the tally and the chips are worked out from the cards' states alone."""
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
 
     def cards(self):
         return [named('A'), critical('B'), named('C', water=()), named('D', stock=SimpleNamespace(over_capacity=True)),

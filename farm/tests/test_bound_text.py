@@ -329,6 +329,9 @@ def cell_of(html, label):
 class FigureTests(SimpleTestCase):
     """The owner's decision of 2026-11-22 ("show as many decimals as it takes to show it is past"): a value judged past a bound
     shows the decimals that prove it wherever it is shown, not only in a sentence (`reading_figure`, `proof_of`)."""
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
 
     def figure(self, code, exact, **bounds):
         return reading_figure(judged(worked_out(code, exact), row_of(**bounds)))

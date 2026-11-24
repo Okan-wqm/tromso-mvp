@@ -63,6 +63,9 @@ class AgeTests(SimpleTestCase):
 
 
 class FaceTests(SimpleTestCase):
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
     def test_a_value_says_its_figure_unit_status_origin_and_age_in_words(self):
         face = render.face(reading('oxygen_mg_l', '8.1'), NOW)
         self.assertEqual((face.value, face.label, face.status, face.origin, face.age, face.stale, face.missing),
@@ -141,6 +144,9 @@ class FaceTests(SimpleTestCase):
 
 class BarTests(SimpleTestCase):
     """The bands of a bar are what evaluate.judge says of the values in them (F-088): an open bound is no band."""
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
 
     def bands(self, value, **bounds):
         limit = SimpleNamespace(**{name: None if bounds.get(name) is None else D(str(bounds[name]))

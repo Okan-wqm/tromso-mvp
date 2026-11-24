@@ -21,6 +21,9 @@ D = Decimal
 
 
 class ClockSkewTests(SimpleTestCase):
+    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
+    databases = {'default'}
+
     def test_a_value_from_further_ahead_than_the_skew_is_not_fresh(self):
         now = datetime(2026, 11, 8, 12, tzinfo=dt_timezone.utc)
         ph = get('ph')

@@ -129,7 +129,7 @@ HOLDS = {Severity.WARNING: ALERTS, Severity.CRITICAL: (Status.CRITICAL,)}
 UNJUDGED = (Status.NO_LIMIT, Status.NOT_MEASURED)
 
 
-def _summary(point, reading):
+def _summary(point, reading, unit=None):
     """'T-01 · Middle: pH (NBS scale) 5.50 (critical)', in English at rest. A reading without a value of its own that
     another fresh value judged (`decided`) names that value; a refused one judged on its limits' basis says "at least"
     before it, as the page does; one whose status the unit's own stale value keeps says "last own value …, measure this
@@ -143,6 +143,8 @@ def _summary(point, reading):
         if reading.value is not None and reading.refused:      # its limits' basis alone, as the page says it (F3-5)
             value = _('at least %(value)s') % {'value': value}
         said = f'{getattr(owner, "code", owner)} · {point.name}: {label} {value} ({status})'
+        if unit is not None and getattr(point, 'unit_id', None) != unit.pk:   # a unit without a point: its system's
+            said = f'{unit.code}, from {said}'
         if reading.last_own is not None:        # the unit's own stale value keeps the level (read.last_own, F3-9)
             said = f'{said}; {water_messages.last_own(reading.last_own)}'
         return said[:SUMMARY_LENGTH]
@@ -410,9 +412,12 @@ def _removed(units, now):
     return found
 
 
-def _water_subjects(found, failed, rules, now):
-    """The water subjects of one unit's PointWater: per quantity, a warning and a critical level."""
-    subjects, unit_id = [], found.point.unit_id
+def _water_subjects(unit, found, failed, rules, now):
+    """The water subjects of one unit's PointWater: per quantity, a warning and a critical level. A unit with no point of
+    its own is read at its system's loop point (read.latest `units`): its levels are there, said for the unit."""
+    subjects, unit_id = [], unit.pk
+    point = found.point or found.system_point
+    where = _where(point) if found.point is not None else _unit_where(unit)
     for slot, reading in _slots(found).items():
         for severity in HOLDS:
             subjects.append(Subject(
@@ -420,9 +425,9 @@ def _water_subjects(found, failed, rules, now):
                 lambda state, severity=severity, reading=reading: not failed and clear_evidence(
                     reading, severity, rules, state.last_bad_at, now, own_held=state.own_held, unit_id=unit_id),
                 seen_at(reading.worse or reading, now), severity,
-                lambda point=found.point, severity=severity, reading=reading: {
-                    'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
-                    'point': point, 'parameter': reading.code, **_where(point)},
+                lambda severity=severity, reading=reading: {
+                    'at': now, 'severity': severity, 'summary': _summary(point, reading, unit),
+                    'source': Source.WATER_LIMIT, 'point': point, 'parameter': reading.code, **where},
                 **_unjudged(reading), note=partial(_note_own, reading, severity, rules, unit_id)))
     return subjects
 
@@ -515,7 +520,7 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
     subjects = []
     for unit in units:
         found = found_water.get(unit.pk)
-        looked = found is not None and found.point is not None and unit.pk not in unevaluated
+        looked = found is not None and found.for_unit and unit.pk not in unevaluated
         for code in REFUSABLE:
             reading = found.get(code) if looked else None
             since = _unevaluated_since(reading, now) if reading is not None and reading.unevaluated else None
@@ -636,15 +641,18 @@ def water(now, rules, oxygen_pass=None):
     found_water, unreadable = _read(units, now)
     failed = any(found.sensors_failed for found in found_water.values())
     subjects, unevaluated = [], {unit.pk for unit in unreadable}
+    # A unit with no point of its own is read at its system's loop point (read.latest `units`): its levels are there;
+    # without one (no point anywhere to raise a level at) it is unwatched.
     unwatched = [unit.pk for unit in units if unit.pk not in unevaluated and (
-        found_water.get(unit.pk) is None or found_water[unit.pk].point is None)]
+        found_water.get(unit.pk) is None or (found_water[unit.pk].point is None
+                                             and found_water[unit.pk].system_point is None))]
     stocked = {pk for pk, fish in stock_read.unit_counts(unwatched).items() if fish > 0} if unwatched else set()
     for unit in units:
         found = found_water.get(unit.pk)
-        if found is None or found.point is None or unit.pk in unevaluated:
+        if found is None or (found.point is None and found.system_point is None) or unit.pk in unevaluated:
             continue
         try:
-            subjects += _water_subjects(found, failed, rules, now)
+            subjects += _water_subjects(unit, found, failed, rules, now)
         except Exception:
             logger.exception('The water of unit %s could not be evaluated.', unit)
             unevaluated.add(unit.pk)
@@ -655,9 +663,9 @@ def water(now, rules, oxygen_pass=None):
         unit=unit.code), now, parameter=UNIT_UNEVALUATED, where=_unit_where(unit)) for unit in units]
     # A unit with fish and no point to read its own water at has no water alarm at all: a configuration warning of its
     # own until it has one (cross review F16).
-    # A unit with fish and no point holds fish now and its oxygen has no fresh value: the critical of `_silent_subjects`
-    # says it (review 2 of the branch, R2); this warning stays only for a unit counted with fish that the water does not
-    # find holding any now, and ends for the others (restored), never two alarms for one unit.
+    # A unit with fish whose oxygen has no fresh value: the critical of `_silent_subjects` says it (review 2 of the
+    # branch, R2), never this warning beside it. It stays for a unit with fish and no point anywhere to raise its water
+    # levels at (none of its own, no loop point) whose oxygen its system's probes still give (review 4, L1).
     stocked = {pk for pk in stocked if found_water.get(pk) is None or found_water[pk].silent_oxygen is None}
     subjects += [system_subject(f'unit:{unit.pk}:{NO_WATER_POINT}', unit.pk in stocked, Severity.WARNING, _text(_(
         '%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm until it '

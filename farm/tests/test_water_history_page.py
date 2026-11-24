@@ -100,3 +100,49 @@ class HistoryPageTests(WaterTestCase):
         self.assertTemplateUsed(response, 'farm/_unit_chart.html')
         self.assertEqual(response['Content-Type'].split(';')[0], 'text/html')
 
+
+
+class LinksIntoTankWaterTests(WaterTestCase):
+    """The links into Tank › Water (`farm:tank_water`, the one home of a tank's water history), in the new look only: a
+    unit's row on Water chemistry's latest page, and an alarm's detail with the 12 hours each side of its opening
+    (`?around=` on the site's clock, dd.mm.yyyy HH:MM). The classic look keeps its links (the history page)."""
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+
+    def look(self, value):
+        if value is None:
+            self.client.cookies.pop('ui', None)
+        else:
+            self.client.cookies['ui'] = value
+
+    def test_a_units_row_on_the_water_page_opens_tank_water_in_the_new_look(self):
+        tank_water = reverse('farm:tank_water', args=[self.t1.pk])
+        self.look('next')
+        self.assertContains(self.client.get(reverse('farm:water')), f'href="{tank_water}"')
+        self.look(None)
+        page = self.client.get(reverse('farm:water'))
+        self.assertNotContains(page, f'href="{tank_water}"')
+        self.assertContains(page, 'href="/operations/water/?point=')                  # the history page, as before
+
+    def test_an_alarms_detail_opens_its_units_water_around_its_opening_in_the_new_look(self):
+        self.user.groups.add(role('Alarm reader', 'view_alarm'))
+        self.user = get_user_model().objects.get(pk=self.user.pk)
+        self.client.force_login(self.user)
+        opened = timezone.now().replace(second=0, microsecond=0) - timedelta(hours=5)
+        alarm = Alarm.objects.create(source='water_limit', point=self.mid1, parameter='oxygen_mg_l', severity='critical',
+                                     site=self.bergen, opened_at=opened, summary='O₂ 5.9 mg/L')
+        detail = reverse('alarms:alarm_detail', args=[alarm.pk])
+        around = f"{reverse('farm:tank_water', args=[self.t1.pk])}?around={opened:%d.%m.%Y}+{opened:%H}%3A{opened:%M}"
+        self.look('next')
+        self.assertContains(self.client.get(detail), f'href="{around}"')       # the site's clock is UTC here
+        found = self.client.get(around).context['props']
+        self.assertEqual(found['start'], int((opened - timedelta(hours=12)).timestamp()))
+        self.assertLessEqual(found['end'] - found['start'], 24 * 3600)                     # clipped at now
+        self.look(None)
+        self.assertNotContains(self.client.get(detail), 'around=')
+        loop = Alarm.objects.create(source='water_limit', point=self.loop, parameter='oxygen_mg_l', severity='critical',
+                                    site=self.bergen, opened_at=opened, summary='O₂ 5.9 mg/L')
+        self.look('next')
+        self.assertNotContains(self.client.get(reverse('alarms:alarm_detail', args=[loop.pk])), 'around=')

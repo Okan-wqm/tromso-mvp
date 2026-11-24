@@ -1,6 +1,8 @@
 """Company › Alarms › Alarms: every alarm, open ones first, with what happened to it (opened, notified, delivered or waiting,
 escalated, acknowledged, cleared), and the console's Acknowledge. The pages say plainly that nothing is sent while no
 transport is connected."""
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -45,7 +47,27 @@ def alarm_detail(request, pk):
     return render_page(request, 'alarms/alarm_detail.html', _context(
         alarm=alarm, events=events, is_open=read.is_open(alarm), level=read.level(alarm),
         nobody=read.nobody_notified(alarm),
-        can_acknowledge=not mine and read.may_acknowledge(request.user, alarm)))
+        can_acknowledge=not mine and read.may_acknowledge(request.user, alarm),
+        water_url=_water_around(request, alarm)))
+
+
+def _water_around(request, alarm):
+    """In the new look, the water of the alarm's unit 12 hours each side of its opening (Tank › Water,
+    `farm:tank_water?around=` the opening moment on the site's clock, dd.mm.yyyy HH:MM as the date box writes it), for a
+    person who may read the water; '' for an alarm at no unit (a loop's, a device's) and in the classic look."""
+    from django.utils import formats, timezone
+
+    from core import ui
+    from farm.models.site import zone_of
+    from farm.models.water_point import site_of
+
+    if not ui.is_next(request) or not request.user.has_perm('farm.view_watermeasurement'):
+        return ''
+    point = alarm.point or getattr(getattr(alarm.sensor_event, 'binding', None), 'point', None)
+    if point is None or not point.unit_id:
+        return ''
+    opened = timezone.localtime(alarm.opened_at, zone_of(site_of(point.unit))).replace(tzinfo=None)
+    return f"{reverse('farm:tank_water', args=[point.unit_id])}?{urlencode({'around': formats.localize_input(opened)})}"
 
 
 @require_POST

@@ -1671,6 +1671,19 @@ without values it shows its defaults.
   follows the form, so a link opens the same view. The server is the one source of every number and of the
   SVG: the browser code (`frontend/poll.ts`, the live form, usable by any GET form) has no chemistry. Without
   the script the form has a Calculate button and the page is drawn again.
+- **The new look** (`?ui=next`, `core.ui.is_next`): the SAME templates, form and live parts, no island and no JSON, drawn
+  as the design console's calculator by the rules under `[data-ui="next"]` in `static/css/components.css` (the calculator
+  section): a values plate (where the values come from as its head, the tabs, a field a row with its value at the right,
+  Defaults and Print report), the charts' row on plates (the server's Deffeyes chart in the middle, its layers as chips
+  under it), the results plate (ammonia and hydrogen sulfide with the judged value as the figure, the values worked out,
+  the recipes across) and the simulator's steps last. Its only additions are the plates' titles "Values" and "Results"
+  (`UI_NEXT`) and wrappers that are no box in the classic look (`.calc-values-plate`, display: contents; `.ui-marks`
+  draws nothing there). The printed report takes the look too (`data-ui` on its own page; on paper at the classic
+  report's size, every row's value wrapped inside its column). `farm/tests/test_calculator_said.py` holds the new look
+  to the classic one for every case on the page, the live parts and the report (`says_missing` empty), and
+  `farm.tests.test_island_pages` does so for the calculator from the test world's TT-01 and keeps the three pages for
+  `frontend/test/calculator.pages.ts` (`npm run test:pages`: the live update in a browser under the server's policy and
+  the page's own nonce, CSP, axe, 4.5:1, 1440 and 390 px, the report on A4 across).
 - **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in the latest value
   of each measured field of its water, its middle point's (temperature, pH, salinity, alkalinity, TAN,
   dissolved oxygen: `read.owner_water`, each

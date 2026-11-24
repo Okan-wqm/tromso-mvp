@@ -31,7 +31,7 @@ from django.utils import formats, timezone
 from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.translation import gettext as _, ngettext
 
-from core import navigation
+from core import navigation, ui
 from core.crud import done, render_page
 from core.dates import on_clock, read_day, read_moment
 from core.widgets import EXAMPLE
@@ -162,7 +162,7 @@ def water_page(request):
         record_url=_dialog_url('farm:water_record', request, place.target),
         round_url=reverse('farm:water_round') + (f'?{urlencode({"site": site.pk})}' if site else ''),
     )
-    context.update(_history(request, site, place) if showing_history else _latest(site))
+    context.update(_history(request, site, place) if showing_history else _latest(site, ui.is_next(request)))
     return render_page(request, 'farm/water.html', context)
 
 
@@ -174,9 +174,11 @@ def _dialog_url(name, request, target=None, args=()):
     return f'{reverse(name, args=args)}?{urlencode(query)}'
 
 
-def _latest(site):
+def _latest(site, next_look=False):
     """One row per point: the middle point of every unit (a unit without one is a row of its own, to say so), and
-    every other point of an owner that has a sample within the window (loops and equipment show only then)."""
+    every other point of an owner that has a sample within the window (loops and equipment show only then). Each row's
+    history: in the new look a unit's is Tank › Water (`farm:tank_water`, the one home of a tank's water history), a
+    loop's and a piece of equipment's the history page; in the classic look the history page for all."""
     units = Tank.objects.select_related('production_department__site', 'system')
     if site is not None:
         units = units.filter(production_department__site=site)
@@ -204,7 +206,8 @@ def _latest(site):
     for owner, point in entries:
         point_water = water[point.pk] if point is not None else read.PointWater(None)
         rows.append({'owner': owner, 'point': point, 'loop': isinstance(owner, System), 'water': point_water,
-                     'history_url': history_url(point or owner)})
+                     'history_url': reverse('farm:tank_water', args=[owner.pk]) if next_look and isinstance(owner, Tank)
+                     else history_url(point or owner)})
     columns = _columns([row['water'].readings for row in rows])
     for row in rows:
         row['cells'] = [row['water'].get(parameter.code) for parameter in columns]
@@ -673,8 +676,6 @@ def tank_water(request, pk):
     axis, the sensors' lines and the samples on the same chart, the fish's limits as bands, the NH₃-N worked out per
     sample, gaps shown, the events of the window (`history_data`). Without the new look the address is the unit's
     history on Water chemistry, today's page for it."""
-    from core import ui
-
     unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=pk)
     if not ui.is_next(request):
         return redirect(history_url(unit))

@@ -150,14 +150,16 @@ html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) { 
 html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .monitor-card:not(.is-fit)) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
 
 /* ---- the toolbar (the design's): the search first, the filters with their names for a screen reader only (each
-   select says its choice: "No board", "All sites"), the wall's two buttons at the end of the row. */
-html[data-ui="next"] .monitor-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-3); }
-html[data-ui="next"] .monitor-filters { display: contents; }
-html[data-ui="next"] .monitor-filters .monitor-search { order: -1; flex: 1 1 18em; }
-html[data-ui="next"] .monitor-filters .monitor-search input { width: 100%; }
-html[data-ui="next"] .monitor-filter-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-html[data-ui="next"] .monitor-units { order: 2; }
-html[data-ui="next"] .monitor-actions { order: 3; }
+   select says its choice: "No board", "All sites"), the wall's two buttons at the end of the row. The DESK page's
+   only: a wall keeps its own toolbar, its two buttons fixed at the band's end with no filter (monitor.css, "the
+   wall"; review round 2, B1: these rules drew the filters over the wall's band and its buttons over a card). */
+html[data-ui="next"]:not([data-wall]) .monitor-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-3); }
+html[data-ui="next"]:not([data-wall]) .monitor-filters { display: contents; }
+html[data-ui="next"]:not([data-wall]) .monitor-filters .monitor-search { order: -1; flex: 1 1 18em; }
+html[data-ui="next"]:not([data-wall]) .monitor-filters .monitor-search input { width: 100%; }
+html[data-ui="next"]:not([data-wall]) .monitor-filter-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+html[data-ui="next"]:not([data-wall]) .monitor-units { order: 2; }
+html[data-ui="next"]:not([data-wall]) .monitor-actions { order: 3; }
 html[data-ui="next"] .monitor-band .monitor-modes { margin-left: auto; }
 
 /* ---- the band (desk page; a wall keeps its own one-row band: monitor.css, "the wall") ----------------------------- */

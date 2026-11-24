@@ -11,7 +11,8 @@
 //     set) and its word is there; no CSP violation, no critical or serious axe finding, every card text at 4.5:1 on
 //     what it stands on, nothing scrolls sideways;
 //   - the pane: the Big card of the unit gone into, filled by its own poll, with its own link to the water;
-//   - the wall of Small cards at 1920x1080 and 3840x2160: one screen, nothing scrolls, no card text under 11 px;
+//   - the wall of Small cards at 1920x1080 and 3840x2160: one screen, nothing scrolls, no card text under 11 px, nothing
+//     over the band, a card's state word or the wall's buttons (the toolbar is its two buttons);
 //   - polling and the announcer in the new look: a card that gets worse is said ("TW-01 is now Critical."), a failed
 //     poll marks the grid not updated, the next answer says "Updated again."; a first answer that fails says the
 //     cards cannot be read, and the cards come when the server answers again.
@@ -174,6 +175,32 @@ function uncut(tab: Page): Promise<string[]> {
       }
     }
     if (innerWidth >= 1100) for (const [kind, seen] of sizes) if (seen.size > 1) wrong.push(`${kind} cards of ${seen.size} sizes: ${[...seen].join(' ')}`);
+    return wrong;
+  });
+}
+
+/** On a wall: what another element lies over (review round 2, B1: the new look's toolbar was drawn over the band, and
+ *  the wall's buttons over a card's state word): the band's time and every tally, the state word of every card on the
+ *  screen and the wall's buttons must each be what the screen shows at their middle; and the toolbar is no wider than
+ *  its buttons. [] when nothing is covered. */
+function covered(tab: Page): Promise<string[]> {
+  return tab.evaluate(() => {
+    const wrong: string[] = [];
+    const seen = (node: HTMLElement): boolean => {
+      const at = node.getBoundingClientRect();
+      const top = document.elementFromPoint(at.left + at.width / 2, at.top + at.height / 2);
+      return top !== null && (node === top || node.contains(top));
+    };
+    const words = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card .monitor-state-word'))
+      .filter((word) => { const at = word.getBoundingClientRect(); return at.top >= 0 && at.bottom <= innerHeight; });
+    const buttons = Array.from(document.querySelectorAll<HTMLElement>('.monitor-actions .button'));
+    for (const node of [...document.querySelectorAll<HTMLElement>('.monitor-band .monitor-head, .monitor-tally li'), ...words, ...buttons]) {
+      if (!seen(node)) wrong.push(`covered: "${(node.textContent ?? '').trim().slice(0, 40)}"`);
+    }
+    const toolbar = document.querySelector<HTMLElement>('.monitor-toolbar')?.getBoundingClientRect();
+    const actions = document.querySelector<HTMLElement>('.monitor-actions')?.getBoundingClientRect();
+    if (toolbar && actions && toolbar.width > actions.width + 2) wrong.push(`the toolbar is ${toolbar.width} px wide, its buttons ${actions.width}`);
+    if (!words.length || !buttons.length) wrong.push(`${words.length} state words, ${buttons.length} buttons on the screen`);
     return wrong;
   });
 }
@@ -360,6 +387,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
         assert.equal(seen.scrolls, false, 'the wall is one screen');
         assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
         assert.equal(seen.links, seen.cards);
+        assert.deepEqual(await covered(tab), [], 'nothing lies over the band, a state word or the buttons of the wall');
         assert.deepEqual(violations, [], 'CSP violations');
         await shot(tab, `wall-en-${width}`, false);
         await tab.close();
@@ -383,6 +411,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
       assert.ok(seen.pages > 1, `${seen.pages} pages`);
       assert.ok(seen.units.length > 0 && seen.units.every((unit) => unit >= least - 0.5), `units ${seen.units} under ${least}`);
       assert.equal(seen.scrolls, false);
+      assert.deepEqual(await covered(tab), [], 'nothing lies over the band, a state word or the buttons of the wall');
       assert.deepEqual(violations, [], 'CSP violations');
       await shot(tab, 'wall-board-en-1920', false);
       await tab.close();

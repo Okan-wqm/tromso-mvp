@@ -1,6 +1,7 @@
 """System › Water (farm:system_water, ?ui=next): the system's points side by side on one time axis, drawn by the island of
-Tank › Water from the system's history_data (the JSON of farm:water_system_chart?view=history), each chart titled with its
-point when the system has more than one; without the new look the address is the system's history on Water chemistry.
+Tank › Water from the system's history_data (the JSON of farm:water_system_chart?view=history), the island heading each
+point's charts with the point when the system has more than one; the window's props are Tank › Water's
+(farm.water.views.window_props); without the new look the address is the system's history on Water chemistry.
 On THE test world (core/test_world.py, clock at MOMENT): Test Loop 1 with TT-01's probe and samples; its props are kept
 for the browser test (frontend/test/prodrest.pages.ts)."""
 from pathlib import Path
@@ -55,10 +56,12 @@ class SystemWaterNextTests(FrozenClock, TestCase):
             self.assertEqual(props['unit']['code'], 'TL1')
             self.assertTrue(any(chart['samples'] or not chart['empty'] for place in props['places']
                                 for chart in place['charts']), 'the world\'s values are drawn')
-            if len(props['places']) > 1:
-                for place in props['places']:
-                    for chart in place['charts']:
-                        self.assertTrue(chart['quantity']['label'].startswith(f"{place['point']} · "))
+            # a chart's title is its quantity's, as the history's: the island heads each point's charts with the point
+            charts = {chart['quantity']['code']: chart['quantity']['label'] for place in data['places']
+                      for chart in place['charts']}
+            for place in props['places']:
+                for chart in place['charts']:
+                    self.assertEqual(chart['quantity']['label'], charts[chart['quantity']['code']])
             self.assertRegex(props['custom']['start'], r'^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$')
             if language == 'en':
                 keep('production-system-water-en', {'island': 'water', 'props': props})

@@ -5553,9 +5553,10 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   another way, named there).
 - **System › Water** (`farm:system_water`, `/operations/systems/<id>/water/`; `farm/water/system_page.py`): the system's
   points side by side, loop first, on one time axis, from `history_data` (the JSON of
-  `farm:water_system_chart?view=history`), drawn by Tank › Water's island; with more than one point each chart's title
-  starts with its point. Without the new look the address is the system's history on Water chemistry. Held:
-  `farm/tests/test_system_water_next.py`.
+  `farm:water_system_chart?view=history`), drawn by Tank › Water's island; with more than one point the island heads each
+  point's charts with the point's name (and each chart's accessible name says it). Its window and words are Tank ›
+  Water's (`farm.water.views.window_props`, one helper for both pages). Without the new look the address is the system's
+  history on Water chemistry. Held: `farm/tests/test_system_water_next.py`.
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

@@ -24,6 +24,12 @@ def main_of(html):
     return html[html.index('<main'):html.index('</main>') + len('</main>')]
 
 
+def as_next(old):
+    """The classic page as the new one would say its own address: a dialog's way back (`next`) is the page asked for,
+    ?ui=classic on the one and ?ui=next on the other."""
+    return old.replace('ui%3Dclassic', 'ui%3Dnext').replace('ui=classic', 'ui=next')
+
+
 @override_settings(ISLANDS_MANIFEST=MANIFEST)
 class ProductionOverviewNextTests(FrozenClock, TestCase):
     NOW = MOMENT
@@ -47,7 +53,7 @@ class ProductionOverviewNextTests(FrozenClock, TestCase):
     def test_the_new_page_says_everything_the_classic_page_says_in_three_languages(self):
         for language in ('en', 'nb', 'tr'):
             with self.subTest(language=language):
-                old, new = self.page('classic', language), self.page('next', language)
+                old, new = as_next(self.page('classic', language)), self.page('next', language)
                 self.assertEqual(unsaid(old, {}, new_html=new), [])
                 keep(f'production-overview-{language}', {'html': main_of(new)})
 
@@ -79,4 +85,4 @@ class ProductionOverviewNextTests(FrozenClock, TestCase):
         new = self.page('next')
         self.assertIn('data-attention="withdrawal"', new)
         self.assertIn(f'{reverse("farm:production_units")}?unit={unit.pk}', new)
-        self.assertEqual(unsaid(self.page('classic'), {}, new_html=new), [])
+        self.assertEqual(unsaid(as_next(self.page('classic')), {}, new_html=new), [])

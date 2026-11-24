@@ -2,18 +2,21 @@
 in both looks: the new look opens the page, the classic look's address redirects to the unit's history on Water
 chemistry, as before."""
 import re
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
 
-from core.tests_islands import FIXTURE
-
 from ..water.views import history_url
 from .test_water import WaterTestCase
 
 
-@override_settings(ISLANDS_MANIFEST=FIXTURE)
+# the islands of both pages: Tank › Water's and the new look's list of units
+MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
+
+
+@override_settings(ISLANDS_MANIFEST=MANIFEST)
 class DrawerWaterHistoryTests(WaterTestCase):
     def setUp(self):
         super().setUp()

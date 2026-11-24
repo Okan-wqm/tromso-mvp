@@ -28,6 +28,14 @@ class SystemWaterNextTests(FrozenClock, TestCase):
         cls.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
         world(cls.admin, Client())
         cls.system = System.objects.get(code='TL1')
+        # the loop's own water (the world samples TT-01's): a meter sample at its point two days back
+        from datetime import timedelta
+        from decimal import Decimal as D
+
+        from .helpers import point_of
+        from ..water import services
+        services.record(cls.admin, point=point_of(cls.system), measured_at=MOMENT - timedelta(days=2), source='manual',
+                        values={'oxygen_mg_l': D('8.20'), 'temperature_c': D('12.0'), 'ph': D('7.30')}, notes='')
 
     def setUp(self):
         self.client.force_login(self.admin)

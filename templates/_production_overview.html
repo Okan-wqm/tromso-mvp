@@ -88,10 +88,10 @@
         {% if water.more %}
         <li class="tw:px-4"><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:text-small tw:font-semibold" href="{{ water.url }}">{% blocktrans trimmed count count=water.more %}{{ count }} more sampling point on Water chemistry{% plural %}{{ count }} more sampling points on Water chemistry{% endblocktrans %}</a></li>
         {% endif %}{% for hold in holds %}
-        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto]" data-attention="withdrawal">
+        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center" data-attention="withdrawal">
           <span class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-2 tw:gap-y-1 tw:col-start-1"><span class="ui-chip" data-status="hold">{% include "icons/_icon.html" with name="hourglass" %}<span>{% trans "Withdrawal" %}</span></span><b>{{ hold.unit.code }}</b></span>
-          <span class="tw:min-w-0 tw:col-start-1 tw:text-small tw:text-ink-2 tw:xl:col-start-2 tw:xl:row-start-1">{% for block in hold.blocks %}{% if not forloop.first %} · {% endif %}{{ block.batch.code }}: {{ block|harvest_from }}{% endfor %}</span>
-          <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ hold.url }}">{% trans "Production units" %}</a>
+          <span class="tw:min-w-0 tw:col-start-1 tw:text-small tw:text-ink-2">{% for block in hold.blocks %}{% if not forloop.first %} · {% endif %}{{ block.batch.code }}: {{ block|harvest_from }}{% endfor %}</span>
+          <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:coarse:min-h-12" href="{{ hold.url }}">{% trans "Production units" %}</a>
         </li>
         {% endfor %}
         {% if late_tasks %}

@@ -50,6 +50,8 @@ class ProductionUnitsNextTests(FrozenClock, TestCase):
         self.client.cookies['django_language'] = language
         url = reverse('farm:production_units')
         old = self.client.get(url, {**query, 'ui': 'classic'}).content.decode()
+        # a dialog's way back (`next`) is the page asked for: ?ui=classic on the one, ?ui=next on the other
+        old = old.replace('ui%3Dclassic', 'ui%3Dnext').replace('ui=classic', 'ui=next')
         new = self.client.get(url, {**query, 'ui': 'next'}).content.decode()
         return old, new
 

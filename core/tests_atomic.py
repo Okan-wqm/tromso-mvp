@@ -3,7 +3,7 @@
 import ast
 from pathlib import Path
 
-from django.db import TransactionManagementError
+from django.db.transaction import TransactionManagementError
 from django.test import SimpleTestCase
 
 from . import atomic

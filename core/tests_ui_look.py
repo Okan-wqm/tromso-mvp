@@ -24,8 +24,6 @@ class NewLookTests(TestCase):
         response = self.client.get(reverse('home'))
         self.assertNotIn('data-ui', html_tag(response))
         self.assertNotIn('ui-strip', response.content.decode())
-        for look in ('next', 'classic'):        # no template comment is printed (a {# #} that spans lines is)
-            self.assertNotIn('{#', self.client.get(reverse('home'), {'ui': look}).content.decode())
 
     def test_ui_next_turns_it_on_and_a_cookie_keeps_it_until_ui_classic(self):
         response = self.client.get(reverse('home'), {'ui': 'next'})

@@ -239,6 +239,9 @@ class StripAlarmsTests(AlarmsCase):
                          {self.bergen.pk: (1, 1, 1, 0), self.oslo.pk: (1, 1, 0, 1)})
         self.assertEqual(alarms_read.attention(site=self.oslo).status, 'critical')     # the farm-wide alarm
         self.assertEqual((alarms_read.attention().alarms, alarms_read.attention().farm_wide), (1, 1))
+        total, sites = alarms_read.attention_all()                    # the farm and its sites from one reading
+        self.assertEqual((total, sites), (alarms_read.attention(), by_site))
+        self.assertEqual((total.critical, total.blind, total.alarms), (1, 1, 1))
 
     @override_settings(ATTENTION_CACHE_SECONDS=15)
     def test_one_read_for_every_viewer_in_its_time(self):
@@ -250,4 +253,10 @@ class StripAlarmsTests(AlarmsCase):
             self.fragment()
             self.fragment()
             alarms_read.attention_by_site()
+            alarms_read.attention_all()
+        self.assertEqual(read.call_count, 1)
+
+    def test_the_farm_and_its_sites_from_one_reading_without_the_cache(self):
+        with mock.patch.object(alarms_read, '_snapshot', wraps=alarms_read._snapshot) as read:
+            alarms_read.attention_all()
         self.assertEqual(read.call_count, 1)

@@ -446,6 +446,8 @@ tr[data-status="critical"] .ui-row-status { color: var(--crit); }
 tr[data-status="warning"] .ui-row-status { color: var(--warn); }
 .ui-cell-sub { display: block; color: var(--text-3); font-size: var(--fs-small); font-weight: 400; white-space: normal; }
 .ui-cell-strong { font-weight: 600; }
+/* a row's name stays readable on a phone: the table scrolls inside its frame rather than squeeze it to a word a line */
+.ui-table tbody th[scope="row"] { min-width: 10rem; }
 .ui-table :is(th, td).ui-actions { position: sticky; right: 0; padding-top: var(--space-1); padding-bottom: var(--space-1); background: var(--plate, var(--surface-sheet)); box-shadow: -1px 0 0 var(--line-hair); vertical-align: middle; }
 .ui-table thead th.ui-actions { background: var(--surface-sunken); }
 .ui-table .ui-actions { width: 1%; white-space: nowrap; }

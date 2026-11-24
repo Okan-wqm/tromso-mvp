@@ -10,7 +10,7 @@
     <a class="icon-button" href="{{ close_url }}" aria-label="{% trans "Close" %}" title="{% trans "Close" %}">{% include "icons/_icon.html" with name="x" %}</a>
   </div>
   <div class="ui-plate-body">
-    <p>{% include "tasks/_status_chip.html" %}{% if task.overdue %} {% trans "Overdue" as overdue %}{% include "ui/_chip.html" with kind="warning" text=overdue %}{% endif %} · {{ task.get_category_display }} · <span>{{ task.get_priority_display }}</span></p>
+    <p>{% include "tasks/_status_chip.html" %}{% if task.overdue %} {% trans "Overdue" as overdue %}{% include "ui/_chip.html" with kind="warning" text=overdue %}{% endif %} · {{ task.get_category_display }} · {% include "tasks/_priority_next.html" with item=task %}</p>
     <dl class="facts">
       <div><dt>{% trans "Location" %}</dt><dd>{{ place|place_label }}{% if place.is_deleted %} {% trans "Place deleted" as deleted %}{% include "ui/_chip.html" with kind="neutral" text=deleted %}{% endif %}<span class="ui-cell-sub">{{ place|place_kind }} · {{ place|place_context }}</span></dd></div>
       {% if task.batch %}<div><dt>{% trans "Batch" %}</dt><dd>{{ task.batch.code }}{% if task.batch.is_deleted %} {% trans "Voided" as voided %}{% include "ui/_chip.html" with kind="neutral" text=voided %}{% endif %}</dd></div>{% endif %}

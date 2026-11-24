@@ -13,7 +13,9 @@
 </nav>
 {% if actions %}
 <div class="ui-toolbar">
-  {% for action in actions %}<a class="ui-btn"{% if action.primary %} data-variant="primary"{% endif %} href="{{ action.url }}">{% if action.primary %}{% include "icons/_icon.html" with name="plus" %}{% endif %}{{ action.label }}</a>{% endfor %}
+  {# the others first, the one primary (Receive delivery) last, at the row's end, as the design draws it #}
+  {% for action in actions %}{% if not action.primary %}<a class="ui-btn" href="{{ action.url }}">{{ action.label }}</a>{% endif %}{% endfor %}
+  {% for action in actions %}{% if action.primary %}<a class="ui-btn" data-variant="primary" href="{{ action.url }}">{% include "icons/_icon.html" with name="plus" %}{{ action.label }}</a>{% endif %}{% endfor %}
 </div>
 {% endif %}
 
@@ -87,7 +89,7 @@
 
 {% elif tab == "stock" %}
 <div class="ui-toolbar">
-  <form method="get" role="search" aria-label="{{ title }}" class="ui-list-filters" data-omit-empty>
+  <form method="get" role="search" aria-label="{% trans "Filter" %}" class="ui-list-filters" data-omit-empty>
     <input type="hidden" name="tab" value="stock">
     <label><span class="sr-only">{% trans "Site" %}</span><select name="site">
       <option value="">{% trans "All sites" %}</option>
@@ -112,7 +114,7 @@
 </div>
 {% else %}
 <div class="ui-plates">
-<section class="ui-plate" data-span="12" aria-label="{{ title }}">
+<section class="ui-plate" data-span="12">
   <div class="ui-table-wrap" tabindex="0" role="region" aria-label="{{ title }}">
     <table class="ui-table">
       <thead><tr><th scope="col">{% trans "Location" %}</th><th scope="col">{% trans "Item" %}</th><th scope="col">{% trans "Lot" %}</th><th scope="col">{% trans "Expiry date" %}</th><th scope="col" class="num">{% trans "On hand" %}</th><th scope="col">{% trans "Last movement" %}</th><th scope="col" class="num">{% trans "Value" %}</th><th scope="col" class="ui-actions"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>
@@ -142,7 +144,7 @@
 
 {% elif tab == "movements" %}
 <div class="ui-toolbar">
-  <form method="get" role="search" aria-label="{{ title }}" class="ui-list-filters" data-omit-empty>
+  <form method="get" role="search" aria-label="{% trans "Filter" %}" class="ui-list-filters" data-omit-empty>
     <input type="hidden" name="tab" value="movements">
     <label><span class="sr-only">{% trans "Site" %}</span><select name="site">
       <option value="">{% trans "All sites" %}</option>
@@ -175,7 +177,7 @@
 <div class="ui-empty"><p class="ui-empty-title">{% trans "No feeding recorded for these filters." %}</p></div>
 {% else %}
 <div class="ui-plates">
-<section class="ui-plate" data-span="12" aria-label="{{ title }}">
+<section class="ui-plate" data-span="12">
   <div class="ui-plate-body"><p class="ui-cell-sub">{% trans "The feed given, read from the feeding records: the store's book draws it from the site's lots, first expired first out." %}</p></div>
   <div class="ui-table-wrap" tabindex="0" role="region" aria-label="{{ title }}">
     <table class="ui-table">
@@ -195,7 +197,7 @@
 </div>
 {% else %}
 <div class="ui-plates">
-<section class="ui-plate" data-span="12" aria-label="{{ title }}">
+<section class="ui-plate" data-span="12">
   <div class="ui-table-wrap" tabindex="0" role="region" aria-label="{{ title }}">
     <table class="ui-table">
       <thead><tr><th scope="col">{% trans "Date" %}</th><th scope="col">{% trans "Operation" %}</th><th scope="col">{% trans "Lines" %}</th><th scope="col">{% trans "Supplier" %}</th><th scope="col">{% trans "Recorded by" %}</th><th scope="col">{% trans "Notes" %}</th><th scope="col" class="ui-actions"><span class="sr-only">{% trans "Actions" %}</span></th></tr></thead>

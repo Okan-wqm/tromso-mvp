@@ -21,6 +21,7 @@ from . import places, read, services
 from .forms import SeriesChecklistLines, TaskChecklistLines, TaskForm, TaskSeriesForm
 from .models import Category, Priority, Status, Task, TaskSeries
 
+PRIORITY_CHIPS = {Priority.URGENT: 'critical', Priority.HIGH: 'warning'}   # the new look's marks of a priority
 FILTERS = ('view', 'q', 'site', 'location', 'assignee', 'priority', 'category', 'from', 'to')
 ME = 'me'
 
@@ -259,9 +260,13 @@ class TaskSeriesResource(Resource):
             if context.get('can_delete'):
                 actions.append(L.link(view.url('delete', series.pk), gettext('Delete %(name)s') % {'name': series.title},
                                       'trash', danger=True))
+            # urgent and high as a chip after the title (the classic list marks them in colour), the others a sub-line
+            marked = PRIORITY_CHIPS.get(series.priority)
+            title = L.title(view, context, series, series.title, sub=[series.get_category_display(), *(
+                () if marked else (series.get_priority_display(),))])
+            title['chips'] = [L.chip(marked, series.get_priority_display())] if marked else []
             rows.append(L.row(series.pk, {
-                'title': L.title(view, context, series, series.title,
-                                 sub=[series.get_category_display(), series.get_priority_display()]),
+                'title': title,
                 'repeats': L.cell(rule_text(series), sub=[' · '.join(span)]),
                 'place': L.cell(place_label(place), sub=[place_context(place)]),
                 'assignees': L.cell(names) if names else L.cell(chip=L.chip('warning', gettext('Nobody'))),

@@ -906,7 +906,7 @@ A weight band of a protocol's feeding table: fish from the lower weight up to, n
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › feeding_protocol_bands
 - **forms**: `BandRowForm`
 - **constraints**: chk_feeding_protocol_bands_min_weight (check); chk_feeding_protocol_bands_band (check); chk_feeding_protocol_bands_meals (check); chk_feeding_protocol_bands_expected_fcr (check); uq_feeding_protocol_bands_start (unique: protocol, min_weight_g); excl_feeding_protocol_bands_overlap (exclusion: protocol, min_weight_g, max_weight_g)
-- **tests that mention it**: `farm/tests/test_protocols.py`, `reports/tests/test_compute.py`, `experiments/tests/__init__.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `farm/tests/test_protocols.py`, `reports/tests/test_compute.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -930,7 +930,7 @@ One cell of a feeding table: the SFR (% of the body weight a day) of a band at a
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › feeding_protocol_rates
 - **forms**: `ProtocolTableForm`
 - **constraints**: chk_feeding_protocol_rates_temperature (check); chk_feeding_protocol_rates_sfr (check); uq_feeding_protocol_rates_cell (unique: band, temperature_c)
-- **tests that mention it**: `farm/tests/test_protocols.py`, `experiments/tests/__init__.py`, `experiments/tests/test_design.py` and 1 more
+- **tests that mention it**: `core/test_world.py`, `farm/tests/test_protocols.py`, `experiments/tests/__init__.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -951,7 +951,7 @@ A feeding table for one species: weight bands with their feed, meals and expecte
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeding_protocols
 - **forms**: `ProtocolForm`
 - **constraints**: uq_feeding_protocols_name_live (unique: name); chk_feeding_protocols_status (check); chk_feeding_protocols_expected_fcr (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_one_column_table.py`, `farm/tests/test_protocols.py` and 6 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_one_column_table.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1429,7 +1429,7 @@ A protocol in force for a unit, a whole batch or a batch in one unit, from a day
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › protocol_assignments
 - **forms**: `AssignmentForm`, `NewAssignmentForm`
 - **constraints**: chk_protocol_assignments_target (check); chk_protocol_assignments_period (check); excl_protocol_assignments_unit (exclusion: unit, valid_from, valid_until); excl_protocol_assignments_batch (exclusion: batch, valid_from, valid_until); excl_protocol_assignments_batch_in_unit (exclusion: unit, batch, valid_from, valid_until)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_assignments.py`, `farm/tests/test_cleaner_ration.py` and 6 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_assignments.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1825,7 +1825,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 56 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 57 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -8451,6 +8451,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
@@ -8629,6 +8630,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "farm/tests/test_protocols.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_design.py",
@@ -8941,6 +8943,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_one_column_table.py",
         "farm/tests/test_protocols.py",
@@ -14433,6 +14436,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
         "farm/tests/test_cleaner_ration.py",
@@ -20116,6 +20120,7 @@
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
+        "monitoring/tests/test_next_pages.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_chart_data.py",
         "sensors/tests/test_pages.py",

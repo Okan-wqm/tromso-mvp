@@ -36,7 +36,7 @@ const PAGES = [
 interface Chunk { file: string; css?: string[]; imports?: string[]; name?: string; isEntry?: boolean }
 
 function entry(name: string): { file: string; css: string[] } {
-  const manifest = JSON.parse(readFileSync(join(ISLANDS, '.vite', 'manifest.json'), 'utf8')) as Record<string, Chunk>;
+  const manifest = JSON.parse(readFileSync(join(ISLANDS, 'manifest.json'), 'utf8')) as Record<string, Chunk>;
   const found = Object.entries(manifest).find(([, chunk]) => chunk.isEntry && chunk.name === name);
   if (!found) throw new Error(`no island ${name} in static/islands: run npm run build`);
   const [key, chunk] = found;
@@ -79,7 +79,7 @@ function serve(): Promise<Server> {
 }
 
 test('the Production and Sensors islands in a browser', { skip: skipWithout(BROWSERS) }, async (t) => {
-  assert.ok(existsSync(join(ISLANDS, '.vite', 'manifest.json')), 'static/islands has no build: run npm run build');
+  assert.ok(existsSync(join(ISLANDS, 'manifest.json')), 'static/islands has no build: run npm run build');
   for (const spec of PAGES) {
     assert.ok(existsSync(join(PROPS, spec.props)), `${spec.props} is missing: the Django tests write it (farm.tests.test_island_pages)`);
   }

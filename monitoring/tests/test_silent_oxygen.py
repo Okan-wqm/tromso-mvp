@@ -15,6 +15,8 @@ Real sensor channels, the real pages and the real alarm engine (the fixture of t
 from datetime import timedelta
 from unittest import mock
 
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import translation
 
@@ -358,3 +360,35 @@ class LoopAndPassTests(SilentOxygenCase):
         self.assertEqual(sorted(Alarm.objects.filter(clearance__isnull=True).values_list('source', 'severity',
                                                                                          'parameter')),
                          [('system', 'warning', PROBE_SILENT)] * 2)
+
+
+class ProbeCostTests(SilentOxygenCase):
+    """Review 4 of the branch (L2): the warnings of the silent oxygen probes cost the same queries whatever their number;
+    where each one is (its site and department) is read with the probes, once per pass, and only for a warning that
+    holds."""
+
+    def probes(self, count, code):
+        device = make_device(self.connection, self.format, self.bergen, code=code)
+        for number in range(count):
+            probe = make_channel(device, 'oxygen_mg_l', code=f'O2-{number}')
+            bindings.move(self.user, probe, point=point_of(self.t2), at=self.now - timedelta(hours=2))
+            self.send(probe, OXYGEN, self.then)
+
+    def queries(self, at):
+        with CaptureQueriesContext(connection) as found:
+            self.assertEqual(engine.run_once(at).failed_steps, [])
+        return len(found)
+
+    def test_a_pass_costs_the_same_for_three_silent_probes_and_for_thirty(self):
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')
+        self.typed(self.t2, 1, oxygen_mg_l='9.0', temperature_c='12.0')        # the oxygen known: each a warning
+        self.probes(3, 'PROBE-A')
+        engine.run_once(self.now - timedelta(seconds=2))
+        few = self.queries(self.now - timedelta(seconds=1))
+        self.probes(27, 'PROBE-B')
+        engine.run_once(self.now)
+        self.assertEqual(self.queries(self.now + timedelta(seconds=1)), few)
+        engine.run_once(self.now + timedelta(seconds=40))                        # past the warning's on-delay
+        self.assertEqual(Alarm.objects.filter(clearance__isnull=True, parameter=PROBE_SILENT).count(), 30)
+        self.assertEqual({(alarm.site, alarm.production_department) for alarm in Alarm.objects.filter(
+            parameter=PROBE_SILENT)}, {(self.bergen, self.hall)})

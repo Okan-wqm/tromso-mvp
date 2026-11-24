@@ -427,6 +427,12 @@ msgstr[0] "%(count)d enhet"
 msgstr[1] "%(count)d enheter"
 
 #, python-format
+msgid "%(count)d unit cannot be read"
+msgid_plural "%(count)d units cannot be read"
+msgstr[0] "%(count)d enhet kan ikke leses"
+msgstr[1] "%(count)d enheter kan ikke leses"
+
+#, python-format
 msgid "%(count)d unit critical"
 msgid_plural "%(count)d units critical"
 msgstr[0] "%(count)d enhet kritisk"
@@ -439,8 +445,14 @@ msgstr[0] "%(count)d enhet med varsel"
 msgstr[1] "%(count)d enheter med varsel"
 
 #, python-format
-msgid "%(count)d unit without recent data"
-msgid_plural "%(count)d units without recent data"
+msgid "%(count)d unit with no limit"
+msgid_plural "%(count)d units with no limit"
+msgstr[0] "%(count)d enhet uten grense"
+msgstr[1] "%(count)d enheter uten grense"
+
+#, python-format
+msgid "%(count)d unit with no recent data"
+msgid_plural "%(count)d units with no recent data"
 msgstr[0] "%(count)d enhet uten nye data"
 msgstr[1] "%(count)d enheter uten nye data"
 
@@ -4107,6 +4119,9 @@ msgstr "Tilbake til oversikten"
 
 msgid "Back to sign in"
 msgstr "Tilbake til innlogging"
+
+msgid "Back to the classic look"
+msgstr "Tilbake til det klassiske utseendet"
 
 msgid "Back to the document"
 msgstr "Tilbake til dokumentet"
@@ -8955,9 +8970,6 @@ msgstr "Sanntidsverdier fra sensorene kunne ikke leses: bare prøver."
 msgid "Live values"
 msgstr "Sanntidsverdier"
 
-msgid "Live values cannot be read"
-msgstr "Liveverdiene kan ikke leses"
-
 msgid "Loading the cards…"
 msgstr "Laster kortene …"
 
@@ -10513,6 +10525,9 @@ msgstr ""
 #, python-format
 msgid "Not suitable for harvest — medicine withdrawal of %(batch)s: %(end)s."
 msgstr "Ikke egnet for høsting — tilbakeholdelsestid for %(batch)s: %(end)s."
+
+msgid "Not updated: the alarms cannot be read"
+msgstr "Ikke oppdatert: alarmene kan ikke leses"
 
 msgid "Not updated: the server cannot be reached or cannot answer. This may be out of date."
 msgstr "Ikke oppdatert: serveren kan ikke nås eller kan ikke svare. Dette kan være utdatert."
@@ -14137,9 +14152,6 @@ msgstr ""
 
 msgid "The alarm system itself"
 msgstr "Selve alarmsystemet"
-
-msgid "The alarms cannot be read"
-msgstr "Alarmene kan ikke leses"
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "

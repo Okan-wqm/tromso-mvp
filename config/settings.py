@@ -205,6 +205,9 @@ TIME_ZONE = 'UTC'
 # The company's time zone: a new site's (the form offers it first) and the one migration farm/0028 gives a site that had
 # none. Not the server's clock above. From the environment until the platform owner's settings hold it.
 COMPANY_TIME_ZONE = os.environ.get('COMPANY_TIME_ZONE', 'Europe/Oslo')
+# How long the new look's status strip keeps one reading of what needs a look (alarms.read.attention), the same for every
+# viewer: a farm's open pages ask the database once in that time. 0: every request reads it.
+ATTENTION_CACHE_SECONDS = int(os.environ.get('ATTENTION_CACHE_SECONDS', '15'))
 # In the tests a page may not show an aware time without a clock filter (core/clock_guard.py): |date and |time refuse it.
 # Never on in production: the filters stay Django's own there.
 CLOCK_GUARD = os.environ.get('CLOCK_GUARD', '1' if sys.argv[1:2] == ['test'] else '0') == '1'

@@ -14,6 +14,11 @@
 //                              fragment has it, a key the fragment lacks goes, focus stays on the element of the
 //                              same id; a fragment with an element without the key replaces the whole content
 //   data-poll-skip-same        an answer equal to the previous one changes nothing (a chart keeps its scroll)
+//   data-poll-stale-after="<n>"  failures in a row after which it is stale (default 2): 1 for a part whose old words
+//                              could mislead at once (the new look's status strip, "No open alarms")
+//   data-poll-if-shown         asked for only while it is drawn (it has a box: not display:none, as the status strip
+//                              is under 1100 px); its timer keeps running, so it is asked again once it is drawn. Not
+//                              the default: an empty rail badge is display:none and must still learn of a new message
 //   data-poll-state="live|stale|gone"
 //                              set by this script: live after an answer, stale after two failures in a row (the
 //                              server cannot be reached), gone when the person may no longer read it (401, 403,
@@ -202,6 +207,8 @@ function start(element: HTMLElement): () => void {
   const append = element.hasAttribute('data-poll-append');
   const mergeBy = element.dataset.pollMerge ?? '';
   const skipSame = element.hasAttribute('data-poll-skip-same');
+  const staleAfter = Number(element.dataset.pollStaleAfter) >= 1 ? Number(element.dataset.pollStaleAfter) : STALE_AFTER;
+  const ifShown = element.hasAttribute('data-poll-if-shown');
   const dropped = new WeakSet<AbortController>();
   let running: AbortController | null = null;
   let failures = 0;
@@ -215,7 +222,7 @@ function start(element: HTMLElement): () => void {
   const failed = (): void => {
     failures += 1;   // the next wait is longer
     if (!filled) state('unread');
-    else if (failures >= STALE_AFTER) state('stale');
+    else if (failures >= staleAfter) state('stale');
   };
   const schedule = (): void => {
     window.clearTimeout(timer);
@@ -265,6 +272,10 @@ function start(element: HTMLElement): () => void {
       return;
     }
     if (running || document.visibilityState !== 'visible') return;
+    if (ifShown && element.getClientRects().length === 0) {   // not drawn: nobody reads it; asked again on the next tick
+      schedule();
+      return;
+    }
     const request = new AbortController();
     running = request;
     const timeout = window.setTimeout(() => request.abort(), filled ? TIMEOUT : FIRST_TIMEOUT);

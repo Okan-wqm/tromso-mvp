@@ -82,9 +82,10 @@
         <nav class="ui-crumbs" aria-label="{% trans "You are here" %}">
           <p class="eyebrow">{% if UI_NEXT and page_label %}{{ page_panel }}<span aria-hidden="true"> › </span>{% if page_group != page_panel %}{{ page_group }}<span aria-hidden="true"> › </span>{% endif %}<span class="ui-crumb-here">{{ page_label }}</span>{% else %}{% block eyebrow %}{% trans "Panel" %}{% endblock %}{% endif %}</p>
         </nav>
-        {% if UI_NEXT and ui_strip %}<div class="ui-strip" role="group" aria-label="{% trans "Status" %}">
-          {% for item in ui_strip %}{% if item.poll %}<span class="ui-strip-poll" data-poll="{{ item.poll }}" data-poll-every="30" data-poll-state="loading" data-unread-text="{% trans "The alarms cannot be read" %}">{% include "core/_strip_item.html" %}</span>{% else %}{% include "core/_strip_item.html" %}{% endif %}{% endfor %}
-        </div>{% endif %}
+        {% if UI_NEXT and ui_strip %}{% comment %} The status strip (core/ui.py strip): polled whole every 30 s while it is shown (from
+           1100 px), marked "not updated" after one failed answer; a rise of its alarms item is said in the live regions beside
+           it (frontend/strip.ts), never the item itself every 30 s. {% endcomment %}<div class="ui-strip" role="group" aria-label="{% trans "Status" %}" data-poll="{% url "core:ui_strip" %}" data-poll-every="30" data-poll-state="loading" data-poll-stale-after="1" data-poll-if-shown data-unread-text="{% trans "Not updated: the alarms cannot be read" %}" data-strip-said="ui-strip-said" data-strip-alert="ui-strip-alert">{% include "core/_strip.html" with items=ui_strip %}</div>
+        <p class="sr-only" id="ui-strip-said" role="status"></p><p class="sr-only" id="ui-strip-alert" role="alert"></p>{% endif %}
         <div class="topbar-language">{% include "_language_switcher.html" %}</div>
 
         <div class="menu user-menu" data-menu>
@@ -107,6 +108,7 @@
                 </div>
               </form>
             </div>
+            {% if UI_NEXT %}<a class="menu-item" href="{{ request.path }}?ui=classic" data-look="classic">{% trans "Back to the classic look" %}</a>{% endif %}
             <a class="menu-item" href="{% url 'password_change' %}">{% trans "Change password" %}</a>
             <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}
@@ -146,5 +148,6 @@
   <script type="module" src="{% asset 'js/shell.js' %}"></script>
   <script type="module" src="{% asset 'js/components.js' %}"></script>
   <script type="module" src="{% asset 'js/poll.js' %}"></script>
+  {% if UI_NEXT %}<script type="module" src="{% asset 'js/strip.js' %}"></script>{% endif %}
 </body>
 </html>

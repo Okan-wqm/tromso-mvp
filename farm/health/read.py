@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import OuterRef, Subquery, Sum
+from django.db.models import OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
 
 from farm.models import HealthEvent, LiceCount, StockMovement, Treatment
@@ -185,3 +185,10 @@ def stocked_by_site(units_with_fish):
     for unit in units_with_fish:
         found[unit.production_department.site_id] += 1
     return found
+
+
+def treatments_on(unit, first, last):
+    """The live treatments of `unit` on any day from `first` to `last` (one with no last day still runs), first day
+    first: the treatments a unit's water history marks (Tank › Water)."""
+    return (Treatment.objects.filter(units=unit, start_date__lte=last)
+            .filter(Q(end_date__isnull=True) | Q(end_date__gte=first)).order_by('start_date'))

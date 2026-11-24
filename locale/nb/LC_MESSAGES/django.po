@@ -720,12 +720,10 @@ msgstr "%(dose)s g/m³"
 
 #, python-format
 msgid ""
-"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions and "
-"limits are those of the newest water. A moment without every value is left out, never joined."
-msgstr ""
-"%(drawn)s av %(total)s tidspunkter hvert %(step)s tegnet, fra %(first)s til %(last)s; områdene og"
-" grensene er de for det nyeste vannet. Et tidspunkt uten alle verdier er utelatt, aldri koblet "
-"sammen."
+"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions, the"
+" limits and the pH isolines are those of the newest water drawn. A moment without every value is "
+"left out, never joined."
+msgstr "%(drawn)s av %(total)s tidspunkter hvert %(step)s tegnet, fra %(first)s til %(last)s; områdene, grensene og pH-isolinjene er de for det nyeste vannet som er tegnet. Et tidspunkt uten alle verdier er utelatt, aldri koblet sammen."
 
 #, python-format
 msgid "%(duty)s · %(site)s · %(year)s: record that it was done."
@@ -1722,6 +1720,10 @@ msgstr "%(value)s %(unit)s"
 #, python-format
 msgid "%(value)s assumed"
 msgstr "%(value)s antatt"
+
+#, python-format
+msgid "%(value)s at %(time)s"
+msgstr "%(value)s kl. %(time)s"
 
 #. Translators: days of cover, e.g. 12.5 days.
 #, python-format
@@ -7997,6 +7999,9 @@ msgstr "Skjul slettede rader"
 msgid "High"
 msgstr "Høy"
 
+msgid "Highest"
+msgstr "Høyest"
+
 msgid "Highest of the open run"
 msgstr "Høyeste i den åpne serien"
 
@@ -8974,6 +8979,12 @@ msgstr "Duktykkelse (mm)"
 msgid "Lines"
 msgstr "Linjer"
 
+#, python-format
+msgid ""
+"Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, up to "
+"%(alkalinity)s meq/L"
+msgstr "Linjer med lik pH: %(low)s til %(high)s; DIC bortover, opp til %(dic)s mmol/L; alkalitet oppover, opp til %(alkalinity)s meq/L"
+
 msgid "Link sent to"
 msgstr "Lenke sendt til"
 
@@ -9076,6 +9087,9 @@ msgstr "Lavtrykk"
 
 msgid "Low stock"
 msgstr "Lav beholdning"
+
+msgid "Lowest"
+msgstr "Lavest"
 
 msgid "Lowest of the open run"
 msgstr "Laveste i den åpne serien"
@@ -9884,6 +9898,13 @@ msgstr "Ingen apparater publiserer på dette emnet"
 
 msgid "No diagnosis"
 msgstr "Ingen diagnose"
+
+msgid "No diagram"
+msgstr "Ikke noe diagram"
+
+#, python-format
+msgid "No diagram after %(time)s: %(why)s"
+msgstr "Ikke noe diagram etter %(time)s: %(why)s"
 
 #, python-format
 msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
@@ -15976,6 +15997,10 @@ msgid ""
 "then."
 msgstr "Vannet slik det var %(moment)s: hver verdi slik kilden ga den da, med alder regnet fra da."
 
+#, python-format
+msgid "The water at %(time)s"
+msgstr "Vannet %(time)s"
+
 msgid "The water cannot stand higher than the depth."
 msgstr "Vannet kan ikke stå høyere enn dybden."
 
@@ -18043,6 +18068,9 @@ msgstr "en lokalitet med rensefiskstamfisk"
 msgid "a unit or a loop"
 msgstr "en enhet eller en sløyfe"
 
+msgid "a value the chart needs is missing"
+msgstr "en verdi diagrammet trenger, mangler"
+
 msgid "activity log"
 msgstr "aktivitetslogg"
 
@@ -19214,6 +19242,10 @@ msgstr "ingen fisk på %(site)s siden %(date)s"
 msgid "no fish now"
 msgstr "ingen fisk nå"
 
+#, python-format
+msgid "no fresh value of %(missing)s"
+msgstr "ingen fersk verdi for %(missing)s"
+
 msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
@@ -19413,6 +19445,10 @@ msgstr ""
 "pH %(ph)s er verdien som ble hentet fra %(point)s: den er allerede på NBS-skalaen (en lagret pH "
 "er alltid det) og regnes ikke om igjen. La skalaen stå på NBS, eller skriv inn pH-en slik den ble"
 " målt, med skalaen sin."
+
+#, python-format
+msgid "pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
+msgstr "pH %(ph)s, DIC %(dic)s mmol/L, alkalitet %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
 
 msgid "pH (NBS scale)"
 msgstr "pH (NBS-skala)"

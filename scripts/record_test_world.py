@@ -10,7 +10,7 @@ core/tests_fixture_privacy.py fails on any other e-mail domain under frontend/te
 
 Run it in the test runner's image against a THROWAWAY database (scripts/record_test_world.sh starts one, migrates it, runs
 this and removes it); it refuses any database not named `test_world`. Everything is made in one transaction that is
-rolled back, with the clock pinned to the test world's MOMENT."""
+rolled back: the world built on core.test_world.ticking's clock, read with the clock pinned to its MOMENT."""
 import os
 import sys
 from importlib import import_module
@@ -33,7 +33,7 @@ from django.utils import translation  # noqa: E402
 
 import_module(settings.ROOT_URLCONF)
 from core.recorded_fixtures import first_difference, render_all  # noqa: E402
-from core.test_world import MOMENT, world  # noqa: E402
+from core.test_world import MOMENT, ticking, world  # noqa: E402
 
 OUT = Path('/app/frontend/test/pages')
 CHECK = '--check' in sys.argv[1:]
@@ -44,10 +44,12 @@ class Rollback(Exception):
 
 
 try:
-    with transaction.atomic(), mock.patch('django.utils.timezone.now', return_value=MOMENT), translation.override('en'):
-        admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
-        made = world(admin)
-        texts, missing = render_all(admin)
+    with transaction.atomic(), translation.override('en'):
+        with mock.patch('django.utils.timezone.now', side_effect=ticking()):
+            admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
+            made = world(admin)
+        with mock.patch('django.utils.timezone.now', return_value=MOMENT):
+            texts, missing = render_all(admin)
         raise Rollback
 except Rollback:
     pass

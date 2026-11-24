@@ -24,6 +24,17 @@ from django.urls import reverse
 MOMENT = datetime.fromisoformat('2026-11-23T12:42:00+00:00')
 
 
+def ticking():
+    """A clock for building the test world: MOMENT, a microsecond later at each reading. Every record is stamped on
+    MOMENT's minute, and two records made one after the other are never stamped alike, so a list in time order (the
+    activity log, newest first) is the same on every run. Patch django.utils.timezone.now with it while the world is built;
+    read the world with the clock pinned to MOMENT."""
+    from datetime import timedelta
+    from itertools import count
+    readings = count()
+    return lambda: MOMENT + timedelta(microseconds=next(readings))
+
+
 def world(admin):
     """The test world, built through a client signed in as `admin`; [what was made: its answer] of the parts posted."""
     client = Client(HTTP_HOST='localhost')

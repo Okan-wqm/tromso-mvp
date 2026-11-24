@@ -12,7 +12,7 @@ compares them with what the code renders today) call: `render_all(admin)`, {path
     panel/<page>-<language>.html        the production panel's pages drawn by the server (Tasks with its drawer, Regulatory
                                         reports, Storage, Messages), whole, in the new look
 
-Call it with the clock pinned to MOMENT and the language English, after `world(admin)`. A person offered in a list of
+Call it with the clock pinned to MOMENT and the language English, after `world(admin)` (built on core.test_world.ticking). A person offered in a list of
 people or roles is written `user:<user name>`, `role:<name>`, not by the id the database counted (as a session's token is written test-token).
 What varies from one rendering to the next (record ids, a page's nonce and token, the assets' versions, the islands'
 build names) is not the fixture's content: `normalised` puts it in a fixed form, and `first_difference` says where
@@ -279,6 +279,7 @@ _VARIES = (
     (re.compile(r'/static/islands/[^"\'\s]+'), '/static/islands/I'),    # a build's file names
     (re.compile(r'(?<=/)\d+(?=/)'), 'N'),                               # a numbered record in an address
     (re.compile(r'\b(id="m|href="#m|after=|before=)\d+'), r'\1N'),      # a message's number
+    (re.compile(r'(\d\d:\d\d:\d\d)\.\d+'), r'\1'),                      # the world's clock's microseconds
 )
 # a record's id, with or without its dashes (a stored file is named by one)
 _UUID = re.compile(r'[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}')

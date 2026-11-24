@@ -23,11 +23,13 @@ PAGES = Path(settings.BASE_DIR) / 'frontend' / 'test' / 'pages'
                    ISLANDS_MANIFEST=str(Path(settings.BASE_DIR) / 'core' / 'testdata' / 'islands-company-manifest.json'))
 class FixturesAreFreshTests(TestCase):
     def test_every_recorded_fixture_is_what_the_code_renders_today(self):
-        from core.test_world import MOMENT, world
-        with mock.patch('django.utils.timezone.now', return_value=MOMENT), translation.override('en'):
-            admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
-            world(admin)
-            texts, _missing = recorded_fixtures.render_all(admin)
+        from core.test_world import MOMENT, ticking, world
+        with translation.override('en'):
+            with mock.patch('django.utils.timezone.now', side_effect=ticking()):     # as the recorder builds it
+                admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
+                world(admin)
+            with mock.patch('django.utils.timezone.now', return_value=MOMENT):
+                texts, _missing = recorded_fixtures.render_all(admin)
         self.assertGreaterEqual(len(texts), 25, 'the oracle, 3 x 3 props files, 15 pages')
         recorded = {path.relative_to(PAGES).as_posix() for path in PAGES.rglob('*')
                     if path.relative_to(PAGES).as_posix() in texts or path.parent.name == 'panel'}

@@ -8201,6 +8201,9 @@ msgstr ""
 msgid "How rations are worked out"
 msgstr "Rasyonlar nasıl hesaplanır"
 
+msgid "How this was worked out"
+msgstr "Bu nasıl hesaplandı"
+
 msgid "How values are judged"
 msgstr "Değerler nasıl değerlendirilir"
 
@@ -8992,6 +8995,9 @@ msgstr "Sınırlar"
 
 msgid "Limits of the fish in the unit"
 msgstr "Birimdeki balıkların sınırları"
+
+msgid "Limits of these fish"
+msgstr "Bu balıkların sınırları"
 
 msgid "Line"
 msgstr "Satır"
@@ -13635,6 +13641,9 @@ msgstr "Değerlerin kaynağı"
 #, python-format
 msgid "Source: %(kind)s"
 msgstr "Kaynak: %(kind)s"
+
+msgid "Sources"
+msgstr "Kaynaklar"
 
 msgid "Sources fingerprint"
 msgstr "Kaynakların parmak izi"

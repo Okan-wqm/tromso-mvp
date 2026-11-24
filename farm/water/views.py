@@ -340,11 +340,15 @@ def _source(form, owner):
         sample = getattr(getattr(offer.reading, 'sample', None), 'sample', None)
         rows.append({'label': field.label, 'value': value, 'decimals': field.decimal_places, 'offer': offer,
                      'changed': entered.get(name) != value,
+                     # a limit of the fish, not a measured value (the new look puts these under a summary)
+                     'limit': offer.reading is None and name != 'altitude_m',
                      # a pH measured on another scale, a phosphate entered as PO₄: what was measured, and that the value
                      # here is the stored one (NBS, as P)
                      'measured': STORED[name](sample) if name in STORED and sample is not None else ''})
     missing = [form.fields[name].label for name in calculation.MEASURED_FIELDS if name not in offers]
-    return {'point': owner, 'rows': rows, 'missing': missing}
+    limits = [row for row in rows if row['limit']]
+    return {'point': owner, 'rows': rows, 'missing': missing, 'limits': bool(limits),
+            'limits_changed': any(row['changed'] for row in limits)}
 
 
 def _calculator_context(request, data, all_layers=False):
@@ -397,6 +401,7 @@ def calculator_report(request):
     data, _filled = _calculator_data(request.GET)
     context = _calculator_context(request, data, all_layers=True)
     context['generated_at'] = timezone.now()
+    context['printing'] = True        # on paper nothing is folded away (the new look's <details> stay out)
     return render(request, 'farm/water_calculator_report.html', context)
 
 

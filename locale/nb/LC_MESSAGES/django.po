@@ -8172,6 +8172,9 @@ msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette 
 msgid "How rations are worked out"
 msgstr "Slik regnes rasjonene ut"
 
+msgid "How this was worked out"
+msgstr "Slik ble dette regnet ut"
+
 msgid "How values are judged"
 msgstr "Slik vurderes verdiene"
 
@@ -8963,6 +8966,9 @@ msgstr "Grenser"
 
 msgid "Limits of the fish in the unit"
 msgstr "Grenser for fisken i enheten"
+
+msgid "Limits of these fish"
+msgstr "Grensene for denne fisken"
 
 msgid "Line"
 msgstr "Linje"
@@ -13608,6 +13614,9 @@ msgstr "Kilde for verdiene"
 #, python-format
 msgid "Source: %(kind)s"
 msgstr "Kilde: %(kind)s"
+
+msgid "Sources"
+msgstr "Kilder"
 
 msgid "Sources fingerprint"
 msgstr "Kildenes fingeravtrykk"

@@ -107,3 +107,7 @@ class CalculatorSaysTests(TestCase):
                 self.assertEqual('class="calc-plate-title">Results<' in parts, expected)
                 self.assertEqual('data-ui="next"' in report, expected)
                 self.assertEqual('data-ui="next"' in page, expected)
+                # the long texts folded under a summary in the new look's page and parts, never on paper
+                self.assertEqual('<details class="calc-more"><summary>How this was worked out</summary>' in parts, expected)
+                self.assertEqual('<summary>Sources</summary>' in page, expected)
+                self.assertNotIn('<details', report)

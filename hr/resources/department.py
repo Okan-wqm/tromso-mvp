@@ -62,8 +62,9 @@ class OfficeDepartmentResource(Resource):
                             L.column('site', _('Site')), L.column('manager', _('Manager')),
                             L.column('people', _('People'), numeric=True)],
                 'rows': [L.row(row.pk, {
+                    # the code and the parent in one line, as the classic page says them
                     'department': L.title(view, context, row, row.name, sub=[
-                        row.code, _('in %(name)s') % {'name': row.parent.name} if row.parent else '']),
+                        ' · '.join([row.code, *([_('in %(name)s') % {'name': row.parent.name}] if row.parent else [])])]),
                     'status': L.cell(chip=L.chip('ok', _('Active')) if row.status == 'active' else L.chip('neutral', _('Inactive'))),
                     'site': L.cell(row.site.name) if row.site else L.cell(chip=L.chip('warning', _('No site'))),
                     'manager': manager(row),

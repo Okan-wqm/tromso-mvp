@@ -537,3 +537,80 @@
    select. A text area keeps a reading measure. */
 .content[data-measure="form"] .field :is(input:not([type="checkbox"], [type="radio"]), select) { max-width: 32rem; }
 .content[data-measure="form"] .field textarea { max-width: 75ch; }
+
+/* ---------- The shell in the new look (data-ui="next", core/ui.py) ----------
+   The same markup as above, drawn as the design console draws it (F:\dev\balik-notes\design-in, "Suderra
+   Console.dc.html", direction B): a flat steel rail with the brand stripe and square lines, Barlow for the wordmark, the
+   panel switch and the section names; rail icons in the rail's ink (the area hue stays on the page head's chip); a top
+   bar with the status strip; the page on grid paper with the menu group over its title. Sizes are the look's tokens. */
+[data-ui="next"] .rail { background: var(--surface-rail); border-right: 1px solid var(--rail-line); }
+[data-ui="next"] .rail-head { min-height: var(--topbar-h); height: auto; gap: 10px; padding: 6px var(--space-3) 0 var(--space-4); }
+[data-ui="next"] .ui-logo { width: 36px; height: 36px; box-shadow: 0 0 0 1px var(--rail-line); }
+[data-ui="next"] .ui-wordmark { font-size: var(--fs-wordmark); letter-spacing: .1em; }
+[data-ui="next"] .rail-toggle { width: 36px; height: 36px; border-color: transparent; color: var(--text-on-rail); }
+[data-ui="next"] .ui-panel-switch { min-height: var(--control-h); margin: var(--space-2) var(--space-3); font-family: var(--font-display); font-size: var(--fs-tab); letter-spacing: .02em; }
+[data-ui="next"] .rail-nav { padding: var(--space-1) var(--space-3) var(--space-5); }
+[data-ui="next"] .rail-section { margin: 20px 0 var(--space-1); padding: var(--space-3) var(--space-3) 0; font-family: var(--font-display); font-size: var(--fs-body); font-weight: 600; letter-spacing: .04em; }
+[data-ui="next"] .rail-group { font-size: var(--fs-head); letter-spacing: .04em; }
+[data-ui="next"] .rail-link { min-height: calc(var(--h) - 2px); margin-top: 1px; font-size: var(--fs-body); font-weight: 400; }
+[data-ui="next"] .rail-link + .rail-link { margin-top: 1px; }
+[data-ui="next"] .rail-link .icon { stroke-width: 1.5; opacity: 1; }
+[data-ui="next"] .rail-link[data-area] .icon { color: currentColor; }
+[data-ui="next"] .rail-link[aria-current="page"]::before { top: 6px; bottom: 6px; width: 3px; }
+[data-ui="next"] .rail-foot { opacity: 1; color: color-mix(in srgb, var(--text-on-rail) 62%, transparent); font-size: var(--fs-small); }
+[data-ui="next"] .menu-panel { border-radius: 0; box-shadow: var(--shadow-overlay); }
+[data-ui="next"] .menu-head { font-size: var(--fs-head); letter-spacing: .04em; }
+[data-ui="next"] .workspace-menu .menu-item { font-family: var(--font-display); font-size: var(--fs-body); font-weight: 600; }
+
+[data-ui="next"] .ui-topbar { min-height: var(--topbar-h); height: auto; padding: 0 var(--edge); }
+[data-ui="next"] .ui-crumbs .eyebrow { color: var(--text-3); font-size: var(--fs-small); }
+[data-ui="next"] .ui-crumb-here { color: var(--text-2); }
+/* the status strip: the open alarms (filled critical when one is critical), the people on site, the company's clock */
+.ui-strip { display: none; }
+[data-ui="next"] .ui-strip { display: flex; flex: none; align-items: stretch; height: 36px; border: 1px solid var(--line-hair); }
+[data-ui="next"] .ui-strip-item {
+  display: flex; align-items: center; gap: 6px; padding: 0 var(--space-3);
+  color: var(--text-2); font-size: var(--fs-small); white-space: nowrap; text-decoration: none;
+}
+[data-ui="next"] .ui-strip > * + * { border-left: 1px solid var(--line-hair); }
+/* the polled strip (frontend/poll.ts sets data-poll-state, stale after one failed answer): never read (unread), no recent
+   answer (stale) or no longer allowed (gone) is said in words first, never left as "Reading the alarms…" or as an old
+   count without a word; an alarms item never read is not shown */
+[data-ui="next"] .ui-strip:is([data-poll-state="unread"], [data-poll-state="stale"], [data-poll-state="gone"])::before {
+  content: attr(data-unread-text); display: flex; align-items: center; padding: 0 var(--space-3);
+  background: var(--warn-tint); color: var(--warn-text); font-size: var(--fs-small); font-weight: 600; white-space: nowrap;
+}
+[data-ui="next"] .ui-strip:is([data-poll-state="unread"], [data-poll-state="gone"]) > [data-strip="alarms"] { display: none; }
+[data-ui="next"] .ui-strip:is([data-poll-state="unread"], [data-poll-state="stale"], [data-poll-state="gone"]) > :first-child { border-left: 1px solid var(--line-hair); }
+[data-ui="next"] a.ui-strip-item { color: var(--text-1); font-family: var(--font-display); font-size: var(--fs-cell); font-weight: 600; letter-spacing: .02em; }
+[data-ui="next"] a.ui-strip-item:hover { background: var(--surface-sunken); }
+[data-ui="next"] .ui-strip-item .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 1.75; }
+[data-ui="next"] .ui-strip-item[data-status="critical"] { background: var(--crit); color: var(--on-crit); }
+[data-ui="next"] .ui-strip-item[data-status="critical"]:hover { background: var(--crit-text); }
+[data-ui="next"] .ui-strip-item[data-status="warning"] { background: var(--warn-tint); color: var(--warn-text); }
+[data-ui="next"] .ui-strip-item[data-status="warning"] .icon { color: var(--warn); }
+@media (max-width: 1099px) { [data-ui="next"] .ui-strip { display: none; } }
+[data-ui="next"] .user-trigger { min-height: var(--control-h); font-size: var(--fs-body); }
+
+[data-ui="next"] .content {
+  display: flex; flex-direction: column; flex: 1; gap: var(--gap);
+  padding: var(--space-5) var(--edge) var(--space-7);
+  background-image: linear-gradient(var(--grid-paper) 1px, transparent 1px), linear-gradient(90deg, var(--grid-paper) 1px, transparent 1px);
+  background-size: 24px 24px; background-position: -1px -1px;
+}
+[data-ui="next"] .content > * { margin-top: 0; margin-bottom: 0; }
+[data-ui="next"] .ui-head { margin-bottom: 0; }
+[data-ui="next"] .ui-head .page-title { gap: var(--space-1) var(--space-3); }
+[data-ui="next"] .ui-head h1 { font-size: var(--fs-h1); line-height: 1.1; }
+.ui-head-group { color: var(--text-3); font-size: var(--fs-head); font-weight: 600; letter-spacing: .04em; }
+[data-ui="next"] .ui-area { width: var(--control-h); height: var(--control-h); border: 1px solid var(--line-hair); background: none; color: var(--text-2); }
+[data-ui="next"] .ui-area .icon { width: 22px; height: 22px; stroke-width: 1.5; }
+[data-ui="next"] .flash-list { max-width: none; margin: 0; }
+[data-ui="next"] .flash { border: 0; border-radius: 0; background: var(--ok-tint); color: var(--ok-text); box-shadow: inset 4px 0 0 var(--ok); font-weight: 600; }
+[data-ui="next"] .flash-error { background: var(--crit-tint); color: var(--crit-text); box-shadow: inset 4px 0 0 var(--crit); }
+[data-ui="next"] .flash-warning { background: var(--warn-tint); color: var(--warn-text); box-shadow: inset 4px 0 0 var(--warn); }
+@media (max-width: 1023px) {
+  [data-ui="next"] .ui-bottombar { border-top: 1px solid var(--line-hair); }
+  [data-ui="next"] .ui-bottombar-link[aria-current="page"]::before { left: 0; right: 0; }
+}
+[data-ui="next"] :is(.rail-badge, .menu-badge) { border-radius: 0; }

@@ -5,8 +5,9 @@
 #             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite (an
 #             hour or more on a hosted runner) runs on a push to main, nightly and by hand
 #   frontend  npm ci, the Tailwind build checked against the committed static/css/tw.css, the tokens against tokens.json,
-#             the design-system gate (npm run check:ds), the browser build (tokens, tsc, Tailwind) and the TypeScript
-#             tests (npm test)
+#             the design-system gate (npm run check:ds), the npm licence gate (npm run check:licences), the browser
+#             build (tokens, icons, tsc, the islands with Vite, Tailwind) and the TypeScript tests (npm test: unit and
+#             browser tests, the islands' component gallery included)
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
 #   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
 #   security  pip-audit, the Python licence gate, npm audit
@@ -171,7 +172,10 @@ jobs:
       # class names held to docs/design/system/ds-ratchet.json, which only goes down (scripts/check-ds.mjs).
       - name: Design-system gate (npm run check:ds)
         run: npm run check:ds
-      - name: Build (tsc -p tsconfig.json, then the Tailwind build)
+      # Every npm package installed for the browser or the build has an allowed or reviewed licence (decision 8).
+      - name: npm licence gate (npm run check:licences)
+        run: npm run check:licences
+      - name: Build (tokens, icons, tsc, the islands with Vite, then the Tailwind build)
         run: npm run build
       # The designer's browser test drives the runner's own Chrome (/usr/bin/google-chrome). Ubuntu 24.04 limits
       # unprivileged user namespaces, which Chrome's sandbox needs.

@@ -2164,6 +2164,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/__init__.py",
@@ -13717,6 +13718,7 @@
         "core/tests_entry_key.py",
         "core/tests_query_pages.py",
         "core/tests_rev.py",
+        "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
@@ -20056,6 +20058,7 @@
         "core/test_database.py",
         "core/test_languages.py",
         "core/tests_rev.py",
+        "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_calculator_loaded_ph.py",
@@ -21462,6 +21465,7 @@
       "tests": [
         "core/test_languages.py",
         "core/tests_rev.py",
+        "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
@@ -40494,6 +40498,7 @@
       "tests": [
         "core/test_datamap.py",
         "core/test_text.py",
+        "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_bound_text.py",
         "farm/tests/test_nh3_unrounded.py",

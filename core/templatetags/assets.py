@@ -1,4 +1,4 @@
-"""Static files a browser can never serve stale.
+"""Static files a browser can never serve stale, and the islands' entry points.
 
 A browser keeps CSS and scripts in its cache, so after a change a page could arrive with new markup
 and old styles and scripts: text on top of text, menus that do nothing. Every asset URL therefore
@@ -64,3 +64,112 @@ def module_map(context):
     nonce = context.get('csp_nonce')        # lazy: made (and put in the header) by being read here
     attribute = format_html(' nonce="{}"', nonce) if nonce is not None else ''
     return mark_safe(f'<script type="importmap"{attribute}>' + json.dumps({'imports': imports}) + '</script>')
+
+
+# ---- Islands (README, Frontend: islands): a React root a server-rendered page mounts, built by Vite into static/islands
+# (vite.config.mjs). The build's manifest maps an island's name to its hashed file and the chunks it imports; it is read
+# once per server start (and again whenever the file changes, so a build during development is seen without a restart).
+
+MANIFEST = 'islands/manifest.json'
+
+
+def manifest_path():
+    """Where the islands' manifest is read: settings.ISLANDS_MANIFEST when set (the tests' fixture); else the collected
+    static files' (STATIC_ROOT/islands/manifest.json, a production server that serves STATIC_ROOT only), when there is
+    one; else the build's, static/islands/manifest.json (npm run build, found by the static finders). It is a plain file
+    name, no dot-folder: collectstatic copies it with the islands."""
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
+    if getattr(settings, 'ISLANDS_MANIFEST', None):
+        return settings.ISLANDS_MANIFEST
+    root = getattr(settings, 'STATIC_ROOT', None)
+    if root and os.path.exists(os.path.join(root, *MANIFEST.split('/'))):
+        return os.path.join(root, *MANIFEST.split('/'))
+    return finders.find(MANIFEST) or os.path.join(settings.BASE_DIR, 'static', *MANIFEST.split('/'))
+
+
+class ManifestUnreadable(Exception):
+    """The manifest is there but is not a manifest (cut short, not JSON, not Vite's shape)."""
+
+
+_manifest_cache = {}
+
+
+def islands_manifest():
+    """{island name: {'file': path under static/islands, 'imports': [...], 'css': [...]}} of the build's manifest ({} for
+    a build without islands); None when there is no build (core.W001, and core.E006 for a deployment, say so). A
+    manifest that cannot be read raises ManifestUnreadable (the checks report it; a page with an island fails loudly)."""
+    path = manifest_path()
+    try:
+        stamp = os.path.getmtime(path)
+    except OSError:
+        return None
+    cached = _manifest_cache.get(path)
+    if cached and cached[0] == stamp:
+        return cached[1]
+    try:
+        with open(path, encoding='utf-8') as handle:
+            raw = json.load(handle)
+        if not isinstance(raw, dict):
+            raise ValueError('not an object')
+        islands = {}
+        for key, chunk in raw.items():
+            if chunk.get('isEntry'):
+                name = chunk.get('name') or os.path.splitext(os.path.basename(key))[0]
+                files, css = _imports(raw, key)
+                islands[name] = {'file': chunk['file'], 'imports': files, 'css': list(dict.fromkeys([*chunk.get('css', []), *css]))}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+        raise ManifestUnreadable(f'{path}: {error}') from error
+    _manifest_cache[path] = (stamp, islands)
+    return islands
+
+
+def _imports(raw, key):
+    """([the files `key` imports], [their stylesheets]), at any depth, depth first, each once: the browser preloads the
+    files beside the island and the page links every stylesheet one of them brings (uPlot's, two chunks deep)."""
+    files, css, seen = [], [], set()
+
+    def walk(at):
+        for child in raw[at].get('imports', []):
+            if child in seen:
+                continue
+            seen.add(child)
+            files.append(raw[child]['file'])
+            css.extend(raw[child].get('css', []))
+            walk(child)
+
+    walk(key)
+    return files, css
+
+
+class UnknownIsland(Exception):
+    pass
+
+
+@register.simple_tag(takes_context=True)
+def island(context, name, props=None, label=''):
+    """One island: its root (a <div data-island> holding what is shown until the script draws, `label` in words), its
+    props as a JSON data block (json_script: escaped, never run as a script, so the Content-Security-Policy is
+    untouched), and, once per page, its module and the chunks it imports. Only finished values travel in the props:
+    the server reads, judges and words them; the island draws them.
+        {% island "gallery" props label=_("Loading the gallery…") %}"""
+    from django.templatetags.static import static as static_url
+    from django.utils.html import json_script
+
+    entry = (islands_manifest() or {}).get(name)
+    if entry is None:
+        # A page without its island would show its placeholder for ever: it fails loudly (core.W001 warns at start).
+        raise UnknownIsland(f'No island named {name!r} in {manifest_path()}: run `npm run build`.')
+    counter = context.render_context.setdefault('islands', {'count': 0, 'loaded': set()})
+    counter['count'] += 1
+    props_id = f'island-{name}-{counter["count"]}'
+    parts = [format_html('<div class="ui-island" data-island="{}" data-props="{}">{}</div>', name, props_id,
+                         format_html('<p class="ui-loading" role="status">{}</p>', label) if label else ''),
+             json_script(props if props is not None else {}, props_id)]
+    if name not in counter['loaded']:
+        counter['loaded'].add(name)
+        prefix = 'islands/'
+        parts += [format_html('<link rel="stylesheet" href="{}">', static_url(prefix + css)) for css in entry['css']]
+        parts += [format_html('<link rel="modulepreload" href="{}">', static_url(prefix + chunk)) for chunk in entry['imports']]
+        parts.append(format_html('<script type="module" src="{}"></script>', static_url(prefix + entry['file'])))
+    return mark_safe(''.join(parts))

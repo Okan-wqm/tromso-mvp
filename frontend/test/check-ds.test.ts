@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 
 const TREE = resolve('.build', 'ds-gate');
 
-type Tree = { css?: Record<string, string>; templates?: Record<string, string>; ratchet?: object };
+type Tree = { css?: Record<string, string>; templates?: Record<string, string>; islands?: Record<string, string>; ratchet?: object };
 
 function gate(tree: Tree): { status: number | null; out: string } {
   rmSync(TREE, { recursive: true, force: true });
@@ -19,6 +19,8 @@ function gate(tree: Tree): { status: number | null; out: string } {
   const css = { 'ds.css': '.ui-btn { font-size: var(--fs-body); border-radius: var(--radius-control); }\n', ...tree.css };
   for (const [name, text] of Object.entries(css)) writeFileSync(join(TREE, 'static', 'css', name), text);
   for (const [name, text] of Object.entries(tree.templates ?? {})) writeFileSync(join(TREE, 'templates', name), text);
+  mkdirSync(join(TREE, 'frontend', 'islands', 'ui'), { recursive: true });
+  for (const [name, text] of Object.entries(tree.islands ?? {})) writeFileSync(join(TREE, 'frontend', 'islands', name), text);
   if (tree.ratchet) writeFileSync(join(TREE, 'docs', 'design', 'system', 'ds-ratchet.json'), JSON.stringify(tree.ratchet));
   const run = spawnSync(process.execPath, ['scripts/check-ds.mjs', '--root', TREE], { encoding: 'utf8' });
   return { status: run.status, out: `${run.stdout}${run.stderr}` };
@@ -29,6 +31,8 @@ const page = (sheets: string[]): string => sheets.map((name) => `<link rel="styl
 
 const CLEAN = '.a { font-size: var(--fs-small); border-radius: var(--radius-chip); color: var(--text-1); }\n';
 const RATCHET = { css: { 'a.css': { fontSizes: 0, radii: 0 } }, legacy: {}, twArbitrarySizes: 0 };
+/** A clean tree with one island source, frontend/islands/ui/X.tsx (or the name given). */
+const island = (code: string, name = 'ui/X.tsx'): Tree => ({ css: { 'a.css': CLEAN }, islands: { [name]: code }, ratchet: RATCHET });
 
 test('the product passes the design-system gate', () => {
   const run = spawnSync(process.execPath, ['scripts/check-ds.mjs'], { encoding: 'utf8' });
@@ -62,6 +66,12 @@ test('a clean tree passes, and a planted fault of each kind fails it', async (t)
         { css: { 'a.css': CLEAN }, templates: { 'p.html': page(['fonts', 'tokens', 'ds', 'base', 'components']) }, ratchet: RATCHET }, 'p.html: base.css comes after ds.css'],
       ['a page that loads base.css and no pattern sheet',
         { css: { 'a.css': CLEAN }, templates: { 'p.html': page(['fonts', 'tokens', 'base', 'components']) }, ratchet: RATCHET }, 'p.html: loads base.css but not ds.css'],
+      ['an island that writes a style attribute', island('export const X = () => <p style={{ color: "var(--ok)" }}>x</p>;'), 'ui/X.tsx:1 writes a style attribute'],
+      ['an island that sets element.style', island('export function x(e: HTMLElement) { e.style.width = "3px"; }'), 'ui/X.tsx:1 writes a style attribute'],
+      ['an island that writes a markup string', island('export const X = () => <p dangerouslySetInnerHTML={{ __html: "<b>" }} />;'), 'ui/X.tsx:1 writes a markup string'],
+      ['an island that writes a colour', island('const ink = "#1d1f20";'), 'ui/X.tsx:1 writes a colour'],
+      ['an island that uses an old class name', island('export const X = () => <a className="button">Go</a>;'), 'ui/X.tsx:1 uses the old class name "button"'],
+      ['an island with an arbitrary Tailwind size', island('export const X = () => <p className="tw:text-[13px]">x</p>;'), 'arbitrary Tailwind size tw:text-[13px]'],
     ];
     for (const [name, tree, message] of faults) {
       await t.test(name, () => {
@@ -75,6 +85,10 @@ test('a clean tree passes, and a planted fault of each kind fails it', async (t)
         'base.html': `${page(['fonts', 'tokens', 'base', 'ui', 'ds', 'app', 'components'])}{% block page_styles %}{% endblock %}${page(['tw'])}{# css/app.css would come first #}`,
         'report.html': page(['fonts', 'tokens', 'base', 'ds', 'app', 'components']),
         'hr.html': `{% block extra_head %}${page(['hr'])}{% endblock %}` } });
+      assert.equal(run.status, 0, run.out);
+    });
+    await t.test('a clean island passes: classes only, and a comment may name what is forbidden', () => {
+      const run = gate(island('// never style={{}} here\nexport const Ok = () => <button className="ui-btn" data-variant="primary">Go</button>;\n'));
       assert.equal(run.status, 0, run.out);
     });
     await t.test('a raw size the ratchet still allows passes', () => {

@@ -221,3 +221,17 @@ def record_of(resource):
     return max(records, key=lambda record: (
         sum(rows.rows(record).count() for rows in resource.row_lists if rows.applies_to(record)),
         sum(1 for rows in resource.row_lists if rows.applies_to(record))))
+
+
+def refused_rows_data(rows, record):
+    """What a row list of `record` posts to be refused: one new row whose every box is wrong (a figure, a choice and a
+    date '!', a text one character longer than it may be), with the record's version."""
+    empty = rows.formset(instance=record, prefix=rows.key).empty_form
+
+    def wrong(bound):
+        longest = getattr(bound.field, 'max_length', None)
+        return 'x' * (longest + 1) if longest else '!'
+    version = getattr(type(record).all_objects.filter(pk=record.pk).first(), 'version', '')
+    return {f'{rows.key}-TOTAL_FORMS': '1', f'{rows.key}-INITIAL_FORMS': '0', f'{rows.key}-MIN_NUM_FORMS': '0',
+            f'{rows.key}-MAX_NUM_FORMS': '1000', 'version': str(version),
+            **{f'{rows.key}-0-{bound.name}': wrong(bound) for bound in empty.visible_fields() if bound.name != 'DELETE'}}

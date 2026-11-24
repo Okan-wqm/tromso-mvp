@@ -25,6 +25,7 @@ interface Widget {
   columns?: string[]; sections?: { label: string; areas: { label: string; notes: string[]; cells: { action: string; said: string; option: Option | null }[] }[] }[];
   rows?: { pk: string; label: string; group: string; id: string; checked: boolean; primary: boolean; details: Field[] }[];
   primary?: boolean; dependsOn?: string; emptyText?: string; areaLabel?: string; shown?: string;
+  primaryLabel?: string | null; primaryWords?: string | null; primaryName?: string | null;
   current?: { name: string; href: string | null; clearName: string | null; clearId: string | null; clearLabel: string;
     intro?: string; changeLabel?: string } | null;
 }
@@ -182,6 +183,7 @@ export function FieldOf({ field, optional, source, inRow = false }: { field: Fie
       break;
     case 'links':
       control = <LinkList {...base} columns={widget.columns ?? []} primary={widget.primary} emptyText={widget.emptyText}
+        primaryLabel={widget.primaryLabel ?? undefined} primaryWords={widget.primaryWords ?? undefined}
         group={widget.dependsOn ? source(widget.dependsOn) : undefined}
         rows={(widget.rows ?? []).map((row) => ({ pk: row.pk, label: row.label, group: row.group, checked: row.checked,
           primary: row.primary, details: row.details.map((detail) => <FieldOf key={detail.name} field={detail} optional={optional} source={source} />) }))} />;

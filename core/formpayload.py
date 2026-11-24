@@ -21,7 +21,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.forms.models import ModelChoiceIteratorValue
 from django.utils.functional import Promise
 from django.utils.safestring import SafeData
-from django.utils.translation import pgettext
+from django.utils.translation import gettext, pgettext
 
 from .widgets import DayInput, DependentSelect, MomentInput, Output
 
@@ -209,7 +209,12 @@ def widget_payload(bound):
                 for area in areas]}
             for group, areas in context['sections']]
     elif kind == 'links':
-        found.update(columns=plain(list(context['columns'])), primary=bool(context['primary']),
+        # the primary mark's head, its radio's name and its words for a screen reader, as core/widgets/link_list.html says
+        primary = bool(context['primary'])
+        found.update(primaryLabel=pgettext('link', 'Primary') if primary else None,
+                     primaryName=f"{context['name']}-primary" if primary else None,
+                     primaryWords=gettext('%(record)s is the primary one') if primary else None)
+        found.update(columns=plain(list(context['columns'])), primary=primary,
                      dependsOn=plain(context['depends_on']), emptyText=plain(context['empty_text']),
                      rows=[{'pk': row['pk'], 'label': row['label'], 'group': row['group'], 'id': row['id'],
                             'checked': row['checked'], 'primary': row['primary'],

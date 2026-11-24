@@ -42,7 +42,7 @@ from core.crud import Resource  # noqa: E402
 from core.formpayload import UnknownWidget, field_payload, unshown_visible_fields  # noqa: E402
 from core.formprops import DRAWN  # noqa: E402
 from core.tests_formpayload import drawn  # noqa: E402
-from core.test_world import MOMENT, record_of, world  # noqa: E402
+from core.test_world import MOMENT, record_of, refused_rows_data, world  # noqa: E402
 
 OUT = '/app/frontend/test/pages'
 
@@ -52,13 +52,9 @@ class Rollback(Exception):
 
 
 def refused_rows(rows, record):
-    """A row list of `record` sent back refused: one new row with '!' in every box (a figure, a choice and a date refuse
-    it), checked, so each field carries the value sent and the server's errors."""
-    empty = rows.formset(instance=record, prefix=rows.key).empty_form
-    data = {f'{rows.key}-TOTAL_FORMS': '1', f'{rows.key}-INITIAL_FORMS': '0', f'{rows.key}-MIN_NUM_FORMS': '0',
-            f'{rows.key}-MAX_NUM_FORMS': '1000',
-            **{f'{rows.key}-0-{bound.name}': '!' for bound in empty.visible_fields() if bound.name != 'DELETE'}}
-    sent = rows.formset(data, instance=record, prefix=rows.key)
+    """A row list of `record` sent back refused (core.test_world.refused_rows_data), checked, so each field carries the
+    value sent and the server's errors."""
+    sent = rows.formset(refused_rows_data(rows, record), instance=record, prefix=rows.key)
     sent.is_valid()
     return sent
 

@@ -15,7 +15,7 @@ from farm.tests.test_withdrawal_guard import GuardTestCase
 from .crud import Resource
 from .pagesays import unsaid
 from .tests_formprops import MANIFEST, props_of
-from .test_world import MOMENT, record_of, world
+from .test_world import MOMENT, record_of, refused_rows_data, world
 
 LANGUAGES = ('en', 'nb', 'tr')
 
@@ -29,7 +29,16 @@ def ported():
 
 def labels_of(props):
     """What the old page says twice as layout (a tab's label on its tab and as its panel's heading): said once is enough."""
-    return {tab['label'] for tab in props['form']['tabs']} | {each['label'] for each in props['panels'] if each['label']}
+    return {tab['label'] for tab in props['form']['tabs']} | {each['label'] for each in props['panels'] if each['label']} | (
+        {props['history']['empty_value']} if props.get('history') else set())
+
+
+def apart(props):
+    """What the old page says in one run that the island says in two of the same words: a history entry's words after the
+    person's name and the separator before the time ('tarafından ·' in Turkish), drawn as the words, then ' · ', then the
+    time."""
+    entries = props['history']['entries'] if props.get('history') else []
+    return {f"{entry['by']['after']} ·" for entry in entries if entry['by']['after']}
 
 
 def value_of(field):
@@ -151,7 +160,7 @@ class PortedFormTests(TestCase):
                         self.assertIsNotNone(props, 'the island draws it')
                         self.assertNotIn('class="record-form"', new.content.decode())
                         self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode(),
-                                                once=labels_of(props)), [])
+                                                once=labels_of(props), ignore=apart(props)), [])
 
     def test_every_list_refused_says_what_the_classic_page_says_and_opens_on_its_tab(self):
         for resource in ported():
@@ -159,11 +168,7 @@ class PortedFormTests(TestCase):
             for rows in resource.row_lists:
                 if record is None or not rows.applies_to(record) or not resource.allows('change'):
                     continue
-                empty = rows.formset(instance=record, prefix=rows.key).empty_form
-                data = {f'{rows.key}-TOTAL_FORMS': '1', f'{rows.key}-INITIAL_FORMS': '0',
-                        f'{rows.key}-MIN_NUM_FORMS': '0', f'{rows.key}-MAX_NUM_FORMS': '1000',
-                        'version': str(getattr(type(record).all_objects.get(pk=record.pk), 'version', '')),
-                        **{f'{rows.key}-0-{bound.name}': '!' for bound in empty.visible_fields() if bound.name != 'DELETE'}}
+                data = refused_rows_data(rows, record)
                 url = reverse(resource.url_name(rows.key), args=[record.pk])
                 with self.subTest(tab=resource.__name__, rows=rows.key):
                     old, new = self.both('post', url, data)
@@ -177,7 +182,7 @@ class PortedFormTests(TestCase):
                         field['errors'] for row in block['formset']['rows'] for field in row['fields'])
                     self.assertTrue(refused, 'the refusal is in the list')
                     self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode(),
-                                            once=labels_of(props)), [])
+                                            once=labels_of(props), ignore=apart(props)), [])
 
     def test_every_list_posts_from_its_props_what_it_holds_and_saves(self):
         saved = 0
@@ -238,7 +243,7 @@ class PortedFormTests(TestCase):
         [checklist] = [each for each in props['panels'] if each['key'] == 'checklist']
         self.assertEqual([block['kind'] for block in checklist['blocks']], ['help', 'checks'])
         self.assertEqual([line['done'] for line in checklist['blocks'][1]['lines']], [True, False])
-        self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode(), once=labels_of(props)), [])
+        self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode(), once=labels_of(props), ignore=apart(props)), [])
 
     def test_a_feeding_table_and_a_design_post_from_their_props_what_they_hold_and_save(self):
         from experiments.models import Experiment
@@ -290,7 +295,7 @@ class Asked:
         return ['Test harvest of 23.11.2026 lies inside this withdrawal (end unknown).']
 
 
-@override_settings(ISLANDS_MANIFEST=MANIFEST)
+@override_settings(ISLANDS_MANIFEST=MANIFEST, ALLOWED_HOSTS=['localhost', 'testserver'])
 class EveryQuestionTabTests(TestCase):
     """Every tab whose save may ask the guard's question (`question_template`) draws it in the new look, as the classic page
     says it: the warnings and the box with the change's fingerprint, or why a second person must approve and no box."""
@@ -331,7 +336,7 @@ class EveryQuestionTabTests(TestCase):
                     else:
                         self.assertEqual((question['box']['name'], question['box']['value']), (FIELD, 'f00dfeed'))
                     self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode(),
-                                            once=labels_of(props)), [])
+                                            once=labels_of(props), ignore=apart(props)), [])
 
 
 def _refusal(second):
@@ -340,7 +345,7 @@ def _refusal(second):
     return error
 
 
-@override_settings(ISLANDS_MANIFEST=MANIFEST)
+@override_settings(ISLANDS_MANIFEST=MANIFEST, ALLOWED_HOSTS=['localhost', 'testserver'])
 class GuardQuestionSavesTests(GuardTestCase):
     """The guard's real question in the new look: a feed made medicated over a recorded harvest (the feed's own form,
     `question_template`) and a medicine's withdrawal made longer over one (its list): refused with the question, and saved
@@ -355,8 +360,8 @@ class GuardQuestionSavesTests(GuardTestCase):
         from farm.models import Feed, WithdrawalAcknowledgement
         from decimal import Decimal
         feed = Feed.objects.create(name='Grower T', code='GRT', feed_type='grower')
+        self.harvest(2)                  # first: fed fish are asked about at a harvest (fasting), not after it
         feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(4), feed=feed, amount_kg=Decimal('2'))
-        self.harvest(2)
         url = reverse('farm:feed_edit', args=[feed.pk])
         props = props_of(self.client.get(url).content.decode(), 'record-form')
         data = {**form_posted(props), 'feed_type': ['medicated']}

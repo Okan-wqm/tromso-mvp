@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "2ad39ea3-b663-4032-a582-e742d7cc408f",
+    "key": "c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/2ad39ea3-b663-4032-a582-e742d7cc408f/",
+    "href": "/sites/c4d38316-c12a-4a62-b5aa-d62c1c4fe0d5/",
     "type": "Land-based facility",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "62bc3b5c-b482-49d3-af09-b50b66bc09a6",
+    "key": "0e440c3c-e3cc-43df-beba-ed85bb2bcccd",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/62bc3b5c-b482-49d3-af09-b50b66bc09a6/",
+    "href": "/sites/0e440c3c-e3cc-43df-beba-ed85bb2bcccd/",
     "type": "Sea cage",
     "status": "warning",
     "units": "1",
@@ -248,7 +248,7 @@
   "critical": "Critical",
   "entries": [
    {
-    "key": "f119e6a9-da39-4176-af38-0585343865a9",
+    "key": "0b5ce764-ba74-4ddd-81d4-8b2660fff08a",
     "action": "Changed",
     "critical": false,
     "record": "Experiment · E-2026-001 · Test trial",
@@ -260,7 +260,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "5051f78d-0026-4394-b7bc-94b3ecf99ada",
+    "key": "6c929c9a-86fb-4574-8837-af78b5797935",
     "action": "Changed",
     "critical": false,
     "record": "Experiment · E-2026-001 · Test trial",
@@ -272,7 +272,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "5c171a2f-a1a0-407e-95ce-c6a6acf7bd45",
+    "key": "b2b837a6-498d-4ef6-9eee-3b99760db3c8",
     "action": "Created",
     "critical": false,
     "record": "Experiment · E-2026-001 · Test trial",
@@ -284,7 +284,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "b5e4406b-50cd-4e01-921c-cb11530cbc18",
+    "key": "b3fdbce7-2b3a-4d26-ab9d-cf6b952cb9ed",
     "action": "Changed",
     "critical": false,
     "record": "Feeding protocol · Test grow-out",
@@ -296,7 +296,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "74c7d0e0-51ab-444e-af43-f78b238bf26e",
+    "key": "7438bdb5-8ca1-4ae2-928a-f0d309c22ff3",
     "action": "Changed",
     "critical": false,
     "record": "Channel · TEST-1 › TEST-T",
@@ -318,10 +318,10 @@
   },
   "rows": [
    {
-    "key": "9fe12b51-9bb5-4788-b3c0-eb75ee096ed1",
+    "key": "38adae63-15e0-4e81-ab23-04551512699e",
     "text": "A test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/9fe12b51-9bb5-4788-b3c0-eb75ee096ed1/view/",
+    "href": "/knowledge/entries/38adae63-15e0-4e81-ab23-04551512699e/view/",
     "kind": "neutral",
     "chip": "Draft"
    }

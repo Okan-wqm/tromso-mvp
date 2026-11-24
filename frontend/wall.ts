@@ -6,6 +6,11 @@
 // every poll. static/css/monitor.css does the rest ("the wall of fitted cards", "the dock").
 //   --cols, --rows   the grid, on .monitor-grid
 //   --mh             the cards' height in card units (the template's measure), for the least height of a cell
+//   --u-floor        on .monitor-grid: the smallest unit a card may be drawn at: 14 px, or the board's legible unit
+//                    (its screen's diagonal and viewing distance, data-screen-inches and data-distance-m on the grid:
+//                    wall/slots.ts legibleUnit, CONSENSUS §9), so a wall read from across the room turns pages rather
+//                    than shrink its type under what can be read from there
+//   --wu             on <html>: the band's unit, raised to the band's legible unit when the board says its distance
 //   --dock-space     on .monitor-grid: the room the pane takes beside the cards (0 when none is open)
 //   --dock, --dock-top, data-dock="beside|full"   on #monitor-dock (the pane of the unit gone into, opened by
 //                    frontend/windows.ts or drawn by the server for ?focus=): its width, one cell of a wall of
@@ -26,7 +31,7 @@
 // hidden, which a hidden element refuses: it is given again here once the indicator shows).
 // A wall of cards that flow (Simple, Detailed) is left as it is: the page scrolls. Without this script the fitted
 // cards stand four across and the grid scrolls.
-import { dock, fillUnit, pageOf, slots, worst } from './wall/slots.js';
+import { FLOOR, dock, fillUnit, legibleUnit, pageOf, slots, worst } from './wall/slots.js';
 
 const number = (value: string | null | undefined): number => Number.parseFloat(value ?? '') || 0;
 // The rungs a wall opens on and jumps to: critical, warning, no recent data (the first three of the states' order).
@@ -95,8 +100,18 @@ function show(wall: HTMLElement, page: number): void {
   });
 }
 
+/** The smallest unit the board's screen and distance allow for a card and for the band (FLOOR when it says neither):
+ *  from the screen's own size in CSS px, which the browser knows; the diagonal and the distance are the board's. */
+function legible(wall: HTMLElement): { card: number; band: number } {
+  const inches = number(wall.dataset.screenInches);
+  const distance = number(wall.dataset.distanceM);
+  return { card: legibleUnit(inches, distance, screen.width, screen.height),
+           band: legibleUnit(inches, distance, screen.width, screen.height, 1) };
+}
+
 function clear(wall: HTMLElement): void {
-  for (const name of ['--cols', '--rows', '--mh', '--band', '--dock-space']) wall.style.removeProperty(name);
+  for (const name of ['--cols', '--rows', '--mh', '--band', '--dock-space', '--u-floor']) wall.style.removeProperty(name);
+  document.documentElement.style.removeProperty('--wu');
   delete wall.dataset.page;
   delete wall.dataset.pageCount;
   delete wall.dataset.per;
@@ -116,6 +131,13 @@ function lay(keep: boolean): void {
     return;
   }
   wall.style.setProperty('--dock-space', '0px');          // (measured without the pane's room, which is set below)
+  // (the board's distance: the cards' least unit, and the band's, read before the band is measured)
+  const floor = legible(wall);
+  wall.style.setProperty('--u-floor', `${floor.card}px`);
+  const root = document.documentElement;
+  root.style.removeProperty('--wu');
+  const bandSize = band0(wall);
+  if (floor.band > FLOOR && floor.band > bandSize) root.style.setProperty('--wu', `${floor.band}px`);
   const style = getComputedStyle(wall);
   const gap = number(style.rowGap);
   const band = wall.querySelector<HTMLElement>(':scope > .monitor-band');
@@ -142,7 +164,7 @@ function lay(keep: boolean): void {
     if (pane.querySelector('.monitor-window')) {
       const bar = pane.querySelector<HTMLElement>('.monitor-dock-bar');
       const room = height - (bar ? bar.offsetHeight : 0);
-      const found = dock(width, room, gap, number(pane.dataset.mw), number(pane.dataset.mh), padX, padY);
+      const found = dock(width, room, gap, number(pane.dataset.mw), number(pane.dataset.mh), padX, padY, floor.card);
       pane.dataset.dock = found.beside ? 'beside' : 'full';
       pane.style.setProperty('--dock', `${found.width}px`);
       pane.style.setProperty('--dock-top', `${wall.getBoundingClientRect().top + (band ? band.offsetHeight + gap : 0)}px`);
@@ -153,7 +175,8 @@ function lay(keep: boolean): void {
   }
   wall.style.setProperty('--dock-space', `${space}px`);
   // (a full-height card, data-fill, keeps a whole row of the screen: more of them than fit side by side turn pages)
-  const least = fitted.card.hasAttribute('data-fill') ? fillUnit(width - space, height, fitted.mw, fitted.mh, padX, padY) : undefined;
+  const least = Math.max(floor.card, fitted.card.hasAttribute('data-fill')
+    ? fillUnit(width - space, height, fitted.mw, fitted.mh, padX, padY) : FLOOR);
   const chosen = slots(cards.length, width - space, height, gap, fitted.mw, fitted.mh, least, padX, padY);
   wall.style.setProperty('--cols', String(chosen.cols));
   wall.style.setProperty('--rows', String(chosen.rows));
@@ -163,6 +186,12 @@ function lay(keep: boolean): void {
   wall.dataset.pageCount = String(chosen.pages);
   // (critical, warning, no recent data: the three rungs a wall opens on; a card never moves for the others either)
   show(wall, keep && wall.dataset.page ? Number(wall.dataset.page) : worstOf(wall)?.page ?? 1);
+}
+
+/** The band's unit as the sheet sets it (its font size: monitor.css html[data-wall] .monitor-band). */
+function band0(wall: HTMLElement): number {
+  const band = wall.querySelector<HTMLElement>(':scope > .monitor-band');
+  return band ? number(getComputedStyle(band).fontSize) : 0;
 }
 
 let seen = '';

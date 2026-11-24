@@ -991,7 +991,21 @@ board is refused) and one activity-log entry. Tables `monitor_boards` and `monit
 hold is a constraint (the name, the modes, the refresh range, one card per unit and board). A board holds only live units: the
 form offers live units, and a unit that is deleted keeps its row (a configuration, not history), its card hidden by the live join
 and back when the unit is restored; saving the list drops the row. There is no position: cards go in the farm's one order. A
-board is deleted and restored like any record (nothing depends on it). Anyone who may read Monitoring may choose a board in the
+board is deleted and restored like any record (nothing depends on it). Its **Wall screen** tab says which screen the board is shown on (a
+standard screen: 24″, 27″, 32″, 34″ and 49″ monitors, 55″ and 65″ TVs, or another screen with its diagonal typed) and
+from how far it is read (0.5 to 20 m; the owner's presets 1, 2, 3, 5 m in the help) (frontend-redesign CONSENSUS §9). With
+both, a wall of fitted cards never sets its type smaller than can be read from there: a state's word subtends at least
+20 arcmin (FHWA-RD-98-057, ch. 3) and every other text at least 15 (MIL-STD-1472H §5.17.18.2), a character's height the
+text face's cap height (0.67 of its size); the screen's size in px is the browser's own, so the diagonal gives the
+millimetres of a px (the pixel ratio cancels out). That unit (`monitoring/cards/slots.py legible_unit`, the same rule in
+`frontend/wall/slots.ts legibleUnit`, both held to `slot_vectors.json`) is the slot rule's `min_u`, the cells' least
+height and the pane's: the wall turns pages rather than shrink its type, and the pane lies over the cards when a Big card
+beside them could not be read from there. The band's unit is raised the same way (its tally and chips at 20 arcmin).
+What it costs, measured from the rule: a 55″ Full HD TV read from 3 m gives a unit of 38.5 px, about two Small cards a
+page (twenty cards on ten pages); from 2 m 25.7 px, six a page; a 24″ monitor read from 1 m 29.4 px, four a page (measured
+with the slot rule; the board's distance is how a farm trades cards a page against the distance they are read from). Without a screen or a distance the wall is as it was
+(the 14 px floor). The constraints hold every rule a row can state (a preset is its own diagonal, another screen has one
+in range, none has none; the distance in range or empty). Anyone who may read Monitoring may choose a board in the
 picker (a board is configuration, not a record); the area Monitoring boards in the role matrix, after Tanks, ponds & cages, is for
 making and changing them. A window's place is remembered per board on each device.
 

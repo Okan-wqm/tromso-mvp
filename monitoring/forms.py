@@ -1,5 +1,6 @@
 """The monitoring forms: a card template and its rules (Reference data), and the board's form: its name, description,
-default template, card width and how often its screens ask; and its Units list, one row per card (a unit and its own
+default template, card width and how often its screens ask, the screen it is shown on and how far it is read from;
+and its Units list, one row per card (a unit and its own
 template), saved as a whole list (monitoring/resources.py). The templates
 offered are the live ones (Reference data › Card templates), a built-in by its name in the person's language."""
 from django import forms
@@ -11,11 +12,12 @@ from core.crud import RowFormSet, TabbedForm, tab_fields
 from farm.models import Species, System, Tank
 
 from .cards import catalogue, validate
-from .models import (PH_SCALE_BOUNDS, PH_SCALE_SPAN, REFRESH_MAX, REFRESH_MIN, SCOPES, CardTemplate,
+from .models import (DISTANCE_M, PH_SCALE_BOUNDS, PH_SCALE_SPAN, REFRESH_MAX, REFRESH_MIN, SCOPES, SCREEN_INCHES, CardTemplate,
                      CardTemplateAssignment, MonitorBoard, MonitorBoardUnit, PhWindowScale)
 
 BOARD_TABS = [
     ('general', _('General'), ['name', 'description', 'default_template', 'card_width', 'refresh_seconds']),
+    ('screen', _('Wall screen'), ['screen', 'screen_inches', 'distance_m']),
 ]
 
 
@@ -42,12 +44,21 @@ class MonitorBoardForm(TabbedForm):
             'card_width': _('How wide the cards are at the least: compact fits more on a wall, comfortable is easier to '
                             'read from a distance.'),
             'refresh_seconds': _('Between 10 and 600. Empty uses the system’s 15 seconds.'),
+            'screen': _('The screen this board is shown on. With the distance below, a wall of small or big cards never sets '
+                        'its type smaller than can be read from there (20 arcmin for a state, 15 for every other text): it '
+                        'turns pages instead. The screen’s resolution is read from the screen itself.'),
+            'screen_inches': _('Only for another screen: its diagonal, between 10 and 150 inches.'),
+            'distance_m': _('How far the people who read the wall stand from it: for example 1, 2, 3 or 5 m. Empty: the '
+                            'cards are as large as the screen allows, never under the type a desk reads.'),
         }
         widgets = {'name': forms.TextInput(attrs={'placeholder': _('e.g. Hall A wall')})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['refresh_seconds'].widget.attrs.update({'min': REFRESH_MIN, 'max': REFRESH_MAX})
+        self.fields['screen_inches'].widget.attrs.update({'min': SCREEN_INCHES[0], 'max': SCREEN_INCHES[1], 'step': '0.1'})
+        self.fields['distance_m'].widget.attrs.update({'min': DISTANCE_M[0], 'max': DISTANCE_M[1], 'step': '0.1'})
+        self.fields['screen'].choices = [('', _('Not set'))] + list(self.fields['screen'].choices)[1:]
         templates(self.fields['default_template'], _('As the rules say'))
 
 

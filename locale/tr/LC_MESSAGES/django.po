@@ -882,6 +882,10 @@ msgid "%(hours)s h"
 msgstr "%(hours)s sa"
 
 #, python-format
+msgid "%(inches)s″ screen"
+msgstr "%(inches)s″ ekran"
+
+#, python-format
 msgid "%(inviter)s has created an account for you in the farm console of %(company)s."
 msgstr "%(inviter)s, %(company)s çiftlik konsolunda sizin için bir hesap oluşturdu."
 
@@ -1907,6 +1911,27 @@ msgstr "Mattilsynet’in verdiği gibi 1 ila 6 harf veya rakam."
 
 msgid "15 July each year, for 1 June to 31 May, by year class"
 msgstr "Her yıl 15 Temmuz, 1 Haziran–31 Mayıs dönemi için, yıl sınıfına göre"
+
+msgid "24″ monitor, 1920 × 1080"
+msgstr "24″ monitör, 1920 × 1080"
+
+msgid "27″ monitor, 2560 × 1440"
+msgstr "27″ monitör, 2560 × 1440"
+
+msgid "32″ monitor, 3840 × 2160"
+msgstr "32″ monitör, 3840 × 2160"
+
+msgid "34″ ultrawide monitor, 3440 × 1440"
+msgstr "34″ ultra geniş monitör, 3440 × 1440"
+
+msgid "49″ ultrawide monitor, 5120 × 1440"
+msgstr "49″ ultra geniş monitör, 5120 × 1440"
+
+msgid "55″ TV, 3840 × 2160"
+msgstr "55″ TV, 3840 × 2160"
+
+msgid "65″ TV, 3840 × 2160"
+msgstr "65″ TV, 3840 × 2160"
 
 msgid "7 January"
 msgstr "7 Ocak"
@@ -3760,6 +3785,9 @@ msgstr "Bu grubun başka bir tekrarı bu numarayı taşıyor."
 msgid "Another role already uses this name."
 msgstr "Bu adı başka bir rol zaten kullanıyor."
 
+msgid "Another screen: type its diagonal"
+msgstr "Başka bir ekran: köşegenini yazın"
+
 msgid "Another shift already uses this code."
 msgstr "Başka bir vardiya bu kodu zaten kullanıyor."
 
@@ -4942,6 +4970,9 @@ msgstr "Bir rol ya da bir kişi seçin."
 
 msgid "Choose a sampling point."
 msgstr "Bir numune noktası seçin."
+
+msgid "Choose a screen, or another screen with its diagonal between 10 and 150 inches."
+msgstr "Bir ekran seçin ya da köşegeni 10 ile 150 inç arasında olan başka bir ekran girin."
 
 msgid "Choose a site to list its sampling points."
 msgstr "Numune noktalarını listelemek için bir saha seçin."
@@ -8076,6 +8107,13 @@ msgstr ""
 msgid "How far back inside the limit the clock must come before the alarm clears. Below the limit."
 msgstr "Alarm kapanmadan önce saatin sınırın ne kadar içine dönmesi gerektiği. Sınırın altında."
 
+msgid ""
+"How far the people who read the wall stand from it: for example 1, 2, 3 or 5 m. Empty: the cards "
+"are as large as the screen allows, never under the type a desk reads."
+msgstr ""
+"Duvarı okuyanların ondan ne kadar uzakta durduğu: örneğin 1, 2, 3 veya 5 m. Boş: kartlar ekranın "
+"izin verdiği kadar büyüktür, bir masada okunan yazıdan asla küçük değildir."
+
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
 
@@ -10971,6 +11009,9 @@ msgstr ""
 msgid "Only for a person without an account."
 msgstr "Yalnızca hesabı olmayan kişi için."
 
+msgid "Only for another screen: its diagonal, between 10 and 150 inches."
+msgstr "Yalnızca başka bir ekran için: köşegeni, 10 ile 150 inç arasında."
+
 msgid "Only one contact can be the primary contact."
 msgstr "Yalnızca bir kişi birincil kişi olabilir."
 
@@ -12104,6 +12145,16 @@ msgstr ""
 "gösterir."
 
 #, python-format
+msgid "Read from %(metres)s m"
+msgstr "%(metres)s m'den okunur"
+
+msgid "Read from (m)"
+msgstr "Okuma mesafesi (m)"
+
+msgid "Read from between 0.5 and 20 m, or leave it empty."
+msgstr "Okuma mesafesi 0,5 ile 20 m arasında olmalı ya da boş bırakılmalı."
+
+#, python-format
 msgid ""
 "Read from the database itself and matched with the Django model <code>%(model)s</code> of the "
 "<code>%(app)s</code> app."
@@ -12894,6 +12945,12 @@ msgstr "Planlama ayarları"
 
 msgid "Scientific name"
 msgstr "Bilimsel ad"
+
+msgid "Screen"
+msgstr "Ekran"
+
+msgid "Screen diagonal (inches)"
+msgstr "Ekran köşegeni (inç)"
 
 msgid "Screen size"
 msgstr "Elek açıklığı"
@@ -15554,6 +15611,16 @@ msgstr ""
 "Turdaki pH’ların ölçüldüğü ölçek. NBS dışında: 5 ‰ ve üzeri deniz suyu için, her satır kendi "
 "sıcaklığı ve tuzluluğuyla; pH NBS ölçeğinde saklanır ve gösterilir, ölçülen değer yanında durur."
 
+msgid ""
+"The screen this board is shown on. With the distance below, a wall of small or big cards never "
+"sets its type smaller than can be read from there (20 arcmin for a state, 15 for every other "
+"text): it turns pages instead. The screen’s resolution is read from the screen itself."
+msgstr ""
+"Bu panonun gösterildiği ekran. Aşağıdaki mesafeyle birlikte, küçük veya büyük kartlardan oluşan "
+"bir duvar yazısını oradan okunabilecek boyuttan asla küçük yapmaz (bir durum için 20 açı "
+"dakikası, diğer her yazı için 15): bunun yerine sayfa çevirir. Ekranın çözünürlüğü ekranın "
+"kendisinden okunur."
+
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "%(unit)s birimindeki %(date)s tarihli deniz biti sayımının balığı kalmaz: önce onu iptal edin."
@@ -16819,6 +16886,9 @@ msgstr "İki bileşenin adı %(widget)s."
 msgid "Type"
 msgstr "Tür"
 
+msgid "Type the diagonal of the screen, in inches."
+msgstr "Ekranın köşegenini inç olarak yazın."
+
 msgid "Type your new password twice."
 msgstr "Yeni parolanızı iki kez yazın."
 
@@ -17140,6 +17210,9 @@ msgid "Volunteer"
 msgstr "Gönüllü"
 
 msgid "Wall"
+msgstr "Duvar ekranı"
+
+msgid "Wall screen"
 msgstr "Duvar ekranı"
 
 msgid "Wall-clock time on the site. A shift that ends at or before its start ends the next day."

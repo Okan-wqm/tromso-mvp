@@ -880,6 +880,10 @@ msgid "%(hours)s h"
 msgstr "%(hours)s t"
 
 #, python-format
+msgid "%(inches)s″ screen"
+msgstr "%(inches)s″ skjerm"
+
+#, python-format
 msgid "%(inviter)s has created an account for you in the farm console of %(company)s."
 msgstr "%(inviter)s har opprettet en konto til deg i driftskonsollen til %(company)s."
 
@@ -1898,6 +1902,27 @@ msgstr "1 til 6 bokstaver eller sifre, slik Mattilsynet gir det."
 
 msgid "15 July each year, for 1 June to 31 May, by year class"
 msgstr "15. juli hvert år, for 1. juni til 31. mai, per årsklasse"
+
+msgid "24″ monitor, 1920 × 1080"
+msgstr "24″ skjerm, 1920 × 1080"
+
+msgid "27″ monitor, 2560 × 1440"
+msgstr "27″ skjerm, 2560 × 1440"
+
+msgid "32″ monitor, 3840 × 2160"
+msgstr "32″ skjerm, 3840 × 2160"
+
+msgid "34″ ultrawide monitor, 3440 × 1440"
+msgstr "34″ ultrabred skjerm, 3440 × 1440"
+
+msgid "49″ ultrawide monitor, 5120 × 1440"
+msgstr "49″ ultrabred skjerm, 5120 × 1440"
+
+msgid "55″ TV, 3840 × 2160"
+msgstr "55″ TV, 3840 × 2160"
+
+msgid "65″ TV, 3840 × 2160"
+msgstr "65″ TV, 3840 × 2160"
 
 msgid "7 January"
 msgstr "7. januar"
@@ -3753,6 +3778,9 @@ msgstr "Et annet replikat i denne gruppen har dette nummeret."
 msgid "Another role already uses this name."
 msgstr "Dette navnet brukes allerede av en annen rolle."
 
+msgid "Another screen: type its diagonal"
+msgstr "En annen skjerm: skriv inn diagonalen"
+
 msgid "Another shift already uses this code."
 msgstr "Et annet skift bruker allerede denne koden."
 
@@ -4932,6 +4960,9 @@ msgstr "Velg en rolle eller en person."
 
 msgid "Choose a sampling point."
 msgstr "Velg et prøvepunkt."
+
+msgid "Choose a screen, or another screen with its diagonal between 10 and 150 inches."
+msgstr "Velg en skjerm, eller en annen skjerm med diagonal mellom 10 og 150 tommer."
 
 msgid "Choose a site to list its sampling points."
 msgstr "Velg en lokalitet for å vise prøvepunktene."
@@ -8052,6 +8083,13 @@ msgstr ""
 msgid "How far back inside the limit the clock must come before the alarm clears. Below the limit."
 msgstr "Hvor langt innenfor grensen klokken må komme tilbake før alarmen oppheves. Under grensen."
 
+msgid ""
+"How far the people who read the wall stand from it: for example 1, 2, 3 or 5 m. Empty: the cards "
+"are as large as the screen allows, never under the type a desk reads."
+msgstr ""
+"Hvor langt unna de som leser veggen står: for eksempel 1, 2, 3 eller 5 m. Tomt: kortene er så "
+"store som skjermen tillater, aldri under skriften en arbeidsplass leser."
+
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Hvordan det gis; en behandling med det bruker samme metode."
 
@@ -10946,6 +10984,9 @@ msgstr ""
 msgid "Only for a person without an account."
 msgstr "Bare for en person uten konto."
 
+msgid "Only for another screen: its diagonal, between 10 and 150 inches."
+msgstr "Bare for en annen skjerm: diagonalen, mellom 10 og 150 tommer."
+
 msgid "Only one contact can be the primary contact."
 msgstr "Bare én kontaktperson kan være hovedkontakt."
 
@@ -12078,6 +12119,16 @@ msgstr ""
 "fôrfaktor) til en person uten Les på driftsområdene de kommer fra."
 
 #, python-format
+msgid "Read from %(metres)s m"
+msgstr "Leses fra %(metres)s m"
+
+msgid "Read from (m)"
+msgstr "Leses fra (m)"
+
+msgid "Read from between 0.5 and 20 m, or leave it empty."
+msgstr "Leses fra mellom 0,5 og 20 m, eller la feltet stå tomt."
+
+#, python-format
 msgid ""
 "Read from the database itself and matched with the Django model <code>%(model)s</code> of the "
 "<code>%(app)s</code> app."
@@ -12867,6 +12918,12 @@ msgstr "Planleggingsinnstillinger"
 
 msgid "Scientific name"
 msgstr "Vitenskapelig navn"
+
+msgid "Screen"
+msgstr "Skjerm"
+
+msgid "Screen diagonal (inches)"
+msgstr "Skjermdiagonal (tommer)"
 
 msgid "Screen size"
 msgstr "Duksåpning"
@@ -15525,6 +15582,15 @@ msgstr ""
 " sin egen temperatur og salinitet; pH lagres og vises på NBS-skalaen, med det som ble målt ved "
 "siden av."
 
+msgid ""
+"The screen this board is shown on. With the distance below, a wall of small or big cards never "
+"sets its type smaller than can be read from there (20 arcmin for a state, 15 for every other "
+"text): it turns pages instead. The screen’s resolution is read from the screen itself."
+msgstr ""
+"Skjermen tavlen vises på. Med avstanden under setter en vegg av små eller store kort aldri "
+"skriften mindre enn den kan leses derfra (20 bueminutter for en tilstand, 15 for all annen "
+"tekst): den blar heller om. Skjermens oppløsning leses fra skjermen selv."
+
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
 msgstr "Lusetellingen %(date)s i %(unit)s ville stått uten fisk: annuller den først."
@@ -16782,6 +16848,9 @@ msgstr "To elementer heter %(widget)s."
 msgid "Type"
 msgstr "Type"
 
+msgid "Type the diagonal of the screen, in inches."
+msgstr "Skriv inn skjermens diagonal i tommer."
+
 msgid "Type your new password twice."
 msgstr "Skriv inn det nye passordet to ganger."
 
@@ -17103,6 +17172,9 @@ msgid "Volunteer"
 msgstr "Frivillig"
 
 msgid "Wall"
+msgstr "Veggskjerm"
+
+msgid "Wall screen"
 msgstr "Veggskjerm"
 
 msgid "Wall-clock time on the site. A shift that ends at or before its start ends the next day."

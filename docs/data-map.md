@@ -2936,7 +2936,7 @@ The named wall screens of Monitoring: a name, the template its cards are drawn w
 - **how it works**: Deleting a board is a soft delete; its card rows stay and come back with it when it is restored.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_boards
 - **forms**: `MonitorBoardForm`
-- **constraints**: uq_monitor_boards_name_live (unique: name); chk_monitor_boards_name (check); chk_monitor_boards_mode (check); chk_monitor_boards_refresh (check); chk_monitor_boards_card_width (check)
+- **constraints**: uq_monitor_boards_name_live (unique: name); chk_monitor_boards_name (check); chk_monitor_boards_mode (check); chk_monitor_boards_refresh (check); chk_monitor_boards_card_width (check); chk_monitor_boards_screen (check); chk_monitor_boards_distance (check)
 - **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_band.py`, `monitoring/tests/test_boards.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
@@ -2956,6 +2956,9 @@ The named wall screens of Monitoring: a name, the template its cards are drawn w
 | refresh_seconds | smallint | yes |  | MonitorBoardForm › General |
 | default_template_id | uuid | yes | monitor_card_templates (SET_NULL) | MonitorBoardForm › General |
 | card_width | smallint |  |  | MonitorBoardForm › General |
+| screen | varchar(8) |  |  | MonitorBoardForm › Wall screen |
+| screen_inches | numeric(4, 1) | yes |  | MonitorBoardForm › Wall screen |
+| distance_m | numeric(4, 1) | yes |  | MonitorBoardForm › Wall screen |
 
 <a id="monitoringcardtemplateassignment"></a>
 ### monitoring.CardTemplateAssignment (`monitor_card_assignments`)

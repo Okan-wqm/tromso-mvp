@@ -31812,6 +31812,54 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "screen",
+          "field": "screen",
+          "type": "varchar(8)",
+          "null": false,
+          "choices": [
+            "24",
+            "27",
+            "32",
+            "34",
+            "49",
+            "55",
+            "65",
+            "other"
+          ],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › Wall screen"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "screen_inches",
+          "field": "screen_inches",
+          "type": "numeric(4, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › Wall screen"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "distance_m",
+          "field": "distance_m",
+          "type": "numeric(4, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › Wall screen"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -31843,6 +31891,18 @@
         },
         {
           "name": "chk_monitor_boards_card_width",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_screen",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_distance",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -31925,6 +31985,9 @@
             "default_template": "General",
             "card_width": "General",
             "refresh_seconds": "General",
+            "screen": "Wall screen",
+            "screen_inches": "Wall screen",
+            "distance_m": "Wall screen",
             "version": ""
           }
         }

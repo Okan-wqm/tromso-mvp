@@ -19,6 +19,7 @@ import { chromium, type Page } from 'playwright-core';
 
 import { BROWSERS, skipWithout } from './browsers.js';
 import { linksOf } from './sheets.js';
+import { legibleUnit } from '../wall/slots.js';
 
 const SERVED: [string, string, string][] = [['/css/', resolve('static/css'), 'text/css'], ['/fonts/', resolve('static/fonts'), 'font/woff2'],
                                             ['/js/', resolve('.build/test'), 'text/javascript']];
@@ -393,6 +394,42 @@ for (const [name, prefix] of [['', ''], [' in the new look', 'next-']] as const)
       assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
       assert.deepEqual([seen.spills, seen.cut, seen.never], [[], [], []]);
       assert.deepEqual(await ages(tab), []);
+    });
+
+    await t.test('a board read from across the room: its type at the legible unit, the wall turning pages', async () => {
+      await open(tab, origin, prefix + 'en', 1920, 1080);
+      const before = await look(tab);
+      // a 55" Full HD TV read from 3 m (the board's Wall screen tab: data-screen-inches, data-distance-m on the grid)
+      await tab.evaluate(() => {
+        const grid = document.querySelector('.monitor-grid') as HTMLElement;
+        grid.dataset.screenInches = '55.0';
+        grid.dataset.distanceM = '3.0';
+        window.dispatchEvent(new Event('resize'));
+      });
+      await tab.waitForTimeout(150);
+      const far = await look(tab);
+      const units = await tab.evaluate(() => {
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'))
+          .filter((card) => { const box = card.getBoundingClientRect(); return box.bottom > 1 && box.top < innerHeight - 1; });
+        const band = document.querySelector('.monitor-band') as HTMLElement;
+        return { cards: cards.map((card) => Number.parseFloat(getComputedStyle(card.firstElementChild as Element).fontSize)),
+                 band: Number.parseFloat(getComputedStyle(band).fontSize) };
+      });
+      const legible = legibleUnit(55, 3, 1920, 1080);
+      assert.ok(Number(far.pages) > Number(before.pages), `${far.pages} pages from 3 m, ${before.pages} at the desk`);
+      assert.ok(units.cards.length > 0 && units.cards.every((unit) => unit >= legible - 0.5), `units ${units.cards} under ${legible}`);
+      assert.ok(units.band >= legibleUnit(55, 3, 1920, 1080, 1) - 0.5, `band ${units.band}`);
+      assert.deepEqual([far.spills, far.cut, far.never], [[], [], []]);
+      assert.equal(far.pageScrolls, false, 'the screen itself never scrolls');
+      assert.deepEqual(await ages(tab), []);
+      // the board says no distance any more: the wall is as it was
+      await tab.evaluate(() => {
+        const grid = document.querySelector('.monitor-grid') as HTMLElement;
+        delete grid.dataset.distanceM;
+        window.dispatchEvent(new Event('resize'));
+      });
+      await tab.waitForTimeout(150);
+      assert.equal((await look(tab)).pages, before.pages);
     });
 
     await t.test('a low window turns pages rather than shrink the type, and the keys turn them', async () => {

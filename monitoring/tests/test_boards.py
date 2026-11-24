@@ -2,6 +2,8 @@
 whole list, every constraint the database holds (each refused with IntegrityError), the migration, the role matrix, the menu,
 the database viewer and the board on the page."""
 import itertools
+from decimal import Decimal
+
 from django.core.management import call_command
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
@@ -57,7 +59,8 @@ class ColumnsTests(BoardCase):
                 with self.subTest(form=form.__name__, field=name):
                     self.assertIn(name, columns)
         self.assertEqual(set(MonitorBoardForm.base_fields) - {'version'},
-                         {'name', 'description', 'default_template', 'card_width', 'refresh_seconds'})
+                         {'name', 'description', 'default_template', 'card_width', 'refresh_seconds', 'screen',
+                          'screen_inches', 'distance_m'})
         self.assertEqual(set(BoardUnitForm.base_fields), {'unit', 'template'})
 
 
@@ -117,6 +120,73 @@ class RoundTripTests(BoardCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, text)
         self.assertEqual(MonitorBoard.objects.count(), 1)
+
+
+class WallScreenTests(BoardCase):
+    """The board's wall screen and how far it is read from (CONSENSUS §9), through the form, against the stored row."""
+
+    def test_a_preset_is_its_own_diagonal_another_screen_is_typed_and_none_clears_both(self):
+        response = self.client.post(CREATE, {'name': 'Hall A wall', 'card_width': '2', 'screen': '55', 'screen_inches': '',
+                                             'distance_m': '3'})
+        self.assertEqual(response.status_code, 302)
+        board = MonitorBoard.objects.get()
+        self.assertEqual((board.screen, board.screen_inches, board.distance_m, board.legible),
+                         ('55', Decimal('55.0'), Decimal('3.0'), True))
+        # a preset wins over a diagonal typed beside it: the preset is a known screen
+        self.client.post(self.edit(board), self.posted(board, screen='24', screen_inches='40'))
+        board.refresh_from_db()
+        self.assertEqual((board.screen, board.screen_inches), ('24', Decimal('24.0')))
+        self.client.post(self.edit(board), self.posted(board, screen='other', screen_inches='43'))
+        board.refresh_from_db()
+        self.assertEqual((board.screen, board.screen_inches), ('other', Decimal('43.0')))
+        self.client.post(self.edit(board), self.posted(board, screen='', screen_inches='43', distance_m=''))
+        board.refresh_from_db()
+        self.assertEqual((board.screen, board.screen_inches, board.distance_m, board.legible), ('', None, None, False))
+        self.assertEqual(AuditLog.objects.filter(entity_type='monitoring board', action='update').count(), 3)
+        listing = self.client.get(LIST)
+        self.assertContains(listing, 'Wall screen')
+
+    def test_what_the_form_refuses_reaches_the_person_as_messages(self):
+        for data, text in (({'screen': 'other', 'screen_inches': ''}, 'Type the diagonal of the screen, in inches.'),
+                           ({'screen': 'other', 'screen_inches': '9'}, 'greater than or equal to 10'),
+                           ({'screen': '55', 'distance_m': '0.4'}, 'greater than or equal to 0.5'),
+                           ({'screen': '55', 'distance_m': '21'}, 'less than or equal to 20')):
+            with self.subTest(data=data):
+                response = self.client.post(CREATE, {'name': 'x', 'card_width': '2', 'screen_inches': '',
+                                                     'distance_m': '', **data})
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, text)
+        self.assertFalse(MonitorBoard.objects.exists())
+
+    def test_the_database_holds_the_screens_rules(self):
+        def refused(**fields):
+            with self.assertRaises(IntegrityError), transaction.atomic():
+                MonitorBoard.objects.bulk_create([MonitorBoard(name=f'Board {next(NUMBER)}', **fields)])
+        refused(screen='55', screen_inches=Decimal('40'))          # a preset is its own diagonal
+        refused(screen='55')                                       # ... and has it
+        refused(screen='', screen_inches=Decimal('55'))            # no screen, no diagonal
+        refused(screen='other')
+        for inches in ('9.9', '150.1'):
+            refused(screen='other', screen_inches=Decimal(inches))
+        for metres in ('0.4', '20.1'):
+            refused(distance_m=Decimal(metres))
+        refused(screen='99', screen_inches=Decimal('99'))          # not a screen the list offers
+        for fields in ({'screen': 'other', 'screen_inches': Decimal('10')}, {'screen': 'other', 'screen_inches': Decimal('150')},
+                       {'screen': '65', 'screen_inches': Decimal('65')}, {'distance_m': Decimal('0.5')},
+                       {'distance_m': Decimal('20')}):
+            MonitorBoard.objects.bulk_create([MonitorBoard(name=f'Board {next(NUMBER)}', **fields)])
+
+    def test_the_wall_is_told_its_screen_and_distance_only_when_the_board_says_both(self):
+        board = self.board('Wall', screen='55', screen_inches=Decimal('55'), distance_m=Decimal('3'))
+        html = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk), 'wall': '1'}).content.decode()
+        self.assertIn('data-screen-inches="55.0" data-distance-m="3.0"', html)       # a dot in every language: a number
+        self.client.cookies['django_language'] = 'nb'
+        self.assertIn('data-screen-inches="55.0" data-distance-m="3.0"',
+                      self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk)}).content.decode())
+        MonitorBoard.objects.filter(pk=board.pk).update(distance_m=None)
+        html = self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk), 'wall': '1'}).content.decode()
+        self.assertNotIn('data-screen-inches', html)
+        self.assertNotIn('data-distance-m', html)
 
 
 class CardsListTests(BoardCase):

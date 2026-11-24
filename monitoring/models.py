@@ -11,6 +11,7 @@ form's choices and the read's live join."""
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Case, F, Q, Value, When
@@ -29,6 +30,23 @@ BUILTIN_IDS = tuple(builtin.BUILTINS)
 
 SIMPLE, DETAILED = 'simple', 'detailed'
 REFRESH_MIN, REFRESH_MAX = 10, 600
+# A board's screen and how far it is read from (frontend-redesign CONSENSUS §9): a typed diagonal and distance in these
+# ranges (a phone is no wall; a wall is not read from farther than across a hall).
+SCREEN_INCHES = (Decimal('10'), Decimal('150'))
+DISTANCE_M = (Decimal('0.5'), Decimal('20'))
+
+
+class WallScreen(models.TextChoices):
+    """The standard screens a wall board is shown on (owner, 2026-11-21 and 22: chosen from presets): the value is the
+    diagonal in inches. The resolution in the name only names the model: the wall reads the screen's own size."""
+    IN24 = '24', _('24″ monitor, 1920 × 1080')
+    IN27 = '27', _('27″ monitor, 2560 × 1440')
+    IN32 = '32', _('32″ monitor, 3840 × 2160')
+    IN34 = '34', _('34″ ultrawide monitor, 3440 × 1440')
+    IN49 = '49', _('49″ ultrawide monitor, 5120 × 1440')
+    TV55 = '55', _('55″ TV, 3840 × 2160')
+    TV65 = '65', _('65″ TV, 3840 × 2160')
+    OTHER = 'other', _('Another screen: type its diagonal')
 
 
 class CardWidth(models.IntegerChoices):
@@ -59,6 +77,14 @@ class MonitorBoard(AuditedModel):
     default_template = models.ForeignKey('CardTemplate', null=True, blank=True, on_delete=models.SET_NULL,
                                          related_name='default_for_boards', verbose_name=_('Cards are drawn with'))
     card_width = models.PositiveSmallIntegerField(_('Card width'), choices=CardWidth.choices, default=CardWidth.AUTO)
+    # Where the wall is shown and from how far it is read: with both, a wall of fitted cards never sets its type smaller
+    # than can be read from there (monitoring/cards/slots.py legible_unit; frontend/wall.ts) and turns pages instead.
+    screen = models.CharField(_('Screen'), max_length=8, choices=WallScreen.choices, blank=True, default='')
+    screen_inches = models.DecimalField(_('Screen diagonal (inches)'), max_digits=4, decimal_places=1, null=True,
+                                        blank=True, validators=[MinValueValidator(SCREEN_INCHES[0]),
+                                                                MaxValueValidator(SCREEN_INCHES[1])])
+    distance_m = models.DecimalField(_('Read from (m)'), max_digits=4, decimal_places=1, null=True, blank=True,
+                                     validators=[MinValueValidator(DISTANCE_M[0]), MaxValueValidator(DISTANCE_M[1])])
 
     class Meta:
         db_table = 'monitor_boards'
@@ -76,10 +102,37 @@ class MonitorBoard(AuditedModel):
                 name='chk_monitor_boards_refresh',
                 violation_error_message=_('Refresh between 10 and 600 seconds, or leave it empty.')),
             models.CheckConstraint(condition=Q(card_width__in=CardWidth.values), name='chk_monitor_boards_card_width'),
+            # no screen and no diagonal; a preset and its own diagonal; another screen and a diagonal in range
+            models.CheckConstraint(
+                condition=Q(screen='', screen_inches__isnull=True)
+                | Q(screen=WallScreen.OTHER, screen_inches__gte=SCREEN_INCHES[0], screen_inches__lte=SCREEN_INCHES[1])
+                | Q(*[Q(screen=preset, screen_inches=Decimal(preset)) for preset in WallScreen.values
+                      if preset != WallScreen.OTHER], _connector=Q.OR),
+                name='chk_monitor_boards_screen',
+                violation_error_message=_('Choose a screen, or another screen with its diagonal between 10 and 150 inches.')),
+            models.CheckConstraint(
+                condition=Q(distance_m__isnull=True) | Q(distance_m__gte=DISTANCE_M[0], distance_m__lte=DISTANCE_M[1]),
+                name='chk_monitor_boards_distance',
+                violation_error_message=_('Read from between 0.5 and 20 m, or leave it empty.')),
         ]
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        """A preset is its own diagonal; another screen needs one; no screen has none."""
+        super().clean()
+        if self.screen and self.screen != WallScreen.OTHER:
+            self.screen_inches = Decimal(self.screen)
+        elif not self.screen:
+            self.screen_inches = None
+        elif self.screen_inches is None:
+            raise ValidationError({'screen_inches': _('Type the diagonal of the screen, in inches.')})
+
+    @property
+    def legible(self):
+        """Whether its walls size their type for their distance: a screen and a distance are both set."""
+        return self.screen_inches is not None and self.distance_m is not None
 
     @property
     def seconds(self):

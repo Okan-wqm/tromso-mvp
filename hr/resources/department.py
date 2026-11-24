@@ -1,5 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
+from core import listprops as L
 from core.crud import Resource
 
 from .. import read
@@ -43,3 +44,28 @@ class OfficeDepartmentResource(Resource):
         else:
             status = ''
         return objects, {'statuses': STATUSES, 'chosen_status': status}
+
+    search_placeholder = _('Search by name or code')
+    empty_text = _('The office departments of the company, such as Finance. The production departments are under Production.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [L.choice('status', _('Status'), context['chosen_status'], [('', _('Any status')), *context['statuses']])]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        def manager(row):
+            if row.manager is None:
+                return L.cell(chip=L.chip('warning', _('No manager')))
+            return L.cell(row.manager.get_full_name() or row.manager.get_username())
+        return {'columns': [L.column('department', _('Department')), L.column('status', _('Status')),
+                            L.column('site', _('Site')), L.column('manager', _('Manager')),
+                            L.column('people', _('People'), numeric=True)],
+                'rows': [L.row(row.pk, {
+                    'department': L.title(view, context, row, row.name, sub=[
+                        row.code, _('in %(name)s') % {'name': row.parent.name} if row.parent else '']),
+                    'status': L.cell(chip=L.chip('ok', _('Active')) if row.status == 'active' else L.chip('neutral', _('Inactive'))),
+                    'site': L.cell(row.site.name) if row.site else L.cell(chip=L.chip('warning', _('No site'))),
+                    'manager': manager(row),
+                    'people': L.cell(row.head_count),
+                }, L.edit_delete(view, context, row, row.name)) for row in objects]}

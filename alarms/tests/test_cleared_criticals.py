@@ -11,6 +11,7 @@ from django.db import connection
 from django.test import override_settings
 
 from core.models import Profile
+from core.templatetags.dates import on, zone_for
 
 from .. import outbox, read, services
 from ..models import DeliveryAttempt, OutboxEntry
@@ -34,8 +35,8 @@ class ClearedCriticalTests(Case):
         (sent,) = RecordingTransport.sent
         self.assertEqual(sent.pk, notification.pk)
         self.assertIn('Critical, now cleared', sent.text)
-        self.assertIn(f'{self.now:%H:%M}', sent.text)                              # when it opened
-        self.assertIn(f'{self.at(1):%H:%M}', sent.text)                            # when it cleared
+        clock = (lambda at: on(at, zone_for(self.bergen)).strftime('%d.%m.%Y %H:%M'))
+        self.assertIn(f'Opened {clock(self.now)}, cleared {clock(self.at(1))}', sent.text)
         self.assertEqual(read.status(notification), 'sent')
 
     def test_it_is_said_in_the_persons_language(self):

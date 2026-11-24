@@ -46,6 +46,9 @@ Latin Extended subsets) on 08.11.2026 (Barlow on 24.11.2026).
 
 ## Packages shipped to the browser (`package.json` dependencies, bundled into `static/islands/`)
 
+Their licence texts travel with the bundles: `npm run build` writes `static/islands/THIRD_PARTY_NOTICES.txt` from
+package-lock.json (every package that is not dev), served beside them.
+
 | Package | Licence | What it is used for |
 |---|---|---|
 | `react`, `react-dom` (19.3.1) | MIT | The islands' rendering; with `scheduler` (MIT) |

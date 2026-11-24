@@ -1,5 +1,5 @@
 """The islands' entry on a server-rendered page ({% island %}, core/templatetags/assets.py), read from a fixture manifest in
-Vite's format (core/testdata/islands-manifest.json), and the build check (core.W001)."""
+Vite's format (core/testdata/islands-manifest.json), and the build checks (core.W001, core.E007 under --deploy)."""
 import json
 import os
 import re
@@ -9,8 +9,10 @@ from pathlib import Path
 from django.template import Context, Template
 from django.test import SimpleTestCase, override_settings
 
-from core.checks import compiled_scripts
-from core.templatetags.assets import UnknownIsland, islands_manifest
+from django.core.checks import Error as CheckError
+
+from core.checks import compiled_scripts, compiled_scripts_deployed
+from core.templatetags.assets import ManifestUnreadable, UnknownIsland, islands_manifest
 
 FIXTURE = str(Path(__file__).resolve().parent / 'testdata' / 'islands-manifest.json')
 
@@ -23,10 +25,11 @@ def render(text, context=None):
 class IslandTagTests(SimpleTestCase):
     def test_the_manifest_names_each_island_with_its_chunks_once_each(self):
         found = islands_manifest()
-        self.assertEqual(set(found), {'units', 'water'})
+        self.assertEqual(set(found), {'units', 'water', 'gallery'})     # gallery: core/layout_pages.py's shell-next
         self.assertEqual(found['units'], {'file': 'units-Ab12Cd34.js', 'imports': ['chunks/ui-Ef56Gh78.js', 'chunks/react-Qr78St90.js'],
-                                          'css': ['assets/units-Zz99Yy88.css']})
+                                          'css': ['assets/units-Zz99Yy88.css', 'assets/deep-Ee88Ff99.css']})
         self.assertEqual(found['water']['imports'], ['chunks/ui-Ef56Gh78.js', 'chunks/react-Qr78St90.js', 'chunks/uplot-Mn34Op56.js'])
+        self.assertEqual(found['water']['css'], ['assets/deep-Ee88Ff99.css'])      # a stylesheet two imports deep (review M5)
 
     def test_an_island_is_its_root_its_props_as_data_and_its_module(self):
         html = render('{% island "units" props label="Loading the units…" %}', {'props': {'rows': [{'code': 'HA-K01'}]}})
@@ -66,3 +69,27 @@ class IslandBuildCheckTests(SimpleTestCase):
         with override_settings(ISLANDS_MANIFEST=missing):
             self.assertEqual(islands_manifest(), {})
             self.assertNotIn('manifest.json', ' '.join(problem.msg for problem in compiled_scripts(None)))
+
+    def test_a_manifest_cut_short_is_reported_not_a_crash_and_stops_a_deployment(self):
+        folder = tempfile.mkdtemp()
+        cut = os.path.join(folder, 'manifest.json')
+        with open(cut, 'w', encoding='utf-8') as handle:
+            handle.write('{"frontend/islands/units.tsx": {"file": "units-')
+        with override_settings(ISLANDS_MANIFEST=cut):
+            warned = compiled_scripts(None)
+            self.assertEqual([problem.id for problem in warned], ['core.W001'])
+            self.assertIn('cannot be read', warned[0].msg)
+            stopped = compiled_scripts_deployed(None)
+            self.assertEqual([(problem.id, problem.level) for problem in stopped], [('core.E007', CheckError.level)])
+            with self.assertRaises(ManifestUnreadable):
+                render('{% island "units" %}')
+        missing = os.path.join(folder, 'none.json')
+        with override_settings(ISLANDS_MANIFEST=missing):
+            self.assertEqual([problem.id for problem in compiled_scripts_deployed(None)], ['core.E007'])
+
+    def test_the_manifest_is_no_dot_file_so_collectstatic_takes_it(self):
+        from django.conf import settings
+        from core.templatetags.assets import MANIFEST
+        self.assertEqual(MANIFEST, 'islands/manifest.json')
+        config = (Path(settings.BASE_DIR) / 'vite.config.mjs').read_text(encoding='utf-8')
+        self.assertIn("manifest: 'manifest.json'", config)

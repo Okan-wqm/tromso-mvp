@@ -29,6 +29,10 @@ msgid "%(age)s ago"
 msgstr "%(age)s önce"
 
 #, python-format
+msgid "%(alarms)s; and %(more)d more, see the alarm list"
+msgstr "%(alarms)s; ve %(more)d tane daha, alarm listesine bakın"
+
+#, python-format
 msgid "%(batch)s has no fish at %(place)s now."
 msgstr "%(batch)s partisinin şu anda %(place)s yerinde balığı yok."
 
@@ -180,6 +184,10 @@ msgstr[0] "%(count)d %(name)s hâlâ ona bağlı."
 msgstr[1] "%(count)d %(name)s hâlâ ona bağlı."
 
 #, python-format
+msgid "%(count)d %(severity)s alarms of one kind since %(since)s. For example: %(summary)s"
+msgstr "%(since)s itibarıyla aynı türden %(count)d alarm (%(severity)s). Örneğin: %(summary)s"
+
+#, python-format
 msgid "%(count)d assignment created."
 msgid_plural "%(count)d assignments created."
 msgstr[0] "%(count)d atama oluşturuldu."
@@ -220,6 +228,24 @@ msgid "%(count)d count"
 msgid_plural "%(count)d counts"
 msgstr[0] "%(count)d sayım"
 msgstr[1] "%(count)d sayım"
+
+#, python-format
+msgid ""
+"%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log."
+" The first opened %(opened)s, the last cleared %(cleared)s."
+msgstr ""
+"Hiçbir mesaj gönderilemezken %(count)d kritik alarm oluştu ve kapandı; alarm kaydına bakın. İlki "
+"%(opened)s açıldı, sonuncusu %(cleared)s kapandı."
+
+#, python-format
+msgid ""
+"%(count)d critical notification(s) cannot be delivered, the oldest queued %(since)s: the people "
+"of those alarms are not reached, nor would the next level be. Look at the alarms and tell them "
+"another way."
+msgstr ""
+"%(count)d kritik bildirim iletilemiyor, en eskisi %(since)s kuyruğa alındı: bu alarmların "
+"kişilerine ulaşılmıyor, bir üst kademeye de ulaşılamaz. Alarmlara bakın ve onlara başka bir yolla"
+" haber verin."
 
 #, python-format
 msgid "%(count)d d"
@@ -328,6 +354,12 @@ msgstr[1] "%(count)d ilacı o üretiyor: “%(category)s” işaretli kalsın."
 #, python-format
 msgid "%(count)d min"
 msgstr "%(count)d dk"
+
+#, python-format
+msgid "%(count)d more critical alarms of one kind since %(since)s, %(open)d open now: %(alarms)s"
+msgstr ""
+"%(since)s itibarıyla aynı türden %(count)d kritik alarm daha, şu anda %(open)d tanesi açık: "
+"%(alarms)s"
 
 #, python-format
 msgid "%(count)d on site"
@@ -484,6 +516,20 @@ msgid "%(count)s critical"
 msgid_plural "%(count)s critical"
 msgstr[0] "%(count)s kritik"
 msgstr[1] "%(count)s kritik"
+
+#, python-format
+msgid ""
+"%(count)s critical notification cannot be delivered, queued %(since)s: its people are NOT "
+"reached. Look at the open alarms and tell them another way."
+msgid_plural ""
+"%(count)s critical notifications cannot be delivered, the oldest queued %(since)s: their people "
+"are NOT reached. Look at the open alarms and tell them another way."
+msgstr[0] ""
+"%(count)s kritik bildirim iletilemiyor, %(since)s kuyruğa alındı: kişilerine ULAŞILMIYOR. Açık "
+"alarmlara bakın ve onlara başka bir yolla haber verin."
+msgstr[1] ""
+"%(count)s kritik bildirim iletilemiyor, en eskisi %(since)s kuyruğa alındı: kişilerine "
+"ULAŞILMIYOR. Açık alarmlara bakın ve onlara başka bir yolla haber verin."
 
 #, python-format
 msgid "%(count)s degree-day"
@@ -1145,6 +1191,10 @@ msgstr[0] "bugün planı olmayan %(more)s kişi daha"
 msgstr[1] "bugün planı olmayan %(more)s kişi daha"
 
 #, python-format
+msgid "%(ms)s ms"
+msgstr "%(ms)s ms"
+
+#, python-format
 msgid "%(name)s (copy %(number)d)"
 msgstr "%(name)s (kopya %(number)d)"
 
@@ -1352,6 +1402,10 @@ msgid "%(section)s: not shown to you"
 msgstr "%(section)s: size gösterilmiyor"
 
 #, python-format
+msgid "%(severity)s: %(summary)s"
+msgstr "%(severity)s: %(summary)s"
+
+#, python-format
 msgid ""
 "%(severity)s: escalated after %(minutes)d min without an acknowledgement; usually at most "
 "%(usual)d min."
@@ -1462,6 +1516,10 @@ msgstr "%(start)s – %(end)s"
 #, python-format
 msgid "%(status)s, no recent data"
 msgstr "%(status)s, güncel veri yok"
+
+#, python-format
+msgid "%(summary)s (cleared %(cleared)s)"
+msgstr "%(summary)s (%(cleared)s kapandı)"
 
 #, python-format
 msgid "%(supplier)s is deleted."
@@ -1949,6 +2007,10 @@ msgstr "7 Ocak"
 msgid "9-digit Norwegian organisation number"
 msgstr "9 haneli Norveç kuruluş numarası"
 
+#, python-format
+msgid "A %(severity)s alarm is snoozed for 1 to %(minutes)d minutes."
+msgstr "%(severity)s düzeyindeki bir alarm 1 ile %(minutes)d dakika arası ertelenebilir."
+
 msgid "A DOI starts with 10. and has no spaces, e.g. 10.1016/j.aquaculture.2019.01.001."
 msgstr "DOI 10. ile başlar ve boşluk içermez, örn. 10.1016/j.aquaculture.2019.01.001."
 
@@ -2337,6 +2399,9 @@ msgid "A fitted card’s widgets share its height in at most %(most)d rows; this
 msgstr ""
 "Sığdırılan bir kartın bileşenleri yüksekliği en çok %(most)d satırda paylaşır; bu yerleşim "
 "%(rows)d satır kullanıyor."
+
+msgid "A flood from (alarms)"
+msgstr "Şu kadar alarmdan sel sayılır"
 
 msgid "A flow can be stated for an inlet or an outlet only."
 msgstr "Debi yalnızca bir giriş veya çıkış için belirtilebilir."
@@ -2797,6 +2862,13 @@ msgstr ""
 "0,2 (lakselusforskriften § 8 ve Vedlegg 1). Her birimin o haftaki son sayımı geçerlidir."
 
 msgid ""
+"A snoozed alarm is still raised, kept and cleared; nobody is notified of it and it is not "
+"escalated until the snooze ends. Snooze an open alarm on its page."
+msgstr ""
+"Ertelenmiş bir alarm yine açılır, saklanır ve kapanır; erteleme bitene kadar kimseye bildirilmez "
+"ve üst kademeye iletilmez. Açık bir alarmı kendi sayfasından erteleyin."
+
+msgid ""
 "A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for"
 " the reports and the water it lives in."
 msgstr ""
@@ -2983,12 +3055,8 @@ msgstr ""
 "Aralık dışındaki bir değer saklanır, işaretlenir ve hiçbir yerde kullanılmaz. Yeni bir kanalda "
 "boş: parametrenin alabileceği değerler."
 
-msgid ""
-"A warning or a critical value raises an alarm (Company › Alarms); nothing is sent until the push "
-"transport is connected."
-msgstr ""
-"Uyarı ya da kritik bir değer bir alarm başlatır (Şirket › Alarmlar); anlık bildirim aktarımı "
-"bağlanana kadar hiçbir şey gönderilmez."
+msgid "A warning or a critical value raises an alarm (Company › Alarms)."
+msgstr "Uyarı ya da kritik bir değer alarm açar (Şirket › Alarmlar)."
 
 msgid "A warning’s device clock limit is below the critical one."
 msgstr "Uyarının cihaz saati sınırı kritik olanınkinden küçüktür."
@@ -3344,6 +3412,14 @@ msgstr "Alarm olayı onaylandı."
 msgid "Alarm events"
 msgstr "Alarm olayları"
 
+#, python-format
+msgid ""
+"Alarm flood: %(size)s open %(severity)s alarms of one kind since %(since)s, the first: "
+"%(example)s. Each is listed below; a person gets one message for them."
+msgstr ""
+"Alarm seli: %(since)s itibarıyla aynı türden %(size)s açık alarm (%(severity)s), ilki: "
+"%(example)s. Her biri aşağıda listelenir; bir kişi bunlar için tek bir mesaj alır."
+
 msgid "Alarm recipients"
 msgstr "Alarm alıcıları"
 
@@ -3356,8 +3432,20 @@ msgstr "Alarm kuralları"
 msgid "Alarm severity rules"
 msgstr "Alarm önem kuralları"
 
+msgid "Alarm snoozed."
+msgstr "Alarm ertelendi."
+
+msgid "Alarm snoozes"
+msgstr "Alarm ertelemeleri"
+
+msgid "Alarm snoozes, scrolls sideways"
+msgstr "Alarm ertelemeleri, yana kaydırılır"
+
 msgid "Alarms"
 msgstr "Alarmlar"
+
+msgid "Alarms in the flood message"
+msgstr "Sel mesajındaki alarmlar"
 
 msgid "Alive"
 msgstr "Canlı"
@@ -3612,6 +3700,13 @@ msgstr ""
 
 msgid "An active protocol has a table."
 msgstr "Aktif bir protokolün tablosu olmalı."
+
+msgid ""
+"An alarm about the alarm system's own health is never snoozed: it says the alarms are not working"
+" as they should."
+msgstr ""
+"Alarm sisteminin kendi sağlığıyla ilgili bir alarm asla ertelenmez: alarmların olması gerektiği "
+"gibi çalışmadığını söyler."
 
 msgid "An amount needs its unit, and a unit its amount."
 msgstr "Miktar birimiyle, birim de miktarıyla girilir."
@@ -4072,6 +4167,14 @@ msgstr "En çok %(decimals)d ondalık."
 #, python-format
 msgid "At most %(max)s."
 msgstr "En fazla %(max)s."
+
+#, python-format
+msgid ""
+"At most %(minutes)s minutes. While it is snoozed nobody is notified of this alarm and it is not "
+"escalated; it is still raised, kept and cleared."
+msgstr ""
+"En çok %(minutes)s dakika. Ertelendiği sürece bu alarm kimseye bildirilmez ve üst kademeye "
+"iletilmez; yine açılır, saklanır ve kapanır."
 
 msgid "At most 720 hours (30 days)."
 msgstr "En fazla 720 saat (30 gün)."
@@ -4925,6 +5028,9 @@ msgstr "E-postanızı kontrol edin"
 msgid "Checked at %(clock)s."
 msgstr "Saat %(clock)s itibarıyla denetlendi."
 
+msgid "Checking the alarms"
+msgstr "Alarmları denetliyor"
+
 msgid "Checklist"
 msgstr "Kontrol listesi"
 
@@ -5591,6 +5697,9 @@ msgstr "Ülke"
 msgid "Counts"
 msgstr "Sayımlar"
 
+msgid "Covered by a flood message"
+msgstr "Bir sel mesajıyla kapsandı"
+
 msgid "Crab"
 msgstr "Yengeç"
 
@@ -5643,11 +5752,30 @@ msgstr "Kritik üst sınır"
 msgid "Critical below"
 msgstr "Kritik alt sınır"
 
+msgid "Critical notifications undeliverable"
+msgstr "İletilemeyen kritik bildirimler"
+
 msgid "Critical water points"
 msgstr "Kritik numune noktaları"
 
+#, python-format
+msgid "Critical, now cleared: %(summary)s. Opened %(opened)s, cleared %(cleared)s."
+msgstr "Kritikti, şimdi kapandı: %(summary)s. Açılış %(opened)s, kapanış %(cleared)s."
+
 msgid "Criticality"
 msgstr "Kritiklik"
+
+msgid ""
+"Criticals only: after a message about a kind of critical alarm (one site, one quantity, rule or "
+"check), the next ones of that kind for that person are collected this long and go as one message "
+"naming each. 0: each at once. Critical 0 to 8, so a second critical still reaches the person "
+"within 10 s of its value; warning 0 (warnings are grouped by the flood window)."
+msgstr ""
+"Yalnızca kritikler: bir kritik alarm türü (tek tesis, tek bir büyüklük, kural ya da denetim) "
+"hakkında bir mesajdan sonra, aynı kişi için aynı türden sonrakiler bu süre boyunca toplanır ve "
+"her birini adıyla sayan tek bir mesajla gider. 0: her biri hemen. Kritik 0 ile 8 arası; böylece "
+"ikinci bir kritik alarm da değerinden sonraki 10 s içinde kişiye ulaşır; uyarı 0 (uyarılar sel "
+"penceresiyle gruplanır)."
 
 msgid "Crude fat (%)"
 msgstr "Ham yağ (%)"
@@ -6459,11 +6587,24 @@ msgstr "Kodlama"
 msgid "End"
 msgstr "Bitiş"
 
+msgid "End snooze"
+msgstr "Ertelemeyi bitir"
+
 msgid "End the leave earlier"
 msgstr "İzni erken bitir"
 
 msgid "Ended"
 msgstr "Sona erdi"
+
+msgid "Ended at"
+msgstr "Bitiş zamanı"
+
+msgid "Ended by"
+msgstr "Bitiren"
+
+#, python-format
+msgid "Ended early by %(person)s, %(at)s"
+msgstr "%(person)s tarafından erken bitirildi, %(at)s"
 
 msgid "Ends at"
 msgstr "Bitiş"
@@ -6818,6 +6959,12 @@ msgstr "Faktörler"
 
 msgid "Failed"
 msgstr "Başarısız"
+
+msgid "Failed steps of the last pass"
+msgstr "Son turda başarısız olan adımlar"
+
+msgid "Failures in a row"
+msgstr "Art arda hata"
 
 msgid "Fallow"
 msgstr "Dinlendirmede"
@@ -7307,6 +7454,9 @@ msgstr "Yüzer"
 msgid "Floating feed stays at the surface; sinking and slow-sinking feed is for cages and deep tanks."
 msgstr "Yüzen yem yüzeyde kalır; batan ve yavaş batan yem kafesler ve derin tanklar içindir."
 
+msgid "Flood window (seconds)"
+msgstr "Sel penceresi (saniye)"
+
 msgid "Flow (m³/h)"
 msgstr "Debi (m³/sa)"
 
@@ -7332,6 +7482,9 @@ msgstr "Odak: %(unit)s"
 #, python-brace-format
 msgid "Focus: {unit}"
 msgstr "Odak: {unit}"
+
+msgid "Follow-up after (seconds)"
+msgstr "Takip mesajı sonrası (saniye)"
 
 msgid "Food fish (matfisk)"
 msgstr "Pazar balığı (matfisk)"
@@ -7565,6 +7718,17 @@ msgstr "Sudan son adıma:"
 
 msgid "From then"
 msgstr "O andan itibaren"
+
+msgid ""
+"From this many warnings of one kind (one site, one quantity, rule or check) within the flood "
+"window, a person gets one flood message for them. Criticals are never grouped this way: the first"
+" of a kind goes at once, the next ones as one follow-up message naming each; for them it marks a "
+"flood on the Alarms page. 2 to 1000."
+msgstr ""
+"Sel penceresi içinde aynı türden (tek tesis, tek bir büyüklük, kural ya da denetim) bu kadar "
+"uyarıdan itibaren bir kişi bunlar için tek bir sel mesajı alır. Kritik alarmlar asla böyle "
+"gruplanmaz: bir türün ilki hemen gider, sonrakiler her birini adıyla sayan tek bir takip "
+"mesajıyla gider; onlar için bu değer Alarmlar sayfasında bir seli işaretler. 2 ile 1000 arası."
 
 msgid "Frozen at"
 msgstr "Dondurulma zamanı"
@@ -8133,6 +8297,9 @@ msgstr "Alarm kapanmadan önce saatin sınırın ne kadar içine dönmesi gerekt
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
 
+msgid "How long after a failed attempt the notification is tried again. 1 to 3600."
+msgstr "Başarısız bir denemeden ne kadar sonra bildirimin yeniden deneneceği. 1 ile 3600 arası."
+
 msgid "How long before a shift starts a clock-in counts for it. Default 2 hours."
 msgstr "Bir giriş kaydının vardiya başlamadan ne kadar önce o vardiyaya sayıldığı. Varsayılan 2 saat."
 
@@ -8152,6 +8319,14 @@ msgstr ""
 " olan kuralın önüne geçer; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Çok kısa "
 "aç bırakma bir uyarıdır, engel değil: devam etmek kaydedilir ve kritik olarak günlüğe yazılır. "
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
+
+msgid ""
+"How long the alarms of a flood are counted together, and how long a flood message of warnings "
+"covers the warnings that come after it (a critical is never covered). 10 to 3600."
+msgstr ""
+"Bir selin alarmlarının ne kadar süre birlikte sayılacağı ve uyarılardan oluşan bir sel mesajının "
+"kendisinden sonra gelen uyarıları ne kadar süre kapsayacağı (kritik bir alarm asla kapsanmaz). 10"
+" ile 3600 arası."
 
 msgid ""
 "How long the condition must hold, counted from the first value past the limit, before the alarm "
@@ -8361,6 +8536,9 @@ msgstr "Giriş"
 
 msgid "In feed"
 msgstr "Yemle"
+
+msgid "In force"
+msgstr "Geçerli"
 
 msgid "In force today"
 msgstr "Bugün yürürlükte"
@@ -8775,6 +8953,9 @@ msgstr "Anahtar"
 msgid "Kind"
 msgstr "Tür"
 
+msgid "Kind of alarm"
+msgstr "Alarm türü"
+
 msgid "Kinds of report"
 msgstr "Rapor türleri"
 
@@ -8853,6 +9034,9 @@ msgstr "Son gün"
 msgid "Last day in the experiment"
 msgstr "Denemedeki son gün"
 
+msgid "Last error"
+msgstr "Son hata"
+
 msgid "Last fed"
 msgstr "Son yemleme"
 
@@ -8885,6 +9069,15 @@ msgstr "Son hareket"
 
 msgid "Last name"
 msgstr "Soyad"
+
+msgid "Last pass at"
+msgstr "Son tur zamanı"
+
+msgid "Last pass took (ms)"
+msgstr "Son tur süresi (ms)"
+
+msgid "Last pass without a failed step at"
+msgstr "Başarısız adımsız son tur zamanı"
 
 msgid "Last read"
 msgstr "Son okunan"
@@ -9139,6 +9332,9 @@ msgstr "Lokalitetsnummer"
 
 msgid "Long axis (m)"
 msgstr "Uzun eksen (m)"
+
+msgid "Longest snooze (minutes)"
+msgstr "En uzun erteleme (dakika)"
 
 msgid "Longitude"
 msgstr "Boylam"
@@ -9923,6 +10119,9 @@ msgstr "Hesap yok"
 
 msgid "No alarm events."
 msgstr "Alarm olayı yok."
+
+msgid "No alarm has been snoozed."
+msgstr "Hiçbir alarm ertelenmedi."
 
 msgid "No alarm is open."
 msgstr "Açık alarm yok."
@@ -10768,6 +10967,9 @@ msgstr "Stokta hiçbir şey yok: önce bir teslimat alın."
 msgid "Nothing is owed there: it was filed, closed already or is not due."
 msgstr "Orada bir şey gerekmiyor: bildirildi, zaten kapatıldı veya zamanı gelmedi."
 
+msgid "Nothing is sent until the push transport is connected."
+msgstr "Push aktarımı bağlanana kadar hiçbir şey gönderilmez."
+
 msgid ""
 "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
 "notification waits in the outbox below, with its recipient and level, and is sent once it is."
@@ -10784,6 +10986,13 @@ msgstr ""
 "Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra "
 "gelecek). Her bildirim, alıcısı ve seviyesiyle Alarmlar sayfasındaki giden kutusunda bekler ve "
 "aktarım bağlandığında gönderilir."
+
+msgid ""
+"Nothing is sent yet: the push transport is not connected. The alarms are raised and listed "
+"(Company › Alarms); their notifications wait."
+msgstr ""
+"Henüz hiçbir şey gönderilmiyor: push aktarımı bağlı değil. Alarmlar açılır ve listelenir (Şirket "
+"› Alarmlar); bildirimleri bekler."
 
 msgid "Nothing needs attention"
 msgstr "Dikkat gerektiren bir şey yok"
@@ -10823,6 +11032,9 @@ msgstr "Bildirim"
 
 msgid "Notification answered"
 msgstr "Yanıtlanan bildirim"
+
+msgid "Notifications waiting"
+msgstr "Bekleyen bildirimler"
 
 msgid "Notified"
 msgstr "Bildirildi"
@@ -10917,6 +11129,9 @@ msgstr "Geldiğinde kanalın saklanan en yeni değerinden daha eski."
 
 msgid "Older than the raw data is kept"
 msgstr "Ham verinin saklanma süresinden daha eski"
+
+msgid "Oldest waiting since"
+msgstr "En eskisi şu zamandan beri bekliyor"
 
 msgid "On"
 msgstr "Günler"
@@ -11440,6 +11655,9 @@ msgstr "Hizmet dışı"
 msgid "Out of the water (not placed)"
 msgstr "Sudan çıkarıldı (yerleştirilmemiş)"
 
+msgid "Outbox last gone through at"
+msgstr "Giden kutusunun son tarandığı zaman"
+
 msgid "Outcome"
 msgstr "Sonuç"
 
@@ -11592,6 +11810,14 @@ msgstr "Üst ekipman"
 
 msgid "Parent system"
 msgstr "Üst sistem"
+
+#, python-format
+msgid ""
+"Part of the alarms is NOT being checked since %(since)s: these steps of the alarm worker fail: "
+"%(steps)s."
+msgstr ""
+"Alarmların bir kısmı %(since)s itibarıyla DENETLENMİYOR: alarm servisinin şu adımları başarısız: "
+"%(steps)s."
 
 msgid "Parts"
 msgstr "Parçalar"
@@ -11997,6 +12223,9 @@ msgstr "Öncelik"
 msgid "Private text"
 msgstr "Özel metin"
 
+msgid "Process"
+msgstr "Süreç"
+
 msgid "Processing"
 msgstr "İşleme"
 
@@ -12184,6 +12413,9 @@ msgstr "Yağmur ve yüzey akışı"
 
 msgid "Raise after (seconds)"
 msgstr "Şu süreden sonra başlat (saniye)"
+
+msgid "Ran out"
+msgstr "Süresi doldu"
 
 msgid "Randomise"
 msgstr "Rastgele dağıt"
@@ -12675,6 +12907,9 @@ msgstr "Sonuç"
 msgid "Retired"
 msgstr "Kullanımdan kaldırıldı"
 
+msgid "Retry after (seconds)"
+msgstr "Yeniden deneme aralığı (saniye)"
+
 msgid "Return"
 msgstr "İade"
 
@@ -12989,6 +13224,9 @@ msgstr "Neden kapatıldığını yazın."
 
 msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
+
+msgid "Say why the alarm is snoozed."
+msgstr "Alarmın neden ertelendiğini yazın."
 
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
@@ -13664,6 +13902,48 @@ msgstr "Küçük boy"
 msgid "Smolt"
 msgstr "Smolt"
 
+msgid "Snooze"
+msgstr "Ertele"
+
+#, python-format
+msgid "Snooze ended by %(person)s"
+msgstr "Erteleme %(person)s tarafından bitirildi"
+
+msgid "Snooze ended: the alarm is notified and escalated again."
+msgstr "Erteleme bitti: alarm yeniden bildirilir ve üst kademeye iletilir."
+
+msgid "Snooze for (minutes)"
+msgstr "Erteleme süresi (dakika)"
+
+msgid "Snoozed at"
+msgstr "Erteleme zamanı"
+
+msgid "Snoozed by"
+msgstr "Erteleyen"
+
+#, python-format
+msgid "Snoozed by %(person)s until %(until)s: %(reason)s"
+msgstr "%(person)s tarafından %(until)s saatine kadar ertelendi: %(reason)s"
+
+#, python-format
+msgid ""
+"Snoozed by %(person)s until %(until)s: %(reason)s. Nobody is notified of it and it is not "
+"escalated until then; it is still raised and kept."
+msgstr ""
+"%(person)s tarafından %(until)s saatine kadar ertelendi: %(reason)s. O zamana kadar kimseye "
+"bildirilmez ve üst kademeye iletilmez; yine açılır ve saklanır."
+
+msgid "Snoozed until"
+msgstr "Şu zamana kadar ertelendi"
+
+#, python-format
+msgid "Snoozed until %(until)s"
+msgstr "%(until)s saatine kadar ertelendi"
+
+#, python-format
+msgid "Snoozed: %(summary)s"
+msgstr "Ertelendi: %(summary)s"
+
 msgid "Sodium bicarbonate"
 msgstr "Sodyum bikarbonat"
 
@@ -13929,6 +14209,10 @@ msgstr "Adım"
 msgid "Still loading? Open the full page"
 msgstr "Hâlâ yükleniyor mu? Tam sayfayı açın"
 
+#, python-format
+msgid "Still open after its snooze: %(summary)s"
+msgstr "Ertelemesinden sonra hâlâ açık: %(summary)s"
+
 msgid "Stock"
 msgstr "Stok"
 
@@ -13995,6 +14279,9 @@ msgstr "Stoklama"
 
 msgid "Stocking date"
 msgstr "Stoklama tarihi"
+
+msgid "Stopped"
+msgstr "Durdu"
 
 msgid "Storage"
 msgstr "Depo"
@@ -14386,6 +14673,17 @@ msgstr "Adreste, protokolünün gerektirdiği bir anahtar eksik."
 msgid "The address of a mis-sent invitation"
 msgstr "Yanlış gönderilen bir davetin adresi"
 
+msgid "The alarm"
+msgstr "Alarm"
+
+#, python-format
+msgid ""
+"The alarm notifications are NOT being sent since %(since)s: the alarm worker's sender does not "
+"answer. The alarms are raised and listed, but nobody is told."
+msgstr ""
+"Alarm bildirimleri %(since)s itibarıyla GÖNDERİLMİYOR: alarm servisinin göndericisi yanıt "
+"vermiyor. Alarmlar açılır ve listelenir, ama kimseye haber verilmez."
+
 #, python-format
 msgid ""
 "The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used "
@@ -14404,6 +14702,47 @@ msgstr ""
 
 msgid "The alarm system itself"
 msgstr "Alarm sisteminin kendisi"
+
+msgid "The alarm was snoozed"
+msgstr "Alarm ertelendi"
+
+msgid "The alarm worker"
+msgstr "Alarm servisi"
+
+#, python-format
+msgid ""
+"The alarms are NOT being checked since %(since)s: the alarm worker does not answer. No alarm is "
+"raised and nobody is told until it runs again."
+msgstr ""
+"Alarmlar %(since)s itibarıyla DENETLENMİYOR: alarm servisi yanıt vermiyor. Yeniden çalışana kadar"
+" hiçbir alarm açılmaz ve kimseye haber verilmez."
+
+#, python-format
+msgid ""
+"The alarms are NOT being checked since %(since)s: the alarm worker stopped. No alarm is raised "
+"and nobody is told until it runs again."
+msgstr ""
+"Alarmlar %(since)s itibarıyla DENETLENMİYOR: alarm servisi durdu. Yeniden çalışana kadar hiçbir "
+"alarm açılmaz ve kimseye haber verilmez."
+
+msgid ""
+"The alarms are NOT being checked: no alarm worker has run here. No alarm is raised and nobody is "
+"told."
+msgstr ""
+"Alarmlar DENETLENMİYOR: burada hiç alarm servisi çalışmadı. Hiçbir alarm açılmaz ve kimseye haber"
+" verilmez."
+
+#, python-format
+msgid "The alarms were last checked %(at)s."
+msgstr "Alarmlar en son %(at)s denetlendi."
+
+#, python-format
+msgid ""
+"The alarms were not checked from %(start)s to %(end)s (the alarm worker was not running): no "
+"alarm was raised and nobody was told in that time. Look at the farm's values of that time."
+msgstr ""
+"Alarmlar %(start)s ile %(end)s arasında denetlenmedi (alarm servisi çalışmıyordu): bu sürede "
+"hiçbir alarm açılmadı ve kimseye haber verilmedi. Çiftliğin o zamanki değerlerine bakın."
 
 msgid ""
 "The amount of a medicinal treatment is the amount used of the product; Mattilsynet asks for the "
@@ -14692,6 +15031,11 @@ msgstr ""
 
 msgid "The department this one belongs to in the organisation chart; none for a top-level one."
 msgstr "Bu departmanın organizasyon şemasında bağlı olduğu departman; en üst düzey için boş bırakın."
+
+msgid ""
+"The deployment's settings (the environment of the alarm worker's service), shown here, changed "
+"there."
+msgstr "Kurulumun ayarları (alarm servisinin ortam değişkenleri): burada gösterilir, orada değiştirilir."
 
 msgid "The depth of the water taken, from the surface."
 msgstr "Alınan suyun yüzeyden itibaren derinliği."
@@ -15165,6 +15509,13 @@ msgid ""
 msgstr ""
 "Hasatta, kanatma ve iç temizliğinden önce tartılan canlı ağırlık. Stok balıkları kayıttaki "
 "ağırlıklarıyla düşer; fark hasatla birlikte gösterilir."
+
+msgid ""
+"The longest an alarm of this severity may be snoozed: nobody is notified of it and it is not "
+"escalated meanwhile. Critical 1 to 480, warning 1 to 1440."
+msgstr ""
+"Bu önem düzeyindeki bir alarmın ertelenebileceği en uzun süre: bu sırada kimseye bildirilmez ve "
+"üst kademeye iletilmez. Kritik 1 ile 480, uyarı 1 ile 1440 arası."
 
 msgid "The longest distance across the ellipse."
 msgstr "Elipsin en uzun çapı."
@@ -15831,6 +16182,9 @@ msgstr ""
 "Hasat edilen balığın gittiği kesimhaneler, Mattilsynet onay numaralarıyla: her hasat "
 "kesimhanesini belirtir."
 
+msgid "The snooze ended; the alarm is still open"
+msgstr "Erteleme bitti; alarm hâlâ açık"
+
 msgid "The source as a reference list cites it: authors, year, title, where it was published."
 msgstr "Kaynakçada gösterildiği gibi kaynak: yazarlar, yıl, başlık, yayımlandığı yer."
 
@@ -16461,6 +16815,23 @@ msgstr "Bu kayıt (%(name)s) henüz silinemez."
 msgid "This account already belongs to another employee."
 msgstr "Bu hesap zaten başka bir çalışana ait."
 
+#, python-format
+msgid ""
+"This alarm has been snoozed for %(used)d of its %(minutes)d minutes already: at most %(left)d "
+"more."
+msgstr ""
+"Bu alarm %(minutes)d dakikasının %(used)d dakikası kadar zaten ertelendi: en çok %(left)d dakika "
+"daha."
+
+msgid "This alarm has cleared: there is nothing to snooze."
+msgstr "Bu alarm kapandı: ertelenecek bir şey yok."
+
+msgid "This alarm is not snoozed."
+msgstr "Bu alarm ertelenmiş değil."
+
+msgid "This alarm is snoozed already."
+msgstr "Bu alarm zaten ertelenmiş."
+
 msgid "This assignment was deleted meanwhile."
 msgstr "Bu atama bu sırada silindi."
 
@@ -16782,6 +17153,9 @@ msgstr "Değeri olmayan süreler taranır, asla doldurulmaz."
 msgid "Timezone"
 msgstr "Saat dilimi"
 
+msgid "Timings"
+msgstr "Süreler"
+
 msgid "Title"
 msgstr "Başlık"
 
@@ -17000,6 +17374,12 @@ msgstr "Açıklanamayan"
 
 msgid "Unaccounted loss"
 msgstr "Açıklanamayan kayıp"
+
+msgid "Unchecked after (seconds)"
+msgstr "Şu kadar sonra denetlenmiyor sayılır (saniye)"
+
+msgid "Undeliverable since"
+msgstr "Şu zamandan beri iletilemiyor"
 
 msgid "Under maintenance"
 msgstr "Bakımda"
@@ -18306,6 +18686,12 @@ msgstr "alarm bildirimi"
 msgid "alarm notifications"
 msgstr "alarm bildirimleri"
 
+msgid "alarm outbox entries"
+msgstr "alarm giden kutusu kayıtları"
+
+msgid "alarm outbox entry"
+msgstr "alarm giden kutusu kaydı"
+
 msgid "alarm recipient rule"
 msgstr "alarm alıcı kuralı"
 
@@ -18324,11 +18710,29 @@ msgstr "alarm önem kuralı"
 msgid "alarm severity rules"
 msgstr "alarm önem kuralları"
 
+msgid "alarm snooze"
+msgstr "alarm ertelemesi"
+
+msgid "alarm snooze end"
+msgstr "alarm ertelemesi bitişi"
+
+msgid "alarm snooze ends"
+msgstr "alarm ertelemesi bitişleri"
+
+msgid "alarm snoozes"
+msgstr "alarm ertelemeleri"
+
 msgid "alarm subject state"
 msgstr "alarm konusu durumu"
 
 msgid "alarm subject states"
 msgstr "alarm konusu durumları"
+
+msgid "alarm worker status"
+msgstr "alarm servisi durumu"
+
+msgid "alarm worker statuses"
+msgstr "alarm servisi durumları"
 
 msgid "alarms"
 msgstr "alarmlar"
@@ -19223,6 +19627,12 @@ msgstr "%(unit)s biriminde"
 msgid "in %(unit)s, before the fish were moved here"
 msgstr "%(unit)s biriminde, balıklar buraya taşınmadan önce"
 
+#, python-format
+msgid "in a flood message of %(alarms)s alarm"
+msgid_plural "in a flood message of %(alarms)s alarms"
+msgstr[0] "%(alarms)s alarmlık bir sel mesajında"
+msgstr[1] "%(alarms)s alarmlık bir sel mesajında"
+
 msgid "ingest contract"
 msgstr "veri alım sözleşmesi"
 
@@ -19304,6 +19714,14 @@ msgstr "seviye"
 #, python-format
 msgid "level %(level)s"
 msgstr "seviye %(level)s"
+
+#, python-format
+msgid ""
+"looks every %(tick)s s, passes at least every %(sweep)s s, unchecked after %(stale)s s, a send "
+"given %(send)s s"
+msgstr ""
+"her %(tick)s sn bakar, en az her %(sweep)s sn tur atar, %(stale)s sn sonra denetlenmiyor sayılır,"
+" bir gönderime %(send)s sn verilir"
 
 #, python-format
 msgid "loop %(system)s, %(age)s ago"
@@ -19873,6 +20291,9 @@ msgstr "deniz suyu ölçeğinde (SWS)"
 msgid "seconds"
 msgstr "saniye"
 
+msgid "see the alarm list"
+msgstr "alarm listesine bakın"
+
 msgid "sensitivity test"
 msgstr "duyarlılık testi"
 
@@ -20027,6 +20448,10 @@ msgstr "balıklar yaklaşık %(date)s tarihinden itibaren çiftlikten çıkabili
 
 msgid "the layout being designed"
 msgstr "tasarlanan yerleşim"
+
+#, python-format
+msgid "the oldest since %(since)s"
+msgstr "en eskisi %(since)s itibarıyla"
 
 msgid ""
 "the operating plan, the lice coordination plan and the others the authorities require that are "

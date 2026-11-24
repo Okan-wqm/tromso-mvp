@@ -57,6 +57,8 @@ class ClearCause(models.TextChoices):
 class Outcome(models.TextChoices):
     SENT = 'sent', _('Sent')
     FAILED = 'failed', _('Failed')
+    # Not sent on its own: a flood message to the same person, sent within the flood window, covered it (alarms/floods.py).
+    GROUPED = 'grouped', _('Covered by a flood message')
 
 
 class Alarm(models.Model):
@@ -153,6 +155,55 @@ class AlarmSubjectState(models.Model):
         return self.key
 
 
+class WorkerState(models.TextChoices):
+    RUNNING = 'running', _('Checking the alarms')
+    STOPPED = 'stopped', _('Stopped')
+
+
+class AlarmWorkerStatus(models.Model):
+    """The alarm worker's own row (alarms/worker.py; one per worker name, written only by the worker that holds the lock):
+    whether it runs, when it last looked (`heartbeat_at`), when it last finished a pass and a pass with no failed step,
+    how long that took, what failed, and the age after which the pages and the health check call the alarms unchecked
+    (`stale_after_seconds`, the worker's own setting, so a reader needs no setting of its own). The stamps are the
+    database's clock (`now()`), the clock the readers compare them with: a server clock that jumps moves neither.
+    Mutable, like the subjects' timers: not history (the alarms and the activity log are)."""
+
+    name = models.CharField(_('Name'), primary_key=True, max_length=40)
+    state = models.CharField(_('State'), max_length=10, choices=WorkerState.choices)
+    host = models.CharField(_('Host'), max_length=100, blank=True)
+    pid = models.PositiveIntegerField(_('Process'), null=True, blank=True)
+    started_at = models.DateTimeField(_('Started at'))
+    heartbeat_at = models.DateTimeField(_('Last seen at'))
+    last_pass_at = models.DateTimeField(_('Last pass at'), null=True, blank=True)
+    last_ok_pass_at = models.DateTimeField(_('Last pass without a failed step at'), null=True, blank=True)
+    last_pass_ms = models.PositiveIntegerField(_('Last pass took (ms)'), null=True, blank=True)
+    failed_steps = models.CharField(_('Failed steps of the last pass'), max_length=300, blank=True)
+    consecutive_failures = models.PositiveIntegerField(_('Failures in a row'), default=0)
+    last_error = models.CharField(_('Last error'), max_length=300, blank=True)
+    stale_after_seconds = models.PositiveIntegerField(_('Unchecked after (seconds)'))
+    # The outbox as its sender last found it (alarms/outbox.py): when it last went through it, how many notifications
+    # are still to be sent (waiting for a transport, for a retry, or being sent) and since when the oldest of them waits.
+    last_send_at = models.DateTimeField(_('Outbox last gone through at'), null=True, blank=True)
+    outbox_waiting = models.PositiveIntegerField(_('Notifications waiting'), default=0)
+    outbox_oldest_at = models.DateTimeField(_('Oldest waiting since'), null=True, blank=True)
+    # Critical notifications of unacknowledged alarms (open or cleared) that have failed longer than the escalation time
+    # (alarms/outbox.py undeliverable), and since when the oldest of them waits.
+    undeliverable = models.PositiveIntegerField(_('Critical notifications undeliverable'), default=0)
+    undeliverable_since = models.DateTimeField(_('Undeliverable since'), null=True, blank=True)
+
+    class Meta:
+        db_table = 'alarm_worker_status'
+        verbose_name = _('alarm worker status')
+        verbose_name_plural = _('alarm worker statuses')
+        constraints = [models.CheckConstraint(condition=Q(state__in=WorkerState.values),
+                                              name='chk_alarm_worker_status_state'),
+                       models.CheckConstraint(condition=Q(stale_after_seconds__gte=1),
+                                              name='chk_alarm_worker_status_stale_after')]
+
+    def __str__(self):
+        return self.name
+
+
 class RecipientRule(AuditedModel):
     """Who is notified of which alarms: on a site (or every site) and a production department (or every one), of at least
     a severity, at a level (0 is notified when the alarm opens; level 1 when nobody acknowledged level 0 in the platform
@@ -199,9 +250,19 @@ class RecipientRule(AuditedModel):
             raise ValidationError({'production_department': _('This production department is not on the site.')})
 
 
+class NotificationKind(models.TextChoices):
+    ALARM = 'alarm', _('The alarm')
+    # Someone snoozed an alarm the person was notified of (alarms/services.py shelve).
+    SNOOZED = 'snoozed', _('The alarm was snoozed')
+    # A snooze ended with the alarm still open and nobody's acknowledgement: its level is told again (alarms/engine.py).
+    RESUMED = 'resumed', _('The snooze ended; the alarm is still open')
+
+
 class Notification(models.Model):
-    """The outbox: one alarm for one person through one channel at one level, queued by the alarm loop. It is sent when a
-    transport for its channel took it (a DeliveryAttempt `sent`); with no transport connected it waits here."""
+    """The outbox: one alarm for one person through one channel at one level, queued by the alarm pass. It is sent when a
+    transport for its channel took it (a DeliveryAttempt `sent`); with no transport connected it waits here. `kind`: the
+    alarm itself (once per alarm, person, channel and level), or a word about its snooze (`shelve`: once per snooze,
+    person, channel and kind). Each waits in alarms.OutboxEntry until it is sent or given up (alarms/outbox.py)."""
 
     id = models.BigAutoField(primary_key=True)
     alarm = models.ForeignKey(Alarm, on_delete=models.PROTECT, related_name='notifications', verbose_name=_('Alarm'))
@@ -212,6 +273,10 @@ class Notification(models.Model):
     rule = models.ForeignKey(RecipientRule, null=True, blank=True, on_delete=models.PROTECT,
                              related_name='notifications', verbose_name=_('Recipient rule'))
     queued_at = models.DateTimeField(_('Queued at'))
+    kind = models.CharField(_('Kind'), max_length=10, choices=NotificationKind.choices, default=NotificationKind.ALARM,
+                            db_default=NotificationKind.ALARM)
+    shelve = models.ForeignKey('AlarmShelve', null=True, blank=True, on_delete=models.PROTECT,
+                               related_name='notifications', verbose_name=_('Snooze'))
 
     class Meta:
         db_table = 'alarm_notifications'
@@ -220,7 +285,12 @@ class Notification(models.Model):
         verbose_name_plural = _('alarm notifications')
         constraints = [
             models.UniqueConstraint(fields=['alarm', 'recipient', 'channel', 'level'],
-                                    name='uq_alarm_notifications_once'),
+                                    condition=Q(kind=NotificationKind.ALARM), name='uq_alarm_notifications_once'),
+            models.UniqueConstraint(fields=['shelve', 'recipient', 'channel', 'kind'],
+                                    condition=Q(shelve__isnull=False), name='uq_alarm_notifications_snooze_once'),
+            models.CheckConstraint(condition=Q(kind=NotificationKind.ALARM, shelve__isnull=True)
+                                   | Q(kind__in=[NotificationKind.SNOOZED, NotificationKind.RESUMED],
+                                       shelve__isnull=False), name='chk_alarm_notifications_kind'),
             models.CheckConstraint(condition=Q(channel__in=Channel.values), name='chk_alarm_notifications_channel'),
             models.CheckConstraint(condition=Q(level__lte=MAX_LEVEL), name='chk_alarm_notifications_level'),
         ]
@@ -229,8 +299,29 @@ class Notification(models.Model):
         return f'{self.alarm} → {self.recipient} ({self.channel}, {self.level})'
 
 
+class OutboxEntry(models.Model):
+    """A notification still to be sent: the outbox's queue (alarms/outbox.py), written with the notification
+    (services.queue_many) and removed once it is sent, covered by a flood message, or given up, so a round reads only
+    what is waiting, however long the history. Mutable, like the subjects' timers: not history (the notifications and
+    their attempts are)."""
+
+    notification = models.OneToOneField(Notification, primary_key=True, on_delete=models.CASCADE,
+                                        related_name='outbox_entry', verbose_name=_('Notification'))
+
+    class Meta:
+        db_table = 'alarm_outbox'
+        verbose_name = _('alarm outbox entry')
+        verbose_name_plural = _('alarm outbox entries')
+
+    def __str__(self):
+        return str(self.notification_id)
+
+
 class DeliveryAttempt(models.Model):
-    """A transport took a notification (sent) or failed to (failed, with what it said)."""
+    """A transport took a notification (sent) or failed to (failed, with what it said), or a flood message to the same
+    person covered it (grouped: alarms/floods.py). `flood_key` is the kind of alarm it is about (the same site, severity
+    and quantity, rule or alarm-system check), on every attempt; `flood_size`, on an attempt that was part of a flood
+    message, how many alarms that message covered."""
 
     id = models.BigAutoField(primary_key=True)
     notification = models.ForeignKey(Notification, on_delete=models.PROTECT, related_name='attempts',
@@ -238,6 +329,8 @@ class DeliveryAttempt(models.Model):
     attempted_at = models.DateTimeField(_('Attempted at'))
     outcome = models.CharField(_('Outcome'), max_length=10, choices=Outcome.choices)
     detail = models.CharField(_('Detail'), max_length=300, blank=True)
+    flood_key = models.CharField(_('Kind of alarm'), max_length=150, blank=True)
+    flood_size = models.PositiveIntegerField(_('Alarms in the flood message'), null=True, blank=True)
 
     class Meta:
         db_table = 'alarm_delivery_attempts'
@@ -246,8 +339,8 @@ class DeliveryAttempt(models.Model):
         verbose_name_plural = _('alarm delivery attempts')
         constraints = [
             models.CheckConstraint(condition=Q(outcome__in=Outcome.values), name='chk_alarm_delivery_attempts_outcome'),
-            # Sent once: a notification a transport took is never sent again.
-            models.UniqueConstraint(fields=['notification'], condition=Q(outcome=Outcome.SENT),
+            # Sent once: a notification a transport took, or a flood message covered, is never sent again.
+            models.UniqueConstraint(fields=['notification'], condition=Q(outcome__in=[Outcome.SENT, Outcome.GROUPED]),
                                     name='uq_alarm_delivery_attempts_sent_once'),
         ]
 
@@ -313,6 +406,59 @@ class Acknowledgement(models.Model):
         return self.acknowledged_at - self.alarm.opened_at
 
 
+class AlarmShelve(models.Model):
+    """A person snoozed an open alarm (ISA-18.2 shelving; owner decision Q5): from `shelved_at` until `until`, for
+    `reason`. While it lasts the alarm is still raised, kept and shown, and clears as any other; nobody is notified of it,
+    what was queued for it waits, and it is not escalated. Once it ends (`until` passes, or someone ends it early:
+    AlarmShelveEnd) notification and escalation go on, the escalation time counted again from the end. At most the
+    severity's longest snooze (Alarm severity rules); one at a time; by who holds Alarm snoozes: Create
+    (alarms/services.py shelve)."""
+
+    id = models.BigAutoField(primary_key=True)
+    alarm = models.ForeignKey(Alarm, on_delete=models.PROTECT, related_name='shelves', verbose_name=_('Alarm'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='alarm_shelves',
+                             verbose_name=_('Snoozed by'))
+    shelved_at = models.DateTimeField(_('Snoozed at'))
+    until = models.DateTimeField(_('Snoozed until'))
+    reason = models.CharField(_('Why'), max_length=300)
+
+    class Meta:
+        db_table = 'alarm_shelves'
+        ordering = ['-shelved_at', '-id']
+        verbose_name = _('alarm snooze')
+        verbose_name_plural = _('alarm snoozes')
+        constraints = [
+            models.CheckConstraint(condition=Q(until__gt=models.F('shelved_at')), name='chk_alarm_shelves_until'),
+            models.CheckConstraint(condition=~Q(reason=''), name='chk_alarm_shelves_reason'),
+        ]
+
+    def __str__(self):
+        return f'{self.alarm} · {self.shelved_at:%Y-%m-%d %H:%M}'
+
+    def ends_at(self):
+        """When it ends or ended: when someone ended it, or its `until`."""
+        end = getattr(self, 'end', None)
+        return min(end.ended_at, self.until) if end is not None else self.until
+
+
+class AlarmShelveEnd(models.Model):
+    """A person ended a snooze before its time."""
+
+    shelve = models.OneToOneField(AlarmShelve, primary_key=True, on_delete=models.PROTECT, related_name='end',
+                                  verbose_name=_('Snooze'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+',
+                             verbose_name=_('Ended by'))
+    ended_at = models.DateTimeField(_('Ended at'))
+
+    class Meta:
+        db_table = 'alarm_shelve_ends'
+        verbose_name = _('alarm snooze end')
+        verbose_name_plural = _('alarm snooze ends')
+
+    def __str__(self):
+        return f'{self.shelve} · {self.ended_at:%Y-%m-%d %H:%M}'
+
+
 # ---- the rules: the user's reference data (owner, alarm plan §7c) ---------------------------------------------------
 # What a row may hold, the model's and the database's refusal of unsafe values (cross review F9); the values themselves
 # are the user's (seeded by migration 0002 with the owner's defaults, alarm plan §7a).
@@ -326,6 +472,23 @@ ON_DELAY_BOUNDS = {Severity.CRITICAL: (0, 10), Severity.WARNING: (0, 900)}
 # times the owner's 5 min, §7a Q7); a warning within a day.
 ESCALATION_BOUNDS = {Severity.CRITICAL: (1, 30), Severity.WARNING: (1, 1440)}
 ATTEMPTS_BOUNDS = (1, 20)
+# Retry after (seconds), per severity: a second to five minutes between two attempts of a critical notification (it is
+# tried again, the wait doubling up to the severity's escalation time, until its alarm is acknowledged or cleared:
+# alarms/outbox.py), to an hour for a warning.
+RETRY_BOUNDS = {Severity.CRITICAL: (1, 300), Severity.WARNING: (1, 3600)}
+# The longest snooze (minutes), per severity: a critical alarm nobody is told of for at most eight hours (twice the owner's
+# 4 h, Q5), a warning for at most a day.
+SHELVE_BOUNDS = {Severity.CRITICAL: (1, 480), Severity.WARNING: (1, 1440)}
+# A flood (alarms/floods.py): from 2 alarms of one kind to a thousand, within ten seconds to five minutes for critical ones
+# (a flood message covers the next ones of its kind for its window: a critical is never covered longer), an hour for
+# warnings.
+FLOOD_COUNT_BOUNDS = (2, 1000)
+FLOOD_WINDOW_BOUNDS = {Severity.CRITICAL: (10, 300), Severity.WARNING: (10, 3600)}
+# How long the next criticals of a kind wait for one follow-up message after a message of that kind went to the person
+# (seconds; alarms/floods.py): none to 8 s, so a second critical of a kind still reaches the person within the owner's
+# 10 s from a value to its message (REVIEW4: the alarm opens in about 1.3 s, a tick of 1 s). Warnings are grouped by their
+# flood window instead: theirs is 0.
+FOLLOW_UP_BOUNDS = {Severity.CRITICAL: (0, 8), Severity.WARNING: (0, 0)}
 # A device clock's limit (seconds), either way: at least a second (a limit of 0 would alarm on the network's own delay),
 # at most the ingest contract's hour (sensors_contract.future_skew_s is at most 3600: past it the ingest replaces a
 # device's time, and the read layer refuses a value further ahead, evaluate.MAX_AHEAD). Its deadband is below the limit.
@@ -361,7 +524,7 @@ class SeverityPolicy(AuditedModel):
     """How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged):
     how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data
     time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified,
-    and how many times a failing transport is tried with one notification."""
+    and how many times a failing transport is tried with one notification, and how long apart."""
 
     severity = models.CharField(_('Severity'), max_length=10, choices=Severity.choices, editable=False)
     on_delay_seconds = models.PositiveIntegerField(_('Raise after (seconds)'))
@@ -370,6 +533,14 @@ class SeverityPolicy(AuditedModel):
     escalation_minutes = models.PositiveIntegerField(_('Escalate after (minutes)'))
     delivery_attempts = models.PositiveIntegerField(
         _('Delivery attempts'), validators=[MinValueValidator(ATTEMPTS_BOUNDS[0]), MaxValueValidator(ATTEMPTS_BOUNDS[1])])
+    retry_seconds = models.PositiveIntegerField(_('Retry after (seconds)'))
+    shelve_max_minutes = models.PositiveIntegerField(_('Longest snooze (minutes)'))
+    flood_count = models.PositiveIntegerField(
+        _('A flood from (alarms)'),
+        validators=[MinValueValidator(FLOOD_COUNT_BOUNDS[0]), MaxValueValidator(FLOOD_COUNT_BOUNDS[1])])
+    flood_window_seconds = models.PositiveIntegerField(_('Flood window (seconds)'))
+    # A row written outside the form (a restore, a hand edit) without it holds nothing back: 0, the criticals at once.
+    follow_up_seconds = models.PositiveIntegerField(_('Follow-up after (seconds)'), db_default=0)
     clock_skew_seconds = models.PositiveIntegerField(
         _('Device clock off by more than (seconds)'),
         validators=[MinValueValidator(CLOCK_SKEW_BOUNDS[0]), MaxValueValidator(CLOCK_SKEW_BOUNDS[1])])
@@ -396,6 +567,17 @@ class SeverityPolicy(AuditedModel):
             models.CheckConstraint(condition=Q(delivery_attempts__gte=ATTEMPTS_BOUNDS[0],
                                                delivery_attempts__lte=ATTEMPTS_BOUNDS[1]),
                                    name='chk_alarm_severity_policies_attempts'),
+            models.CheckConstraint(condition=_per_severity('retry_seconds', RETRY_BOUNDS),
+                                   name='chk_alarm_severity_policies_retry'),
+            models.CheckConstraint(condition=_per_severity('shelve_max_minutes', SHELVE_BOUNDS),
+                                   name='chk_alarm_severity_policies_shelve'),
+            models.CheckConstraint(condition=Q(flood_count__gte=FLOOD_COUNT_BOUNDS[0],
+                                               flood_count__lte=FLOOD_COUNT_BOUNDS[1]),
+                                   name='chk_alarm_severity_policies_flood'),
+            models.CheckConstraint(condition=_per_severity('flood_window_seconds', FLOOD_WINDOW_BOUNDS),
+                                   name='chk_alarm_severity_policies_flood_window'),
+            models.CheckConstraint(condition=_per_severity('follow_up_seconds', FOLLOW_UP_BOUNDS),
+                                   name='chk_alarm_severity_policies_follow_up'),
             models.CheckConstraint(condition=Q(clock_skew_seconds__gte=CLOCK_SKEW_BOUNDS[0],
                                                clock_skew_seconds__lte=CLOCK_SKEW_BOUNDS[1],
                                                clock_skew_deadband_seconds__gte=0,
@@ -416,7 +598,11 @@ class SeverityPolicy(AuditedModel):
         super().clean()
         errors = {}
         for field, bounds, unit in (('on_delay_seconds', ON_DELAY_BOUNDS, _('seconds')),
-                                    ('escalation_minutes', ESCALATION_BOUNDS, _('minutes'))):
+                                    ('escalation_minutes', ESCALATION_BOUNDS, _('minutes')),
+                                    ('shelve_max_minutes', SHELVE_BOUNDS, _('minutes')),
+                                    ('retry_seconds', RETRY_BOUNDS, _('seconds')),
+                                    ('flood_window_seconds', FLOOD_WINDOW_BOUNDS, _('seconds')),
+                                    ('follow_up_seconds', FOLLOW_UP_BOUNDS, _('seconds'))):
             value, (low, high) = getattr(self, field), bounds.get(self.severity, (None, None))
             if value is not None and low is not None and not low <= value <= high:
                 errors[field] = _('For a %(severity)s alarm, from %(low)d to %(high)d %(unit)s.') % {
@@ -512,6 +698,6 @@ class ParameterDeadband(AuditedModel):
             'band': narrowest.normalize()}]
 
 
-# The tables a database trigger keeps append-only (migration 0001).
+# The tables a database trigger keeps append-only (migrations 0001 and 0017).
 APPEND_ONLY = ('alarms', 'alarm_clearances', 'alarm_notifications', 'alarm_delivery_attempts', 'alarm_escalations',
-               'alarm_acknowledgements')
+               'alarm_acknowledgements', 'alarm_shelves', 'alarm_shelve_ends')

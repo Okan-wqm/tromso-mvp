@@ -570,12 +570,15 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-chart-key > span { color: var(--text-2); }
 .ui-chart-empty { margin: 0; padding: var(--space-5) var(--space-4); }
 .ui-series { position: relative; min-height: 160px; }
-/* A series chart's markers (SeriesChart, Marks): an SVG over the canvas that takes no pointer itself; each mark a line
-   wide enough to hover, reached with Tab, its label shown on hover and on focus. */
+/* A series chart's markers (SeriesChart, Marks): an SVG over the canvas that takes no pointer itself; each mark a handle at
+   the top of its line, 24 px across (WCAG 2.5.8), the only part that takes the pointer, so the cursor and the drag-zoom
+   reach the whole plot; reached with Tab (unless its moments are listed beside the chart), its line lit and its label
+   shown on hover and on focus. */
 .ui-chart-marks { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
-.ui-chart-mark { pointer-events: auto; cursor: default; outline: none; }
+.ui-chart-mark { cursor: default; outline: none; }
 a.ui-chart-mark { cursor: pointer; }
-.ui-chart-mark-hit { stroke: transparent; stroke-width: 12; }
+.ui-chart-mark-hit { stroke: transparent; stroke-width: 2; pointer-events: none; }
+.ui-chart-mark-handle { fill: transparent; stroke: none; pointer-events: all; }
 .ui-chart-mark-label { visibility: hidden; fill: var(--text-1); font-family: var(--font-text); font-size: var(--fs-chart-label);
   font-weight: 600; paint-order: stroke; stroke: var(--surface-sheet); stroke-width: 4px; stroke-linejoin: round; }
 .ui-chart-mark:hover .ui-chart-mark-label, .ui-chart-mark:focus-visible .ui-chart-mark-label { visibility: visible; }

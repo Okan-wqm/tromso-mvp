@@ -39,6 +39,8 @@ class HistoryPageTests(WaterTestCase):
         oxygen = next(chart for chart in place['charts'] if chart['quantity']['code'] == 'oxygen_mg_l')
         self.assertEqual(oxygen['bands'], {'critical_low': 6.0, 'warning_low': 7.0})
         self.assertEqual([sample['value'] for sample in oxygen['samples']], [6.5])
+        # each sample judged as the history page judges it, and said in words (review of batch 1, S1)
+        self.assertEqual([(sample['status'], sample['status_text']) for sample in oxygen['samples']], [('warning', 'Warning')])
         (nh3,) = place['worked']['nh3_n_mg_l']['values']
         self.assertGreater(nh3['value'], 0)
 
@@ -54,7 +56,8 @@ class HistoryPageTests(WaterTestCase):
     def test_a_window_that_is_not_one_is_refused(self):
         for query in ({'start': 'yesterday', 'end': '2026-01-01T00:00'}, {'start': '2026-01-02T00:00',
                                                                           'end': '2026-01-01T00:00'},
-                      {'start': '2020-01-01T00:00', 'end': '2026-01-01T00:00'}, {'around': 'x'}):
+                      {'start': '2020-01-01T00:00', 'end': '2026-01-01T00:00'}, {'around': 'x'},
+                      {'around': '2050-01-01T00:00'}, {'around': '01.01.2100 00:00'}):   # no window after now
             with self.subTest(query=query):
                 self.assertEqual(self.client.get(self.url, {'view': 'history', **query}).status_code, 400)
 

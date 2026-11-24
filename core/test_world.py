@@ -1,8 +1,8 @@
 """The TEST WORLD: the one set of records the browser tests' fixtures and props are made from, never the development
 database (owner's privacy rule, 2026-11-24: the repository is public). Every person, address and name is a fixture value
 (names "Test …", addresses @example.com; core/tests_fixture_privacy.py guards the addresses). It is built in a test
-database only: by scripts/record_test_world.py in the throwaway database test_world (scripts/record_test_world.sh), and
-by the tests that make the islands' props in the test run's own database. The clock is pinned to MOMENT while it is
+database only: by the tests that make the islands' props and pages in the test run's own database
+(farm/tests/test_island_pages.py), and by a recorder of fixtures in a throwaway database, where one exists. The clock is pinned to MOMENT while it is
 built and read.
 
     world(admin)                      every part below, in order, through a client signed in as `admin`
@@ -19,6 +19,7 @@ built and read.
       harvest_world(admin, tank)      a harvest from TT-01 six days back
       treatment_world(admin, tank)    a thermal delousing of TT-01 five days back
       feeding_world(admin, tank)      a feeding of TT-01 the day before
+      limits_world(tank)              the fish's NH₃-N and CO₂ limits, so the Deffeyes chart draws its regions
     sensors_world(admin)              after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat"""
 import math
@@ -148,6 +149,19 @@ def water_world(admin, parts):
     harvest_world(admin, tank)
     treatment_world(admin, tank)
     feeding_world(admin, tank)
+    limits_world(tank)
+
+
+def limits_world(tank):
+    """The NH₃-N and CO₂ limits of TT-01's fish (any water): the Deffeyes charts then draw the regions where each is passed
+    and their borders (Tank › Water's chart of the time, the calculator from TT-01)."""
+    from farm.models import WaterLimit
+
+    species = WaterLimit.objects.filter(parameter='oxygen_mg_l').first().species
+    for parameter, bounds in (('nh3_n_mg_l', {'warning_high': '0.01', 'critical_high': '0.0125'}),
+                              ('co2_mg_l', {'warning_high': '10', 'critical_high': '15'})):
+        WaterLimit.objects.create(species=species, parameter=parameter, water_type='any',
+                                  **{key: D(value) for key, value in bounds.items()})
 
 
 def channel_states(channels):

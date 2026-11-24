@@ -20110,6 +20110,7 @@
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_production_units_next.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_range_deffeyes.py",
         "farm/tests/test_rederive_ph.py",
         "farm/tests/test_sensor_ph_scale.py",
         "farm/tests/test_site_structure.py",

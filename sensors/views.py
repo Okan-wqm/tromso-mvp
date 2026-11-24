@@ -226,10 +226,14 @@ def chart_bands(user, place):
 
 def chart_now(found, now):
     """The newest value of the channel drawn last in the window, with its time and whether it is fresh (sensors.read
-    `latest`, the channel's own freshness): what a chart's "now" dot says; None when nothing is bound there."""
+    `latest`, the channel's own freshness): what a chart's "now" dot says; None when nothing is bound there. The channel
+    drawn last is the last bucket's (a place's own probe, or the backup or the system's channel where it has none);
+    with nothing drawn, the place's first channel (`segments` are in the order they count: own first, the system's
+    last), never the last of them (review of batch 1, F3)."""
     if not found.segments:
         return None
-    state = read.latest([found.segments[-1].channel_no], now)[found.segments[-1].channel_no]
+    channel = found.buckets[-1].channel_no if found.buckets else found.segments[0].channel_no
+    state = read.latest([channel], now)[channel]
     if state.value is None:
         return {'value': None, 'at': None, 'fresh': False, 'channel': state.channel_no}
     return {'value': state.value, 'at': int(state.at.timestamp()), 'fresh': state.fresh, 'channel': state.channel_no}

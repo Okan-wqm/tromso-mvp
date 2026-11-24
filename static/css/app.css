@@ -564,6 +564,7 @@
 
 [data-ui="next"] .ui-topbar { min-height: var(--topbar-h); height: auto; padding: 0 var(--edge); }
 [data-ui="next"] .ui-crumbs .eyebrow { color: var(--text-3); font-size: var(--fs-small); }
+[data-ui="next"] .ui-crumb-here { color: var(--text-2); }
 /* the status strip: the open alarms (filled critical when one is critical), the people on site, the company's clock */
 .ui-strip { display: none; }
 [data-ui="next"] .ui-strip { display: flex; flex: none; align-items: stretch; height: 36px; border: 1px solid var(--line-hair); }
@@ -571,7 +572,8 @@
   display: flex; align-items: center; gap: 6px; padding: 0 var(--space-3);
   color: var(--text-2); font-size: var(--fs-small); white-space: nowrap; text-decoration: none;
 }
-[data-ui="next"] .ui-strip-item + .ui-strip-item { border-left: 1px solid var(--line-hair); }
+[data-ui="next"] .ui-strip > * + * { border-left: 1px solid var(--line-hair); }
+[data-ui="next"] .ui-strip-poll { display: flex; }
 [data-ui="next"] a.ui-strip-item { color: var(--text-1); font-family: var(--font-display); font-size: var(--fs-cell); font-weight: 600; letter-spacing: .02em; }
 [data-ui="next"] a.ui-strip-item:hover { background: var(--surface-sunken); }
 [data-ui="next"] .ui-strip-item .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 1.75; }

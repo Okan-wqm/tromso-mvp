@@ -113,3 +113,62 @@ class RecordFormNextTests(TestCase):
         self.assertEqual(unsaid(old, props, new_html=new), [])
         self.assertEqual(self.client.post(url).status_code, 302)
         self.assertFalse(ParameterDeadband.objects.filter(pk=record.pk).exists())    # gone from every list (soft or hard)
+
+
+@override_settings(ISLANDS_MANIFEST=MANIFEST, ALLOWED_HOSTS=['localhost', 'testserver'])
+class EveryDrawableTabTests(TestCase):
+    """Review F1: every tab whose form the island draws says, new and editing a record of the test world, everything its
+    classic page says (core.pagesays), as the admin sees it; a tab whose save may ask the withdrawal guard's question
+    (`question_template`) keeps its classic page in the new look, so the question and its box are there."""
+
+    def setUp(self):
+        from unittest import mock
+
+        from core.test_world import MOMENT, world
+        clock = mock.patch('django.utils.timezone.now', return_value=MOMENT)
+        clock.start()
+        self.addCleanup(clock.stop)
+        self.admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
+        world(self.admin)
+        self.client.force_login(self.admin)
+
+    def pages(self, url):
+        return self.client.get(url, {'ui': 'classic'}), self.client.get(url, {'ui': 'next'})
+
+    def test_every_drawn_form_says_all_its_classic_page_says_new_and_editing(self):
+        from core.crud import Resource
+        drawn, checked = [], 0
+        for resource in Resource.registry:
+            if resource.form_class is None or resource.form_template != 'crud/form.html':
+                continue
+            urls = []
+            if resource.allows('add'):
+                urls.append(('new', reverse(resource.url_name('create'))))
+            record = resource.queryset().order_by('pk').first() if resource.allows('change') else None
+            if record is not None:
+                urls.append(('edit', reverse(resource.url_name('edit'), args=[record.pk])))
+            for what, url in urls:
+                with self.subTest(tab=resource.__name__, page=what):
+                    old, new = self.pages(url)
+                    if old.status_code != 200:
+                        continue
+                    props = props_of(new.content.decode(), 'record-form')
+                    if props is None:
+                        continue
+                    drawn.append(f'{resource.__name__} {what}')
+                    self.assertIsNone(resource.question_template, 'a tab that may ask the guard\'s question is not drawn')
+                    self.assertEqual(unsaid(old.content.decode(), props, new_html=new.content.decode()), [])
+                    checked += 1
+        self.assertGreater(checked, 20, drawn)
+
+    def test_a_tab_whose_save_may_ask_the_guards_question_keeps_the_classic_page(self):
+        from core.crud import Resource
+        asking = [resource for resource in Resource.registry if resource.question_template and resource.allows('change')]
+        self.assertTrue(asking)
+        for resource in asking:
+            record = resource.queryset().order_by('pk').first()
+            if record is None:
+                continue
+            with self.subTest(tab=resource.__name__):
+                new = self.client.get(reverse(resource.url_name('edit'), args=[record.pk]), {'ui': 'next'}).content.decode()
+                self.assertIsNone(props_of(new, 'record-form'))

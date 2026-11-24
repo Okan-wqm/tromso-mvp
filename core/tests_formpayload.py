@@ -27,6 +27,7 @@ class Drawn(HTMLParser):
         self.controls, self.stack, self.texts = [], [], {'label': [], 'legend': [], 'help': [], 'error': []}
         self.select = None
         self.option = None
+        self.group = ''                 # the <optgroup> an option is under: its heading
         self.textarea = None
 
     def _where(self):
@@ -53,9 +54,11 @@ class Drawn(HTMLParser):
         elif tag == 'select':
             self.select = {'name': attrs.get('name'), 'required': 'required' in attrs, 'disabled': 'disabled' in attrs,
                            'multiple': 'multiple' in attrs, 'options': []}
+        elif tag == 'optgroup' and self.select is not None:
+            self.group = attrs.get('label') or ''
         elif tag == 'option' and self.select is not None:
             self.option = {'value': attrs.get('value', ''), 'selected': 'selected' in attrs,
-                           'disabled': 'disabled' in attrs, 'label': ''}
+                           'disabled': 'disabled' in attrs, 'label': '', 'group': self.group}
         elif tag == 'textarea':
             self.textarea = {'name': attrs.get('name'), 'value': '', 'on': True, 'type': 'textarea',
                              'required': 'required' in attrs, 'disabled': 'disabled' in attrs,
@@ -67,6 +70,8 @@ class Drawn(HTMLParser):
             self.stack.pop()
 
     def handle_endtag(self, tag):
+        if tag == 'optgroup':
+            self.group = ''
         if tag == 'option' and self.option is not None:
             self.option['label'] = ' '.join(self.option['label'].split())
             self.select['options'].append(self.option)
@@ -75,6 +80,7 @@ class Drawn(HTMLParser):
             for option in self.select['options']:
                 self.controls.append({'name': self.select['name'], 'value': option['value'], 'on': option['selected'],
                                       'type': 'option', 'label': option['label'], 'off': option['disabled'],
+                                      'group': option['group'],
                                       'required': self.select['required'], 'disabled': self.select['disabled'],
                                       'bounds': {}})
             self.select = None
@@ -116,6 +122,7 @@ def posted(field):
     if kind in ('select', 'multiselect'):
         return [{'name': widget['name'], 'value': option['value'], 'on': option['selected'], 'type': 'option',
                  'label': ' '.join(str(option['label']).split()), 'off': bool(option['attrs'].get('disabled')),
+                 'group': str(group['label'] or ''),
                  **base, 'bounds': {}}
                 for group in widget['groups'] for option in group['options']]
     if kind in ('checks', 'radio'):
@@ -180,7 +187,7 @@ def normalised(controls):
         (c['name'] or '', c['value'],
          bool(c['on']), c['type'] if c['type'] in ('option', 'checkbox', 'radio', 'file', 'hidden', 'textarea')
          else 'input', c['required'], c['disabled'], tuple(sorted(c['bounds'].items())),
-         c.get('label', ''), bool(c.get('off')))
+         c.get('label', ''), bool(c.get('off')), c.get('group', ''))
         for c in controls)
 
 
@@ -339,3 +346,13 @@ class FormPayloadTests(TestCase):
                                                           '/reports/', 'the reports', 'https://evil.example/', 'elsewhere', 'now'))
         self.assertEqual(field_payload(Helped()['mixed'])['help'], {'segments': [
             {'text': 'See '}, {'href': '/reports/', 'label': 'the reports'}, {'text': ' or '}, {'text': 'elsewhere, now.'}]})
+
+    def test_a_link_is_the_applications_own_only_as_a_plain_path(self):
+        """Review F9: a browser reads "/<backslash>evil.example" and "/<TAB>/evil.example" as "//evil.example": refused, as any address
+        that is not a plain path of this application."""
+        from .formpayload import own_path
+        for href in ('/reports/', '/', '/hr/team/?q=a&page=2', '/knowledge/library/12/view/#page-3'):
+            self.assertTrue(own_path(href), href)
+        for href in ('//evil.example', '/\\evil.example', '/\t/evil.example', '/x/\\y', 'https://evil.example/',
+                     'javascript:alert(1)', 'reports/', '/x//y', ' /x/', '/x/\n'):
+            self.assertFalse(own_path(href), repr(href))

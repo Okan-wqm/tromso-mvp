@@ -744,7 +744,7 @@ class FormView(ResourceView):
             action = self.url('edit', obj.pk)
         else:
             action = self.url('create') if obj is None and r.allows('add') else self.request.path
-        if not is_modal(self.request) and is_next(self.request) and formprops.drawable(r, form):
+        if not is_modal(self.request) and is_next(self.request) and formprops.drawable(r, form, extra):
             # The new look's record form (core/formprops.py): the same form, view and address, drawn by the island.
             return render_page(self.request, 'crud/form_next.html', self.context(
                 form=form, object=obj, props=formprops.record_form_props(
@@ -753,7 +753,7 @@ class FormView(ResourceView):
                     and self.request.user.has_perm(r.perm('delete')) and r.allowed(self.request, obj, 'delete') else '',
                     history=history,
                     history_url=f"{reverse('core:activity_log')}?type={quote(r.entity_type(), safe='/')}&q={quote(str(obj), safe='/')}"
-                    if obj is not None else '')))
+                    if obj is not None else '', open_tab=extra.get('open_tab', ''))))
         return render_page(self.request, r.form_template, self.context(
             form=form, object=obj, history=history, form_action=action, **extra))
 

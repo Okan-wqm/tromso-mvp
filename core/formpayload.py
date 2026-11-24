@@ -13,6 +13,7 @@ every tab (core.crud.Resource.registry) and fails on one, so a new widget cannot
 A value the payload carries is a string, a number, a boolean, None, or a list or dict of those: a lazy translation is
 said in the request's language, a model choice by its key; anything else is refused (UnsafeValue) instead of being
 turned into a string nobody checked."""
+import re
 from html.parser import HTMLParser
 
 from django import forms
@@ -44,7 +45,7 @@ def _kinds():
     from .links import LinkListWidget
     return [
         (Unshown, 'unshown'),                    # carried, drawn by the page's own question (farm/_withdrawal_change.html)
-        (forms.MultipleHiddenInput, 'hidden'),
+        (forms.MultipleHiddenInput, 'hidden_multiple'),   # one input per value: not drawn by the island (formprops.DRAWN)
         (forms.HiddenInput, 'hidden'),
         (AcknowledgeInput, 'acknowledge'),       # the box that goes on past handling warnings (its value: their fingerprint)
         (PermissionMatrix, 'matrix'),            # a role's rights, area by action
@@ -127,6 +128,17 @@ def _initial(bound):
     return {'name': bound.html_initial_name, 'values': ['' if each is None else str(plain(each)) for each in values]}
 
 
+# An address of the application's own: a path starting with one "/" and a letter, digit or one of these, never a backslash
+# or a control character (a browser reads "/\evil.example" and "/<TAB>/evil.example" as "//evil.example").
+_OWN_PATH = re.compile(r"/(?:[A-Za-z0-9_.~%-][A-Za-z0-9_.~%/?#=&;:@+,!$'()*-]*)?")
+
+
+def own_path(href):
+    """Whether `href` is a path of this application (a help's link may lead there): one leading "/", then the characters
+    of a plain path and query; never a scheme, another host, a backslash or a control character."""
+    return bool(_OWN_PATH.fullmatch(href)) and '//' not in href.split('?', 1)[0]
+
+
 class _Segments(HTMLParser):
     """The words of markup a project's own code built, as text and link segments: an <a> becomes {'href', 'label'} when its
     address is the application's own (a path, never a scheme or another host), any other element gives only its words."""
@@ -138,7 +150,7 @@ class _Segments(HTMLParser):
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
             href = dict(attrs).get('href') or ''
-            self.href = href if href.startswith('/') and not href.startswith('//') else ''
+            self.href = href if own_path(href) else ''
             self.label = []
 
     def handle_endtag(self, tag):

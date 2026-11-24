@@ -4552,10 +4552,14 @@ from which device, how late) is logged. The server side is built; the push trans
   owner's 10 s from its value; 0 sends each at once), then go as ONE follow-up message, "N more
   critical alarms of one kind since ..., M open now: ...", naming each (its summary names the unit, a cleared one
   "(cleared ...)"), the open ones first; one alone goes with its own text. **Every text fits its transport** (REVIEW4,
-  F-A): each transport declares `max_chars`, its service's payload limit (a push about 4,000 characters, an SMS 160),
-  and `outbox.text` builds to it: a follow-up names what fits, whole, then "and K more, see the alarm list" (or only
+  F-A): each transport declares `max_bytes`, its service's payload limit in UTF-8 bytes (a Norwegian or Turkish letter
+  is two; a real push transport declares about 3,000 of its 4,096, the envelope being in it too; an SMS 160), and
+  `outbox.text` builds to it: a follow-up names what fits, whole, then "and K more, see the alarm list" (or only
   "see the alarm list"), always with how many are open now; any other text too long is cut between two words and
-  marked "…". A transport that declares no limit sends nothing: each attempt fails, saying so. Ones due in the same round as the first go with it, the rest as
+  marked "…". `manage.py check --deploy` (CI, a release) refuses a configured transport that cannot be imported, is
+  not a `Transport` or declares no whole `max_bytes` of at least 1 (`alarms/checks.py`, alarms.E001-E003); it is a
+  deployment check only, so a wrong setting never stops `run_alarm_worker`. One that reaches a round all the same
+  sends nothing: each attempt fails, saying so. Ones due in the same round as the first go with it, the rest as
   the follow-up. So every critical reaches the person by name within the follow-up time of being queued, and a person
   gets at most one message of a kind in that time. For criticals the flood count and window only mark a flood on the Alarms page. Grouping
   is the outbox's only: every alarm is raised in its own pass, kept, acknowledged and escalated on its own. The Alarms

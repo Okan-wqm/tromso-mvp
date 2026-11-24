@@ -744,6 +744,7 @@ class PointWater:
     silent_oxygen: object = None    # Silence: the unit holds fish and its oxygen has no fresh value (`latest`)
     targets: frozenset = frozenset()    # the sensor targets its place reads (own, then its system's)
     system_point: object = None     # a unit without a point of its own: its system's loop point it is read at, if any
+    standing_place: object = None   # a unit without a point of its own: where it is read (its loop point, else system)
 
     @staticmethod
     def _rolled_up(counted):
@@ -819,6 +820,12 @@ class PointWater:
         (`Reading.last_own`): what the card says beside the status."""
         return [f'{reading.parameter.label}: {messages.last_own(reading.last_own)}' for reading in self.readings.values()
                 if reading.last_own is not None]
+
+    @property
+    def standing_said(self):
+        """'From its system, RAS 1 › Middle: the unit has no sampling point of its own.' for a unit read at its system
+        (`latest`, `units`), else '': what its values say, the drawer and the card's water table say it above them."""
+        return str(messages.from_system(self.standing_place)) if self.standing_place is not None else ''
 
     @property
     def why_silent(self):
@@ -1601,6 +1608,8 @@ def latest(points, now=None, at=None, own=None, units=()):
         where = places[place.pk]
         point_water = water[place.pk] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit,
                                                    system_point=where.system[0] if point is None and where.system
+                                                   else None,
+                                                   standing_place=_system_place(where, place) if point is None
                                                    else None)
         own_ids = {each.pk for each in where.own}
         day = local_time(moment, place).date()
@@ -1636,7 +1645,7 @@ def latest(points, now=None, at=None, own=None, units=()):
                     last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
                                        and each.point.pk in own_ids], moment)
             if point is None:                       # a unit without a point: every value is its system's
-                said = str(messages.from_system(_system_place(where, place)))
+                said = point_water.standing_said
                 reading.note = f'{reading.note} {said}' if reading.note else said
             point_water.readings[code] = reading
         point_water.targets = frozenset(target for target, _origin, _point in (*where.own_targets,
@@ -1647,7 +1656,8 @@ def latest(points, now=None, at=None, own=None, units=()):
 
 
 def _system_place(where, unit):
-    """How a unit without a point names the place its water is read at: its system's loop point, else its system."""
+    """How a unit without a point names the place its water is read at: its system's loop point, else its system;
+    None for a unit in no system (it is read nowhere)."""
     return where.system[0] if where.system else unit.system
 
 

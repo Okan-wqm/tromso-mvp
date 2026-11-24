@@ -6,6 +6,7 @@
 <section class="drawer-section">
   <h3>{% trans "Water" %} {% include "farm/_water_status.html" with status=water_point.status old=water_point.old_alert %}</h3>
   {% if water_point.point %}<p class="row-sub">{% blocktrans trimmed with point=water_point.point %}at {{ point }}{% endblocktrans %}</p>
+  {% elif water_point.standing_said %}<p class="row-sub">{{ water_point.standing_said }}{% if water_points_url %} <a href="{{ water_points_url }}">{% trans "Sampling points" %}</a>{% endif %}</p>
   {% else %}<p class="muted">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}{% if water_points_url %} <a href="{{ water_points_url }}">{% trans "Sampling points" %}</a>{% endif %}</p>{% endif %}
   {% if water_readings %}
   <div class="table-wrap">

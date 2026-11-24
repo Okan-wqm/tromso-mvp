@@ -626,7 +626,9 @@ def overview(user):
     if not user.has_perm(VIEW):
         return None
     latest = _latest(None)
-    alerting = [row for row in latest['rows'] if row['point'] is not None and row['water'].point_status in ALERTS]
+    # (a unit read at its system or nowhere is its own row, without a point: it is counted, so it is listed)
+    alerting = [row for row in latest['rows'] if (row['point'] is not None or isinstance(row['owner'], Tank))
+                and row['water'].point_status in ALERTS]
     alerting.sort(key=lambda row: row['water'].point_status != Status.CRITICAL)
     # The units that hold fish and have no water value at all inside the page's window (no row of theirs has a reading:
     # "Not measured" on this page): nothing is known about their water, which is not "nothing needs attention" (flow

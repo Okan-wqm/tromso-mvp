@@ -212,15 +212,16 @@ def feeding_world(admin, tank):
 
 # The cards of Operations › Monitoring in every state a card can be in (monitoring.read STATES), each a unit of its own in
 # Test Hall A: (code, name, fish, protocol, hours back of its sample, the sample's values). The salmon's limits are the
-# company and water worlds' (oxygen, temperature, pH); the nitrite has none.
+# company and water worlds' (oxygen, temperature, pH) and this one's (alkalinity); the nitrite has none. The alkalinity
+# draws each card's pH window and calculated CO₂.
 MONITORING_UNITS = (
-    ('TW-01', 'Test tank OK', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2'}),
-    ('TW-02', 'Test tank critical', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2'}),
-    ('TW-03', 'Test tank warning', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '6.5', 'ph': '7.2'}),
-    ('TW-04', 'Test tank old values', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2'}),
+    ('TW-01', 'Test tank OK', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
+    ('TW-02', 'Test tank critical', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
+    ('TW-03', 'Test tank warning', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '6.5', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
+    ('TW-04', 'Test tank old values', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-05', 'Test tank no limit', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2',
                                                    'nitrite_n_mg_l': '0.05'}),
-    ('TW-06', 'Test tank no protocol', True, False, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2'}),
+    ('TW-06', 'Test tank no protocol', True, False, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-07', 'Test tank empty', False, False, 0, {}),
 )
 
@@ -230,7 +231,8 @@ def monitoring_world(admin):
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
     and its warning limit), no recent data (its water 30 hours old), no limit (a nitrite no limit row judges), a note (no
     feeding protocol: no ration, and why) and empty (no fish). 1,000 salmon of 50 g each, stocked ten days back; the
-    protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed. Through the services where
+    protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
+    (70 to 150 mg/L) is set here. Through the services where
     the record has one (stocking, the samples), straight into the tables otherwise (the protocol), as the tests do."""
     from farm.models import (Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate,
                              ProductionDepartment, WaterLimit)
@@ -240,6 +242,8 @@ def monitoring_world(admin):
 
     hall = ProductionDepartment.objects.get(code='THA')
     salmon = WaterLimit.objects.filter(parameter='oxygen_mg_l').first().species
+    WaterLimit.objects.create(species=salmon, parameter='alkalinity_mg_l', water_type='any', warning_low=D(70),
+                              warning_high=D(150))
     feed, _ = Feed.objects.get_or_create(code='TF-3', defaults={'name': 'Test Feed 3 mm', 'feed_type': 'grower',
                                                                 'pellet_size_mm': D(3)})
     protocol = FeedingProtocol.objects.create(name='Test salmon table', species=salmon, expected_fcr=D('1.00'),

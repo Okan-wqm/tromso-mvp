@@ -16,7 +16,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -27,7 +27,7 @@ from core import navigation
 from core.crud import DRAFT, done, render_page
 from core.dates import read_day
 from farm.forms.stock import VoidForm
-from farm.models import Feed, FeedingRecord, Site, Supplier
+from farm.models import Feed, Site, Supplier
 from farm.stock.dates import shown_date, site_earliest, site_today
 from farm.stock.services import AlreadyRecorded
 from farm.stock.views import _is_uuid, _refused
@@ -191,23 +191,16 @@ def _voidable(operation):
 
 def _feeding_days(params):
     """The feeding of each site, feed and day, read from the records: what the store's book draws."""
-    rows = FeedingRecord.objects.filter(unit__production_department__site__isnull=False)
-    if params['site']:
-        rows = rows.filter(unit__production_department__site=params['site'])
-    if params['item']:
-        rows = rows.filter(feed__inventory_items=params['item'])
-    if params['from']:
-        rows = rows.filter(date__gte=params['from'])
-    if params['to']:
-        rows = rows.filter(date__lte=params['to'])
-    rows = (rows.order_by().values('unit__production_department__site', 'feed', 'date').annotate(kg=Sum('amount_kg'))
-            .order_by('-date', 'unit__production_department__site', 'feed'))
+    rows = read.feeding_days(site=params['site'], item=params['item'], first=params['from'], last=params['to'])
     feeds, sites = Feed.all_objects.in_bulk(), Site.all_objects.in_bulk()
     url = reverse('farm:feeding_records')
+
+    def address(row):
+        day = row['date'].isoformat()
+        return f'{url}?{urlencode({"site": row[read.SITE], "feed": row["feed_id"], "from": day, "to": day})}'
     return {'feeding_rows': [
-        {'date': row['date'], 'site': sites[row['unit__production_department__site']], 'feed': feeds[row['feed']],
-         'kilos': row['kg'], 'url': f'{url}?{urlencode({"site": row["unit__production_department__site"], "feed": row["feed"], "from": row["date"].isoformat(), "to": row["date"].isoformat()})}'}
-        for row in rows]}
+        {'date': row['date'], 'site': sites[row[read.SITE]], 'feed': feeds[row['feed_id']], 'kilos': row['kg'],
+         'url': address(row)} for row in rows]}
 
 
 def _counts(request, context):

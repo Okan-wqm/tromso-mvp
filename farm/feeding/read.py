@@ -32,7 +32,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.conf import settings
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch, Q, Sum
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -57,6 +57,15 @@ HUNDRED = Decimal(100)
 UNWEIGHED = _('Not weighed since the fish came in.')
 UNFED = _('No feed recorded up to the last weighing.')
 NO_GAIN = _('No growth up to the last weighing.')
+
+
+def given(only=None):
+    """THE kilos of feed given (the data-layering audit, L-8): the sum of `amount_kg` over the live feeding records (a
+    voided one never counts), `only` a Q narrowing which (a site's own day, ...). An aggregate expression for
+    `.aggregate()` / `.annotate()` on FeedingRecord rows; every figure of feed given (a day's ration check, the records'
+    total, the meal board, the overview's cards, the store's draw on the feed) is this sum."""
+    live = Q(is_deleted=False)
+    return Sum('amount_kg', filter=live if only is None else live & only)
 
 
 def feedings(unit_ids=None, since=None):

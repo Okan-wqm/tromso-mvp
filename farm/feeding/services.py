@@ -9,7 +9,6 @@ A failure raises ValidationError (a dict of field to message: 'unit', 'date', 'f
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Sum
 from django.utils.translation import gettext as _, gettext_lazy
 
 from core import access, audit
@@ -71,7 +70,7 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
         # Q-F5 asks about more than the limit a day: the day's feedings of the target in the unit, this one included (the
         # unit is locked, so two feedings of one day take turns; audit F-081).
         day_kg = amount_kg + (FeedingRecord.objects.filter(unit=unit, date=day, target=target)
-                              .aggregate(total=Sum('amount_kg'))['total'] or 0)
+                              .aggregate(total=read.given())['total'] or 0)
         rate = 100 * day_kg / book.biomass_kg
         if rate > settings.FEEDING_ACK_PERCENT:
             if not ack:

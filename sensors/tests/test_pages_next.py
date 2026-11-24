@@ -55,12 +55,13 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
 
     def apart(self, language):
         """What the new page says apart that the classic page says in one run: a payload format's time unit, which the
-        classic list writes after its path ("/ts · Milliseconds since 1970") and the new one under it."""
+        classic list writes after its path ("/ts · Milliseconds since 1970") and the new one under it; a live channel's
+        "device · #number", which Live values says as its device's table head and the channel's "#number"."""
         from django.utils import translation
 
-        from sensors.models import PayloadFormat
+        from sensors.models import Channel, PayloadFormat
         with translation.override(language):
-            return {f'· {each.get_time_unit_display()}' for each in PayloadFormat.objects.exclude(time_path='')}
+            return {f'· {each.get_time_unit_display()}' for each in PayloadFormat.objects.exclude(time_path='')} |                 {f'{each.device.code} · #{each.channel_no}' for each in Channel.objects.select_related('device')}
 
     def pages(self, route, query, language):
         self.client.cookies['django_language'] = language
@@ -98,6 +99,17 @@ class SensorsPagesNextTests(FrozenClock, TestCase):
         self.assertEqual(states['OXYGEN_MG_L']['chip'], {'kind': 'ok', 'text': 'Fresh'})
         stale = next(row for row in live['table']['rows'] if row['cells']['channel']['text'] == 'PH')
         self.assertEqual(stale['status'], 'warning')
+        # one table per device, each channel in its device's group once, the group's head the device's code and name
+        from sensors.models import Channel
+        grouped = [key for group in live['groups'] for key in group['rows']]
+        self.assertEqual(sorted(grouped), sorted(row['key'] for row in live['table']['rows']))
+        for group in live['groups']:
+            devices = {Channel.objects.get(pk=key).device for key in group['rows']}
+            self.assertEqual(len(devices), 1)
+            [device] = devices
+            self.assertEqual(group['title'], f'{device.code} · {device.name}')
+            self.assertEqual(group['chips'], [{'kind': 'hold', 'text': 'Simulated'}] if device.is_simulated else [])
+            self.assertTrue(group['meta'].startswith(device.site.name))
         events = props_of(self.pages('sensors:alarm_events', {}, 'en')[1], 'list-page')
         [open_event, closed] = events['table']['rows']
         self.assertEqual(open_event['cells']['closed']['chip']['text'], 'Open')

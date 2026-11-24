@@ -8,7 +8,7 @@ state is the classic page's (read.latest's `fresh`), its chip the stale one."""
 from django.middleware.csrf import get_token
 from django.template.defaultfilters import truncatechars
 from django.urls import reverse
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, ngettext
 
 from core import listprops as L
 from core.dates import company_zone
@@ -19,9 +19,10 @@ from .lists import DASH, moment
 from .templatetags.sensors import measured
 
 
-def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, page=None, pager_query=''):
+def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, page=None, pager_query='', groups=None):
     """The list-page island's props of a page that is not a tab (core/listprops.py `list_props` is a tab's): its filters
-    (a GET form, `filters` as listprops.choice), notices, table, the sentence said when there is no row, and the pager."""
+    (a GET form, `filters` as listprops.choice), notices, table (in `groups`, listprops.group, when given), the sentence
+    said when there is no row, and the pager."""
     shown = {each['name'] for each in filters} | {'page', 'ui'}
     return {
         'csrfToken': get_token(request),
@@ -32,13 +33,17 @@ def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, 
         'notices': list(notices),
         'lines': [],
         'table': {'label': label, 'columns': columns, 'rows': rows, 'actionsLabel': _('Actions')},
+        'groups': groups,
         'empty': {'title': empty, 'text': None, 'link': None, 'add': None},
         'pager': L.pager(page, pager_query),     # the tabs' pager (core/listprops.py), the one wording of it
     }
 
 
 def live_props(request, rows):
-    """Live values: each channel's last good value, how old it is, whether it is fresh, and where it is bound now."""
+    """Live values: each channel's last good value, how old it is, whether it is fresh, and where it is bound now; one
+    table per device (the design's), in the view's order (device, then channel), its head the device's code and name,
+    Simulated, its site and its number of channels. A channel's line under its code is its number (the classic page's
+    "device · #number" is the device's head and that line)."""
     def state(row):
         if row['channel'].state == 'maintenance':
             return L.cell(chip=L.chip('neutral', _('Maintenance')))
@@ -67,9 +72,7 @@ def live_props(request, rows):
                L.column('value', _('Value'), numeric=True), L.column('measured', _('Measured')),
                L.column('state', _('State')), L.column('bound', _('Bound to'))]
     table = [L.row(row['channel'].pk, {
-        'channel': L.cell(row['channel'].code, strong=True,
-                          sub=[f"{row['channel'].device.code} · #{row['channel'].channel_no}"],
-                          chips=[L.chip('hold', _('Simulated'))] if row['channel'].device.is_simulated else ()),
+        'channel': L.cell(row['channel'].code, strong=True, sub=[f"#{row['channel'].channel_no}"]),
         'quantity': quantity(row['channel']),
         'value': L.cell(measured(row['state'].value, row['channel'].quantity)),
         'measured': measured_at(row),
@@ -77,11 +80,22 @@ def live_props(request, rows):
         'bound': bound(row),
     }, status='warning' if row['state'].value is not None and not row['state'].fresh
         and row['channel'].state != 'maintenance' else None) for row in rows]
-    return page_props(request, label=_('Live values'), columns=columns, rows=table, notices=[L.notice(
+    return page_props(request, label=_('Live values'), columns=columns, rows=table, groups=_by_device(rows), notices=[L.notice(
         'fresh', 'neutral', _('A value is fresh while both its own time on the device and its arrival here are no older '
                               'than its channel’s own number of heartbeats (3 unless the channel is set otherwise). A '
                               'stale value is not used for a unit’s water: the next source counts (its system’s sensor, '
                               'then the latest sample).'))], empty=_('No channel is listened to yet.'))
+
+
+def _by_device(rows):
+    """Live values' rows in one group per device, in the rows' order (the view reads them by device, then channel)."""
+    devices = {}
+    for row in rows:
+        devices.setdefault(row['channel'].device, []).append(row['channel'].pk)
+    return [L.group(device.pk, f'{device.code} · {device.name}', keys,
+                    chips=[L.chip('hold', _('Simulated'))] if device.is_simulated else (),
+                    meta=' · '.join([device.site.name, ngettext('%(count)s channel', '%(count)s channels', len(keys)) % {
+                        'count': len(keys)}])) for device, keys in devices.items()]
 
 
 def dead_letters_props(request, rows, *, page, reasons, reason, show, pager_query, can_resolve):

@@ -5521,7 +5521,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   Devices, Channels, Credentials, Bindings, Alarm rules; their rows in `sensors/lists.py`, each tab's `list_rows`), and
   Live values, Dead letters and Alarm events on the same island, their props made by `sensors/pages.py` from the rows
   their own views read (the same page and filters as the classic page; the tabs' pager wording). A device marked
-  simulated says "Simulated" (the design's mark; its values are stored marked and used nowhere). A stale live value keeps
+  simulated says "Simulated" (the design's mark; its values are stored marked and used nowhere). Live values is one table
+  per device (the list page's `groups`, `listprops.group`): its head the device's code and name, Simulated, its site and
+  its number of channels; a channel's line is its "#number". A stale live value keeps
   its "Stale" chip and its row the warning edge, never "Fresh". Resolve (a dead letter) and Acknowledge (an alarm event
   nobody acknowledged) are the row's POST action with the page's token, for a person who may. "Nothing is sent yet" stays
   on Alarm events while no push transport is connected. A place's bindings (`?place=`) say whose they are and lead back

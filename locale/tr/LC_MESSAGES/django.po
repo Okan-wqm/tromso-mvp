@@ -468,6 +468,12 @@ msgstr[0] "%(count)d bekleme süresi satırı kaydedildi."
 msgstr[1] "%(count)d bekleme süresi satırı kaydedildi."
 
 #, python-format
+msgid "%(count)s channel"
+msgid_plural "%(count)s channels"
+msgstr[0] "%(count)s kanal"
+msgstr[1] "%(count)s kanal"
+
+#, python-format
 msgid "%(count)s column"
 msgid_plural "%(count)s columns"
 msgstr[0] "%(count)s sütun"

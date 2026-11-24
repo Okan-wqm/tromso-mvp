@@ -312,7 +312,7 @@ def live(request):
     """Sensors › Operations › Live values: every channel listened to, its last value, how old it is and whether it is
     fresh, and where it is bound now."""
     now = timezone.now()
-    channels = list(Channel.objects.exclude(state=ChannelStatus.RETIRED).select_related('device')
+    channels = list(Channel.objects.exclude(state=ChannelStatus.RETIRED).select_related('device__site')
                     .order_by('device__code', 'code'))
     states = read.latest([channel.channel_no for channel in channels], now)
     places = {binding.channel_id: binding for binding in Binding.objects.visible().at(now)

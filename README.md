@@ -3967,7 +3967,8 @@ the device.
   raw readings bucketed below an hour, the hour rollup up to a day, and the site's local days from the hours (a day the
   clocks go back has 25 hours). The rollup refreshes every hour over the last 75 days and is compressed after 90; a daily
   job takes in later readings back to the contract's late limit (728 days). The refresh never reaches back into dropped
-  raw data: TimescaleDB 2.17 invalidates a dropped region and a refresh there would empty the rollup.
+  raw data: TimescaleDB invalidates a dropped region and a refresh there empties the rollup (2.32.1 does,
+  `sensors.tests.test_timescale` holds it).
 - Late or old readings are written one row per statement. TimescaleDB 2.17.2 silently dropped the remaining rows of a
   multi-row `INSERT ... ON CONFLICT` that met a compressed chunk; 2.32.1, the release everything runs on now, keeps
   them (`sensors/tests/test_timescale.py` pins it), and one row per statement stays the ingest's rule. Nothing in the

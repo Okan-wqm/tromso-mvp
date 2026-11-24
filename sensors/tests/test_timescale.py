@@ -308,7 +308,7 @@ class RollupRefreshTests(TransactionTestCase):
         self.assertEqual(self.hour(21), [(3, 9.0, 1.0, 5.0, 3.0)])
         one("SELECT count(*) FROM drop_chunks('sensors_reading', older_than => %s)", [early + timedelta(days=30)])
         self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 21'), 0)
-        # Dropping raw chunks invalidates their region (TimescaleDB 2.17): a refresh over it would empty the rollup. No
+        # Dropping raw chunks invalidates their region: a refresh over it would empty the rollup (the test below). No
         # job reaches it: the policy looks 75 days back, the late job no further than the late limit and a day.
         self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1h')
         with connection.cursor() as cursor:                      # the drop as if it happened two years on

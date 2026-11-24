@@ -27,7 +27,7 @@ export SECRETS_DIR=$T/secrets OFFSITE_DIR=$T/offsite
 HOST=farm.ci.invalid
 ROOT=$PWD
 DC=(docker compose --env-file "$ENV_FILE" -f "$ROOT/deploy/compose.yml" -f "$ROOT/deploy/ci/compose.ci.yml")
-RC=(env EDGE_SUBNET=172.31.251.0/24 WEB_FRONT_ADDRESS=172.31.251.10 docker compose -p farm-restore --env-file "$ENV_FILE" -f "$ROOT/deploy/compose.yml"
+RC=(env EDGE_SUBNET=172.31.251.0/24 WEB_FRONT_ADDRESS=172.31.251.10 MQTT_EDGE_SUBNET=172.31.253.0/24 docker compose -p farm-restore --env-file "$ENV_FILE" -f "$ROOT/deploy/compose.yml"
     -f "$ROOT/deploy/ci/compose.ci.yml" --profile ops)
 SERVICES=(db web jobs proxy mosquitto ingest backup)
 ADMIN_PASSWORD_FILE=$T/admin_password
@@ -107,38 +107,65 @@ roles() {
 
 network() {
   say "who reaches whom: a probe in each service's own network namespace (a throwaway container sharing it)"
+  say "open: answered; closed: the host is reached, nothing listens; unreachable: no route, no name, no answer"
   local failures=0
-  probe() {  # probe SERVICE HOST PORT open|closed
+  probe() {  # probe SERVICE tcp|udp|tcp6 HOST PORT open|closed|unreachable
     local got
     got=$(docker run --rm --network "container:farm-ci-$1-1" --entrypoint python balik-web:ci -c '
 import socket, sys
+kind, host, port = sys.argv[1], sys.argv[2], int(sys.argv[3])
 try:
-    socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=5).close()
-    print("open")
-except OSError as error:
-    print("closed", type(error).__name__)' "$2" "$3" 2>&1)
-    if [ "${got%% *}" = "$4" ]; then echo "ok    $1 -> $2:$3 $got"; else echo "FAIL  $1 -> $2:$3 $got (expected $4)"; failures=$((failures + 1)); fi
+    if kind == "udp":                                     # a DNS question: an answer is the way out
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(4)
+        s.sendto(bytes.fromhex("abcd01000001000000000000076578616d706c6503636f6d0000010001"), (host, port))
+        s.recvfrom(512)
+        print("open")
+    else:
+        family = socket.AF_INET6 if kind == "tcp6" else socket.AF_INET
+        address = socket.getaddrinfo(host, port, family, socket.SOCK_STREAM)[0][4]
+        s = socket.socket(family, socket.SOCK_STREAM)
+        s.settimeout(5)
+        s.connect(address)
+        print("open")
+except ConnectionRefusedError:
+    print("closed ConnectionRefusedError")
+except OSError as error:                                  # no name, no route, no answer
+    print("unreachable", type(error).__name__, getattr(error, "errno", ""))' "$2" "$3" "$4" 2>&1)
+    if [ "${got%% *}" = "$5" ]; then echo "ok    $1 -> $2 $3:$4 $got"
+    else echo "FAIL  $1 -> $2 $3:$4 $got (expected $5)"; failures=$((failures + 1)); fi
   }
-  probe web db 5432 open
-  probe web ingest 8080 closed
-  probe web mosquitto 1883 closed
-  probe jobs db 5432 open
-  probe jobs ingest 8080 closed
-  probe jobs 1.1.1.1 443 closed
-  probe proxy web 8000 open
-  probe proxy db 5432 closed
-  probe proxy ingest 8080 closed
-  probe proxy mosquitto 1883 closed
-  probe mosquitto db 5432 closed
-  probe mosquitto web 8000 closed
-  probe ingest mosquitto 1883 open
-  probe ingest db 5432 open
-  probe ingest web 8000 closed
-  probe ingest 1.1.1.1 443 closed
-  probe backup db 5432 open
-  probe backup mosquitto 1883 closed
-  probe jobs web 8000 closed
-  probe backup web 8000 closed
+  # between the services
+  probe web tcp db 5432 open
+  probe web tcp ingest 8080 closed
+  probe web tcp mosquitto 1883 unreachable
+  probe jobs tcp db 5432 open
+  probe jobs tcp ingest 8080 closed
+  probe jobs tcp web 8000 closed
+  probe proxy tcp web 8000 open
+  probe proxy tcp db 5432 unreachable
+  probe proxy tcp ingest 8080 unreachable
+  probe proxy tcp mosquitto 1883 unreachable
+  probe mosquitto tcp db 5432 unreachable
+  probe mosquitto tcp web 8000 unreachable
+  probe ingest tcp mosquitto 1883 open
+  probe ingest tcp db 5432 open
+  probe ingest tcp web 8000 closed
+  probe backup tcp db 5432 open
+  probe backup tcp mosquitto 1883 unreachable
+  probe backup tcp web 8000 closed
+  # the way out, TCP, UDP and IPv6, for every running service: only the web server (mail) and the backup agent
+  # (the repository) have one
+  for service in web backup; do
+    probe "$service" tcp 1.1.1.1 443 open
+    probe "$service" udp 1.1.1.1 53 open
+    probe "$service" tcp6 2606:4700:4700::1111 443 unreachable
+  done
+  for service in db jobs proxy mosquitto ingest; do
+    probe "$service" tcp 1.1.1.1 443 unreachable
+    probe "$service" udp 1.1.1.1 53 unreachable
+    probe "$service" tcp6 2606:4700:4700::1111 443 unreachable
+  done
   [ "$failures" = 0 ] || { echo "network: $failures probe(s) failed"; exit 1; }
   echo "network: every probe as expected"
 }

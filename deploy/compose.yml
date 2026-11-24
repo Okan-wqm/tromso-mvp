@@ -166,8 +166,11 @@ services:
       GUNICORN_BIND: 127.0.0.1:8000 ${WEB_FRONT_ADDRESS:-172.31.250.10}:8000
     volumes:
       - media:/srv/media
+    # data: the database; front: the proxy; egress: the mail server (the only one of the three with a way out, and
+    # first by name, so it holds the default route)
     networks:
       data: {}
+      egress: {}
       front:
         ipv4_address: ${WEB_FRONT_ADDRESS:-172.31.250.10}
     expose: ["8000"]
@@ -464,24 +467,35 @@ services:
           memory: 256m
           cpus: "1"
     logging: *logging
-    networks: [front]
+    networks: [egress, front]
 
 networks:
   # The database's network: no way out of the server, nothing published.
   data:
     internal: true
   # The proxy and the web server (and cloudflared). A fixed range, so that the proxy can be told to believe the client
-  # address cloudflared passes on from this network only (PROXY_REAL_IP_FROM). The web server's mail leaves by it.
+  # address cloudflared passes on from this network only (PROXY_REAL_IP_FROM). No way out: its ports are published
+  # (which an internal network cannot do), but nothing on it is masqueraded to the internet, so the proxy has no
+  # egress (docs/ops/install.md also drops it in DOCKER-USER); the web server's mail and cloudflared leave by `egress`.
   front:
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "false"
     ipam:
       config:
         - subnet: ${EDGE_SUBNET:-172.31.250.0/24}
   # The broker and the ingest, and nothing else: no way out.
   broker:
     internal: true
-  # The broker's TLS port for the field devices is published from this network (an internal one cannot publish).
-  mqtt-edge: {}
-  # Out to the backup repository (and, when it lands, the alarm worker's notifications).
+  # The broker's TLS port for the field devices is published from this network (an internal one cannot publish);
+  # nothing on it is masqueraded to the internet, so the broker has no way out either.
+  mqtt-edge:
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "false"
+    ipam:
+      config:
+        - subnet: ${MQTT_EDGE_SUBNET:-172.31.252.0/24}
+  # The way out: the web server's mail, the backup repository, cloudflared's tunnel (and, when it lands, the alarm
+  # worker's notifications). Nothing else is on it.
   egress: {}
 
 volumes:

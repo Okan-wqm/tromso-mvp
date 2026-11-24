@@ -21,6 +21,16 @@ From an empty server to the sign-in page of one farm. Each farm gets its own ser
   `HTTPS_BIND`/`HTTP_BIND` (default `127.0.0.1`: nobody outside the server) and `MQTT_BIND_ADDRESS` (the WireGuard
   address). Set `HTTPS_BIND` to the WireGuard address for VPN access, and to `0.0.0.0` only for public access
   ([access.md](access.md), C). Rules that must hold whatever Docker does go in the `DOCKER-USER` chain.
+- **No way out for the proxy and the broker.** Their networks (`front`, `mqtt-edge`) are not masqueraded
+  (`deploy/compose.yml`), so a packet from them to the internet has no return path; the web server's mail and the
+  backup leave by `egress`. A second lock, so that they cannot even send a packet out (with the subnets of `farm.env`):
+  ```
+  iptables -I DOCKER-USER -s 172.31.250.0/24 ! -d 172.31.250.0/24 -m conntrack --ctstate NEW -j DROP   # front
+  iptables -I DOCKER-USER -s 172.31.252.0/24 ! -d 172.31.252.0/24 -m conntrack --ctstate NEW -j DROP   # mqtt-edge
+  ```
+  (answers to connections coming in are not NEW, so the published ports keep working), made permanent with
+  `iptables-persistent` (`netfilter-persistent save`). The networks have no IPv6. The go-live stack workflow probes
+  every service's way out (TCP, UDP and IPv6): only the web server and the backup agent have one.
 - **Check from outside** after the start (another machine, not on the VPN):
   `nmap -Pn -p 22,80,443,1883,5432,8000,8080,8883 <public address>`: only 22 (from the operators' addresses) is
   open, and 80/443 only when public access was chosen.

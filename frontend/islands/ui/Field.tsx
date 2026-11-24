@@ -183,7 +183,10 @@ export interface ServerFormProps {
 
 /** A form Django receives and validates. Comes the page back with errors, the focus goes to the first invalid field. While
  * it is posting, it is busy: its submit buttons are switched off and say so (aria-busy), and a second press sends nothing;
- * coming back to the page from the browser's history (bfcache, pageshow) makes it ready again. */
+ * the pressed button's name and value still go (a hidden copy: a switched-off button is not sent, and the busy state
+ * switches it off before the browser reads the form), so a form with several buttons (Randomise, Add factor) says which.
+ * Coming back to the page from the browser's history (bfcache, pageshow) makes it ready again and takes away every input
+ * added for one sending (`data-sent`: that copy, a draft refresh's marker), so the next press sends only what it says. */
 export function ServerForm({ action, csrfToken, formErrors, children, actions, method = 'post', label, multipart, noValidate = false }: ServerFormProps) {
   const form = useRef<HTMLFormElement>(null);
   const [busy, setBusy] = useState(false);
@@ -195,7 +198,11 @@ export function ServerForm({ action, csrfToken, formErrors, children, actions, m
     target?.focus();
   }, []);
   useEffect(() => {
-    const ready = (event: PageTransitionEvent) => { if (event.persisted) setBusy(false); };
+    const ready = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      form.current?.querySelectorAll('input[data-sent]').forEach((input) => input.remove());
+      setBusy(false);
+    };
     window.addEventListener('pageshow', ready);
     return () => window.removeEventListener('pageshow', ready);
   }, []);
@@ -221,6 +228,15 @@ export function ServerForm({ action, csrfToken, formErrors, children, actions, m
     if (busy) {
       event.preventDefault();
       return;
+    }
+    const pressed = (event.nativeEvent as SubmitEvent).submitter;
+    if ((pressed instanceof HTMLButtonElement || pressed instanceof HTMLInputElement) && pressed.name) {
+      const copy = document.createElement('input');
+      copy.type = 'hidden';
+      copy.name = pressed.name;
+      copy.value = pressed.value;
+      copy.dataset.sent = '';
+      event.currentTarget.append(copy);
     }
     setBusy(true);
   };

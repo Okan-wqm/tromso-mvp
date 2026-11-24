@@ -15513,6 +15513,7 @@
         "sensors/tests/__init__.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "alarms/tests/__init__.py",

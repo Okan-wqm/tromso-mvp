@@ -121,7 +121,7 @@ def production_home(request):
     water = water_overview(user)
     upcoming = _upcoming(user)
     tasks_named = _named(tasks)
-    return render(request, 'production_home.html', {
+    context = {
         **(_next_parts(user, stock_part) if look else {}),
         'stock_tiles': stock,
         'feeding_tiles': feeding,
@@ -154,4 +154,9 @@ def production_home(request):
              'url': f"{reverse('farm:tank_list')}?kind={value}"}
             for value, label in Tank.Kind.choices
         ] if request.user.has_perm('farm.view_tank') else [],
-    })
+    }
+    if look:
+        # the design's layout: the island draws the same context (config/production_props.py); the head is the classic's
+        from .production_props import production_props
+        return render(request, 'production_home_next.html', {**context, 'props': production_props(context)})
+    return render(request, 'production_home.html', context)

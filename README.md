@@ -5543,12 +5543,18 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `sensors/tests/test_pages_next.py` (every page against its classic page on the test world plus `sensors_world`, in
   three languages; nothing opens the classic dialog; the world's facts) and `frontend/test/prodrest.pages.ts` (each page
   at 1440 and 390: CSP, axe, 4.5:1, no sideways scroll, the screenshots).
-- **Production › Overview** (`config.views.production_home`): the classic body (`templates/_production_overview.html`)
-  drawn by the server, with what the design adds under `next` from real sources: the fish card's batch count ("in 4
-  batches", `farm.stock.views.overview`, one read of the stock with the tiles), the units under a medicine withdrawal today
-  in Needs attention (hold chip, each batch's "harvest from", a link to the unit's drawer) and "Production team today", the
-  HR board's bar (`config.views.team_today`, `core/stack.py`; the tiles add up to the people planned today) with the
-  muster count and the late ones. The classic page says none of them. Held: `farm/tests/test_production_overview_next.py`.
+- **Production › Overview** (`config.views.production_home`; `templates/production_home_next.html`, island `production`,
+  `frontend/islands/pages/Production.tsx`): the design's layout over the very context the classic page is drawn from
+  (`config/production_props.py`): "Today on the farm" as tiles (stock, feed, the water's critical and warning points,
+  tasks, reports due, each with its source and time), Needs attention (each row its status chip, what and where, its
+  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, and the
+  way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
+  HR board's bar (`config.views.team_today`, `core/stack`; the tiles add up to the people planned today) with the muster
+  count and the late ones. What the design adds from real sources: the fish card's batch count
+  (`farm.stock.views.overview`), the units under a medicine withdrawal today in Needs attention (hold chip, each batch's
+  "harvest from", a link to the unit's drawer) and the team bar. The head (status chips, Record water sample) is the
+  classic page's. Held: `farm/tests/test_production_overview_next.py` (every word of the classic page in three
+  languages; a value's title said by its chip and origin line, never for a value that was critical or a warning).
 - **Production › Production units** (`farm.stock.views.production_units`): the table on the shared list page
   (`farm/stock/units_next.py`, from the rows the view read; the classic filter buttons are the toolbar's selects with the
   same values; the kind and fish selects' first options say "All kinds" and "Stocked and empty" where the classic buttons

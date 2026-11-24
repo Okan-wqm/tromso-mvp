@@ -29,5 +29,14 @@
   "_ui-Ef56Gh78.js": {
     "file": "chunks/ui-Ef56Gh78.js",
     "name": "ui"
+  },
+  "frontend/islands/production.tsx": {
+    "file": "production-Pr12Ab34.js",
+    "name": "production",
+    "src": "frontend/islands/production.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
   }
 }

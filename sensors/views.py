@@ -422,7 +422,6 @@ def dead_letter_resolve(request, pk):
 
 
 # ---- the overview's state ---------------------------------------------------------------------------------------
-INGEST_DEAD_AFTER = timedelta(seconds=90)
 
 
 def state_tiles(user, now):
@@ -435,7 +434,7 @@ def state_tiles(user, now):
                                                     .values('pk')))
         if not statuses:
             text = _('No heartbeat yet')
-        elif all(now - status.heartbeat_at <= INGEST_DEAD_AFTER for status in statuses):
+        elif read.ingest_alive(now):
             text = _('Alive')
         else:
             text = _('Down')

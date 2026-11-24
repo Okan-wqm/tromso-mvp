@@ -87,6 +87,27 @@ class IslandBuildCheckTests(SimpleTestCase):
         with override_settings(ISLANDS_MANIFEST=missing):
             self.assertEqual([problem.id for problem in compiled_scripts_deployed(None)], ['core.E007'])
 
+    def test_a_server_that_serves_static_root_only_is_not_stopped_for_scripts_it_has(self):
+        """The entry scripts and the manifest are looked for where the server serves them (assets.built): STATIC_ROOT
+        first. With no build in the source tree (the finders find nothing), a complete STATIC_ROOT passes `check
+        --deploy`, and one entry script missing from it is named."""
+        from unittest import mock
+
+        from core.checks import ENTRY_SCRIPTS
+        root = tempfile.mkdtemp()
+        for path in ENTRY_SCRIPTS:
+            os.makedirs(os.path.join(root, os.path.dirname(path)), exist_ok=True)
+            Path(root, path).write_text('export {};', encoding='utf-8')
+        os.makedirs(os.path.join(root, 'islands'))
+        Path(root, 'islands', 'manifest.json').write_text('{}', encoding='utf-8')
+        with override_settings(STATIC_ROOT=root, ISLANDS_MANIFEST=None),                 mock.patch('django.contrib.staticfiles.finders.find', return_value=None):
+            self.assertEqual(compiled_scripts_deployed(None), [])
+            os.remove(os.path.join(root, 'js', 'strip.js'))
+            stopped = compiled_scripts_deployed(None)
+            self.assertEqual([problem.id for problem in stopped], ['core.E007'])
+            self.assertIn('js/strip.js is missing', stopped[0].msg)
+            self.assertNotIn('manifest.json', stopped[0].msg)
+
     def test_the_manifest_is_no_dot_file_so_collectstatic_takes_it(self):
         from django.conf import settings
         from core.templatetags.assets import MANIFEST

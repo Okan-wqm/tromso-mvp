@@ -89,6 +89,15 @@ class PagesOnlyReadTests(TasksTestCase):
         TaskSeries.objects.filter(pk=self.behind.pk).update(generated_until=self.day(-1))
         self.assertEqual(len(read.unplanned()), 1)
 
+    def test_a_recurring_task_planned_to_its_last_day_is_not_behind(self):
+        # its last day is past and its tasks reach it: nothing is left to plan (the landing review, m-2)
+        TaskSeries.objects.filter(pk=self.behind.pk).update(ends_on=self.day(-2), generated_until=self.day(-2))
+        self.assertEqual(read.unplanned(), [])
+        TaskSeries.objects.filter(pk=self.behind.pk).update(generated_until=self.day(-3))
+        self.assertEqual(len(read.unplanned()), 1)                 # a day before its end is still missing
+        TaskSeries.objects.filter(pk=self.behind.pk).update(ends_on=self.day(3), generated_until=self.day(-1))
+        self.assertEqual(len(read.unplanned()), 1)                 # it goes on after today: today is missing
+
     def test_the_overview_never_fails_on_the_planning(self):
         with mock.patch('tasks.services.materialise', side_effect=RuntimeError('a series whose place is gone')):
             self.assertEqual(self.client.get(reverse('production_home')).status_code, 200)

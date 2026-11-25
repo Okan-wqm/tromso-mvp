@@ -319,6 +319,25 @@ class PageTests(MonitoringCase):
         tasks = next(node for node in widgets_of(card) if 'w-tasks' in node.classes)
         self.assertIn('no data', ' '.join(tasks.text().split()))
 
+    def test_the_task_counts_say_when_the_task_job_is_behind(self):
+        """The cards' task counts miss today's tasks of a recurring task the job has not planned: they say so, as the
+        Tasks pages and the overview do (the landing review, m-3); and nothing once the job has run."""
+        from io import StringIO
+
+        from django.core.management import call_command
+        from tasks.models import Frequency, TaskSeries
+
+        def widget():
+            card = articles(self.page(builtin.DETAILED_LAYOUT))[f'card:{self.t2.pk}']
+            return ' '.join(next(node for node in widgets_of(card) if 'w-tasks' in node.classes).text().split())
+        self.assertNotIn('not planned', widget())
+        series = TaskSeries(title='Feed check', frequency=Frequency.DAILY, starts_on=self.day(3))
+        series.set_place(self.t2)
+        series.save()                                   # a row only: nothing planned yet (the job's work)
+        self.assertIn('1 recurring task not planned up to today', widget())
+        call_command('generate_tasks', stdout=StringIO())
+        self.assertNotIn('not planned', widget())
+
     def test_a_failed_source_is_said_on_the_frame_whatever_the_template_shows(self):
         """F-134: a source that could not be read is said where no template can hide it, not as a quiet "no data"."""
         from unittest import mock

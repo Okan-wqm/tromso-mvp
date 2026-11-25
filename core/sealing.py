@@ -498,6 +498,9 @@ class Seal:
     mode: str = ROW
     reason: str = ''
     rows: object = None
+    # The parts the activity log's entries about a record of the model may hold beyond `part` (an experiment's entries
+    # hold its design and its places, review L6): such an entry is shown only to whoever reads every one of them.
+    log_parts: tuple = ()
 
     @property
     def filters(self):
@@ -761,9 +764,11 @@ def _seals_reached(model, depth=None):
 
 
 def stamp_parts(model):
-    """The parts a record of `model` is sealed with, its own and those of the parents and children its seal follows:
-    the change token leaves out an entry about it when one of its works is hidden from the person for any of them."""
-    return sorted({seal.part for seal in _seals_reached(model)})
+    """The parts a record of `model` is sealed with, its own and those of the parents and children its seal follows, and
+    the parts its log entries hold (`log_parts`): the change token leaves out an entry about it when one of its works
+    is hidden from the person for any of them."""
+    seal = seal_of(model)
+    return sorted({each.part for each in _seals_reached(model)} | set(seal.log_parts if seal is not None else ()))
 
 
 def stamp_shows_overseer(model):

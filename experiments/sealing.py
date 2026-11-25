@@ -234,7 +234,9 @@ def register():
     from . import models as m
     Provider.grant_tables = _grant_tables()
     sealing.register_provider(Provider)
-    sealing.declare(m.Experiment, part=SHELL, cls=sealing.SCIENCE, work='')
+    # Its own log entries hold its design (the factors, the hypothesis, the allocation) and its places (the tanks): shown
+    # to whoever reads both (review L6), never on the shell alone.
+    sealing.declare(m.Experiment, part=SHELL, cls=sealing.SCIENCE, work='', log_parts=('design', 'systems'))
     for model, path in ((m.Factor, 'experiment'), (m.Level, 'factor__experiment'), (m.ExperimentGroup, 'experiment'),
                         (m.GroupLevel, 'experiment'), (m.Replicate, 'group__experiment')):
         sealing.declare(model, part='design', cls=sealing.SCIENCE, work=path)

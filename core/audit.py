@@ -67,12 +67,15 @@ def sealed_out(entries):
         # Every level of parents and children the seal follows (sealing.seal_depth): what an entry is about and the
         # records it hangs on, to the record sealed by its own cell (read when a person opens the log; the change token
         # reads the entries' stamps instead, `revision`).
-        condition = sealing.hidden(seal, depth=sealing.seal_depth(seal.model))
-        if condition is None:
-            continue
-        ids = sealing.unsealed(seal.model).filter(condition).annotate(log_id=Cast('pk', models.CharField())).values(
-            'log_id')
-        entries = entries.exclude(entity_type__in=entity_types(seal.model), entity_id__in=ids)
+        # An entry is hidden when its record is hidden for the record's part or for any part its entries hold
+        # (`log_parts`: an experiment's entries hold its design and its places, review L6).
+        for part in dict.fromkeys((seal.part, *seal.log_parts)):
+            condition = sealing.hidden(seal, part, depth=sealing.seal_depth(seal.model))
+            if condition is None:
+                continue
+            ids = sealing.unsealed(seal.model).filter(condition).annotate(log_id=Cast('pk', models.CharField())).values(
+                'log_id')
+            entries = entries.exclude(entity_type__in=entity_types(seal.model), entity_id__in=ids)
     if entries.model is AuditLog:
         # And those stamped, when they were written, with a work hidden from the person (`stamp`): an entry's text was
         # written once for everyone and may name what its record reached then (a transfer from an open tank into a

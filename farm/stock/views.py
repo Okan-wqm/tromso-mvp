@@ -588,14 +588,14 @@ def overview_tiles(user, units=None, stock=None):
 def overview(user):
     """The redesigned overview's stock part, from ONE read of the stock: the tiles (`overview_tiles`) and the units whose
     fish are under a medicine withdrawal today (`holds`: [(unit, [WithdrawalBlock])] in the units' order, each a link to
-    its drawer), what Production units marks on the row (harvest.views.withdrawals). None for a person who may not read
-    the stock."""
+    its drawer), what Production units marks on the row (farm.handling.check.in_force_now). None for a person who may
+    not read the stock."""
     if not user.has_perm(VIEW):
         return None
     units = list(Tank.objects.select_related('production_department__site').order_by('code'))
     stock = read.stock_of(units)
     stocked = [unit for unit in units if unit.pk in stock]
-    blocks = harvest_views.withdrawals(stocked)
+    blocks = check.in_force_now(stocked)
     return {'tiles': overview_tiles(user, units, stock),
             'holds': [{'unit': unit, 'blocks': blocks[unit.pk], 'url': page_url({}, unit=str(unit.pk))}
                       for unit in stocked if unit.pk in blocks]}

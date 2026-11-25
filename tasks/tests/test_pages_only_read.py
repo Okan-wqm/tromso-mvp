@@ -2,12 +2,17 @@
 the task job (`manage.py generate_tasks`), never by a GET of the production overview or the Tasks pages; a page says
 how many recurring tasks are not planned up to today instead, and the overview never fails because of the planning."""
 from io import StringIO
+from pathlib import Path
 from unittest import mock
 
 from django.core.management import call_command
 from django.db import connection
+from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+
+from core import ui
+from core.island_props import props_of
 
 from .. import read
 from ..models import Frequency, Task, TaskSeries
@@ -45,6 +50,27 @@ class PagesOnlyReadTests(TasksTestCase):
                 response = self.client.get(reverse(name))
                 self.assertEqual(response.context['unplanned'], 1)
                 self.assertContains(response, 'not planned up to today')
+
+    def test_the_new_look_says_it_too(self):
+        # a redesign never drops what the classic page says: the overview's Needs attention, both task pages' notices
+        manifest = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
+        with override_settings(ISLANDS_MANIFEST=manifest):
+            props = props_of(self.client.get(reverse('production_home'), {ui.PARAM: ui.NEXT}).content.decode(),
+                             'production')
+            rows = {row['key']: row for row in props['attention']['rows']}
+            self.assertEqual(rows['tasks-unplanned']['title'], '1 recurring task not planned up to today')
+            self.assertIsNone(props['attention']['nothing'])
+            for name in ('tasks:task_list', 'tasks:taskseries_list'):
+                with self.subTest(page=name):
+                    self.assertContains(self.client.get(reverse(name), {ui.PARAM: ui.NEXT}),
+                                        '1 recurring task is not planned up to today')
+        call_command('generate_tasks', stdout=StringIO())
+        with override_settings(ISLANDS_MANIFEST=manifest):
+            props = props_of(self.client.get(reverse('production_home'), {ui.PARAM: ui.NEXT}).content.decode(),
+                             'production')
+            self.assertNotIn('tasks-unplanned', {row['key'] for row in props['attention']['rows']})
+            self.assertNotContains(self.client.get(reverse('tasks:taskseries_list'), {ui.PARAM: ui.NEXT}),
+                                   'not planned up to today')
 
     def test_the_job_plans_them_and_the_notice_goes(self):
         call_command('generate_tasks', stdout=StringIO())

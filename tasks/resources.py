@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 from django.urls import reverse
 from django.utils import formats
 from django.utils.html import strip_tags
-from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
+from django.utils.translation import gettext, gettext_lazy as _, ngettext, ngettext_lazy
 
 from core import formpanels, listprops as L
 from core.crud import Resource, RowList
@@ -314,7 +314,15 @@ class TaskSeriesResource(Resource):
             'A recurring task plans its tasks up to two weeks ahead; they are on the <a href="%(url)s">Tasks</a> page. '
             'Changing or pausing it plans the tasks from today on that nobody has touched again; the others stay as they '
             'are.') % {'url': context['tasks_url']})
-        return {'tabs': task_tabs(view.request, current=None), 'notices': [L.notice('plan', 'neutral', notice)],
+        notices = [L.notice('plan', 'neutral', notice)]
+        if context.get('unplanned'):
+            # the task job behind (tasks.read.unplanned), as the classic page's tasks/_unplanned.html says it
+            notices.insert(0, L.notice('unplanned', 'warning', ngettext(
+                '%(count)s recurring task is not planned up to today: its tasks for today are missing here until the '
+                'task job (manage.py generate_tasks) runs.',
+                '%(count)s recurring tasks are not planned up to today: their tasks for today are missing here until '
+                'the task job (manage.py generate_tasks) runs.', context['unplanned']) % {'count': context['unplanned']}))
+        return {'tabs': task_tabs(view.request, current=None), 'notices': notices,
                 'columns': [L.column('title', _('Recurring task')), L.column('repeats', _('Repeats')),
                             L.column('place', _('Location')), L.column('assignees', _('Assignees')),
                             L.column('next', _('Next')), L.column('status', _('Status'))],

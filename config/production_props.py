@@ -128,6 +128,14 @@ def _attention(context, clock):
         rows.append(_row('tasks', 'tasks', {'kind': 'warning', 'text': _('Overdue')},
                          ngettext('%(count)s task is overdue', '%(count)s tasks are overdue', count) % {'count': count},
                          None, {'href': tasks['overdue']['url'], 'label': _('Tasks')}))
+    if context.get('tasks_unplanned'):
+        # the task job behind (tasks.read.unplanned): the task counts miss today's tasks of these recurring tasks
+        count = context['tasks_unplanned']
+        rows.append(_row('tasks-unplanned', 'tasks', {'kind': 'warning', 'text': _('Not planned')},
+                         ngettext('%(count)s recurring task not planned up to today',
+                                  '%(count)s recurring tasks not planned up to today', count) % {'count': count},
+                         _('Its tasks for today are missing from the counts until the task job runs.'),
+                         {'href': tasks['overdue']['url'], 'label': _('Tasks')}))
     reports = {'href': upcoming['url'], 'label': _('Regulatory reports')} if upcoming else None
     for index, row in enumerate((upcoming or {}).get('late', ())):
         rows.append(_row(f'late-{index}', 'report', {'kind': 'warning', 'text': _('Overdue')}, _report(row),

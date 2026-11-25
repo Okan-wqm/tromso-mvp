@@ -799,7 +799,16 @@ def narrow(queryset, part=None):
         return seal.rows(queryset)
     if seal is None or not seal.filters:
         return queryset
+    if _building.get():
+        # Inside HiddenRows's build (a parent's or child's manager): its condition, built now, compiled with the rest.
+        condition = hidden(seal, part)
+        return queryset if condition is None else queryset.exclude(condition)
     return queryset.exclude(Q(HiddenRows(seal, part)))
+
+
+# While HiddenRows builds the seal's condition: the managers it reads (parents, children) add theirs built at once, so
+# one statement nests one HiddenRows, never one per level (a compile inside a compile per level ran out of stack).
+_building = contextvars.ContextVar('sealing_building', default=False)
 
 
 class HiddenRows(models.Expression):
@@ -842,10 +851,14 @@ class HiddenRows(models.Expression):
         found = _reach_of_person()
         if found is not None and (not any(found.hidden.values()) or (fact and found.oversee)):
             return 'FALSE', []
-        condition = hidden(seal, self.part)
-        if condition is None:
-            return 'FALSE', []
-        rows = seal.model._base_manager.filter(condition).order_by().values('pk')
+        token = _building.set(True)
+        try:
+            condition = hidden(seal, self.part)
+            if condition is None:
+                return 'FALSE', []
+            rows = seal.model._base_manager.filter(condition).order_by().values('pk')
+        finally:
+            _building.reset(token)
         inner, inner_params = rows.query.get_compiler(connection=connection).as_sql()
         key, key_params = compiler.compile(self.key)
         return f'{key} IN ({inner})', [*key_params, *inner_params]

@@ -489,9 +489,12 @@ def state_tiles(user, now):
 def alarm_events(request):
     """Sensors › Operations › Alarm events: the times a rule held, the open ones first, with who acknowledged each (the
     alarms app keeps it)."""
+    # each row's place and its clock (Binding.clock: the place's site, else its channel's device's) read with the page
     events = AlarmEvent.objects.select_related(
-        'rule__channel__device', 'alarm', 'binding__point__unit', 'binding__point__system', 'binding__point__equipment',
-        'binding__system', 'binding__equipment').prefetch_related(
+        'rule__channel__device', 'alarm', 'binding__channel__device__site',
+        'binding__point__unit__production_department__site', 'binding__point__system__site',
+        'binding__point__equipment__production_department__site', 'binding__system__site',
+        'binding__equipment__production_department__site').prefetch_related(
         'alarm__acknowledgements__user').order_by(F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
     shown = list(page.object_list)               # the page's rows read once, for the rows and for who may acknowledge

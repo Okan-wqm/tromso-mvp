@@ -172,6 +172,49 @@ class SilentProbeTests(SilentOxygenCase):
                               .values_list('severity', flat=True)), ['warning'])
 
 
+class WeakerRuleTests(SilentOxygenCase):
+    """Review 6, M1: the alarm system's critical stands aside for a probe only where a rule that raises a CRITICAL at the
+    freshness covers it (sensors.alarms.watched): a farm's own warning or delayed rule, or the default lowered to a
+    warning, would leave a red card with only a warning, or nothing for an hour."""
+
+    def setUp(self):
+        super().setUp()
+        self.typed(self.t1, 1, oxygen_mg_l='9.0', temperature_c='12.0')     # T-01 is measured: only T-02 is silent
+
+    def kinds(self):
+        return sorted((source, severity) for source, severity, _parameter, _summary in self.alarms())
+
+    def test_a_farms_own_warning_rule_an_hour_late_leaves_the_critical_to_the_alarm_system(self):
+        from sensors.models import AlarmRule
+        AlarmRule.objects.create(quantity='oxygen_mg_l', kind='no_data', for_s=3600, severity='warning')
+        self.sensors(self.t2, 'PROBE-T')
+        self.assertEqual(self.card(self.t2).state.key, 'critical')
+        self.assertEqual(self.kinds(), [('system', 'critical')])        # the default stands aside, the farm's waits
+
+    def test_the_default_rule_lowered_to_a_warning_leaves_the_critical_to_the_alarm_system(self):
+        from sensors.models import AlarmRule
+        AlarmRule.objects.filter(quantity='oxygen_mg_l', is_default=True).update(severity='warning')
+        self.sensors(self.t2, 'PROBE-T')
+        self.assertEqual(self.kinds(), [('sensor_rule', 'warning'), ('system', 'critical')])
+
+    def test_a_farms_own_critical_rule_at_the_freshness_is_the_one_alarm(self):
+        from sensors.models import AlarmRule
+        AlarmRule.objects.create(quantity='oxygen_mg_l', kind='no_data', for_s=0, severity='critical')
+        self.sensors(self.t2, 'PROBE-T')
+        self.assertEqual(self.kinds(), [('sensor_rule', 'critical')])
+
+    def test_an_oxygen_channel_only_a_weaker_rule_covers_is_not_listed_as_uncovered(self):
+        """sensors.alarms.uncovered and the check sensors.W001 still leave the oxygen out: whatever rule covers its probe,
+        a unit with fish whose oxygen has no fresh value is the alarm system's critical where no critical rule at the
+        freshness says it."""
+        from sensors import alarms as sensor_alarms
+        from sensors.models import AlarmRule
+        AlarmRule.objects.filter(quantity='oxygen_mg_l', is_default=True).update(severity='warning')
+        self.sensors(self.t2, 'PROBE-T')
+        self.assertEqual([channel for channel in sensor_alarms.uncovered() if channel.quantity == 'oxygen_mg_l'], [])
+        self.assertEqual(sensor_alarms.watched(('oxygen_mg_l',), self.now), set())
+
+
 class TypedOxygenTests(SilentOxygenCase):
     def test_a_typed_oxygen_sample_grown_old_with_fish_is_red_and_a_critical_alarm(self):
         """T-01 has no probe: its oxygen is typed, the last 30 hours ago (past its freshness), its temperature fresh."""
@@ -614,3 +657,32 @@ class CardHasItsAlarmTests(SilentOxygenCase):
                  if not isinstance(child, str) and 'row-sub' in child.classes]
         self.assertTrue(names and all(names), names)
         self.assertIn(str(loop), ' '.join(names))
+
+    def test_a_unit_read_at_an_outlet_alone_says_the_same_on_every_page(self):
+        """Review 6, M2: a unit with fish whose only point is a side outlet carrying its oxygen probe (no middle point,
+        no typed sample): when the probe stops, the Water page, the production overview and the company overview say
+        it critical at that outlet, as its card, the strip and the alarms do (one point stands for it: read.anchors)."""
+        from config.company_props import overview_props
+        unit = make_unit('N-OUT', self.hall)
+        stock_fish(self.user, unit, 500, '50', 10, species=self.salmon)
+        outlet = SamplingPoint.objects.create(unit=unit, name='Side outlet', kind='side_outlet')
+        device = make_device(self.connection, self.format, self.bergen, code='P-OUT')
+        probe = make_channel(device, 'oxygen_mg_l', code='O2')
+        bindings.move(self.user, probe, point=outlet, at=self.now - timedelta(hours=2))
+        self.send(probe, OXYGEN, self.then)                       # then silent
+        self.assertEqual(self.card(unit).state.key, 'critical')
+        rows = [row for row in self.client.get(reverse('farm:water')).context['rows'] if row['owner'].pk == unit.pk]
+        self.assertEqual([row['point'] for row in rows], [outlet])
+        self.assertEqual(rows[0]['water'].status, 'critical')
+        self.assertTrue(rows[0]['water'].why_silent)
+        with self.settings(ISLANDS_MANIFEST=MANIFEST):      # the new look's Water page says why too (review 6, m1)
+            props = props_of(self.client.get(reverse('farm:water'), {'ui': 'next'}).content.decode(), 'list-page')
+        [said] = [row for row in props['table']['rows'] if row['cells']['point']['text'] == unit.code]
+        self.assertEqual(said['cells']['status']['chip']['kind'], 'critical')
+        self.assertTrue(any(line.startswith(SILENT) for line in said['cells']['status']['sub']), said['cells']['status'])
+        self.assertIn(unit.pk, {row['owner'].pk for row in self.overview()['alerts']})
+        from django.contrib.auth import get_user_model
+        boss = get_user_model().objects.create_superuser('test.boss', 'test.boss@example.com', 'x')
+        chips = {row['code']: row['water'] for row in overview_props(boss)['sites']['rows']}
+        self.assertEqual(chips[self.bergen.code]['kind'], 'critical')
+        self.assertEqual([found[:2] for found in self.alarms()], [('sensor_rule', 'critical')])

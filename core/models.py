@@ -242,7 +242,9 @@ class AuditLog(models.Model):
 
     class Meta:
         db_table = 'audit_log'
-        ordering = ['-created_at']
+        # Newest first, and one order for entries of the same moment (one transaction): never left to the plan, so a
+        # list does not tell by its order what else a statement read (a narrowed read and a plain one alike).
+        ordering = ['-created_at', '-id']
         indexes = [
             models.Index(fields=['entity_type', 'entity_id']),
             # The few critical entries, newest first, without reading the whole log.

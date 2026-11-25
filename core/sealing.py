@@ -648,14 +648,14 @@ def hidden(seal, part=None, depth=None):
         conditions.append(Q(**{f'{link}__isnull': False}) & ~Q(Exists(shown)))
     if seal.any_of:
         child, link = _child(seal.any_of)
-        children = child._base_manager.filter(**{link: OuterRef('pk')})
+        children = unsealed(child).filter(**{link: OuterRef('pk')})
         shown = _shown(child, part, depth).filter(**{link: OuterRef('pk')})
         conditions.append(Q(Exists(children)) & ~Q(Exists(shown)))
     if seal.hidden_with:
         child, link = _child(seal.hidden_with)
         child_hidden = None if depth == 0 else hidden(seal_of(child), part, None if depth is None else depth - 1)
         if child_hidden is not None:
-            conditions.append(Q(Exists(child._base_manager.filter(child_hidden, **{link: OuterRef('pk')}))))
+            conditions.append(Q(Exists(unsealed(child).filter(child_hidden, **{link: OuterRef('pk')}))))
     if not conditions:
         return None
     result = conditions[0]
@@ -678,8 +678,16 @@ def _shown(model, part, depth):
         return model._default_manager.all()
     seal = seal_of(model)
     condition = None if depth == 0 or seal is None or not seal.filters else hidden(seal, None, depth - 1)
-    rows = model._base_manager.all()
+    rows = unsealed(model)
     return rows if condition is None else rows.exclude(condition)
+
+
+def unsealed(model):
+    """Every row of `model` as stored, for the seal's own reads (the condition's parents and children, the stamp, the
+    log's read-time rule): never through a manager, since a model's base manager may be sealed itself (base_manager_name
+    = 'all_objects': the escape, harvest, delivery and opening-balance records), and narrowed it leaves out the very
+    rows the seal asks for: a rule that looks for the hidden rows then finds none and hides nothing."""
+    return models.QuerySet(model)
 
 
 def _child(spec):
@@ -763,7 +771,7 @@ def works_of(model, pks, depth=WORKS_DEPTH, cells=None):
                 lookup, ref = _correlated(model, path, target)
                 columns[f'_cells{len(columns)}'] = ArraySubquery(
                     _provider.cells().filter(days, **{lookup: ref}).values('work'))
-    rows = model._base_manager.filter(pk__in=list(keys)).annotate(**columns).values('pk', *columns, *seal.via)
+    rows = unsealed(model).filter(pk__in=list(keys)).annotate(**columns).values('pk', *columns, *seal.via)
     parents = {link: {} for link in seal.via}
     present = set()
     for row in rows:
@@ -785,7 +793,7 @@ def works_of(model, pks, depth=WORKS_DEPTH, cells=None):
     for spec in (seal.any_of, seal.hidden_with):
         if spec:
             child, link = _child(spec)
-            pairs = list(child._base_manager.filter(**{f'{link}__in': list(present)}).values_list('pk', link))
+            pairs = list(unsealed(child).filter(**{f'{link}__in': list(present)}).values_list('pk', link))
             theirs = works_of(child, [pk for pk, _parent in pairs], depth - 1, cells)
             for pk, parent in pairs:
                 found[str(parent)].update(theirs[str(pk)])
@@ -856,9 +864,7 @@ class HiddenRows(models.Expression):
             condition = hidden(seal, self.part)
             if condition is None:
                 return 'FALSE', []
-            # A plain QuerySet: a model's base manager may be sealed itself (base_manager_name = 'all_objects'), and
-            # narrowed it would leave out the very rows asked for here.
-            rows = models.QuerySet(seal.model).filter(condition).order_by().values('pk')
+            rows = unsealed(seal.model).filter(condition).order_by().values('pk')
         finally:
             _building.reset(token)
         inner, inner_params = rows.query.get_compiler(connection=connection).as_sql()

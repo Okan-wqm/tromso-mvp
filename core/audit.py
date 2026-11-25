@@ -65,7 +65,8 @@ def sealed_out(entries):
         condition = sealing.hidden(seal, depth=2)
         if condition is None:
             continue
-        ids = seal.model._base_manager.filter(condition).annotate(log_id=Cast('pk', models.CharField())).values('log_id')
+        ids = sealing.unsealed(seal.model).filter(condition).annotate(log_id=Cast('pk', models.CharField())).values(
+            'log_id')
         entries = entries.exclude(entity_type__in=entity_types(seal.model), entity_id__in=ids)
     if entries.model is AuditLog:
         # And those stamped, when they were written, with a work hidden from the person (`stamp`): an entry's text was

@@ -3493,7 +3493,9 @@ digest of what they read, added to the token so a grant, a share's end or an aud
 itself is never read on a poll. The activity log's pages and the database viewer's audit_log decide from the seals
 at read time and also leave out an entry stamped with a work hidden from the person: an entry's text is written once
 and may name what its record reached then (a transfer from an open tank into a sealed one names both units). A person who reads no confidential work gets the token as before. The delete plan says that records the person may not see are
-reached, never how many. The seal reads the person when the SQL is compiled, so a queryset built at import is never
+reached, never how many. The seal's own reads (its parents and children, the stamp, the log's read-time rule) take a
+model's rows as stored (`core.sealing.unsealed`), never through a manager that may itself be sealed; the log has one
+order, newest first and then by id, whatever a statement's plan. The seal reads the person when the SQL is compiled, so a queryset built at import is never
 bound to anyone (`core.sealing.Viewing`; `core/tests_boot.py` starts the server as a server). It is decided from the
 person's Reach, read once a request (forgotten after a write that changes a grant, a team, an audience or a role): a
 person from whom no work is hidden reads with no seal in the statement, a holder of Oversee reads the farm facts with

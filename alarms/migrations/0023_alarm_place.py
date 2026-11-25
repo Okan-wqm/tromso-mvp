@@ -75,9 +75,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('alarms', '0022_water_limit_without_point'),
-        ('core', '0017_audit_log_order'),
-        ('farm', '0050_rev_triggers'),
-        ('sensors', '0015_default_no_data_rules'),
+        ('core', '0007_audit_severity'),            # the log's row of a data migration (core.migrations._log)
     ]
 
     operations = [

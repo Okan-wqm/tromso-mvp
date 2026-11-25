@@ -341,9 +341,12 @@ def reach():
 
 def _reach():
     current = _current.get()
-    if not isinstance(current, _Lazy):
-        if who() is None:
-            return SEES_ALL
+    if isinstance(current, _Lazy):
+        # Reading what the person may read is reading the seal: the answer is made for them alone (no-store), whether
+        # something turns out hidden or not, so its headers never tell which (run 45704864961).
+        current.who()
+    elif who() is None:
+        return SEES_ALL
     if _provider is None or not hasattr(_provider, 'reach'):
         return SEES_ALL
     return memo(('reach',), lambda: _provider.reach(current.user))

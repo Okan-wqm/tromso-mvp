@@ -14,6 +14,7 @@ urlpatterns += [
     path('sensors/devices/move/', views.device_move, name='device_move'),
     path('sensors/charts/', views.charts, name='charts'),
     path('sensors/charts/csv/', views.chart_csv, name='chart_csv'),
+    path('sensors/charts/data/', views.chart_data, name='chart_data'),
     path('sensors/charts/place/', views.target_charts, name='target_charts'),
     path('sensors/live/', views.live, name='live'),
     path('sensors/dead-letters/', views.dead_letters, name='dead_letters'),

@@ -1,7 +1,8 @@
 // Every list page the list-page island draws, with the props recorded from the test world (frontend/test/pages/
-// list-props-<language>.json, scripts/record_test_world.py), in a real browser (Playwright; skipped where there is no Chrome
-// or Edge, never under CI=1): in en, nb and tr, at 1440 and at 390 wide, no CSP violation, no serious axe finding, no
-// page-wide scroll, and no link of the list that opens the classic dialog. Test code only.
+// list-props-<language>.json and panel-props-<language>.json, scripts/record_test_world.py), in a real browser
+// (Playwright; skipped where there is no Chrome or Edge, never under CI=1): in en, nb and tr, at 1440 and at 390 wide,
+// no CSP violation, no serious axe finding, no page-wide scroll, and no link of the list that opens the classic dialog.
+// Test code only.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { test } from 'node:test';
@@ -11,8 +12,9 @@ import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
 import { axe, islandPage, serve, watchCsp } from './island-page.js';
 
 const LANGUAGES = ['en', 'nb', 'tr'];
-const pages = (language: string): Record<string, unknown> =>
-  JSON.parse(readFileSync(resolve(`frontend/test/pages/list-props-${language}.json`), 'utf8')) as Record<string, unknown>;
+// the lists of Company and HR (list-props) and of the production panel (panel-props), one set of pages
+const pages = (language: string): Record<string, unknown> => Object.assign({}, ...['list', 'panel'].map((set) =>
+  JSON.parse(readFileSync(resolve(`frontend/test/pages/${set}-props-${language}.json`), 'utf8')) as Record<string, unknown>));
 
 test('every list page in a browser', { skip: skipWithout(BROWSERS) }, async (t) => {
   let asked = 'team';

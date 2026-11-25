@@ -14,7 +14,7 @@
    {
     "key": "biomass",
     "label": "Biomass",
-    "figure": "500 kg",
+    "figure": "495 kg",
     "sub": "2 units stocked",
     "source": "Stock ledger · 13:42",
     "href": "/operations/units/"
@@ -22,11 +22,11 @@
    {
     "key": "alarms",
     "label": "Open alarms",
-    "figure": "0",
+    "figure": "1",
     "href": "/alarms/",
     "status": "critical",
     "statusLabel": "Critical",
-    "sub": null,
+    "sub": "1 critical",
     "sub2": "1 unit critical · 1 unit with no recent data",
     "source": "Alarms · 13:42"
    },
@@ -52,9 +52,9 @@
    {
     "key": "messages",
     "label": "Unread messages",
-    "figure": "0",
+    "figure": "33",
     "href": "/messages/",
-    "sub": null,
+    "sub": "in 3 conversations",
     "source": "Messages · 13:42"
    }
   ]
@@ -76,29 +76,29 @@
   },
   "rows": [
    {
-    "key": "4c85a9c5-4d43-4aa1-a1d2-47b5f8c1670d",
+    "key": "3bf42092-a2a3-4ad4-b190-b3f54955152f",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/4c85a9c5-4d43-4aa1-a1d2-47b5f8c1670d/",
+    "href": "/sites/3bf42092-a2a3-4ad4-b190-b3f54955152f/",
     "type": "Land-based facility",
     "status": "critical",
     "units": "1",
-    "biomass": "50 kg",
+    "biomass": "45 kg",
     "water": {
      "kind": "critical",
-     "text": "O₂ (mg/L) 5.00"
+     "text": "O₂ (mg/L) 8.40"
     },
     "alarms": {
-     "figure": "0",
+     "figure": "1",
      "sub": "1 unit critical"
     },
     "onSite": null
    },
    {
-    "key": "91944f2e-db63-42c7-b559-95230d5e186c",
+    "key": "0c028847-7f78-4343-a25d-39d537db0a27",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/91944f2e-db63-42c7-b559-95230d5e186c/",
+    "href": "/sites/0c028847-7f78-4343-a25d-39d537db0a27/",
     "type": "Sea cage",
     "status": "warning",
     "units": "1",
@@ -128,7 +128,16 @@
    "severity": "Severity",
    "what": "What"
   },
-  "rows": [],
+  "rows": [
+   {
+    "key": "1",
+    "severity": "Critical",
+    "kind": "critical",
+    "what": "O₂ 5.8 mg/L, below 6.00 (critical)",
+    "href": "/alarms/1/",
+    "where": "TT-01 › Middle · Test Site North · 20.11.2026 13:42"
+   }
+  ],
   "more": null,
   "empty": null,
   "units": {
@@ -226,9 +235,19 @@
    "onHand": "On hand",
    "cover": "Days of cover"
   },
-  "rows": [],
+  "rows": [
+   {
+    "key": "3bf42092-a2a3-4ad4-b190-b3f54955152f-2449d149-7e6d-4cdb-a063-c283cd0ce777",
+    "item": "Test Grower 4 (TG-4)",
+    "site": "Test Site North",
+    "onHand": "1,475 kg",
+    "cover": null,
+    "status": "warning",
+    "note": "TS-01, below the reorder level of 2,000 kg"
+   }
+  ],
   "none": "—",
-  "empty": "Nothing on hand"
+  "empty": null
  },
  "messages": {
   "title": "Unread messages",
@@ -236,8 +255,30 @@
    "href": "/messages/",
    "label": "Messages"
   },
-  "rows": [],
-  "empty": "No unread messages"
+  "rows": [
+   {
+    "key": "bce8f4e4-7b4a-4840-b068-56c1f40b0400",
+    "title": "Test long channel",
+    "href": "/messages/bce8f4e4-7b4a-4840-b068-56c1f40b0400/",
+    "text": "Test message 60 of 60.",
+    "when": "23.11.2026 13:41"
+   },
+   {
+    "key": "1a44bd90-8fc3-4275-acc4-d569637e6996",
+    "title": "Test channel",
+    "href": "/messages/1a44bd90-8fc3-4275-acc4-d569637e6996/",
+    "text": "A test message to the channel.",
+    "when": "23.11.2026 12:41"
+   },
+   {
+    "key": "5f3ae3de-0c65-4cf9-8027-7bbad8a785e6",
+    "title": "Test Writer",
+    "href": "/messages/5f3ae3de-0c65-4cf9-8027-7bbad8a785e6/",
+    "text": "A second test answer,\non two lines.",
+    "when": "23.11.2026 12:40"
+   }
+  ],
+  "empty": null
  },
  "activity": {
   "title": "Recent activity",
@@ -248,10 +289,10 @@
   "critical": "Critical",
   "entries": [
    {
-    "key": "d561ef08-b556-4b74-87ad-054f4421ea0a",
+    "key": "a1452f9c-3179-44d7-8ff4-b970eb14b1ec",
     "action": "Created",
     "critical": false,
-    "record": "Knowledge entry · A test statement.",
+    "record": "Channel · Test long channel",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -260,10 +301,10 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "e72bc53a-caa0-4f80-a7c7-820ac9f770fb",
+    "key": "94f70087-b9f4-40a8-bf85-9145bb3d0078",
     "action": "Created",
     "critical": false,
-    "record": "Document · Test document",
+    "record": "Channel · Test channel",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -272,10 +313,10 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "797d2cfa-6984-4ac6-856b-e809cd4a470b",
+    "key": "b2c05246-0742-4142-b3c0-9c9cb57cd63d",
     "action": "Created",
     "critical": false,
-    "record": "Storage location · Test Store (TS-01)",
+    "record": "Inventory operation · Count · TS-01 · TG-4 TL-1, TG-4 TL-2 · 2026-11-21",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -284,10 +325,10 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "7bfae189-4f4a-46c3-9526-319496919651",
-    "action": "Created",
+    "key": "bc7b4df7-8ece-4e1d-9507-205bedcb3161",
+    "action": "Voided",
     "critical": false,
-    "record": "Water sample · Water sample · TT-01 › Middle · 2026-11-23 12:42",
+    "record": "Inventory operation · Write-off · TS-01 · TG-4 TL-2 · 2026-11-19",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -296,10 +337,10 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "0d441c48-c5e0-4409-bacb-5af780ee8f4b",
-    "action": "Changed",
+    "key": "2e482183-f961-4a88-b3ce-0c94b23de767",
+    "action": "Created",
     "critical": false,
-    "record": "Unit · Unit TM-01 (TM-01)",
+    "record": "Inventory operation · Write-off · TS-01 · TG-4 TL-2 · 2026-11-19",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -318,10 +359,10 @@
   },
   "rows": [
    {
-    "key": "ce957a82-d0df-4dc5-af8c-6d50b15bc8bd",
+    "key": "0253881e-e8f6-4f69-8728-26bdc31160e5",
     "text": "A test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/ce957a82-d0df-4dc5-af8c-6d50b15bc8bd/view/",
+    "href": "/knowledge/entries/0253881e-e8f6-4f69-8728-26bdc31160e5/view/",
     "kind": "neutral",
     "chip": "Draft"
    }

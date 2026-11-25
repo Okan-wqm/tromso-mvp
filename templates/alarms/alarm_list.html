@@ -8,6 +8,7 @@
 {% block content %}
 {% alarm_watch %}
 {% include "alarms/_not_sent.html" %}
+{% if units_note %}{% comment %} The units the strip counts (alarms.views.units_note): a red strip never leads to an empty page. {% endcomment %}<p class="notice {% if units_note.failed or units_note.status == "critical" %}notice-error{% else %}notice-warning{% endif %}" role="status" data-units-note>{% if units_note.failed %}{% include "icons/_icon.html" with name="alert" %}<span>{% trans "The units that need a look could not be read here." %}{% else %}{% if units_note.status == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% else %}{% include "icons/_icon.html" with name="alert" %}{% endif %}<span>{% blocktrans trimmed with units=units_note.text %}On the Monitoring screen: {{ units }}.{% endblocktrans %}{% if units_note.unalarmed %} {% blocktrans trimmed count count=units_note.unalarmed %}{{ count }} unit with critical or warning water has no open alarm.{% plural %}{{ count }} units with critical or warning water have no open alarm.{% endblocktrans %}{% endif %}{% endif %}{% if units_note.url %} <a href="{{ units_note.url }}">{% trans "See them on Monitoring" %}</a>{% endif %}</span></p>{% endif %}
 {% if worker.row %}<details class="ui-explain">
   <summary>{% trans "The alarm worker" %}</summary>
   <dl class="facts">

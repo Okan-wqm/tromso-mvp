@@ -1,7 +1,7 @@
 <div class="monitor-band tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:gap-y-1 tw:min-w-0 tw:wall:gap-y-0" data-key="band">
-  <div class="tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-6 tw:gap-y-1 tw:min-w-0 tw:wall:flex-nowrap">
+  <div class="tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-6 tw:gap-y-1 tw:min-w-0">
     <p class="monitor-head tw:shrink-0 tw:m-0 tw:text-u-s tw:text-ink-3 tw:[&>b]:text-u-l tw:[&>b]:font-semibold tw:[&>b]:text-ink-1">computed at <b>09:19</b> · 20 of 25 units shown</p>
-    <ul class="monitor-tally tw:flex tw:flex-1 tw:flex-wrap tw:gap-x-5 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list" aria-label="Cards by state"><li class="monitor-critical"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-critical" aria-hidden="true"></span><span>1 Critical</span></span></li> <li class="monitor-warning"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-warning" aria-hidden="true"></span><span>1 Warning</span></span></li> <li class="monitor-blind"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-blind" aria-hidden="true"></span><span>1 No recent data</span></span></li> <li class="monitor-note"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-note" aria-hidden="true"></span><span>1 Note</span></span></li> <li class="monitor-ok"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-ok" aria-hidden="true"></span><span>15 OK</span></span></li> <li class="monitor-empty"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-empty" aria-hidden="true"></span><span>1 Empty</span></span></li> </ul>
+    <ul class="monitor-tally tw:flex tw:flex-1 tw:flex-wrap tw:gap-x-5 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none" role="list" aria-label="Cards by state"><li class="monitor-critical"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-critical" aria-hidden="true"></span><span>1 Critical</span></span></li> <li class="monitor-warning"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-warning" aria-hidden="true"></span><span>1 Warning</span></span></li> <li class="monitor-blind"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-blind" aria-hidden="true"></span><span>1 No recent data</span></span></li> <li class="monitor-note"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-note" aria-hidden="true"></span><span>1 Note</span></span></li> <li class="monitor-ok"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-ok" aria-hidden="true"></span><span>15 OK</span></span></li> <li class="monitor-empty"><span class="monitor-state tw:shrink-0 tw:whitespace-nowrap tw:font-semibold tw:text-u-m"><span class="monitor-shape monitor-shape-empty" aria-hidden="true"></span><span>1 Empty</span></span></li> </ul>
     <span class="monitor-pages tw:flex tw:shrink-0 tw:items-baseline tw:gap-x-2 tw:text-u-s" data-pages hidden><button type="button" id="pages-prev" class="tw:border-0 tw:bg-transparent tw:px-2 tw:py-0 tw:[font:inherit] tw:text-ink-2 tw:cursor-pointer" data-page-turn="-1" title="Previous page (PageUp)" aria-label="Previous page (PageUp)">‹</button><span class="tw:font-semibold" data-pages-text></span><button type="button" id="pages-next" class="tw:border-0 tw:bg-transparent tw:px-2 tw:py-0 tw:[font:inherit] tw:text-ink-2 tw:cursor-pointer" data-page-turn="1" title="Next page (PageDown)" aria-label="Next page (PageDown)">›</button><button type="button" id="pages-worst" class="monitor-pages-worst tw:items-baseline tw:gap-1 tw:border-0 tw:bg-transparent tw:px-2 tw:py-0 tw:[font:inherit] tw:font-semibold tw:text-ink-1 tw:cursor-pointer" data-page-worst hidden title="Page of the worst card (Home)" aria-label="Page of the worst card (Home)"><span class="monitor-shape" data-page-worst-shape aria-hidden="true"></span><span aria-hidden="true">→</span><span data-page-worst-text></span></button></span>
     <nav class="monitor-modes tw:flex tw:shrink-0 tw:text-u-s" aria-label="Cards"><a id="mode-small" class="tw:px-3 tw:no-underline tw:font-semibold tw:text-ink-1" href="#" aria-current="page">Small</a><a id="mode-simple" class="tw:px-3 tw:no-underline tw:text-ink-3" href="#">Simple</a><a id="mode-detailed" class="tw:px-3 tw:no-underline tw:text-ink-3" href="#">Detailed</a></nav>
     
@@ -29,33 +29,38 @@
   </header>
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
-    <ul class="monitor-reasons tw:flex tw:flex-1 tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list"><li class="tw:truncate tw:text-ink-1" title="Medicine withdrawal in force"><span class="tw:font-semibold">Medicine withdrawal in force</span> <span class="tw:text-ink-2">· harvest from 25.11.2026</span><span class="sr-only"> (Medicine withdrawal in force)</span></li></ul>
+    <ul class="monitor-reasons tw:flex tw:flex-1 tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list"><li class="tw:truncate tw:text-ink-1" title="Medicine withdrawal in force"><span class="monitor-figure tw:font-semibold">Medicine withdrawal in force</span> <span class="monitor-bound tw:text-ink-2">· harvest from 25.11.2026</span><span class="sr-only"> (Medicine withdrawal in force)</span></li></ul>
     
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003e8" href="/operations/units/00000000-0000-0000-0000-0000000003e8/water/" title="Water history of HA-K01"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of HA-K01</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">10.30</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #58 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">13.1</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #57 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.21</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #59 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">16.5</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0022, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -83,33 +88,38 @@
   </header>
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
-    <ul class="monitor-reasons tw:flex tw:flex-1 tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list"><li class="tw:shrink-0 tw:text-warn-text" title="Dissolved oxygen (mg/L O₂): Warning"><span class="tw:font-semibold">O₂ (mg/L) 6.40</span> <span class="tw:text-ink-2">· warning limit 7.00</span><span class="sr-only"> (Dissolved oxygen (mg/L O₂): Warning)</span></li></ul>
+    <ul class="monitor-reasons tw:flex tw:flex-1 tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list"><li class="tw:shrink-0 tw:text-warn-text" title="Dissolved oxygen (mg/L O₂): Warning"><span class="monitor-figure tw:font-semibold">O₂ (mg/L) 6.40</span> <span class="monitor-bound tw:text-ink-2">· warning limit 7.00</span><span class="sr-only"> (Dissolved oxygen (mg/L O₂): Warning)</span></li></ul>
     
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003e9" href="/operations/units/00000000-0000-0000-0000-0000000003e9/water/" title="Water history of HA-K02"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of HA-K02</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 71.5 %"><span class="tw:min-w-0 tw:truncate">O₂ · 71.5 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 71.5 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 71.5 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-warn-text"><span class="monitor-shape monitor-shape-warning" aria-hidden="true"></span>6.40</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="Warning · unit sensor #59 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">13.1</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #58 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.05</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #60 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">22.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0020, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -138,31 +148,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 1,274 fish · 128 kg · 25.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003ea" href="/operations/units/00000000-0000-0000-0000-0000000003ea/water/" title="Water history of HA-K03"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of HA-K03</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">10.30</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #60 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">13.1</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #59 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.40</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #61 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">11.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0023, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -191,31 +206,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 1,411 fish · 159 kg · 26.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003eb" href="/operations/units/00000000-0000-0000-0000-0000000003eb/water/" title="Water history of HA-R01"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of HA-R01</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.90</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #61 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">11.5</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #60 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.30</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #62 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">15.1</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0024, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -243,33 +263,38 @@
   </header>
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
-    <ul class="monitor-reasons tw:flex tw:flex-1 tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list"><li class="tw:shrink-0 tw:text-crit-text" title="Dissolved oxygen (mg/L O₂): Critical"><span class="tw:font-semibold">O₂ (mg/L) 5.10</span> <span class="tw:text-ink-2">· critical limit 6.00</span><span class="sr-only"> (Dissolved oxygen (mg/L O₂): Critical)</span></li><li class="tw:shrink-0 tw:text-ink-2" title="pH (NBS scale): Critical"><span aria-hidden="true">+1</span><span class="sr-only">pH (NBS scale): Critical</span></li></ul>
+    <ul class="monitor-reasons tw:flex tw:flex-1 tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list"><li class="tw:shrink-0 tw:text-crit-text" title="Dissolved oxygen (mg/L O₂): Critical"><span class="monitor-figure tw:font-semibold">O₂ (mg/L) 5.10</span> <span class="monitor-bound tw:text-ink-2">· critical limit 6.00</span><span class="sr-only"> (Dissolved oxygen (mg/L O₂): Critical)</span></li><li class="tw:shrink-0 tw:text-ink-2" title="pH (NBS scale): Critical"><span aria-hidden="true">+1</span><span class="sr-only">pH (NBS scale): Critical</span></li></ul>
     
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003ec" href="/operations/units/00000000-0000-0000-0000-0000000003ec/water/" title="Water history of HA-R02"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of HA-R02</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 71.5 %"><span class="tw:min-w-0 tw:truncate">O₂ · 71.5 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 71.5 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 71.5 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-crit-text"><span class="monitor-shape monitor-shape-critical" aria-hidden="true"></span>5.10</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="Critical · unit sensor #62 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">11.5</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #61 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-crit-text"><span class="monitor-shape monitor-shape-critical" aria-hidden="true"></span>6.62</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="Critical · unit sensor #63 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">72.6</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0024, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -298,31 +323,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 1,685 fish · 221 kg · 28.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003ed" href="/operations/units/00000000-0000-0000-0000-0000000003ed/water/" title="Water history of RT-01"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-01</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.31</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #63 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #62 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.21</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #64 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">15.4</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -351,31 +381,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 1,822 fish · 252 kg · 29.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003ee" href="/operations/units/00000000-0000-0000-0000-0000000003ee/water/" title="Water history of RT-02"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-02</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.32</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #64 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #63 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.22</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #65 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">15.1</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -404,31 +439,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 1,959 fish · 283 kg · 30.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003ef" href="/operations/units/00000000-0000-0000-0000-0000000003ef/water/" title="Water history of RT-03"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-03</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.33</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #65 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #64 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.23</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #66 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">14.7</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -457,31 +497,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 2,096 fish · 314 kg · 31.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f0" href="/operations/units/00000000-0000-0000-0000-0000000003f0/water/" title="Water history of RT-04"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-04</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.34</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #66 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #65 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.24</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #67 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">14.4</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -510,31 +555,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 2,233 fish · 345 kg · 32.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f1" href="/operations/units/00000000-0000-0000-0000-0000000003f1/water/" title="Water history of RT-05"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-05</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.35</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #67 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #66 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.25</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #68 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">14.1</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -563,31 +613,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 2,370 fish · 376 kg · 33.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f2" href="/operations/units/00000000-0000-0000-0000-0000000003f2/water/" title="Water history of RT-06"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-06</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.36</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #68 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #67 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.26</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #69 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">13.8</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -616,31 +671,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 2,507 fish · 407 kg · 34.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f3" href="/operations/units/00000000-0000-0000-0000-0000000003f3/water/" title="Water history of RT-07"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-07</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.37</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #69 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #68 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.27</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #70 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">13.4</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -668,33 +728,38 @@
   </header>
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
-    <ul class="monitor-reasons tw:flex tw:flex-1 tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list"><li class="tw:truncate tw:text-ink-1" title="Temperature (°C): no recent data, 4 days old"><span class="tw:font-semibold">Temperature (°C): no recent data, 4 days old</span><span class="sr-only"> (Temperature (°C): no recent data, 4 days old)</span></li><li class="tw:shrink-0 tw:text-ink-2" title="Dissolved oxygen (mg/L O₂): no recent data, 4 days old"><span aria-hidden="true">+1</span><span class="sr-only">Dissolved oxygen (mg/L O₂): no recent data, 4 days old</span></li></ul>
+    <ul class="monitor-reasons tw:flex tw:flex-1 tw:flex-wrap tw:items-baseline tw:gap-x-2 tw:min-w-0 tw:m-0 tw:p-0 tw:list-none tw:wall:flex-nowrap" role="list"><li class="tw:truncate tw:text-ink-1" title="Temperature (°C): no recent data, 4 days old"><span class="monitor-figure tw:font-semibold">Temperature (°C): no recent data, 4 days old</span><span class="sr-only"> (Temperature (°C): no recent data, 4 days old)</span></li><li class="tw:shrink-0 tw:text-ink-2" title="Dissolved oxygen (mg/L O₂): no recent data, 4 days old"><span aria-hidden="true">+1</span><span class="sr-only">Dissolved oxygen (mg/L O₂): no recent data, 4 days old</span></li></ul>
     
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f4" href="/operations/units/00000000-0000-0000-0000-0000000003f4/water/" title="Water history of RT-08"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-08</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span> <span class="tw:shrink-0 tw:font-semibold tw:text-ink-1" data-old>old</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span> <span class="tw:shrink-0 tw:font-semibold tw:text-ink-1" data-old>old</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-2 tw:italic">9.38</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="Stale · unit sensor #70 · 4 d ago">sensor · 4 d</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span> <span class="tw:shrink-0 tw:font-semibold tw:text-ink-1" data-old>old</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span> <span class="tw:shrink-0 tw:font-semibold tw:text-ink-1" data-old>old</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-2 tw:italic">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="Stale · unit sensor #69 · 4 d ago">sensor · 4 d</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span> <span class="tw:shrink-0 tw:font-semibold tw:text-ink-1" data-old>old</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span> <span class="tw:shrink-0 tw:font-semibold tw:text-ink-1" data-old>old</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-2 tw:italic">7.17</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="Stale · unit sensor #71 · 4 d ago">sensor · 4 d</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span> <span class="tw:shrink-0 tw:font-semibold tw:text-ink-1" data-old>old</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span> <span class="tw:shrink-0 tw:font-semibold tw:text-ink-1" data-old>old</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-2 tw:italic">16.9</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 4 d ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 4 d</dd>
 </dl>
@@ -723,31 +788,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 2,781 fish · 469 kg · 36.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f5" href="/operations/units/00000000-0000-0000-0000-0000000003f5/water/" title="Water history of RT-09"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-09</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.33</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #71 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.3</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #70 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.25</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #72 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">14.0</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -776,31 +846,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 2,918 fish · 500 kg · 37.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f6" href="/operations/units/00000000-0000-0000-0000-0000000003f6/water/" title="Water history of RT-10"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-10</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.47</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #72 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.4</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #71 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.26</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #73 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">13.7</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -829,31 +904,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 3,055 fish · 531 kg · 38.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f7" href="/operations/units/00000000-0000-0000-0000-0000000003f7/water/" title="Water history of RT-11"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-11</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.02</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #73 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #72 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">8.31</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #74 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">1.2</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0019, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>
@@ -882,7 +962,18 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f8" href="/operations/units/00000000-0000-0000-0000-0000000003f8/water/" title="Water history of RT-12"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of RT-12</span></a>
+
   </div>
+  <div class="monitor-cells tw:grid tw:grid-cols-4 tw:content-center tw:min-w-0" role="group" aria-label="Unit">
+  <div class="tw:grid tw:content-center tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap"><span class="tw:truncate tw:text-u-s tw:text-ink-2">Status</span><span class="tw:text-u-m tw:font-semibold tw:text-ink-1">Active</span></div>
+  <div class="tw:grid tw:content-center tw:min-w-0 tw:m-0 tw:pl-2 tw:pr-3 tw:border-l tw:border-hair tw:whitespace-nowrap"><span class="tw:truncate tw:text-u-s tw:text-ink-2">Volume</span><span class="tw:text-u-m tw:font-semibold tw:text-ink-1">no data</span></div>
+  <div class="tw:grid tw:content-center tw:min-w-0 tw:m-0 tw:pl-2 tw:pr-3 tw:border-l tw:border-hair tw:whitespace-nowrap"><span class="tw:truncate tw:text-u-s tw:text-ink-2">Max density</span><span class="tw:text-u-m tw:font-semibold tw:text-ink-1">no data</span></div>
+  <div class="tw:grid tw:content-center tw:min-w-0 tw:m-0 tw:pl-2 tw:border-l tw:border-hair tw:whitespace-nowrap"><span class="tw:truncate tw:text-u-s tw:text-ink-2">Max biomass</span><span class="tw:text-u-m tw:font-semibold tw:text-ink-1">no data</span></div>
+</div>
+
   <div class="card-grid gr-5"></div>
   
 </article>
@@ -906,31 +997,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 3,329 fish · 593 kg · 40.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003f9" href="/operations/units/00000000-0000-0000-0000-0000000003f9/water/" title="Water history of TG-M01"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of TG-M01</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.80</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #75 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">8.4</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #74 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">7.98</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #76 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><span class="tw:truncate tw:text-u-m tw:text-ink-2" title="Not worked out: no value of Alkalinity (mg/L as CaCO₃).">no data</span></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3"></dd>
 </dl>
@@ -959,31 +1055,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 3,466 fish · 624 kg · 41.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003fa" href="/operations/units/00000000-0000-0000-0000-0000000003fa/water/" title="Water history of TG-M03"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of TG-M03</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.90</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #76 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">8.3</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #75 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">8.02</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #77 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><span class="tw:truncate tw:text-u-m tw:text-ink-2" title="Not worked out: no value of Salinity (‰, g/kg).">no data</span></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3"></dd>
 </dl>
@@ -1012,31 +1113,36 @@
   <div class="monitor-card-line tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3 tw:min-w-0 tw:text-u-m tw:wall:flex-nowrap tw:wall:whitespace-nowrap">
     
     <p class="monitor-card-fish tw:m-0 tw:text-ink-3">Atlantic salmon · 3,603 fish · 655 kg · 42.6 kg/m³</p>
+    <a class="monitor-water-link" id="water-00000000-0000-0000-0000-0000000003fb" href="/operations/units/00000000-0000-0000-0000-0000000003fb/water/" title="Water history of TG-M04"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>
+</svg>
+<span class="monitor-water-word sr-only">Water history of TG-M04</span></a>
+
   </div>
+  
   <div class="card-grid gr-5"><div class="w w-value gx-0 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="tw:min-w-0 tw:truncate">O₂ · 98.0 %</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Dissolved oxygen (mg/L O₂) · 98.0 %"><span class="monitor-label tw:min-w-0 tw:truncate">O₂</span><span class="monitor-beside tw:shrink-0 tw:whitespace-nowrap"> · 98.0 %</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">9.90</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #77 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-3 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="tw:min-w-0 tw:truncate">°C</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Temperature (°C)"><span class="monitor-label tw:min-w-0 tw:truncate">°C</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">8.3</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #76 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-6 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="tw:min-w-0 tw:truncate">pH</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="pH (NBS scale)"><span class="monitor-label tw:min-w-0 tw:truncate">pH</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">8.02</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="OK · unit sensor #78 · 30 s ago">sensor · 30 s</dd>
 </dl>
 
 </div><div class="w w-value gx-9 gy-0 gw-3 gh-3">
 <dl class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:content-center tw:h-full tw:min-w-0 tw:m-0 tw:pr-3 tw:whitespace-nowrap tw:pl-2 tw:border-l tw:border-hair">
-  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
+  <dt class="tw:flex tw:items-baseline tw:gap-1 tw:min-w-0 tw:text-u-s tw:text-ink-2" title="Carbon dioxide, calculated (mg/L CO₂)"><span class="monitor-label tw:min-w-0 tw:truncate">CO₂ calc.</span></dt>
   <dd class="tw:flex tw:items-baseline tw:gap-2 tw:min-w-0 tw:m-0"><b class="tw:text-u-xl tw:font-semibold tw:text-ink-1">2.8</b></dd>
   <dd class="monitor-under tw:m-0 tw:text-u-s tw:text-ink-3" title="calculated · 30 s ago · Calculated from the pH, the alkalinity, the temperature and the salinity. The salinity is assumed: fresh water. Formula 4: ionic strength 0.0021, at least that of the alkalinity.">calc. · 30 s</dd>
 </dl>

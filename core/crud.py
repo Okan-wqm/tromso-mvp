@@ -438,6 +438,8 @@ class Resource:
     # None keeps the classic list in the new look too). The search box's placeholder and the empty list's sentence when
     # the tab's list template has its own (its blocks `search_placeholder` and `empty_text`): the same msgid.
     list_rows = None
+    list_above_next = ''      # a template the server draws above the new look's list (a safety notice the classic list
+                              # draws in its `above` block: Alarm rules' {% alarm_watch %}); '' for none
     list_template_next = ''   # the new look's page of a tab whose list is not a table (Scheduling settings), drawn by
                               # the server from the same context; '' for none
     list_next_props = None    # its island's props, when the page is an island: (view, objects, context) -> dict
@@ -723,7 +725,8 @@ class ListView(ResourceView):
         if self.resource.list_rows is not None and is_next(request):
             # The new look's list page (core/listprops.py): the same rows, read by the same view, drawn by the island.
             return render_page(request, 'crud/list_next.html',
-                               {**context, 'props': listprops.list_props(self, objects, context)})
+                               {**context, 'props': listprops.list_props(self, objects, context),
+                                'list_above': self.resource.list_above_next})
         if self.resource.list_template_next and is_next(request):
             props = self.resource.list_next_props(self, objects, context) if self.resource.list_next_props else None
             return render_page(request, self.resource.list_template_next, {**context, 'props': props})

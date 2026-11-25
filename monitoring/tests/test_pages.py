@@ -77,7 +77,7 @@ class PageTests(MonitoringCase):
         self.assertIn(f'data-window="{reverse("farm:water_unit_chart", args=[self.t2.pk])}"', card)
         # the chart lives in the window, never in a card: the only svg are the icons and the capacity bar (an SVG rectangle,
         # templates/farm/_capacity_bar.html, since the Content-Security-Policy allows no style attribute)
-        self.assertEqual(card.count('<svg') - card.count('<svg class="capacity-bar'), 0)
+        self.assertEqual(card.count('<svg') - card.count('<svg class="capacity-bar') - card.count('<svg class="icon"'), 0)
         self.assertEqual(html.count('<svg'), html.count('class="icon"') + html.count('<svg class="capacity-bar'))
 
     def test_a_card_that_may_not_see_a_section_says_so_and_prints_no_value_of_it(self):

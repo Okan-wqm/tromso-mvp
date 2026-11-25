@@ -7,5 +7,6 @@
 {% block eyebrow %}{{ group }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
+{% if list_above %}{% include list_above %}{% endif %}
 {% trans "Loading the list…" as loading %}{% island "list-page" props label=loading %}
 {% endblock %}

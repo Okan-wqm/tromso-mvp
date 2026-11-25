@@ -21,7 +21,9 @@
 <form method="get" action="{{ calculator_url }}" class="calc" data-live="{{ results_url }}" novalidate>
   <input type="hidden" name="{{ form.DRAWN }}" value="1">
   {{ form.loaded }}{{ form.ph_loaded }}{{ form.phosphate_loaded }}
+  <div class="calc-values-plate ui-marks">
   <section class="calc-source" aria-label="{% trans "Where the values come from" %}">
+    {% if UI_NEXT %}<h2 class="calc-plate-title">{% trans "Values" %}</h2>{% endif %}
     <div class="calc-source-pick field">
       <label for="{{ form.point.id_for_label }}">{{ form.point.label }}</label>
       {{ form.point }}
@@ -36,7 +38,7 @@
     {% for tab in form.tabs %}
     <section class="tab-panel calc-panel" role="tabpanel" data-panel="{{ tab.key }}"{% if tab.has_errors %} data-has-errors{% endif %}>
       <h3 class="panel-title">{{ tab.label }}</h3>
-      <div class="calc-fields">{% for field in tab.fields %}{% include "registration/_field.html" %}{% endfor %}</div>
+      <div class="calc-fields">{% for field in tab.fields %}{% include "registration/_field.html" with notes=UI_NEXT %}{% endfor %}</div>
     </section>
     {% endfor %}
     <div class="calc-actions">
@@ -44,6 +46,7 @@
       <a class="button button-ghost" href="{{ calculator_url }}">{% trans "Defaults" %}</a>
       {% include "farm/calculator/_actions.html" %}
     </div>
+  </div>
   </div>
 
   {% include "farm/calculator/_errors.html" %}
@@ -54,7 +57,7 @@
       {% include "farm/calculator/_plot.html" with key="nh3" plot=result.plots.nh3 %}
       {% include "farm/calculator/_plot.html" with key="h2s" plot=result.plots.h2s %}
     </div>
-    <section class="calc-card calc-deffeyes" aria-label="{% trans "Water Quality Management Chart" %}">
+    <section class="calc-card calc-deffeyes ui-marks" aria-label="{% trans "Water Quality Management Chart" %}">
       <fieldset class="calc-layers">
         <legend>{{ form.layers.label }}</legend>
         {% for box in form.layers %}<label class="check">{{ box.tag }} {{ box.choice_label }}</label>{% endfor %}
@@ -69,5 +72,5 @@
 
   {% include "farm/calculator/_results.html" %}
 </form>
-<p class="panel-help calculator-sources">{% blocktrans trimmed %}Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); boric acid: Dickson (1990); ammonium: Clegg and Whitfield (1995) for the best estimate, Yao and Millero (1995) for the ideal water; fresh and salt-added water is judged on the larger of these two values, and brackish water of 1 to 5 ‰ on the larger of the best estimate and a blend of the two constants; hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning.{% endblocktrans %} {% blocktrans trimmed %}Dosing: each reagent moves the water along its own direction on the chart (Deffeyes 1965); CO₂ the air leaves in the water: Weiss (1974), with 420 µmol/mol CO₂ in the air.{% endblocktrans %}</p>
+{% if UI_NEXT %}<details class="calc-more calc-sources"><summary>{% trans "Sources" %}</summary>{% endif %}<p class="panel-help calculator-sources">{% blocktrans trimmed %}Carbonic acid: Millero, Graham, Huang, Bustos-Serrano and Pierrot (2006); water: Millero (1995); boric acid: Dickson (1990); ammonium: Clegg and Whitfield (1995) for the best estimate, Yao and Millero (1995) for the ideal water; fresh and salt-added water is judged on the larger of these two values, and brackish water of 1 to 5 ‰ on the larger of the best estimate and a blend of the two constants; hydrogen sulfide: Millero, Plese and Fernandez (1988); calcite and aragonite: Mucci (1983); oxygen: Benson and Krause (1984). A pH is as a meter reads it (NBS scale). A border nearer than 0.2 pH is a warning.{% endblocktrans %} {% blocktrans trimmed %}Dosing: each reagent moves the water along its own direction on the chart (Deffeyes 1965); CO₂ the air leaves in the water: Weiss (1974), with 420 µmol/mol CO₂ in the air.{% endblocktrans %}</p>{% if UI_NEXT %}</details>{% endif %}
 {% endblock %}

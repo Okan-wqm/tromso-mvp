@@ -2,7 +2,9 @@
 escalated, acknowledged, snoozed, cleared), the console's Acknowledge and Snooze; Company › Alarms › Alarm snoozes: every
 snooze, newest first, and whether it is in force. The pages say plainly that nothing is sent while no transport is
 connected."""
+import logging
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
@@ -28,12 +30,33 @@ from .models import Alarm, AlarmShelve
 READ = 'alarms.view_alarm'
 SNOOZES = 'alarms.view_alarmshelve'
 STATES = ('open', 'all')
+logger = logging.getLogger(__name__)
 
 
 def _context(**extra):
     place = navigation.place(READ)
     return {'title': place.entry.label, 'eyebrow': place.heading,
             'connected': read.connected(), **extra}
+
+
+def units_note(user):
+    """What the Alarms page says of the units that need a look on the Monitoring screen, from the strip's own reading
+    (alarms.read.attention, in core.ui.attention_words: no second judgement), so a person who comes from a red strip
+    never finds an empty page: {'text', 'status', 'url' (Monitoring, '' for a person who may not open it), 'unalarmed'
+    (how many of them have critical or warning water and no open water alarm at their own points: Attention.unalarmed;
+    nothing is said of the rungs the engine never raises an alarm for)}; {'failed': True} when the reading fails
+    (logged); None when no unit needs a look."""
+    from core import ui
+    try:
+        found = read.attention()
+    except Exception:
+        logger.exception('The units that need a look could not be read for the Alarms page.')
+        return {'failed': True, 'url': reverse(ui.MONITORING) if ui.may_open(user, ui.MONITORING) else ''}
+    words = [text for what, text in ui.attention_words(found) if what == ui.UNITS]
+    if not words:
+        return None
+    return {'text': ' · '.join(words), 'status': 'critical' if found.critical else 'warning', 'unalarmed': found.unalarmed,
+            'url': reverse(ui.MONITORING) if ui.may_open(user, ui.MONITORING) else ''}
 
 
 @permission_required(READ, raise_exception=True)
@@ -43,6 +66,7 @@ def alarm_list(request):
     page = Paginator(read.listing(state), PAGE_SIZE).get_page(request.GET.get('page'))
     return render_page(request, 'alarms/alarm_list.html', _context(page=page, alarms=page.object_list, state=state,
                                                                    pager_query=f'state={state}',
+                                                                   units_note=units_note(request.user),
                                                                    floods=floods.open_floods(current_rules()),
                                                                    worker=watch.state(), timings=settings.ALARM_WORKER))
 
@@ -60,7 +84,27 @@ def alarm_detail(request, pk):
         can_acknowledge=not mine and read.may_acknowledge(request.user, alarm),
         snooze=read.snoozes([alarm.pk], now).get(alarm.pk), can_snooze=request.user.has_perm(read.SHELVE),
         may_snooze=read.may_snooze(request.user, alarm, now),
-        longest_snooze=current_rules().shelve_max(alarm.severity) // timedelta(minutes=1)))
+        longest_snooze=current_rules().shelve_max(alarm.severity) // timedelta(minutes=1),
+        water_url=_water_around(request, alarm)))
+
+
+def _water_around(request, alarm):
+    """In the new look, the water of the alarm's unit 12 hours each side of its opening (Tank › Water,
+    `farm:tank_water?around=` the opening moment on the site's clock, dd.mm.yyyy HH:MM as the date box writes it), for a
+    person who may read the water; '' for an alarm at no unit (a loop's, a device's) and in the classic look."""
+    from django.utils import formats, timezone
+
+    from core import ui
+    from farm.models.site import zone_of
+    from farm.models.water_point import site_of
+
+    if not ui.is_next(request) or not request.user.has_perm('farm.view_watermeasurement'):
+        return ''
+    point = alarm.point or getattr(getattr(alarm.sensor_event, 'binding', None), 'point', None)
+    if point is None or not point.unit_id:
+        return ''
+    opened = timezone.localtime(alarm.opened_at, zone_of(site_of(point.unit))).replace(tzinfo=None)
+    return f"{reverse('farm:tank_water', args=[point.unit_id])}?{urlencode({'around': formats.localize_input(opened)})}"
 
 
 @require_POST

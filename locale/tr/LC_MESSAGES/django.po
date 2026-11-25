@@ -500,6 +500,12 @@ msgstr[0] "%(count)d bekleme süresi satırı kaydedildi."
 msgstr[1] "%(count)d bekleme süresi satırı kaydedildi."
 
 #, python-format
+msgid "%(count)s channel"
+msgid_plural "%(count)s channels"
+msgstr[0] "%(count)s kanal"
+msgstr[1] "%(count)s kanal"
+
+#, python-format
 msgid "%(count)s column"
 msgid_plural "%(count)s columns"
 msgstr[0] "%(count)s sütun"
@@ -570,6 +576,10 @@ msgid "%(count)s of them for the whole farm"
 msgid_plural "%(count)s of them for the whole farm"
 msgstr[0] "%(count)s tanesi tüm çiftlik için"
 msgstr[1] "%(count)s tanesi tüm çiftlik için"
+
+#, python-format
+msgid "%(count)s offline"
+msgstr "%(count)s çevrim dışı"
 
 #, python-format
 msgid "%(count)s overdue"
@@ -676,6 +686,12 @@ msgstr[0] "%(count)s balıklı birim"
 msgstr[1] "%(count)s balıklı birim"
 
 #, python-format
+msgid "%(count)s unit with critical or warning water has no open alarm."
+msgid_plural "%(count)s units with critical or warning water have no open alarm."
+msgstr[0] "Suyu kritik veya uyarı düzeyinde olan %(count)s birimin açık alarmı yok."
+msgstr[1] "Suyu kritik veya uyarı düzeyinde olan %(count)s birimin açık alarmı yok."
+
+#, python-format
 msgid "%(count)s warning"
 msgid_plural "%(count)s warnings"
 msgstr[0] "%(count)s uyarı"
@@ -772,6 +788,16 @@ msgstr "%(planned)s öğünün %(done)s tanesi verildi"
 #, python-format
 msgid "%(dose)s g/m³"
 msgstr "%(dose)s g/m³"
+
+#, python-format
+msgid ""
+"%(drawn)s of %(total)s moments every %(step)s drawn, from %(first)s to %(last)s; the regions, the"
+" limits and the pH isolines are those of the newest water drawn. A moment without every value is "
+"left out, never joined."
+msgstr ""
+"%(total)s andan %(drawn)s tanesi her %(step)s bir çizildi, %(first)s ile %(last)s arası; "
+"bölgeler, sınırlar ve pH eş çizgileri çizilen en yeni suyunkilerdir. Her değeri olmayan bir an "
+"dışarıda bırakılır, asla birleştirilmez."
 
 #, python-format
 msgid "%(duty)s · %(site)s · %(year)s: record that it was done."
@@ -933,6 +959,9 @@ msgstr "%(hours)s sa"
 #, python-format
 msgid "%(hours)s h %(minutes)s min"
 msgstr "%(hours)s sa %(minutes)s dk"
+
+msgid "%(inches)s″ screen"
+msgstr "%(inches)s″ ekran"
 
 #, python-format
 msgid "%(inviter)s has created an account for you in the farm console of %(company)s."
@@ -1270,6 +1299,10 @@ msgid "%(people)s notification"
 msgid_plural "%(people)s notifications"
 msgstr[0] "%(people)s bildirim"
 msgstr[1] "%(people)s bildirim"
+
+#, python-format
+msgid "%(percent)s of capacity"
+msgstr "kapasitenin %(percent)s kadarı"
 
 #, python-format
 msgid "%(person)s (can no longer be chosen)"
@@ -1801,6 +1834,10 @@ msgstr "%(value)s %(unit)s"
 msgid "%(value)s assumed"
 msgstr "%(value)s varsayıldı"
 
+#, python-format
+msgid "%(value)s at %(time)s"
+msgstr "%(time)s anında %(value)s"
+
 #. Translators: days of cover, e.g. 12.5 days.
 #, python-format
 msgid "%(value)s days"
@@ -1976,6 +2013,27 @@ msgstr "Mattilsynet’in verdiği gibi 1 ila 6 harf veya rakam."
 
 msgid "15 July each year, for 1 June to 31 May, by year class"
 msgstr "Her yıl 15 Temmuz, 1 Haziran–31 Mayıs dönemi için, yıl sınıfına göre"
+
+msgid "24″ monitor, 1920 × 1080"
+msgstr "24″ monitör, 1920 × 1080"
+
+msgid "27″ monitor, 2560 × 1440"
+msgstr "27″ monitör, 2560 × 1440"
+
+msgid "32″ monitor, 3840 × 2160"
+msgstr "32″ monitör, 3840 × 2160"
+
+msgid "34″ ultrawide monitor, 3440 × 1440"
+msgstr "34″ ultra geniş monitör, 3440 × 1440"
+
+msgid "49″ ultrawide monitor, 5120 × 1440"
+msgstr "49″ ultra geniş monitör, 5120 × 1440"
+
+msgid "55″ TV, 3840 × 2160"
+msgstr "55″ TV, 3840 × 2160"
+
+msgid "65″ TV, 3840 × 2160"
+msgstr "65″ TV, 3840 × 2160"
 
 msgid "7 January"
 msgstr "7 Ocak"
@@ -3081,6 +3139,10 @@ msgstr "API kimliği"
 msgid "Abnormal swimming"
 msgstr "Anormal yüzme"
 
+#, python-format
+msgid "About %(field)s"
+msgstr "%(field)s hakkında"
+
 msgid "Above"
 msgstr "Üstünde"
 
@@ -3539,6 +3601,9 @@ msgstr "Tüm protokoller"
 msgid "All reports"
 msgstr "Tüm raporlar"
 
+msgid "All roles"
+msgstr "Tüm roller"
+
 msgid "All rules"
 msgstr "Tüm kurallar"
 
@@ -3874,6 +3939,9 @@ msgstr "Bu grubun başka bir tekrarı bu numarayı taşıyor."
 
 msgid "Another role already uses this name."
 msgstr "Bu adı başka bir rol zaten kullanıyor."
+
+msgid "Another screen: type its diagonal"
+msgstr "Başka bir ekran: köşegenini yazın"
 
 msgid "Another shift already uses this code."
 msgstr "Başka bir vardiya bu kodu zaten kullanıyor."
@@ -4513,6 +4581,9 @@ msgstr ""
 msgid "Bought from a supplier"
 msgstr "Tedarikçiden satın alındı"
 
+msgid "Bound"
+msgstr "Bağlı"
+
 msgid "Bound to"
 msgstr "Atandığı yer"
 
@@ -5054,14 +5125,23 @@ msgstr "Bir pH ölçeği seçin."
 msgid "Choose a person"
 msgstr "Bir kişi seçin"
 
+msgid "Choose a place and a quantity from the lists to compare with."
+msgstr "Karşılaştırmak için listelerden bir yer ve bir miktar seçin."
+
 msgid "Choose a place from the list."
 msgstr "Listeden bir yer seçin."
+
+msgid "Choose a place, a quantity and a time, then Draw."
+msgstr "Bir yer, bir miktar ve bir zaman seçin, sonra Çiz'e basın."
 
 msgid "Choose a role or a person."
 msgstr "Bir rol ya da bir kişi seçin."
 
 msgid "Choose a sampling point."
 msgstr "Bir numune noktası seçin."
+
+msgid "Choose a screen, or another screen with its diagonal between 10 and 150 inches."
+msgstr "Bir ekran seçin ya da köşegeni 10 ile 150 inç arasında olan başka bir ekran girin."
 
 msgid "Choose a site to list its sampling points."
 msgstr "Numune noktalarını listelemek için bir saha seçin."
@@ -5399,6 +5479,9 @@ msgstr "Şirket genel bakışı"
 
 msgid "Company today"
 msgstr "Bugün şirket"
+
+msgid "Compare with"
+msgstr "Karşılaştır"
 
 msgid "Complete"
 msgstr "Tamamla"
@@ -5937,6 +6020,9 @@ msgstr "Varsayılanlar"
 
 msgid "Deffeyes chart"
 msgstr "Deffeyes grafiği"
+
+msgid "Deffeyes chart of the time"
+msgstr "Zaman aralığının Deffeyes grafiği"
 
 #, python-format
 msgid "Deffeyes chart · %(unit)s"
@@ -6683,6 +6769,9 @@ msgstr "Tahmini: ölçülen ağırlık ile o zamandan beri verilen yemin beklene
 msgid "Event"
 msgstr "Olay"
 
+msgid "Events"
+msgstr "Olaylar"
+
 msgid "Every"
 msgstr "Her"
 
@@ -6988,6 +7077,10 @@ msgstr "%(date)s taşıması öncesi aç bırakma: %(start)s itibarıyla (%(asks
 msgid "Fed"
 msgstr "Yemlenen"
 
+#, python-format
+msgid "Fed %(kg)s kg of %(feed)s"
+msgstr "%(kg)s kg %(feed)s verildi"
+
 msgid "Fed beyond the book"
 msgstr "Kaydın ötesinde yemlenen"
 
@@ -7225,6 +7318,9 @@ msgstr "İlk gün"
 
 msgid "First day of the new tank"
 msgstr "Yeni tankın ilk günü"
+
+msgid "First drawn"
+msgstr "İlk çizilen"
 
 msgid "First name"
 msgstr "Ad"
@@ -7614,6 +7710,20 @@ msgstr "Cuma"
 
 msgid "From"
 msgstr "Başlangıç"
+
+#, python-format
+msgid ""
+"From %(distance)s m this screen shows %(count)d card a page: the wall turns its pages. A nearer "
+"distance or a larger screen shows more."
+msgid_plural ""
+"From %(distance)s m this screen shows %(count)d cards a page: the wall turns its pages. A nearer "
+"distance or a larger screen shows more."
+msgstr[0] ""
+"%(distance)s m uzaklıktan bu ekran sayfa başına %(count)d kart gösterir: duvar sayfa çevirir. "
+"Daha yakın bir mesafe veya daha büyük bir ekran daha fazlasını gösterir."
+msgstr[1] ""
+"%(distance)s m uzaklıktan bu ekran sayfa başına %(count)d kart gösterir: duvar sayfa çevirir. "
+"Daha yakın bir mesafe veya daha büyük bir ekran daha fazlasını gösterir."
 
 #, python-format
 msgid "From %(low)s to %(high)s."
@@ -8146,6 +8256,10 @@ msgstr "Sağlıklı, artık kullanılmayacak"
 msgid "Heart and skeletal muscle inflammation (HSMI)"
 msgstr "Kalp ve iskelet kası iltihabı (HSMI)"
 
+#, python-format
+msgid "Heartbeat %(age)s ago"
+msgstr "Son sinyal %(age)s önce"
+
 msgid "Heartbeat (s)"
 msgstr "Nabız (sn)"
 
@@ -8188,6 +8302,9 @@ msgstr "Silinmiş satırları gizle"
 
 msgid "High"
 msgstr "Yüksek"
+
+msgid "Highest"
+msgstr "En yüksek"
 
 msgid "Highest of the open run"
 msgstr "Açık serinin en yükseği"
@@ -8243,6 +8360,13 @@ msgstr ""
 
 msgid "How far back inside the limit the clock must come before the alarm clears. Below the limit."
 msgstr "Alarm kapanmadan önce saatin sınırın ne kadar içine dönmesi gerektiği. Sınırın altında."
+
+msgid ""
+"How far the people who read the wall stand from it: for example 1, 2, 3 or 5 m. Empty: the cards "
+"are as large as the screen allows, never under the type a desk reads."
+msgstr ""
+"Duvarı okuyanların ondan ne kadar uzakta durduğu: örneğin 1, 2, 3 veya 5 m. Boş: kartlar ekranın "
+"izin verdiği kadar büyüktür, bir masada okunan yazıdan asla küçük değildir."
 
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
@@ -8371,6 +8495,9 @@ msgstr ""
 
 msgid "How rations are worked out"
 msgstr "Rasyonlar nasıl hesaplanır"
+
+msgid "How this was worked out"
+msgstr "Bu nasıl hesaplandı"
 
 msgid "How values are judged"
 msgstr "Değerler nasıl değerlendirilir"
@@ -8575,6 +8702,9 @@ msgstr "Enfeksiyöz somon anemisi (ISA)"
 
 msgid "Ingest"
 msgstr "Veri alımı"
+
+msgid "Ingest and devices"
+msgstr "Veri alımı ve cihazlar"
 
 msgid "Injection"
 msgstr "Enjeksiyon"
@@ -9188,6 +9318,9 @@ msgstr "Sınırlar"
 msgid "Limits of the fish in the unit"
 msgstr "Birimdeki balıkların sınırları"
 
+msgid "Limits of these fish"
+msgstr "Bu balıkların sınırları"
+
 msgid "Line"
 msgstr "Satır"
 
@@ -9205,6 +9338,14 @@ msgstr "Kaplama kalınlığı (mm)"
 
 msgid "Lines"
 msgstr "Satırlar"
+
+#, python-format
+msgid ""
+"Lines of equal pH: %(low)s to %(high)s; DIC across, up to %(dic)s mmol/L; alkalinity up, up to "
+"%(alkalinity)s meq/L"
+msgstr ""
+"Eşit pH çizgileri: %(low)s ile %(high)s arası; DIC yatay eksende, en çok %(dic)s mmol/L; "
+"alkalinite dikey eksende, en çok %(alkalinity)s meq/L"
 
 msgid "Link sent to"
 msgstr "Bağlantının gönderildiği adres"
@@ -9237,7 +9378,7 @@ msgid "Loading the cards…"
 msgstr "Kartlar yükleniyor…"
 
 msgid "Loading the chart…"
-msgstr "Organizasyon şeması yükleniyor…"
+msgstr "Grafik yükleniyor…"
 
 msgid "Loading the confirmation…"
 msgstr "Onay yükleniyor…"
@@ -9253,6 +9394,9 @@ msgstr "Genel bakış yükleniyor…"
 
 msgid "Loading the schedule…"
 msgstr "Vardiya planı yükleniyor…"
+
+msgid "Loading the water history…"
+msgstr "Su geçmişi yükleniyor…"
 
 msgid "Loading…"
 msgstr "Yükleniyor…"
@@ -9323,6 +9467,9 @@ msgstr "Düşük basınç"
 
 msgid "Low stock"
 msgstr "Azalan stok"
+
+msgid "Lowest"
+msgstr "En düşük"
 
 msgid "Lowest of the open run"
 msgstr "Açık serinin en düşüğü"
@@ -10137,6 +10284,13 @@ msgstr "Bu konuda yayın yapan cihaz yok"
 msgid "No diagnosis"
 msgstr "Tanı yok"
 
+msgid "No diagram"
+msgstr "Diyagram yok"
+
+#, python-format
+msgid "No diagram after %(time)s: %(why)s"
+msgstr "%(time)s sonrasında diyagram yok: %(why)s"
+
 #, python-format
 msgid "No diagram: the sensor’s pH cannot be put on the NBS scale (%(why)s)."
 msgstr "Diyagram yok: sensörün pH’ı NBS ölçeğine dönüştürülemiyor (%(why)s)."
@@ -10184,6 +10338,9 @@ msgstr "Bu birimde henüz yemleme kaydedilmedi."
 msgid "No feeding recorded yet"
 msgstr "Henüz yemleme kaydedilmedi"
 
+msgid "No feeding, treatment, harvest or alarm in this time."
+msgstr "Bu sürede yemleme, tedavi, hasat veya alarm yok."
+
 msgid "No file"
 msgstr "Dosya yok"
 
@@ -10229,6 +10386,13 @@ msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
 
 msgid "No flip link"
 msgstr "Geçiş bağlantısı yok"
+
+msgid "No frame of this time has every value the chart needs."
+msgstr "Bu zaman aralığında grafiğin gerektirdiği her değere sahip bir an yok."
+
+#, python-format
+msgid "No frame of this time has every value the chart needs: %(missing)s."
+msgstr "Bu zaman aralığında grafiğin gerektirdiği her değere sahip bir an yok: %(missing)s."
 
 msgid "No fresh value"
 msgstr "Güncel değer yok"
@@ -10576,6 +10740,9 @@ msgstr "Ünitedeki balıklar için su sınırı tanımlanmamış."
 msgid "No water sample in the last 30 days."
 msgstr "Son 30 günde su numunesi yok."
 
+msgid "No water value in this time: nothing was measured or sampled here."
+msgstr "Bu sürede su değeri yok: burada hiçbir şey ölçülmedi veya numune alınmadı."
+
 msgid "No widget shows the oxygen."
 msgstr "Oksijeni gösteren bir bileşen yok."
 
@@ -10614,6 +10781,9 @@ msgid ""
 msgstr ""
 "Bir kural kimi söyleyene kadar bir alarmdan kimse haberdar edilmez: bir rol ya da bir kişi, bir "
 "sahada ya da her sahada, bir önem derecesinden itibaren, bir seviyede."
+
+msgid "Nobody is planned today."
+msgstr "Bugün kimse planlanmadı."
 
 msgid "Nobody to notify"
 msgstr "Bildirilecek kimse yok"
@@ -10750,6 +10920,14 @@ msgstr "Orada son 30 günde ölçülmemiş, girildiği gibi:"
 msgid "Not needed for a notice given by telephone."
 msgstr "Telefonla verilen bir bildirim için gerekmez."
 
+#, python-format
+msgid ""
+"Not one card a page can be read from %(distance)s m on this screen: read it from %(farthest)s m "
+"or nearer, or choose a larger screen."
+msgstr ""
+"Bu ekranda %(distance)s m uzaklıktan sayfa başına tek bir kart bile okunamaz: %(farthest)s m veya"
+" daha yakından okuyun ya da daha büyük bir ekran seçin."
+
 msgid "Not placed"
 msgstr "Yerleştirilmemiş"
 
@@ -10833,6 +11011,9 @@ msgstr "Doğrulanmadı"
 msgid "Not weighed since the fish came in."
 msgstr "Balıklar geldiğinden beri tartılmadı."
 
+msgid "Not worked out"
+msgstr "Hesaplanmadı"
+
 #, python-format
 msgid "Not worked out: %(why)s."
 msgstr "Hesaplanmadı: %(why)s."
@@ -10867,6 +11048,9 @@ msgstr "Depoda henüz hiçbir şey yok"
 
 msgid "Nothing is assumed for a missing value."
 msgstr "Eksik değer için hiçbir şey varsayılmaz."
+
+msgid "Nothing is bound here now."
+msgstr "Şu anda buraya bağlı bir şey yok."
 
 msgid "Nothing is filled in for a missing value."
 msgstr "Eksik bir değer için hiçbir şey doldurulmaz."
@@ -10922,6 +11106,9 @@ msgstr "Bu birimde henüz bir şey kaydedilmedi."
 msgid "Nothing recorded yet."
 msgstr "Henüz kayıt yok."
 
+msgid "Nothing to compare"
+msgstr "Karşılaştırılacak bir şey yok"
+
 msgid "Nothing to show yet"
 msgstr "Henüz gösterilecek bir şey yok"
 
@@ -10958,6 +11145,12 @@ msgstr "Hemen bildirin"
 
 msgid "Now"
 msgstr "Şimdi"
+
+msgid "Now and before"
+msgstr "Şimdi ve önce"
+
+msgid "Now bound"
+msgstr "Şimdi bağlı"
 
 msgid "Nullable"
 msgstr "Boş olabilir"
@@ -11058,6 +11251,10 @@ msgstr "İzinde"
 
 msgid "On site now"
 msgstr "Şu an sahada"
+
+#, python-format
+msgid "On the Monitoring screen: %(units)s."
+msgstr "İzleme ekranında: %(units)s."
 
 msgid "On the clock of the place’s site. Every channel’s binding until now ends then."
 msgstr "Yerin sahasının saatine göre. Her kanalın şu ana kadarki ataması o zaman sona erer."
@@ -11212,6 +11409,9 @@ msgstr ""
 
 msgid "Only for a person without an account."
 msgstr "Yalnızca hesabı olmayan kişi için."
+
+msgid "Only for another screen: its diagonal, between 10 and 150 inches."
+msgstr "Yalnızca başka bir ekran için: köşegeni, 10 ile 150 inç arasında."
 
 msgid "Only one contact can be the primary contact."
 msgstr "Yalnızca bir kişi birincil kişi olabilir."
@@ -12160,6 +12360,9 @@ msgstr "Üretim planı"
 msgid "Production plans"
 msgstr "Üretim planları"
 
+msgid "Production team today"
+msgstr "Bugün üretim ekibi"
+
 msgid "Production units"
 msgstr "Üretim birimleri"
 
@@ -12278,6 +12481,9 @@ msgstr "Miktar (kg)"
 msgid "Quantity and unit"
 msgstr "Parametre ve birim"
 
+msgid "Quantity to compare"
+msgstr "Karşılaştırılacak miktar"
+
 msgid "Quarantine"
 msgstr "Karantina"
 
@@ -12361,6 +12567,16 @@ msgstr ""
 "Görüntüle, bir deneyin kendi tanklarının çiftlik rakamlarını da (partiler, balık, biyokütle, "
 "hayatta kalma, yem dönüşümü) geldikleri çiftlik alanlarında Görüntüle yetkisi olmayan kişiye "
 "gösterir."
+
+#, python-format
+msgid "Read from %(metres)s m"
+msgstr "%(metres)s m'den okunur"
+
+msgid "Read from (m)"
+msgstr "Okuma mesafesi (m)"
+
+msgid "Read from between 0.5 and 20 m, or leave it empty."
+msgstr "Okuma mesafesi 0,5 ile 20 m arasında olmalı ya da boş bırakılmalı."
 
 #, python-format
 msgid ""
@@ -12802,6 +13018,9 @@ msgstr "Geri yüklendi"
 msgid "Result"
 msgstr "Sonuç"
 
+msgid "Results"
+msgstr "Sonuçlar"
+
 msgid "Retired"
 msgstr "Kullanımdan kaldırıldı"
 
@@ -13163,6 +13382,12 @@ msgstr "Planlama ayarları"
 msgid "Scientific name"
 msgstr "Bilimsel ad"
 
+msgid "Screen"
+msgstr "Ekran"
+
+msgid "Screen diagonal (inches)"
+msgstr "Ekran köşegeni (inç)"
+
 msgid "Screen size"
 msgstr "Elek açıklığı"
 
@@ -13355,6 +13580,9 @@ msgstr "Günlük kaydı görün"
 msgid "See the feedings"
 msgstr "Yemlemeleri gör"
 
+msgid "See them on Monitoring"
+msgstr "İzleme ekranında görün"
+
 msgid "Seed"
 msgstr "Tohum"
 
@@ -13485,8 +13713,14 @@ msgstr "Duyarlı"
 msgid "Sensitivity tests"
 msgstr "Duyarlılık testleri"
 
+msgid "Sensor"
+msgstr "Sensör"
+
 msgid "Sensor alarm event"
 msgstr "Sensör alarm olayı"
+
+msgid "Sensor alarm events"
+msgstr "Sensör alarm olayları"
 
 msgid "Sensor alarm rule"
 msgstr "Sensör alarm kuralı"
@@ -13505,6 +13739,9 @@ msgstr "Sensör buraya taşındı"
 
 msgid "Sensor readings"
 msgstr "Sensör okumaları"
+
+msgid "Sensor values are not shown: they need the right to read sensor readings."
+msgstr "Sensör değerleri gösterilmiyor: sensör okumalarını görme yetkisi gerekir."
 
 msgid "Sensors"
 msgstr "Sensörler"
@@ -13699,6 +13936,9 @@ msgstr "Basit"
 
 msgid "Simulated"
 msgstr "Simüle"
+
+msgid "Simulated values"
+msgstr "Simüle değerler"
 
 msgid "Simulator"
 msgstr "Simülatör"
@@ -13911,6 +14151,9 @@ msgstr "Değerlerin kaynağı"
 msgid "Source: %(kind)s"
 msgstr "Kaynak: %(kind)s"
 
+msgid "Sources"
+msgstr "Kaynaklar"
+
 msgid "Sources fingerprint"
 msgstr "Kaynakların parmak izi"
 
@@ -13992,6 +14235,12 @@ msgstr "Eski"
 
 msgid "Standard week"
 msgstr "Standart hafta"
+
+msgid "Stale, was critical"
+msgstr "Eski, kritikti"
+
+msgid "Stale, was warning"
+msgstr "Eski, uyarıydı"
 
 msgid "Standard week (minutes)"
 msgstr "Standart hafta (dakika)"
@@ -14138,6 +14387,9 @@ msgstr "Stoklandı"
 msgctxt "occupancy"
 msgid "Stocked"
 msgstr "Dolu"
+
+msgid "Stocked and empty"
+msgstr "Dolu ve boş"
 
 msgid "Stocked on"
 msgstr "Stoklama tarihi"
@@ -15365,6 +15617,9 @@ msgstr ""
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
 
+msgid "The limit bands are the limits of the fish today, over the whole time."
+msgstr "Sınır bantları, balıkların bugünkü sınırlarıdır; tüm süre boyunca gösterilir."
+
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
 
@@ -15890,6 +16145,9 @@ msgstr "Tuzluluk varsayıldı: tatlı su."
 msgid "The salinity is fresh water’s."
 msgstr "Tuzluluk tatlı suyunkidir."
 
+msgid "The same quantity"
+msgstr "Aynı miktar"
+
 msgid "The scale must span at least half a pH unit, from the lower end to the higher."
 msgstr "Ölçek, alt uçtan üst uca en az yarım pH birimi kapsamalıdır."
 
@@ -15932,6 +16190,19 @@ msgid ""
 msgstr ""
 "Turdaki pH’ların ölçüldüğü ölçek. NBS dışında: 5 ‰ ve üzeri deniz suyu için, her satır kendi "
 "sıcaklığı ve tuzluluğuyla; pH NBS ölçeğinde saklanır ve gösterilir, ölçülen değer yanında durur."
+
+msgid ""
+"The screen this board is shown on. With the distance below, a wall of small or big cards never "
+"sets its type smaller than can be read from there (20 arcmin for a state, 16 for every other "
+"text): it turns pages instead. The screen’s resolution is read from the screen itself. A screen "
+"and a distance at which not one card a page can be read are refused (another screen is taken as "
+"16:9)."
+msgstr ""
+"Bu panonun gösterildiği ekran. Aşağıdaki mesafeyle birlikte, küçük veya büyük kartlardan oluşan "
+"bir duvar yazısını oradan okunabilecek boyuttan asla küçük yapmaz (bir durum için 20 açı "
+"dakikası, diğer her yazı için 16): bunun yerine sayfa çevirir. Ekranın çözünürlüğü ekranın "
+"kendisinden okunur. Sayfa başına tek bir kartın bile okunamayacağı bir ekran ve mesafe reddedilir"
+" (başka bir ekran 16:9 kabul edilir)."
 
 #, python-format
 msgid "The sea-lice count of %(date)s in %(unit)s would have no fish: void it first."
@@ -16316,6 +16587,9 @@ msgstr ""
 msgid "The units take %(placed)s fish, but %(count)s arrive: the split must add up."
 msgstr "Birimler %(placed)s balık alıyor, ama %(count)s balık geliyor: dağılımın toplamı tutmalı."
 
+msgid "The units that need a look could not be read here."
+msgstr "Bakılması gereken birimler burada okunamadı."
+
 msgid "The units the fish go into and how many each takes; together they take every fish arriving."
 msgstr ""
 "Balıkların gireceği birimler ve her birinin kaç balık aldığı; hepsi birlikte gelen balığın "
@@ -16376,6 +16650,9 @@ msgstr "Garanti satın alma tarihinden önce bitemez."
 msgid "The water"
 msgstr "Su"
 
+msgid "The water 12 hours each side of the alarm"
+msgstr "Alarmın 12 saat öncesi ve sonrasındaki su"
+
 msgid ""
 "The water after each amount, added in the order of the list, mixed through and closed to the air "
 "while it mixes. Amounts are of the pure substance."
@@ -16390,6 +16667,10 @@ msgid ""
 msgstr ""
 "%(moment)s anındaki su: her değer, kaynağının o zaman verdiği gibi, yaşı o andan itibaren "
 "hesaplanarak."
+
+#, python-format
+msgid "The water at %(time)s"
+msgstr "%(time)s anındaki su"
 
 msgid "The water cannot stand higher than the depth."
 msgstr "Su, derinlikten yüksek olamaz."
@@ -16428,6 +16709,9 @@ msgstr "Havuz doluyken su yüzeyi."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
+
+msgid "The water through the time"
+msgstr "Zaman boyunca su"
 
 msgid "The week is longer than the standard week."
 msgstr "Hafta, standart haftadan uzun."
@@ -17013,6 +17297,13 @@ msgstr ""
 "Tam saniye cinsinden zamanlar, her saniye gönderilen mesajları ayırt edemez: en az %(seconds)d "
 "saniyede bir gönderin ya da milisaniyeli bir biçim kullanın."
 
+#, python-format
+msgid "Times on the site’s clock (%(zone)s)."
+msgstr "Saatler tesisin saatine göre (%(zone)s)."
+
+msgid "Times without a value are shaded, never filled."
+msgstr "Değeri olmayan süreler taranır, asla doldurulmaz."
+
 msgid "Timezone"
 msgstr "Saat dilimi"
 
@@ -17146,6 +17437,10 @@ msgstr "%(date)s tarihli tedavi iptal edildi."
 msgid "Treatment recorded: %(what)s in %(units)s from %(start)s to %(end)s."
 msgstr "Tedavi kaydedildi: %(what)s, %(units)s, %(start)s – %(end)s."
 
+#, python-format
+msgid "Treatment: %(method)s"
+msgstr "Tedavi: %(method)s"
+
 msgid "Treatments"
 msgstr "Tedaviler"
 
@@ -17206,6 +17501,9 @@ msgstr "İki bileşenin adı %(widget)s."
 
 msgid "Type"
 msgstr "Tür"
+
+msgid "Type the diagonal of the screen, in inches."
+msgstr "Ekranın köşegenini inç olarak yazın."
 
 msgid "Type your new password twice."
 msgstr "Yeni parolanızı iki kez yazın."
@@ -17542,6 +17840,9 @@ msgstr "Gönüllü"
 msgid "Wall"
 msgstr "Duvar ekranı"
 
+msgid "Wall screen"
+msgstr "Duvar ekranı"
+
 msgid "Wall-clock time on the site. A shift that ends at or before its start ends the next day."
 msgstr "Sahadaki duvar saati. Başlangıcında ya da öncesinde biten bir vardiya ertesi gün biter."
 
@@ -17596,6 +17897,13 @@ msgstr "Su ortamı"
 msgid "Water freshness"
 msgstr "Su tazeliği"
 
+msgid "Water history"
+msgstr "Su geçmişi"
+
+#, python-format
+msgid "Water history of %(unit)s"
+msgstr "%(unit)s su geçmişi"
+
 msgid ""
 "Water is sampled at the sampling points of the tanks, ponds and cages of Setup, of the loops of "
 "its systems and of its equipment."
@@ -17608,6 +17916,10 @@ msgstr "Su limiti"
 
 msgid "Water limits"
 msgstr "Su sınırları"
+
+#, python-format
+msgid "Water of %(name)s"
+msgstr "%(name)s suyu"
 
 msgid "Water origin"
 msgstr "Su kökeni"
@@ -17909,6 +18221,10 @@ msgstr ""
 
 msgid "Where"
 msgstr "Nerede"
+
+#, python-format
+msgid "Where %(channel)s was bound over time"
+msgstr "%(channel)s zaman içinde nereye bağlıydı"
 
 msgid ""
 "Where a PLC or field bus holds the value, as JSON. Modbus: unit_id, function, register; S7: db, "
@@ -18229,6 +18545,9 @@ msgstr "Üretim departmanı olmayanlar"
 msgid "Without a site"
 msgstr "Sahasız"
 
+msgid "Worked out"
+msgstr "Hesaplandı"
+
 #, python-format
 msgid "Worked out %(when)s · %(zone)s"
 msgstr "Hesaplandı %(when)s · %(zone)s"
@@ -18479,6 +18798,9 @@ msgstr "temizleyici balık damızlığı olan bir lokasyon"
 
 msgid "a unit or a loop"
 msgstr "bir birim veya döngü"
+
+msgid "a value the chart needs is missing"
+msgstr "grafiğin gerektirdiği bir değer eksik"
 
 msgid "activity log"
 msgstr "etkinlik günlüğü"
@@ -19441,6 +19763,12 @@ msgid "https:// is added when it is left out."
 msgstr "Yazılmazsa https:// eklenir."
 
 #, python-format
+msgid "in %(count)s batch"
+msgid_plural "in %(count)s batches"
+msgstr[0] "%(count)s partide"
+msgstr[1] "%(count)s partide"
+
+#, python-format
 msgid "in %(count)s conversation"
 msgid_plural "in %(count)s conversations"
 msgstr[0] "%(count)s sohbette"
@@ -19701,6 +20029,10 @@ msgstr "%(date)s tarihinden beri %(site)s lokasyonunda balık yok"
 msgid "no fish now"
 msgstr "şu anda balık yok"
 
+#, python-format
+msgid "no fresh value of %(missing)s"
+msgstr "%(missing)s için güncel değer yok"
+
 msgid ""
 "no increased mortality has stayed unexplained for 14 days; otherwise started by a person when an "
 "event happens"
@@ -19903,6 +20235,10 @@ msgstr ""
 "pH %(ph)s, %(point)s kaynağından yüklenen değerdir: zaten NBS ölçeğinde (saklanan pH her zaman "
 "öyledir) ve yeniden dönüştürülmez. Ölçeği NBS olarak bırakın veya pH’ı ölçüldüğü haliyle, "
 "ölçeğiyle birlikte yazın."
+
+#, python-format
+msgid "pH %(ph)s, DIC %(dic)s mmol/L, alkalinity %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
+msgstr "pH %(ph)s, DIC %(dic)s mmol/L, alkalinite %(alkalinity)s meq/L, CO₂ %(co2)s mg/L"
 
 msgid "pH (NBS scale)"
 msgstr "pH (NBS ölçeği)"
@@ -20485,6 +20821,9 @@ msgstr "arınma süresi onayı"
 
 msgid "withdrawal acknowledgements"
 msgstr "arınma süresi onayları"
+
+msgid "worked out from each sample, not measured"
+msgstr "her numuneden hesaplandı, ölçülmedi"
 
 msgid "worked out from the sample"
 msgstr "numuneden hesaplandı"

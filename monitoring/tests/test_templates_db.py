@@ -251,6 +251,10 @@ class BackfillTests(TestCase):
     """0004: a board's default mode and each card's mode become the built-in templates; back, the modes return."""
 
     def migrate(self, target):
+        # (the rows this test made have their deferred checks still pending in its transaction: run them now, or a later
+        # migration that alters their table, 0008 on monitor_boards, is refused on the way back)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
         executor = MigrationExecutor(connection)
         executor.loader.build_graph()
         executor.migrate([('monitoring', target)])
@@ -288,6 +292,10 @@ class SmallTemplateMigrationTests(TestCase):
     this migration) with what pointed at it detached; forward again, it is back as it was."""
 
     def migrate(self, target):
+        # (the rows this test made have their deferred checks still pending in its transaction: run them now, or a later
+        # migration that alters their table, 0008 on monitor_boards, is refused on the way back)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
         executor = MigrationExecutor(connection)
         executor.loader.build_graph()
         executor.migrate([('monitoring', target)])
@@ -348,7 +356,8 @@ class SmallTemplateMigrationTests(TestCase):
         self.assertEqual(CardTemplate.objects.get(pk=mine.pk).name, 'small (3)')            # (2) was taken
         self.assertEqual(CardTemplate.objects.get(pk=taken.pk).name, 'Small (2)')
         self.assertEqual(CardTemplate.all_objects.get(pk=gone.pk).name, 'SMALL')
-        self.assertEqual(MonitorBoard.objects.get(pk=board.pk).default_template_id, mine.pk)
+        # (only the column it asks for: the board's later columns, 0008's screen, are not there at 0005)
+        self.assertEqual(MonitorBoard.objects.values_list('default_template_id', flat=True).get(pk=board.pk), mine.pk)
         self.assertEqual(CardTemplateAssignment.objects.get(unit=unit).template_id, mine.pk)
         # back: the built-in goes, the farm's template keeps the name it was given (nothing guesses it back)
         back = self.migrate('0004_backfill_modes')
@@ -362,6 +371,10 @@ class BigTemplateMigrationTests(TestCase):
     again; forward again, it is back as it was."""
 
     def migrate(self, target):
+        # (the rows this test made have their deferred checks still pending in its transaction: run them now, or a later
+        # migration that alters their table, 0008 on monitor_boards, is refused on the way back)
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
         executor = MigrationExecutor(connection)
         executor.loader.build_graph()
         executor.migrate([('monitoring', target)])

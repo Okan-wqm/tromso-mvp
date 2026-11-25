@@ -5964,6 +5964,13 @@ msgstr "Dag %(day)s av %(total)s"
 msgid "Day 0"
 msgstr "Dag 0"
 
+msgid ""
+"Day 0 has passed: this seals the records of its tanks since then, so a person who holds Oversee "
+"does it."
+msgstr ""
+"Dag 0 er passert: dette forsegler registreringene til karene siden da, så en person med Tilsyn "
+"gjør det."
+
 #, python-format
 msgid ""
 "Day 0 is further back than records can be dated: an experiment is registered at most %(days)d "
@@ -13544,15 +13551,15 @@ msgstr "Skriv hvorfor den annulleres."
 msgid "Say why the alarm is snoozed."
 msgstr "Oppgi hvorfor alarmen slumres."
 
-msgid "Say why the experiment is taken over."
-msgstr "Si hvorfor forsøket overtas."
-
 msgid ""
 "Say why the default rule is switched off: a probe of this quantity that stops sending is then "
 "warned of by nothing."
 msgstr ""
 "Si hvorfor standardregelen slås av: en sonde for denne parameteren som slutter å sende, varsles "
 "da ikke av noe."
+
+msgid "Say why the experiment is taken over."
+msgstr "Si hvorfor forsøket overtas."
 
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "

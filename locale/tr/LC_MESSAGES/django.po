@@ -5983,6 +5983,13 @@ msgstr "%(total)s günün %(day)s. günü"
 msgid "Day 0"
 msgstr "0. gün"
 
+msgid ""
+"Day 0 has passed: this seals the records of its tanks since then, so a person who holds Oversee "
+"does it."
+msgstr ""
+"0. gün geçti: bu, tanklarının o zamandan beri kayıtlarını mühürler; bu yüzden bunu Gözetim "
+"yetkisi olan bir kişi yapar."
+
 #, python-format
 msgid ""
 "Day 0 is further back than records can be dated: an experiment is registered at most %(days)d "
@@ -13577,15 +13584,15 @@ msgstr "Neden iptal edildiğini yazın."
 msgid "Say why the alarm is snoozed."
 msgstr "Alarmın neden ertelendiğini yazın."
 
-msgid "Say why the experiment is taken over."
-msgstr "Deneyin neden devralındığını yazın."
-
 msgid ""
 "Say why the default rule is switched off: a probe of this quantity that stops sending is then "
 "warned of by nothing."
 msgstr ""
 "Varsayılan kuralın neden kapatıldığını yazın: bu parametrenin veri göndermeyi bırakan bir sondası"
 " artık hiçbir şeyle bildirilmez."
+
+msgid "Say why the experiment is taken over."
+msgstr "Deneyin neden devralındığını yazın."
 
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "

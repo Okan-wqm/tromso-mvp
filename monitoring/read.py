@@ -263,6 +263,7 @@ class Card:
     lice: object = None
     chips: tuple = ()                   # where the unit stands in work the farm does not own (farm.placements)
     tasks: object = None                # tasks.read.UnitTasks
+    tasks_unplanned: int = 0            # recurring tasks the task job has not planned up to today (tasks.read.unplanned)
     hidden: tuple = ()                  # what the person may not read: FEEDING, WATER, HEALTH, TASKS
     sections: frozenset = frozenset()
     failed: frozenset = frozenset()     # the optional sources that failed: their widgets say "no data"
@@ -428,6 +429,9 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
     treatments = optional(TREATMENTS, health_read.recent_treatments)
     counts = optional(LICE, lambda wanted: health_read.latest_counts([unit.pk for unit in wanted]))
     tasks = optional(TASKS, lambda wanted: tasks_read.per_unit([unit.pk for unit in wanted], now))
+    # The task job behind: the task counts miss today's tasks of these recurring tasks, said beside them as the pages say
+    # it (the landing review, m-3). Read once for the wall, only when a card shows tasks.
+    behind = optional(TASKS, lambda wanted: {'count': len(tasks_read.unplanned())}).get('count', 0)
     chips = optional(CHIPS, lambda wanted: _placements(wanted, user))
     # From the water just read: no value is read again, and the fish's limits once for all the cards that show it.
     charts = optional(CHART, lambda wanted: water_calculation.charts_of(wanted, water, now))
@@ -448,6 +452,7 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
             lines=lines, drift=weigh(lines), water=tuple(water.get(unit.pk, ())),
             withdrawal=tuple(withdrawals.get(unit.pk, ())), treatments=tuple(treatments.get(unit.pk, ())),
             events=tuple(events.get(unit.pk, ())), lice=counts.get(unit.pk), tasks=tasks.get(unit.pk),
+            tasks_unplanned=behind,
             chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed), chart=charts.get(unit.pk),
             chart_view=(deffeyes.FULL if (choice.chart == CHART_FULL) != (str(unit.pk) in choice.zoom)
                         else deffeyes.CLOSE),

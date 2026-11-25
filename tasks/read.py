@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from functools import reduce
 from operator import or_
 
-from django.db.models import BooleanField, Case, Count, IntegerField, OuterRef, Q, Subquery, Value, When
+from django.db.models import BooleanField, Case, Count, F, IntegerField, OuterRef, Q, Subquery, Value, When
 from django.db.models.functions import Coalesce
 
 from core import people
@@ -127,16 +127,21 @@ def unplanned():
     generate_tasks`, run every hour by the server's jobs) has not made them, so today's tasks of each are missing from
     every count and list. Pages never make them (the data-layering audit, M-3: a read writes nothing, and the landing
     page must not fail on the planning): they say how many are behind, and the job makes them. A recurring task that
-    starts after today is not behind. Two queries at most, whatever the number of tasks."""
+    starts after today is not behind, nor one planned up to its last day. Two queries at most, whatever the number of
+    tasks."""
     from farm.stock.dates import site_today
     latest = max(clock.today for clock in clocks())
     candidates = (TaskSeries.objects.filter(is_active=True)
                   .filter(Q(generated_until__lt=latest) | Q(generated_until__isnull=True, starts_on__lte=latest))
+                  .filter(Q(ends_on__isnull=True) | Q(generated_until__isnull=True) | Q(ends_on__gt=F('generated_until')))
                   .select_related(*SERIES_PLACES))
 
     def behind(series):
-        today = site_today(series.place_site)         # the day tasks.services.materialise plans to
-        return series.generated_until < today if series.generated_until else series.starts_on <= today
+        # up to its place's today (the day tasks.services.materialise plans to), or its last day when that came first
+        until = site_today(series.place_site)
+        if series.ends_on is not None:
+            until = min(until, series.ends_on)
+        return series.generated_until < until if series.generated_until else series.starts_on <= until
     return [series for series in candidates if behind(series)]
 
 

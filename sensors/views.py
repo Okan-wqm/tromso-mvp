@@ -494,26 +494,25 @@ def alarm_events(request):
         'binding__system', 'binding__equipment').prefetch_related(
         'alarm__acknowledgements__user').order_by(F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
+    shown = list(page.object_list)               # the page's rows read once, for the rows and for who may acknowledge
     if ui.is_next(request):
-        props = pages.alarm_events_props(request, page.object_list, page=page, connected=alarms_read.connected(),
-                                         acknowledgeable=_acknowledgeable(request.user, page.object_list))
+        props = pages.alarm_events_props(request, shown, page=page, connected=alarms_read.connected(),
+                                         acknowledgeable=_acknowledgeable(request.user, shown))
         # the classic page's {% alarm_watch %} above it, drawn by the server
         return _next_list(request, 'sensors:alarm_events', props, above='sensors/_alarm_watch.html')
     return render_page(request, 'sensors/alarm_events.html', _context(
-        'sensors:alarm_events', page=page, events=page.object_list, connected=alarms_read.connected(),
-        acknowledgeable=_acknowledgeable(request.user, page.object_list)))
+        'sensors:alarm_events', page=page, events=shown, connected=alarms_read.connected(),
+        acknowledgeable=_acknowledgeable(request.user, shown)))
 
 
 def _acknowledgeable(user, events):
-    """The events of the page whose Acknowledge button is shown (_may_acknowledge), for both pages alike."""
-    return {event.pk for event in events if _may_acknowledge(user, event)}
-
-
-def _may_acknowledge(user, event):
-    """Whether the Acknowledge button is shown: the alarms' one rule (alarms.read.may_acknowledge) on the event's alarm;
-    an event the alarm loop has not mirrored yet has notified nobody, so only Alarms: Edit may (the rule's first part)."""
-    alarm = getattr(event, 'alarm', None)
-    return alarms_read.may_acknowledge(user, alarm) if alarm is not None else user.has_perm(alarms_read.ACKNOWLEDGE)
+    """The events of the page whose Acknowledge button is shown, for both pages alike: the alarms' one rule
+    (alarms.read.acknowledgeable, one query for the page) on each event's alarm; an event the alarm loop has not
+    mirrored yet has notified nobody, so only Alarms: Edit may (the rule's first part)."""
+    alarms = {event.pk: getattr(event, 'alarm', None) for event in events}
+    may = alarms_read.acknowledgeable(user, alarms.values())
+    edit = user.has_perm(alarms_read.ACKNOWLEDGE)
+    return {pk for pk, alarm in alarms.items() if (alarm.pk in may if alarm is not None else edit)}
 
 
 @require_POST

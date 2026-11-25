@@ -6,4 +6,5 @@
     <div><dt>{% trans "Due today" %}</dt><dd>{{ tasks.due_today|default:0 }}</dd></div>
   </dl>
   {% endwith %}
+  {% if card.tasks_unplanned %}<p class="monitor-note" role="status">{% blocktrans trimmed count count=card.tasks_unplanned %}{{ count }} recurring task not planned up to today{% plural %}{{ count }} recurring tasks not planned up to today{% endblocktrans %}</p>{% endif %}
 </section>

@@ -20,14 +20,17 @@ from core import sealing
 
 from hr import read as hr_read
 
-from .models import RANK, RecipientRule, Source
+from . import place
+from .models import RANK, Channel, RecipientRule, Source
 
 
 class Router:
-    """The recipient rules as one pass reads them: three queries at most (the rules, the roles' members, who is on
-    shift, the last only when a rule asks)."""
+    """The recipient rules as one pass reads them, for the alarms it routes: three queries at most (the rules, the roles'
+    members, who is on shift, the last only when a rule asks), and one for which of `alarms` lie on a sealed cell. The
+    alarms are given when it is made (review L1): a router that has not read which of them are sealed would route a
+    sealed alarm to everyone, so there is no way to make one that has not."""
 
-    def __init__(self, now):
+    def __init__(self, now, alarms):
         self.now = now
         self.rules = list(RecipientRule.objects.filter(is_active=True).select_related('user', 'role')
                           .order_by('created_at', 'id'))
@@ -37,16 +40,19 @@ class Router:
                            .select_related('user').order_by('user__username')):
             self.members[membership.group_id].append(membership.user)
         self._on_shift = None
-        self.sealed = set()
         self._sees = {}
+        self.routed = {alarm.pk for alarm in alarms}
+        self.sealed = self._sealed(self.routed)
 
-    def prepare(self, alarms):
-        """Reads which of `alarms` lie on a sealed cell: those someone outside every team may not see (one query)."""
+    @staticmethod
+    def _sealed(ids):
+        """Which of the alarms `ids` lie on a sealed cell: those someone outside every team may not see (one query)."""
         from .models import Alarm
-        ids = [alarm.pk for alarm in alarms]
+        if not ids:
+            return set()
         with sealing.as_viewer(AnonymousUser()):
-            open_to_all = set(Alarm.objects.filter(pk__in=ids).values_list('pk', flat=True))
-        self.sealed = set(ids) - open_to_all
+            open_to_all = set(Alarm.objects.filter(pk__in=list(ids)).values_list('pk', flat=True))
+        return set(ids) - open_to_all
 
     def sees(self, person, alarm):
         """Whether `person` may see `alarm` (asked only for an alarm on a sealed cell)."""
@@ -86,6 +92,8 @@ class Router:
         """[(user, rule)] notified of the alarm at `level`, each person once, by username. An alarm on a sealed cell
         goes to the people of the rules who may see it; when no rule names anyone who may, it goes at its first level
         to whoever keeps those fish: the experiment's lead and the people holding Oversee (review F8; `rule` None)."""
+        if alarm.pk not in self.routed:
+            raise ValueError(f'alarm {alarm.pk} is routed by a router not made for it: its seal was not read')
         found = {}
         reaching = self.reaching(alarm)
         for rule in reaching:
@@ -99,14 +107,20 @@ class Router:
                 found.setdefault(person.pk, (person, None))
         return sorted(found.values(), key=lambda pair: pair[0].get_username())
 
+    def deliveries(self, alarm, level):
+        """[(user, channel, rule)] of `recipients`: the rule's channel, or push for a keeper of the fish (no rule)."""
+        return [(user, rule.channel if rule is not None else Channel.PUSH, rule)
+                for user, rule in self.recipients(alarm, level)]
+
     def keepers(self, alarm):
         """Who keeps the fish of a sealed alarm's cell: its experiment's live lead and the active Oversee holders, among
-        those who may see the alarm."""
+        those who may see the alarm. The cell is the alarm's place (alarms/place.py: its point's, its unit subject's or
+        its sensor channel's), so a sensor alarm, which has no point, finds them too (review W4)."""
         provider = sealing.provider()
-        if provider is None or alarm.point_id is None:
+        unit, system = place.of_alarm(alarm)
+        if provider is None or (unit is None and system is None):
             return []
-        point = alarm.point
-        return [person for person in provider.keepers(point.unit_id, point.system_id) if self.sees(person, alarm)]
+        return [person for person in provider.keepers(unit, system) if self.sees(person, alarm)]
 
     def next_level(self, alarm, level):
         """The first level above `level` with a rule that reaches the alarm, or None."""
@@ -115,11 +129,9 @@ class Router:
 
 def recipients(alarm, level, now):
     """[(user, rule)] notified of the alarm at `level` (`Router`)."""
-    router = Router(now)
-    router.prepare([alarm])
-    return router.recipients(alarm, level)
+    return Router(now, [alarm]).recipients(alarm, level)
 
 
 def next_level(alarm, level, now=None):
     """The first level above `level` with a rule that reaches the alarm (`Router`)."""
-    return Router(now).next_level(alarm, level)
+    return Router(now, [alarm]).next_level(alarm, level)

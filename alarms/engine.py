@@ -24,7 +24,7 @@ from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmSubjectState, Channel, Escalation, Notification,
+from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification,
                      NotificationKind, Severity, Source)
 
 logger = logging.getLogger(__name__)
@@ -61,8 +61,7 @@ def _route(alarms, now, summary, rules, resumed=None):
     if not alarms:
         return
     resumed = resumed or {}
-    router = routing.Router(now)
-    router.prepare(alarms)
+    router = routing.Router(now, alarms)
     ids = [alarm.pk for alarm in alarms]
     levels = dict(Escalation.objects.filter(alarm__in=ids).values('alarm').annotate(top=Max('level'))
                   .values_list('alarm', 'top'))
@@ -76,8 +75,7 @@ def _route(alarms, now, summary, rules, resumed=None):
         level = levels.get(alarm.pk, 0)
         while True:
             key = (alarm.pk, level)
-            for user, rule in router.recipients(alarm, level):
-                channel = rule.channel if rule is not None else Channel.PUSH     # a keeper of a sealed cell's fish
+            for user, channel, rule in router.deliveries(alarm, level):
                 if (user.pk, channel) not in sent[key]:
                     sent[key].add((user.pk, channel))
                     first.setdefault(key, now)
@@ -104,16 +102,16 @@ def _remind(alarms, now, summary, ended):
         return
     told = set(Notification.objects.filter(shelve__in=[ended[alarm.pk] for alarm in alarms],
                                            kind=NotificationKind.RESUMED).values_list('shelve', 'recipient', 'channel'))
-    router = routing.Router(now)
+    router = routing.Router(now, alarms)
     levels = dict(Escalation.objects.filter(alarm__in=[alarm.pk for alarm in alarms]).values('alarm')
                   .annotate(top=Max('level')).values_list('alarm', 'top'))
     queued = []
     for alarm in alarms:
         shelve, level = ended[alarm.pk], levels.get(alarm.pk, 0)
-        for user, rule in router.recipients(alarm, level):
-            if (shelve.pk, user.pk, rule.channel) not in told:
-                told.add((shelve.pk, user.pk, rule.channel))
-                queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
+        for user, channel, rule in router.deliveries(alarm, level):
+            if (shelve.pk, user.pk, channel) not in told:
+                told.add((shelve.pk, user.pk, channel))
+                queued.append(Notification(alarm=alarm, recipient=user, channel=channel, level=level, rule=rule,
                                            queued_at=now, kind=NotificationKind.RESUMED, shelve=shelve))
     summary.queued += len(services.queue_many(queued))
 

@@ -53,6 +53,7 @@ from sensors import alarms as sensor_alarms, clock as sensor_clock
 from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
+from .place import UNIT_PREFIXES
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
 logger = logging.getLogger(__name__)
@@ -404,9 +405,6 @@ def _read(units, now):
 def water_key(unit_id, slot, severity):
     """The subject of a unit's quantity at a level: the unit's, never its point's (cross review F7)."""
     return f'water:unit:{unit_id}:{slot}:{severity}'
-
-
-UNIT_PREFIXES = ('water:unit:', 'system:unit:')
 
 
 def _removed(units, now):

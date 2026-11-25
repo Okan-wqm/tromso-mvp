@@ -20,7 +20,7 @@ from django.db.models import Q
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel, SealedManager
-from farm.models import ProductionDepartment, SamplingPoint, Site
+from farm.models import ProductionDepartment, SamplingPoint, Site, System, Tank
 from farm.water.parameters import LIMIT_CHOICES
 from sensors.models import AlarmEvent, Device
 from sensors.models.alarm import Severity
@@ -84,6 +84,12 @@ class Alarm(models.Model):
                                               related_name='alarms', verbose_name=_('Production department'))
     opened_at = models.DateTimeField(_('Opened at'), db_index=True)
     summary = models.CharField(_('What'), max_length=300)
+    # Where it is, decided when it opens (alarms/place.py: its point, its subject's unit, or its sensor channel's place
+    # then): what its seal, the log's stamp and the keepers of its fish read. Empty for an alarm about no unit.
+    unit = models.ForeignKey(Tank, null=True, blank=True, on_delete=models.PROTECT, related_name='alarms',
+                             verbose_name=_('Unit'))
+    system = models.ForeignKey(System, null=True, blank=True, on_delete=models.PROTECT, related_name='alarms',
+                               verbose_name=_('System'))
 
     objects = SealedManager()
 

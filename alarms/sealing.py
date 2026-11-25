@@ -7,7 +7,9 @@ from core.sealing import declare
 
 def declare_all():
     from . import models as m
-    declare(m.Alarm, part='water', unit='point__unit', system='point__system', day='opened_at',
+    # Its place is kept on it when it opens (alarms/place.py: a unit subject's, a point's, a sensor channel's then), and
+    # a row written without one is still sealed by its point (fail closed).
+    declare(m.Alarm, part='water', unit=('unit', 'point__unit'), system=('system', 'point__system'), day='opened_at',
             via=('sensor_event',))
     for model in (m.AlarmClearance, m.Escalation, m.Acknowledgement, m.Notification, m.AlarmShelve):
         declare(model, part='water', via=('alarm',))

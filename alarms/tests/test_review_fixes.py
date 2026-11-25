@@ -184,7 +184,8 @@ class QueueTests(Case):
 class SnoozeRuleTests(Case):
     def setUp(self):
         super().setUp()
-        self.snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
+        self.snoozer = may_record(get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x'),
+                                  'add_alarmshelve')
         self.rule()
         self.sample(5.5)
         self.loop()

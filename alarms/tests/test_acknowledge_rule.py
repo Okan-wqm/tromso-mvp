@@ -70,3 +70,21 @@ class SensorEventsPageTests(AlarmsCase):
         self.assertContains(page, reverse('sensors:alarm_event_acknowledge', args=[self.event.pk]))
         self.client.post(reverse('sensors:alarm_event_acknowledge', args=[self.event.pk]))
         self.assertEqual(Acknowledgement.objects.get().user, self.viewer)
+
+    def test_who_may_acknowledge_is_asked_once_for_the_page(self):
+        """The landing review, m-9: the rule is asked for the whole page in one query, not once per event."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from ..sources import mirror
+
+        def queries():
+            with CaptureQueriesContext(connection) as seen:
+                self.assertEqual(self.client.get(reverse('sensors:alarm_events')).status_code, 200)
+            return len(seen)
+        mirror(self.event)
+        one = queries()
+        for minutes in (1, 2, 3):
+            mirror(AlarmEvent.objects.create(rule=self.event.rule, channel_no=self.event.channel_no, peak=4,
+                                             opened_at=self.now - timedelta(minutes=minutes), binding=self.event.binding))
+        self.assertEqual(queries(), one)

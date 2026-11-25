@@ -20,6 +20,7 @@ from .. import outbox, read, services
 from ..models import Alarm, AlarmShelve, AlarmShelveEnd, Escalation, Notification, RecipientRule, SeverityPolicy
 from . import AlarmsCase
 from .doubles import RecordingTransport
+from farm.tests.helpers import may_record
 
 SNOOZER = ('view_alarm', 'view_alarmshelve', 'add_alarmshelve')
 
@@ -33,7 +34,8 @@ class SnoozeCase(AlarmsCase):
         self.sample(5.5)
         self.loop()
         self.alarm = self.critical()
-        self.snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x', first_name='Siri')
+        self.snoozer = may_record(get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x', first_name='Siri'),
+                                  'add_alarmshelve')
         self.snoozer.groups.add(role('Alarm snoozer', *SNOOZER))
 
     def at(self, minutes):

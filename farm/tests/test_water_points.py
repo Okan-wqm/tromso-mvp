@@ -25,7 +25,7 @@ from ..models.water_point import (FLOW_ROLE, OUTLET_KINDS, STREAM_KINDS, FlowRol
 from ..resources.water_point import SamplingPointResource
 from ..water import parameters, points, read, services
 from ..water.evaluate import Status
-from .helpers import point_of, role
+from .helpers import may_record, point_of, role
 from .test_stock import make_unit
 from .test_water import WaterTestCase
 from farm import withdrawal_gate
@@ -225,6 +225,10 @@ class ShareNoteTests(PointTestCase):
 
 # ---- the points a new unit or system starts with ------------------------------------------------------------
 class DefaultPointTests(PointTestCase):
+    def setUp(self):
+        super().setUp()
+        may_record(self.user, 'add_tank', 'add_system', 'add_equipment')   # a new owner's points: the service asks (L-6)
+
     def kinds(self, owner):
         return sorted((point.kind, point.name) for point in self.named(owner).values())
 

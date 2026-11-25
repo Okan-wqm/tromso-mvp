@@ -22,7 +22,7 @@ from django.test import SimpleTestCase, TransactionTestCase
 from django.utils import timezone
 
 from farm.models import ProductionDepartment, Site, System, WaterLimit
-from farm.tests.helpers import make_species, point_of, role, stock_fish
+from farm.tests.helpers import make_species, may_record, point_of, role, stock_fish
 from farm.tests.test_stock import make_unit
 from farm.water import services as water
 from sensors import bindings
@@ -46,6 +46,7 @@ class Farm:
         self.keeper = User.objects.create_user('keeper', 'keeper@example.com', 'x')
         self.keeper.groups.add(role('Water keeper', 'view_watermeasurement', 'add_watermeasurement',
                                     'view_stockoperation', 'add_stockoperation'))
+        may_record(self.keeper, 'add_binding')          # binds the probe: the binding service asks (L-6)
         self.site = Site.objects.create(name='Bergen', code='BG', altitude=D(0))
         hall = ProductionDepartment.objects.create(site=self.site, name='Hall A', code='HA')
         ras = System.objects.create(name='RAS 1', code='R1', site=self.site, production_department=hall)

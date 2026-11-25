@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from farm.models import ProductionDepartment, Site, System, WaterLimit
-from farm.tests.helpers import make_species, point_of, role, stock_fish
+from farm.tests.helpers import make_species, may_record, point_of, role, stock_fish
 from farm.tests.test_stock import make_unit
 from farm.water import services as water
 
@@ -24,6 +24,7 @@ class AlarmsCase(TestCase):
         self.keeper = User.objects.create_user('keeper', 'keeper@example.com', 'x')
         self.keeper.groups.add(role('Water keeper', 'view_watermeasurement', 'add_watermeasurement',
                                     'delete_watermeasurement', 'view_stockoperation', 'add_stockoperation'))
+        may_record(self.keeper, 'add_binding')          # binds the fixtures' sensors: the binding service asks (L-6)
         self.bergen = Site.objects.create(name='Bergen', code='BG', altitude=D(0))
         self.oslo = Site.objects.create(name='Oslo', code='OS', altitude=D(0))
         self.hall = ProductionDepartment.objects.create(site=self.bergen, name='Hall A', code='HA')

@@ -432,8 +432,8 @@ class HarvestedPageTests(HarvestTestCase):
         built = []
         real = harvest_read.harvests
 
-        def spy(lines, **kwargs):
-            rows = real(lines, **kwargs)
+        def spy(*args, **kwargs):
+            rows = real(*args, **kwargs)
             built.append(len(rows))
             return rows
         with mock.patch.object(harvest_views, 'PAGE_SIZE', 1), mock.patch.object(harvest_read, 'harvests', spy):

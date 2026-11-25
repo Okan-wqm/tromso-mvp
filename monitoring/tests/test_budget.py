@@ -70,7 +70,7 @@ class BudgetTests(Counting, MonitoringCase):
 
     def test_simple_cards_skip_the_detailed_sources(self):
         units = self.farm_of(4)
-        with mock.patch.object(read.harvest_views, 'withdrawals', return_value={}):     # (the registry reads treatments)
+        with mock.patch.object(read.check, 'in_force_now', return_value={}):     # (the registry reads treatments)
             with CaptureQueriesContext(connection) as simple:
                 read.cards(units, self.reader, chosen({unit.pk: 'simple' for unit in units}))
             with CaptureQueriesContext(connection) as detailed:

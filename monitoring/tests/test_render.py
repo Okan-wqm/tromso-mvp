@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from django.conf import settings
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -62,9 +62,9 @@ class AgeTests(SimpleTestCase):
                 self.assertEqual(render.age_text(seconds), text)
 
 
-class FaceTests(SimpleTestCase):
-    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
-    databases = {'default'}
+class FaceTests(TestCase):
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
 
     def test_a_value_says_its_figure_unit_status_origin_and_age_in_words(self):
         face = render.face(reading('oxygen_mg_l', '8.1'), NOW)
@@ -142,10 +142,10 @@ class FaceTests(SimpleTestCase):
         self.assertEqual(render.face(found, NOW).note, 'From the sample. Formula 4: ionic strength 0.0021.')
 
 
-class BarTests(SimpleTestCase):
+class BarTests(TestCase):
     """The bands of a bar are what evaluate.judge says of the values in them (F-088): an open bound is no band."""
-    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
-    databases = {'default'}
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
 
 
     def bands(self, value, **bounds):

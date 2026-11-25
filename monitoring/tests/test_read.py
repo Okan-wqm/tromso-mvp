@@ -7,7 +7,7 @@ from unittest import mock
 
 from django.db import connection
 from django.http import QueryDict
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
@@ -75,9 +75,9 @@ def card(**changes):
     return read.Card(**values)
 
 
-class LadderTests(SimpleTestCase):
-    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
-    databases = {'default'}
+class LadderTests(TestCase):
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
 
     def key(self, **changes):
         return card(**changes).state.key

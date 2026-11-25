@@ -9,7 +9,7 @@ import random
 from decimal import ROUND_HALF_UP, Decimal as D
 from types import SimpleNamespace
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from farm.tests.test_bound_text import BOUNDS, decimals_of, judged, row_of, worked_out
@@ -130,10 +130,10 @@ class NeverInsideItsBoundTests(SimpleTestCase):
         self.assertEqual((reading.value, reading.exact, reading.judged), (D('60.0'), D('59.988221'), Status.CRITICAL))
 
 
-class WorkedOutCardTests(SimpleTestCase):
+class WorkedOutCardTests(TestCase):
     """On hand-made cards: the card's reason, the band's chip and the bar's name."""
-    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
-    databases = {'default'}
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
 
 
     ROW = dict(critical_low='60.0', warning_low='70.0', warning_high='110.0', critical_high='120.0')

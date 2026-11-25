@@ -6,7 +6,7 @@ worked out with. Each case is a probe of the review (P1-P8) turned round: it ass
 from datetime import datetime, timedelta, timezone as dt_timezone
 from decimal import Decimal
 
-from django.test import SimpleTestCase
+from django.test import TestCase
 
 from .. import withdrawal_gate
 from ..water import read
@@ -20,9 +20,9 @@ from .test_water_sources import SourcesCase
 D = Decimal
 
 
-class ClockSkewTests(SimpleTestCase):
-    # The water's freshness rules are the database's rows, read without a stand-in (the data-layering audit, M-1).
-    databases = {'default'}
+class ClockSkewTests(TestCase):
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
 
     def test_a_value_from_further_ahead_than_the_skew_is_not_fresh(self):
         now = datetime(2026, 11, 8, 12, tzinfo=dt_timezone.utc)

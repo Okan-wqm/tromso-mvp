@@ -41,10 +41,25 @@ def chip(kind, text):
     return {'kind': kind, 'text': str(text)}
 
 
-def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=()):
-    """One cell: its text (a link to `href`), a sub-line per item of `sub` (empty items left out), or a `chip`."""
-    return {'text': None if text is None else str(text), 'href': href or None, 'strong': bool(strong),
+def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=(), gauge=None, details=None):
+    """One cell: its text (a link to `href`), a sub-line per item of `sub` (empty items left out), or a `chip`; a `gauge`
+    (below) is drawn under the text; `details` (below) is drawn in place of the text, closed."""
+    said = {'text': None if text is None else str(text), 'href': href or None, 'strong': bool(strong),
             'chip': chip, 'chips': list(chips), 'sub': [str(item) for item in sub if item not in (None, '')]}
+    if gauge is not None:
+        said['gauge'] = gauge
+    if details is not None:
+        said['details'] = details
+    return said
+
+
+def gauge(share, text, status=None):
+    """A share of a whole as a bar and in words (frontend/islands/ui/Gauge.tsx): `share` in % (None is 0; the bar is full
+    from 100), `text` the share said ("12 % of capacity": the bar is never the only cue), `status` critical or warning."""
+    if status not in (None, 'critical', 'warning'):
+        raise ValueError(f'no gauge status {status!r}')
+    value = 0.0 if share in (None, '') else max(0.0, min(float(share), 100.0))
+    return {'value': round(value, 1), 'text': str(text), 'status': status}
 
 
 def link(href, label, icon, danger=False):
@@ -52,14 +67,30 @@ def link(href, label, icon, danger=False):
     return {'kind': 'link', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger)}
 
 
-def post(href, label, icon, fields=(), danger=False):
-    """A row action that posts at once (with the page's CSRF token), as the classic page's small form does."""
-    return {'kind': 'post', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger),
+def post(href, label, icon, fields=(), danger=False, labelled=False):
+    """A row action that posts at once (with the page's CSRF token), as the classic page's small form does; `labelled`
+    draws its word beside the icon (an action that changes a safety state: Acknowledge, Resolve)."""
+    said = {'kind': 'post', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger),
             'fields': [{'name': name, 'value': str(value)} for name, value in fields]}
+    if labelled:
+        said['labelled'] = True
+    return said
+
+
+def details(summary, lines):
+    """A cell's closed disclosure: its summary, and its lines (empty ones left out) shown when it is opened."""
+    return {'summary': str(summary), 'lines': [str(line) for line in lines if line not in (None, '')]}
 
 
 def row(key, cells, actions=(), status=None, voided=False):
     return {'key': str(key), 'status': status, 'voided': bool(voided), 'cells': cells, 'actions': list(actions)}
+
+
+def group(key, title, rows, chips=(), meta=None):
+    """A group of a list's rows, drawn as a plate of its own with its own table of the shared columns (ListPage.tsx
+    `groups`): its title, chips beside it, a meta line, and the keys of its rows (each a `row` of the table)."""
+    return {'key': str(key), 'title': str(title), 'chips': list(chips), 'meta': None if meta is None else str(meta),
+            'rows': [str(each) for each in rows]}
 
 
 def choice(name, label, chosen, options, groups=()):
@@ -85,13 +116,20 @@ def tabs(label, items):
                                           for href, text, count, current in items]}
 
 
-def notice(key, tone, text):
+def notice(key, tone, text, link=None):
+    """A sentence above the table in its tone; `link` (href, label) ends it with a link ("Show them")."""
     if tone not in TONES:
         raise ValueError(f'no notice tone {tone!r}')
-    return {'key': key, 'tone': tone, 'text': str(text)}
+    said = {'key': key, 'tone': tone, 'text': str(text)}
+    if link is not None:
+        said['link'] = {'href': link[0], 'label': str(link[1])}
+    return said
 
 
-def _pager(page, pager_query):
+def pager(page, pager_query):
+    """The pager of a list page (crud/_pager.html's words): None for one page; else the range, the page and the
+    previous/next links, each keeping the query (`pager_query`, without page=). Every list-page island's props use it: a
+    tab's (list_props) and a page's that is not a tab (sensors/pages.py)."""
     if page is None or page.paginator.num_pages <= 1:
         return None
     at = f'?{pager_query}&page=' if pager_query else '?page='
@@ -105,40 +143,57 @@ def _pager(page, pager_query):
     }
 
 
+_pager = pager     # the earlier private name, kept for branches that still call it
+
+
+def toolbar(view, context, filters, keep=()):
+    """A list's toolbar (ListPage's ListToolbar): the search, `filters` (choice, day) and what the address holds besides
+    them sent again (a view, a tab; `keep`: (name, value) the form must send whatever the address says, a week), and the
+    Add link. The classic list's words (crud/list.html)."""
+    r, request = view.resource, view.request
+    plural, name = r.plural, r.name
+    shown = {'q', 'page', ui.PARAM, *(each['name'] for each in filters), *(key for key, _value in keep)}
+    search = _('Search %(plural)s') % {'plural': plural}
+    return {
+        'label': search,
+        'search': {'name': 'q', 'value': context.get('query', ''), 'label': search,
+                   'placeholder': str(r.search_placeholder) if r.search_placeholder else search},
+        'keep': [*({'name': key, 'value': str(value)} for key, value in keep),
+                 *({'name': key, 'value': value} for key, value in request.GET.items() if key not in shown)],
+        'filters': filters, 'submit': _('Filter'),
+        'add': {'href': context['create_url'], 'label': _('Add %(name)s') % {'name': name}} if context.get('can_add') else None,
+    }
+
+
+def empty(view, context):
+    """What an empty list says (crud/list.html): none matching the search with the way back, or none yet with what to do."""
+    r, query = view.resource, context.get('query', '')
+    if query:
+        return {'title': _('No %(plural)s match “%(query)s”') % {'plural': r.plural, 'query': query},
+                'text': _('Try another search.'),
+                'link': {'href': context['list_url'], 'label': _('Show all %(plural)s') % {'plural': r.plural}}, 'add': None}
+    return {'title': _('No %(plural)s yet') % {'plural': r.plural},
+            'text': str(r.empty_text) if r.empty_text else _('Add the first %(name)s.') % {'name': r.name},
+            'link': None,
+            'add': {'href': context['create_url'], 'label': _('Add %(name)s') % {'name': r.name}} if context.get('can_add') else None}
+
+
 def list_props(view, objects, context):
     """Everything the list-page island draws for `view` (a core.crud.ListView) over the rows it read (`objects`, this
     page's) and the context the classic page gets (`context`: query, page, pager_query and the tab's filter values)."""
     r, request = view.resource, view.request
-    name, plural, query = r.name, r.plural, context.get('query', '')
-    filters = r.list_filters(view, context)
-    shown = {'q', 'page', ui.PARAM, *(each['name'] for each in filters)}     # the look's switch is the cookie's
     table = r.list_rows(view, objects, context)
-    add = {'href': context['create_url'], 'label': _('Add %(name)s') % {'name': name}} if context.get('can_add') else None
-    if query:
-        empty = {'title': _('No %(plural)s match “%(query)s”') % {'plural': plural, 'query': query},
-                 'text': _('Try another search.'),
-                 'link': {'href': context['list_url'], 'label': _('Show all %(plural)s') % {'plural': plural}}, 'add': None}
-    else:
-        empty = {'title': _('No %(plural)s yet') % {'plural': plural},
-                 'text': str(r.empty_text) if r.empty_text else _('Add the first %(name)s.') % {'name': name},
-                 'link': None, 'add': add}
-    search = _('Search %(plural)s') % {'plural': plural}
     return {
         'csrfToken': get_token(request),
         'tabs': table.get('tabs'),
-        'toolbar': {
-            'label': search,
-            'search': {'name': 'q', 'value': query, 'label': search,
-                       'placeholder': str(r.search_placeholder) if r.search_placeholder else search},
-            'keep': [{'name': key, 'value': value} for key, value in request.GET.items() if key not in shown],
-            'filters': filters, 'submit': _('Filter'), 'add': add,
-        },
+        'toolbar': toolbar(view, context, r.list_filters(view, context)),
         'notices': table.get('notices', []),
         'lines': [str(line) for line in table.get('lines', ())],
         'table': {'label': str(r.title(view.mount)), 'columns': table['columns'], 'rows': table['rows'],
                   'actionsLabel': _('Actions')},
-        'empty': empty,
-        'pager': _pager(context.get('page'), context.get('pager_query', '')),
+        'timeline': table.get('timeline'),
+        'empty': empty(view, context),
+        'pager': pager(context.get('page'), context.get('pager_query', '')),
     }
 
 

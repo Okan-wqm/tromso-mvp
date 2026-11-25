@@ -6,9 +6,11 @@ from datetime import timedelta
 from urllib.parse import urlencode
 
 from django.urls import reverse
+from django.utils import formats
+from django.utils.html import strip_tags
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
-from core import formpanels
+from core import formpanels, listprops as L
 from core.crud import Resource, RowList
 from core.dates import read_day
 from core.widgets import NONE
@@ -19,6 +21,7 @@ from . import places, read, services, words
 from .forms import SeriesChecklistLines, TaskChecklistLines, TaskForm, TaskSeriesForm
 from .models import Category, Priority, Status, Task, TaskSeries
 
+PRIORITY_CHIPS = {Priority.URGENT: 'critical', Priority.HIGH: 'warning'}   # the new look's marks of a priority
 FILTERS = ('view', 'q', 'site', 'location', 'assignee', 'priority', 'category', 'from', 'to')
 ME = 'me'
 
@@ -74,6 +77,8 @@ class TaskResource(Resource):
     url_prefix = 'operations/tasks'
     search_fields = ['title', 'description']
     list_template = 'tasks/task_list.html'
+    # The new look: the same context drawn by the server (its views, filters, rows and drawer as the classic page's)
+    list_template_next = 'tasks/task_list_next.html'
     form_template = 'tasks/task_form.html'
     icon = 'list-checks'
     row_lists = (TaskChecklist,)
@@ -266,3 +271,63 @@ class TaskSeriesResource(Resource):
             today = site_today(series.place_site)
             series.next_on = series.next_date(today - timedelta(days=1)) if series.is_active else None
         return objects, {'state': state, 'tasks_url': reverse('tasks:task_list')}
+
+    # The new look (core/listprops.py): the classic list's words (tasks/series_list.html), its rows as the island's.
+    search_placeholder = _('Search recurring tasks')
+    empty_text = _('A job that comes back: every day, on chosen weekdays, or on a day of the month.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [L.choice('state', _('Status'), context['state'], [('', _('Active and paused')), ('active', _('Active')),
+                                                                 ('paused', _('Paused'))])]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        from .templatetags.tasks import people, place_context, place_label, rule_text
+        day = lambda value: formats.date_format(value, 'DATE_FORMAT')     # noqa: E731
+        rows = []
+        for series in objects:
+            place, names = series.place, people(series.assignees.all())
+            span = [gettext('from %(first)s') % {'first': day(series.starts_on)}]
+            if series.ends_on:
+                span.append(gettext('until %(last)s') % {'last': day(series.ends_on)})
+            actions = []
+            if context.get('can_delete'):
+                actions.append(L.link(view.url('delete', series.pk), gettext('Delete %(name)s') % {'name': series.title},
+                                      'trash', danger=True))
+            # urgent and high as a chip after the title (the classic list marks them in colour), the others a sub-line
+            marked = PRIORITY_CHIPS.get(series.priority)
+            title = L.title(view, context, series, series.title, sub=[series.get_category_display(), *(
+                () if marked else (series.get_priority_display(),))])
+            title['chips'] = [L.chip(marked, series.get_priority_display())] if marked else []
+            rows.append(L.row(series.pk, {
+                'title': title,
+                'repeats': L.cell(rule_text(series), sub=[' · '.join(span)]),
+                'place': L.cell(place_label(place), sub=[place_context(place)]),
+                'assignees': L.cell(names) if names else L.cell(chip=L.chip('warning', gettext('Nobody'))),
+                'next': L.cell(day(series.next_on) if series.next_on else '—'),
+                'status': L.cell(chip=L.chip('ok', gettext('Active')) if series.is_active
+                                 else L.chip('neutral', gettext('Paused'))),
+            }, actions))
+        # the classic page's note, its link to the Tasks page in the tabs above
+        notice = strip_tags(gettext(
+            'A recurring task plans its tasks up to two weeks ahead; they are on the <a href="%(url)s">Tasks</a> page. '
+            'Changing or pausing it plans the tasks from today on that nobody has touched again; the others stay as they '
+            'are.') % {'url': context['tasks_url']})
+        return {'tabs': task_tabs(view.request, current=None), 'notices': [L.notice('plan', 'neutral', notice)],
+                'columns': [L.column('title', _('Recurring task')), L.column('repeats', _('Repeats')),
+                            L.column('place', _('Location')), L.column('assignees', _('Assignees')),
+                            L.column('next', _('Next')), L.column('status', _('Status'))],
+                'rows': rows}
+
+
+def task_tabs(request, current):
+    """The link tabs of Operations › Tasks on the recurring tasks' page in the new look: Today, Open and Completed (the
+    Tasks page's views, for a person who may read tasks) and Recurring tasks; `current` is the view shown (None: the
+    recurring tasks)."""
+    base, items = reverse('tasks:task_list'), []
+    if request.user.has_perm('tasks.view_task'):
+        items = [(base if key == read.TODAY else f'{base}?view={key}', label, None, key == current)
+                 for key, label in ((read.TODAY, _('Today')), (read.OPEN, _('Open')), (read.COMPLETED, _('Completed')))]
+    items.append((reverse('tasks:taskseries_list'), _('Recurring tasks'), None, current is None))
+    return L.tabs(_('Tasks'), items)

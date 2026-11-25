@@ -2,10 +2,12 @@
 page, with their cards saved as a list on a tab of their own) and Setup › Reference data › Card templates and Card
 template rules (what a card holds, and which unit's card gets which; monitoring/cards/) and pH window scales (the two
 ends of a card's pH window, per water type)."""
+from django.contrib import messages
 from django.db.models import Case, Count, IntegerField, OuterRef, Subquery, Value, When
 from django.db.models.functions import Coalesce
 from django.urls import path
-from django.utils.translation import gettext_lazy as _, ngettext_lazy
+from django.utils.formats import number_format
+from django.utils.translation import gettext_lazy as _, ngettext, ngettext_lazy
 
 from core import formpanels
 from core.crud import Resource, RowList
@@ -13,6 +15,9 @@ from core.crud import Resource, RowList
 from .forms import (BoardUnitFormSet, CardTemplateAssignmentForm, CardTemplateForm, MonitorBoardForm,
                     PhWindowScaleForm)
 from .models import CardTemplate, CardTemplateAssignment, MonitorBoard, MonitorBoardUnit, PhWindowScale
+
+# A board whose screen and distance leave room for this many cards a page or fewer is saved with a warning.
+FEW_A_PAGE = 2
 
 
 class BoardUnits(RowList):
@@ -53,6 +58,20 @@ class MonitorBoardResource(Resource):
     def next_panels(cls, view, form, obj, extra):
         """monitoring/board_form.html in the new look: its row lists."""
         return formpanels.row_list_panels(cls, view, obj, extra)
+
+    @classmethod
+    def after_commit(cls, request, obj, created):
+        """Saved, but its screen and distance leave room for FEW_A_PAGE cards a page or fewer: the person is told what
+        the wall will do and what shows more (review round 2, B3). A pair at which no card can be read never saves
+        (MonitorBoard.clean)."""
+        found = obj.reach()
+        if found is not None and 0 < found.per_page <= FEW_A_PAGE:
+            messages.warning(request, ngettext(
+                'From %(distance)s m this screen shows %(count)d card a page: the wall turns its pages. A nearer '
+                'distance or a larger screen shows more.',
+                'From %(distance)s m this screen shows %(count)d cards a page: the wall turns its pages. A nearer '
+                'distance or a larger screen shows more.', found.per_page) % {
+                    'distance': number_format(obj.distance_m, 1), 'count': found.per_page})
 
     @classmethod
     def queryset(cls):

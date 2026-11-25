@@ -105,13 +105,15 @@ def strings(payload, keys=True):
     return found
 
 
-def unsaid(old_html, payload, ignore=(), new_html=None, once=()):
+def unsaid(old_html, payload, ignore=(), new_html=None, once=(), said_as=None):
     """The items of the old page that the new page does not carry: [] when the new page can say all the old one said.
     The new page is its island's payload and, given `new_html`, what its own server-rendered <main> says around the island
     (the page head: its heading). `ignore` are texts the new page says by design in another way, each named with its
     reason by the caller's test. `once` are texts the old page repeats as layout (a form's tab label on its tab and again
     as its panel's heading) that the new page must say, once at least. A control's name is one control, however many
-    boxes carry it (a group of boxes): it must be carried, not counted."""
+    boxes carry it (a group of boxes): it must be carried, not counted. `said_as` ({old text: new text}) are facts the new
+    page says another way by design (a duration in minutes there, "37 h 30 min" here: core.durations): the old text is
+    carried when the new one is, word for word."""
     carried = strings(payload) + ([value for _kind, value in says(new_html)] if new_html is not None else [])
     left = Counter(carried)
     # a control's name is carried as a value of the payload (a widget's name) or a control of the new page's own markup,
@@ -127,6 +129,10 @@ def unsaid(old_html, payload, ignore=(), new_html=None, once=()):
                 missing.append((kind, value))
             continue
         if value in once and value in left:
+            continue
+        if said_as and value in said_as:
+            if said_as[value] not in left and not any(said_as[value] in each for each in carried):
+                missing.append((kind, value))
             continue
         if left[value] > 0:                     # a value of its own, as many times as the old page says it
             left[value] -= 1

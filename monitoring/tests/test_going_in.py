@@ -198,6 +198,12 @@ class LossesTests(SmallCase):
         self.assertEqual(text(label), 'O₂ · 77.2 % old')
         (old,) = [each for each in label.walk() if 'data-old' in each.attrs]
         self.assertIn('tw:shrink-0', old.classes)
+        # (review round 2, B2) the saturation is a figure in a slot of its own, never in the label's name that gives way
+        (beside,) = [each for each in label.walk() if 'monitor-beside' in each.classes]
+        self.assertEqual(text(beside), '· 77.2 %')
+        self.assertIn('tw:shrink-0', beside.classes)
+        (name,) = [each for each in label.walk() if 'monitor-label' in each.classes]
+        self.assertEqual((text(name), 'tw:truncate' in name.classes), ('O₂', True))
 
 
 class WindowWordsTests(SmallCase):

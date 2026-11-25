@@ -1,0 +1,2 @@
+{% comment %} A task's priority in the new look (`item`: a task or a recurring task): urgent as a critical chip, high as a
+   warning chip, the others as their word, as the classic page marks urgent and high in colour (tasks.css). {% endcomment %}{% if item.priority == "urgent" %}{% include "ui/_chip.html" with kind="critical" text=item.get_priority_display %}{% elif item.priority == "high" %}{% include "ui/_chip.html" with kind="warning" text=item.get_priority_display %}{% else %}<span>{{ item.get_priority_display }}</span>{% endif %}

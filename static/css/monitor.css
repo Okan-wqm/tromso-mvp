@@ -250,7 +250,8 @@ html[data-wall] .monitor-grid:has(> .is-fit) {
   flex: 1 1 auto; min-height: 0; overflow: hidden auto; scrollbar-width: none;
   grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   grid-template-rows: var(--band);
-  grid-auto-rows: max(calc((100dvh - 2 * var(--wall-pad) - var(--band) - var(--rows, 3) * var(--wall-gap)) / var(--rows, 3)), calc(var(--mh, 10) * var(--u-floor) + 1.2 * var(--wall-pad) + 2px));
+  /* (a row: its share of the room under the band, as wall.ts measures it, --room; the whole screen's without the script) */
+  grid-auto-rows: max(calc((var(--room, 100dvh - 2 * var(--wall-pad) - var(--band) - var(--wall-gap)) - (var(--rows, 3) - 1) * var(--wall-gap)) / var(--rows, 3)), calc(var(--mh, 10) * var(--u-floor) + 1.2 * var(--wall-pad) + 2px));
   gap: var(--wall-gap); align-items: stretch;
 }
 html[data-wall] .monitor-band { position: sticky; top: 0; z-index: 2; padding-right: calc(5.4 * var(--wu)); background: var(--surface-canvas); font-size: var(--wu); }
@@ -331,6 +332,13 @@ html[data-wall] .monitor-grid:has(> .is-fit):is([data-poll-state="stale"], [data
 .monitor-template-error { margin: .375rem 0 0; padding: .25rem .5rem; border: 1px dashed var(--crit); border-radius: var(--radius-chip); color: var(--crit-text); font-weight: 700; }
 /* A source that could not be read, on the frame (monitoring/read.py): said in words, never only as "no data". */
 .monitor-failed { margin: .375rem 0 0; font-weight: 700; color: var(--warn-text); }
+
+/* ---- the link from a card to its tank's water history (templates/monitoring/_water_link.html: Tank › Water) -----------
+   The chart icon at the size of the text it stands in, and its words where the card has room (on the Small card they are
+   for a screen reader only); the action's colour, underlined on hover and focus. */
+.monitor-water-link { display: inline-flex; flex: none; align-items: center; gap: .3em; color: var(--action); text-decoration: none; white-space: nowrap; }
+.monitor-water-link .icon { width: 1.1em; height: 1.1em; }
+.monitor-water-link:is(:hover, :focus-visible) .monitor-water-word { text-decoration: underline; }
 
 /* ---- forced colours (Windows high contrast): the state's shape, border and the bars keep their meaning ---------- */
 @media (forced-colors: active) {

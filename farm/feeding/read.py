@@ -684,3 +684,13 @@ def meal_lines(unit_day, batches, today):
              'drift': drift(today, share.measured_on),
              'estimate_days': (today - share.measured_on).days if share.measured_on else None}
             for share in shares]
+
+
+def fed_in(unit, start, end):
+    """[(moment, record)] of the live feeding records of `unit` fed from `start` to before `end` (`fed_moment`), in time
+    order: the feedings a unit's water history marks (Tank › Water)."""
+    zone = zone_of(unit.production_department.site)
+    first, last = start.astimezone(zone).date(), end.astimezone(zone).date()
+    found = [(fed_moment(record), record) for record in FeedingRecord.objects.filter(unit=unit, date__gte=first, date__lte=last)
+             .select_related('unit__production_department__site', 'feed')]
+    return sorted(((at, record) for at, record in found if start <= at < end), key=lambda pair: pair[0])

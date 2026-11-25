@@ -1,19 +1,19 @@
 {% extends base_template %}
-{% load i18n %}
+{% load i18n dates durations %}
 {% comment %} Team overview in the new look (hr.views.team_overview behind ?ui=next): the classic page's figures and words
    (hr/overview.html, hr.read.overview), drawn by the server with the design system's classes. The search and the
    department are one GET form that keeps the week. {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
+{% block head_actions %}{% with week=overview.week %}<nav class="ui-head-actions" aria-label="{% trans 'Week' %}">
+    <a class="ui-btn" href="?week={{ week.previous|date:'Y-m-d' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Previous week" %}</a>
+    <strong class="ui-head-range">{{ week.start|date:"DATE_FORMAT" }} – {{ week.end|date:"DATE_FORMAT" }}</strong>
+    <a class="ui-btn" href="?week={{ week.next|date:'Y-m-d' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Next week" %}</a>
+    <button type="button" class="ui-btn" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button>
+</nav>{% endwith %}{% endblock %}
 {% block content %}
 {% with week=overview.week %}
-<nav class="ui-toolbar" aria-label="{% trans 'Week' %}">
-    <a class="ui-btn" data-variant="ghost" href="?week={{ week.previous|date:'Y-m-d' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Previous week" %}</a>
-    <strong>{{ week.start|date:"DATE_FORMAT" }} – {{ week.end|date:"DATE_FORMAT" }}</strong>
-    <a class="ui-btn" data-variant="ghost" href="?week={{ week.next|date:'Y-m-d' }}{% if chosen_department %}&department={{ chosen_department|urlencode }}{% endif %}">{% trans "Next week" %}</a>
-    <button type="button" class="ui-btn" data-variant="ghost" data-print hidden>{% include "icons/_icon.html" with name="printer" %}{% trans "Print" %}</button>
-</nav>
 <div class="ui-toolbar">
   <form method="get" role="search" aria-label="{% trans 'Search by name or number' %}">
     <input type="hidden" name="week" value="{{ week.start|date:'Y-m-d' }}">
@@ -32,15 +32,15 @@
   <div class="ui-table-wrap" tabindex="0" role="region" aria-label="{{ title }}">
     <table class="ui-table">
       <thead>
-        <tr><th scope="col">{% trans "Employee" %}</th><th scope="col" class="num">{% trans "Working days" %}</th><th scope="col" class="num">{% trans "Off" %}</th><th scope="col" class="num">{% trans "On leave" %}</th><th scope="col" class="num">{% trans "Planned (h)" %}</th><th scope="col" class="num">{% trans "Against the standard week (min)" %}</th></tr>
+        <tr><th scope="col">{% trans "Employee" %}</th><th scope="col" class="num">{% trans "Working days" %}</th><th scope="col" class="num">{% trans "Off" %}</th><th scope="col" class="num">{% trans "On leave" %}</th><th scope="col" class="num">{% trans "Planned (h)" %}</th><th scope="col" class="num">{% trans "Against the standard week" %}</th></tr>
       </thead>
       <tbody>
-        {% for row in overview.rows %}
+        {% for row, meter in rows_next %}
         <tr{% if row.over %} data-status="warning"{% endif %}>
           <th scope="row"><span class="ui-cell-strong">{{ row.employee.full_name }}</span><span class="ui-cell-sub">{% if row.department %}{{ row.department.name }}{% else %}{% trans "Not placed" %}{% endif %}</span></th>
           <td class="num">{{ row.working }}</td><td class="num">{{ row.off }}</td><td class="num">{{ row.leave }}</td>
-          <td class="num">{{ row.planned_hours|floatformat:"-1" }}</td>
-          <td class="num">{% if row.over %}+{% endif %}{{ row.over_minutes }}</td>
+          <td class="num"><span class="ui-meter-figure">{{ row.planned_hours|floatformat:"-1" }}</span><svg class="ui-meter" viewBox="0 0 {{ meter.scale }} 4" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="ui-meter-track" x="0" y="0" width="{{ meter.scale }}" height="4"></rect><rect class="ui-meter-bar"{% if row.over %} data-status="warning"{% endif %} x="0" y="0" width="{{ meter.planned }}" height="4"></rect><line class="ui-meter-tick" x1="{{ meter.standard }}" x2="{{ meter.standard }}" y1="-1" y2="5"></line></svg></td>
+          <td class="num"{% if row.over %} data-status="warning"{% endif %}>{{ row.over_minutes|hours_said:"signed" }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -51,7 +51,7 @@
   <div class="ui-plate-head"><h2 class="ui-plate-title" id="each-day">{% trans "Each day" %}</h2></div>
   <div class="ui-table-wrap" tabindex="0" role="region" aria-labelledby="each-day">
     <table class="ui-table">
-      <thead><tr><th scope="col">{% trans "Day" %}</th>{% for day in week.days %}<th scope="col" class="num">{{ day|date:"D" }} {{ day|date:"MONTH_DAY_FORMAT" }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th scope="col">{% trans "Day" %}</th>{% for day in week.days %}<th scope="col" class="num">{{ day|weekday_day }}</th>{% endfor %}</tr></thead>
       <tbody>
         <tr><th scope="row">{% trans "Working" %}</th>{% for item in overview.footer %}<td class="num">{{ item.working }}</td>{% endfor %}</tr>
         <tr><th scope="row">{% trans "Off" %}</th>{% for item in overview.footer %}<td class="num">{{ item.off }}</td>{% endfor %}</tr>

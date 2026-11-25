@@ -552,7 +552,7 @@ Feeding records) and the operations, **Record feeding** first; for an empty unit
 and max biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit,
 with the water read, its **Water**: the latest value of every parameter with its age, status and limits,
 the worked-out NH₃-N and O₂ saturation, **Record water sample** (the unit fixed, back to the drawer) and
-its water history; for every unit its last 20 operations and 10 feedings, voided ones struck through with
+**History**, the unit's Tank › Water (`farm:tank_water`; in the classic look that address redirects to the unit's history on Water chemistry); for every unit its last 20 operations and 10 feedings, voided ones struck through with
 their reason, each with **Void** while it may be voided.
 
 **Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock
@@ -741,6 +741,7 @@ answers for many units at once (the table is `monitoring/read.py`'s docstring):
 | open health events (every card), treatments and the latest sea-lice count (detailed) | `health.read.open_events`, `recent_treatments`, `latest_counts` |
 | open, overdue and due-today tasks (detailed) | `tasks.read.per_unit` |
 | the Deffeyes chart in its window | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
+| a unit's or a system's water history (Tank › Water, System › Water, behind `?ui=next`) | `farm:water_unit_chart` / `farm:water_system_chart` with `?view=history`: `sensors.read.water_history` (every parameter's `series` on one window, the NH₃-N worked out per sample, every live sample judged as the history page judges it, `judged`, sent as each sample's `status` and `status_text`; the limit bands `bands_of`), each chart in words (`sensors.chart.said`: latest, lowest, highest, gaps; `gap_text`) with its buckets from a backup or the system's channel marked (`buckets.other`, drawn as points of their own as the SVG chart's circles), the events each read by its area's reader (`farm.water.read.history_events` over `farm.feeding.read.fed_in`, `farm.health.read.treatments_on`, `farm.stock.read.harvests_on`, `alarms.read.opened_at`) for the person who may read that area, a day-dated one (treatment, harvest) said as its day or days, never 00:00 (`all_day`, `when`), the Deffeyes replay's address and the Deffeyes for the range (`range_deffeyes`: about 120 replay frames of the window, the diagram of the newest frame that has one from `deffeyes.render` with the pH labels the server placed, its star named with its time, "No diagram after <time>: <why>" in the warning's colour when the window's end has none, the water's path through the time broken where a frame has no diagram, a lone frame a dot, else the reason); a system's points side by side. The page's from and to are the shared date box (dd.mm.yyyy HH:MM); `?around=` 12 hours or more after now is refused (400). Its events are marks on every chart for the pointer (a 24 px handle; the plot under it free for the cursor and the zoom) and a list of links, the keyboard's and the screen reader's path; under 480 px the Deffeyes chart's labels give way to their words. In the new look a unit's row on Water chemistry opens `farm:tank_water`, and an alarm's detail at a unit's point links its water 12 hours each side of its opening (`?around=` on the site's clock); the classic look keeps its links |
 | the calculated CO₂ and the pH window of a card that shows them (the Small card) | `water.calculation.charts_of`: every such unit's chart at once, from the water the card read already holds and one read of the fish's limits |
 
 **The page** has a toolbar (a GET form that works without script: site, department, system, kind, fish (stocked by default,
@@ -873,6 +874,74 @@ kept today, the parameters no row judges (`water.read.missing_limits`). The valu
 trace (at most once a minute per source): a required one gives the 503 (the screen keeps its last picture and says it is not
 updated), an optional one says "Could not be read: Tasks" on the frame, where no template can hide it.
 
+**In the new look** (`?ui=next`, see The new look; 2026-11-24). The same page, the same card read (`read.cards`,
+`_ladder`, `water_rungs`), the same templates, fragment, pane and polls (poll.ts's start-up gate, the merge by key, the
+announcer): the new look is a skin, and the cards' markup is byte for byte the same in both looks
+(`monitoring/tests/test_next_pages.py`), so the change token does not need to know the look. `templates/monitoring/monitor.html`
+loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new look, and every rule of the second is under
+`html[data-ui="next"]`, so the classic page reads none of it. What it draws, from the design console:
+- **The state's glyph** as the design's icons (critical the octagon, warning the triangle, no recent data the clock, no
+  limit the gauge, note the bell, OK the check, empty the grid): `monitor-next.css` names each state's icon, and
+  `glyphs.css` (built by `scripts/icons.mjs` from `templates/icons` beside the islands' set; `npm run check:icons`)
+  draws it as a mask, under `@supports` with the `-webkit-` form: a page that lacks that sheet, or a browser without
+  masks, keeps the classic shapes, never seven identical squares. The glyph a script sets (the band's "page of the worst
+  card") follows; every rung keeps a glyph of its own and its word.
+- **The frame**: a square hairline plate (border longhands only: the classic look's edge STYLE of each state stays, dashed
+  for no recent data and no limit, dotted for empty, and the hatch strip of a card whose value is old, `ds.css`
+  `.monitor-card[data-stale]`), a critical card framed in the critical colour, the head of a card with no recent data
+  hatched (its stripe the control line half way to the plate: 1.5:1 or more in all six themes, measured by the page
+  test), every word of that head on a pad of the plate, so no text lies on a stripe (4.5:1 held by the page test against
+  the stripe, in the six themes); on a wall the frame and the edge grow with the type; in forced colours a critical or warning edge is 10 px, as
+  classic. The code in the text face, the figures in Barlow, OK in its green.
+- **One size per mode** (owner, 2026-11-24: "a card grows taller when a warning appears"). The Small card on the desk page
+  is the design's: a regular grid of equal cards (three to a row at 1440 px: at four the oxygen's saturation beside its
+  label was cut; four at 1920), with fixed slots: the head (the code, the name cut with an ellipsis and whole in its
+  title, the state's glyph and word, never cut), TWO lines of reason (the first in short and "+N"; the reason's figure
+  and the bound it is past never cut, its own words past two lines end in an ellipsis; every reason in full in its title,
+  for a screen reader, in the band's chips and on the pane's card; the fish line where there is no reason), the link to
+  the water at its end, then the four cells (a label of two lines, its name and "old" then the oxygen's saturation, a
+  figure in a slot of its own in `_value_fit.html`: only the name gives way, whole in its title; the figure never cut,
+  sized to its cell; where it came from and how old, cut with an ellipsis and whole in its title). The pH window is not in the design's Small card: it stays in the markup and on the wall, in the pane and
+  on the Big screen. An empty unit's card says the unit in four cells (status, volume, max density, max biomass:
+  `monitoring/_empty_cells.html`). Big cards on a desk (from 1100 px) are each at the Big template's proportion, as in the
+  pane; Simple and Detailed cards are as tall as the longest of them (rows of one fraction: nothing of a longer card is
+  cut). On a wall the cards are the fitted ones, sized by the slot rule.
+- **The toolbar and the band**: on the desk page the search first, the filters named for a screen reader only (each
+  select says its choice: "No board", "All sites"), the wall's buttons at the end (a wall keeps its own toolbar, the two
+  buttons fixed at the band's end: the page test checks that nothing lies over the band, a state word or the buttons); the band a plate on the desk page with the switch of
+  the cards as a segmented control on the right, the current one bold and underlined, not only tinted.
+- **The Big card's boxes** (dosing, other points, stock) say their names where their place has the room
+  (`render._titled`, from the validator's `fitted_place`).
+
+No safety word or figure is cut or faded: the page test holds every code, state word, figure, saturation, "old", and the
+first reason's figure and bound whole (en, nb, tr at 390, 1440 and 1920 px), the cards of one kind one size, and the wall's
+browser test runs every case again in the new look (`frontend/test/wall.browser.test.ts`, the parts of `manage.py
+layout_pages` under the new look's sheets). What the desk's Small card does NOT show, by the design (owner, 2026-11-24):
+the flip link to the other card, the pH window and its sentences ("The pH window cannot be drawn: ...", "no CO₂ limit"),
+the second and later reasons but for their count ("+N"), and the end of a long name, source line or reason sentence: they
+stay in the markup (so for a screen reader too, but for the flip link and the pH window, which are not displayed), in the
+titles, on the pane's Big card and on the wall.
+
+**A card links its tank's water history** (`templates/monitoring/_water_link.html`, `farm:tank_water`) in both looks, the
+pane's included, when its water section is readable: the page needs the right to read water samples, which the cards do
+not (`card.sections`), so a person who may see the cards but not the water gets no link that would answer 403. The chart
+icon, and "Water history" in words on a full-height card and a card that flows; on the Small card its words, for a screen
+reader, name the unit. Tank › Water in the new look, the unit's history on Water chemistry in the classic look (the address
+redirects there).
+
+Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py` `monitoring_world`: a unit in each
+of the seven states and an old critical one, and a wall board read from 2 m): each card says in the new look what it says
+in the classic one (the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on
+the Small, Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish; the link resolves, and is
+absent for a person without the water right. And by `frontend/test/monitoring.pages.ts` (`npm run test:pages`, on the
+pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the product's policy and
+nonce, its polls answered with the real fragments, at 1440, 1920 and 390 px (no CSP violation, no serious axe finding,
+card text at 4.5:1, no sideways scroll, a glyph and a link on every card, nothing safety-relevant cut, one size per mode,
+the rail at its width beside a long strip), each state's edge style, the stale strip, one glyph per state and the classic
+shapes without `glyphs.css`, the hatch in six themes, the pane, the wall at 1920×1080 and 3840×2160 and a board's wall
+read from 2 m, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that
+fails said as "cannot be read".
+
 **Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The
 fragment `cards/?...&after=<token>` computes the **change token** first (`core.audit.revision()`: the newest audit entry and
 how many lie in the five minutes up to it, two indexed queries, read before any data; the minute, the language, what the person
@@ -896,8 +965,11 @@ rows of equal cells, chosen by the one **slot rule** (`monitoring/cards/slots.py
 `frontend/wall/slots.ts`, where the screen's size is known; both run `monitoring/tests/slot_vectors.json`): of every grid
 whose cells hold all the cards, the one that gives a card its largest unit; when that unit is under 14 px (the smallest
 text would be under 11 px) the wall turns PAGES rather than shrink the type: the grid with the most cells that can still
-be read, PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
-of its worst card. A card never moves, so a page is always the same cards. Twenty small cards are one page on 3440×1440,
+be read (when none can, ONE card a page at the largest unit a cell gives, never the densest grid: review round 2, B3),
+PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
+of its worst card. A card never moves, so a page is always the same cards. The cells share the room the grid really has
+under the band (`frontend/wall.ts` sets `--room`): a notice of the page above the wall (no alarm worker, no push
+transport) takes some of the screen, and a page still shows its own cards whole, never the top of the next page's. Twenty small cards are one page on 3440×1440,
 5120×1440, 2560×1440, 3840×2160 and 1920×1080 (5 by 4 on the two wide screens, 4 by 5 on 16:9); twenty-four are one
 page on the first four and two pages on 1920×1080 (`monitoring/tests/slot_vectors.json`). The line under each figure
 says where it came from in one word and how old it is ("sensor · 12 s", "sample · 3 h", "calc. · 7 d") at EVERY size
@@ -961,7 +1033,28 @@ board is refused) and one activity-log entry. Tables `monitor_boards` and `monit
 hold is a constraint (the name, the modes, the refresh range, one card per unit and board). A board holds only live units: the
 form offers live units, and a unit that is deleted keeps its row (a configuration, not history), its card hidden by the live join
 and back when the unit is restored; saving the list drops the row. There is no position: cards go in the farm's one order. A
-board is deleted and restored like any record (nothing depends on it). Anyone who may read Monitoring may choose a board in the
+board is deleted and restored like any record (nothing depends on it). Its **Wall screen** tab says which screen the board is shown on (a
+standard screen: 24″, 27″, 32″, 34″ and 49″ monitors, 55″ and 65″ TVs, or another screen with its diagonal typed) and
+from how far it is read (0.5 to 20 m; the owner's presets 1, 2, 3, 5 m in the help) (frontend-redesign CONSENSUS §9). With
+both, a wall of fitted cards never sets its type smaller than can be read from there: a state's word subtends at least
+20 arcmin (FHWA-RD-98-057, ch. 3) and every other text at least 16 (the least character height of ANSI/HFES 100-2007 and
+ISO 9241-303; 15 before review round 2), a character's height the
+text face's cap height (0.67 of its size); the screen's size in px is the browser's own, so the diagonal gives the
+millimetres of a px (the pixel ratio cancels out). That unit (`monitoring/cards/slots.py legible_unit`, the same rule in
+`frontend/wall/slots.ts legibleUnit`, both held to `slot_vectors.json`) is the slot rule's `min_u`, the cells' least
+height and the pane's: the wall turns pages rather than shrink its type, and the pane lies over the cards when a Big card
+beside them could not be read from there. The band's unit is raised the same way (its tally and chips at 20 arcmin), but
+never so far that the band takes more than a sixth of the screen's height (`frontend/wall.ts` bandUnit: the largest unit
+that fits; its tally wraps into rows rather than run off the screen). What it costs, measured from the rule on a Full HD
+screen: a 55″ TV read from 3 m gives a unit of 41.1 px, one Small card a page (twenty cards on twenty pages); from 2 m
+27.4 px, four a page; a 24″ monitor read from 1 m 31.4 px, two a page (the board's distance is how a farm trades cards a
+page against the distance they are read from). A pair at which not even one card a page can be read (a 24″ monitor from
+3 m, a 55″ TV from 5 m) is refused by the board's form (`MonitorBoard.clean`, `slots.reach` on the preset's resolution,
+another screen taken as 16:9: the answer follows the screen's shape, not its px), which says the farthest distance that
+works (1.9 m and 4.4 m there); a pair that leaves one or two cards a page is saved with a warning that says so. A wall
+whose distance cannot be met all the same (a screen of another shape) shows one card a page at the largest unit it can. Without a screen or a distance the wall is as it was
+(the 14 px floor). The constraints hold every rule a row can state (a preset is its own diagonal, another screen has one
+in range, none has none; the distance in range or empty). Anyone who may read Monitoring may choose a board in the
 picker (a board is configuration, not a record); the area Monitoring boards in the role matrix, after Tanks, ponds & cages, is for
 making and changing them. A window's place is remembered per board on each device.
 
@@ -1670,6 +1763,29 @@ without values it shows its defaults.
   follows the form, so a link opens the same view. The server is the one source of every number and of the
   SVG: the browser code (`frontend/poll.ts`, the live form, usable by any GET form) has no chemistry. Without
   the script the form has a Calculate button and the page is drawn again.
+- **The new look** (`?ui=next`, `core.ui.is_next`): the SAME templates, form and live parts, no island and no JSON, drawn
+  as the design console's calculator by the rules under `[data-ui="next"]` in `static/css/components.css` (the calculator
+  section): a values plate (where the values come from as its head, the tabs, a field a row with its value at the right,
+  Defaults and Print report), the charts' row on plates (the server's Deffeyes chart in the middle, its layers as chips
+  under it), the results plate (ammonia and hydrogen sulfide with the judged value as the figure, the values worked out,
+  the recipes across) and the simulator's steps last. Its only additions are the plates' titles "Values" and "Results"
+  (`UI_NEXT`) and wrappers that are no box in the classic look (`.calc-values-plate`, display: contents; `.ui-marks`
+  draws nothing there). The long texts (a card's method notes, the unit's fish limits, the references) stand under
+  closed `<details>` there, never on paper; a field's help follows the field-note rule (below); under 440 px the chart's labels give way to their words (`views.deffeyes_scale`, the rule
+  Tank › Water uses). The printed report takes the look too (`data-ui` on its own page, always on a day theme,
+  `PAPER_THEME`; on paper at the classic report's size, every row's value wrapped inside its column, in both looks). `farm/tests/test_calculator_said.py` holds the new look
+  to the classic one for every case on the page, the live parts and the report (`says_missing` empty), and
+  `farm.tests.test_island_pages` does so for the calculator from the test world's TT-01 and keeps the three pages for
+  `frontend/test/calculator.pages.ts` (`npm run test:pages`: the live update in a browser under the server's policy and
+  the page's own nonce, CSP, axe, 4.5:1, 1440 and 390 px, the report on A4 across).
+- **Field notes** (the rule): a field's help of more than 80 characters is a long reference note (a scale, a
+  conversion, a source: "As a pH meter or kit calibrated with NBS/NIST buffers reads it, …"); a shorter one is a hint
+  ("At most 20 characters") and stays under the field. Where a page asks for notes (`registration/_field.html` with
+  `notes`: today only the calculator in the new look; `crud.is_noted`, `NOTE_LONGER_THAN`), a note is a tooltip: the
+  mouse resting on the field for a second or the control's focus shows it, Esc closes it, an ⓘ button beside the label
+  opens and closes it (a finger has no hover); it wraps at a reading width, is never cut and stays inside the window
+  (`frontend/field-note.ts`, the pattern in `ds.css`). It is the server's help text, in the page and the control's
+  description (`aria-describedby`) whether open or not; without the script it is text under the field.
 - **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in the latest value
   of each measured field of its water, its middle point's (temperature, pH, salinity, alkalinity, TAN,
   dissolved oxygen: `read.owner_water`, each
@@ -3783,7 +3899,12 @@ What works:
   a move ends one binding and starts the next, so a sensor's earlier values stay with the tank they were taken in; a
   whole device moves at once, between sites too, or is taken out of the water: see Portable sensors).
 - **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
-  the drawn buckets), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
+  the drawn buckets; `sensors:chart_data` gives the same chart as data for the redesigned page behind `?ui=next`:
+  `sensors/chart.py` `data`, exactly what the SVG draws, each manual sample with its source, meter or lab, the fish's
+  limit bands for a person who may read the water, the channel's newest value with its freshness, whether the drawn
+  values come from the live demo's channels ("Simulated values", `sensors/demo.py` `demo_channels`), and with
+  `compare=<place>` and `compare_quantity` a second chart read on exactly the same window; each bucket's sum adds its
+  rows in time order, so the same chart and CSV are the same on every read), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
   own, as the water pages say it: `sensors/templatetags/sensors.py` `measured`, also the alarm thresholds and peaks; its
   age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
@@ -5525,7 +5646,7 @@ validation and every chemistry judgement; the island draws the finished values i
   `./ui/SeriesChart.js`: an interactive series, gaps never bridged, colours from the chart roles). They draw the design system's classes (`static/css/ds.css`):
   a server-rendered page writes the same classes, so both look the same from one rule set. React Aria where a control
   needs behaviour (buttons, tabs); native `<select>`, `<dialog>` otherwise (no popover that would lock the scroll).
-  Icons come from `templates/icons/` (`scripts/icons.mjs` builds `ui/icon-shapes.ts`; `npm test` fails when it is stale).
+  Icons come from `templates/icons/` (`scripts/icons.mjs` builds `ui/icon-shapes.ts`, and `static/css/glyphs.css`: each icon as a CSS mask of the new look, `--glyph-<name>`, for a glyph drawn without markup; `npm test` fails when either is stale).
 - **Build.** `npm run build` runs `vite build` (`vite.config.mjs`, `scripts/islands.mjs`) into `static/islands/` (not
   committed): hashed names, no source maps, no inlined assets, no module-preload polyfill. There is **no dev server and
   no hot reload**: its injected scripts and styles would break the Content-Security-Policy. With no island yet the
@@ -5552,7 +5673,20 @@ validation and every chemistry judgement; the island draws the finished values i
   `frontend/test/page.browser.test.ts` loads a whole server-printed page of the new look (`frontend/test/pages/shell-next.html`,
   `manage.py layout_pages`: the shell, its scripts, the strip and an island) under the server's own policy and nonce;
   `frontend/test/classic.browser.test.ts` holds the classic look as it was. The browser tests read the policy from
-  `config/settings.py` (`frontend/test/csp.ts`). `core/tests_islands.py` holds the tag and the build checks.
+  `config/settings.py` (`frontend/test/csp.ts`). `core/tests_islands.py`
+  holds the tag and the build checks.
+- **Real pages in a browser.** An island page's props are made in the TEST database, through its real view, by a Django
+  test (`core/island_props.py`: `render_island` asks the view in the new look and the language given, `keep` writes the
+  props to `.build/island-props/`, never committed: the repository is public, so nothing recorded from a real database
+  is kept). `farm/tests/test_island_pages.py` makes those of Tank › Water and Sensors › Charts from THE test world
+  (`core/test_world.py`, the one builder, the clock at its `MOMENT`: TT-01's probe with an
+  outage and a pH silent for two hours, the channels' state as the ingest writes it, samples, limits, an alarm, a harvest,
+  a treatment and a feeding, the fish's NH₃-N and CO₂ limits, each part a function of its own);
+  `monitoring/tests/test_next_pages.py` keeps the monitoring pages the same way (`.build/monitor-pages`, Operations › Monitoring above);
+  `npm run test:pages` (`frontend/test/*.pages.ts`) then mounts the built islands on them under the product's policy
+  (CSP, axe, 4.5:1, no sideways scroll at 1440 and 390 px). CI runs it in the Django job right after the suite (a run
+  with labels makes the props too) and keeps its screenshots as the artifact `island-pages-shots`; missing props fail
+  it, never skip it.
 - **Notices.** `npm run build` writes `static/islands/THIRD_PARTY_NOTICES.txt` beside the bundles: the licence text of every
   package they may ship (package-lock.json, not dev), served with them.
 
@@ -5599,7 +5733,8 @@ see it.
   for it). It is asked for only while it is drawn (`data-poll-if-shown`: it is hidden under 1100 px), and is marked "Not
   updated: the alarms cannot be read" after ONE failed answer (`data-poll-stale-after="1"`), never an old "No open alarms"
   unmarked. A rise of its alarms is said in a live region beside it (`frontend/strip.ts`; a critical one assertively), never
-  the item every 30 s (`frontend/test/strip.browser.test.ts`).
+  the item every 30 s (`frontend/test/strip.browser.test.ts`). In the top bar it gives way before the language switch and the person's menu: its alarms item wraps onto a
+  second line, never cut and never pushing them past the window (found by the monitoring page test at 1440 px).
 
 Pages drawn by an island in the new look (the classic page is unchanged behind `?ui=classic`):
 
@@ -5681,16 +5816,121 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `list_filters` (selects and day boxes from the values `filter_list` returns); a tab without `list_rows` keeps its
   classic list in the new look. A row's title and its actions open the record's own page (the record form island), never
   the classic dialog. Drawn now: the HR lists (Team, Departments, Attendance, Leave requests, Shifts, Holidays, Leave
-  types), under both mounts. Held: `hr/tests/test_list_next.py` (each list against its classic page on the test world in
+  types), under both mounts; Production's Recurring tasks (the Tasks page's views as its link tabs), Questions for the
+  authority and Experiments (its three views; the rows are the ones the list view read, so an experiment the classic
+  list does not show is not shown, and no field of it the classic list leaves out). Held: `hr/tests/test_list_next.py` (each list against its classic page on the test world in
   three languages; the search, the filters and the pager are the address's); `frontend/islands/ui/ui.test.tsx` (the
   markup); `frontend/test/listpage.browser.test.ts` (the GET form sends what the server reads; CSP and axe in every theme
   at 1440 and 390) and `listpages.browser.test.ts` (every recorded list in three languages at both widths).
+- **HR's own pages** (behind `?ui=next`; the classic pages stay as they are). Today & attendance, Team overview and
+  Scheduling settings are drawn by the server with the design system's classes (`hr/today_next.html`,
+  `_board_next.html`, `overview_next.html`, `settings_next.html`; a tab whose list is not a table names its page in
+  `Resource.list_template_next`), so the one poll (`frontend/poll.ts`) draws Today's board again in the look the page
+  is in. The people planned today are a stacked bar of the board's own tiles (`core/stack.py`, `templates/ui/_stack.html`
+  and the library's `StackedBar` draw the same bar: an SVG whose viewBox is the whole, no style attribute). The
+  Organisation chart is the island `org-chart` with the library's `OrgTree` (nested lists in a named, scrolling frame;
+  the people behind a native disclosure). The Shift schedule is the island `roster` with the library's `RosterGrid`
+  (`Resource.list_next_props`): the arrow keys, Home and End move between the cells' controls; the paint works by
+  keyboard (toggle buttons choose the paint and select the cells) and posts to the same batch route with the CSRF
+  token, which plans all of them or none. A plan's link and "Plan this day" open the record's own page. They follow the design (Company Panel v2): a tile grid of one tile size (`data-fixed`: a secondary line too long for its
+  tile ends in an ellipsis and keeps its whole text in its title, never a figure or a state; six to a row on a wide screen,
+  two on a phone, four for the scheduling limits); Today's bar in the design's tones (here now in ink, not in yet dashed,
+  absent in the warning colour, on leave light) with each part's figure before its words; a week's Previous, range, Next
+  and Print in the page head; each shift's code in its own tone (`Shift.tone`, the tokens --tone-1..8); the roster's days
+  as equal columns and a finding on one line in its cell (the whole sentence in its title); the organisation chart's
+  children as a wrapping grid of boxes of one size. Held:
+  `hr/tests/test_today_next.py` (each page against its classic page on the test world, three languages, both mounts;
+  the paint's post), `frontend/islands/ui/ui.test.tsx`, `frontend/test/roster.browser.test.ts` (keyboard, paint, CSP and
+  axe in every theme at 1440 and 390) and the gallery's browser test.
+- **Production pages drawn by the server in the new look** (no island: the classic page's own context, the classic
+  view's reads, drawn with the design system's classes in a template of their own beside the classic one): Operations ›
+  Tasks (`TaskResource.list_template_next`, `templates/tasks/task_list_next.html`: its views with their counts, the
+  filters as one GET form, the overdue count, the table, and the drawer of the task picked as a plate beside it, its
+  buttons the classic forms posted to the task's own addresses), Operations › Storage (`inventory.views.storage`,
+  `templates/inventory/storage_next.html`: Overview, Stock, Movements and Counts, every warning of the classic page),
+  Regulatory reports (`ReportResource.list_template_next`, `templates/reports/report_list_next.html`: all eleven kinds,
+  where each stands, the reports and notices due, what the records no longer give, closed without filing, not set up)
+  and Messages (`messaging.views`, `templates/messaging/inbox_next.html`: the conversations and the open one as two
+  plates around the classic fragments the poll renders again; the open conversation's list is bounded in its plate, so it
+  opens at its newest message; on a phone one plate shows, as on the classic page). What opened a dialog on the classic
+  page (an action, an edit, a delete, New message, Members, Leave channel, a read page's Edit and Delete) opens its own
+  page; still classic, outside this batch: an experiment's read and edit pages (Start, Release, Replace, Copy) and Feeding records. Urgent
+  and high priority are marked as chips, as the classic page marks them in colour. Held: `core/tests_panel_next.py` (each
+  page, its views, tabs, kinds and the drawer, against the classic page on the test world in three languages; the
+  Experiments list's rows say nothing the classic list does not; no style attribute, no dialog link, in the seven pages
+  and in every page they open) and `frontend/test/panelpages.browser.test.ts` (the server's answers recorded from the
+  test world, `frontend/test/pages/panel/`: CSP, axe, no page-wide scroll, the rail's full width, a 60-message
+  conversation opening at its end; three languages, 1440 and 390).
+- **The Sensors pages** (Charts aside): every Sensors tab's list on the shared list page (Connections, Payload formats,
+  Devices, Channels, Credentials, Bindings, Alarm rules; their rows in `sensors/lists.py`, each tab's `list_rows`), and
+  Live values, Dead letters and Alarm events on the same island, their props made by `sensors/pages.py` from the rows
+  their own views read (the same page and filters as the classic page; the tabs' pager wording). A device marked
+  simulated says "Simulated" (the design's mark; its values are stored marked and used nowhere). Live values is one table
+  per device (the list page's `groups`, `listprops.group`): its head the device's code and name, Simulated, its site and
+  its number of channels; a channel's line is its "#number". A stale live value keeps
+  its "Stale" chip and its row the warning edge, never "Fresh". Resolve (a dead letter) and Acknowledge (an alarm event
+  nobody acknowledged) are the row's POST action with the page's token, for a person who may. "Nothing is sent yet" stays
+  on Alarm events while no push transport is connected. Acknowledge and Resolve show their word beside the icon (the
+  list page's `labelled` action: a safety state changes); a dead letter's payload, its hex and size are a closed
+  disclosure (`listprops.details`), as the classic page's `<details>`. Bindings: a channel's history (`?channel=`) is
+  drawn above its table as a timeline (`sensors.lists.binding_timeline` over the list's own rows; `ui/Timeline.tsx`: a
+  lane per place, each binding a span in % of the window from its first start to now, its words inside it and in the
+  lane's name for a screen reader); the site, role and "now bound" selects are `BindingResource.filter_list`'s (the
+  classic page reads the same address). A place's bindings (`?place=`) say whose they are and lead back
+  to every binding. Overview is island `sensors-home` (`frontend/islands/pages/SensorsHome.tsx`): the classic page's own
+  state and setup counts (`sensors.views.state_tiles`, each with its key) in the design's order, with the moment they were
+  worked out, the ingest's oldest heartbeat (the one that decides Down) and the offline devices; a status edge only for
+  what needs a look (an ingest down or never heard critical; an offline device, a stale channel, a dead letter, a lost
+  message a warning). "Open alarms" is the classic page's count of open sensor alarm events, said so under it ("Sensor
+  alarm events": not the strip's open alarms), critical while one of them is critical, a warning while only warnings are
+  open. Bindings and credentials are counted as their lists show them (`Resource.queryset`: a hidden binding is not). Held:
+  `sensors/tests/test_pages_next.py` (every page against its classic page on the test world plus `sensors_world`, in
+  three languages; nothing opens the classic dialog; the world's facts) and `frontend/test/prodrest.pages.ts` (each page
+  at 1440 and 390: CSP, axe, 4.5:1, no sideways scroll, the screenshots).
+- **Production › Overview** (`config.views.production_home`; `templates/production_home_next.html`, island `production`,
+  `frontend/islands/pages/Production.tsx`): the design's layout over the very context the classic page is drawn from
+  (`config/production_props.py`): "Today on the farm" as tiles (stock, feed, the water's critical and warning points,
+  tasks, reports due, each with its source and time), Needs attention (each row its status chip, what and where, its
+  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, and the
+  way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
+  HR board's bar (`config.views.team_today`, `core/stack`; the tiles add up to the people planned today) with the muster
+  count and the late ones. What the design adds from real sources: the fish card's batch count
+  (`farm.stock.views.overview`), the units under a medicine withdrawal today in Needs attention (hold chip, each batch's
+  "harvest from", a link to the unit's drawer) and the team bar. The head (status chips, Record water sample) is the
+  classic page's. Held: `farm/tests/test_production_overview_next.py` (every word of the classic page in three
+  languages; a value's title said by its chip and origin line, never for a value that was critical or a warning).
+- **Production › Production units** (`farm.stock.views.production_units`): the table on the shared list page
+  (`farm/stock/units_next.py`, from the rows the view read; the classic filter buttons are the toolbar's selects with the
+  same values; the kind and fish selects' first options say "All kinds" and "Stocked and empty" where the classic buttons
+  say "All"), the unit's drawer as the server draws it on the classic page, beside it (`farm/_unit_drawer.html`, every
+  section). A row's code and batch open the drawer, Edit the unit's form (`farm:tank_edit`, with the right to change
+  units). The density cell draws the share of capacity as the list page's gauge (`listprops.gauge`, `ui/Gauge.tsx`: the
+  bar and "12 % of capacity" in words, critical with its "Over" chip above capacity). A water value is its figure with
+  its origin and age; a warning, critical or stale one is in its status's chip, never drawn as OK; a stale one that was
+  critical or a warning when taken (F-244, `Reading.old_alert`) keeps its stale chip and says "Stale, was critical" and
+  its sample's moment (its age is the origin line's). Held:
+  `farm/tests/test_production_units_next.py` (the filter links, the bare "All" and the values' titles are the things said
+  another way, named there).
+- **System › Water** (`farm:system_water`, `/operations/systems/<id>/water/`; `farm/water/system_page.py`): the system's
+  points side by side, loop first, on one time axis, from `history_data` (the JSON of
+  `farm:water_system_chart?view=history`), drawn by Tank › Water's island; with more than one point the island heads each
+  point's charts with the point's name (and each chart's accessible name says it). Its window and words are Tank ›
+  Water's (`farm.water.views.window_props`, one helper for both pages). Without the new look the address is the system's
+  history on Water chemistry. Its way in: Setup › Systems in the new look (`SystemResource.list_rows`, the classic
+  list's words and filters, a nested system's "↳", its "Show them" notice; the classic template unchanged) gives each row a "Water of …" action
+  for a person who may read the water. Held: `farm/tests/test_system_water_next.py`, `farm/tests/test_systems_next.py`.
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture
-  names "Test …", addresses @example.com; `core/test_world.py`, one function per part: `company_world`, `hr_world`) in a
-  transaction it rolls back, and writes `form-oracle.json`, `company-props-<language>.json` and
-  `list-props-<language>.json`. `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
+  names "Test …", addresses @example.com; `core/test_world.py`, one function per part: `company_world`, `hr_world`,
+  `panel_world` and its parts for tasks, questions, experiments, reports, storage and messages) in a transaction it
+  rolls back, and writes `form-oracle.json`, `company-props-<language>.json`, `list-props-<language>.json` and
+  `panel-props-<language>.json` (the production panel's lists), the pages the server draws (`panel/`).
+  `core/tests_fixtures_fresh.py` holds them fresh: it builds the test world in the test run with the clock pinned, renders
+  every fixture by the recorder's own function (`core.recorded_fixtures.render_all`), puts what varies from run to run in a
+  fixed form (record ids, a page's nonce and token, the assets' versions) and fails, naming the file and its first
+  differing line, when a committed one is not what the code renders today: run `scripts/record_test_world.sh` and commit
+  what it writes (`--check` compares without writing). `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
   `frontend/islands` and `core/testdata` outside example.com and the `.example` domains.
 
 ## One format for every tab

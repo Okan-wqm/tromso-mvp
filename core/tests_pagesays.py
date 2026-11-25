@@ -81,3 +81,12 @@ class SaysTests(SimpleTestCase):
         self.assertEqual(unsaid(old, {'widget': {'name': 'title', 'kind': 'text'}}), [('control', 'name'), ('control', 'kind')])
         self.assertEqual(unsaid(old, {'fields': [{'widget': {'name': 'name'}}, {'widget': {'name': 'kind'}}]}), [])
         self.assertEqual(unsaid(old, {}, new_html='<main><input name="name"><input name="kind"></main>'), [])
+
+    def test_a_fact_said_another_way_by_design_is_carried_by_its_declared_words(self):
+        """A duration in minutes on the old page, in hours and minutes on the new one (core.durations): declared, held."""
+        old = '<main><dt>Standard week (minutes)</dt><dd>2250</dd></main>'
+        new = {'label': 'Standard week', 'value': '37 h 30 min'}
+        self.assertEqual(unsaid(old, new), [('text', 'Standard week (minutes)'), ('text', '2250')])
+        declared = {'2250': '37 h 30 min', 'Standard week (minutes)': 'Standard week'}
+        self.assertEqual(unsaid(old, new, said_as=declared), [])
+        self.assertEqual(unsaid(old, {'label': 'Standard week', 'value': '37 h'}, said_as=declared), [('text', '2250')])

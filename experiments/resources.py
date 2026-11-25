@@ -11,9 +11,10 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
-from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
+from django.utils import formats
+from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy, pgettext_lazy
 
-from core import formpanels, listprops
+from core import formpanels, listprops as L
 from core.crud import DRAFT, Resource, ResourceView, RowList, UpdateView, done, filter_by, render_page
 from core.people import person_name
 from farm.models import Site, Species, System, Tank
@@ -121,6 +122,61 @@ class ExperimentResource(Resource):
                          'sites': sites, 'chosen_site': chosen_site, 'species_list': species,
                          'chosen_species': chosen_species, 'statuses': Status.choices, 'chosen_status': chosen_status}
 
+    # The new look (core/L.py): the classic list's words (experiments/experiment_list.html), its rows as the
+    # island's. The rows are the ones the list view read (its queryset and scope): the page shows nothing the classic one
+    # does not, and no field of an experiment the classic list leaves out.
+    search_placeholder = _('Search by number, name or hypothesis')
+    empty_text = _('Plan a trial: its hypothesis, its groups and the tanks they get.')
+    STATUS_CHIPS = {Status.RUNNING: 'ok', Status.CLOSED: 'neutral', Status.DRAFT: 'note'}
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [
+            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']]),
+            L.choice('site', _('Site'), context['chosen_site'],
+                     [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])]),
+            L.choice('species', pgettext_lazy('singular', 'Species'), context['chosen_species'],
+                     [('', _('All species')), *((species.pk, species.common_name) for species in context['species_list'])]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        rows = []
+        for experiment in objects:
+            actions = []
+            if context.get('can_change'):
+                actions.append(L.link(view.url('edit', experiment.pk), gettext('Edit %(name)s') % {'name': experiment.name},
+                                      'pencil'))
+            if context.get('can_delete') and experiment.status == Status.DRAFT:
+                actions.append(L.link(view.url('delete', experiment.pk),
+                                      gettext('Delete %(name)s') % {'name': experiment.name}, 'trash', danger=True))
+            chips = [L.chip('note', gettext('Template'))] if experiment.is_template else []
+            rows.append(L.row(experiment.pk, {
+                'experiment': L.cell(experiment.name, href=view.url('detail', experiment.pk), strong=True,
+                                     sub=[f'{experiment.code} · {experiment.get_primary_endpoint_display()}'
+                                          if experiment.primary_endpoint else experiment.code]),
+                'status': L.cell(chip=L.chip(cls.STATUS_CHIPS.get(experiment.status, 'neutral'),
+                                             experiment.get_status_display()), chips=chips),
+                'site': L.cell(experiment.site.name),
+                'species': L.cell(experiment.species.common_name),
+                'day0': L.cell(formats.date_format(experiment.starts_on, 'DATE_FORMAT') if experiment.starts_on else '—'),
+                'days': L.cell(experiment.duration_days),
+                'groups': L.cell(experiment.group_count),
+                'replicates': L.cell(experiment.replicate_count),
+            }, actions))
+        return {
+            'tabs': L.tabs(_('Experiments'), [(f'?view={value}' if value else '?', label, None, context['view'] == value)
+                                              for value, label in context['views']]),
+            'notices': [L.notice('trial', 'neutral', _(
+                'A trial of one species on one site: its groups, their replicates and the tanks and days each is booked '
+                'to. A draft reserves its tanks; starting it fixes its design, and the figures are read from the farm’s '
+                'own records.'))],
+            'columns': [L.column('experiment', _('Experiment')), L.column('status', _('Status')), L.column('site', _('Site')),
+                        L.column('species', pgettext_lazy('singular', 'Species')), L.column('day0', _('Day 0')),
+                        L.column('days', _('Days'), numeric=True), L.column('groups', _('Groups'), numeric=True),
+                        L.column('replicates', _('Replicates'), numeric=True)],
+            'rows': rows}
+
     @classmethod
     def detail_extras(cls, request, experiment):
         """The read page: the details, and one of its three parts (`?tab=`): the Overview (where the experiment is in its
@@ -225,18 +281,18 @@ def design_panel(experiment, extra, copies):
         return formpanels.panel('design', title, [
             formpanels.notice(words.THE_EXPERIMENT_HAS_STARTED_SO_ITS),
             formpanels.table(title, [
-                listprops.column('group', words.GROUP), listprops.column('role', words.ROLE),
-                *(listprops.column(f'f{index}', f'{factor.name} ({factor.unit})' if factor.unit else factor.name)
+                L.column('group', words.GROUP), L.column('role', words.ROLE),
+                *(L.column(f'f{index}', f'{factor.name} ({factor.unit})' if factor.unit else factor.name)
                   for index, factor in enumerate(table['factors'])),
-                listprops.column('replicates', words.REPLICATES, numeric=True)], [
-                listprops.row(row['group'].pk, {
-                    'group': listprops.cell(row['group'].name, chips=[listprops.chip('note', words.CONTROL)]
+                L.column('replicates', words.REPLICATES, numeric=True)], [
+                L.row(row['group'].pk, {
+                    'group': L.cell(row['group'].name, chips=[L.chip('note', words.CONTROL)]
                                             if row['group'].is_control else ()),
-                    'role': listprops.cell(row['group'].get_role_display()),
-                    **{f'f{index}': listprops.cell(
+                    'role': L.cell(row['group'].get_role_display()),
+                    **{f'f{index}': L.cell(
                         (f'{level} ({floatformat(level.value, "-4")})' if level.value is not None else str(level))
                         if level else '—') for index, level in enumerate(row['levels'])},
-                    'replicates': listprops.cell(len(row['replicates']))})
+                    'replicates': L.cell(len(row['replicates']))})
                 for row in table['rows']]) if table['rows'] else formpanels.help_text(words.NO_GROUP),
             *copies])
     findings = extra.get('findings')
@@ -280,14 +336,14 @@ def places_panel(experiment, extra):
     if extra.get('frozen'):
         blocks += [formpanels.help_text(words.THE_EXPERIMENT_HAS_STARTED_ITS_TANKS),
                    formpanels.table(title, [
-                       listprops.column('group', words.GROUP), listprops.column('replicate', words.REPLICATE),
-                       listprops.column('tank', words.TANK), listprops.column('from', words.FROM),
-                       listprops.column('until', words.UNTIL)], [
-                       listprops.row(cell.id, {
-                           'group': listprops.cell(cell.group.name), 'replicate': listprops.cell(f'R{cell.replicate.number}'),
-                           'tank': listprops.cell(f'{cell.unit.code} · {cell.unit.name}'),
-                           'from': listprops.cell(formats.date_format(cell.first, 'DATE_FORMAT')),
-                           'until': listprops.cell(formats.date_format(cell.last, 'DATE_FORMAT'))})
+                       L.column('group', words.GROUP), L.column('replicate', words.REPLICATE),
+                       L.column('tank', words.TANK), L.column('from', words.FROM),
+                       L.column('until', words.UNTIL)], [
+                       L.row(cell.id, {
+                           'group': L.cell(cell.group.name), 'replicate': L.cell(f'R{cell.replicate.number}'),
+                           'tank': L.cell(f'{cell.unit.code} · {cell.unit.name}'),
+                           'from': L.cell(formats.date_format(cell.first, 'DATE_FORMAT')),
+                           'until': L.cell(formats.date_format(cell.last, 'DATE_FORMAT'))})
                        for cell in extra.get('cells', ())]) if extra.get('cells') else formpanels.help_text(
                        words.NO_TANK_IS_PLACED)]
     elif span is None:

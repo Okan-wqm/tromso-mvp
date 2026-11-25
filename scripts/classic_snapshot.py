@@ -1,7 +1,7 @@
 """Renders the CLASSIC pages of every form with a template of its own (new, editing each record of the test world, each
 row list sent back refused) into a folder, one file a page, the per-request values blanked (CSRF tokens, entry keys):
 run before and after a change to those templates and compare the folders (`diff -r`): the classic look must not change.
-Run it as scripts/record_test_world.py runs (scripts/record_test_world.sh with this script), in the throwaway database
+Run it as scripts/record_test_world.py runs (SCRIPT=scripts/classic_snapshot.py scripts/record_test_world.sh /app/.build/FOLDER), in the throwaway database
 test_world: `python scripts/classic_snapshot.py <folder>`. Nothing is kept: one transaction, rolled back."""
 import os
 import re

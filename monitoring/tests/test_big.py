@@ -19,8 +19,10 @@ BIG = {'mode': 'big'}
 # `?mode=big` in Turkish, 20 stocked units: 19,272 to 29,120 bytes a card, the median 27,217; the heaviest, HA-R02,
 # has fourteen value rows, two reasons and both regions drawn), with about a twentieth of room: the mock-up's 21.6 KB
 # was a card of fewer rows and no arrival times. A wall of 20 is then about 0.6 MB before compression (the page weighed
-# 572 KB). Raise it only with a reason; a card that grows is a wall that slows.
-BIG_CARD_BYTES = 30500
+# 572 KB). Raise it only with a reason; a card that grows is a wall that slows. Raised by 500 on 2026-11-24: the names
+# of the three boxes under the values (Dosing advice, Other sampling points, Stock: the design's) and the link to the
+# tank's water history (the test's card weighed 30,795 with them).
+BIG_CARD_BYTES = 31000
 
 
 class BigCase(SmallCase):
@@ -180,7 +182,12 @@ class BigCardTests(BigCase):
         (box,) = [each for each in card.walk() if 'w-dosing' in each.classes]
         self.assertEqual([text(each) for each in box.walk() if each.tag == 'p'],
                          ['No dosing advice', 'No target, reagent or dosing volume is set for these fish yet.'])
-        self.assertEqual(box.children[0].attrs['aria-label'] if not isinstance(box.children[0], str) else '', 'Dosing advice')
+        # (its name: the heading over it where the Big card has the room, render._titled; else its aria-label)
+        section = next(each for each in box.walk() if each.tag == 'section')
+        heading = next((each for each in section.walk() if each.tag == 'h4'), None)
+        self.assertEqual(text(heading) if heading is not None else section.attrs.get('aria-label'), 'Dosing advice')
+        if heading is not None:
+            self.assertEqual(section.attrs['aria-labelledby'], heading.attrs['id'])
         self.assertNotIn('truncate', ' '.join(' '.join(each.classes) for each in box.walk()))
 
     def test_the_stock_and_the_other_points(self):

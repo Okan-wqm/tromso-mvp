@@ -78,6 +78,9 @@
 .tw\:grid-cols-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+.tw\:grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 .tw\:grid-cols-\[auto_auto_minmax\(1\.5em\,1fr\)_auto_auto\] {
   grid-template-columns: auto auto minmax(1.5em,1fr) auto auto;
 }

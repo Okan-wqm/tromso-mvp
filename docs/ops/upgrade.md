@@ -121,11 +121,24 @@ schema, not only written.
 
 ```
 export MSYS_NO_PATHCONV=1
-MANAGE="docker run --rm -i --network balik-ciftligi_default -e DB_HOST=db -e DB_PORT=5432 -v F:/dev/balik-ciftligi:/app -w /app balik-testrunner-chemcore python manage.py"
+IMG=$(sh scripts/testrunner/image.sh build)                   # this checkout's image, built now, never :latest
+MANAGE="docker run --rm -i --network balik-ciftligi_default -e DB_HOST=db -e DB_PORT=5432 -v F:/dev/balik-ciftligi:/app -w /app $IMG python manage.py"
 $MANAGE check --database default --fail-level WARNING        # quiet, as the move will ask
 docker compose exec -T db psql -X -U balik -d postgres -At -c "SELECT datname, pg_size_pretty(pg_database_size(datname)) FROM pg_database WHERE datallowconn"
+docker compose exec -T db psql -X -U balik -d balik -At -c "SELECT job_id, last_run_status, last_successful_finish FROM timescaledb_information.job_stats"
+docker compose exec -T db psql -X -U balik -d postgres -At -c "SHOW timescaledb.max_background_workers"
+docker pull timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
 docker system df; df -h /c /f                                 # room (below)
 ```
+
+- The jobs must be running. Every database with the extension takes one background worker for its scheduler, plus one
+  launcher: with `timescaledb.max_background_workers` 16 and 15 leftover `test_*` databases no worker is left for a job,
+  the jobs never run (the db log says `out of background workers`), and the move's step 8 can never pass. Drop the
+  leftover databases (or raise the limit) and let the job backlog (compression, aggregates) finish on 2.17.2 first.
+- The new image is pulled by its digest the day before, so the move never pulls it with the revision triggers off.
+- Nothing else may touch the server on the day: no agent's test run (`sensors-ingest/tests/run.sh` drops and
+  recreates `sensors_ingest_test` on this server), no other container on `balik-ciftligi_default`
+  (`docker network inspect balik-ciftligi_default`), and `pg_stat_activity` shows no client but the move's.
 
 - The check must be quiet. core.W003 (a role that holds Read only from the old matrix rule), core.W004 (plain private
   values in the activity log) and farm.W001 (water samples whose pH was put on NBS by an older formula) depend on the
@@ -137,12 +150,15 @@ docker system df; df -h /c /f                                 # room (below)
 
 **Room, and where everything goes.** Per move, in the backup folder (the script's first argument; for the development
 database `F:/dev/balik-backups/timescaledb`, outside iCloud, so a sync never takes half a dump): two dumps, each about
-the size of the landing backup (`pg_dump -Fc`, about 265 MB on 24.11.2026), the facts and check records (a few KB) and
+the size of the landing backup (`pg_dump -Fc`; the dev `balik` database itself is about 5.7 GB on 25.11.2026,
+almost all `sensors_reading`), the facts and check records (a few KB) and
 the roles (a few KB, with password hashes: mode 600, never committed or synced). The way back needs more: a second whole
 copy of the database in a new Docker volume (about `pg_database_size('balik')` above) and the old image (about 1 GB)
 on Docker's disk, which on this PC is the WSL disk image on drive C. `back` measures Docker's disk, and with
 `DOCKER_HOST_DRIVE=/c` drive C too, and refuses, making nothing, when there is less free than `BACK_ROOM_FACTOR` (10)
-times the dump.
+times the dump. That factor can pass without room for the database's whole size: check `pg_database_size` against the
+free room yourself. `back` restores onto 2.32.1, it is not a return to 2.17.2: an exact way back is a cold copy of the
+data volume taken before the merge (`docker compose stop db`, copy the volume, `docker compose start db`, never `up`).
 
 **The day: order.** No `docker compose up` (of anything) between the merge into `main` and the move: it would recreate
 `db` on the new image (the merge changes its image line) with the old extension. The move still handles that (the image
@@ -150,15 +166,17 @@ carries the old release's library, so its dump is still one of the old release; 
 included), but nothing gains from it. In this order, in Git Bash, from the main checkout:
 
 ```
+git merge-base --is-ancestor main wip/go-live                 # main must fast-forward: merge main into the branch first
 docker stop balik-dev-web                                     # nothing writes from here to the end of the move:
-docker compose --profile sensors stop sensors-ingest node-red #   between its steps 3 and 6 the revision triggers are off
+docker compose --profile alarms stop alarms                   #   between its steps 3 and 6 the revision triggers are off
+docker compose --profile sensors stop sensors-ingest node-red # (mosquitto and db stay up; step 4 recreates db)
 git merge --ff-only wip/go-live                               # main holds this branch (CLAUDE.md, How work lands)
-docker build -f docker/testrunner.Dockerfile -t balik-testrunner-chemcore .   # requirements.txt changed (gunicorn)
 export MSYS_NO_PATHCONV=1
-MANAGE="docker run --rm -i --network balik-ciftligi_default -e DB_HOST=db -e DB_PORT=5432 -v F:/dev/balik-ciftligi:/app -w /app balik-testrunner-chemcore python manage.py"
+IMG=$(sh scripts/testrunner/image.sh build)                   # built the day before: requirements.txt changed (gunicorn)
+MANAGE="docker run --rm -i --network balik-ciftligi_default -e DB_HOST=db -e DB_PORT=5432 -v F:/dev/balik-ciftligi:/app -w /app $IMG python manage.py"
 $MANAGE migrate && $MANAGE compile_catalogs && npm run build  # before the move: its check is refused by core.W002
                                                               # (catalogs older than the merged .po files) otherwise
-export DB_EXEC="docker compose exec -T db" RECREATE="docker compose up -d db" MANAGE DOCKER_HOST_DRIVE=/c
+export DB_EXEC="docker compose exec -T db" RECREATE="docker compose up -d db" MANAGE DOCKER_HOST_DRIVE=/c JOB_WAIT_SECONDS=1800
 sh deploy/scripts/timescaledb-move.sh move F:/dev/balik-backups/timescaledb balik-timescaledb-2.32.1
 ```
 

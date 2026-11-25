@@ -352,6 +352,19 @@ def _reach():
     return memo(('reach',), lambda: _provider.reach(current.user))
 
 
+def reach_key():
+    """A short name for what the person looking may read of the sealed records: '' when nothing is hidden from them
+    (the system's reading, and every person's on a farm with no confidential work), else a digest of the work hidden
+    from them per part and of Oversee. Two people with the same key read the same rows of every sealed model, so a value
+    computed from sealed records may be kept for one key and served to the other (review L3); never across keys."""
+    import hashlib
+    found = reach()
+    if not any(found.hidden.values()):
+        return ''
+    text = ';'.join(f'{part}:{",".join(sorted(ids))}' for part, ids in sorted(found.hidden.items()) if ids)
+    return hashlib.sha256(f'{text}|{found.oversee}'.encode()).hexdigest()[:16]
+
+
 def forget():
     """What has been read of the person looking (their Reach, their Viewer, the memo) is read again on the next ask:
     called after any statement that writes a table that says who reads what (the provider's `grant_tables`, seen by the

@@ -236,19 +236,24 @@ def _unit_feeding(units, held):
 
 def snapshot(now=None):
     """(open alarms, [(unit id, site id, rung, whether its water is critical or past a warning)] of every stocked unit): what `attention` counts, read once. Without `now`
-    it is kept for settings.ATTENTION_CACHE_SECONDS (the same for every viewer: it depends on no one's rights), so a
-    farm's open pages ask the database once in that time, not once each."""
+    it is kept for settings.ATTENTION_CACHE_SECONDS, so a farm's open pages ask the database once in that time, not
+    once each. It is read through the sealed managers (the units, the alarms), so it is kept per what the person reads
+    (core.sealing.reach_key: one copy for everyone from whom nothing is hidden, one per set of hidden work): a count
+    made for a lead is never served to an outsider, nor an outsider's to the people who keep the fish (review L3)."""
     from django.conf import settings
     from django.core.cache import cache
 
+    from core import sealing
+
     seconds = settings.ATTENTION_CACHE_SECONDS
+    key = ':'.join(filter(None, (CACHE_KEY, sealing.reach_key())))
     if now is None and seconds:
-        kept = cache.get(CACHE_KEY)
+        kept = cache.get(key)
         if kept is not None:
             return kept
     found = _snapshot(now)
     if now is None and seconds:
-        cache.set(CACHE_KEY, found, seconds)
+        cache.set(key, found, seconds)
     return found
 
 

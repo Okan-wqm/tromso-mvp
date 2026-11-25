@@ -37,7 +37,13 @@ built and read.
     monitoring_world(admin)           eight more units of Test Hall A, one in each state a monitoring card can be in
                                       (OK, critical, warning, no recent data, no limit, note, empty, an old critical),
                                       and a wall board of the hall's units on a 55" TV read from 2 m (wall_board); not part of world():
-                                      the monitoring pages' test builds it after it (monitoring/tests/test_next_pages.py)"""
+                                      the monitoring pages' test builds it after it (monitoring/tests/test_next_pages.py)
+    feeding_ops_world(admin)          after world(), for Feeding's pages: a protocol in force on TT-01, a meal today, a
+                                      voided feeding
+    health_ops_world(admin)           after world(), for Health's pages: a medicated bath of TM-01, a lice count over the
+                                      limit, a listed disease not notified, a closed observation
+    harvest_ops_world(admin)          after health_ops_world(), for Harvest's pages: a harvest planned on TM-01's
+                                      withdrawal, an overdue transport, a production plan"""
 import math
 from datetime import datetime, time, timedelta
 from decimal import Decimal as D

@@ -5919,6 +5919,34 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   history on Water chemistry. Its way in: Setup › Systems in the new look (`SystemResource.list_rows`, the classic
   list's words and filters, a nested system's "↳", its "Show them" notice; the classic template unchanged) gives each row a "Water of …" action
   for a person who may read the water. Held: `farm/tests/test_system_water_next.py`, `farm/tests/test_systems_next.py`.
+- **Operations › Feeding, Harvest and Health** (every list and read page of the three groups on the shared list page; the
+  classic pages and their templates unchanged). A read page that is not a tab gets its props from
+  `core.listprops.page_props` (the one builder of a non-tab page, Sensors' too), built from the very context its view gives
+  the classic page: Meal board, Records and Records by unit and day (`farm/feeding/pages.py`), Harvested
+  (`farm/harvest/pages.py`), Treatments and Sea-lice counts (`farm/health/pages.py`); the tabs' `list_rows` and
+  `list_filters` are in `farm/feeding/lists.py` (Protocols, Assignments), `farm/harvest/lists.py` (Harvest plan,
+  Production plans) and `farm/health/lists.py` (Health events), with each classic list's search placeholder and empty text
+  as the tab's attributes (the same msgids). What the list page gained for them, each with its unit test: a check box
+  filter ("Show voided", `listprops.check`), a day's meals as pips (`listprops.pips`, `ui/Pips.tsx`, the classic
+  `.ui-pips`, named by "2 of 4 meals done"), a cell's figure drawn large (`figure`, the classic `.ui-readout`: the meal
+  board's next meal) and tables of their own above the list (`listprops.section`: Sea-lice counts' weekly averages).
+  The Meal board is a row per batch line, the unit's own cells (code, fed today, water, Record meal) on its first line;
+  a line without a ration says why where its next meal would be, never a figure; a temperature that is not fresh is its
+  stale chip with the classic warning; "Weigh now" critical, "Weigh soon" and an incomplete estimate warnings. Harvested's
+  totals per batch and per site (under the classic table) are the design's two other views (`?view=batch|site`, read in
+  the new look only, the filters kept), and the Harvest group's strip (`farm/_harvest_tabs.html`) stays above the three
+  Harvest pages. Food safety is the server's words: a treatment's withdrawal on each batch (`held_until`, and why:
+  `withdrawal_reason`) with a batch held today in the hold chip, a plan's or a batch's withdrawal (`harvest_from`) with
+  the Withdrawal chip and its row critical, "Medicine withdrawal not checked" and "Not checked" as on the classic pages,
+  "Notify Mattilsynet" as a critical notice above Health events with each event and the way to its notice, "Notify at
+  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. Every record
+  form and dialog these pages open (Record feeding or meal, Void, Record treatment, Last day, Record sea-lice count, the
+  plans' Record harvest or transfer) is opened as a page from the island (no classic dialog link), still the classic
+  form for now. Held: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
+  `test_health_pages_next.py` (every page against its classic page on the test world plus `feeding_ops_world`,
+  `health_ops_world` and `harvest_ops_world`, in three languages; Harvested's three views together against the classic
+  page; the safety facts) and `frontend/test/prodrest.pages.ts` (each page at 1440 and 390: CSP, axe, 4.5:1, no
+  sideways scroll, the screenshots).
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

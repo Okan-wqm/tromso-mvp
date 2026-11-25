@@ -57,7 +57,7 @@ class TankWaterPageTests(WaterTestCase):
         props = props_of(self.page(range='7d'))
         drawn = {(chart['quantity']['code'], sample['value']) for chart in props['places'][0]['charts']
                  for sample in chart['samples']}
-        old = self.client.get(history_url(self.t1)).context['history']
+        old = self.client.get(history_url(self.t1), {'ui': 'classic'}).context['history']
         said = {(code, float(reading.value)) for row in old for code, reading in row.readings.items()
                 if not reading.derived and reading.value is not None and code != 'oxygen_saturation_pct'}
         self.assertEqual(drawn, said)

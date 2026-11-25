@@ -124,7 +124,8 @@ class LinksIntoTankWaterTests(WaterTestCase):
     def test_a_units_row_on_the_water_page_opens_tank_water_in_the_new_look(self):
         tank_water = reverse('farm:tank_water', args=[self.t1.pk])
         self.look('next')
-        self.assertContains(self.client.get(reverse('farm:water')), f'href="{tank_water}"')
+        # the new look's Latest is the list page's island: the row's link is in its props
+        self.assertContains(self.client.get(reverse('farm:water')), f'"href": "{tank_water}"')
         self.look(None)
         page = self.client.get(reverse('farm:water'))
         self.assertNotContains(page, f'href="{tank_water}"')

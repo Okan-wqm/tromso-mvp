@@ -137,11 +137,14 @@ class WaterPageNextTests(FrozenClock, TestCase):
         self.assertLess(new.index('ui-safety'), new.index('data-island="list-page"'))
         rows = {row['cells']['point']['text']: row for row in props['table']['rows']}
         tm = rows['TM-01']
-        # TM-01's oxygen: its latest is the company world's critical 5 mg/L an hour back (the voided sample is not it)
+        # TM-01's oxygen: the company world's critical 5 mg/L (the voided sample is not it), critical or, once past its
+        # freshness, stale and saying it was critical: never drawn as an OK value
         self.assertEqual(tm['cells']['status']['chip']['kind'], 'critical')
         self.assertEqual(tm['status'], 'critical')
         oxygen = tm['cells']['oxygen_mg_l']
-        self.assertEqual(oxygen['chip']['kind'], 'critical')
+        self.assertIn(oxygen['chip']['kind'], ('critical', 'stale'))
+        if oxygen['chip']['kind'] == 'stale':
+            self.assertTrue(oxygen['sub'][0].startswith('Stale, was critical'), oxygen['sub'])
         self.assertRegex(oxygen['sub'][-1], r'^.+ · .+ ago$')                          # its origin and age
 
     def test_the_history_strikes_a_voided_sample_and_offers_void_only_on_the_others(self):

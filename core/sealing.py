@@ -799,8 +799,56 @@ def narrow(queryset, part=None):
         return seal.rows(queryset)
     if seal is None or not seal.filters:
         return queryset
-    condition = hidden(seal, part)
-    return queryset if condition is None else queryset.exclude(condition)
+    return queryset.exclude(Q(HiddenRows(seal, part)))
+
+
+class HiddenRows(models.Expression):
+    """The rows of a sealed model hidden from whoever is looking, as a condition on the outer row's key, built when the
+    SQL is compiled and only then: for the system, for a person from whom nothing is hidden and, for a farm fact, for a
+    holder of Oversee it is FALSE and nothing of the seal is built at all; for anyone else it is `pk IN (the rows of
+    `hidden(seal)`)`, a subquery of its own. Building the seal's condition (its parents' and children's managers, each
+    with theirs) when a manager is touched cost more than the reads it narrowed (the alarm outbox's round: 2.5 s of
+    3.7 s, run 45649043541), so it is never built for a read that does not need it."""
+
+    contains_aggregate = False
+
+    def __init__(self, seal, part=None, key=None):
+        super().__init__(output_field=models.BooleanField())
+        self.seal, self.part, self.key = seal, part, key
+
+    def __repr__(self):
+        return f'HiddenRows({self.seal.model._meta.label})'
+
+    def get_source_expressions(self):
+        return [self.key] if self.key is not None else []
+
+    def set_source_expressions(self, expressions):
+        if expressions:
+            (self.key,) = expressions
+
+    def resolve_expression(self, query=None, allow_joins=True, reuse=None, summarize=False, for_save=False):
+        copy = self.copy()
+        copy.key = models.F('pk').resolve_expression(query, allow_joins, reuse, summarize)
+        return copy
+
+    def get_group_by_cols(self):
+        return []
+
+    def as_sql(self, compiler, connection):
+        if who() is None:
+            return 'FALSE', []
+        seal = self.seal
+        fact = seal.cls == FACT and seal.work is None and _provider is not None
+        found = _reach_of_person()
+        if found is not None and (not any(found.hidden.values()) or (fact and found.oversee)):
+            return 'FALSE', []
+        condition = hidden(seal, self.part)
+        if condition is None:
+            return 'FALSE', []
+        rows = seal.model._base_manager.filter(condition).order_by().values('pk')
+        inner, inner_params = rows.query.get_compiler(connection=connection).as_sql()
+        key, key_params = compiler.compile(self.key)
+        return f'{key} IN ({inner})', [*key_params, *inner_params]
 
 
 class SealedMixin:

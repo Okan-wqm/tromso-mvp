@@ -52,19 +52,38 @@ def chip(kind, text):
     return {'kind': kind, 'text': str(text)}
 
 
-def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=(), gauge=None, details=None, more=None):
+def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=(), gauge=None, details=None, pips=None,
+         figure=False, more=None):
     """One cell: its text (a link to `href`), a sub-line per item of `sub` (empty items left out), or a `chip`; a `gauge`
-    (below) is drawn under the text; `details` (below) is drawn in place of the text, closed; `more` (a `details` too) is
-    drawn closed under the text and its lines, for a long explanation the cell keeps (how a water value was worked out)."""
+    (below) is drawn under the text; `details` (below) is drawn in place of the text, closed; `pips` (below) before it;
+    `figure`: the text is the row's figure, drawn large (the meal board's next meal); `more` (a `details` too) is drawn
+    closed under the text and its lines, for a long explanation the cell keeps (how a water value was worked out)."""
     said = {'text': None if text is None else str(text), 'href': href or None, 'strong': bool(strong),
             'chip': chip, 'chips': list(chips), 'sub': [str(item) for item in sub if item not in (None, '')]}
     if gauge is not None:
         said['gauge'] = gauge
     if details is not None:
         said['details'] = details
+    if pips is not None:
+        said['pips'] = pips
+    if figure:
+        said['figure'] = True
     if more is not None:
         said['more'] = more
     return said
+
+
+PIP_STATES = {'done', 'next', ''}
+
+
+def pips(states, label):
+    """A day's meals as pips (frontend/islands/ui/Pips.tsx, the classic .ui-pips): one state per planned meal, 'done',
+    'next' or '' (to come), as farm.templatetags.feeding.meal_pips gives them, and `label` their words ("2 of 4 meals
+    done"): the pips are never the only cue."""
+    states = [str(state) for state in states]
+    if not set(states) <= PIP_STATES:
+        raise ValueError(f'no pip state in {states!r}')
+    return {'states': states, 'label': str(label)}
 
 
 def gauge(share, text, status=None):
@@ -77,8 +96,8 @@ def gauge(share, text, status=None):
 
 
 def link(href, label, icon, danger=False, labelled=False):
-    """A row action that opens a page (the record's edit, its delete confirmation); `labelled` draws its word beside the icon
-    (an action that changes a record for good: a sample's Void)."""
+    """A row action that opens a page (the record's edit, its delete confirmation); `labelled` draws its word beside the
+    icon (the meal board's Record meal, a record's Void)."""
     said = {'kind': 'link', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger)}
     if labelled:
         said['labelled'] = True
@@ -139,6 +158,12 @@ def day(name, label, value):
             'placeholder': formats.localize_input(EXAMPLE.date()), 'options': [], 'groups': []}
 
 
+def check(name, label, checked):
+    """A filter that is on or off: a check box named `name` sending 1 when it is ticked ("Show voided")."""
+    return {'kind': 'check', 'name': name, 'label': str(label), 'value': '1' if checked else '', 'options': [],
+            'groups': []}
+
+
 def tabs(label, items):
     """Link tabs: (href, label, count or None, current) for each view of the list."""
     return {'label': str(label), 'tabs': [{'href': href, 'label': str(text), **({'count': str(count)} if count is not None
@@ -180,6 +205,39 @@ def pager(page, pager_query):
         'next': {'href': f'{at}{page.next_page_number()}', 'label': _('Next')} if page.has_next() else None,
     }
 
+
+
+def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, page=None, pager_query='', groups=None,
+               tabs=None, lines=(), add=None, keep=(), table_label=None, sections=()):
+    """The list-page island's props of a page that is not a tab (`list_props` is a tab's): its link tabs (`tabs`), filters
+    (a GET form, `filters` as `choice`, `day`, `check`; what else the address holds is sent again, and `keep` (name,
+    value) whatever it says), its Add link (`add`: (href, label)), notices, lines above the table, the table (in `groups`
+    when given; `table_label` its accessible name, else `label`), what is said when there is no row (`empty`: a title, or
+    the whole {title, text, link, add}), the pager, and `sections` (`section`) drawn above the table."""
+    shown = {each['name'] for each in filters} | {key for key, _value in keep} | {'page', ui.PARAM}
+    return {
+        'csrfToken': get_token(request),
+        'tabs': tabs,
+        'toolbar': {'label': str(label), 'search': None,
+                    'keep': [*({'name': key, 'value': str(value)} for key, value in keep),
+                             *({'name': key, 'value': value} for key, value in request.GET.items() if key not in shown)],
+                    'filters': list(filters), 'submit': _('Filter'),
+                    'add': {'href': add[0], 'label': str(add[1])} if add else None},
+        'notices': list(notices),
+        'lines': [str(line) for line in lines if line],
+        'table': {'label': str(table_label or label), 'columns': columns, 'rows': rows, 'actionsLabel': _('Actions')},
+        'groups': groups,
+        'empty': empty if isinstance(empty, dict) else {'title': str(empty), 'text': None, 'link': None, 'add': None},
+        'pager': pager(page, pager_query),
+        'sections': list(sections),
+    }
+
+
+def section(key, title, columns, rows, lines=()):
+    """A table of its own above a page's list, in a plate of its title with its lines (Sea-lice counts' weekly averages
+    over the counts): `columns` and `rows` as the list's (`column`, `row`)."""
+    return {'key': key, 'title': str(title), 'lines': [str(line) for line in lines if line], 'columns': columns,
+            'rows': rows}
 
 
 def toolbar(view, context, filters, keep=()):

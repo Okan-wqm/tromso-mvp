@@ -24,6 +24,7 @@ from django.utils.translation import gettext as _, ngettext
 from core import navigation
 from core.crud import done, render_page
 from core.dates import read_day
+from core.ui import is_next
 
 from .. import placements
 from ..clocks import clocks, own_days
@@ -39,7 +40,7 @@ from ..stock.dates import earliest, local_today, shown_date
 from ..stock.services import AlreadyRecorded
 from ..templatetags.feeding import amount
 from ..templatetags.stock import grams, tonnes
-from . import read, services
+from . import pages, read, services
 
 VIEW, RECORD, VOID = 'farm.view_feedingrecord', 'farm.add_feedingrecord', 'farm.delete_feedingrecord'
 RECORDS, BOARD = 'farm:feeding_records', 'farm:meal_board'
@@ -57,6 +58,15 @@ def _context(url_name=RECORDS, **extra):
     place = navigation.page(url_name)
     eyebrow = ' · '.join(str(label) for label in (place.section.label, place.group.label) if label)
     return {'title': place.entry.label, 'eyebrow': eyebrow, **extra}
+
+
+def _page(request, template, context, props):
+    """The classic page, or in the new look (core.ui.is_next) the shared list page with the props of farm/feeding/pages.py
+    (`props`: their builder, given the request and the classic page's context)."""
+    if is_next(request):
+        return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow'],
+                                                            'props': props(request, context)})
+    return render_page(request, template, context)
 
 
 def _back(request, unit=None):
@@ -116,7 +126,7 @@ def feeding_records(request):
     can_void = request.user.has_perm(VOID)
     here = request.get_full_path()
     kept = {key: value for key, value in params.items() if value}
-    return render_page(request, 'farm/feeding_list.html', _context(
+    return _page(request, 'farm/feeding_list.html', _context(
         rows=[{
             'record': record,
             'batches': sorted((batches[batch_id] for batch_id in split.get(record.pk, {})), key=lambda b: b.code),
@@ -129,7 +139,7 @@ def feeding_records(request):
         filtered=bool({key for key in kept if key != 'voided'}),
         clear_url=reverse('farm:feeding_records'), views=_views(request, LIST),
         record_url=_with_next(reverse('farm:feeding_new'), request) if request.user.has_perm(RECORD) else '',
-    ))
+    ), pages.records_props)
 
 
 def _views(request, current):
@@ -207,13 +217,14 @@ def _by_day(request):
     page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))
     kept = {key: value for key, value in params.items() if value}
     calculated = [row['unit_day'].calculated_kg for row in rows if row['unit_day'] is not None]
-    return render_page(request, 'farm/feeding_list.html', _context(
+    return _page(request, 'farm/feeding_list.html', _context(
         view=DAYS, views=_views(request, DAYS), day_rows=page.object_list, page=page,
         pager_query=urlencode({'view': DAYS, **kept}), params=params, choices=choices, clipped=clipped, span=SPAN,
         given_kg=sum((row['given_kg'] for row in rows), 0), cleaner_kg=sum((row['cleaner_kg'] for row in rows), 0),
         calculated_kg=sum(calculated) if calculated and None not in calculated else None,
         filtered=bool(set(kept) - {'from', 'to'}), clear_url=f'{reverse(RECORDS)}?view={DAYS}',
-        record_url=_with_next(reverse('farm:feeding_new'), request) if request.user.has_perm(RECORD) else ''))
+        record_url=_with_next(reverse('farm:feeding_new'), request) if request.user.has_perm(RECORD) else ''),
+        pages.days_props)
 
 
 # ---- the meal board --------------------------------------------------------------------------------
@@ -270,8 +281,9 @@ def meal_board(request):
             'record_url': f'{reverse("farm:feeding_record", args=[unit.pk])}?'
                           f'{urlencode({"meal": "next", "next": here})}' if can_record else '',
             'water_url': f'{reverse("farm:water_record")}?{urlencode({"unit": unit.pk})}' if can_sample else ''})
-    return render_page(request, 'farm/meal_board.html', _context(
-        BOARD, rows=rows, params=params, choices=choices, filtered=any(params.values()), clear_url=reverse(BOARD)))
+    return _page(request, 'farm/meal_board.html', _context(
+        BOARD, rows=rows, params=params, choices=choices, filtered=any(params.values()), clear_url=reverse(BOARD)),
+        pages.meal_board_props)
 
 
 def next_meal(unit):

@@ -26,7 +26,7 @@ const ISLANDS = resolve('static/islands');
 const PROPS = resolve('.build/island-props');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 // the pages of this test: the props files their Django tests keep, by name
-const PREFIXES = ['sensors-', 'production-', 'setup-'];
+const PREFIXES = ['sensors-', 'production-', 'feeding-', 'harvest-', 'health-', 'setup-'];
 // The keys each Django test keeps, by test: a test that ran keeps all of its keys (a renamed or lost page fails here,
 // never passes silently); a test left out of a labels run keeps none.
 const EXPECTED: Record<string, string[]> = {
@@ -44,6 +44,15 @@ const EXPECTED: Record<string, string[]> = {
     .concat(['setup-sites-nb', 'setup-sites-tr', 'setup-limits-nb', 'setup-limits-tr']),
   'farm.tests.test_water_page_next': ['production-water-latest-en', 'production-water-latest-nb', 'production-water-latest-tr',
     'production-water-history-en'],
+  // Operations › Feeding (farm/feeding/pages.py)
+  'farm.tests.test_feeding_pages_next': ['meal-board-en', 'meal-board-nb', 'meal-board-tr', 'records-en', 'records-days-en', 'protocols-en',
+    'assignments-en']
+    .map((name) => `feeding-${name}`),
+  // Operations › Harvest (farm/harvest/pages.py, lists.py) and Health (farm/health/pages.py, lists.py)
+  'farm.tests.test_harvest_pages_next': ['harvested-en', 'harvested-nb', 'harvested-tr', 'harvested-batch-en', 'plan-en',
+    'targets-en'].map((name) => `harvest-${name}`),
+  'farm.tests.test_health_pages_next': ['treatments', 'events', 'lice'].flatMap((name) => ['en', 'nb', 'tr']
+    .map((language) => `health-${name}-${language}`)),
 };
 
 /** an island's page ({island, props}), or a page the server draws in the new look ({html}: its <main>, scripts left out) */

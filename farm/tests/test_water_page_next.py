@@ -161,7 +161,7 @@ class WaterPageNextTests(FrozenClock, TestCase):
         filters = {each['name']: each for each in props['toolbar']['filters']}
         self.assertEqual(set(filters), {'site', 'owner', 'from', 'to', 'alerts'})
         self.assertEqual(filters['alerts']['kind'], 'check')
-        self.assertFalse(filters['alerts']['checked'])
+        self.assertEqual(filters['alerts']['value'], '')                    # not ticked
         self.assertIn({'name': 'view', 'value': 'history'}, props['toolbar']['keep'])
         # one unit's history: its points to choose from, the unit chosen in its group
         _old, new, props = self.held('en', {'unit': str(self.tank.pk)})

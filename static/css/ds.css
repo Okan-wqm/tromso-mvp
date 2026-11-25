@@ -456,7 +456,10 @@
 [data-ui="next"] :is(.ui-table, .data-table) thead th { border-top: 0; font-size: var(--fs-head); letter-spacing: .04em; vertical-align: bottom; }
 .ui-table tr[data-status="critical"] > :first-child { box-shadow: var(--edge-crit); }
 .ui-table tr[data-status="warning"] > :first-child { box-shadow: var(--edge-warn); }
-.ui-table tr[data-voided] > * { opacity: .6; }
+/* a voided row: its text in the sub-lines' grey (4.5:1 in every theme, never faded below it) and its first cell struck
+   through, as the classic list's is-voided row */
+.ui-table tr[data-voided] > * { color: var(--text-3); }
+.ui-table tr[data-voided] > :first-child { text-decoration: line-through; }
 .ui-row-status { display: inline-flex; vertical-align: -2px; margin-right: var(--space-1); }
 .ui-row-status .icon { width: var(--icon-inline); height: var(--icon-inline); stroke-width: 2; }
 tr[data-status="critical"] .ui-row-status { color: var(--crit); }

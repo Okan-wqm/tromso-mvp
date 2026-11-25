@@ -1198,7 +1198,7 @@ A harvest or a transport planned for the fish of one batch in one unit on a day:
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › handling_plan_items
 - **forms**: `HandlingPlanItemForm`
 - **constraints**: chk_handling_plan_items_kind (check); chk_handling_plan_items_destination (check); chk_handling_plan_items_count (check); chk_handling_plan_items_kg (check); chk_handling_plan_items_other_unit (check); uq_handling_plan_items_operation (unique: operation)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_fast_of_the_unit.py` and 16 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1307,7 +1307,7 @@ A health observation, a vet or fish-health visit, a lab result or a rise in mort
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › health_events
 - **forms**: `HealthEventForm`
 - **constraints**: chk_health_events_kind (check); chk_health_events_signs (check); chk_health_events_diagnosis (check); chk_health_events_confirmation (check); chk_health_events_closed_on (check); chk_health_events_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 9 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_entry_key.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1408,7 +1408,7 @@ A medicine or vaccine the farm uses.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › medicines
 - **forms**: `MedicineForm`
 - **constraints**: uq_medicines_name_live (unique: name); chk_medicines_kind (check); chk_medicines_administration (check); chk_medicines_status (check); chk_medicines_lice_report_code (check); chk_medicines_strength (check); chk_medicines_strength_positive (check); chk_medicines_strength_unit (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_workspaces.py` and 16 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_workspaces.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1500,7 +1500,7 @@ A batch's target: the average weight it is grown to for harvest.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_plans
 - **forms**: `ProductionPlanForm`
 - **constraints**: uq_production_plans_batch (unique: batch); chk_production_plans_target (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_harvest.py`, `farm/tests/test_production_plans_reads.py`
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1646,7 +1646,7 @@ A slaughterhouse harvested fish go to: its name, Mattilsynet's approval number, 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › slaughter_facilities
 - **forms**: `SlaughterFacilityForm`
 - **constraints**: uq_slaughter_facilities_approval_live (unique: approval_number); uq_slaughter_facilities_name_live (unique: name); chk_slaughter_facilities_approval_number (check); chk_slaughter_facilities_status (check); chk_slaughter_facilities_capacity (check); chk_slaughter_facilities_latitude (check); chk_slaughter_facilities_longitude (check); chk_slaughter_facilities_coordinates_paired (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/helpers.py` and 1 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_workspaces.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

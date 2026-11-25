@@ -15,6 +15,7 @@ import { CellLines, Table } from './Table.js';
 import { Chip, type ChipKind } from './Chip.js';
 import { Gauge, type GaugeProps } from './Gauge.js';
 import { Icon, type IconName } from './Icon.js';
+import { Pips, type PipsProps } from './Pips.js';
 import { Plate, Plates } from './Plate.js';
 import { Timeline, type TimelineProps } from './Timeline.js';
 import { EmptyState, Notice, type NoticeTone } from './States.js';
@@ -35,6 +36,10 @@ export interface ListCell {
   gauge?: GaugeProps | null;
   /** a closed disclosure in place of the text: its summary, and its lines shown when opened (a dead letter's payload) */
   details?: { summary: string; lines: string[] } | null;
+  /** the text is the row's figure, drawn large (the meal board's next meal: the design's readout) */
+  figure?: boolean;
+  /** a day's meals as pips before the text (the meal board), with their words */
+  pips?: PipsProps | null;
   /** a closed disclosure under the text and its lines: a long explanation the cell keeps without growing (how a water
    *  value was worked out: "worked out from the sample", its formula and inputs when opened) */
   more?: { summary: string; lines: string[] } | null;
@@ -96,15 +101,16 @@ export interface ListNotice {
 /** The rows drawn as cards: the column whose cell is the card's chip, and the columns drawn in its foot. */
 export interface ListCards { chip: string | null; foot: string[] }
 
+export interface ListSection { key: string; title: string; lines: string[]; columns: ListColumn[]; rows: ListRow[] }
+
 export interface ListFilterOption { value: string; label: string }
 export interface ListFilter {
-  /** a select (the default), a day typed the European way (frontend/date-input.ts tidies it), or a box that is ticked
-   *  or not (`checked`; it sends `value` when ticked: Water chemistry's "Only warnings and criticals") */
+  /** a select (the default), a day typed the European way (frontend/date-input.ts tidies it), or a box ticked or not
+   *  (`check`: it sends 1 when ticked, `value` is '1' when it is: "Show voided", "Only warnings and criticals") */
   kind?: 'select' | 'day' | 'check';
   name: string;
   label: string;
   value: string;
-  checked?: boolean;
   placeholder?: string;
   options: ListFilterOption[];
   /** options under group labels (an optgroup each), after `options` */
@@ -135,6 +141,9 @@ export interface ListPageProps {
    *  chip column's beside it, its facts the other columns (a cell with nothing to say left out), its foot the foot
    *  columns' cells and the row's actions */
   cards?: ListCards | null;
+  /** tables of their own above the list, each in a plate of its title with its lines (Sea-lice counts' weekly averages;
+   * optional): drawn whether or not the list has rows */
+  sections?: ListSection[] | null;
   /** a timeline of the listed rows above the table, in a plate of its title (a channel's bindings over time; optional) */
   timeline?: (TimelineProps & { title: string }) | null;
   /** said when there is no row: "No … yet" with what to do, or "No … match" with the way back */
@@ -146,11 +155,12 @@ export interface ListPageProps {
 export function Cell({ cell }: { cell: ListCell }) {
   if (cell.details) return <Disclosure details={cell.details} className="ui-cell-details" />;
   const main = cell.chip ? <Chip kind={cell.chip.kind}>{cell.chip.text}</Chip>
-    : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.text;
+    : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.figure ? <span className="ui-readout">{cell.text}</span> : cell.text;
   const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);
   const sub = cell.sub && cell.sub.length ? cell.sub.join(' · ') : undefined;
   const lines = <CellLines strong={Boolean(cell.strong)} main={chips && chips.length ? <>{main} {chips}</> : main} sub={sub} />;
   const more = cell.more ? <Disclosure details={cell.more} className="ui-cell-details ui-cell-more" /> : null;
+  if (cell.pips) return <><Pips {...cell.pips} />{lines}{more}</>;
   if (!cell.gauge) return more ? <>{lines}{more}</> : lines;
   return <>{lines}<span className="ui-cell-sub"><Gauge {...cell.gauge} /></span>{more}</>;
 }
@@ -199,14 +209,13 @@ export function ListToolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) 
             <input id={searchId} type="search" name={search.name} defaultValue={search.value} placeholder={search.placeholder} />
           </div>
         ) : null}
-        {filters.map((filter) => filter.kind === 'check' ? (
-          // a box is named by its words beside it, in sight (a ticked filter must say what it hides)
-          <label key={filter.name} className="ui-check">
-            <input type="checkbox" name={filter.name} value={filter.value} defaultChecked={Boolean(filter.checked)} />
-            <span>{filter.label}</span>
-          </label>
-        ) : (
-          <label key={filter.name}>
+        {filters.map((filter) => (
+          filter.kind === 'check' ? (
+            // on or off ("Show voided"): its word beside the box, as the classic page's
+            <label key={filter.name} className="ui-check">
+              <input type="checkbox" name={filter.name} value="1" defaultChecked={filter.value === '1'} /> {filter.label}
+            </label>
+          ) : <label key={filter.name}>
             <span className="sr-only">{filter.label}</span>
             {filter.kind === 'day' ? (
               <input type="text" name={filter.name} defaultValue={filter.value} placeholder={filter.placeholder}
@@ -332,12 +341,23 @@ function RowCards({ label, columns, rows, cards, csrfToken }: {
   );
 }
 
-export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, cards, timeline, empty, pager }: ListPageProps) {
+export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, cards, sections, timeline, empty, pager }: ListPageProps) {
   return (
     <>
       {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
       <ListToolbar toolbar={toolbar} />
       {notices.map((notice) => <ListNoticeView key={notice.key} notice={notice} />)}
+      {sections && sections.length ? (
+        <Plates>
+          {sections.map((section) => (
+            <Plate key={section.key} title={section.title}>
+              {section.lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}
+              <RowsTable label={section.title} columns={section.columns} rows={section.rows} actionsLabel={table.actionsLabel}
+                csrfToken={csrfToken} />
+            </Plate>
+          ))}
+        </Plates>
+      ) : null}
       {table.rows.length ? (
         <>
           {timeline ? (

@@ -876,8 +876,24 @@ updated), an optional one says "Could not be read: Tasks" on the frame, where no
 
 **In the new look** (`?ui=next`, see The new look; 2026-11-24). The same page, the same card read (`read.cards`,
 `_ladder`, `water_rungs`), the same templates, fragment, pane and polls (poll.ts's start-up gate, the merge by key, the
-announcer): the new look is a skin, and the cards' markup is byte for byte the same in both looks
-(`monitoring/tests/test_next_pages.py`), so the change token does not need to know the look. `templates/monitoring/monitor.html`
+announcer). A fitted card (Small, Big, the pane's, a wall's) is the same markup in both looks, byte for byte; a card that
+FLOWS (Simple, every unit's default; Detailed; Operator view; a farm's template without a measure) is the design's card
+in the new look (2026-11-25: the owner saw "the old cards"): `templates/monitoring/_card.html` includes
+`monitoring/_card_next.html` in its place when `UI_NEXT` (`core.ui.is_next`, which `monitoring/views.py` gives the
+fragment and the pane; the page has it from the context processor), and the classic card is untouched by it
+(`scripts/classic_snapshot.py --monitoring` renders every screen's classic cards, the page and the pane in three languages
+to compare before and after a change; `monitoring/tests/test_golden.py` holds the classic card to its golden file). The
+design's card is the same frame and the same widgets in the same reading order on the same grid; a widget keeps its
+classic markup there, restyled, unless the design draws it otherwise (`render.WidgetView.next_renderer`, `render.NEXT_LOOK`:
+the feeding as the design's "Next meal" box, `templates/monitoring/widgets/next/_feeding.html`). Its head has the code
+large and the state as the design's chip (filled for critical, tinted for a warning), the withdrawal a chip with an
+hourglass, each reason the state's glyph in the state's tone, the figures in hairline boxes of three, the water a row a
+value (its figure in its status's tone with its glyph: octagon, triangle, clock), each sampling point of "every active
+point" a box under its name. The **Deffeyes chart** is not in the card: as in the design, it opens in the movable window
+(`frontend/windows.ts`, the classic button's `data-window`, titled "Deffeyes chart · <unit>"), from its outlined button
+among the card's actions at its foot (`render.FOOT`), beside the link to the tank's water history; under them what the
+state is from and which template draws the card, and the flip link at the right. A screen's change token is its look's own
+(`read.change_token`'s `look`): a poll of one look never answers "nothing changed" to the other. `templates/monitoring/monitor.html`
 loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new look, and every rule of the second is under
 `html[data-ui="next"]`, so the classic page reads none of it. What it draws, from the design console:
 - **The state's glyph** as the design's icons (critical the octagon, warning the triangle, no recent data the clock, no
@@ -904,8 +920,9 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
   sized to its cell; where it came from and how old, cut with an ellipsis and whole in its title). The pH window is not in the design's Small card: it stays in the markup and on the wall, in the pane and
   on the Big screen. An empty unit's card says the unit in four cells (status, volume, max density, max biomass:
   `monitoring/_empty_cells.html`). Big cards on a desk (from 1100 px) are each at the Big template's proportion, as in the
-  pane; Simple and Detailed cards are as tall as the longest of them (rows of one fraction: nothing of a longer card is
-  cut). On a wall the cards are the fitted ones, sized by the slot rule.
+  pane; the cards that flow (Simple, Detailed, Operator view) are as tall as the longest of them (rows of one fraction:
+  nothing of a longer card is cut), their foot at the bottom, wherever they stand side by side (from 640 px; on a
+  phone each card is as tall as what it says). On a wall the cards are the fitted ones, sized by the slot rule.
 - **The toolbar and the band**: on the desk page the search first, the filters named for a screen reader only (each
   select says its choice: "No board", "All sites"), the wall's buttons at the end (a wall keeps its own toolbar, the two
   buttons fixed at the band's end: the page test checks that nothing lies over the band, a state word or the buttons); the band a plate on the desk page with the switch of
@@ -932,11 +949,15 @@ redirects there).
 Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py` `monitoring_world`: a unit in each
 of the seven states and an old critical one, and a wall board read from 2 m): each card says in the new look what it says
 in the classic one (the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on
-the Small, Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish; the link resolves, and is
-absent for a person without the water right. And by `frontend/test/monitoring.pages.ts` (`npm run test:pages`, on the
+the Small, Simple, Detailed, Big and Operator view cards (`operator_board`, a board whose default template is the
+Operator view) and in the pane, in English, Norwegian and Turkish; the cards that flow are the design's card in the new
+look and never in the classic one, the fitted ones the same markup, and each look's token its own; the link resolves, and
+is absent for a person without the water right. `monitoring/tests/test_shell.py` holds the shell with its first answers
+to the full page in the new look too. And by `frontend/test/monitoring.pages.ts` (`npm run test:pages`, on the
 pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the product's policy and
 nonce, its polls answered with the real fragments, at 1440, 1920 and 390 px (no CSP violation, no serious axe finding,
-card text at 4.5:1, no sideways scroll, a glyph and a link on every card, nothing safety-relevant cut, one size per mode,
+card text at 4.5:1, no sideways scroll, a glyph and a link on every card, the design's card with its Deffeyes chart's
+button on every card that flows (Simple in the three languages, Detailed, Operator view), nothing safety-relevant cut, one size per mode,
 the rail at its width beside a long strip), each state's edge style, the stale strip, one glyph per state and the classic
 shapes without `glyphs.css`, the hatch in six themes, the pane, the wall at 1920×1080 and 3840×2160 and a board's wall
 read from 2 m, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that
@@ -5919,6 +5940,34 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   history on Water chemistry. Its way in: Setup › Systems in the new look (`SystemResource.list_rows`, the classic
   list's words and filters, a nested system's "↳", its "Show them" notice; the classic template unchanged) gives each row a "Water of …" action
   for a person who may read the water. Held: `farm/tests/test_system_water_next.py`, `farm/tests/test_systems_next.py`.
+- **Operations › Feeding, Harvest and Health** (every list and read page of the three groups on the shared list page; the
+  classic pages and their templates unchanged). A read page that is not a tab gets its props from
+  `core.listprops.page_props` (the one builder of a non-tab page, Sensors' too), built from the very context its view gives
+  the classic page: Meal board, Records and Records by unit and day (`farm/feeding/pages.py`), Harvested
+  (`farm/harvest/pages.py`), Treatments and Sea-lice counts (`farm/health/pages.py`); the tabs' `list_rows` and
+  `list_filters` are in `farm/feeding/lists.py` (Protocols, Assignments), `farm/harvest/lists.py` (Harvest plan,
+  Production plans) and `farm/health/lists.py` (Health events), with each classic list's search placeholder and empty text
+  as the tab's attributes (the same msgids). What the list page gained for them, each with its unit test: a check box
+  filter ("Show voided", `listprops.check`), a day's meals as pips (`listprops.pips`, `ui/Pips.tsx`, the classic
+  `.ui-pips`, named by "2 of 4 meals done"), a cell's figure drawn large (`figure`, the classic `.ui-readout`: the meal
+  board's next meal) and tables of their own above the list (`listprops.section`: Sea-lice counts' weekly averages).
+  The Meal board is a row per batch line, the unit's own cells (code, fed today, water, Record meal) on its first line;
+  a line without a ration says why where its next meal would be, never a figure; a temperature that is not fresh is its
+  stale chip with the classic warning; "Weigh now" critical, "Weigh soon" and an incomplete estimate warnings. Harvested's
+  totals per batch and per site (under the classic table) are the design's two other views (`?view=batch|site`, read in
+  the new look only, the filters kept), and the Harvest group's strip (`farm/_harvest_tabs.html`) stays above the three
+  Harvest pages. Food safety is the server's words: a treatment's withdrawal on each batch (`held_until`, and why:
+  `withdrawal_reason`) with a batch held today in the hold chip, a plan's or a batch's withdrawal (`harvest_from`) with
+  the Withdrawal chip and its row critical, "Medicine withdrawal not checked" and "Not checked" as on the classic pages,
+  "Notify Mattilsynet" as a critical notice above Health events with each event and the way to its notice, "Notify at
+  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. Every record
+  form and dialog these pages open (Record feeding or meal, Void, Record treatment, Last day, Record sea-lice count, the
+  plans' Record harvest or transfer) is opened as a page from the island (no classic dialog link), still the classic
+  form for now. Held: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
+  `test_health_pages_next.py` (every page against its classic page on the test world plus `feeding_ops_world`,
+  `health_ops_world` and `harvest_ops_world`, in three languages; Harvested's three views together against the classic
+  page; the safety facts) and `frontend/test/prodrest.pages.ts` (each page at 1440 and 390: CSP, axe, 4.5:1, no
+  sideways scroll, the screenshots).
 - **The Setup lists** (each tab's `list_rows` and `list_filters`, the classic list template's words and filters; the
   classic templates unchanged): Company's Sites (the classic page's cards: the list page's `cards`, `listprops.cards`,
   a grid of cards of one size, its head the site's name, code and status chip, its facts Type, Location, Area and

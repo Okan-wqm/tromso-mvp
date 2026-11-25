@@ -262,6 +262,28 @@ test('a gauge: the bar as long as the share (full from 100), the share in words 
   assert.doesNotMatch(gauge + over, /style=/);
 });
 
+test('pips: one per planned meal in its state, named by their words, never the only cue, no style', async () => {
+  const { Pips } = await import('./index.js');
+  const pips = html(<Pips states={['done', 'next', '']} label="1 of 3 meals done" />);
+  assert.equal(pips, '<span class="ui-pips" role="img" aria-label="1 of 3 meals done"><span class="ui-pip" data-state="done"></span><span class="ui-pip" data-state="next"></span><span class="ui-pip"></span></span>');
+  assert.doesNotMatch(pips, /style=/);
+});
+
+test('a list cell with pips draws them before its text; a check filter is a ticked box with its word', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const rows = [{ key: '1', cells: { name: { text: 'TT-01', strong: true },
+    today: { text: '0.40 kg left', pips: { states: ['done' as const, '' as const], label: '1 of 2 meals done' } } }, actions: [] }];
+  const toolbar = { ...LIST_PROPS.toolbar, filters: [{ kind: 'check' as const, name: 'voided', label: 'Show voided', value: '1', options: [] }] };
+  const page = html(<ListPage {...LIST_PROPS} toolbar={toolbar} table={{ ...LIST_PROPS.table, rows,
+    columns: [{ key: 'name', label: 'Unit' }, { key: 'today', label: 'Today' }] }} />);
+  const big = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, columns: [{ key: 'next', label: 'Next meal' }],
+    rows: [{ key: '1', cells: { next: { text: '0.40 kg', figure: true, sub: ['TF-3, 3 mm'] } }, actions: [] }] }} />);
+  assert.match(big, /<span><span class="ui-readout">0\.40 kg<\/span><\/span><span class="ui-cell-sub">TF-3, 3 mm<\/span>/);
+  assert.match(page, /<td><span class="ui-pips" role="img" aria-label="1 of 2 meals done">[^]*?<\/span><span>0\.40 kg left<\/span><\/td>/);
+  assert.match(page, /<label class="ui-check"><input type="checkbox" name="voided" checked="" value="1"\/> Show voided<\/label>/);
+});
+
 test('a list cell with a gauge draws its text and sub-lines, then the gauge under them', async () => {
   const { ListPage } = await import('./index.js');
   const { LIST_PROPS } = await import('../../test/pages/list-props.js');
@@ -270,6 +292,18 @@ test('a list cell with a gauge draws its text and sub-lines, then the gauge unde
   const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows,
     columns: [{ key: 'name', label: 'Unit' }, { key: 'density', label: 'Density · capacity' }] }} />);
   assert.match(page, /<td><span>7\.4 kg\/m³<\/span><span class="ui-cell-sub">Over<\/span><span class="ui-cell-sub"><span class="ui-gauge">[^]*?<span class="ui-gauge-text">12 % of capacity<\/span><\/span><\/span><\/td>/);
+});
+
+test('a list page with a section draws its plate, lines and table above the list, also over an empty list', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const sections = [{ key: 'weeks', title: 'Weekly averages', lines: ['The latest 12 weeks of counts, per site.'],
+    columns: [{ key: 'week', label: 'Week' }], rows: [{ key: 'w', cells: { week: { text: 'Week 47, 2026' } }, actions: [] }] }];
+  for (const rows of [LIST_PROPS.table.rows, []]) {
+    const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows }} sections={sections} />);
+    assert.match(page, /<section class="ui-plate"[^>]*>[^]*?<h2>Weekly averages<\/h2>[^]*?<p class="ui-cell-sub">The latest 12 weeks of counts, per site\.<\/p>[^]*?aria-label="Weekly averages"[^]*?Week 47, 2026/);
+    assert.ok(page.indexOf('Weekly averages') < page.indexOf(rows.length ? 'Ann Alfa' : 'ui-empty'), 'the section comes first');
+  }
 });
 
 test('a list page with groups draws a plate per group, its head and its own table of the shared columns', async () => {
@@ -450,17 +484,6 @@ test('a list page as cards: a card per row of one grid, its title and chip, its 
   assert.doesNotMatch(cards[0] ?? '', /<dt>Created<\/dt>|<dt>Status<\/dt>/, 'the chip and the foot are not facts');
   assert.match(cards[0] ?? '', /<div class="ui-list-card-foot"><span><span>Created 14\.03\.2026<\/span><\/span><span class="ui-list-card-actions"><a class="icon-button" href="\/sites\/1\/edit\/" aria-label="Edit Site 1"/);
   assert.doesNotMatch(page, /style=/);
-});
-
-test('a list filter may be a box ticked or not, named by its words in sight', async () => {
-  const { ListPage } = await import('./index.js');
-  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
-  const toolbar = { ...LIST_PROPS.toolbar, filters: [
-    { kind: 'check' as const, name: 'alerts', label: 'Only warnings and criticals', value: '1', checked: true, options: [] }] };
-  const page = html(<ListPage {...LIST_PROPS} toolbar={toolbar} />);
-  assert.match(page, /<label class="ui-check"><input type="checkbox" name="alerts" checked="" value="1"\/><span>Only warnings and criticals<\/span><\/label>/);
-  const off = html(<ListPage {...LIST_PROPS} toolbar={{ ...toolbar, filters: [{ ...toolbar.filters[0]!, checked: false }] }} />);
-  assert.doesNotMatch(off, /checked=""/);
 });
 
 test('a list cell may keep a long explanation closed under its lines, opened by its words', async () => {

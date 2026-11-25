@@ -97,18 +97,33 @@ def unit_cell(row):
     if row['water']:
         water = row['water']
         chips.append(L.chip(POINT_CHIP.get(water.status, 'neutral'), point_said(water)))
-    for mix in (stock.size_mixes if stock else ()):
-        chips.append(L.chip('warning', _('Mixed sizes: %(heavy)s and %(light)s (limit %(limit)s)') % {
-            'heavy': mix.heaviest.text, 'light': mix.lightest.text, 'limit': _times(mix.limit)}))
-        sub.append(f'{mix.heavy.code} · {mix.light.code}')
-    for chip in row['placements']:
-        chips.append(L.chip('accent', chip.label))
-        if chip.title:
-            sub.append(chip.title)
+    for found in (mix_chips(stock.size_mixes if stock else ()), placement_chips(row['placements'])):
+        chips += found[0]
+        sub += found[1]
     if row['withdrawal']:
         chips.append(L.chip('hold', _('Withdrawal')))
         sub += [f'{block.batch.code}: {harvest_from(block)}' for block in row['withdrawal']]
     return L.cell(unit.code, href=row['href'], strong=True, sub=sub, chips=chips)
+
+
+def mix_chips(mixes):
+    """([chip], [sub-line]) of a unit's size mixes (farm/_size_mixes.html): a warning chip each, its lots on a line."""
+    chips, sub = [], []
+    for mix in mixes:
+        chips.append(L.chip('warning', _('Mixed sizes: %(heavy)s and %(light)s (limit %(limit)s)') % {
+            'heavy': mix.heaviest.text, 'light': mix.lightest.text, 'limit': _times(mix.limit)}))
+        sub.append(f'{mix.heavy.code} · {mix.light.code}')
+    return chips, sub
+
+
+def placement_chips(placements):
+    """([chip], [sub-line]) of a unit's placements (farm/_placements.html): an accent chip each, its title on a line."""
+    chips, sub = [], []
+    for chip in placements:
+        chips.append(L.chip('accent', chip.label))
+        if chip.title:
+            sub.append(chip.title)
+    return chips, sub
 
 
 def _times(value):

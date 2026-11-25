@@ -11858,6 +11858,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_fast_of_the_unit.py",
@@ -13028,6 +13029,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
@@ -14139,6 +14141,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_health_pages_next.py",
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_production_overview_next.py",
         "farm/tests/test_production_plans_reads.py",
@@ -15028,6 +15031,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_production_plans_reads.py"
@@ -16901,6 +16905,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_harvest.py"

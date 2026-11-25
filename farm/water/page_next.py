@@ -89,8 +89,7 @@ def history_props(request, context):
                                 [('', _('All its points')), *((each.pk, f'{each.name} · {each.get_kind_display()}')
                                                               for each in context['point_choices'])]))
     filters += [L.day('from', _('From'), context['start']), L.day('to', _('To'), context['end']),
-                {'kind': 'check', 'name': 'alerts', 'label': _('Only warnings and criticals'), 'value': '1',
-                 'checked': context['alerts_only'], 'options': [], 'groups': []}]
+                L.check('alerts', _('Only warnings and criticals'), context['alerts_only'])]
     rows = []
     for row in context['history']:
         sample = row.sample

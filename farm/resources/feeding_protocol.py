@@ -12,7 +12,7 @@ from core import formpanels, listprops
 from core.crud import DRAFT, CreateView, Resource, ResourceView, UpdateView, done, filter_by
 
 from .. import words
-from ..feeding import assignments, protocols
+from ..feeding import assignments, lists, protocols
 from ..feeding.ration import Policy, band_range
 from ..feeding.read import tables
 from ..forms.feeding_protocol import (
@@ -35,6 +35,12 @@ class FeedingProtocolResource(Resource):
     form_template = 'farm/feeding_protocol_form.html'
     icon = 'table'
     page_size = 50
+    # the new look's list (farm/feeding/lists.py) in the classic list's words (farm/feeding_protocol_list.html)
+    search_placeholder = gettext_lazy('Search by name, species or notes')
+    empty_text = gettext_lazy('The feeding tables the farm feeds by: per weight band and water temperature, the feed and '
+                              'the share of the body weight given a day.')
+    list_rows = staticmethod(lists.protocols)
+    list_filters = staticmethod(lists.protocol_filters)
 
     @classmethod
     def queryset(cls):
@@ -237,6 +243,11 @@ class ProtocolAssignmentResource(Resource):
     icon = 'link'
     create_view = AssignmentCreateView
     page_size = 50
+    # the new look's list (farm/feeding/lists.py) in the classic list's words (farm/protocol_assignment_list.html)
+    search_placeholder = gettext_lazy('Search by protocol, unit or batch')
+    empty_text = gettext_lazy('Which feeding protocol feeds which fish, from which day.')
+    list_rows = staticmethod(lists.assignments)
+    list_filters = staticmethod(lists.assignment_filters)
 
     @classmethod
     def form(cls, request, *args, **kwargs):

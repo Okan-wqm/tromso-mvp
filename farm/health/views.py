@@ -22,6 +22,7 @@ from django.utils.translation import gettext as _, ngettext
 from core import navigation
 from core.crud import done, render_page
 from core.dates import read_day
+from core.ui import is_next
 from core.platform import unknown_withdrawal_days
 
 from ..forms.health import LastDayForm, LiceCountForm, TreatmentForm
@@ -31,7 +32,7 @@ from ..models.health import MedicineKind
 from ..stock import read as stock_read, views as stock_views
 from ..stock.dates import earliest, shown_date
 from ..stock.services import AlreadyRecorded
-from . import notices, read, services, withdrawal
+from . import notices, pages, read, services, withdrawal
 
 TREATMENTS = {'view': 'farm.view_treatment', 'add': 'farm.add_treatment', 'change': 'farm.change_treatment',
               'delete': 'farm.delete_treatment'}
@@ -53,6 +54,15 @@ def _back(request, default):
     if target.startswith('/') and url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
         return target
     return default
+
+
+def _page(request, template, context, props):
+    """The classic page, or in the new look (core.ui.is_next) the shared list page with the props of farm/health/pages.py
+    (`props`: their builder, given the request and the classic page's context)."""
+    if is_next(request):
+        return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow'],
+                                                            'props': props(request, context)})
+    return render_page(request, template, context)
 
 
 def dialog_url(name, back, unit=None, args=()):
@@ -145,7 +155,7 @@ def treatments(request):
     here = request.get_full_path()
     can_void, can_change = request.user.has_perm(TREATMENTS['delete']), request.user.has_perm(TREATMENTS['change'])
     kept = {key: value for key, value in params.items() if value}
-    return render_page(request, 'farm/treatment_list.html', _context(
+    return _page(request, 'farm/treatment_list.html', _context(
         TREATMENTS['view'],
         rows=[{'treatment': treatment, 'batches': batches[treatment.pk],
                'void_url': dialog_url('farm:treatment_void', here, args=[treatment.pk]) if can_void else '',
@@ -162,7 +172,7 @@ def treatments(request):
         # The courses whose unknown end has stopped holding fish (withdrawal rule 8), with what gives each an end.
         unresolved=[withdrawal.unresolved_text(batch, held) for batch, held in withdrawal.unresolved()],
         unknown_days=unknown_withdrawal_days(),
-    ))
+    ), pages.treatments_props)
 
 
 @permission_required(TREATMENTS['add'], raise_exception=True)
@@ -296,7 +306,7 @@ def lice_counts(request):
     here = request.get_full_path()
     can_void = request.user.has_perm(COUNTS['delete'])
     kept = {key: value for key, value in params.items() if value}
-    return render_page(request, 'farm/lice_list.html', _context(
+    return _page(request, 'farm/lice_list.html', _context(
         COUNTS['view'], weeks=weeks, weeks_shown=LICE_WEEKS,
         rows=[{'count': count, 'void_url': dialog_url('farm:lice_void', here, args=[count.pk]) if can_void else ''}
               for count in page.object_list],
@@ -306,7 +316,7 @@ def lice_counts(request):
         filtered=bool({key for key in kept if key != 'voided'}),
         clear_url=reverse('farm:lice_counts'),
         record_url=dialog_url('farm:lice_record', here) if request.user.has_perm(COUNTS['add']) else '',
-    ))
+    ), pages.lice_props)
 
 
 @permission_required(COUNTS['add'], raise_exception=True)

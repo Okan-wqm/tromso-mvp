@@ -83,6 +83,7 @@ class SensorEventsPageTests(AlarmsCase):
                 self.assertEqual(self.client.get(reverse('sensors:alarm_events')).status_code, 200)
             return len(seen)
         mirror(self.event)
+        queries()                                       # warm what a process reads once (the settings, the clocks)
         one = queries()
         for minutes in (1, 2, 3):
             opened = self.now - timedelta(minutes=minutes)          # closed ones: one event of a rule is open at a time

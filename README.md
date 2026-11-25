@@ -1693,6 +1693,23 @@ bounds hold 10 digits, 4 of them decimals, so a conductivity's limit fits:
 | `salinity_ppt` | Salinity (‰, g/kg) | 1 | 0 … 50 | 7 days |
 | `conductivity_25_us_cm` | Conductivity at 25 °C (µS/cm, temperature-compensated) | 0 | 0 … 100000 | 7 days |
 | `turbidity_ntu` | Turbidity (NTU) | 1 | 0 … 4000 | 7 days |
+| `phosphate_p_mg_l` | Phosphate (mg/L PO₄ as P) | 2 | 0 … 100 | 7 days |
+
+"Fresh" is the seeded default of Setup › Reference data › Water freshness, the user's rows (`farm/water/freshness.py`);
+a live value is fresh for its channel's heartbeats instead. **A worked-out value is never fresher than its oldest
+input** (the coordinator's decision of 2026-11-26). Each worked-out parameter declares the measured values it is worked
+out from (`farm/water/parameters.py` `inputs`; the NH₃-N and the NH₄-N: the TAN, the pH, the temperature and the
+salinity), and it stops being fresh at the first moment one of them does (`freshness.derived_until`), never later than
+its own row (7 days for both). Each input's end is its own: a sample's value its time plus its parameter's hours, a
+sensor's its channel's, a salinity found at the point or the owner's middle point that value's own, an oxygen basis's
+salinity the basis's time plus the salinity's hours; fresh water's assumed 0 has none. So the NH₃ of a sample goes stale
+with the sample's temperature (24 h), not with its TAN (7 days), and an NH₃ worked out with a salinity measured 160 h
+earlier goes stale 8 h after. The ionic-strength inputs (alkalinity, conductivity at 25 °C, hardness) only move the best
+estimate, never below the safe-side basis, and are not counted. The rule is answered in one place,
+`read.Reading.fresh_until` (`Reading.fresh`), which the water page, the drawer, the overview, the monitoring cards and
+the alarm engine all read; `evaluate.is_fresh` refuses a worked-out parameter without it, and a parameter made with
+`measured=False` and no `inputs` is refused where it is declared (`farm/tests/test_derived_fresh.py` guards both, and
+that each input alone running out ends every worked-out value).
 
 **A sample** is one row: what a person measured at one point at one moment, a typed column per
 parameter, empty when not measured, at least one value (a database check). The point is one sampling point
@@ -4660,8 +4677,9 @@ from which device, how late) is logged. The server side is built; the push trans
   severity's rule is never deleted (model, check, trigger: `alarms` 0006); a row lost all the same (a restore) never stops
   the evaluation: the safest value of each field stands in (no on-delay, the longest off-delay, the shortest escalation,
   the most attempts) and a critical configuration alarm says so until the row is back (F6). The staleness thresholds the
-  alarms depend on are rule data too (F10): how long a water value counts as fresh per parameter (Setup › Reference data ›
-  Water freshness, seeded with the hours the code held; the conductivity at 25 °C and the hardness by farm 0042, 7 and 14
+  alarms depend on are rule data too (F10): how long a water value counts as fresh per parameter (a worked-out one never
+  longer than its oldest input, see Operations › Water chemistry; Setup › Reference data › Water freshness, seeded with
+  the hours the code held; the conductivity at 25 °C and the hardness by farm 0042, 7 and 14
   days), the clock tolerance (Platform settings) and a sensor channel's
   fresh heartbeats; the ingest contract's hour (`evaluate.MAX_AHEAD`) is the contract's and stays. No number in the modules
   an alarm's decision reads is a threshold: a test reads them, each named exception with its reason.

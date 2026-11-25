@@ -469,6 +469,11 @@ tr[data-status="warning"] .ui-row-status { color: var(--warn); }
    run without spaces (hex) broken anywhere so it never widens the table */
 .ui-cell-details > summary { cursor: pointer; overflow-wrap: anywhere; }
 .ui-cell-details > .ui-cell-sub { margin-top: var(--space-1); overflow-wrap: anywhere; white-space: pre-wrap; }
+/* a cell's long explanation under its lines (ListCell `more`): closed, in the sub-line's size, its text left-aligned
+   even in a figure's column */
+.ui-cell-more { color: var(--text-3); font-size: var(--fs-small); font-weight: 400; text-align: start; }
+.ui-cell-more > summary { color: var(--text-2); }
+.ui-cell-more[open] { max-width: 28rem; }
 .ui-cell-strong { font-weight: 600; }
 /* a row's name stays readable on a phone: the table scrolls inside its frame rather than squeeze it to a word a line */
 .ui-table tbody th[scope="row"] { min-width: 10rem; }
@@ -587,6 +592,28 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
   .ui-timeline-row > span:empty { display: none; }
 }
 
+/* ================================================================================================== List cards ===
+   ui-list-cards: a list page's rows as cards (ListPage `cards`: Sites), one size in a regular grid whatever a card says:
+   a row of cards is as tall as its tallest, the foot (its date and actions) at every card's bottom. The head is the
+   record's name and code with its status chip beside; the facts two to a row, label above value, a long value wrapped,
+   never cut. One column under 640 px. */
+.ui-list-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+.ui-list-card { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--line-hair); border-radius: var(--radius-object); background: var(--surface-sheet); }
+.ui-list-card[data-status="critical"] { box-shadow: inset 4px 0 0 var(--crit); }
+.ui-list-card[data-status="warning"] { box-shadow: inset 4px 0 0 var(--warn); }
+.ui-list-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line-hair); }
+.ui-list-card-title { min-width: 0; margin: 0; font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+.ui-list-card-title a { color: var(--text-1); text-decoration: none; }
+.ui-list-card-title a:hover { color: var(--action); text-decoration: underline; }
+.ui-list-card-title .ui-cell-sub { margin-top: 2px; }
+.ui-list-card-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1; align-content: start; margin: 0; }
+.ui-list-card-facts > div { min-width: 0; padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--line-hair); }
+.ui-list-card-facts > div:nth-child(odd) { border-right: 1px solid var(--line-hair); }
+.ui-list-card-facts dt { color: var(--text-2); font-size: var(--fs-caption); }
+.ui-list-card-facts dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.ui-list-card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-4); color: var(--text-2); font-size: var(--fs-small); }
+.ui-list-card-actions { display: flex; gap: var(--space-1); margin-left: auto; }
+
 /* ====================================================================================================== Notice ===
    ui-notice: a sentence that must stay in sight. data-tone="warning" is the safety line ("Nothing is sent yet: …"), "ok"
    the flash after a save (with its close), "critical" an error, none a note. Glyph and words, a 4 px edge. */
@@ -599,6 +626,7 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-notice[data-tone="critical"] > .icon { color: var(--crit); }
 .ui-notice-body { flex: 1; min-width: 0; }
 .ui-notice-title { display: block; font-weight: 600; }
+.ui-notice-items { margin: var(--space-1) 0 0; padding-left: 1.2em; }
 .ui-notice > .icon-button { width: 32px; height: 32px; margin: -6px -6px -6px 0; border-color: transparent; color: inherit; }
 
 /* ======================================================================================= Empty, loading, error ===

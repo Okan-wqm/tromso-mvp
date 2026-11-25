@@ -2,8 +2,9 @@ from itertools import groupby
 
 from django.contrib import messages
 from django.utils.text import capfirst
-from django.utils.translation import gettext, gettext_lazy as _, pgettext_lazy
+from django.utils.translation import gettext, gettext_lazy as _, pgettext, pgettext_lazy
 
+from core import listprops as L
 from core.crud import NONE, Resource, filter_by
 
 from ..forms import SpeciesForm
@@ -81,3 +82,50 @@ class SpeciesResource(WithdrawalInput, Resource):
                 parts += [f'{label(name)}: {shown(name)}' for name in names]
         messages.info(request, gettext('Filled in from the species catalogue: %(values)s.') % {
             'values': '; '.join(parts)})
+
+    # The list in the new look (core/listprops.py), in the classic list's words (farm/species_list.html).
+    search_placeholder = _('Search by name, scientific name or code')
+    empty_text = _('A species the farm grows or stocks, such as Atlantic salmon or lumpfish: its names, its codes for the '
+                   'reports and the water it lives in.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [
+            L.choice('category', _('Category'), context['chosen_category'],
+                     [('', _('All categories')), *context['categories']]),
+            L.choice('water', _('Water environment'), context['chosen_water'],
+                     [('', _('All water environments')), *context['waters']]),
+            L.choice('cleaner_fish', _('Cleaner fish'), context['chosen_cleaner'],
+                     [('', _('All species')), (context['any_cleaner'], _('Cleaner fish only')), *context['cleaner_types'],
+                      (context['none_value'], _('Not a cleaner fish'))]),
+            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        from ..templatetags.stock import times
+
+        def official(species):
+            if species.official_code:
+                return L.cell(species.official_code)
+            return L.cell(chip=L.chip('warning', _('Missing')), sub=[_('Reports for this species cannot be filed without it.')])
+
+        return {
+            'columns': [L.column('species', pgettext('singular', 'Species')), L.column('scientific', _('Scientific name')),
+                        L.column('code', _('Code')), L.column('official', _('Official code')),
+                        L.column('category', _('Category')), L.column('water', _('Water')),
+                        L.column('cleaner', _('Cleaner fish')), L.column('size', _('Size limit')),
+                        L.column('status', _('Status'))],
+            'rows': [L.row(species.pk, {
+                'species': L.title(view, context, species, species.common_name, sub=[species.local_name]),
+                'scientific': L.cell(species.scientific_name, sub=[' · '.join(
+                    part for part in (species.family, species.genus) if part)]),
+                'code': L.cell(species.code),
+                'official': official(species),
+                'category': L.cell(species.get_category_display()),
+                'water': L.cell(', '.join(str(each) for each in species.water_environments())),
+                'cleaner': L.cell(species.get_cleaner_fish_type_display() if species.is_cleaner_fish else '–'),
+                'size': L.cell(times(species.max_weight_ratio) if species.max_weight_ratio is not None else _('No check')),
+                'status': L.badge(species.status, species.get_status_display()),
+            }, L.edit_delete(view, context, species, species.common_name)) for species in objects],
+        }

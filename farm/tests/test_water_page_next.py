@@ -81,11 +81,32 @@ class WaterPageNextTests(FrozenClock, TestCase):
         new = self.client.get(url, {**query, 'ui': 'next'}).content.decode()
         return old, new
 
+    def another_way(self, old, props):
+        """What the new page says another way, each checked here before it is ignored:
+        - a unit's history: the classic Latest links its row to the history page (`?point=` its middle point, `?unit=` a
+          unit without one); the new look links it to Tank › Water, the one home of a tank's water history
+          (farm.water.views._latest `next_look`): every such row of the props must link there;
+        - a value that could not be worked out: the classic cell's "?*" (the figure and the note's mark) is the chip's "?"
+          with the note in words under it (title_unsaid holds the note)."""
+        from ..models import SamplingPoint
+        units = {str(point.pk): point.unit_id for point in SamplingPoint.objects.filter(unit__isnull=False)}
+        found = set()
+        latest = 'measured' not in {column['key'] for column in props['table']['columns']}
+        for href in ([] if not latest else re.findall(r'href="(/operations/water/\?(?:point|unit)=[0-9a-f-]+)"', old)):
+            kind, _sep, pk = href.rpartition('?')[2].partition('=')
+            unit = units.get(pk) if kind == 'point' else pk
+            if unit is None:
+                continue
+            tank = reverse('farm:tank_water', args=[unit])
+            self.assertTrue(any(row['cells']['point']['href'] == tank for row in props['table']['rows']), href)
+            found.add(href)
+        return found | {'?*'}
+
     def held(self, language, query):
         old, new = self.pages(language, **query)
         props = props_of(new, 'list-page')
         self.assertEqual(title_unsaid(old, props, language), [])
-        self.assertEqual(unsaid(old, props, new_html=new, ignore=set(titles(old))), [])
+        self.assertEqual(unsaid(old, props, new_html=new, ignore=set(titles(old)) | self.another_way(old, props)), [])
         main = new[new.index('<main'):new.index('</main>')]
         self.assertIsNone(re.search(r'\sdata-modal[\s>=]', main), 'nothing opens the classic dialog')
         return old, new, props

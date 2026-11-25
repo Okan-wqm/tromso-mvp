@@ -125,7 +125,7 @@ html[data-ui="next"] .monitor-ok.is-next .monitor-card-state > .monitor-state { 
 html[data-ui="next"] .monitor-empty.is-next .monitor-card-state > .monitor-state { border-color: var(--surface-sunken); background-color: var(--surface-sunken); color: var(--text-1); }
 /* the chips under the head (the withdrawal: an hourglass and its first day of harvest) */
 html[data-ui="next"] .is-next > .monitor-chips { display: flex; flex-wrap: wrap; gap: .45em; }
-html[data-ui="next"] .is-next > .monitor-chips .badge { gap: .35em; border: 1px solid var(--text-1); background: var(--plate); color: var(--text-1); }
+html[data-ui="next"] .is-next > .monitor-chips .ui-chip { gap: .35em; border: 1px solid var(--text-1); background: var(--plate); color: var(--text-1); }
 /* the reasons: each a line in the state's tone with the state's glyph, the figure and its bound whole */
 html[data-ui="next"] .is-next > .monitor-reasons { display: flex; flex-direction: column; gap: .3em; padding: 0; list-style: none; }
 html[data-ui="next"] .is-next > .monitor-reasons > li { display: flex; align-items: flex-start; gap: .45em; color: var(--text-2); }

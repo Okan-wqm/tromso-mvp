@@ -25,7 +25,7 @@
     </div>
     <div class="monitor-card-state">{% include "monitoring/_state_word.html" %}</div>
   </header>
-  {% if card.withdrawal %}<p class="monitor-chips"><span class="badge badge-note" title="{% for block in card.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% include "icons/_icon.html" with name="hourglass" %}{% trans "Withdrawal" %} · {{ card.withdrawal.0|harvest_from }}</span></p>{% endif %}
+  {% if card.withdrawal %}<p class="monitor-chips"><span class="ui-chip" data-status="note" title="{% for block in card.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% include "icons/_icon.html" with name="hourglass" %}{% trans "Withdrawal" %} · {{ card.withdrawal.0|harvest_from }}</span></p>{% endif %}
   {% if state.reasons %}<ul class="monitor-reasons" role="list">{% for reason in state.reasons %}<li><span class="monitor-shape monitor-shape-{{ state.key }}" aria-hidden="true"></span>{{ reason }}</li>{% endfor %}</ul>{% endif %}
   {% if card.failed %}<p class="monitor-failed row-sub" role="status">{% trans "Could not be read" %}: {{ card.failed_text }}</p>{% endif %}
   {% if chosen.error %}<p class="monitor-template-error">{% blocktrans trimmed with name=chosen.name %}Template error: “{{ name }}” cannot be drawn; this card is shown as Detailed.{% endblocktrans %}</p>{% endif %}

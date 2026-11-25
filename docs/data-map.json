@@ -9617,7 +9617,8 @@
         "left_out": false
       },
       "tests": [
-        "farm/tests/test_escape_delivery.py"
+        "farm/tests/test_escape_delivery.py",
+        "experiments/tests/test_change_token.py"
       ]
     },
     {
@@ -13383,7 +13384,8 @@
       },
       "tests": [
         "core/tests_workspaces.py",
-        "farm/tests/test_harvest.py"
+        "farm/tests/test_harvest.py",
+        "experiments/tests/test_change_token.py"
       ]
     },
     {

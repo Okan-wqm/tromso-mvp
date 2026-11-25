@@ -1028,7 +1028,7 @@ What a line cannot say of an escape (akvakulturdriftsforskriften § 38, § 41 c,
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › escape_records
 - **forms**: `EscapeForm`
 - **constraints**: chk_escape_records_cause (check)
-- **tests that mention it**: `farm/tests/test_escape_delivery.py`
+- **tests that mention it**: `farm/tests/test_escape_delivery.py`, `experiments/tests/test_change_token.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1365,7 +1365,7 @@ Where a harvest went: the slaughter facility (required) and, when someone else c
 - **read**: farm.stock.views.production_units (`/operations/units/`); farm.harvest.views.harvests (`/operations/harvests/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › harvest_records
 - **forms**: `HarvestForm`
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_harvest.py`
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_harvest.py`, `experiments/tests/test_change_token.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -213,3 +213,42 @@ class StampTests(TokenCase):
         open_point = point_of(self.open_tank)
         self.assertEqual(sealing.works_of(type(open_point), [self.sealed_point.pk, open_point.pk]),
                          {str(self.sealed_point.pk): {str(self.experiment.pk)}, str(open_point.pk): set()})
+
+
+class ReadTimeRuleTests(TokenCase):
+    """The activity log's read-time rule (core.audit.sealed_out) on its own, without the stamp: an entry written before
+    entries were stamped (core/0016) has none, and the rule alone must hide it."""
+
+    def unstamped(self, record):
+        with mock.patch.object(audit, 'stamp'):
+            return audit.record(self.boss, AuditLog.Action.UPDATE, record, {'Note': [None, 'x']})
+
+    def test_an_unstamped_entry_about_a_record_hidden_with_its_operation_is_left_out(self):
+        """The escape and the harvest records' base manager is the sealed one (base_manager_name = 'all_objects'): the
+        rule reads the hidden rows past it, or it would find none of them and hide nothing."""
+        from farm.models import EscapeRecord, HarvestRecord
+        records = [EscapeRecord.objects.get(operation=self.escape), HarvestRecord.objects.get(operation=self.harvest)]
+        entries = [self.unstamped(record) for record in records]
+        self.assertEqual([entry.works for entry in entries], [[], []])
+        with sealing.as_viewer(self.researcher):
+            shown = set(audit.sealed_out(AuditLog.objects.filter(pk__in=[entry.pk for entry in entries])))
+        with sealing.as_viewer(self.lead):
+            team = set(audit.sealed_out(AuditLog.objects.filter(pk__in=[entry.pk for entry in entries])))
+        self.assertEqual((shown, team), (set(), set(entries)))
+
+
+class LogOrderTests(TokenCase):
+    def test_entries_of_one_moment_come_in_one_order_whatever_the_reading(self):
+        """The log is read newest first and, for entries of the same moment (one transaction, a frozen clock), by id:
+        one order however the statement is planned, the plain log's and a narrowed one's (sealed_out) alike, so a
+        list never tells by its order that something else was read beside it (run 45672059505)."""
+        self.assertEqual(AuditLog._meta.ordering, ['-created_at', '-id'])
+        moment = timezone.now()
+        with mock.patch('django.utils.timezone.now', return_value=moment):
+            made = {audit.record(self.boss, AuditLog.Action.UPDATE, self.open_tank, {'Note': [None, str(number)]}).pk
+                    for number in range(6)}
+        plain = [entry.pk for entry in AuditLog.objects.all() if entry.pk in made]
+        with sealing.as_viewer(self.researcher):
+            narrowed = [entry.pk for entry in audit.sealed_out(AuditLog.objects.all()) if entry.pk in made]
+        self.assertEqual(plain, sorted(made, reverse=True))
+        self.assertEqual(narrowed, plain)

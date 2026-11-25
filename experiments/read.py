@@ -500,7 +500,8 @@ def chips(units, user):
     distinct day, so the farm's pages do not grow with their units.
 
     A person who holds Oversee sees, on a tank of an experiment they may not read, the card instead (plan 3, owner
-    decision C2.5): "Research trial", its lead, its approval and its days; never its number, name, group, replicate or
+    decision C2.5): "Research trial", its lead, its approval and its days, and in full its care and biosecurity
+    instructions (owner 2026-11-24: whoever works the tank reads them); never its number, name, group, replicate or
     team, and no link. Each such card read is in the read log (`oversee`)."""
     by_day = {}
     for unit in units:
@@ -519,7 +520,8 @@ def chips(units, user):
                 found[unit_id] = [farm_placements.Placement(
                     label=label,
                     title=f'{experiment.name} ({experiment.get_status_display()})',
-                    url=reverse('experiments:experiment_detail', args=[experiment.pk]))]
+                    url=reverse('experiments:experiment_detail', args=[experiment.pk]),
+                    notice=experiment.care_instructions)]
     if user.has_perm('experiments.oversee_experiment') and not user.is_superuser:
         for day, unit_ids in by_day.items():
             for unit_id, card in cards([pk for pk in unit_ids if pk not in found], day).items():
@@ -557,7 +559,8 @@ def cards(unit_ids, day):
         if experiment.on_call_phone:
             parts.append(_('on call %(phone)s') % {'phone': experiment.on_call_phone})
         parts.append(_('%(first)s to %(last)s') % {'first': date_format(first), 'last': date_format(last)})
-        found[unit_id] = farm_placements.Placement(label=_('Research trial'), title=' · '.join(parts), url='')
+        found[unit_id] = farm_placements.Placement(label=_('Research trial'), title=' · '.join(parts), url='',
+                                                   notice=experiment.care_instructions)
     # Logged against each experiment shown, once, so its lead reads it on Who looked (review F8): one statement.
     sealing.log_accesses('oversee', 'experiment', [experiment.pk for experiment, *_rest in lines.values()],
                          part='systems', route='experiments.read.cards')

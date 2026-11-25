@@ -4986,6 +4986,12 @@ msgstr "Duruma göre kartlar"
 msgid "Cards can be added once the board is created."
 msgstr "Kartlar, pano oluşturulduktan sonra eklenebilir."
 
+msgid "Care and biosecurity instructions"
+msgstr "Bakım ve biyogüvenlik talimatları"
+
+msgid "Care instructions"
+msgstr "Bakım talimatları"
+
 msgid "Carried out by"
 msgstr "Uygulayan"
 
@@ -18318,6 +18324,15 @@ msgstr "Ne"
 
 msgid "What caused it, or what is thought to have."
 msgstr "Nedeni veya neden olduğu düşünülen şey."
+
+msgid ""
+"What everyone who works its tanks must do: protective equipment, disinfection, the order the "
+"tanks are handled in. Shown beside its tanks to everyone who works them, outside the team too; "
+"write no design or result here."
+msgstr ""
+"Tanklarında çalışan herkesin yapması gerekenler: koruyucu ekipman, dezenfeksiyon, tankların hangi"
+" sırayla ele alınacağı. Tankların yanında, ekip dışından da olsa onlarda çalışan herkese "
+"gösterilir; buraya tasarım ya da sonuç yazmayın."
 
 msgid "What happened"
 msgstr "Ne oldu"

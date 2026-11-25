@@ -4922,6 +4922,7 @@
         "experiments/tests/test_pages.py",
         "experiments/tests/test_review.py",
         "experiments/tests/test_triggers.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py"
       ]
     },
@@ -6013,6 +6014,7 @@
         "experiments/tests/test_seal_budget.py",
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py"
       ]
     },
@@ -6298,6 +6300,7 @@
         "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
         "experiments/tests/test_sealing_schema.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py"
       ]
     },
@@ -6655,6 +6658,7 @@
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
         "experiments/tests/test_triggers.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py"
       ]
     },
@@ -7613,6 +7617,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "care_instructions",
+          "field": "care_instructions",
+          "type": "varchar(1000)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ExperimentForm › Approval"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -7764,6 +7781,7 @@
             "approval_ref": "Approval",
             "approval_valid_until": "Approval",
             "on_call_phone": "Approval",
+            "care_instructions": "Approval",
             "version": ""
           }
         },
@@ -7796,6 +7814,7 @@
         "experiments/tests/__init__.py",
         "experiments/tests/test_access.py",
         "experiments/tests/test_amend.py",
+        "experiments/tests/test_care.py",
         "experiments/tests/test_change_token.py",
         "experiments/tests/test_collaborator.py",
         "experiments/tests/test_confidential.py",
@@ -7812,6 +7831,7 @@
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
         "experiments/tests/test_triggers.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py"
       ]
     },
@@ -11307,6 +11327,7 @@
         "experiments/tests/test_oversee.py",
         "experiments/tests/test_rawdata.py",
         "experiments/tests/test_review.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py",
         "monitoring/tests/test_pages.py"
       ]
@@ -19146,7 +19167,8 @@
         "reports/tests/test_cleaner.py",
         "experiments/tests/test_change_token.py",
         "experiments/tests/test_oversee.py",
-        "experiments/tests/test_overview.py"
+        "experiments/tests/test_overview.py",
+        "experiments/tests/test_university.py"
       ]
     },
     {
@@ -21017,6 +21039,7 @@
         "experiments/tests/test_places.py",
         "experiments/tests/test_preflight.py",
         "experiments/tests/test_sealing_schema.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_templates_db.py",
@@ -22122,6 +22145,7 @@
         "experiments/tests/test_seal_budget.py",
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py",
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_boards.py",
@@ -24335,6 +24359,7 @@
         "reports/tests/test_compute.py",
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_oversee.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py",
         "monitoring/tests/test_pages.py"
       ]
@@ -44763,6 +44788,7 @@
         "experiments/tests/test_change_token.py",
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_oversee.py",
+        "experiments/tests/test_university.py",
         "experiments/tests/world.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_token.py"

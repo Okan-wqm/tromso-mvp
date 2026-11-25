@@ -4976,6 +4976,12 @@ msgstr "Kort etter tilstand"
 msgid "Cards can be added once the board is created."
 msgstr "Kort kan legges til når panelet er opprettet."
 
+msgid "Care and biosecurity instructions"
+msgstr "Stell- og smittevernsinstrukser"
+
+msgid "Care instructions"
+msgstr "Stellinstrukser"
+
 msgid "Carried out by"
 msgstr "Utført av"
 
@@ -18273,6 +18279,15 @@ msgstr "Hva"
 
 msgid "What caused it, or what is thought to have."
 msgstr "Hva som forårsaket det, eller hva som antas å ha gjort det."
+
+msgid ""
+"What everyone who works its tanks must do: protective equipment, disinfection, the order the "
+"tanks are handled in. Shown beside its tanks to everyone who works them, outside the team too; "
+"write no design or result here."
+msgstr ""
+"Hva alle som arbeider med karene må gjøre: verneutstyr, desinfeksjon, rekkefølgen karene "
+"håndteres i. Vises ved karene for alle som arbeider med dem, også utenfor teamet; skriv ikke "
+"design eller resultater her."
 
 msgid "What happened"
 msgstr "Hva som skjedde"

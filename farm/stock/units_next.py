@@ -98,6 +98,9 @@ def placement_chips(placements):
         chips.append(L.chip('accent', chip.label))
         if chip.title:
             sub.append(chip.title)
+        if chip.notice:
+            chips.append(L.chip('warning', _('Care instructions')))
+            sub.append(chip.notice)
     return chips, sub
 
 

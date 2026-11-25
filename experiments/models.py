@@ -121,6 +121,11 @@ class Experiment(AuditedModel):
     approval_valid_until = models.DateField(_('Approval valid until'), null=True, blank=True)
     # A number the lead types for whoever keeps the fish at night (the Oversee card only); HR keeps no contact detail.
     on_call_phone = models.CharField(_('On-call phone'), max_length=30, blank=True, default='', db_default='')
+    # What everyone who works its tanks must do (owner 2026-11-24: welfare and people's safety come before
+    # confidentiality): protective equipment, disinfection, the order tanks are handled in. Shown with the tanks to
+    # everyone who works them (the Oversee card and the team's chip, experiments.read), never the design or the pathogen.
+    care_instructions = models.CharField(_('Care and biosecurity instructions'), max_length=1000, blank=True, default='',
+                                         db_default='')
 
     kept_note = _('They stay as they are.')
 

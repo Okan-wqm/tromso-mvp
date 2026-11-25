@@ -567,7 +567,7 @@ A thing the groups differ in: the diet (each of its levels names a feeding proto
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_factors
 - **forms**: `FactorRowForm`
 - **constraints**: uq_experiment_factors_name_live (unique: name, experiment); uq_experiment_factors_diet (unique: experiment); uq_experiment_factors_id_experiment (unique: id, experiment); uq_experiment_factors_id_kind (unique: id, kind); chk_experiment_factors_kind (check); chk_experiment_factors_diet_unit (check)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_copy.py` and 6 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_copy.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -684,7 +684,7 @@ A person of the experiment's team, with their part.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Research › experiment_members
 - **forms**: `MemberForm`, `MemberForm`
 - **constraints**: uq_experiment_members_user (unique: experiment, user); uq_experiment_members_lead (unique: experiment); chk_experiment_members_role (check); chk_experiment_members_window (check)
-- **tests that mention it**: `core/test_world.py`, `experiments/tests/__init__.py`, `experiments/tests/test_access.py` and 11 more
+- **tests that mention it**: `core/test_world.py`, `experiments/tests/__init__.py`, `experiments/tests/test_access.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -708,7 +708,7 @@ A whole system booked to a replicate for a range of days, both included: the int
 - **how it works**: A whole system booked for a replicate, each nested system its own row, its tanks placed and tagged with it (services.save_places); no other experiment books the system or one of its tanks on those days.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_replicate_systems
 - **constraints**: chk_experiment_bookings_period (check); excl_replicate_systems_system (exclusion: system, from_on, until_on)
-- **tests that mention it**: `experiments/tests/test_pages.py`, `experiments/tests/test_places.py`, `experiments/tests/test_sealing_schema.py` and 1 more
+- **tests that mention it**: `experiments/tests/test_pages.py`, `experiments/tests/test_places.py`, `experiments/tests/test_sealing_schema.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -740,7 +740,7 @@ A tank booked to a replicate for a range of days, both included, on the site's c
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Research › experiment_replicate_units
 - **forms**: `PlaceRowForm`
 - **constraints**: chk_experiment_placements_period (check); excl_replicate_units_unit (exclusion: unit, from_on, until_on)
-- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_amend.py` and 14 more
+- **tests that mention it**: `experiments/tests/__init__.py`, `experiments/tests/test_access.py`, `experiments/tests/test_amend.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -831,7 +831,7 @@ A trial of one species on one site: its design, its allocation and its dates; al
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Research › experiments
 - **forms**: `ExperimentForm`, `AudienceForm`
 - **constraints**: uq_experiments_code (unique: code); chk_experiments_code (check); chk_experiments_status (check); chk_experiments_audience (check); chk_experiments_approval (check); chk_experiments_endpoint (check); chk_experiments_duration (check); chk_experiments_template (check); chk_experiments_started (check); chk_experiments_allocation (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/test_world.py`, `core/tests_entry_key.py` and 23 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_world.py`, `core/tests_entry_key.py` and 25 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -863,6 +863,7 @@ A trial of one species on one site: its design, its allocation and its dates; al
 | approval_ref | varchar(60) |  |  | ExperimentForm › Approval |
 | approval_valid_until | date | yes |  | ExperimentForm › Approval |
 | on_call_phone | varchar(30) |  |  | ExperimentForm › Approval |
+| care_instructions | varchar(1000) |  |  | ExperimentForm › Approval |
 
 ## farm
 
@@ -1179,7 +1180,7 @@ Feed given to one unit on one day: the farm's feeding record.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › feeding_records
 - **forms**: `FeedingForm`
 - **constraints**: chk_feeding_records_amount (check); chk_feeding_records_target (check); chk_feeding_records_meals (check); chk_feeding_records_void_reason (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 14 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1839,7 +1840,7 @@ A line of the stock ledger: fish of one batch into (+) or out of (−) one unit,
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › stock_movements
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`
 - **constraints**: chk_stock_movements_kind (check); chk_stock_movements_sign (check); chk_stock_movements_weight_positive (check); chk_stock_movements_weight_required (check); chk_stock_movements_weight_inherited (check); chk_stock_movements_pair (check); chk_stock_movements_measured (check); chk_stock_movements_reason (check); chk_stock_movements_escape_removes (check); chk_stock_movements_size_class (check); chk_stock_movements_harvest_weighed (check); chk_stock_movements_sample (check); uq_stock_movements_line (unique: operation, unit, batch, kind, pair)
-- **tests that mention it**: `core/tests_rev.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_emptied_unit.py` and 14 more
+- **tests that mention it**: `core/tests_rev.py`, `farm/tests/test_cleaner_fish.py`, `farm/tests/test_emptied_unit.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1986,7 +1987,7 @@ A production system of a site: a RAS, a pond, a cage line, a hatchery.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › systems
 - **forms**: `SystemForm`
 - **constraints**: uq_systems_site_code_live (unique: site, code); chk_systems_total_volume (check); chk_systems_max_biomass (check); chk_systems_not_its_own_parent (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 44 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 45 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2022,7 +2023,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 74 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 75 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2209,7 +2210,7 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
 - **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_hardness_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_conductivity_25_us_cm (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_phosphate_p_mg_l (check); chk_water_measurements_ph_scale (check); chk_water_measurements_phosphate_unit (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_rev.py` and 28 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_rev.py` and 29 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -4169,7 +4170,7 @@ A job at one place for one or more people, due on a day on the clock of the plac
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › tasks
 - **forms**: `TaskForm`
 - **constraints**: chk_tasks_one_place (check); chk_tasks_title (check); chk_tasks_category (check); chk_tasks_priority (check); chk_tasks_status (check); chk_tasks_started (check); chk_tasks_in_progress_started (check); chk_tasks_open_not_started (check); chk_tasks_done (check); chk_tasks_cancelled (check); chk_tasks_occurrence (check); uq_tasks_series_occurrence (unique: series, occurrence_date)
-- **tests that mention it**: `core/test_world.py`, `core/tests_formpanels.py`, `core/tests_panel_next.py` and 15 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_formpanels.py`, `core/tests_panel_next.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

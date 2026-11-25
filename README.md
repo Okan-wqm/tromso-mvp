@@ -3474,7 +3474,11 @@ farm facts (stock, mortality, feeding, water, health, lice, withdrawal, tasks, a
 chip, and each card read is logged as `oversee`. Migration 0005 gives it to every role that records stock, feeding,
 health, treatments or lice; the platform admin gives and takes it away, and the matrix says which duties it touches.
 The **approval** (FOTS reference and last day) is on the experiment's Approval tab, editable after the start, with an
-optional **on-call phone** the lead types, shown only on the Oversee card (HR keeps no contact detail). An alarm on a
+optional **on-call phone** the lead types, shown only on the Oversee card (HR keeps no contact detail), and its **care
+and biosecurity instructions** (owner 2026-11-24: welfare and people's safety come before confidentiality): what
+everyone who works its tanks must do, shown in full beside its tanks (Production units, the drawer, the meal board, the
+monitoring card; a "Care instructions" chip and the text in the new look) to the team and to every holder of Oversee,
+never the design or the pathogen (migration 0006 lets the lead change it after the start). An alarm on a
 sealed cell goes to the people of the rules who may see it; when none may, to the experiment's lead and the Oversee
 holders. Regulatory reports and their due list, the medicine withdrawal's reader, the stock fold and the store's feed
 book count every unit whoever asks; what a page prints of them is read as the person (a unit or batch they may not see

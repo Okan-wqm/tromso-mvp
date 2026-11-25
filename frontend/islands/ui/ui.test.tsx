@@ -415,3 +415,50 @@ test('a blocked delete: the plan\'s reasons are said and its Delete button is of
   const open = html(<ConfirmDelete {...OPEN_PROPS} />);
   assert.doesNotMatch(open, /<button[^>]*disabled/);
 });
+
+test('a list page notice may have a title, more links and the items it is about; a help sentence has the info glyph', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const page = html(<ListPage {...LIST_PROPS} notices={[
+    { key: 'points', tone: 'info', text: 'The points of TT-01.', link: { href: '/sampling-points/', label: 'Show all' },
+      more: [{ href: '/sampling-points/new/?unit=1', label: 'Add a point to it' }] },
+    { key: 'missing', tone: 'warning', title: 'Fish with no limit', text: 'Add the limits your vet gives.',
+      items: ['Atlantic salmon (Any water): Oxygen, pH', 'Lumpfish (Sea water): pH'] },
+  ]} />);
+  assert.match(page, /<div class="ui-notice" role="status">[^]*?The points of TT-01\. <a href="\/sampling-points\/">Show all<\/a><span> · <a href="\/sampling-points\/new\/\?unit=1">Add a point to it<\/a><\/span><\/div>/);
+  assert.doesNotMatch(page, /data-tone="info"/, 'a help sentence is drawn as a neutral notice');
+  assert.match(page, /<div class="ui-notice" data-tone="warning" role="status">[^]*?<strong class="ui-notice-title">Fish with no limit<\/strong>Add the limits your vet gives\.<ul class="ui-notice-items"><li>Atlantic salmon \(Any water\): Oxygen, pH<\/li><li>Lumpfish \(Sea water\): pH<\/li><\/ul>/);
+});
+
+test('a list page as cards: a card per row of one grid, its title and chip, its facts with nothing empty, its foot and actions', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const row = (key: string, contact: string | null) => ({ key, cells: {
+    site: { text: `Site ${key}`, href: `/sites/${key}/edit/`, strong: true, sub: [`S-${key}`] },
+    status: { text: null, chip: { kind: 'ok' as const, text: 'Active' } },
+    type: { text: 'Sea' }, contact: { text: contact }, created: { text: 'Created 14.03.2026' },
+  }, actions: [{ kind: 'link' as const, href: `/sites/${key}/edit/`, label: `Edit Site ${key}`, icon: 'pencil' as const }] });
+  const columns = ['site', 'status', 'type', 'contact', 'created'].map((key) => ({ key, label: key[0]?.toUpperCase() + key.slice(1) }));
+  const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, columns, rows: [row('1', 'a@example.com'), row('2', null)] }}
+    cards={{ chip: 'status', foot: ['created'] }} />);
+  assert.doesNotMatch(page, /<table/, 'cards, no table');
+  const cards = page.split('<li class="ui-list-card"').slice(1);
+  assert.equal(cards.length, 2);
+  assert.match(cards[0] ?? '', /<h2 class="ui-list-card-title"><a href="\/sites\/1\/edit\/">Site 1<\/a><span class="ui-cell-sub">S-1<\/span><\/h2><span class="ui-chip"[^>]*>[^]*?Active/);
+  assert.match(cards[0] ?? '', /<dt>Type<\/dt><dd><span>Sea<\/span><\/dd><\/div><div><dt>Contact<\/dt><dd><span>a@example\.com<\/span><\/dd>/);
+  assert.doesNotMatch(cards[1] ?? '', /<dt>Contact<\/dt>/, 'a fact with nothing to say is left out');
+  assert.doesNotMatch(cards[0] ?? '', /<dt>Created<\/dt>|<dt>Status<\/dt>/, 'the chip and the foot are not facts');
+  assert.match(cards[0] ?? '', /<div class="ui-list-card-foot"><span><span>Created 14\.03\.2026<\/span><\/span><span class="ui-list-card-actions"><a class="icon-button" href="\/sites\/1\/edit\/" aria-label="Edit Site 1"/);
+  assert.doesNotMatch(page, /style=/);
+});
+
+test('a list filter may be a box ticked or not, named by its words in sight', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const toolbar = { ...LIST_PROPS.toolbar, filters: [
+    { kind: 'check' as const, name: 'alerts', label: 'Only warnings and criticals', value: '1', checked: true, options: [] }] };
+  const page = html(<ListPage {...LIST_PROPS} toolbar={toolbar} />);
+  assert.match(page, /<label class="ui-check"><input type="checkbox" name="alerts" value="1" checked=""\/><span>Only warnings and criticals<\/span><\/label>/);
+  const off = html(<ListPage {...LIST_PROPS} toolbar={{ ...toolbar, filters: [{ ...toolbar.filters[0]!, checked: false }] }} />);
+  assert.doesNotMatch(off, /checked=""/);
+});

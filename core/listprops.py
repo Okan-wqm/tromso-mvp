@@ -19,8 +19,19 @@ from django.utils.translation import gettext as _
 from . import ui
 
 ICONS = Path(settings.BASE_DIR) / 'templates' / 'icons'
-TONES = {'critical', 'warning', 'ok', 'neutral'}
+TONES = {'critical', 'warning', 'ok', 'neutral', 'info'}    # info: a page's help sentence (the classic panel-help)
 STATUS_CHIP = {'active': 'ok', 'inactive': 'neutral'}     # a record's Active / Inactive as its chip
+# A record's status as its chip, by the classic list's badge (`badge badge-<status>`; static/css/ds.css maps each onto a
+# tone): the same tone, but an active or operational record is the design's OK and a trial status its hold.
+BADGE_CHIP = {
+    **dict.fromkeys(('active', 'operational'), 'ok'),
+    **dict.fromkeys(('harvesting', 'reviewed', 'done'), 'note'),
+    **dict.fromkeys(('inactive', 'construction', 'standby', 'decommissioned', 'discontinued', 'preparing', 'fallow',
+                     'draft', 'cancelled'), 'neutral'),
+    **dict.fromkeys(('maintenance', 'repair', 'cleaning', 'suspended', 'retired'), 'warning'),
+    **dict.fromkeys(('closed', 'offline', 'out_of_service', 'quarantine', 'blocked'), 'critical'),
+    **dict.fromkeys(('experimental', 'in_progress'), 'hold'),
+}
 CHIPS = {'ok', 'warning', 'critical', 'hold', 'neutral', 'note', 'accent', 'stale', 'nodata'}
 
 
@@ -82,6 +93,18 @@ def details(summary, lines):
     return {'summary': str(summary), 'lines': [str(line) for line in lines if line not in (None, '')]}
 
 
+def badge(status, text):
+    """A record's status as its chip (BADGE_CHIP) in its words (`get_status_display`); a status with no tone is neutral."""
+    return cell(chip=chip(BADGE_CHIP.get(status, 'neutral'), text))
+
+
+def cards(chip=None, foot=()):
+    """The rows drawn as a grid of cards instead of a table (ListPage.tsx `cards`; Sites, as its classic page): a card's
+    head is the first column's cell with the `chip` column's beside it, its facts the other columns (label and cell, an
+    empty cell left out), its foot the `foot` columns and the row's actions."""
+    return {'chip': chip, 'foot': list(foot)}
+
+
 def row(key, cells, actions=(), status=None, voided=False):
     return {'key': str(key), 'status': status, 'voided': bool(voided), 'cells': cells, 'actions': list(actions)}
 
@@ -116,13 +139,21 @@ def tabs(label, items):
                                           for href, text, count, current in items]}
 
 
-def notice(key, tone, text, link=None):
-    """A sentence above the table in its tone; `link` (href, label) ends it with a link ("Show them")."""
+def notice(key, tone, text, link=None, more=(), title=None, items=()):
+    """A sentence above the table in its tone; `link` (href, label) ends it with a link ("Show them"), `more` with more such
+    links after it (Sampling points of one owner: "Show all · Add a point to it"). `title` heads it, `items` list under it
+    what it is about, a line each (Water limits' fish with no limit: "Atlantic salmon (Any water): Oxygen, pH")."""
     if tone not in TONES:
         raise ValueError(f'no notice tone {tone!r}')
     said = {'key': key, 'tone': tone, 'text': str(text)}
     if link is not None:
         said['link'] = {'href': link[0], 'label': str(link[1])}
+    if more:
+        said['more'] = [{'href': href, 'label': str(label)} for href, label in more]
+    if title is not None:
+        said['title'] = str(title)
+    if items:
+        said['items'] = [str(item) for item in items]
     return said
 
 
@@ -192,6 +223,8 @@ def list_props(view, objects, context):
         'table': {'label': str(r.title(view.mount)), 'columns': table['columns'], 'rows': table['rows'],
                   'actionsLabel': _('Actions')},
         'timeline': table.get('timeline'),
+        # a tab's rows in groups (Water limits: a plate per species) or as cards (Sites), only when it draws them so
+        **{key: table[key] for key in ('groups', 'cards') if table.get(key)},
         'empty': empty(view, context),
         'pager': pager(context.get('page'), context.get('pager_query', '')),
     }

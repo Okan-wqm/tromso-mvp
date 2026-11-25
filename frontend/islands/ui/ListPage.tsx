@@ -69,13 +69,30 @@ export interface ListGroup {
   rows: string[];
 }
 
+export interface ListNotice {
+  key: string;
+  tone: NoticeTone;
+  text: string;
+  link?: ListLink | null;
+  /** more links after the first, " · " between them */
+  more?: ListLink[];
+  title?: string;
+  /** what the notice is about, a line each ("Atlantic salmon (Any water): Oxygen, pH") */
+  items?: string[];
+}
+
+/** The rows drawn as cards: the column whose cell is the card's chip, and the columns drawn in its foot. */
+export interface ListCards { chip: string | null; foot: string[] }
+
 export interface ListFilterOption { value: string; label: string }
 export interface ListFilter {
-  /** a select (the default), or a day typed the European way (frontend/date-input.ts tidies it) */
-  kind?: 'select' | 'day';
+  /** a select (the default), a day typed the European way (frontend/date-input.ts tidies it), or a box that is ticked
+   *  or not (`checked`; it sends `value` when ticked: Water chemistry's "Only warnings and criticals") */
+  kind?: 'select' | 'day' | 'check';
   name: string;
   label: string;
   value: string;
+  checked?: boolean;
   placeholder?: string;
   options: ListFilterOption[];
   /** options under group labels (an optgroup each), after `options` */
@@ -94,13 +111,18 @@ export interface ListPageProps {
     submit: string;
     add: ListLink | null;
   };
-  /** sentences above the table; one may end in a link (Systems' "Show them") */
-  notices: { key: string; tone: NoticeTone; text: string; link?: ListLink | null }[];
+  /** sentences above the table; one may end in links (Systems' "Show them"; Sampling points' "Show all · Add a point to
+   *  it"), have a title and list what it is about (Water limits' fish with no limit) */
+  notices: ListNotice[];
   /** lines above the table ("Showing 200 of 250 requests.") */
   lines: string[];
   table: { label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string };
   /** the rows in groups, one plate and table each (optional: without it, one table) */
   groups?: ListGroup[] | null;
+  /** the rows as a grid of cards instead of a table (Sites; optional): a card's head the first column's cell with the
+   *  chip column's beside it, its facts the other columns (a cell with nothing to say left out), its foot the foot
+   *  columns' cells and the row's actions */
+  cards?: ListCards | null;
   /** a timeline of the listed rows above the table, in a plate of its title (a channel's bindings over time; optional) */
   timeline?: (TimelineProps & { title: string }) | null;
   /** said when there is no row: "No … yet" with what to do, or "No … match" with the way back */
@@ -171,7 +193,13 @@ export function ListToolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) 
             <input id={searchId} type="search" name={search.name} defaultValue={search.value} placeholder={search.placeholder} />
           </div>
         ) : null}
-        {filters.map((filter) => (
+        {filters.map((filter) => filter.kind === 'check' ? (
+          // a box is named by its words beside it, in sight (a ticked filter must say what it hides)
+          <label key={filter.name} className="ui-check">
+            <input type="checkbox" name={filter.name} value={filter.value} defaultChecked={Boolean(filter.checked)} />
+            <span>{filter.label}</span>
+          </label>
+        ) : (
           <label key={filter.name}>
             <span className="sr-only">{filter.label}</span>
             {filter.kind === 'day' ? (
@@ -232,16 +260,78 @@ function Groups({ groups, table, csrfToken }: { groups: ListGroup[]; table: List
   );
 }
 
-export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, timeline, empty, pager }: ListPageProps) {
+/** A notice of the list: its title, its sentence, its links (" · " between them) and the items it is about. */
+function ListNoticeView({ notice }: { notice: ListNotice }) {
+  return (
+    <Notice tone={notice.tone} {...(notice.title ? { title: notice.title } : {})}>
+      {notice.text}
+      {notice.link ? <> <a href={notice.link.href}>{notice.link.label}</a></> : null}
+      {notice.more?.map((link) => <span key={link.href + link.label}> · <a href={link.href}>{link.label}</a></span>)}
+      {notice.items?.length ? (
+        <ul className="ui-notice-items">
+          {notice.items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : null}
+    </Notice>
+  );
+}
+
+/** Whether a cell says anything (a card leaves out a fact with nothing to say, as the classic card does). */
+function says(cell: ListCell | undefined): cell is ListCell {
+  return Boolean(cell && (cell.text || cell.chip || cell.chips?.length || cell.sub?.length || cell.details));
+}
+
+/** The rows as cards of one size in a regular grid: a card's head the first column's cell (its title and code) with the
+ *  chip column's cell beside it, its facts the other columns' labels and cells, its foot the foot columns' cells and the
+ *  row's actions, kept at the card's bottom. */
+function RowCards({ label, columns, rows, cards, csrfToken }: {
+  label: string; columns: ListColumn[]; rows: ListRow[]; cards: ListCards; csrfToken: string;
+}) {
+  const [head, ...rest] = columns;
+  const facts = rest.filter((column) => column.key !== cards.chip && !cards.foot.includes(column.key));
+  return (
+    <ul className="ui-list-cards" aria-label={label}>
+      {rows.map((row) => {
+        const title = head ? row.cells[head.key] : undefined;
+        const chip = cards.chip ? row.cells[cards.chip] : undefined;
+        return (
+          <li key={row.key} className="ui-list-card" data-status={row.status ?? undefined}>
+            <div className="ui-list-card-head">
+              <h2 className="ui-list-card-title">
+                {title?.href ? <a href={title.href}>{title.text}</a> : title?.text}
+                {title?.sub?.length ? <span className="ui-cell-sub">{title.sub.join(' · ')}</span> : null}
+              </h2>
+              {says(chip) ? <Cell cell={chip} /> : null}
+            </div>
+            <dl className="ui-list-card-facts">
+              {facts.map((column) => {
+                const cell = row.cells[column.key];
+                return says(cell) ? <div key={column.key}><dt>{column.label}</dt><dd><Cell cell={cell} /></dd></div> : null;
+              })}
+            </dl>
+            <div className="ui-list-card-foot">
+              {cards.foot.map((key) => { const cell = row.cells[key]; return says(cell) ? <span key={key}><Cell cell={cell} /></span> : null; })}
+              {row.actions.length ? (
+                <span className="ui-list-card-actions">
+                  {row.actions.map((action) => <Action key={action.href + action.label} action={action} csrfToken={csrfToken} />)}
+                </span>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, cards, timeline, empty, pager }: ListPageProps) {
   return (
     <>
       {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
       <ListToolbar toolbar={toolbar} />
-      {notices.map((notice) => (
-        <Notice key={notice.key} tone={notice.tone}>
-          {notice.text}{notice.link ? <> <a href={notice.link.href}>{notice.link.label}</a></> : null}
-        </Notice>
-      ))}
+      {notices.map((notice) => <ListNoticeView key={notice.key} notice={notice} />)}
       {table.rows.length ? (
         <>
           {timeline ? (
@@ -250,7 +340,8 @@ export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, grou
             </Plates>
           ) : null}
           {lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}
-          {groups && groups.length ? <Groups groups={groups} table={table} csrfToken={csrfToken} />
+          {cards ? <RowCards label={table.label} columns={table.columns} rows={table.rows} cards={cards} csrfToken={csrfToken} />
+            : groups && groups.length ? <Groups groups={groups} table={table} csrfToken={csrfToken} />
             : <RowsTable label={table.label} columns={table.columns} rows={table.rows} actionsLabel={table.actionsLabel}
               csrfToken={csrfToken} />}
           {pager ? (

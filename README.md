@@ -1121,12 +1121,14 @@ grey, with the alarm system's "no active sampling point" warning, which no longe
 one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
 in `status` and `point_status`) makes it critical: the Small and Big cards, the wall, the pane and the band's chip say
 "Dissolved oxygen (mg/L O₂): no recent data, 3 hours old" (the chip "O₂ (mg/L): no recent data", one chip for every unit
-it holds), the water page's row, Production units and the production overview say "Critical, no recent data" with that
+it holds), the water page's row (in both looks; a unit's row is the point that stands for it, `read.anchors`: its middle point,
+else an outlet, review 6, M2), Production units and the production overview say "Critical, no recent data" with that
 sentence. The alarms say it too, once per unit: a silent oxygen probe is its default "No fresh value" rule's critical
 alarm (Sensors); a typed oxygen sample grown old, or a unit with no oxygen probe watched by a "No fresh value" rule, is a
 critical alarm of the alarm system, "T-01: Dissolved oxygen (mg/L O₂): no recent data, 1 day old" (`alarms/sources.py`
-`_silent_subjects`, subject `system:unit:<unit>:no_fresh_oxygen`), never a second one beside the probe's
-(`sensors.alarms.watched`); it ends once the oxygen is fresh again, or "no fish in the unit any more". **Fish present
+`_silent_subjects`, subject `system:unit:<unit>:no_fresh_oxygen`), never a second one beside the probe's where a rule
+that raises a critical at the channel's freshness covers it (`sensors.alarms.watched`; a farm's own warning or delayed
+rule, or the default lowered to a warning, never makes the critical wait or weaken: review 6, M1); it ends once the oxygen is fresh again, or "no fish in the unit any more". **Fish present
 guard** (the coordinator's call of 2026-11-23, against false alarms): all of it only where the unit holds fish; a fallow
 or empty unit stays grey "no recent data" and raises no alarm, and so do the sensors' default "No fresh value" rules
 (they hold only where their place's water concerns fish, `farm.water.read.with_fish`; a farm's own rule holds whatever
@@ -5862,7 +5864,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   Water page's own rows, alarms, the office board and muster, reports due, unread messages, feed on hand and cover, the
   latest log and knowledge entries), split per site from the same rows; `config/company_props.py` words it in the
   request's language. A block is left out for a person who may not read its area. The water chip per site says the
-  sampling points' worst judgement (critical, warning, OK, or "Not measured"). The Open alarms tile and each site's
+  sampling points' worst judgement (critical, warning, OK, or "Not measured"), and a unit with fish whose oxygen has
+  no fresh value as "O₂ (mg/L): no recent data", critical, for every viewer (after a critical value, before a warning;
+  a unit with no point of its own counts on its site: review 6, B2). The Open alarms tile and each site's
   Open alarms are the status strip's one reader, the farm and its sites from one reading of the water
   (`alarms.read.attention_all`): the figure counts open alarms (a site's holds the farm-wide ones too, and says how many
   of them are for the whole farm); the line under it counts stocked units on the monitoring cards' ladder, in the strip's

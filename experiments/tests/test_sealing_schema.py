@@ -166,7 +166,9 @@ class CellTests(SchemaCase):
         ReplicateUnit.objects.filter(pk=deleted.pk).update(is_deleted=True)
         self.assertFalse(SealedCell.objects.exists())
         with withdrawal_gate.opened('test: the trial started past the service'):
-            Experiment.objects.filter(pk=self.trial.pk).update(status='running')
+            Experiment.objects.filter(pk=self.trial.pk).update(
+                status='running', hypothesis='More protein, faster growth', primary_endpoint='bfcr',
+                allocation_method='manual', allocation_note='By hand')
         cells = sorted((str(cell.unit_id), str(cell.system_id), cell.from_on, cell.until_on, str(cell.work))
                        for cell in SealedCell.objects.all())
         end = self.today + timedelta(days=20)

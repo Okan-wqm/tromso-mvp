@@ -31,7 +31,7 @@ from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from farm.tests.helpers import role
+from farm.tests.helpers import may_record, role
 from sensors.models import Connection, IngestStatus
 from sensors.tests import make_connection
 
@@ -93,6 +93,7 @@ class CriticalNeverGivenUpTests(Case):
         self.sample(5.5)
         self.loop()
         alarm = self.critical()
+        may_record(self.manager, 'change_alarm')         # Alarms: Edit: the service asks who may (L-5)
         services.acknowledge(alarm, self.manager, at=self.at(1))
         for minute in range(2, 40):
             self.loop(minutes=minute)

@@ -24,7 +24,7 @@ from ..models.site import zone_of
 from ..models.stock import OperationKind
 from ..stock import services as stock_services
 from ..water import services as water_services
-from .helpers import may_record, point_of, role
+from .helpers import point_of, role
 from .test_withdrawal_gate import edit_data
 from .test_withdrawal_guard import GuardTestCase
 
@@ -78,7 +78,6 @@ class WaterSampleTests(DeliveryTestCase):
 
     def test_a_backdated_sample_asks_about_the_delivery(self):
         def write(**ack):
-            may_record(self.user, 'add_watermeasurement')  # the water service asks (L-6)
             return water_services.record(self.user, point=point_of(self.t1), measured_at=self.moment,
                                          source='manual', values={'temperature_c': Decimal('0')}, **ack)
         change = self.asked(write)
@@ -88,7 +87,6 @@ class WaterSampleTests(DeliveryTestCase):
 
     def test_a_round_asks_about_the_delivery(self):
         def write(**ack):
-            may_record(self.user, 'add_watermeasurement')  # the water service asks (L-6)
             return water_services.record_round(self.user, measured_at=self.moment, source='manual',
                                                rows=[(point_of(self.t1), {'temperature_c': Decimal('0')}, '')], **ack)
         change = self.asked(write)
@@ -137,7 +135,6 @@ class ReferenceDataTests(DeliveryTestCase):
 
     def test_a_feed_made_medicated_asks_about_the_delivery(self):
         feed = Feed.objects.create(name='Grower X', code='GRX', feed_type='grower')
-        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(3), feed=feed, amount_kg=Decimal('2'))
         delivery = self.deliver(1)
         change = self.page('farm:feed_edit', feed, feed_type='medicated')

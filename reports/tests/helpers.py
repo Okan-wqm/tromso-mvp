@@ -9,7 +9,7 @@ from django.test import TestCase
 from core.testing import StartedClock
 from farm.models import ProductionDepartment, Site
 from farm.stock import services
-from farm.tests.helpers import correction_window, make_facility, make_species, may_record, role
+from farm.tests.helpers import RECORDER, correction_window, make_facility, make_species, may_record, role
 from farm.tests.test_stock import make_unit
 
 from .. import compute, integrity
@@ -46,8 +46,7 @@ class ReportTestCase(StartedClock, TestCase):
                                                          last_name='Nord')
         self.user.groups.add(role('Reporter', *REPORTER))
         # the records the fixtures write through the farm's services, which ask who may (the data-layering audit, L-6)
-        may_record(self.user, 'add_stockoperation', 'delete_stockoperation', 'add_feedingrecord', 'add_licecount',
-                   'add_treatment')
+        may_record(self.user, *RECORDER, 'add_licecount', 'delete_licecount', 'add_treatment', 'delete_treatment')
         self.client.force_login(self.user)
         self.hatchery = Site.objects.create(name='Hatchery', code='HA', type='hatchery', lokalitetsnummer=12345,
                                             organisation_number='987654321')

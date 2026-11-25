@@ -53,13 +53,9 @@ WRITE_PATHS = {
     'farm/feeding/protocols.py': 'the feeding protocols and their tables',
     'farm/feeding/assignments.py': "the protocols' assignments",
     'farm/handling/check.py': 'the handling acknowledgements',
-    'farm/health/withdrawal.py': 'the withdrawal acknowledgements and their approvals',
     'farm/water/points.py': 'the sampling points',
-    'farm/water/rederive.py': "the pH re-derivation behind the gate, a reason and a log entry per sample",
     'sensors/bindings.py': 'where a channel measures',
     'sensors/credentials.py': "the broker's credentials",
-    'sensors/alarms.py': "the sensor rules' events, the sensors' own state (their alarm, logged, is "
-                         'alarms.services.open_alarm)',
 }
 # (b) a model's own methods that write its row: its save and delete, the base class's soft delete and restore, and the
 # form key's note (core.models.EntryKey, written by core.crud in the creating transaction).
@@ -78,6 +74,13 @@ WRITES_ALLOWED = {
                        '(L-3)'),
     'sensors/demo.py': (7, "the development tool's demo configuration (core/management/devtool.py: refused outside "
                             'development)'),
+    # Write paths of their own, counted rather than exempted whole (the landing review, M-2): a new write in the module
+    # that answers "may these fish be harvested" fails here until it is reviewed.
+    'farm/health/withdrawal.py': (4, 'the withdrawal acknowledgements and their approvals (2), and the what-if of a '
+                                     "moved or restored record (2, an UPDATE rolled back: L-7's design takes them off)"),
+    'farm/water/rederive.py': (1, 'the pH re-derivation behind the gate, a reason and a log entry per sample'),
+    'sensors/alarms.py': (3, "the sensor rules' events opened and closed, the sensors' own state (their alarm, logged, "
+                             'is alarms.services.open_alarm)'),
 }
 
 # ---- rule R ------------------------------------------------------------------------------------------------------------
@@ -89,49 +92,87 @@ OWNED = {
     'Treatment': 'farm/health', 'HealthEvent': 'farm/health', 'WithdrawalAcknowledgement': 'farm/health',
     'Alarm': 'alarms', 'Notification': 'alarms', 'Acknowledgement': 'alarms', 'AlarmClearance': 'alarms',
     'Reading': 'sensors', 'AlarmEvent': 'sensors',
+    # added on the landing review (m-14): the fish's identity, the handling acknowledgements, the lice counts, the
+    # harvests and the water limits
+    'Batch': 'farm/stock', 'HandlingAcknowledgement': 'farm/handling', 'LiceCount': 'farm/health',
+    'HarvestRecord': 'farm/harvest', 'WaterLimit': 'farm/water',
 }
 # {(module, model): ceiling}: the reads of owned models found outside their owner when the guard came. Lower, never raise.
 READS_ALLOWED = {
+    ('alarms/resources.py', 'WaterLimit'): 1,
     ('alarms/sources.py', 'AlarmEvent'): 3,
+    ('alarms/sources.py', 'WaterLimit'): 4,
+    ('experiments/design.py', 'Batch'): 2,
+    ('experiments/read.py', 'Batch'): 3,
     ('experiments/read.py', 'FeedingRecord'): 3,
     ('experiments/read.py', 'StockMovement'): 6,
+    ('farm/feeding/read.py', 'Batch'): 4,
     ('farm/feeding/read.py', 'StockMovement'): 4,
+    ('farm/feeding/views.py', 'Batch'): 6,
+    ('farm/forms/feeding_protocol.py', 'Batch'): 4,
     ('farm/forms/feeding_protocol.py', 'StockMovement'): 2,
+    ('farm/forms/harvest.py', 'Batch'): 5,
     ('farm/forms/health.py', 'HealthEvent'): 1,
     ('farm/forms/stock.py', 'HealthEvent'): 1,
+    ('farm/handling/check.py', 'Batch'): 3,
+    ('farm/harvest/read.py', 'HandlingAcknowledgement'): 1,
     ('farm/harvest/read.py', 'StockMovement'): 2,
+    ('farm/harvest/views.py', 'Batch'): 3,
     ('farm/harvest/views.py', 'StockMovement'): 3,
     ('farm/health/read.py', 'StockMovement'): 5,
     ('farm/health/services.py', 'StockOperation'): 2,
+    ('farm/health/views.py', 'Batch'): 1,
+    ('farm/health/withdrawal.py', 'Batch'): 13,
     ('farm/health/withdrawal.py', 'FeedingRecord'): 4,
+    ('farm/health/withdrawal.py', 'HandlingAcknowledgement'): 1,
     ('farm/health/withdrawal.py', 'StockMovement'): 6,
+    ('farm/management/commands/check_withdrawal.py', 'Batch'): 2,
+    ('farm/management/commands/check_withdrawal.py', 'HandlingAcknowledgement'): 2,
     ('farm/management/commands/check_withdrawal.py', 'WithdrawalAcknowledgement'): 1,
+    ('farm/management/commands/fix_seed_size_mix.py', 'Batch'): 4,
+    ('farm/models/harvest.py', 'HarvestRecord'): 2,
     ('farm/models/site.py', 'StockMovement'): 2,
     ('farm/models/stock.py', 'StockMovement'): 2,
     ('farm/models/tank.py', 'StockMovement'): 2,
     ('farm/models/water_point.py', 'WaterMeasurement'): 2,
     ('farm/resources/feed.py', 'FeedingRecord'): 2,
+    ('farm/resources/feeding_protocol.py', 'Batch'): 4,
     ('farm/resources/harvest_plan.py', 'StockMovement'): 1,
     ('farm/resources/health_event.py', 'HealthEvent'): 5,
     ('farm/resources/medicine.py', 'Treatment'): 2,
     ('farm/resources/species.py', 'StockMovement'): 2,
+    ('farm/stock/integrity.py', 'HandlingAcknowledgement'): 2,
+    ('farm/stock/integrity.py', 'HarvestRecord'): 2,
     ('farm/stock/integrity.py', 'WithdrawalAcknowledgement'): 2,
     ('farm/stock/services.py', 'HealthEvent'): 2,
+    ('farm/water/degree_days.py', 'Batch'): 2,
+    ('farm/water/read.py', 'Batch'): 2,
     ('inventory/read.py', 'FeedingRecord'): 6,
+    ('reports/compute/biomass.py', 'Batch'): 5,
     ('reports/compute/biomass.py', 'FeedingRecord'): 1,
+    ('reports/compute/cleaner.py', 'Batch'): 2,
     ('reports/compute/cleaner.py', 'FeedingRecord'): 1,
+    ('reports/compute/lice.py', 'Batch'): 2,
+    ('reports/compute/lice.py', 'LiceCount'): 8,
     ('reports/compute/lice.py', 'StockOperation'): 2,
     ('reports/compute/lice.py', 'Treatment'): 15,
+    ('reports/compute/notices.py', 'Batch'): 2,
     ('reports/compute/notices.py', 'HealthEvent'): 2,
     ('reports/compute/notices.py', 'StockOperation'): 3,
     ('reports/compute/slaughter.py', 'StockMovement'): 3,
     ('reports/compute/slaughter.py', 'StockOperation'): 5,
+    ('reports/compute/smolt.py', 'Batch'): 2,
+    ('reports/compute/stock.py', 'Batch'): 1,
     ('reports/compute/stock.py', 'StockOperation'): 2,
+    ('reports/due.py', 'Batch'): 2,
+    ('reports/due.py', 'HarvestRecord'): 2,
     ('reports/due.py', 'HealthEvent'): 4,
     ('reports/due.py', 'StockMovement'): 4,
     ('reports/forms.py', 'HealthEvent'): 2,
     ('reports/forms.py', 'StockMovement'): 1,
     ('reports/resources.py', 'HealthEvent'): 5,
+    ('reports/services.py', 'Batch'): 2,
+    ('tasks/forms.py', 'Batch'): 4,
 }
 
 # ---- rule P ------------------------------------------------------------------------------------------------------------
@@ -144,26 +185,42 @@ PRESENT_ALLOWED = {
 }
 
 # ---- rule V ------------------------------------------------------------------------------------------------------------
-# core's builders shared by every area's (the list, the form, its panels and payload, the page's sayings).
+# A props builder is found by what it is, wherever it lives (the landing review, M-3): a function named for what crud and
+# the views ask a builder for (a tab's `list_rows`, `list_next_props`, `next_panels`), a function named `*_props`, or one
+# that builds with core.listprops (`L.row`, `L.cell`, ...). A view method (get, post, ...) that only hands its rows to a
+# builder is no builder.
+BUILDER_NAMES = ('list_rows', 'list_next_props', 'next_panels')
+VIEW_METHODS = ('get', 'post', 'put', 'patch', 'delete', 'dispatch')
+# core's builders shared by every area's (the list, the form, its panels and payload, the page's sayings): every
+# function of these modules is one.
 SHARED_BUILDERS = ('core/listprops.py', 'core/formprops.py', 'core/formpanels.py', 'core/formpayload.py',
                    'core/pagesays.py')
-# {module: reason}: named like a builder, not one.
-NOT_PRESENTATION = {
-    'core/island_props.py': "the tests' reader of a page's props (props_of, render_island): it signs a test person's "
-                            'language in, as the account page does',
-}
+# {(module, function): reason}: shaped like a builder, not one.
+NOT_PRESENTATION = {}
 QUERY_CALLS = ('get_object_or_404', 'get_list_or_404')
 
 
-def is_presentation(module):
-    name = module.rsplit('/', 1)[-1]
-    return module in SHARED_BUILDERS or name in ('pages.py', 'lists.py') or (
-        module.startswith('config/') and name.endswith('_props.py'))
+def _listprops_names(tree):
+    """The names a module calls core.listprops by (`from core import listprops as L`, `from . import listprops`)."""
+    names = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and (node.module == 'core' or (node.level == 1 and node.module is None)):
+            names.update(alias.asname or alias.name for alias in node.names if alias.name == 'listprops')
+    return names
 
 
-def named_like_a_builder(module):
-    name = module.rsplit('/', 1)[-1]
-    return name in ('pages.py', 'lists.py') or name.endswith('props.py')
+def builders(module, tree):
+    """[FunctionDef] of the props builders of a module (see above)."""
+    listprops = _listprops_names(tree)
+    found = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or node.name in VIEW_METHODS:
+            continue
+        builds = any(isinstance(child, ast.Attribute) and isinstance(child.value, ast.Name)
+                     and child.value.id in listprops for child in ast.walk(node))
+        if module in SHARED_BUILDERS or node.name in BUILDER_NAMES or node.name.endswith('_props') or builds:
+            found.append(node)
+    return found
 
 
 def production_modules():
@@ -201,10 +258,48 @@ def _literal(node):
     return None
 
 
+MANAGERS = ('objects', 'all_objects', '_base_manager')
+NOT_SQL_EXECUTE = ('softdelete', 'super')
+# The ledger's columns rules P and F look for, however the sum is spelled: Sum('count_delta'), models.Sum(...),
+# Sum('movements__count_delta') through a relation, Sum(F('count_delta')).
+LEDGER_COLUMNS = {'count_delta': 'present', 'amount_kg': 'given'}
+# {module: (ceiling, reason)}: SQL run from a name, not a literal, so rule W cannot read its verb. Lower, never raise.
+NON_LITERAL_SQL = {
+    'alarms/changes.py': (1, "the worker's look at the sensors' state (CHANNELS: a SELECT)"),
+    'core/database.py': (3, "the database viewer's catalogue reads (COLUMNS_SQL, CONSTRAINTS_SQL, INDEXES_SQL)"),
+    'core/operations.py': (4, "the migration operations' own DDL (TrackRev, KeepRows), run by migrate"),
+    'core/rev.py': (1, "the revision triggers' repair replaying the migration's DDL (manage.py core_rev_*)"),
+    'sensors/management/commands/sensors_ingest_role.py': (2, "the ingest role's ALTER ROLE through psycopg's sql "
+                                                              'composition (quoted identifiers and literals)'),
+    'sensors/read.py': (3, "the readings' SELECTs, built from module constants only"),
+}
+
+
+def _ledger_column(node):
+    """The ledger column a Sum(...) call sums, or None."""
+    if not node.args:
+        return None
+    argument = node.args[0]
+    if isinstance(argument, ast.Call) and isinstance(argument.func, ast.Name) and argument.func.id == 'F' \
+            and argument.args:
+        argument = argument.args[0]
+    if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+        column = argument.value.rsplit('__', 1)[-1]
+        return column if column in LEDGER_COLUMNS else None
+    return None
+
+
 class _Scan(ast.NodeVisitor):
     def __init__(self, module):
         self.module, self.writes, self.reads, self.present, self.given = module, [], [], [], []
         self.queries = []           # rule V: a manager, a shortcut that queries, a cursor
+        self.querysets = set()      # local names that hold a manager's queryset: `qs = X.objects.filter(...)`
+        self.sql = []               # SQL run from a name, not a literal
+
+    def visit_Assign(self, node):
+        if any(name in MANAGERS for name in _chain(node.value)):
+            self.querysets.update(target.id for target in node.targets if isinstance(target, ast.Name))
+        self.generic_visit(node)
 
     def visit_Call(self, node):
         func = node.func
@@ -212,11 +307,15 @@ class _Scan(ast.NodeVisitor):
             receiver = _chain(func.value)
             if func.attr in WRITE_CALLS and self._is_write(func.attr, receiver, node):
                 self.writes.append((node.lineno, '.'.join([*receiver, func.attr])))
-            if func.attr == 'execute' and node.args:
+            # an execute of SQL: on a cursor, a connection (Django's or psycopg's), a schema editor; not the delete
+            # plan's `softdelete.execute(plan, user)` nor a command's `super().execute(...)`
+            if func.attr == 'execute' and node.args and receiver and receiver[-1] not in NOT_SQL_EXECUTE:
                 text = _literal(node.args[0])
-                if text and text.lstrip().upper().startswith(SQL_WRITES):
+                if text is None:
+                    self.sql.append(node.lineno)
+                elif text.lstrip().upper().startswith(SQL_WRITES):
                     self.writes.append((node.lineno, f'execute({text.lstrip()[:30]!r})'))
-            if any(name in ('objects', 'all_objects', '_base_manager') for name in receiver) or func.attr == 'cursor':
+            if any(name in MANAGERS for name in receiver) or func.attr == 'cursor':
                 self.queries.append((node.lineno, '.'.join([*receiver, func.attr])))
             for index, name in enumerate(receiver):
                 if name in OWNED and index + 1 < len(receiver) and receiver[index + 1] in (
@@ -225,11 +324,10 @@ class _Scan(ast.NodeVisitor):
                     break
         if isinstance(func, ast.Name) and func.id in QUERY_CALLS:
             self.queries.append((node.lineno, func.id))
-        if isinstance(func, ast.Name) and func.id == 'Sum' and node.args and isinstance(node.args[0], ast.Constant):
-            if node.args[0].value == 'count_delta':
-                self.present.append(node.lineno)
-            elif node.args[0].value == 'amount_kg':
-                self.given.append(node.lineno)
+        if (isinstance(func, ast.Name) and func.id == 'Sum') or (isinstance(func, ast.Attribute) and func.attr == 'Sum'):
+            column = _ledger_column(node)
+            if column is not None:
+                getattr(self, LEDGER_COLUMNS[column]).append(node.lineno)
         self.generic_visit(node)
 
     def _is_write(self, name, receiver, node):
@@ -239,10 +337,11 @@ class _Scan(ast.NodeVisitor):
             # a session, a file or a cache is no row.
             return not node.args and (not receiver or receiver[-1] not in (
                 'form', 'session', 'cache', 'storage', 'file', 'formset', 'super'))
+        held = len(receiver) == 1 and receiver[0] in self.querysets          # a queryset held in a local name
         if name == 'update':
-            return any(hint in receiver for hint in QUERYSET_HINTS)
-        return any(hint in receiver for hint in QUERYSET_HINTS) or (receiver and receiver[-1][:1].isupper()) or (
-            len(receiver) >= 2)
+            return held or any(hint in receiver for hint in QUERYSET_HINTS)
+        return held or any(hint in receiver for hint in QUERYSET_HINTS) or (receiver and receiver[-1][:1].isupper()) \
+            or len(receiver) >= 2
 
 
 def scan():
@@ -254,12 +353,22 @@ def scan():
         # (b) the model's own methods: what a model module writes inside them
         model_writes = set()
         if '/models' in f'/{module}':
-            for node in ast.walk(tree):
-                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in MODEL_WRITERS:
-                    model_writes.update(child.lineno for child in ast.walk(node) if isinstance(child, ast.Call))
+            # only a class's own methods of those names (a model's), never a module function that happens to share one
+            for model in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+                for method in model.body:
+                    if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)) and method.name in MODEL_WRITERS:
+                        model_writes.update(child.lineno for child in ast.walk(method) if isinstance(child, ast.Call))
         writes = [(line, call) for line, call in visitor.writes if line not in model_writes]
+        built = []                  # rule V: what the module's props builders query or write
+        for builder in builders(module, tree):
+            if (module, builder.name) in NOT_PRESENTATION:
+                continue
+            inner = _Scan(module)
+            inner.visit(builder)
+            built += [(line, f'{builder.name}: {call}') for line, call in inner.queries + inner.writes]
         found[module] = {'writes': writes, 'reads': Counter(model for _line, model in visitor.reads),
-                         'present': visitor.present, 'given': visitor.given, 'queries': visitor.queries}
+                         'present': visitor.present, 'given': visitor.given, 'queries': visitor.queries,
+                         'sql': visitor.sql, 'built': built}
     return found
 
 
@@ -379,26 +488,72 @@ class ReadersImportNoViewTests(SimpleTestCase):
 
 
 class PropsBuildersOnlyShapeTests(SimpleTestCase):
-    """Rule V: the new look's props builders shape what their view read through the area's reader; a query or a write
-    in one is a read or a write outside the layers that no page test would see."""
+    """Rule V: the new look's props builders, found by what they are (`builders`), shape what their view read through the
+    area's reader; a query or a write in one is a read or a write outside the layers that no page test would see. The
+    scan reads the builder's own body by name: a query through a related object or a model method it calls is not seen."""
 
     def test_no_props_builder_queries_or_writes(self):
-        found = scan()
-        bad = {module: [f'{line}: {call}' for line, call in data['queries'] + data['writes']]
-               for module, data in found.items() if is_presentation(module) and (data['queries'] or data['writes'])}
+        bad = {module: data['built'] for module, data in scan().items() if data['built']}
         self.assertEqual(bad, {}, "A props builder shapes rows its view read: ask the area's read.py in the view and "
                                   'pass the rows in.')
 
-    def test_every_module_named_like_a_builder_is_one_or_is_listed(self):
-        found = scan()
-        named = {module for module in found if named_like_a_builder(module)}
-        self.assertEqual({module for module in named if not is_presentation(module)}, set(NOT_PRESENTATION))
-        for module in SHARED_BUILDERS:
-            with self.subTest(module=module):
-                self.assertIn(module, found)
+    def test_the_builders_are_found_where_they_live(self):
+        found = {(module, node.name) for module, tree in production_modules() for node in builders(module, tree)}
+        for expected in (('farm/water/page_next.py', 'page_props'), ('farm/stock/units_next.py', 'units_props'),
+                         ('farm/resources/tank.py', 'list_rows'), ('farm/feeding/lists.py', 'assignments'),
+                         ('config/production_props.py', 'production_props'), ('core/listprops.py', 'row')):
+            with self.subTest(builder=expected):
+                self.assertIn(expected, found)
+        self.assertEqual(set(NOT_PRESENTATION) - found, set(), 'a listed exception is no builder any more')
 
     def test_the_scan_sees_a_query_and_a_shortcut(self):
         visitor = _Scan('x/pages.py')
         visitor.visit(ast.parse('Tank.objects.filter(a=1)' + chr(10) + 'get_object_or_404(Tank, pk=1)' + chr(10)
                                 + 'connection.cursor()'))
         self.assertEqual([line for line, _call in visitor.queries], [1, 2, 3])
+
+    def test_a_builder_found_by_its_shape_and_its_query_seen(self):
+        tree = ast.parse('from core import listprops as L' + chr(10) + 'def rows(units):' + chr(10)
+                         + '    return [L.row(u.pk, {}) for u in Tank.objects.all()]' + chr(10)
+                         + 'def get(request):' + chr(10) + '    return L.page(Tank.objects.all())')
+        self.assertEqual([node.name for node in builders('x/anything.py', tree)], ['rows'])
+
+
+class ScannerSpellingTests(SimpleTestCase):
+    """What the name-based scan sees (the landing review, m-11, m-12): the counter-examples it was shown to miss."""
+
+    def scanned(self, *lines):
+        visitor = _Scan('x/views.py')
+        visitor.visit(ast.parse(chr(10).join(lines)))
+        return visitor
+
+    def test_a_sum_of_the_ledger_however_spelled(self):
+        found = self.scanned("models.Sum('count_delta')", "Sum('movements__count_delta')", "Sum(F('count_delta'))",
+                             "Sum('feedings__amount_kg')", "Sum('weight_g')")
+        self.assertEqual((found.present, found.given), ([1, 2, 3], [4]))
+
+    def test_a_queryset_held_in_a_name_and_written(self):
+        found = self.scanned('rows = Task.objects.filter(a=1)', 'rows.update(b=2)', 'rows.delete()',
+                             'other = {}', 'other.update(c=3)')
+        self.assertEqual([line for line, _call in found.writes], [2, 3])
+
+    def test_sql_from_a_name_is_counted(self):
+        found = self.scanned('cursor.execute(statement)', "cursor.execute('SELECT 1')", 'softdelete.execute(plan, user)')
+        self.assertEqual(found.sql, [1])
+
+    def test_a_model_module_function_named_like_a_model_method_is_not_exempt(self):
+        tree = ast.parse('def note(row):' + chr(10) + '    Other.objects.create(row=row)' + chr(10) + 'class M:'
+                         + chr(10) + '    def save(self):' + chr(10) + '        Log.objects.create(row=self)')
+        visitor = _Scan('x/models/m.py')
+        visitor.visit(tree)
+        exempt = {child.lineno for model in ast.walk(tree) if isinstance(model, ast.ClassDef) for method in model.body
+                  if isinstance(method, ast.FunctionDef) and method.name in MODEL_WRITERS
+                  for child in ast.walk(method) if isinstance(child, ast.Call)}
+        self.assertEqual([line for line, _call in visitor.writes if line not in exempt], [2])
+
+
+class NonLiteralSqlTests(SimpleTestCase):
+    def test_sql_run_from_a_name_is_listed_with_its_reason(self):
+        counts = {module: len(data['sql']) for module, data in scan().items() if data['sql']}
+        self.assertEqual(counts, {module: ceiling for module, (ceiling, _why) in NON_LITERAL_SQL.items()},
+                         'SQL run from a name: rule W cannot read its verb. Use a literal, or list it with its reason.')

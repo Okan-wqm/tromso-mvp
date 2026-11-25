@@ -100,6 +100,13 @@ class WaterPageNextTests(FrozenClock, TestCase):
             tank = reverse('farm:tank_water', args=[unit])
             self.assertTrue(any(row['cells']['point']['href'] == tank for row in props['table']['rows']), href)
             found.add(href)
+        # a value's origin and age are one line ("lab · 4 d ago", as Production units says them): a short origin is
+        # carried as that line's start
+        carried = strings(props)
+        for origin in set(re.findall(r'<span class="wq-origin">([^<]*)</span>', old)):
+            origin = htmllib.unescape(origin)
+            self.assertTrue(any(each.startswith(f'{origin} · ') for each in carried), origin)
+            found.add(origin)
         return found | {'?*'}
 
     def held(self, language, query):

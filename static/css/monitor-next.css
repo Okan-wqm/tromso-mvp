@@ -1,9 +1,10 @@
 /* Monitoring in the new look (`?ui=next`, core/ui.py; docs/design/system/README.md, The new look): the cards, the band and
    the pane as the design console draws them (F:\dev\balik-notes\design-in, "Suderra Console.dc.html", Monitoring).
    Loaded by templates/monitoring/monitor.html AFTER monitor.css and only in the new look, and every rule is under
-   html[data-ui="next"] besides: the classic look never reads a line of it (the same card
-   read, the same templates, the same fragment and poll: the markup is the classic one, byte for byte). Tokens only: no
-   colour, no raw font size, no radius.
+   html[data-ui="next"] besides: the classic look never reads a line of it (the same card read, the same fragment and
+   poll; a fitted card's markup is the classic one, byte for byte, and a card that flows is the design's card,
+   templates/monitoring/_card_next.html, the classic card's frame and widgets laid out as the design lays them out).
+   Tokens only: no colour, no raw font size, no radius.
 
    What it changes, and what it never does:
    - the state's glyph: the design's icons (octagon, triangle, clock, ...) in place of the classic shapes, from the one
@@ -92,15 +93,123 @@ html[data-ui="next"] .is-fit .w-chart .monitor-chart-svg { outline: 1px solid va
 html[data-ui="next"] .is-fit :is(.w-dosing, .w-points, .w-stock) > section { padding: 0 .45em; border: 1px solid var(--line-hair); }
 html[data-ui="next"] .is-fit .w-water_table { border-top: 1px solid var(--line-hair); }
 
-/* ---- a card that flows (Simple, Detailed, a template without a measure) ------------------------------------------- */
-html[data-ui="next"] .monitor-card:not(.is-fit) .monitor-card-head h3 { font-size: 1.6em; line-height: 1.05; }
-/* The state as the design's chip on a flowing card: filled for critical, tinted for a warning, outlined otherwise. */
-html[data-ui="next"] .monitor-card:not(.is-fit) .monitor-card-state > .monitor-state { padding: .25em .6em; border: 1px solid var(--line-hair); }
-html[data-ui="next"] .monitor-critical:not(.is-fit) .monitor-card-state > .monitor-state { border-color: var(--crit); background: var(--crit); color: var(--on-crit); }
-html[data-ui="next"] .monitor-warning:not(.is-fit) .monitor-card-state > .monitor-state { border-color: var(--warn); background: var(--warn-tint); color: var(--warn-text); }
-html[data-ui="next"] .monitor-card:not(.is-fit) .metrics { gap: 0; border-top: 1px solid var(--line-hair); border-left: 1px solid var(--line-hair); }
-html[data-ui="next"] .monitor-card:not(.is-fit) .metrics > div { padding: .4em .6em; border-right: 1px solid var(--line-hair); border-bottom: 1px solid var(--line-hair); }
-html[data-ui="next"] .monitor-card:not(.is-fit) .monitor-card-foot { padding-top: .5em; border-top: 1px solid var(--line-hair); }
+/* ---- a card that flows (Simple, Detailed, Operator view, a farm's template without a measure) ----------------------
+   The design's card (templates/monitoring/_card_next.html: the same frame and widgets as the classic card, laid out as
+   the design lays them out). Every part on the plate at the design's margins; the head over a hairline with the code
+   large and the state as the design's chip; then the chips, the reasons in the state's tone with its glyph, the
+   widgets in their template's order, the actions (the Deffeyes chart's button, the water history) and the foot (what
+   the state is from and which template draws the card, the flip link at its right) at the bottom: cards of one row are
+   one size (the row's, below), so their feet line up. Sizes are steps of the card's own type (the small step): the
+   code 2 of it, a figure 1.5, the next meal 1.7, a water value 1.25, a label and the foot the caption step.
+   Nothing here cuts a figure, a state word or a reason: lines wrap, a figure never breaks inside itself. */
+html[data-ui="next"] .monitor-card.is-next { display: flex; flex-direction: column; min-width: 0; padding: 0; }
+/* (on the desk page the small step; a wall keeps its own, larger type for cards that flow: monitor.css, "the wall") */
+html[data-ui="next"]:not([data-wall]) .monitor-card.is-next { font-size: var(--fs-small); }
+/* (the card spaces its parts itself, below: no paragraph's or list's own margin) */
+html[data-ui="next"] .is-next :is(p, ul, dl) { margin-block: 0; }
+html[data-ui="next"] .is-next > :not(.monitor-card-head, .monitor-card-foot) { margin: .75em 1.1em 0 1.1em; }
+html[data-ui="next"] .is-next > .monitor-card-head { flex-wrap: nowrap; align-items: flex-start; gap: .9em; padding: .9em 1.1em .75em; border-bottom: 1px solid var(--line-hair); }
+html[data-ui="next"] .is-next .monitor-card-name { display: flex; flex: 1; flex-direction: column; gap: .15em; min-width: 0; }
+html[data-ui="next"] .is-next .monitor-card-head h3 { margin: 0; font-size: 2em; line-height: 1; }
+html[data-ui="next"] .is-next .monitor-card-head .row-sub { color: var(--text-2); font-size: 1em; }
+html[data-ui="next"] .is-next .monitor-card-head .monitor-status { color: var(--text-1); font-weight: 600; }
+/* (the hatch of a card with no recent data: the whole head, which has its own padding here) */
+html[data-ui="next"] .monitor-blind.is-next > .monitor-card-head::before { inset: 0; }
+/* The state as the design's chip: filled for critical, tinted for a warning, the plate's for the rest, the sunken tone
+   for an empty unit; one height, its word never cut. */
+html[data-ui="next"] .is-next .monitor-card-state { flex: none; }
+html[data-ui="next"] .is-next .monitor-card-state > .monitor-state { gap: .4em; min-height: 2.15em; padding: 0 .65em; border: 1px solid var(--line-hair); background-color: var(--plate); font-size: 1.08em; white-space: nowrap; }
+html[data-ui="next"] .monitor-critical.is-next .monitor-card-state > .monitor-state { border-color: var(--crit); background-color: var(--crit); color: var(--on-crit); }
+html[data-ui="next"] .monitor-warning.is-next .monitor-card-state > .monitor-state { border-color: var(--warn); background-color: var(--warn-tint); color: var(--warn-text); }
+html[data-ui="next"] .monitor-ok.is-next .monitor-card-state > .monitor-state { border-color: transparent; background-color: transparent; }
+html[data-ui="next"] .monitor-empty.is-next .monitor-card-state > .monitor-state { border-color: var(--surface-sunken); background-color: var(--surface-sunken); color: var(--text-1); }
+/* the chips under the head (the withdrawal: an hourglass and its first day of harvest) */
+html[data-ui="next"] .is-next > .monitor-chips { display: flex; flex-wrap: wrap; gap: .45em; }
+html[data-ui="next"] .is-next > .monitor-chips .ui-chip { gap: .35em; border: 1px solid var(--text-1); background: var(--plate); color: var(--text-1); }
+/* the reasons: each a line in the state's tone with the state's glyph, the figure and its bound whole */
+html[data-ui="next"] .is-next > .monitor-reasons { display: flex; flex-direction: column; gap: .3em; padding: 0; list-style: none; }
+html[data-ui="next"] .is-next > .monitor-reasons > li { display: flex; align-items: flex-start; gap: .45em; color: var(--text-2); }
+html[data-ui="next"] .monitor-critical.is-next > .monitor-reasons > li { color: var(--crit-text); }
+html[data-ui="next"] :is(.monitor-warning, .monitor-unjudged).is-next > .monitor-reasons > li { color: var(--warn-text); }
+html[data-ui="next"] .is-next > .monitor-reasons .monitor-shape { flex: none; width: .95em; height: .95em; margin-top: .15em; }
+html[data-ui="next"] .is-next > :is(.monitor-failed, .monitor-template-error) { font-weight: 600; }
+html[data-ui="next"] .is-next > .empty-unit { color: var(--text-2); }
+/* The widgets on their template's grid: the rows as high as what they hold (a row no widget is in takes no room), a
+   space before each widget instead of the grid's gap; a widget that has nothing to say (no experiment) takes none. */
+html[data-ui="next"] .is-next .card-grid { grid-auto-rows: auto; row-gap: 0; }
+html[data-ui="next"] .is-next .card-grid > .w { padding-top: .8em; }
+html[data-ui="next"] .is-next .card-grid > .w:not(:has(*)) { display: none; }
+html[data-ui="next"] .is-next .monitor-section { margin-top: 0; }
+html[data-ui="next"] .is-next .monitor-section > * + * { margin-top: .75em; }
+/* A list of figures (the fish, the tasks, a value): three in a row of hairline boxes, a label over a figure. */
+html[data-ui="next"] .is-next .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 0; border-top: 1px solid var(--line-hair); border-left: 1px solid var(--line-hair); background: none; }
+html[data-ui="next"] .is-next .metrics > div { min-width: 0; padding: .6em .75em; border-right: 1px solid var(--line-hair); border-bottom: 1px solid var(--line-hair); background: var(--plate); }
+html[data-ui="next"] .is-next .metrics dt { color: var(--text-3); font-size: var(--fs-caption); }
+html[data-ui="next"] .is-next .metrics dd { font-size: 1.5em; font-weight: 600; line-height: 1.15; }
+html[data-ui="next"] .is-next .metrics dd.row-sub { font-family: var(--font-text); font-size: var(--fs-caption); font-weight: 400; }
+html[data-ui="next"] .is-next .monitor-stock > .row-sub:first-child { color: var(--text-2); font-size: 1em; }
+/* a value of its own (the Operator view's oxygen and temperature): one box, its figure large when the template says */
+html[data-ui="next"] .is-next .monitor-value { grid-template-columns: minmax(0, 1fr); }
+html[data-ui="next"] .is-next .monitor-value.is-large dd:first-of-type { font-size: 2.6em; font-weight: 700; }
+/* (a card narrower than 30 rem stacks its widgets, as the classic card does: a value's note, what it was worked out
+   from, is a paragraph that a third of a desk card would make a tower of; side by side, the boxes of a row are one
+   height) */
+html[data-ui="next"] .is-next .card-grid > .w-value > .monitor-value { height: 100%; }
+html[data-ui="next"] .is-next .op-lines { font-size: 1em; }
+/* the density and the capacity: the line, the design's thin bar, the volume and the maxima under it */
+html[data-ui="next"] .is-next .drawer-capacity { gap: .3em; }
+html[data-ui="next"] .is-next .capacity-line > span:first-child { color: var(--text-3); }
+html[data-ui="next"] .is-next .capacity-line > span:last-child { font-weight: 600; }
+html[data-ui="next"] .is-next .capacity-bar { height: .65em; }
+html[data-ui="next"] .is-next .capacity-note { font-size: var(--fs-caption); }
+/* The next meal: the design's sunken box, the meal large, the day's ration, what was fed and what remains under it. */
+html[data-ui="next"] .is-next .monitor-meal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35em .9em; margin: 0; padding: .65em .8em; background: var(--surface-sunken); }
+html[data-ui="next"] .is-next .monitor-meal > div { min-width: 0; }
+html[data-ui="next"] .is-next .monitor-meal-next { grid-column: 1 / -1; }
+html[data-ui="next"] .is-next .monitor-meal dt { color: var(--text-2); font-size: var(--fs-caption); }
+html[data-ui="next"] .is-next .monitor-meal dd { margin: 0; font-family: var(--font-display); font-size: 1.1em; font-weight: 600; }
+html[data-ui="next"] .is-next .monitor-meal-next dd { font-size: 1.7em; font-weight: 700; line-height: 1.1; }
+html[data-ui="next"] .is-next .monitor-meal dd.row-sub { color: var(--text-2); font-family: var(--font-text); font-size: var(--fs-caption); font-weight: 400; }
+/* A list of the design's rows: the name on the left, the figure on the right, a hairline between (the feeding's week). */
+html[data-ui="next"] .is-next .monitor-rows { margin: 0; }
+html[data-ui="next"] .is-next .monitor-rows > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .2em .9em; padding: .3em 0; border-top: 1px solid var(--line-hair); }
+html[data-ui="next"] .is-next .monitor-rows dt { color: var(--text-3); }
+html[data-ui="next"] .is-next .monitor-rows dd { margin: 0 0 0 auto; font-weight: 600; text-align: right; }
+/* The water: a row a value, its name, the figure (in its status's tone, with its glyph) and where it came from and
+   how old; each sampling point of "every active point" a hairline box under its name on the sunken tone. */
+html[data-ui="next"] .is-next .monitor-point .metrics { display: block; border: 0; }
+html[data-ui="next"] .is-next .monitor-point .metrics > div { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, max-content); align-items: baseline; column-gap: .9em; padding: .4em 0; border: 0; border-top: 1px solid var(--line-hair); }
+html[data-ui="next"] .is-next .monitor-point .metrics dt { color: var(--text-2); font-size: 1em; }
+html[data-ui="next"] .is-next .monitor-point .metrics dd { font-size: 1.25em; font-weight: 700; text-align: right; }
+html[data-ui="next"] .is-next .monitor-point .metrics dd.row-sub { color: var(--text-3); font-size: var(--fs-caption); }
+html[data-ui="next"] .is-next .monitor-point + .monitor-point { margin-top: .6em; }
+html[data-ui="next"] .is-next .monitor-point:has(> p.row-sub:first-child) { border: 1px solid var(--line-hair); }
+html[data-ui="next"] .is-next .monitor-point > p.row-sub:first-child { margin: 0; padding: .35em .6em; background: var(--surface-sunken); color: var(--text-1); font-size: 1em; font-weight: 600; }
+html[data-ui="next"] .is-next .monitor-point:has(> p.row-sub:first-child) .metrics > div { padding-right: .6em; padding-left: .6em; }
+html[data-ui="next"] .is-next :is(.monitor-point dd > *, .monitor-value dd).wq-critical { color: var(--crit-text); }
+html[data-ui="next"] .is-next :is(.monitor-point dd > *, .monitor-value dd).wq-warning { color: var(--warn-text); }
+html[data-ui="next"] .is-next :is(.monitor-point dd > *, .monitor-value dd).wq-stale { color: var(--text-2); font-style: italic; }
+@supports (mask-image: url("")) or (-webkit-mask-image: url("")) {
+  html[data-ui="next"] .is-next :is(.monitor-point dd > *, .monitor-value dd):is(.wq-critical, .wq-warning, .wq-stale)::before {
+    content: ""; display: inline-block; width: .8em; height: .8em; margin-right: .25em; vertical-align: -.05em;
+    background: currentColor; -webkit-mask: var(--glyph) center / contain no-repeat; mask: var(--glyph) center / contain no-repeat;
+  }
+  html[data-ui="next"] .is-next :is(.monitor-point dd > *, .monitor-value dd).wq-critical { --glyph: var(--glyph-octagon); }
+  html[data-ui="next"] .is-next :is(.monitor-point dd > *, .monitor-value dd).wq-warning { --glyph: var(--glyph-alert); }
+  html[data-ui="next"] .is-next :is(.monitor-point dd > *, .monitor-value dd).wq-stale { --glyph: var(--glyph-clock); }
+  @media (forced-colors: active) { html[data-ui="next"] .is-next :is(.monitor-point dd > *, .monitor-value dd):is(.wq-critical, .wq-warning, .wq-stale)::before { forced-color-adjust: none; background: CanvasText; } }
+}
+/* The actions, as the design's: the Deffeyes chart's outlined button (it opens the unit's chart in the movable
+   window) and the link to the tank's water history. */
+html[data-ui="next"] .is-next > .monitor-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5em 1.1em; }
+html[data-ui="next"] .is-next > .monitor-card-actions:empty { display: none; }
+html[data-ui="next"] .is-next > .monitor-card-actions .button { min-height: 2.45em; padding: 0 .8em; border: 1px solid var(--line-control); background: transparent; color: var(--text-1); font-family: var(--font-display); font-weight: 600; }
+html[data-ui="next"] .is-next > .monitor-card-actions .button:is(:hover, :focus-visible) { background: var(--surface-sunken); }
+/* The foot at the card's bottom: what the state is from and the template, quiet; the flip link at its right. */
+html[data-ui="next"] .is-next > .monitor-card-foot { flex-wrap: nowrap; align-items: flex-end; gap: .9em; margin: auto 0 0; padding: .9em 1.1em .8em; font-size: var(--fs-caption); }
+html[data-ui="next"] .is-next .monitor-card-basis { flex: 1; min-width: 0; }
+html[data-ui="next"] .is-next .monitor-card-basis > .row-sub { font-size: var(--fs-caption); }
+html[data-ui="next"] .is-next .monitor-flip { flex: none; font-weight: 600; white-space: nowrap; }
 
 /* ---- the Small card on the desk page: the design's card, one size for every card (owner, 2026-11-24) ------------
    A regular grid of equal cards: four to a row at 1440 px, the same width and height whatever the card says (a
@@ -170,9 +279,13 @@ html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .
 }
 html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) { align-items: start; }
 
-/* ---- the cards that flow (Simple, Detailed) on the desk page: one size for all of them, the tallest card's (rows of
-   one fraction each, sized to the longest card: nothing of a longer card is cut, a shorter one is as tall as it). */
-html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .monitor-card:not(.is-fit)) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
+/* ---- the cards that flow (Simple, Detailed, Operator view) on the desk page: one size for all of them, the tallest
+   card's (rows of one fraction each, sized to the longest card: nothing of a longer card is cut, a shorter one is as
+   tall as it), wherever they stand side by side. On a phone (one column) each card is as tall as what it says: an empty
+   unit's card the height of the longest one would be a screen of nothing to scroll past. */
+@media (min-width: 640px) {
+  html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .monitor-card:not(.is-fit)) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
+}
 
 /* ---- the toolbar (the design's): the search first, the filters with their names for a screen reader only (each
    select says its choice: "No board", "All sites"), the wall's two buttons at the end of the row. The DESK page's

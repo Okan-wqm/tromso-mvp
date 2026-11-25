@@ -8,7 +8,14 @@ so nothing recorded from a real database is ever kept (owner's privacy rule, 202
 
 The view is asked in the new look (`?ui=next`, core/ui.py), in the language given (the account's language wins over the
 cookie, core/language.py, so both are set); the island's root must be there exactly once, and its props are returned as
-the page wrote them (json_script, `{% island %}` in core/templatetags/assets.py)."""
+the page wrote them (json_script, `{% island %}` in core/templatetags/assets.py).
+
+A server-rendered page of the new look (the calculator: a GET form and the live parts frontend/poll.ts swaps in) is kept
+whole, as Django printed it, for a browser test that serves it under the server's policy with the nonce it was printed
+with (frontend/test/calculator.pages.ts):
+
+    html = render_next(client, url, query={'point': ...}, language='nb')
+    keep_page('calculator-nb', html)            # .build/island-props/calculator-nb.html"""
 import json
 import re
 from pathlib import Path
@@ -33,6 +40,12 @@ def props_of(html, island):
 
 def render_island(client, url, island, query=None, language=None):
     """The props `url` gives `island` in the new look, for the signed-in person of `client` (in `language`, if given)."""
+    return props_of(render_next(client, url, query, language), island)
+
+
+def render_next(client, url, query=None, language=None):
+    """The HTML `url` prints in the new look for the signed-in person of `client` (in `language`, if given), following a
+    redirect (the calculator sends a unit's values to its own address)."""
     if language is not None:
         from core.language import save_account_language
 
@@ -41,10 +54,10 @@ def render_island(client, url, island, query=None, language=None):
             from django.contrib.auth import get_user_model
             save_account_language(get_user_model().objects.get(pk=user), language)
         client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
-    response = client.get(url, {**(query or {}), ui.PARAM: ui.NEXT})
+    response = client.get(url, {**(query or {}), ui.PARAM: ui.NEXT}, follow=True)
     if response.status_code != 200:
         raise AssertionError(f'{url} answered {response.status_code} in the new look')
-    return props_of(response.content.decode(), island)
+    return response.content.decode()
 
 
 def keep(name, props):
@@ -52,4 +65,12 @@ def keep(name, props):
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / f'{name}.json'
     path.write_text(json.dumps(props, ensure_ascii=False, indent=1), encoding='utf-8')
+    return path
+
+
+def keep_page(name, html):
+    """Writes a whole page of the new look for the browser tests: .build/island-props/<name>.html. Returns the path."""
+    OUT.mkdir(parents=True, exist_ok=True)
+    path = OUT / f'{name}.html'
+    path.write_text(html, encoding='utf-8')
     return path

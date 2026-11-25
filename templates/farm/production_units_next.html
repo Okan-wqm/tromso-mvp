@@ -1,0 +1,14 @@
+{% extends "farm/production_units.html" %}
+{% load i18n assets %}
+{% comment %} Production › Production units in the new look (farm.stock.views.production_units behind ?ui=next): the table on
+   the shared list page (island list-page, props of farm/stock/units_next.py), and the drawer of the unit picked (?unit=)
+   as the server draws it on the classic page (farm/_unit_drawer.html: every section). The head (counts, New batch) is
+   the classic page's. {% endcomment %}
+{% block content %}
+<div>
+  <div class="units-main">
+    {% trans "Loading the list…" as loading %}{% island "list-page" props label=loading %}
+  </div>
+  {% if drawer %}{% include "farm/_unit_drawer.html" %}{% endif %}
+</div>
+{% endblock %}

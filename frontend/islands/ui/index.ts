@@ -19,6 +19,8 @@ export { ChartFrame, type ChartKey } from './ChartFrame.js';
 // SeriesChart (uPlot) is imported from './SeriesChart.js' on its own, so an island without a series does not bundle uPlot.
 export { mount, readProps, PRESSABLE_STYLE_ID } from './mount.js';
 export {
-  ListPage, type ListPageProps, type ListRow, type ListCell, type ListAction, type ListColumn, type ListFilter,
+  ListPage, type ListPageProps, type ListRow, type ListCell, type ListAction, type ListColumn, type ListFilter, type ListGroup,
 } from './ListPage.js';
+export { Gauge, type GaugeProps } from './Gauge.js';
+export { Timeline, type TimelineProps, type TimelineLane, type TimelineSpan } from './Timeline.js';
 export { StackedBar, type StackedBarProps, type StackPart, type StackTone } from './StackedBar.js';

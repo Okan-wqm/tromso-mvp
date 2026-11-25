@@ -552,7 +552,7 @@ Feeding records) and the operations, **Record feeding** first; for an empty unit
 and max biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit,
 with the water read, its **Water**: the latest value of every parameter with its age, status and limits,
 the worked-out NH₃-N and O₂ saturation, **Record water sample** (the unit fixed, back to the drawer) and
-its water history; for every unit its last 20 operations and 10 feedings, voided ones struck through with
+**History**, the unit's Tank › Water (`farm:tank_water`; in the classic look that address redirects to the unit's history on Water chemistry); for every unit its last 20 operations and 10 feedings, voided ones struck through with
 their reason, each with **Void** while it may be voided.
 
 **Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock
@@ -741,7 +741,7 @@ answers for many units at once (the table is `monitoring/read.py`'s docstring):
 | open health events (every card), treatments and the latest sea-lice count (detailed) | `health.read.open_events`, `recent_treatments`, `latest_counts` |
 | open, overdue and due-today tasks (detailed) | `tasks.read.per_unit` |
 | the Deffeyes chart in its window | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
-| a unit's or a system's water history (Tank › Water, System › Water, behind `?ui=next`) | `farm:water_unit_chart` / `farm:water_system_chart` with `?view=history`: `sensors.read.water_history` (every parameter's `series` on one window, the NH₃-N worked out per sample, every live sample judged as the history page judges it, `judged`, sent as each sample's `status` and `status_text`; the limit bands `bands_of`), each chart in words (`sensors.chart.said`: latest, lowest, highest, gaps; `gap_text`) with its buckets from a backup or the system's channel marked (`buckets.other`, drawn as points of their own as the SVG chart's circles), the events each read by its area's reader (`farm.water.read.history_events` over `farm.feeding.read.fed_in`, `farm.health.read.treatments_on`, `farm.stock.read.harvests_on`, `alarms.read.opened_at`) for the person who may read that area, a day-dated one (treatment, harvest) said as its day or days, never 00:00 (`all_day`, `when`), the Deffeyes replay's address and the Deffeyes for the range (`range_deffeyes`: about 120 replay frames of the window, the diagram of the newest frame that has one from `deffeyes.render` with the pH labels the server placed, its star named with its time, "No diagram after <time>: <why>" in the warning's colour when the window's end has none, the water's path through the time broken where a frame has no diagram, a lone frame a dot, else the reason); a system's points side by side. The page's from and to are the shared date box (dd.mm.yyyy HH:MM); `?around=` 12 hours or more after now is refused (400). Its events are marks on every chart for the pointer (a 24 px handle; the plot under it free for the cursor and the zoom) and a list of links, the keyboard's and the screen reader's path; under 480 px the Deffeyes chart's labels give way to their words |
+| a unit's or a system's water history (Tank › Water, System › Water, behind `?ui=next`) | `farm:water_unit_chart` / `farm:water_system_chart` with `?view=history`: `sensors.read.water_history` (every parameter's `series` on one window, the NH₃-N worked out per sample, every live sample judged as the history page judges it, `judged`, sent as each sample's `status` and `status_text`; the limit bands `bands_of`), each chart in words (`sensors.chart.said`: latest, lowest, highest, gaps; `gap_text`) with its buckets from a backup or the system's channel marked (`buckets.other`, drawn as points of their own as the SVG chart's circles), the events each read by its area's reader (`farm.water.read.history_events` over `farm.feeding.read.fed_in`, `farm.health.read.treatments_on`, `farm.stock.read.harvests_on`, `alarms.read.opened_at`) for the person who may read that area, a day-dated one (treatment, harvest) said as its day or days, never 00:00 (`all_day`, `when`), the Deffeyes replay's address and the Deffeyes for the range (`range_deffeyes`: about 120 replay frames of the window, the diagram of the newest frame that has one from `deffeyes.render` with the pH labels the server placed, its star named with its time, "No diagram after <time>: <why>" in the warning's colour when the window's end has none, the water's path through the time broken where a frame has no diagram, a lone frame a dot, else the reason); a system's points side by side. The page's from and to are the shared date box (dd.mm.yyyy HH:MM); `?around=` 12 hours or more after now is refused (400). Its events are marks on every chart for the pointer (a 24 px handle; the plot under it free for the cursor and the zoom) and a list of links, the keyboard's and the screen reader's path; under 480 px the Deffeyes chart's labels give way to their words. In the new look a unit's row on Water chemistry opens `farm:tank_water`, and an alarm's detail at a unit's point links its water 12 hours each side of its opening (`?around=` on the site's clock); the classic look keeps its links |
 | the calculated CO₂ and the pH window of a card that shows them (the Small card) | `water.calculation.charts_of`: every such unit's chart at once, from the water the card read already holds and one read of the fish's limits |
 
 **The page** has a toolbar (a GET form that works without script: site, department, system, kind, fish (stocked by default,
@@ -1763,6 +1763,29 @@ without values it shows its defaults.
   follows the form, so a link opens the same view. The server is the one source of every number and of the
   SVG: the browser code (`frontend/poll.ts`, the live form, usable by any GET form) has no chemistry. Without
   the script the form has a Calculate button and the page is drawn again.
+- **The new look** (`?ui=next`, `core.ui.is_next`): the SAME templates, form and live parts, no island and no JSON, drawn
+  as the design console's calculator by the rules under `[data-ui="next"]` in `static/css/components.css` (the calculator
+  section): a values plate (where the values come from as its head, the tabs, a field a row with its value at the right,
+  Defaults and Print report), the charts' row on plates (the server's Deffeyes chart in the middle, its layers as chips
+  under it), the results plate (ammonia and hydrogen sulfide with the judged value as the figure, the values worked out,
+  the recipes across) and the simulator's steps last. Its only additions are the plates' titles "Values" and "Results"
+  (`UI_NEXT`) and wrappers that are no box in the classic look (`.calc-values-plate`, display: contents; `.ui-marks`
+  draws nothing there). The long texts (a card's method notes, the unit's fish limits, the references) stand under
+  closed `<details>` there, never on paper; a field's help follows the field-note rule (below); under 440 px the chart's labels give way to their words (`views.deffeyes_scale`, the rule
+  Tank › Water uses). The printed report takes the look too (`data-ui` on its own page, always on a day theme,
+  `PAPER_THEME`; on paper at the classic report's size, every row's value wrapped inside its column, in both looks). `farm/tests/test_calculator_said.py` holds the new look
+  to the classic one for every case on the page, the live parts and the report (`says_missing` empty), and
+  `farm.tests.test_island_pages` does so for the calculator from the test world's TT-01 and keeps the three pages for
+  `frontend/test/calculator.pages.ts` (`npm run test:pages`: the live update in a browser under the server's policy and
+  the page's own nonce, CSP, axe, 4.5:1, 1440 and 390 px, the report on A4 across).
+- **Field notes** (the rule): a field's help of more than 80 characters is a long reference note (a scale, a
+  conversion, a source: "As a pH meter or kit calibrated with NBS/NIST buffers reads it, …"); a shorter one is a hint
+  ("At most 20 characters") and stays under the field. Where a page asks for notes (`registration/_field.html` with
+  `notes`: today only the calculator in the new look; `crud.is_noted`, `NOTE_LONGER_THAN`), a note is a tooltip: the
+  mouse resting on the field for a second or the control's focus shows it, Esc closes it, an ⓘ button beside the label
+  opens and closes it (a finger has no hover); it wraps at a reading width, is never cut and stays inside the window
+  (`frontend/field-note.ts`, the pattern in `ds.css`). It is the server's help text, in the page and the control's
+  description (`aria-describedby`) whether open or not; without the script it is text under the field.
 - **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in the latest value
   of each measured field of its water, its middle point's (temperature, pH, salinity, alkalinity, TAN,
   dissolved oxygen: `read.owner_water`, each
@@ -5770,6 +5793,64 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   three languages; the search, the filters and the pager are the address's); `frontend/islands/ui/ui.test.tsx` (the
   markup); `frontend/test/listpage.browser.test.ts` (the GET form sends what the server reads; CSP and axe in every theme
   at 1440 and 390) and `listpages.browser.test.ts` (every recorded list in three languages at both widths).
+- **The Sensors pages** (Charts aside): every Sensors tab's list on the shared list page (Connections, Payload formats,
+  Devices, Channels, Credentials, Bindings, Alarm rules; their rows in `sensors/lists.py`, each tab's `list_rows`), and
+  Live values, Dead letters and Alarm events on the same island, their props made by `sensors/pages.py` from the rows
+  their own views read (the same page and filters as the classic page; the tabs' pager wording). A device marked
+  simulated says "Simulated" (the design's mark; its values are stored marked and used nowhere). Live values is one table
+  per device (the list page's `groups`, `listprops.group`): its head the device's code and name, Simulated, its site and
+  its number of channels; a channel's line is its "#number". A stale live value keeps
+  its "Stale" chip and its row the warning edge, never "Fresh". Resolve (a dead letter) and Acknowledge (an alarm event
+  nobody acknowledged) are the row's POST action with the page's token, for a person who may. "Nothing is sent yet" stays
+  on Alarm events while no push transport is connected. Acknowledge and Resolve show their word beside the icon (the
+  list page's `labelled` action: a safety state changes); a dead letter's payload, its hex and size are a closed
+  disclosure (`listprops.details`), as the classic page's `<details>`. Bindings: a channel's history (`?channel=`) is
+  drawn above its table as a timeline (`sensors.lists.binding_timeline` over the list's own rows; `ui/Timeline.tsx`: a
+  lane per place, each binding a span in % of the window from its first start to now, its words inside it and in the
+  lane's name for a screen reader); the site, role and "now bound" selects are `BindingResource.filter_list`'s (the
+  classic page reads the same address). A place's bindings (`?place=`) say whose they are and lead back
+  to every binding. Overview is island `sensors-home` (`frontend/islands/pages/SensorsHome.tsx`): the classic page's own
+  state and setup counts (`sensors.views.state_tiles`, each with its key) in the design's order, with the moment they were
+  worked out, the ingest's oldest heartbeat (the one that decides Down) and the offline devices; a status edge only for
+  what needs a look (an ingest down or never heard critical; an offline device, a stale channel, a dead letter, a lost
+  message a warning). "Open alarms" is the classic page's count of open sensor alarm events, said so under it ("Sensor
+  alarm events": not the strip's open alarms), critical while one of them is critical, a warning while only warnings are
+  open. Bindings and credentials are counted as their lists show them (`Resource.queryset`: a hidden binding is not). Held:
+  `sensors/tests/test_pages_next.py` (every page against its classic page on the test world plus `sensors_world`, in
+  three languages; nothing opens the classic dialog; the world's facts) and `frontend/test/prodrest.pages.ts` (each page
+  at 1440 and 390: CSP, axe, 4.5:1, no sideways scroll, the screenshots).
+- **Production › Overview** (`config.views.production_home`; `templates/production_home_next.html`, island `production`,
+  `frontend/islands/pages/Production.tsx`): the design's layout over the very context the classic page is drawn from
+  (`config/production_props.py`): "Today on the farm" as tiles (stock, feed, the water's critical and warning points,
+  tasks, reports due, each with its source and time), Needs attention (each row its status chip, what and where, its
+  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, and the
+  way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
+  HR board's bar (`config.views.team_today`, `core/stack`; the tiles add up to the people planned today) with the muster
+  count and the late ones. What the design adds from real sources: the fish card's batch count
+  (`farm.stock.views.overview`), the units under a medicine withdrawal today in Needs attention (hold chip, each batch's
+  "harvest from", a link to the unit's drawer) and the team bar. The head (status chips, Record water sample) is the
+  classic page's. Held: `farm/tests/test_production_overview_next.py` (every word of the classic page in three
+  languages; a value's title said by its chip and origin line, never for a value that was critical or a warning).
+- **Production › Production units** (`farm.stock.views.production_units`): the table on the shared list page
+  (`farm/stock/units_next.py`, from the rows the view read; the classic filter buttons are the toolbar's selects with the
+  same values; the kind and fish selects' first options say "All kinds" and "Stocked and empty" where the classic buttons
+  say "All"), the unit's drawer as the server draws it on the classic page, beside it (`farm/_unit_drawer.html`, every
+  section). A row's code and batch open the drawer, Edit the unit's form (`farm:tank_edit`, with the right to change
+  units). The density cell draws the share of capacity as the list page's gauge (`listprops.gauge`, `ui/Gauge.tsx`: the
+  bar and "12 % of capacity" in words, critical with its "Over" chip above capacity). A water value is its figure with
+  its origin and age; a warning, critical or stale one is in its status's chip, never drawn as OK; a stale one that was
+  critical or a warning when taken (F-244, `Reading.old_alert`) keeps its stale chip and says "Stale, was critical" and
+  its sample's moment (its age is the origin line's). Held:
+  `farm/tests/test_production_units_next.py` (the filter links, the bare "All" and the values' titles are the things said
+  another way, named there).
+- **System › Water** (`farm:system_water`, `/operations/systems/<id>/water/`; `farm/water/system_page.py`): the system's
+  points side by side, loop first, on one time axis, from `history_data` (the JSON of
+  `farm:water_system_chart?view=history`), drawn by Tank › Water's island; with more than one point the island heads each
+  point's charts with the point's name (and each chart's accessible name says it). Its window and words are Tank ›
+  Water's (`farm.water.views.window_props`, one helper for both pages). Without the new look the address is the system's
+  history on Water chemistry. Its way in: Setup › Systems in the new look (`SystemResource.list_rows`, the classic
+  list's words and filters, a nested system's "↳", its "Show them" notice; the classic template unchanged) gives each row a "Water of …" action
+  for a person who may read the water. Held: `farm/tests/test_system_water_next.py`, `farm/tests/test_systems_next.py`.
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

@@ -6,7 +6,7 @@ from .feeding import views as feeding
 from .health import views as health
 from .harvest import views as harvest
 from .stock import opening, views as stock
-from .water import views as water
+from .water import system_page, views as water
 
 app_name = 'farm'
 
@@ -37,6 +37,7 @@ urlpatterns += [
     path('operations/water/calculator/results/', water.calculator_results, name='water_calculator_results'),
     path('operations/water/calculator/report/', water.calculator_report, name='water_calculator_report'),
     path('operations/units/<uuid:pk>/water/', water.tank_water, name='tank_water'),
+    path('operations/systems/<uuid:pk>/water/', system_page.system_water, name='system_water'),
     path('operations/water/units/<uuid:pk>/chart/', water.unit_chart, name='water_unit_chart'),
     path('operations/water/systems/<uuid:pk>/chart/', water.system_chart, name='water_system_chart'),
     path('operations/water/record/', water.record_sample, name='water_record'),

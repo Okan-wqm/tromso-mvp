@@ -40,6 +40,9 @@ export interface Marker {
   status?: Severity;
   /** where the record is read (a feeding's list, an alarm's detail): the mark is then a link */
   href?: string;
+  /** the moment is listed beside the chart, a link there (Tank › Water's events): its mark is for the pointer only, no
+   *  Tab stop; a marker of the chart's own (a sensor moved, calibrated) keeps its Tab stop */
+  listed?: boolean;
 }
 
 /** A marker placed on the drawing, in CSS pixels of the chart's box. */
@@ -87,7 +90,8 @@ export function extent(series: Series[], envelope: Envelope | undefined, limits:
 }
 
 /** The markers' marks over the canvas: a handle at the top of the line to hover or focus (24 px across), the line lit and
- *  the label beside it while it is. `listed`: the moments are listed beside the chart, the marks are for the pointer only.
+ *  the label beside it while it is. `listed` (every mark) or a marker's own `listed`: the moment is listed beside the
+ *  chart, its mark is for the pointer only.
  *  Exported for its tests. */
 export function Marks({ overlay, listed = false }: { overlay: Overlay; listed?: boolean }) {
   return (
@@ -105,7 +109,7 @@ export function Marks({ overlay, listed = false }: { overlay: Overlay; listed?: 
           </>
         );
         const key = `${marker.at}-${index}`;
-        if (listed) {
+        if (listed || marker.listed) {
           return <g key={key} className="ui-chart-mark" aria-hidden="true" data-status={marker.status}>{body}</g>;
         }
         return marker.href ? (

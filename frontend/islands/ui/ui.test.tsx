@@ -63,7 +63,14 @@ test('a plate has its head, its safety line and its span; a tile its status edge
   assert.match(plate, /class="ui-notice" data-tone="warning"/);
   const tile = html(<Tiles><Tile label="Open alarms" figure="3" status="critical" statusLabel="Critical" href="/alarms/" /></Tiles>);
   assert.match(tile, /<a class="ui-tile" href="\/alarms\/" data-status="critical">/);
-  assert.match(tile, /<span class="sr-only">Critical: <\/span>Open alarms/);
+  assert.match(tile, /<span class="sr-only">Critical: <\/span><span class="ui-tile-label-text" title="Open alarms">Open alarms<\/span>/);
+});
+
+test('a tile label sits in its own slot and keeps its whole text as its title, so a clamped label is never lost', () => {
+  const label = 'QoS 0 messages dropped on a full queue of the ingest';
+  const tile = html(<Tile label={label} figure="0" />);
+  assert.match(tile, new RegExp(`<span class="ui-tile-label"><span class="ui-tile-label-text" title="${label}">${label}</span></span>`));
+  assert.match(tile, /<span class="ui-tile-figure" data-figure="" title="0">0<\/span>/);
 });
 
 test('a table is a named, scrolling region with its figures right, its row status and its sticky actions', () => {
@@ -227,6 +234,100 @@ test('a list page: one GET form for the search and the filters, the table with i
   const empty = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows: [] }} />);
   assert.match(empty, /<div class="ui-empty"><p class="ui-empty-title">No employees match “Zed”<\/p><p class="ui-empty-text">Try another search\. <a href="\/hr\/team\/">Show all employees<\/a><\/p><\/div>/);
   assert.doesNotMatch(empty, /ui-table|list-pager|Showing 2 of 3/, 'no table, pager or line over an empty list');
+});
+
+test('a gauge: the bar as long as the share (full from 100), the share in words beside it, the bar hidden, no style', async () => {
+  const { Gauge } = await import('./index.js');
+  const gauge = html(<Gauge value={12.5} text="12 % of capacity" />);
+  assert.match(gauge, /^<span class="ui-gauge"><svg class="ui-gauge-track" viewBox="0 0 100 1" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect class="ui-gauge-fill" width="12\.5" height="1"><\/rect><\/svg><span class="ui-gauge-text">12 % of capacity<\/span><\/span>$/);
+  const over = html(<Gauge value={124} text="124 % of capacity" status="critical" />);
+  assert.match(over, /<span class="ui-gauge" data-status="critical">/);
+  assert.match(over, /width="100"/, 'a share above the whole fills the bar; its text says it whole');
+  assert.match(html(<Gauge value={-3} text="0 %" />), /width="0"/);
+  assert.doesNotMatch(gauge + over, /style=/);
+});
+
+test('a list cell with a gauge draws its text and sub-lines, then the gauge under them', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const rows = [{ key: '1', cells: { name: { text: 'TT-01', strong: true },
+    density: { text: '7.4 kg/m³', sub: ['Over'], gauge: { value: 12, text: '12 % of capacity', status: null } } }, actions: [] }];
+  const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows,
+    columns: [{ key: 'name', label: 'Unit' }, { key: 'density', label: 'Density · capacity' }] }} />);
+  assert.match(page, /<td><span>7\.4 kg\/m³<\/span><span class="ui-cell-sub">Over<\/span><span class="ui-cell-sub"><span class="ui-gauge">[^]*?<span class="ui-gauge-text">12 % of capacity<\/span><\/span><\/span><\/td>/);
+});
+
+test('a list page with groups draws a plate per group, its head and its own table of the shared columns', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const row = (key: string, text: string) => ({ key, cells: { name: { text, strong: true } }, actions: [] });
+  const table = { ...LIST_PROPS.table, columns: [{ key: 'name', label: 'Channel' }], rows: [row('1', 'PH'), row('2', 'O2'), row('3', 'TEMP')] };
+  const groups = [
+    { key: 'a', title: 'PROBE-A · Probe A', chips: [{ kind: 'hold' as const, text: 'Simulated' }], meta: 'Site North · 2 channels', rows: ['1', '3'] },
+    { key: 'b', title: 'PROBE-B · Probe B', meta: null, rows: ['2'] },
+  ];
+  const page = html(<ListPage {...LIST_PROPS} table={table} groups={groups} />);
+  const plates = page.split('<section class="ui-plate"').slice(1);
+  assert.equal(plates.length, 2);
+  assert.match(plates[0] ?? '', /<h2>PROBE-A · Probe A<\/h2><span class="ui-chip"[^>]*>[^]*?Simulated[^]*?<span class="ui-plate-meta">Site North · 2 channels<\/span>/);
+  assert.match(plates[0] ?? '', /aria-label="PROBE-A · Probe A"[^]*?PH[^]*?TEMP/);
+  assert.doesNotMatch(plates[0] ?? '', />O2</);
+  assert.match(plates[1] ?? '', /<h2>PROBE-B · Probe B<\/h2>[^]*?>O2</);
+  assert.equal((html(<ListPage {...LIST_PROPS} table={table} />).match(/<table/g) ?? []).length, 1, 'without groups: one table');
+});
+
+test('a list page notice may end in a link; one without is as before', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const page = html(<ListPage {...LIST_PROPS} notices={[
+    { key: 'none', tone: 'warning', text: '2 systems are not in any production department.', link: { href: '?production_department=none', label: 'Show them' } },
+    { key: 'plain', tone: 'neutral', text: 'A plain line.' },
+  ]} />);
+  assert.match(page, /2 systems are not in any production department\. <a href="\?production_department=none">Show them<\/a><\/div>/);
+  assert.match(page, /A plain line\.<\/div>/);
+});
+
+test('a list cell may be a closed disclosure; a labelled action shows its word beside its icon', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const rows = [{ key: '1', cells: {
+    topic: { text: 'test/probe' },
+    payload: { text: null, details: { summary: '{"ts":17954…', lines: ['{"ts":1795440480000}', '7b227473', '21 bytes'] } },
+  }, actions: [
+    { kind: 'post' as const, href: '/sensors/dead/1/resolve/', label: 'Resolve', icon: 'check-circle' as const, labelled: true },
+    { kind: 'link' as const, href: '/x/', label: 'Edit x', icon: 'pencil' as const },
+  ] }];
+  const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows,
+    columns: [{ key: 'topic', label: 'Topic' }, { key: 'payload', label: 'Payload' }] }} />);
+  assert.match(page, /<details class="ui-cell-details"><summary>\{&quot;ts&quot;:17954…<\/summary><span class="ui-cell-sub">\{&quot;ts&quot;:1795440480000\}<\/span><span class="ui-cell-sub">7b227473<\/span><span class="ui-cell-sub">21 bytes<\/span><\/details>/);
+  assert.doesNotMatch(page, /<details[^>]* open/, 'closed');
+  assert.match(page, /<button type="submit" class="ui-btn"><svg[^]*?<\/svg>Resolve<\/button>/);
+  assert.match(page, /<a class="icon-button" href="\/x\/" aria-label="Edit x"/, 'an unlabelled action is the icon button as before');
+});
+
+test('a timeline: a lane per place, each span placed in % and said in words, the lane a named picture, no style', async () => {
+  const { Timeline } = await import('./index.js');
+  const page = html(<Timeline label="Where OXYGEN was bound over time" ticks={[{ x: 0, label: '01.11' }, { x: 50, label: '12.11' }, { x: 100, label: 'now' }]}
+    lanes={[
+      { key: 'rt', label: 'Research hall › RT-03', spans: [{ key: 'a', x: 0, width: 22.5, tone: 'primary', open: false, label: 'Primary · 01.11.2026 08:00 – 06.11.2026 08:02' }] },
+      { key: 'bio', label: 'Biofilter loop', spans: [{ key: 'b', x: 22.5, width: 77.5, tone: 'backup', open: true, label: 'Backup · 06.11.2026 08:02 – now' }] },
+    ]} />);
+  assert.match(page, /^<figure class="ui-timeline" aria-label="Where OXYGEN was bound over time">/);
+  assert.match(page, /<svg class="ui-timeline-track" role="img" aria-label="Research hall › RT-03: Primary · 01\.11\.2026 08:00 – 06\.11\.2026 08:02">/);
+  assert.match(page, /<svg x="22\.5%" width="77\.5%" y="4" height="20" class="ui-timeline-span" data-tone="backup" data-open="">/);
+  assert.match(page, /<title>Backup · 06\.11\.2026 08:02 – now<\/title>/);
+  assert.match(page, /text-anchor="end">now<\/text>/);
+  assert.doesNotMatch(page, /style=/);
+});
+
+test('a list page draws its timeline in a plate above the table; without one, as before', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const timeline = { title: 'OXYGEN #186 · SIM-BIO-1 · History', label: 'Where OXYGEN was bound', ticks: [{ x: 0, label: '01.11' }],
+    lanes: [{ key: 'a', label: 'Loop', spans: [] }] };
+  const page = html(<ListPage {...LIST_PROPS} timeline={timeline} />);
+  assert.match(page, /<h2>OXYGEN #186 · SIM-BIO-1 · History<\/h2><\/div><figure class="ui-timeline"[^]*<table/);
+  assert.doesNotMatch(html(<ListPage {...LIST_PROPS} />), /ui-timeline/);
 });
 
 test('a stacked bar: each part a segment as long as its share on the whole, every part in words, no style', async () => {

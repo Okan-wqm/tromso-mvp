@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import {
-  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, IconButton, LinkButton,
+  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RowList, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, Gauge, IconButton, Timeline, LinkButton,
   LinkTabs, List, ListItem, LoadingState, Notice, Plate, Plates, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
@@ -48,6 +48,14 @@ function Gallery({ rows, errors }: GalleryProps) {
           <Tile label="On site now" figure="31" sub="of 38 planned today" />
           <Tile label="Biomass" figure="1,252.6 t" sub="89 units stocked" source="Stock ledger · 13:42" />
           <Tile label="Unread messages" figure="4" sub="in 2 conversations" />
+        </Tiles>
+      </Plate>
+      <Plate title="Label slot" span={12}>
+        <Tiles label="Label slot">
+          <Tile label="Ingest" figure="Alive" sub="Heartbeat 4 s ago" />
+          <Tile label="Channels without a fresh value" figure="2" status="warning" statusLabel="Warning" />
+          <Tile label="QoS 0 messages dropped on a full queue of the ingest, a label far longer than the two lines of its slot, so it is cut with an ellipsis" figure="0" />
+          <Tile label="Devices not placed" figure="1" />
         </Tiles>
       </Plate>
       <Plate title="Statuses" badge={<Chip kind="critical">1 overdue</Chip>} span={12} safety="Nothing is sent yet: the push transport is not connected.">
@@ -189,6 +197,22 @@ function Gallery({ rows, errors }: GalleryProps) {
           <StackedBar label="Planned today: 0" empty="Nobody is expected today" parts={[
             { key: 'here', label: 'Here now', value: 0, figure: '0', tone: 'ok' },
           ]} />
+        </div>
+      </Plate>
+      <Plate title="OXYGEN-MG-L #186 · SIM-BIO-1 · History" span={12}>
+        <Timeline label="Where OXYGEN-MG-L was bound over time"
+          ticks={[{ x: 0, label: '01.11' }, { x: 22.7, label: '06.11' }, { x: 45.4, label: '11.11' }, { x: 68.1, label: '16.11' }, { x: 100, label: 'now' }]}
+          lanes={[
+            { key: 'rt', label: 'Research hall › RT-03', spans: [{ key: 'a', x: 0, width: 22.7, tone: 'primary', open: false, label: 'Primary · 01.11.2026 08:00 – 06.11.2026 08:02' }] },
+            { key: 'bio', label: 'Biofilter loop (BIO-1)', spans: [{ key: 'b', x: 22.7, width: 77.3, tone: 'primary', open: true, label: 'Primary · 06.11.2026 08:02 – now' }] },
+            { key: 'ha', label: 'HA-K01 › Middle', spans: [{ key: 'c', x: 54.5, width: 12, tone: 'backup', open: false, label: 'Backup · 13.11.2026 08:00 – 16.11.2026 08:00' }] },
+          ]} />
+      </Plate>
+      <Plate title="Capacity" span={6}>
+        <div className="ui-plate-body" id="gauges">
+          <CellLines main="7.4 kg/m³" sub={undefined} /><Gauge value={12} text="12 % of capacity" />
+          <CellLines main="96.1 kg/m³" sub={undefined} /><Gauge value={124} text="124 % of capacity" status="critical" />
+          <CellLines main="0.0 kg/m³" sub={undefined} /><Gauge value={0} text="0 % of capacity" />
         </div>
       </Plate>
     </Plates>

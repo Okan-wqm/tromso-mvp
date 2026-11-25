@@ -117,6 +117,23 @@
   background: var(--crit-tint); color: var(--crit-text); font-size: var(--fs-body);
 }
 .form-error .errorlist { margin: 0; }
+/* A field's long reference note (registration/_field.html with `notes`; frontend/field-note.ts): the server's help text, the
+   control's description whether shown or not; with the script a tooltip that the mouse resting on the field for a second, the
+   control's focus or the ⓘ button beside the label shows, Esc closes; wrapped at a reading width, never cut, kept inside the
+   window. Without the script it stays text under the field and the button is not shown. */
+.field-head { display: inline-flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.ui-note-toggle { display: none; place-items: center; flex: none; width: 24px; height: 24px; margin: 0; padding: 0;
+  border: 0; border-radius: var(--radius-pill); background: none; color: var(--text-2); cursor: pointer; }
+.is-noted .ui-note-toggle { display: inline-grid; }
+.ui-note-toggle:hover, .ui-note-toggle[aria-expanded="true"] { color: var(--action); }
+.ui-note-toggle .icon { width: var(--icon-inline); height: var(--icon-inline); }
+.is-noted .ui-note { display: none; }
+.is-noted .ui-note.is-open {
+  display: block; position: fixed; z-index: 60; width: max-content; max-width: min(32rem, calc(100vw - 16px)); margin: 0;
+  padding: var(--space-2) var(--space-3); border: 1px solid var(--line-control); border-radius: var(--radius-control);
+  background: var(--surface-sheet); color: var(--text-1); box-shadow: var(--shadow-raised);
+  font-size: var(--fs-small); line-height: 1.45; white-space: normal; overflow-wrap: anywhere; text-wrap: pretty;
+}
 @media (pointer: coarse) {
   :is(.field input:not([type="checkbox"], [type="radio"]), .field select, .ui-control, .ui-select, .search input, .ui-toolbar :is(input, select)) { min-height: var(--control-h-coarse); }
 }
@@ -445,6 +462,10 @@
 tr[data-status="critical"] .ui-row-status { color: var(--crit); }
 tr[data-status="warning"] .ui-row-status { color: var(--warn); }
 .ui-cell-sub { display: block; color: var(--text-3); font-size: var(--fs-small); font-weight: 400; white-space: normal; }
+/* a cell's closed disclosure (a dead letter's payload): the summary in the cell's text, the lines when opened, a long
+   run without spaces (hex) broken anywhere so it never widens the table */
+.ui-cell-details > summary { cursor: pointer; overflow-wrap: anywhere; }
+.ui-cell-details > .ui-cell-sub { margin-top: var(--space-1); overflow-wrap: anywhere; white-space: pre-wrap; }
 .ui-cell-strong { font-weight: 600; }
 /* a row's name stays readable on a phone: the table scrolls inside its frame rather than squeeze it to a word a line */
 .ui-table tbody th[scope="row"] { min-width: 10rem; }
@@ -459,6 +480,8 @@ tr[data-status="warning"] .ui-row-status { color: var(--warn); }
    stand in ui-plates, a 12-column grid; data-span="4|6|8|12" (the whole width under 1100 px, half from 640 px). */
 .ui-plates { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap, var(--space-5)); align-items: start; }
 .ui-plates > * { grid-column: 1 / -1; min-width: 0; }
+/* a heading over a run of plates in the grid (System › Water: each point's charts), the whole width */
+.ui-plates > .ui-plates-head { margin: var(--space-2) 0 calc(-1 * var(--space-2)); font-family: var(--font-display); font-size: var(--fs-h2); font-weight: 600; line-height: 1.2; color: var(--text-1); }
 @media (min-width: 1100px) {
   .ui-plates > [data-span="4"] { grid-column: span 4; }
   .ui-plates > [data-span="6"] { grid-column: span 6; }
@@ -504,6 +527,12 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-tile-label .icon { flex: none; width: var(--icon-inline); height: var(--icon-inline); }
 .ui-tile[data-status="critical"] .ui-tile-label .icon { color: var(--crit); }
 .ui-tile[data-status="warning"] .ui-tile-label .icon { color: var(--warn); }
+/* The new look's label slot: two lines high whatever the label, so a wrapped label never pushes its figure below its
+   neighbours'; a label longer than two lines ends in an ellipsis (its whole text is the title, Tiles.tsx). */
+[data-ui="next"] .ui-tile > .ui-tile-label { align-items: flex-start; min-height: calc(2em * 1.3); }
+[data-ui="next"] .ui-tile > .ui-tile-label .icon { margin-top: calc((1.3em - var(--icon-inline)) / 2); }
+.ui-tile-label-text { min-width: 0; }
+[data-ui="next"] .ui-tile-label-text { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; }
 /* The classic look's figure is the metric card's as it was: the readout step (28 px) in the text face, never cut. The new
    look's is the design's: Barlow, as large as the cell allows; one too long for its cell ends in an ellipsis and keeps
    its whole value in its title (Tiles.tsx, _metric_card.html). */
@@ -515,6 +544,29 @@ a.ui-tile[data-status="warning"]:focus-visible { box-shadow: var(--ring-focus), 
 .ui-tile-sub { color: var(--text-2); font-size: var(--fs-small); }
 .ui-tile-sub2 { color: var(--text-3); font-size: var(--fs-small); }
 .ui-tile-source { margin-top: auto; padding-top: var(--space-1); color: var(--text-3); font-size: var(--fs-caption); }
+
+/* ==================================================================================================== Timeline ===
+   ui-timeline: lanes of spans on one time axis (Sensors › Bindings: where a channel was bound). A lane's name, then its
+   track; every position is the server's, in % of the track (SVG attributes, no style). A primary span is filled, a backup
+   dashed; each says its words inside it (cut by its own box) and in its <title>; the lane is named in words for a screen
+   reader. Under 640 px the name stands above its track. */
+.ui-timeline { margin: 0; padding: var(--space-3) var(--cell-px, var(--space-4)); }
+.ui-timeline-row { display: grid; grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr); align-items: center; gap: var(--space-3); }
+.ui-timeline-row + .ui-timeline-row { margin-top: var(--space-2); }
+.ui-timeline-name { overflow-wrap: anywhere; color: var(--text-1); font-size: var(--fs-small); font-weight: 600; }
+.ui-timeline-axis { display: block; width: 100%; height: 16px; overflow: visible; }
+.ui-timeline-axis text { fill: var(--text-3); font-size: var(--fs-caption); }
+.ui-timeline-track { display: block; width: 100%; height: 28px; border: 1px solid var(--line-hair); background: var(--surface-sunken); }
+.ui-timeline-tick { stroke: var(--line-hair); }
+.ui-timeline-span rect { fill: var(--surface-sheet); stroke: var(--line-control); }
+.ui-timeline-span[data-tone="primary"] rect { fill: var(--primary); stroke: var(--primary); }
+.ui-timeline-span[data-tone="backup"] rect { stroke-dasharray: 4 3; }
+.ui-timeline-span text { fill: var(--text-1); font-size: var(--fs-caption); }
+.ui-timeline-span[data-tone="primary"] text { fill: var(--on-primary); }
+@media (max-width: 639px) {
+  .ui-timeline-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+  .ui-timeline-row > span:empty { display: none; }
+}
 
 /* ====================================================================================================== Notice ===
    ui-notice: a sentence that must stay in sight. data-tone="warning" is the safety line ("Nothing is sent yet: …"), "ok"

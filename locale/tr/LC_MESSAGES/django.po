@@ -500,6 +500,12 @@ msgstr[0] "%(count)d bekleme süresi satırı kaydedildi."
 msgstr[1] "%(count)d bekleme süresi satırı kaydedildi."
 
 #, python-format
+msgid "%(count)s channel"
+msgid_plural "%(count)s channels"
+msgstr[0] "%(count)s kanal"
+msgstr[1] "%(count)s kanal"
+
+#, python-format
 msgid "%(count)s column"
 msgid_plural "%(count)s columns"
 msgstr[0] "%(count)s sütun"
@@ -570,6 +576,10 @@ msgid "%(count)s of them for the whole farm"
 msgid_plural "%(count)s of them for the whole farm"
 msgstr[0] "%(count)s tanesi tüm çiftlik için"
 msgstr[1] "%(count)s tanesi tüm çiftlik için"
+
+#, python-format
+msgid "%(count)s offline"
+msgstr "%(count)s çevrim dışı"
 
 #, python-format
 msgid "%(count)s overdue"
@@ -1286,6 +1296,10 @@ msgid "%(people)s notification"
 msgid_plural "%(people)s notifications"
 msgstr[0] "%(people)s bildirim"
 msgstr[1] "%(people)s bildirim"
+
+#, python-format
+msgid "%(percent)s of capacity"
+msgstr "kapasitenin %(percent)s kadarı"
 
 #, python-format
 msgid "%(person)s (can no longer be chosen)"
@@ -3119,6 +3133,10 @@ msgstr "API kimliği"
 msgid "Abnormal swimming"
 msgstr "Anormal yüzme"
 
+#, python-format
+msgid "About %(field)s"
+msgstr "%(field)s hakkında"
+
 msgid "Above"
 msgstr "Üstünde"
 
@@ -3570,6 +3588,9 @@ msgstr "Tüm protokoller"
 
 msgid "All reports"
 msgstr "Tüm raporlar"
+
+msgid "All roles"
+msgstr "Tüm roller"
 
 msgid "All rules"
 msgstr "Tüm kurallar"
@@ -4547,6 +4568,9 @@ msgstr ""
 
 msgid "Bought from a supplier"
 msgstr "Tedarikçiden satın alındı"
+
+msgid "Bound"
+msgstr "Bağlı"
 
 msgid "Bound to"
 msgstr "Atandığı yer"
@@ -8220,6 +8244,10 @@ msgstr "Sağlıklı, artık kullanılmayacak"
 msgid "Heart and skeletal muscle inflammation (HSMI)"
 msgstr "Kalp ve iskelet kası iltihabı (HSMI)"
 
+#, python-format
+msgid "Heartbeat %(age)s ago"
+msgstr "Son sinyal %(age)s önce"
+
 msgid "Heartbeat (s)"
 msgstr "Nabız (sn)"
 
@@ -8456,6 +8484,9 @@ msgstr ""
 msgid "How rations are worked out"
 msgstr "Rasyonlar nasıl hesaplanır"
 
+msgid "How this was worked out"
+msgstr "Bu nasıl hesaplandı"
+
 msgid "How values are judged"
 msgstr "Değerler nasıl değerlendirilir"
 
@@ -8659,6 +8690,9 @@ msgstr "Enfeksiyöz somon anemisi (ISA)"
 
 msgid "Ingest"
 msgstr "Veri alımı"
+
+msgid "Ingest and devices"
+msgstr "Veri alımı ve cihazlar"
 
 msgid "Injection"
 msgstr "Enjeksiyon"
@@ -9271,6 +9305,9 @@ msgstr "Sınırlar"
 
 msgid "Limits of the fish in the unit"
 msgstr "Birimdeki balıkların sınırları"
+
+msgid "Limits of these fish"
+msgstr "Bu balıkların sınırları"
 
 msgid "Line"
 msgstr "Satır"
@@ -10727,6 +10764,9 @@ msgstr ""
 "Bir kural kimi söyleyene kadar bir alarmdan kimse haberdar edilmez: bir rol ya da bir kişi, bir "
 "sahada ya da her sahada, bir önem derecesinden itibaren, bir seviyede."
 
+msgid "Nobody is planned today."
+msgstr "Bugün kimse planlanmadı."
+
 msgid "Nobody to notify"
 msgstr "Bildirilecek kimse yok"
 
@@ -11087,6 +11127,12 @@ msgstr "Hemen bildirin"
 
 msgid "Now"
 msgstr "Şimdi"
+
+msgid "Now and before"
+msgstr "Şimdi ve önce"
+
+msgid "Now bound"
+msgstr "Şimdi bağlı"
 
 msgid "Nullable"
 msgstr "Boş olabilir"
@@ -12296,6 +12342,9 @@ msgstr "Üretim planı"
 msgid "Production plans"
 msgstr "Üretim planları"
 
+msgid "Production team today"
+msgstr "Bugün üretim ekibi"
+
 msgid "Production units"
 msgstr "Üretim birimleri"
 
@@ -12947,6 +12996,9 @@ msgstr "Geri yüklendi"
 
 msgid "Result"
 msgstr "Sonuç"
+
+msgid "Results"
+msgstr "Sonuçlar"
 
 msgid "Retired"
 msgstr "Kullanımdan kaldırıldı"
@@ -13646,6 +13698,9 @@ msgstr "Sensör"
 msgid "Sensor alarm event"
 msgstr "Sensör alarm olayı"
 
+msgid "Sensor alarm events"
+msgstr "Sensör alarm olayları"
+
 msgid "Sensor alarm rule"
 msgstr "Sensör alarm kuralı"
 
@@ -14075,6 +14130,9 @@ msgstr "Değerlerin kaynağı"
 msgid "Source: %(kind)s"
 msgstr "Kaynak: %(kind)s"
 
+msgid "Sources"
+msgstr "Kaynaklar"
+
 msgid "Sources fingerprint"
 msgstr "Kaynakların parmak izi"
 
@@ -14153,6 +14211,12 @@ msgstr "Paslanmaz çelik"
 
 msgid "Stale"
 msgstr "Eski"
+
+msgid "Stale, was critical"
+msgstr "Eski, kritikti"
+
+msgid "Stale, was warning"
+msgstr "Eski, uyarıydı"
 
 msgid "Standard week (minutes)"
 msgstr "Standart hafta (dakika)"
@@ -14299,6 +14363,9 @@ msgstr "Stoklandı"
 msgctxt "occupancy"
 msgid "Stocked"
 msgstr "Dolu"
+
+msgid "Stocked and empty"
+msgstr "Dolu ve boş"
 
 msgid "Stocked on"
 msgstr "Stoklama tarihi"
@@ -15526,6 +15593,9 @@ msgstr ""
 msgid "The level %(label)s of %(factor)s has two different values."
 msgstr "%(factor)s faktörünün %(label)s düzeyinin iki farklı değeri var."
 
+msgid "The limit bands are the limits of the fish today, over the whole time."
+msgstr "Sınır bantları, balıkların bugünkü sınırlarıdır; tüm süre boyunca gösterilir."
+
 msgid "The link was already used or has expired. Request a new one."
 msgstr "Bağlantı daha önce kullanılmış veya süresi dolmuş. Yeni bir tane isteyin."
 
@@ -16555,6 +16625,9 @@ msgstr "Garanti satın alma tarihinden önce bitemez."
 
 msgid "The water"
 msgstr "Su"
+
+msgid "The water 12 hours each side of the alarm"
+msgstr "Alarmın 12 saat öncesi ve sonrasındaki su"
 
 msgid ""
 "The water after each amount, added in the order of the list, mixed through and closed to the air "
@@ -17820,6 +17893,10 @@ msgstr "Su limiti"
 msgid "Water limits"
 msgstr "Su sınırları"
 
+#, python-format
+msgid "Water of %(name)s"
+msgstr "%(name)s suyu"
+
 msgid "Water origin"
 msgstr "Su kökeni"
 
@@ -18120,6 +18197,10 @@ msgstr ""
 
 msgid "Where"
 msgstr "Nerede"
+
+#, python-format
+msgid "Where %(channel)s was bound over time"
+msgstr "%(channel)s zaman içinde nereye bağlıydı"
 
 msgid ""
 "Where a PLC or field bus holds the value, as JSON. Modbus: unit_id, function, register; S7: db, "
@@ -19656,6 +19737,12 @@ msgstr "saat"
 
 msgid "https:// is added when it is left out."
 msgstr "Yazılmazsa https:// eklenir."
+
+#, python-format
+msgid "in %(count)s batch"
+msgid_plural "in %(count)s batches"
+msgstr[0] "%(count)s partide"
+msgstr[1] "%(count)s partide"
 
 #, python-format
 msgid "in %(count)s conversation"

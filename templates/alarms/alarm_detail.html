@@ -14,6 +14,7 @@
     <div><dt>{% trans "Severity" %}</dt><dd>{{ alarm.get_severity_display }}</dd></div>
     <div><dt>{% trans "Source" %}</dt><dd>{{ alarm.get_source_display }}</dd></div>
     <div><dt>{% trans "Where" %}</dt><dd>{{ alarm.production_department|default:alarm.site|default:"—" }}</dd></div>
+    {% if water_url %}<div><dt>{% trans "Water" %}</dt><dd><a href="{{ water_url }}">{% trans "The water 12 hours each side of the alarm" %}</a></dd></div>{% endif %}
     <div><dt>{% trans "State" %}</dt><dd>{% if is_open %}{% trans "Open" %}{% else %}{% trans "Cleared" %}{% endif %} · {% blocktrans trimmed with level=level %}level {{ level }}{% endblocktrans %}</dd></div>
   </dl>
   {% if nobody %}<p class="notice notice-warning">{% trans "Nobody to notify: no alarm recipient rule reaches this alarm. Add one under Alarm recipients." %}</p>{% endif %}

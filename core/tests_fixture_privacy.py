@@ -2,7 +2,7 @@
 of the development database goes to GitHub). Every e-mail address in the browser tests' sources and fixtures
 (frontend/test, frontend/islands) and in core/testdata must be a fixture address: example.com or a .example domain
 (RFC 2606). A file recorded from the development database (form-oracle.json was, once) fails here; fixtures are recorded
-from the test world (core/test_world.py), in a test database."""
+from the test world (core/test_world.py; scripts/record_test_world.sh), in a test database."""
 import re
 from pathlib import Path
 

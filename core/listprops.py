@@ -52,15 +52,18 @@ def chip(kind, text):
     return {'kind': kind, 'text': str(text)}
 
 
-def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=(), gauge=None, details=None):
+def cell(text=None, *, href=None, strong=False, sub=(), chip=None, chips=(), gauge=None, details=None, more=None):
     """One cell: its text (a link to `href`), a sub-line per item of `sub` (empty items left out), or a `chip`; a `gauge`
-    (below) is drawn under the text; `details` (below) is drawn in place of the text, closed."""
+    (below) is drawn under the text; `details` (below) is drawn in place of the text, closed; `more` (a `details` too) is
+    drawn closed under the text and its lines, for a long explanation the cell keeps (how a water value was worked out)."""
     said = {'text': None if text is None else str(text), 'href': href or None, 'strong': bool(strong),
             'chip': chip, 'chips': list(chips), 'sub': [str(item) for item in sub if item not in (None, '')]}
     if gauge is not None:
         said['gauge'] = gauge
     if details is not None:
         said['details'] = details
+    if more is not None:
+        said['more'] = more
     return said
 
 

@@ -193,3 +193,12 @@ class ValueCellTests(SimpleTestCase):
         cell = value_cell(self.reading(status='stale', note='Test note'), latest=False, whole=True)
         self.assertEqual(cell['chip']['kind'], 'stale')
         self.assertEqual(value_cell(None, latest=False)['text'], '—')
+
+    def test_how_a_value_was_worked_out_is_closed_under_it_opened_by_its_words(self):
+        from ..stock.units_next import value_cell
+        with translation.override('en'):
+            cell = value_cell(self.reading(value=None, derived=True, provenance='Test formula 4: ionic strength 0.0016'),
+                              latest=False, whole=True)
+        self.assertEqual(cell['more'], {'summary': 'worked out from the sample',
+                                        'lines': ['Test formula 4: ionic strength 0.0016']})
+        self.assertNotIn('worked out from the sample', cell['sub'])

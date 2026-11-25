@@ -35,6 +35,18 @@ export interface ListCell {
   gauge?: GaugeProps | null;
   /** a closed disclosure in place of the text: its summary, and its lines shown when opened (a dead letter's payload) */
   details?: { summary: string; lines: string[] } | null;
+  /** a closed disclosure under the text and its lines: a long explanation the cell keeps without growing (how a water
+   *  value was worked out: "worked out from the sample", its formula and inputs when opened) */
+  more?: { summary: string; lines: string[] } | null;
+}
+
+function Disclosure({ details, className }: { details: { summary: string; lines: string[] }; className: string }) {
+  return (
+    <details className={className}>
+      <summary>{details.summary}</summary>
+      {details.lines.map((line, index) => <span key={index} className="ui-cell-sub">{line}</span>)}
+    </details>
+  );
 }
 
 export interface ListAction {
@@ -132,21 +144,15 @@ export interface ListPageProps {
 
 /** One cell of a list's table, as the server worded it: also a read-only table of a record's page (core/formpanels.py). */
 export function Cell({ cell }: { cell: ListCell }) {
-  if (cell.details) {
-    return (
-      <details className="ui-cell-details">
-        <summary>{cell.details.summary}</summary>
-        {cell.details.lines.map((line, index) => <span key={index} className="ui-cell-sub">{line}</span>)}
-      </details>
-    );
-  }
+  if (cell.details) return <Disclosure details={cell.details} className="ui-cell-details" />;
   const main = cell.chip ? <Chip kind={cell.chip.kind}>{cell.chip.text}</Chip>
     : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.text;
   const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);
   const sub = cell.sub && cell.sub.length ? cell.sub.join(' · ') : undefined;
   const lines = <CellLines strong={Boolean(cell.strong)} main={chips && chips.length ? <>{main} {chips}</> : main} sub={sub} />;
-  if (!cell.gauge) return lines;
-  return <>{lines}<span className="ui-cell-sub"><Gauge {...cell.gauge} /></span></>;
+  const more = cell.more ? <Disclosure details={cell.more} className="ui-cell-details ui-cell-more" /> : null;
+  if (!cell.gauge) return more ? <>{lines}{more}</> : lines;
+  return <>{lines}<span className="ui-cell-sub"><Gauge {...cell.gauge} /></span>{more}</>;
 }
 
 function Action({ action, csrfToken }: { action: ListAction; csrfToken: string }) {

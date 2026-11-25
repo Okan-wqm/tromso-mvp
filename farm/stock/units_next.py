@@ -56,26 +56,36 @@ def value_cell(reading, latest=True, whole=False):
 
     `latest=False`: a value of a sample in the history (farm/_water_cell.html): no origin line (the row says the sample's
     source and moment), and no value is "—". `whole`: also what the classic title says besides the status a chip draws
-    (Water chemistry, where a value is read for itself): that it was worked out and by what (`provenance`), why it could
-    not be (`note`: the "?" is never left without its reason), and a status no chip draws in words (cannot be evaluated,
-    no limit)."""
+    (Water chemistry, where a value is read for itself): that it was worked out, and by what (`provenance`, long: a closed
+    disclosure under the value, `listprops.cell` `more`), why it could not be (`note`: the "?" is never left without its
+    reason), and a status no chip draws in words (cannot be evaluated, no limit)."""
     if reading is None:
         return L.cell(_('no data') if latest else '—')
     figure = '?' if reading.value is None else str(reading_figure(reading))
     sub = [reading.measured or '', getattr(reading, 'last_own_said', '') if reading.last_own else '']
+    more = None
     if whole and not reading.old_alert:
         if reading.status in (Status.UNEVALUATED, Status.NO_LIMIT):
             sub.insert(0, str(status_label(reading.status)))
+        worked = ''
         if reading.derived:
-            sub.append(_('worked out from the sensors') if reading.sample.live else _('worked out from the sample'))
-        sub += [str(each) for each in (reading.provenance, reading.note) if each]
+            worked = _('worked out from the sensors') if reading.sample.live else _('worked out from the sample')
+        # how it was worked out or converted (`provenance`: a formula and its inputs, long) is closed under the value,
+        # opened by the words that say it was ("worked out from the sample", or what was measured)
+        summary = worked or reading.measured
+        if reading.provenance and summary:
+            more = L.details(summary, [reading.provenance])
+        else:
+            sub += [str(each) for each in (worked, reading.provenance) if each]
+        if reading.note:
+            sub.append(str(reading.note))           # why a "?" could not be worked out: always in sight
     if latest:
         said = source(reading)
         sub.append(f"{said['origin']} · {said['age']}")
     if reading.old_alert:
         sub.insert(0, was_said(reading))
     tone = VALUE_CHIP.get(reading.status)
-    return L.cell(chip=L.chip(tone, figure), sub=sub) if tone else L.cell(figure, sub=sub)
+    return L.cell(chip=L.chip(tone, figure), sub=sub, more=more) if tone else L.cell(figure, sub=sub, more=more)
 
 
 def unit_cell(row):

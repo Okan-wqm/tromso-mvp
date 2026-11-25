@@ -462,3 +462,10 @@ test('a list filter may be a box ticked or not, named by its words in sight', as
   const off = html(<ListPage {...LIST_PROPS} toolbar={{ ...toolbar, filters: [{ ...toolbar.filters[0]!, checked: false }] }} />);
   assert.doesNotMatch(off, /checked=""/);
 });
+
+test('a list cell may keep a long explanation closed under its lines, opened by its words', async () => {
+  const { Cell } = await import('./ListPage.js');
+  const cell = html(<Cell cell={{ text: '0.0017', sub: ['manual · 2 days ago'], more: { summary: 'worked out from the sample', lines: ['Formula 4: ionic strength 0.0016'] } }} />);
+  assert.match(cell, /<span class="ui-cell-sub">manual · 2 days ago<\/span><details class="ui-cell-details ui-cell-more"><summary>worked out from the sample<\/summary><span class="ui-cell-sub">Formula 4: ionic strength 0\.0016<\/span><\/details>/);
+  assert.doesNotMatch(cell, /<details[^>]* open/);
+});

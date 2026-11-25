@@ -266,17 +266,60 @@ class Viewing(models.Expression):
 
 
 class Sealed(models.ExpressionWrapper):
-    """The seal's condition, decided when the SQL is compiled: for the system (a command, a named system read) it is
-    FALSE and its subqueries are never compiled, so a system read costs what an unsealed one does; for a person it is
-    the condition itself, read with them (Viewing)."""
+    """The seal's condition, decided when the SQL is compiled, never when the queryset is built (review F1), from the
+    person's Reach (read once per request, `reach()`): FALSE for the system (a command, a named system read) and for a
+    person from whom nothing is hidden, FALSE for a farm fact (`fact`) when they hold Oversee; the condition itself
+    otherwise, with the hidden work's ids written in (HiddenWork). Its subqueries are compiled only then, so a read
+    costs what an unsealed one does wherever no confidential work is hidden from the person (the farm's every day)."""
 
-    def __init__(self, condition):
+    def __init__(self, condition, fact=False):
         super().__init__(condition, output_field=models.BooleanField())
+        self.fact = fact
 
     def as_sql(self, compiler, connection):
         if who() is None:
             return 'FALSE', []
+        found = _reach_of_person()
+        if found is not None and (not any(found.hidden.values()) or (self.fact and found.oversee)):
+            return 'FALSE', []
         return super().as_sql(compiler, connection)
+
+
+class HiddenWork(models.Expression):
+    """The ids of the work whose `part` the person looking may not read, as the right-hand side of an `__in`: written in
+    from their Reach when the SQL is compiled (literal ids; an empty set when none), or, with no Reach to read (a
+    provider without one), the provider's own subquery, read in the statement."""
+
+    contains_aggregate = False
+
+    def __init__(self, part, subquery):
+        super().__init__(output_field=subquery.model._meta.pk)
+        self.part, self.subquery = part, subquery
+
+    def __repr__(self):
+        return f'HiddenWork({self.part!r})'
+
+    def get_group_by_cols(self):
+        return []
+
+    def as_sql(self, compiler, connection):
+        found = _reach_of_person()
+        if found is None:
+            sql, params = self.subquery.query.get_compiler(connection=connection).as_sql()
+            return f'({sql})', params
+        key = self.output_field
+        ids = sorted(found.hidden.get(self.part, ()))
+        if not ids:
+            return f'(SELECT NULL::{key.db_type(connection)} WHERE FALSE)', []
+        return '(' + ', '.join(['%s'] * len(ids)) + ')', [key.get_db_prep_value(key.to_python(each), connection)
+                                                          for each in ids]
+
+
+def _reach_of_person():
+    """The Reach of the person looking, or None when the provider reads none (the condition is then compiled whole)."""
+    if _provider is None or not hasattr(_provider, 'reach'):
+        return None
+    return reach()
 
 
 @dataclass(frozen=True)
@@ -302,6 +345,16 @@ def reach():
     if _provider is None or not hasattr(_provider, 'reach'):
         return SEES_ALL
     return memo(('reach',), lambda: _provider.reach(current.user))
+
+
+def forget():
+    """What has been read of the person looking (their Reach, their Viewer, the memo) is read again on the next ask:
+    called when a grant, a team, an audience or a role changes (the provider's signals), so a read after it in the same
+    request or `as_viewer` block is narrowed by what holds now."""
+    current = _current.get()
+    if isinstance(current, _Lazy):
+        current.memo.clear()
+        current.loaded = None
 
 
 def memo(key, compute):
@@ -547,7 +600,7 @@ def hidden(seal, part=None, depth=None):
     part = part or seal.part
     conditions = []
     if _provider is not None and (seal.work is not None or seal.unit or seal.system):
-        hidden_work = _provider.hidden_work(part)
+        hidden_work = HiddenWork(part, _provider.hidden_work(part))
         if seal.work is not None:
             lookup = f'{seal.work}__pk__in' if seal.work else 'pk__in'
             conditions.append(Q(**{lookup: hidden_work}))
@@ -577,11 +630,14 @@ def hidden(seal, part=None, depth=None):
     result = conditions[0]
     for condition in conditions[1:]:
         result |= condition
-    if seal.cls == FACT and seal.work is None and _provider is not None:
-        # A farm fact is shown to a person who holds Oversee (the role matrix): read in the same statement.
+    fact = seal.cls == FACT and seal.work is None and _provider is not None
+    if fact and not hasattr(_provider, 'reach'):
+        # A farm fact is shown to a person who holds Oversee (the role matrix): with no Reach to read it from, read in
+        # the same statement.
         result &= ~Q(Exists(_provider.oversees()))
-    # The system (a command, a named system read) hides nothing, and its read is not made longer by the condition.
-    return Q(Sealed(result))
+    # The system (a command, a named system read) and a person from whom nothing is hidden see every row, and their read
+    # is not made longer by the condition (Sealed).
+    return Q(Sealed(result, fact=fact))
 
 
 def _shown(model, part, depth):

@@ -64,9 +64,10 @@ class CompanyOverviewTests(CompanyFixture):
         self.assertEqual((rows['BG']['water']['critical'], rows['BG']['water']['warning']), (1, 1))
         # M-01 has fish, no point of its own and no oxygen: critical (owner decision of 2026-11-23), counted on its site,
         # never as a point
-        self.assertEqual((rows['TR']['water']['critical'], rows['TR']['water']['points']), (1, 0))
+        self.assertEqual((rows['TR']['water']['critical'], rows['TR']['water']['points'], rows['TR']['water']['silent']),
+                         (1, 0, 1))
         self.assertEqual(rows['AL']['water'], {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0, 'worst': None,
-                                              'stale_since': None})
+                                              'stale_since': None, 'silent': 0})
 
     def test_the_sites_are_counted_by_status_with_the_statuses_they_have(self):
         found = overview(self.admin)['sites']

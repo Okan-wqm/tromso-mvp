@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "adc14883-8202-45a9-9b1b-4a6d438bc5c5",
+    "key": "f2a13bd9-6885-478c-b977-7a2ef377783d",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/adc14883-8202-45a9-9b1b-4a6d438bc5c5/",
+    "href": "/sites/f2a13bd9-6885-478c-b977-7a2ef377783d/",
     "type": "Landbasert anlegg",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "9a37b8f4-95bd-4cfd-b9cf-df13493d1ba9",
+    "key": "deb43d50-9f11-4f9d-8859-83bd28c8cdbe",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/9a37b8f4-95bd-4cfd-b9cf-df13493d1ba9/",
+    "href": "/sites/deb43d50-9f11-4f9d-8859-83bd28c8cdbe/",
     "type": "Merd",
     "status": "warning",
     "units": "1",
@@ -237,7 +237,7 @@
   },
   "rows": [
    {
-    "key": "adc14883-8202-45a9-9b1b-4a6d438bc5c5-2d063347-e50c-4e9d-a1d5-23a11446db53",
+    "key": "f2a13bd9-6885-478c-b977-7a2ef377783d-c03d365f-8cf8-4c47-bae6-6fce7204c770",
     "item": "Test Grower 4 (TG-4)",
     "site": "Test Site North",
     "onHand": "1 475 kg",
@@ -257,23 +257,23 @@
   },
   "rows": [
    {
-    "key": "7820fc55-12e5-42ac-8247-46fb0cb42d7f",
+    "key": "d33a7924-bf51-4095-aedb-fb370da717d4",
     "title": "Test long channel",
-    "href": "/messages/7820fc55-12e5-42ac-8247-46fb0cb42d7f/",
+    "href": "/messages/d33a7924-bf51-4095-aedb-fb370da717d4/",
     "text": "Test message 60 of 60.",
     "when": "23.11.2026 13:41"
    },
    {
-    "key": "5c64c817-b100-4185-b72c-49c21aee10ae",
+    "key": "a2106c9a-ae68-40f6-b3ee-472268cc738d",
     "title": "Test channel",
-    "href": "/messages/5c64c817-b100-4185-b72c-49c21aee10ae/",
+    "href": "/messages/a2106c9a-ae68-40f6-b3ee-472268cc738d/",
     "text": "A test message to the channel.",
     "when": "23.11.2026 12:41"
    },
    {
-    "key": "8fade099-f44b-48c6-8450-643da8027ce5",
+    "key": "2f224372-398d-4274-80dd-a936790b58d0",
     "title": "Test Writer",
-    "href": "/messages/8fade099-f44b-48c6-8450-643da8027ce5/",
+    "href": "/messages/2f224372-398d-4274-80dd-a936790b58d0/",
     "text": "A second test answer,\non two lines.",
     "when": "23.11.2026 12:40"
    }
@@ -289,7 +289,7 @@
   "critical": "Kritisk",
   "entries": [
    {
-    "key": "21376345-62e1-48b2-b0e9-d8f4ad1223b8",
+    "key": "12434758-8df5-441a-81c2-15c4f9f6e423",
     "action": "Endret",
     "critical": false,
     "record": "Kanal · TEST-2 › TEST-P",
@@ -301,7 +301,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "f38acad9-edbf-47c9-bd2b-a580c0e448be",
+    "key": "b9bef2fe-9c2a-441e-b8bb-717a9c2e0bab",
     "action": "Endret",
     "critical": false,
     "record": "Kanal · TEST-2 › TEST-P",
@@ -313,7 +313,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "a1cb2a23-1406-4916-9589-880488007a35",
+    "key": "b7b93c12-4f2b-426a-8ac3-72625e279f36",
     "action": "Endret",
     "critical": false,
     "record": "Kunnskapsoppføring · A reviewed test statement.",
@@ -325,7 +325,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "a740f86a-f799-4bf0-82a3-1d9a0463fac4",
+    "key": "73a8416d-39ad-451f-aa03-f8a0338843bd",
     "action": "Opprettet",
     "critical": false,
     "record": "Kunnskapsoppføring · A reviewed test statement.",
@@ -337,7 +337,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "a871e32d-4abc-4ace-92d5-faa73d7e307f",
+    "key": "c4bea7d0-05c2-409f-bf29-0c6ff40ae77b",
     "action": "Endret",
     "critical": false,
     "record": "Fôringsprotokoll · Test assigned protocol",
@@ -359,18 +359,18 @@
   },
   "rows": [
    {
-    "key": "e5067aed-b5f0-4690-8d6b-b9a3def1a4a8",
+    "key": "3dcf333c-cca2-4817-a725-080b112105c5",
     "text": "A reviewed test statement.",
     "source": "Test document (u.å.)",
-    "href": "/knowledge/entries/e5067aed-b5f0-4690-8d6b-b9a3def1a4a8/view/",
+    "href": "/knowledge/entries/3dcf333c-cca2-4817-a725-080b112105c5/view/",
     "kind": "ok",
     "chip": "Gjennomgått"
    },
    {
-    "key": "cf8ec56e-639f-4146-8a83-4b1fd343e439",
+    "key": "c208f6a0-283f-43d7-8b42-02bdc55e0f81",
     "text": "A test statement.",
     "source": "Test document (u.å.)",
-    "href": "/knowledge/entries/cf8ec56e-639f-4146-8a83-4b1fd343e439/view/",
+    "href": "/knowledge/entries/c208f6a0-283f-43d7-8b42-02bdc55e0f81/view/",
     "kind": "neutral",
     "chip": "Utkast"
    }

@@ -293,7 +293,8 @@ def design_panel(experiment, extra, copies):
                         (f'{level} ({floatformat(level.value, "-4")})' if level.value is not None else str(level))
                         if level else '—') for index, level in enumerate(row['levels'])},
                     'replicates': L.cell(len(row['replicates']))})
-                for row in table['rows']]) if table['rows'] else formpanels.help_text(words.NO_GROUP),
+                for row in table['rows']]),
+            None if table['rows'] else formpanels.help_text(words.NO_GROUP),
             *copies])
     findings = extra.get('findings')
     columns = list(groups.columns)
@@ -344,8 +345,8 @@ def places_panel(experiment, extra):
                            'tank': L.cell(f'{cell.unit.code} · {cell.unit.name}'),
                            'from': L.cell(formats.date_format(cell.first, 'DATE_FORMAT')),
                            'until': L.cell(formats.date_format(cell.last, 'DATE_FORMAT'))})
-                       for cell in extra.get('cells', ())]) if extra.get('cells') else formpanels.help_text(
-                       words.NO_TANK_IS_PLACED)]
+                       for cell in extra.get('cells', ())]),
+                   None if extra.get('cells') else formpanels.help_text(words.NO_TANK_IS_PLACED)]
     elif span is None:
         blocks.append(formpanels.notice(words.SET_DAY_0_ON_THE_DETAILS, 'warning'))
     elif not places.forms:

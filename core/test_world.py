@@ -316,8 +316,8 @@ def forms_world(admin, client):
     from farm.tests.helpers import rows_data
     from inventory.models import ReorderLevel, StorageLocation
     from monitoring.models import MonitorBoard
-    from sensors.models import Credential
-    from sensors.tests import make_channel, make_connection, make_device, make_format
+    from sensors.models import Credential, Device
+    from sensors.tests import make_channel, make_device
     from tasks.models import Frequency, Task, TaskSeries
     made = []
 
@@ -361,7 +361,9 @@ def forms_world(admin, client):
     series.set_place(tank)
     series.save()
     rows(series, 'checklist', [{'text': 'Test round step'}])
-    device = make_device(make_connection('Test forms broker'), make_format('Test forms format'), north, code='TEST-1')
+    # on the probe's broker and format (company_world's): one broker, so the ingest's state is what its heartbeat says
+    probe = Device.objects.get(code='PROBE-TT01')
+    device = make_device(probe.connection, probe.payload_format, north, code='TEST-1')
     channel = make_channel(device, 'temperature_c', code='TEST-T')
     rows(channel, 'calibrations', [{'valid_from': '22.11.2026 10:00', 'gain': '1.02', 'offset': '-0.1', 'performed_by': '',
                                     'note': 'Test calibration'}])
@@ -415,7 +417,8 @@ def states_world(admin, client):
     from knowledge.models import Document, KnowledgeEntry
     from knowledge.tests.helpers import entry_data
     from sensors import bindings
-    from sensors.tests import make_channel, make_connection, make_device, make_format
+    from sensors.models import Device
+    from sensors.tests import make_channel, make_device
     made = []
     north = Site.objects.get(code='TSN')
     salmon, feed = Species.objects.get(code='SAL'), Feed.objects.get(code='TFE')
@@ -455,7 +458,8 @@ def states_world(admin, client):
                                {'version': entry.version, 'status': 'reviewed'})
         made.append(f'review of an entry: {response.status_code}')
     # a device placed in the spare unit's water two days ago, then moved to the experiment's tank: two stays
-    device = make_device(make_connection('Test placed broker'), make_format('Test placed format'), north, code='TEST-2')
+    probe = Device.objects.get(code='PROBE-TT01')
+    device = make_device(probe.connection, probe.payload_format, north, code='TEST-2')
     channel = make_channel(device, 'temperature_c', code='TEST-P')
     bindings.move(admin, channel, MOMENT - timedelta(days=2), point=point_of(spare))
     bindings.move(admin, channel, MOMENT - timedelta(days=1), point=point_of(tank))

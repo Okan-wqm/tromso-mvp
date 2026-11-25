@@ -358,3 +358,23 @@ class ResearcherRoleTests(ReviewCase):
                                     rows_data('team', [{'user': member.pk, 'role': 'lead'}], record=self.experiment))
         self.assertEqual(response.status_code, 403)
         self.assertTrue(services.is_lead(self.lead, self.experiment))
+
+
+class VoidedParentTests(ReviewCase):
+    def test_a_voided_open_harvest_keeps_its_record_for_whoever_has_work_hidden(self):
+        """W1: a child sealed with its parent (`via`) is hidden when the parent is hidden, not when it is voided: the
+        record of a voided harvest on an open tank stays readable to a person from whom X is hidden."""
+        from decimal import Decimal
+        from farm.handling import check
+        from farm.models import HarvestRecord
+        from farm.stock import services as stock_services
+        day = self.today - timedelta(days=1)
+        with withdrawal_gate.opened('test: an open harvest written and voided'):
+            harvest = stock_services.record_harvest(
+                self.boss, unit=self.open_tank, batch=self.open_batch, day=day, count=10,
+                measured_weight_kg=Decimal('0.6'), facility=self.facility,
+                handling_ack=check.assess('harvest', self.open_tank, day, self.open_batch).fingerprint)
+            stock_services.void(self.boss, harvest, 'Typed on the wrong day', ack=True)
+        self.assertTrue(type(harvest).all_objects.get(pk=harvest.pk).is_deleted)
+        with sealing.as_viewer(self.researcher):
+            self.assertTrue(HarvestRecord.all_objects.filter(operation=harvest.pk).exists())

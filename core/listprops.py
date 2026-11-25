@@ -178,8 +178,6 @@ def pager(page, pager_query):
     }
 
 
-_pager = pager     # the earlier private name, kept for branches that still call it
-
 
 def toolbar(view, context, filters, keep=()):
     """A list's toolbar (ListPage's ListToolbar): the search, `filters` (choice, day) and what the address holds besides

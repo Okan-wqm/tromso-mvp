@@ -9390,6 +9390,9 @@ msgstr "Form yükleniyor…"
 msgid "Loading the list…"
 msgstr "Liste yükleniyor…"
 
+msgid "Loading the organization chart…"
+msgstr "Organizasyon şeması yükleniyor…"
+
 msgid "Loading the overview…"
 msgstr "Genel bakış yükleniyor…"
 

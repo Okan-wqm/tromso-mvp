@@ -27,7 +27,7 @@
     "status": "critical",
     "statusLabel": "Kritik",
     "sub": "1 kritik",
-    "sub2": "1 birim kritik · 1 birimde güncel veri yok",
+    "sub2": "2 birim kritik",
     "source": "Alarmlar · 13:42"
    },
    {
@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3",
+    "key": "24cdb41b-4a1d-4388-86f2-d70094d0d8bf",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/69e9c2d3-e70f-4828-b665-938b19ef8da3/",
+    "href": "/sites/24cdb41b-4a1d-4388-86f2-d70094d0d8bf/",
     "type": "Kara tesisi",
     "status": "critical",
     "units": "1",
@@ -95,12 +95,12 @@
     "onSite": null
    },
    {
-    "key": "a7631506-d39d-419d-a7a4-1dfdda973ba1",
+    "key": "e9968ec7-f24a-4908-be6d-7ce772f9384a",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/a7631506-d39d-419d-a7a4-1dfdda973ba1/",
+    "href": "/sites/e9968ec7-f24a-4908-be6d-7ce772f9384a/",
     "type": "Deniz kafesi",
-    "status": "warning",
+    "status": "critical",
     "units": "1",
     "biomass": "450 kg",
     "water": {
@@ -109,7 +109,7 @@
     },
     "alarms": {
      "figure": "0",
-     "sub": "1 birimde güncel veri yok"
+     "sub": "1 birim kritik"
     },
     "onSite": null
    }
@@ -142,7 +142,7 @@
   "empty": null,
   "units": {
    "tone": "critical",
-   "text": "1 birim kritik · 1 birimde güncel veri yok"
+   "text": "2 birim kritik"
   }
  },
  "people": {
@@ -237,7 +237,7 @@
   },
   "rows": [
    {
-    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3-b5007070-d82f-40a4-a4bc-b5a165903c9f",
+    "key": "24cdb41b-4a1d-4388-86f2-d70094d0d8bf-6ed33741-bc77-4a7c-8fe5-4bf9c888c6b9",
     "item": "Test Grower 4 (TG-4)",
     "site": "Test Site North",
     "onHand": "1.475 kg",
@@ -257,23 +257,23 @@
   },
   "rows": [
    {
-    "key": "9c2b0c5b-4afe-4973-892d-a964e6167ca0",
+    "key": "0aaad63e-e95f-42b4-9d5c-660f68820f4e",
     "title": "Test long channel",
-    "href": "/messages/9c2b0c5b-4afe-4973-892d-a964e6167ca0/",
+    "href": "/messages/0aaad63e-e95f-42b4-9d5c-660f68820f4e/",
     "text": "Test message 60 of 60.",
     "when": "23.11.2026 13:41"
    },
    {
-    "key": "f72a7254-70b5-465b-9c65-f1962920d32b",
+    "key": "f2bb1f79-e6d1-4ffc-9b45-d7b27f72efa1",
     "title": "Test channel",
-    "href": "/messages/f72a7254-70b5-465b-9c65-f1962920d32b/",
+    "href": "/messages/f2bb1f79-e6d1-4ffc-9b45-d7b27f72efa1/",
     "text": "A test message to the channel.",
     "when": "23.11.2026 12:41"
    },
    {
-    "key": "05771e1f-169f-451b-b66a-e009e120fe65",
+    "key": "ad2b39f9-de78-4c05-afb8-e657bc66496f",
     "title": "Test Writer",
-    "href": "/messages/05771e1f-169f-451b-b66a-e009e120fe65/",
+    "href": "/messages/ad2b39f9-de78-4c05-afb8-e657bc66496f/",
     "text": "A second test answer,\non two lines.",
     "when": "23.11.2026 12:40"
    }
@@ -289,7 +289,7 @@
   "critical": "Kritik",
   "entries": [
    {
-    "key": "dcdddff5-9433-4d9d-b6c0-538e6986115e",
+    "key": "06182713-d2f8-4a7a-b791-a39d05051b86",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Kanal · TEST-2 › TEST-P",
@@ -301,7 +301,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "0bdd9348-0e55-4645-a246-8c00d0710881",
+    "key": "98b3f0b1-be0b-4b34-baf3-570c4c428cb5",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Kanal · TEST-2 › TEST-P",
@@ -313,7 +313,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "854f244e-a2e8-43d3-8c9e-1c8ec84d92b7",
+    "key": "5e3bd343-9ddd-4e2a-9e89-97da0b2637b1",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Bilgi kaydı · A reviewed test statement.",
@@ -325,7 +325,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "926d0cdc-d1b3-4725-bd4b-8e451e5f5fea",
+    "key": "9ab769ec-35b8-47b1-b72a-28b84ca679fd",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Bilgi kaydı · A reviewed test statement.",
@@ -337,7 +337,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "a3089ba3-41e8-4ba8-afef-5c4f4c0c6903",
+    "key": "eefcdcd9-f13f-435b-bd89-1319f0b7d28a",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Yemleme protokolü · Test assigned protocol",
@@ -359,18 +359,18 @@
   },
   "rows": [
    {
-    "key": "9bdbec43-d1f6-4f78-8656-2138a1ec290b",
+    "key": "19bb0ab7-d666-41a2-adb5-3660d0e449bf",
     "text": "A reviewed test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/9bdbec43-d1f6-4f78-8656-2138a1ec290b/view/",
+    "href": "/knowledge/entries/19bb0ab7-d666-41a2-adb5-3660d0e449bf/view/",
     "kind": "ok",
     "chip": "İncelendi"
    },
    {
-    "key": "399dd24d-3265-4ee1-8c89-ee0925aa514a",
+    "key": "df79e394-939a-431f-ae6b-a6375aebc96a",
     "text": "A test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/399dd24d-3265-4ee1-8c89-ee0925aa514a/view/",
+    "href": "/knowledge/entries/df79e394-939a-431f-ae6b-a6375aebc96a/view/",
     "kind": "neutral",
     "chip": "Taslak"
    }

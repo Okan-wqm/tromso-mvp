@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group
 from django.db import connection
 from django.utils import timezone
 
+from farm import withdrawal_gate
 from farm.models import System, Tank
 
 from ..models import Experiment, ExperimentShare, Member, ReplicateSystem, ReplicateUnit, SealedCell
@@ -164,7 +165,8 @@ class CellTests(SchemaCase):
         deleted = self.placement(self.rep, self.tanks[6], 0, 10)
         ReplicateUnit.objects.filter(pk=deleted.pk).update(is_deleted=True)
         self.assertFalse(SealedCell.objects.exists())
-        type(self.trial).objects.filter(pk=self.trial.pk).update(status='running')
+        with withdrawal_gate.opened('test: the trial started past the service'):
+            Experiment.objects.filter(pk=self.trial.pk).update(status='running')
         cells = sorted((str(cell.unit_id), str(cell.system_id), cell.from_on, cell.until_on, str(cell.work))
                        for cell in SealedCell.objects.all())
         end = self.today + timedelta(days=20)

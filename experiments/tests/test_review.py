@@ -10,6 +10,7 @@ import uuid
 from datetime import timedelta
 from io import StringIO
 
+from django.core.exceptions import ValidationError
 from django.core.management import CommandError, call_command
 from django.test import TestCase
 from django.urls import reverse
@@ -378,3 +379,33 @@ class VoidedParentTests(ReviewCase):
         self.assertTrue(type(harvest).all_objects.get(pk=harvest.pk).is_deleted)
         with sealing.as_viewer(self.researcher):
             self.assertTrue(HarvestRecord.all_objects.filter(operation=harvest.pk).exists())
+
+
+class SealingStartsWithTheStartTests(ReviewCase):
+    """W3, the coordinator's decision of 2026-11-25: a draft seals nothing; sealing starts when the experiment starts;
+    days already passed are sealed only by a person who holds Oversee."""
+
+    def test_a_draft_placed_on_a_tank_hides_nothing_of_it(self):
+        from ..models import ExperimentGroup, Replicate, ReplicateUnit
+        draft = Experiment.objects.create(code='E-DRAFT-1', name='Draft on the open tank', site=self.site,
+                                          species=self.salmon, duration_days=30,
+                                          starts_on=self.today - timedelta(days=10))
+        group = ExperimentGroup.objects.create(experiment=draft, name='Only group')
+        replicate = Replicate.objects.create(group=group, number=1)
+        ReplicateUnit.objects.create(replicate=replicate, unit=self.open_tank, from_on=self.today - timedelta(days=10),
+                                     until_on=self.today + timedelta(days=20))
+        self.assertEqual(draft.status, 'draft')
+        self.assertEqual(self.seen(self.researcher, Tank, pk=self.open_tank.pk), {self.open_tank.pk})
+        self.assertEqual(len(self.seen(self.researcher, FeedingRecord, unit=self.open_tank)), 1)
+
+    def test_sealing_days_already_passed_needs_oversee(self):
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Permission
+        Experiment.objects.filter(pk=self.experiment.pk).update(audience='open')
+        self.assertLess(self.experiment.starts_on, self.today)
+        with self.assertRaises(ValidationError):
+            services.set_audience(self.lead, self.experiment, 'sealed')
+        self.lead.user_permissions.add(Permission.objects.get(content_type__app_label='experiments',
+                                                              codename='oversee_experiment'))
+        lead = get_user_model().objects.get(pk=self.lead.pk)            # the rights read afresh
+        self.assertEqual(services.set_audience(lead, self.experiment, 'sealed').audience, 'sealed')

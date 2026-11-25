@@ -878,8 +878,24 @@ updated), an optional one says "Could not be read: Tasks" on the frame, where no
 
 **In the new look** (`?ui=next`, see The new look; 2026-11-24). The same page, the same card read (`read.cards`,
 `_ladder`, `water_rungs`), the same templates, fragment, pane and polls (poll.ts's start-up gate, the merge by key, the
-announcer): the new look is a skin, and the cards' markup is byte for byte the same in both looks
-(`monitoring/tests/test_next_pages.py`), so the change token does not need to know the look. `templates/monitoring/monitor.html`
+announcer). A fitted card (Small, Big, the pane's, a wall's) is the same markup in both looks, byte for byte; a card that
+FLOWS (Simple, every unit's default; Detailed; Operator view; a farm's template without a measure) is the design's card
+in the new look (2026-11-25: the owner saw "the old cards"): `templates/monitoring/_card.html` includes
+`monitoring/_card_next.html` in its place when `UI_NEXT` (`core.ui.is_next`, which `monitoring/views.py` gives the
+fragment and the pane; the page has it from the context processor), and the classic card is untouched by it
+(`scripts/classic_snapshot.py --monitoring` renders every screen's classic cards, the page and the pane in three languages
+to compare before and after a change; `monitoring/tests/test_golden.py` holds the classic card to its golden file). The
+design's card is the same frame and the same widgets in the same reading order on the same grid; a widget keeps its
+classic markup there, restyled, unless the design draws it otherwise (`render.WidgetView.next_renderer`, `render.NEXT_LOOK`:
+the feeding as the design's "Next meal" box, `templates/monitoring/widgets/next/_feeding.html`). Its head has the code
+large and the state as the design's chip (filled for critical, tinted for a warning), the withdrawal a chip with an
+hourglass, each reason the state's glyph in the state's tone, the figures in hairline boxes of three, the water a row a
+value (its figure in its status's tone with its glyph: octagon, triangle, clock), each sampling point of "every active
+point" a box under its name. The **Deffeyes chart** is not in the card: as in the design, it opens in the movable window
+(`frontend/windows.ts`, the classic button's `data-window`, titled "Deffeyes chart · <unit>"), from its outlined button
+among the card's actions at its foot (`render.FOOT`), beside the link to the tank's water history; under them what the
+state is from and which template draws the card, and the flip link at the right. A screen's change token is its look's own
+(`read.change_token`'s `look`): a poll of one look never answers "nothing changed" to the other. `templates/monitoring/monitor.html`
 loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new look, and every rule of the second is under
 `html[data-ui="next"]`, so the classic page reads none of it. What it draws, from the design console:
 - **The state's glyph** as the design's icons (critical the octagon, warning the triangle, no recent data the clock, no
@@ -906,8 +922,9 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
   sized to its cell; where it came from and how old, cut with an ellipsis and whole in its title). The pH window is not in the design's Small card: it stays in the markup and on the wall, in the pane and
   on the Big screen. An empty unit's card says the unit in four cells (status, volume, max density, max biomass:
   `monitoring/_empty_cells.html`). Big cards on a desk (from 1100 px) are each at the Big template's proportion, as in the
-  pane; Simple and Detailed cards are as tall as the longest of them (rows of one fraction: nothing of a longer card is
-  cut). On a wall the cards are the fitted ones, sized by the slot rule.
+  pane; the cards that flow (Simple, Detailed, Operator view) are as tall as the longest of them (rows of one fraction:
+  nothing of a longer card is cut), their foot at the bottom, wherever they stand side by side (from 640 px; on a
+  phone each card is as tall as what it says). On a wall the cards are the fitted ones, sized by the slot rule.
 - **The toolbar and the band**: on the desk page the search first, the filters named for a screen reader only (each
   select says its choice: "No board", "All sites"), the wall's buttons at the end (a wall keeps its own toolbar, the two
   buttons fixed at the band's end: the page test checks that nothing lies over the band, a state word or the buttons); the band a plate on the desk page with the switch of
@@ -934,11 +951,15 @@ redirects there).
 Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py` `monitoring_world`: a unit in each
 of the seven states and an old critical one, and a wall board read from 2 m): each card says in the new look what it says
 in the classic one (the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on
-the Small, Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish; the link resolves, and is
-absent for a person without the water right. And by `frontend/test/monitoring.pages.ts` (`npm run test:pages`, on the
+the Small, Simple, Detailed, Big and Operator view cards (`operator_board`, a board whose default template is the
+Operator view) and in the pane, in English, Norwegian and Turkish; the cards that flow are the design's card in the new
+look and never in the classic one, the fitted ones the same markup, and each look's token its own; the link resolves, and
+is absent for a person without the water right. `monitoring/tests/test_shell.py` holds the shell with its first answers
+to the full page in the new look too. And by `frontend/test/monitoring.pages.ts` (`npm run test:pages`, on the
 pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the product's policy and
 nonce, its polls answered with the real fragments, at 1440, 1920 and 390 px (no CSP violation, no serious axe finding,
-card text at 4.5:1, no sideways scroll, a glyph and a link on every card, nothing safety-relevant cut, one size per mode,
+card text at 4.5:1, no sideways scroll, a glyph and a link on every card, the design's card with its Deffeyes chart's
+button on every card that flows (Simple in the three languages, Detailed, Operator view), nothing safety-relevant cut, one size per mode,
 the rail at its width beside a long strip), each state's edge style, the stale strip, one glyph per state and the classic
 shapes without `glyphs.css`, the hatch in six themes, the pane, the wall at 1920×1080 and 3840×2160 and a board's wall
 read from 2 m, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that

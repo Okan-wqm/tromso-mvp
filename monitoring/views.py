@@ -24,7 +24,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext, pgettext
 from django.views.decorators.http import require_POST
 
-from core import audit, navigation
+from core import audit, navigation, ui
 from core.dates import company_today, company_zone
 from core.crud import ENTRY_KEY, render_page
 from farm.models import ProductionDepartment, Site, System, Tank
@@ -187,7 +187,14 @@ def _pane(request, params, now=None):
 
 
 def _pane_token(request, params, revision=None):
-    return read.change_token(request.user, f'pane?{params.canonical()}', board=params.board, revision=revision)
+    return read.change_token(request.user, f'pane?{params.canonical()}', board=params.board, revision=revision,
+                             look=_look(request))
+
+
+def _look(request):
+    """The look the cards are drawn in, for their change token: a screen's cards in the new look are other markup than
+    in the classic one (monitoring/_card_next.html), so a token of one look never answers "unchanged" to the other."""
+    return ui.NEXT if ui.is_next(request) else ''
 
 
 def _flip_urls(params, card):
@@ -247,7 +254,8 @@ def _full(request, params):
     """The full page (`?full=1`): toolbar, grid with the cards, the windows' place. The token is read before the cards,
     so a change between the two shows at the first poll."""
     revision = audit.revision()                  # once, before any data, for both tokens
-    token = read.change_token(request.user, params.canonical(), board=params.board, revision=revision)
+    token = read.change_token(request.user, params.canonical(), board=params.board, revision=revision,
+                              look=_look(request))
     now = timezone.now()
     board = _board(params)
     pane_token = _pane_token(request, params, revision)
@@ -269,7 +277,7 @@ def cards(request):
     params = read.Params.from_query(request.GET)
     _keep_alive(request, params)
     query = params.canonical()
-    token = read.change_token(request.user, query, board=params.board)
+    token = read.change_token(request.user, query, board=params.board, look=_look(request))
     headers = {'Cache-Control': 'no-store', 'X-Poll-Next': _poll_url(query, token)}
     if request.GET.get('after') == token:
         return HttpResponse(status=204, headers=headers)
@@ -278,7 +286,7 @@ def cards(request):
         grid = _grid(request, params, _board(params), now)
     except read.Unavailable:
         return _unavailable()
-    html = render_to_string('monitoring/_grid.html', {**grid, 'wall': params.wall})
+    html = render_to_string('monitoring/_grid.html', {**grid, 'wall': params.wall, 'UI_NEXT': ui.is_next(request)})
     return HttpResponse(html, headers=headers)
 
 
@@ -302,7 +310,8 @@ def pane(request):
         return _unavailable()
     if found is None:
         return HttpResponse(status=404, headers={'Cache-Control': 'no-store'})
-    return HttpResponse(render_to_string('monitoring/_pane.html', found), headers=headers)
+    return HttpResponse(render_to_string('monitoring/_pane.html', {**found, 'UI_NEXT': ui.is_next(request)}),
+                        headers=headers)
 
 
 # ---- Reference data › Card templates --------------------------------------------------------------------------------

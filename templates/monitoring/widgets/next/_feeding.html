@@ -1,0 +1,24 @@
+{% load i18n stock feeding %}{% comment %} The feeding of a card that flows, in the new look: the design's "Next meal" box (the next meal large, today's
+   ration, what was fed and how many meals, what remains under it), why there is no ration, and with "The week too"
+   the design's list of the feeding (feed rate, last fed, feed in use). The same figures, labels and lines as the
+   classic widget (monitoring/widgets/_feeding.html), in the design's order: the next meal first. {% endcomment %}
+<section class="monitor-section monitor-feeding">
+  {% with day=card.day %}
+  <dl class="monitor-meal">
+    <div class="monitor-meal-next"><dt>{% trans "Next meal" %}</dt><dd>{{ day.next_meal_kg|feed_kg }}</dd></div>
+    <div><dt>{% trans "Ration" %}</dt><dd>{{ day.ration_kg|feed_kg }}</dd></div>
+    <div><dt>{% trans "Fed today" %}</dt><dd>{{ day.fed_kg|feed_kg }}</dd>{% if day %}<dd class="row-sub">{% blocktrans trimmed count meals=day.meals_done %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}</dd>{% endif %}</div>
+    <div><dt>{% trans "Remaining" %}</dt><dd>{{ day.remaining_kg|feed_kg }}</dd></div>
+  </dl>
+  {% endwith %}
+  {% for line in card.lines %}{% if line.why %}<p class="row-sub warn-text">{{ line.batch.code }}: {{ line.why }}</p>{% endif %}{% endfor %}
+  {% if view.opts.week and card.feeding %}
+  {% with week=card.feeding.week %}
+  <dl class="monitor-rows">
+    <div><dt>{% trans "Feed rate" %}</dt><dd>{{ week.sfr|percent:2 }}</dd></div>
+    <div><dt>{% trans "Last fed" %}</dt><dd>{{ card.feeding.last_fed|fed_on:card.feeding.today }}</dd></div>
+    <div><dt>{% trans "Feed in use" %}</dt><dd>{{ week.feed|default:"—" }}</dd></div>
+  </dl>
+  {% endwith %}
+  {% endif %}
+</section>

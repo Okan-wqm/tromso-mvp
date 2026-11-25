@@ -913,31 +913,8 @@ class Context:
 
     @staticmethod
     def _served(points):
-        """{point id: [unit]}: the units a point's water is judged for. A unit's point: the unit; a loop's: the
-        units of the system; a piece of equipment's: the units of the systems it serves."""
-        system_ids = {point.system_id for point in points if point.system_id}
-        equipment_ids = {point.equipment_id for point in points if point.equipment_id}
-        serves = defaultdict(set)                          # equipment id -> the ids of the systems it serves
-        if equipment_ids:
-            links = EquipmentSystem.objects.filter(equipment__in=equipment_ids, system__is_deleted=False)
-            for equipment_id, system_id in links.values_list('equipment_id', 'system_id'):
-                serves[equipment_id].add(system_id)
-                system_ids.add(system_id)
-        units_of = defaultdict(list)                       # system id -> its live units
-        if system_ids:
-            for unit in Tank.objects.filter(system__in=system_ids).order_by('code'):
-                units_of[unit.system_id].append(unit)
-        served = {}
-        for point in points:
-            if point.unit_id:
-                served[point.pk] = [point.unit]
-            elif point.system_id:
-                served[point.pk] = units_of.get(point.system_id, [])
-            else:
-                found = {unit.pk: unit for system_id in serves.get(point.equipment_id, ())
-                         for unit in units_of.get(system_id, [])}
-                served[point.pk] = sorted(found.values(), key=lambda unit: unit.code)
-        return served
+        """{point id: [unit]}: the units a point's water is judged for (`units_served`)."""
+        return units_served(points)[0]
 
     # -- the water a sample was taken in --
     def water_types(self, point):
@@ -1840,32 +1817,54 @@ def _at_moment(where, moment):
 EQUIPMENT = 'equipment'
 
 
+def units_served(points, system_ids=(), equipment_ids=()):
+    """The units a place's water is judged for, the one definition: ({point id: [unit]}, {system id: [unit]},
+    {equipment id: [unit]}). A unit's point: the unit; a loop's point or a system: the system's live units; a piece of
+    equipment, or its point: the units of the systems it serves (each once, by code). Two queries at most."""
+    system_ids, equipment_ids = set(system_ids), set(equipment_ids)
+    system_ids |= {point.system_id for point in points if point.system_id}
+    asked_equipment = equipment_ids | {point.equipment_id for point in points if point.equipment_id}
+    serves = defaultdict(set)                          # equipment id -> the ids of the systems it serves
+    if asked_equipment:
+        links = EquipmentSystem.objects.filter(equipment__in=asked_equipment, system__is_deleted=False)
+        for equipment_id, system_id in links.values_list('equipment_id', 'system_id'):
+            serves[equipment_id].add(system_id)
+            system_ids.add(system_id)
+    units_of = defaultdict(list)                       # system id -> its live units
+    if system_ids:
+        for unit in (Tank.objects.filter(system__in=system_ids).select_related('production_department__site')
+                     .order_by('code')):
+            units_of[unit.system_id].append(unit)
+
+    def of_equipment(equipment_id):
+        found = {unit.pk: unit for system_id in serves.get(equipment_id, ()) for unit in units_of.get(system_id, [])}
+        return sorted(found.values(), key=lambda unit: unit.code)
+
+    by_point = {}
+    for point in points:
+        if point.unit_id:
+            by_point[point.pk] = [point.unit]
+        elif point.system_id:
+            by_point[point.pk] = units_of.get(point.system_id, [])
+        else:
+            by_point[point.pk] = of_equipment(point.equipment_id)
+    return (by_point, {system_id: units_of.get(system_id, []) for system_id in system_ids},
+            {equipment_id: of_equipment(equipment_id) for equipment_id in equipment_ids})
+
+
 def _fished(places, now):
     """{place: [the units holding fish now (SpeciesBook.holds)]} of the places given ((sources.POINT, point id),
-    (sources.SYSTEM, system id) or (EQUIPMENT, equipment id)), among the units the place's water is judged for (a unit's
-    point: the unit; a loop's point or a system: the system's units; a piece of equipment: the units of the systems it
-    serves; Context._served). Four queries at most."""
+    (sources.SYSTEM, system id) or (EQUIPMENT, equipment id)), among the units the place's water is judged for
+    (`units_served`, the one definition the water read's Context uses too). Four queries at most."""
     places = set(places)
     point_ids = [pk for kind, pk in places if kind == sources.POINT]
     points = list(SamplingPoint.objects.filter(pk__in=point_ids).with_owners()) if point_ids else []
-    served = {(sources.POINT, pk): units for pk, units in Context._served(points).items()}
-    system_ids = {pk for kind, pk in places if kind == sources.SYSTEM}
-    serves = defaultdict(set)
-    equipment_ids = [pk for kind, pk in places if kind == EQUIPMENT]
-    if equipment_ids:
-        for equipment_id, system_id in EquipmentSystem.objects.filter(
-                equipment__in=equipment_ids, system__is_deleted=False).values_list('equipment_id', 'system_id'):
-            serves[equipment_id].add(system_id)
-            system_ids.add(system_id)
-    units_of = defaultdict(list)
-    if system_ids:
-        for unit in Tank.objects.filter(system__in=system_ids).select_related('production_department__site'):
-            units_of[unit.system_id].append(unit)
-    for system_id in {pk for kind, pk in places if kind == sources.SYSTEM}:
-        served[(sources.SYSTEM, system_id)] = units_of.get(system_id, [])
-    for equipment_id in equipment_ids:
-        served[(EQUIPMENT, equipment_id)] = [unit for system_id in serves.get(equipment_id, ())
-                                             for unit in units_of.get(system_id, [])]
+    by_point, by_system, by_equipment = units_served(
+        points, {pk for kind, pk in places if kind == sources.SYSTEM}, {pk for kind, pk in places if kind == EQUIPMENT})
+    served = {**{(sources.POINT, pk): units for pk, units in by_point.items()},
+              **{(sources.SYSTEM, pk): units for pk, units in by_system.items()
+                 if (sources.SYSTEM, pk) in places},
+              **{(EQUIPMENT, pk): units for pk, units in by_equipment.items()}}
     book = SpeciesBook({unit.pk for units in served.values() for unit in units})
     return {place: [unit for unit in units if book.holds(unit.pk, local_time(now, unit).date())]
             for place, units in served.items()}

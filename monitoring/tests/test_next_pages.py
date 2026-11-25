@@ -195,12 +195,12 @@ class NextPagesTests(FrozenClock, TestCase):
                     self.assertEqual(self.ask(CARDS, {**query, 'after': after}, look=other).status_code, 200)
 
     def test_every_widget_has_a_new_look(self):
-        """Every widget a card that flows can hold is drawn in the new look: by its own markup where the design draws it
+        """Every widget (that may be placed: a catalogued one that is not yet, the trend, has no markup) a card that flows can hold is drawn in the new look: by its own markup where the design draws it
         otherwise (render.NEXT_LOOK), else its classic one; the Deffeyes chart's button in the card's foot."""
         from django.template.loader import get_template
         from monitoring.cards import catalogue
         from monitoring.cards.render import FOOT, NEXT_LOOK, WidgetView
-        for spec in catalogue.WIDGETS.values():
+        for spec in (spec for spec in catalogue.WIDGETS.values() if spec.enabled):
             view = WidgetView('w1', spec.type, 0, 0, 1, 1, spec.renderer, {}, {}, '', False, 'w-1-w1')
             get_template(view.next_renderer)
             self.assertEqual(view.next_renderer != spec.renderer, spec.type in NEXT_LOOK, spec.type)

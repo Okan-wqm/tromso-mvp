@@ -92,13 +92,14 @@ class HarvestPagesNextTests(FrozenClock, TestCase):
         self.assertEqual(harvest['status'], 'critical')
         self.assertIn({'kind': 'hold', 'text': 'Withdrawal'}, harvest['cells']['before']['chips'])
         said = [harvest['cells']['before']['text'], *harvest['cells']['before']['sub']]
-        self.assertTrue(any(': medicine withdrawal, harvest from ' in line for line in said), said)
+        # the cage has no temperature, so the medicine's degree-days give no end: the server says "end unknown"
+        self.assertTrue(any(line.endswith(': medicine withdrawal, end unknown') for line in said), said)
         transport = next(row for row in rows if row['cells']['unit']['text'] == 'TT-01')
         self.assertEqual(transport['cells']['status']['chip'], {'kind': 'warning', 'text': 'Overdue'})
         _old, new = self.pages('farm:productionplan_list')
         rows = props_of(new, 'list-page')['table']['rows']
         cage = next(row for row in rows if row['cells']['unit']['text'] == 'TM-01')
         self.assertEqual(cage['status'], 'critical')
-        self.assertRegex(cage['cells']['withdrawal']['text'], r'^\S+: harvest from ')
+        self.assertRegex(cage['cells']['withdrawal']['text'], r'^\S+: (harvest from |end unknown)')
         tank = next(row for row in rows if row['cells']['unit']['text'] == 'TT-01')
         self.assertEqual(tank['cells']['target']['text'], '250 g')

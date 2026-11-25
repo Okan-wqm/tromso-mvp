@@ -54,8 +54,10 @@ loop); else the newest of its own, else of its system's, which is then stale and
 function, `choose`, that `latest`, `Series.latest` and the ration's temperature all pick through. A sensor value enters as the parameter's Decimal at its decimals, exactly as a typed value, and is
 judged by the same limits. Derived values follow their base value's source: a sensor TAN gives NH3 only with fresh sensor
 pH and temperature, a sensor oxygen gives the other unit only with a fresh sensor temperature, at the oldest input's time;
-a manual TAN only with its own sample's pH and temperature. `Series` answers "the value at a moment" from the samples and
-the sensors alike (each sensor value at or before the moment, never after it)."""
+a manual TAN only with its own sample's pH and temperature. A worked-out value is never fresher than its oldest input:
+it stops being fresh when the first value it was worked out with does (`Reading.fresh_until`, freshness.derived_until;
+the coordinator's decision of 2026-11-26), so an NH₃ of a sample goes stale with the sample's temperature.
+`Series` answers "the value at a moment" from the samples and the sensors alike (each sensor value at or before the moment, never after it)."""
 from bisect import bisect_right
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
@@ -95,7 +97,7 @@ LIMITED = {parameter.code for parameter in parameters.LIMITED}
 # Every limited quantity, a measured column or a derived one (NH3-N), goes through the worst fresh value (owner, A10.1;
 # third cross review): `latest` judges every fresh candidate of each of them.
 WORST_FRESH_CODES = frozenset(LIMITED)
-DERIVED = (NH3_N.code, NH4_N.code)
+DERIVED = parameters.DERIVED      # the worked-out codes, each never fresher than its oldest input
 # What a sample's label, clock and fish need loaded: its point, the owner of it and the owner's site.
 POINT_RELATED = ('point__unit__production_department__site', 'point__system__site',
                  'point__equipment__production_department__site')
@@ -333,6 +335,9 @@ class Observation:
     sample: WaterMeasurement | None = None
     basis: dict = field(default_factory=dict)     # code -> Basis: what a sample's oxygen is worked out with
     ph: SensorPh | None = None                    # a sensor's pH not on the NBS scale as sent (SensorPh)
+    # Combined from several (`combined`): {code: the moment the value of that code it holds stops being fresh}, each its
+    # own source's, so a value worked out from them is never fresher than the oldest of them (`until`).
+    ends: dict = field(default_factory=dict)
 
     @classmethod
     def of_sample(cls, sample):
@@ -362,16 +367,17 @@ class Observation:
     def combined(cls, observations):
         """The sensor values a derived value is worked out from: their values together, at the oldest one's time, from
         the first one's point and origin, fresh as long as the least fresh of them, with the pH's conversion (`ph`) of
-        the one that has it."""
+        the one that has it, and each value's own end (`ends`, `until`)."""
         first = observations[0]
-        measured = {}
+        measured, ends_of = {}, {}
         for each in observations:
             measured.update(each.measured)
+            ends_of.update({code: each.until(code) for code in each.measured})
         oldest = min(observations, key=lambda each: each.at)
         ends = [each.at + timedelta(seconds=each.fresh_for) for each in observations if each.fresh_for is not None]
         fresh_for = int((min(ends) - oldest.at).total_seconds()) if ends else None
         ph = next((each.ph for each in observations if each.ph is not None), None)
-        return cls(first.point, oldest.at, first.origin, measured, fresh_for=fresh_for, ph=ph)
+        return cls(first.point, oldest.at, first.origin, measured, fresh_for=fresh_for, ph=ph, ends=ends_of)
 
     @property
     def measured_at(self):
@@ -393,6 +399,12 @@ class Observation:
 
     def get(self, code):
         return self.measured.get(code)
+
+    def until(self, code):
+        """The moment its value of `code` stops being fresh: the one kept for it where it was combined from several
+        (`ends`), else its time plus its channel's seconds or the parameter's hours (freshness.fresh_until)."""
+        found = self.ends.get(code)
+        return found if found is not None else freshness.fresh_until(code, self.at, self.fresh_for)
 
 
 @dataclass(frozen=True)
@@ -622,6 +634,10 @@ class Reading:
     # the limits judge (`judged_value`; the water-chemistry audit of 2026-11-19, F3: a true 0.01034 mg/L NH₃-N read
     # 0.0103 and was OK against a limit of 0.0103). None for a measured value, which is judged as entered.
     exact: Decimal | None = None
+    # A worked-out value: {input code: the moment it stops being fresh} of the inputs it was worked out with that its
+    # observation does not hold (the salinity found at its point or its owner's middle point; None for fresh water's 0
+    # or none found). What `fresh_until` takes for them; the others are its observation's (`Observation.until`).
+    inputs_until: dict = field(default_factory=dict)
 
     @property
     def judged_value(self):
@@ -669,9 +685,23 @@ class Reading:
         show such a value as old and as what it was, never as only "stale" (F-244)."""
         return self.judged if self.status == Status.STALE and self.judged in ALERTS else ''
 
+    @property
+    def fresh_until(self):
+        """The moment it stops saying something about the water now: a measured value its time plus its sensor's seconds
+        or its parameter's hours (freshness.fresh_until); a worked-out one (a parameter with `inputs`) when the first
+        value it was worked out with stops (freshness.derived_until: never fresher than its oldest input), each input
+        from `inputs_until`, else its observation's own (None where the observation has no value of it). THE answer
+        every reader takes: the pages, the cards, the alarms (`fresh`)."""
+        if not self.parameter.inputs:
+            return freshness.fresh_until(self.code, self.at, self.sample.fresh_for)
+        sample = self.sample
+        return freshness.derived_until(self.code, self.at, {
+            code: self.inputs_until[code] if code in self.inputs_until
+            else (sample.until(code) if sample.get(code) is not None else None) for code in self.parameter.inputs})
+
     def fresh(self, now):
-        """Whether it still says something about the water now (evaluate.is_fresh, the one rule)."""
-        return is_fresh(self.parameter, self.at, now, self.sample.fresh_for)
+        """Whether it still says something about the water now (evaluate.is_fresh, the one rule, to `fresh_until`)."""
+        return is_fresh(self.parameter, self.at, now, self.sample.fresh_for, self.fresh_until)
 
 
 def reading_of(code, observation):
@@ -709,17 +739,10 @@ class Silence:
 
     @property
     def since(self):
-        """When the oxygen stopped being fresh: its newest value's time plus its freshness (`now` when it has none)."""
+        """When the oxygen stopped being fresh: its newest value's `Reading.fresh_until` (`now` when it has none)."""
         if self.reading is None:
             return self.now
-        return min(self.now, self.reading.at + freshness_of(self.reading))
-
-
-def freshness_of(reading):
-    """How long a reading stays fresh: its sensor's own freshness, else its parameter's (freshness.fresh_for)."""
-    if reading.sample.fresh_for is not None:
-        return timedelta(seconds=reading.sample.fresh_for)
-    return freshness.fresh_for(reading.code)
+        return min(self.now, self.reading.fresh_until)
 
 
 @dataclass
@@ -971,18 +994,28 @@ class Context:
         """The observation's salinity, else its point's latest sample fresh at its time (at or before it, within the
         salinity's freshness: a stale salinity never enters a calculation, PLAN A9.3), else its owner's middle point's,
         else 0 where every unit it concerns is in fresh water; None when there is none."""
+        return self.salinity_found(observation)[0]
+
+    def salinity_found(self, observation):
+        """(`salinity_for`'s salinity, the moment it stops being fresh): what a value worked out with it takes as that
+        input's end (Reading.inputs_until). The observation's own value its own end (`Observation.until`); its oxygen's
+        basis, the basis's time plus the salinity's hours (fresh water's 0: None); the point's or the middle point's
+        value, its own end; fresh water's 0 assumed, or none: None (no measured value entered)."""
         observation = observe(observation)
         if observation.get(parameters.SALINITY) is not None:
-            return observation.get(parameters.SALINITY)
+            return observation.get(parameters.SALINITY), observation.until(parameters.SALINITY)
         if parameters.SALINITY in observation.basis:
-            return observation.basis[parameters.SALINITY].value
+            basis = observation.basis[parameters.SALINITY]
+            if basis.source == BasisSource.FRESH_WATER:
+                return basis.value, None
+            return basis.value, freshness.fresh_until(parameters.SALINITY, basis.at or observation.at)
         point = observation.point
         fresh = freshness.fresh_for(parameters.SALINITY)
         for where in (point, self.middles.get(point.owner.pk)):
             found = None if where is None else self.salinity.latest(where.pk, observation.at, fresh)
             if found is not None and self.salinity.fresh(found, observation.at):
-                return found.value
-        return assumed_salinity(self.water_types(point))
+                return found.value, freshness.fresh_until(parameters.SALINITY, found.at, found.fresh_for)
+        return assumed_salinity(self.water_types(point)), None
 
     # -- a sensor's pH on another scale --
     def sensor_ph(self, observation, fresh_live, now, temperature=None, at_moment=None):
@@ -1038,9 +1071,9 @@ class Context:
         """{code: Reading} of a sample or an Observation: what was measured and what follows from it."""
         observation = observe(observation)
         found = {code: reading_of(code, observation) for code in observation.values()}
-        salinity = self.salinity_for(observation)
+        salinity, salinity_until = self.salinity_found(observation)
         if observation.get(TAN) is not None:
-            found.update(self._ammonia(observation, salinity))
+            found.update(self._ammonia(observation, salinity, salinity_until))
         if observation.get(OXYGEN_MG_L) is not None or observation.get(OXYGEN_PCT) is not None:
             found.update(self._oxygen(observation, self._temperature_of(observation), salinity))
         return found
@@ -1066,7 +1099,16 @@ class Context:
             return messages.judged_on_nbs(observation.ph.scale)
         return ''
 
-    def _ammonia(self, observation, salinity):
+    def _ammonia(self, observation, salinity, salinity_until):
+        """{code: Reading} of the NH₃-N and the NH₄-N worked out from an observation's TAN, pH and temperature and
+        `salinity` (`salinity_found`), each saying when that salinity stops being fresh (`salinity_until`,
+        Reading.inputs_until): never fresher than the oldest of them (Reading.fresh_until)."""
+        found = self._ammonia_of(observation, salinity)
+        for reading in found.values():
+            reading.inputs_until = {parameters.SALINITY: salinity_until}
+        return found
+
+    def _ammonia_of(self, observation, salinity):
         ph, temperature, tan = (observation.get(code) for code in (parameters.PH, parameters.TEMPERATURE, TAN))
         if ph is None and observation.ph is not None and observation.ph.refused:
             # The sensor's pH could not be put on the NBS scale: the NH₃ is not known, and where the fish have an NH₃
@@ -1340,7 +1382,7 @@ def newest(found):
 def fresh_at(reading, moment):
     """Whether a reading can stand for the water at `moment` in a calculation (PLAN A9.3): measured at or before it (or
     within the clock tolerance after it, freshness.tolerance: one moment for two clocks) and still fresh then."""
-    return reading.at <= moment + freshness.tolerance() and is_fresh(reading.parameter, reading.at, moment, reading.sample.fresh_for)
+    return reading.at <= moment + freshness.tolerance() and reading.fresh(moment)
 
 
 def newest_shown(found, now):
@@ -1437,7 +1479,7 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
                                 if fresh_live.get(code) is not None)]
         if tan.fresh(now):
             together = Observation.combined(inputs)
-            worked = context._ammonia(together, context.salinity_for(together))
+            worked = context._ammonia(together, *context.salinity_found(together))
             chosen.update(worked)
             for code, reading in worked.items():
                 if reading.value is not None:

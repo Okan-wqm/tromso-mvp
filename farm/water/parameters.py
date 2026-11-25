@@ -36,6 +36,9 @@ class Parameter:
     group: str = ''
     help: str = ''
     measured: bool = True    # False: worked out from other values of the sample (never stored)
+    # A worked-out parameter: the codes of the measured values it is worked out from. It is never fresher than the oldest
+    # of them (farm/water/freshness.py `derived_until`); a worked-out parameter without them is refused here.
+    inputs: tuple = ()
 
     @property
     def max_digits(self):
@@ -59,8 +62,12 @@ class Parameter:
         return value == value.quantize(self.step)
 
 
-def _parameter(code, label, short, decimals, low, high, group='', help='', measured=True):
-    return Parameter(code, label, short, decimals, Decimal(str(low)), Decimal(str(high)), group, help, measured)
+def _parameter(code, label, short, decimals, low, high, group='', help='', measured=True, inputs=()):
+    if measured == bool(inputs):
+        raise ValueError(f'{code}: a worked-out parameter declares the inputs its freshness is taken from, a measured '
+                         f'one none')
+    return Parameter(code, label, short, decimals, Decimal(str(low)), Decimal(str(high)), group, help, measured,
+                     tuple(inputs))
 
 
 MEASURED = [
@@ -115,12 +122,19 @@ MEASURED = [
 ]
 
 # Worked out on read from the same sample (farm/water/chemistry.py), never stored. NH₃-N takes limits;
-# NH₄-N is shown only. Their range is TAN's.
+# NH₄-N is shown only. Their range is TAN's. Their inputs: the TAN, the pH and the temperature of the sample (or of the
+# fresh sensor values a sensor's TAN is worked out with) and the salinity found for it (farm/water/read.py `_ammonia`).
+# The ionic-strength inputs (alkalinity, conductivity at 25 °C, hardness) only move the best estimate, never below
+# the safe-side basis, and are not counted (the coordinator's decision of 2026-11-26).
+AMMONIA_INPUTS = ('tan_mg_l', 'ph', 'temperature_c', 'salinity_ppt')
 NH3_N = _parameter('nh3_n_mg_l', _('Un-ionised ammonia (mg/L NH₃ as N)'), _('NH₃-N (mg/L)'), 4, 0, 100,
-                   measured=False)
-NH4_N = _parameter('nh4_n_mg_l', _('Ammonium (mg/L NH₄⁺ as N)'), _('NH₄-N (mg/L)'), 3, 0, 100, measured=False)
+                   measured=False, inputs=AMMONIA_INPUTS)
+NH4_N = _parameter('nh4_n_mg_l', _('Ammonium (mg/L NH₄⁺ as N)'), _('NH₄-N (mg/L)'), 3, 0, 100, measured=False,
+                   inputs=AMMONIA_INPUTS)
 
 BY_CODE = {parameter.code: parameter for parameter in (*MEASURED, NH3_N, NH4_N)}
+# The worked-out parameters, each never fresher than its oldest input (`inputs`).
+DERIVED = tuple(parameter.code for parameter in BY_CODE.values() if not parameter.measured)
 COLUMNS = [parameter.code for parameter in MEASURED]
 # What a limit can be set on: every measured parameter, and the toxic ammonia worked out from TAN.
 LIMITED = [*MEASURED, NH3_N]

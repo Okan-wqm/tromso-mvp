@@ -113,11 +113,17 @@ def ahead(measured_at, now):
     return measured_at - now > freshness.tolerance()
 
 
-def is_fresh(parameter, measured_at, now, fresh_for=None):
+def is_fresh(parameter, measured_at, now, fresh_for=None, until=None):
     """The one freshness rule: a value says something about the water now for its parameter's freshness (the user's
-    row, freshness.hours), or, for a live value, for `fresh_for` seconds (a sensor channel's heartbeats); a value from
-    further ahead than the clock tolerance says nothing (`ahead`)."""
+    row, freshness.hours), or, for a live value, for `fresh_for` seconds (a sensor channel's heartbeats); a worked-out
+    value until `until`, the moment its first input stops being fresh (freshness.derived_until, read.Reading.fresh_until:
+    never fresher than its oldest input, so it is refused without it); a value from further ahead than the clock
+    tolerance says nothing (`ahead`)."""
     if ahead(measured_at, now):
         return False
-    limit = timedelta(seconds=fresh_for) if fresh_for is not None else freshness.fresh_for(parameter.code)
-    return now - measured_at <= limit
+    if until is None:
+        if parameter.inputs:
+            raise ValueError(f'{parameter.code} is worked out: it is fresh only while its inputs are '
+                             f'(read.Reading.fresh_until), never for its own hours alone')
+        until = freshness.fresh_until(parameter.code, measured_at, fresh_for)
+    return now <= until

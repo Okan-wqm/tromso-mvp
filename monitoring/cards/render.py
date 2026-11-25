@@ -130,7 +130,7 @@ class Face:
     status_label: str
     origin: str          # where it came from (the sample's source), '' when unknown
     age: str             # how old, in a band ("1 h ago"), '' when there is no reading
-    stale: bool          # older than the parameter's freshness
+    stale: bool          # no longer fresh (read.Reading.fresh: a worked-out value once its first input is not)
     missing: bool
     reading: object = None
     note: str = ''           # what a worked-out value was worked out from and by (its formula), or why it could not be

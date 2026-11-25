@@ -6,6 +6,8 @@ code's:
   tolerance, `tolerance`): one moment for two clocks. A value further ahead, up to the ingest contract's hour
   (evaluate.MAX_AHEAD), still decides its unit's status and its alarm is never delayed (alarms/sources.py seen_at).
 A live value's freshness is its channel's (sensors.Channel `fresh_s`: its heartbeat times its own `fresh_heartbeats`).
+A worked-out value (NH₃-N, NH₄-N: a parameter with declared `inputs`) is never fresher than its oldest input
+(`derived_until`): it stops being fresh when the first value it was worked out from does, never later than its own row.
 
 The rows are read once and kept in the process until one of them is saved (a signal, farm/apps.py), a request starts
 (Django's request_started) or the alarm loop starts a pass (alarms/engine.py): a change takes effect on the next page and
@@ -88,3 +90,25 @@ def fresh_for(code):
 def tolerance():
     """How far ahead of the server's clock a value may be stamped and still count as fresh."""
     return _rules()['tolerance']
+
+
+def fresh_until(code, at, seconds=None):
+    """The moment a measured value of `code` taken at `at` stops being fresh: a live value `seconds` after it (its
+    channel's heartbeats times its fresh heartbeats), else the parameter's hours after it."""
+    return at + (timedelta(seconds=seconds) if seconds is not None else fresh_for(code))
+
+
+def derived_until(code, at, inputs):
+    """The moment a worked-out value of `code` (one with declared `inputs`, farm/water/parameters.py) worked out at `at`
+    stops being fresh: a worked-out value is never fresher than its oldest input (the coordinator's decision of
+    2026-11-26), so the earliest moment any of its inputs stops being fresh, and never later than its own row's hours.
+    `inputs`: {input code: the moment that input stops being fresh (`fresh_until`), or None where no measured value of
+    it entered (the salinity 0 assumed in fresh water; an input missing, so nothing was worked out)}, for exactly the
+    inputs the parameter declares: one left out or one not declared is refused (ValueError), never silently skipped."""
+    from .parameters import get
+    declared = get(code).inputs
+    if not declared:
+        raise ValueError(f'{code} is not a worked-out parameter: it declares no inputs')
+    if set(inputs) != set(declared):
+        raise ValueError(f'{code} is worked out from {sorted(declared)}, not {sorted(inputs)}')
+    return min([fresh_until(code, at), *(end for end in inputs.values() if end is not None)])

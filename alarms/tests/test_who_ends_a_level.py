@@ -13,7 +13,7 @@ Each also as OPEN WHEN 0014 LANDS (`<raiser>_landed`, F3-8): raised, then every 
 migration leaves it, then the first pass after landing works it out.
 What came next (6 h ago): an own full sample OK or critical, an own TAN without a pH, the loop OK or critical, an own
 TAN without a pH then the loop OK (F3-1 / S4b; for OWN the probe S9 of F3-7), nothing, the bad sample voided; and, on a
-timeline raised 200 h ago, the bad value going stale (NH₃ 168 h) while the loop's OK sample stands in (F3-9, decision
+timeline raised 200 h ago, the bad value going stale (its temperature 24 h, its TAN 168 h) while the loop's OK sample stands in (F3-9, decision
 of 2026-11-19: a value measured on the unit is confirmed over only by measuring the unit again)."""
 from datetime import timedelta
 

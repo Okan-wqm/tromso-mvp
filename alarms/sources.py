@@ -34,7 +34,6 @@
 Where an alarm is (its site, its production department) is set when it opens, for the recipient rules."""
 import logging
 from dataclasses import dataclass
-from datetime import timedelta
 from functools import partial
 
 from django.db import transaction
@@ -510,7 +509,7 @@ def _unevaluated_since(reading, now):
         return seen_at(reading, now)
     if reading.fresh(now):
         return None
-    stale_at = reading.at + timedelta(seconds=reading.sample.fresh_for or 0)
+    stale_at = reading.fresh_until
     return min(max(ph.since, stale_at), now)
 
 

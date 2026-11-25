@@ -13,6 +13,7 @@ from datetime import timedelta
 from django.db import connection
 
 from farm.models import WaterLimit
+from farm.tests.helpers import may_record
 from farm.tests.test_ph_scale import SeaTestCase
 from farm.water import messages as water_messages, parameters, read as water_read
 from sensors import bindings
@@ -34,6 +35,7 @@ def refused(why, scale='total'):
 class RefusedSensorPhCase(SeaTestCase):
     def setUp(self):
         super().setUp()
+        may_record(self.user, 'add_binding')            # binds the probes: the binding service asks (L-6)
         self.stock(self.sea)
         self.limit(PH, critical_low='6.20', warning_low='6.50', warning_high='8.50')
         device = make_device(make_connection(), make_format(), self.bergen)

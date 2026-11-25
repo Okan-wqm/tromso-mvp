@@ -124,6 +124,9 @@ OWN_POINT_QUERIES = 2       # owner rule A9.1: the other points of the units, on
                             # and once for the ration's temperature (read.water_sources every_point), whatever the number
 OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range (A11, Series carry) and the unit's other
                               # own-water points for the withdrawal's degree-days, whatever the number of units
+TASK_JOB_QUERIES = 2        # the task job behind (tasks.read.unplanned: the sites' clocks and the recurring tasks), read
+                            # once for the wall when a card shows tasks, as the Tasks pages say it (landing review, m-3)
+SHOW_TASKS = ('detailed', 'mixed')      # the modes with a card that shows the tasks widget
 
 
 SMALL_READS = 43            # measured 2026-11-13 at 6, 24 and 200 units: 42, three more than a Simple card's 39 (the fish
@@ -149,7 +152,8 @@ class RecordedCountsTests(Counting, MonitoringCase):
         # without them. Card templates add their
         # two queries (the live templates, the live rules), whatever the number of units.
         added = TEMPLATE_QUERIES + SENSOR_QUERIES + OWN_POINT_QUERIES + OWNER_2026_11_08_QUERIES
-        self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + added] * 3
+        self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + added
+                                        + (TASK_JOB_QUERIES if mode in SHOW_TASKS else 0)] * 3
                                  for mode, count in RECORDED.items()})
         # The Small card (2026-11-13): the roll-up's reads and the unit's chart, worked out from the water already read
         # with ONE read of the fish and their limits for all the cards; the same at 6, 24 and 200 units.

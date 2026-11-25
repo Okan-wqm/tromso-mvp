@@ -85,6 +85,8 @@ class SensorEventsPageTests(AlarmsCase):
         mirror(self.event)
         one = queries()
         for minutes in (1, 2, 3):
+            opened = self.now - timedelta(minutes=minutes)          # closed ones: one event of a rule is open at a time
             mirror(AlarmEvent.objects.create(rule=self.event.rule, channel_no=self.event.channel_no, peak=4,
-                                             opened_at=self.now - timedelta(minutes=minutes), binding=self.event.binding))
+                                             opened_at=opened, closed_at=opened + timedelta(seconds=30),
+                                             binding=self.event.binding))
         self.assertEqual(queries(), one)

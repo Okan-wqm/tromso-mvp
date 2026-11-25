@@ -156,12 +156,15 @@ class BookingTests(SchemaCase):
 
 class CellTests(SchemaCase):
     def test_the_cells_are_the_live_placements_and_bookings_of_sealed_experiments(self):
+        """Of a started experiment: a draft seals nothing (the coordinator's decision of 2026-11-25, review W3)."""
         booking = self.booking(last=20)
         placement = self.placement(self.rep, self.tanks[2], 0, 20, booking=booking)
         open_trial = self.experiment(name='Open', starts_on=self.today, audience='open')
         self.placement(self.replicate(self.group(open_trial)), self.tanks[5], 0, 10)
         deleted = self.placement(self.rep, self.tanks[6], 0, 10)
         ReplicateUnit.objects.filter(pk=deleted.pk).update(is_deleted=True)
+        self.assertFalse(SealedCell.objects.exists())
+        type(self.trial).objects.filter(pk=self.trial.pk).update(status='running')
         cells = sorted((str(cell.unit_id), str(cell.system_id), cell.from_on, cell.until_on, str(cell.work))
                        for cell in SealedCell.objects.all())
         end = self.today + timedelta(days=20)

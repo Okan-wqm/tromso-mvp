@@ -1,5 +1,5 @@
 """Operations › Feeding in the new look (?ui=next): the Meal board and Records (Feeding records, By unit and day) on the
-shared list page (farm/feeding/pages.py). On THE test world (core/test_world.py, world() and feeding_ops_world(), clock at
+shared list page (farm/feeding/pages.py), and the Protocols and Assignments tabs' lists (farm/feeding/lists.py). On THE test world (core/test_world.py, world() and feeding_ops_world(), clock at
 MOMENT) each page says everything its classic page says in three languages (core.pagesays), with the things it says
 another way named (SAID_ANOTHER_WAY): the abbreviation "SFR" is said with its figure ("SFR 1.27 %") and its meaning once
 above the table, the classic header titles (an interpolated SFR's columns, the estimate's meaning) are sub-lines and a
@@ -57,7 +57,8 @@ class FeedingPagesNextTests(FrozenClock, TestCase):
         return old, new
 
     PAGES = (('meal-board', 'farm:meal_board', {}), ('records', 'farm:feeding_records', {'voided': '1'}),
-             ('records-days', 'farm:feeding_records', {'view': 'days'}))
+             ('records-days', 'farm:feeding_records', {'view': 'days'}),
+             ('protocols', 'farm:feedingprotocol_list', {}), ('assignments', 'farm:protocolassignment_list', {}))
 
     def test_each_page_says_everything_the_classic_page_says_in_three_languages(self):
         for key, name, query in self.PAGES:
@@ -107,3 +108,18 @@ class FeedingPagesNextTests(FrozenClock, TestCase):
         props = props_of(new, 'list-page')
         self.assertIn({'name': 'view', 'value': 'days'}, props['toolbar']['keep'])
         self.assertEqual([tab['current'] for tab in props['tabs']['tabs']], [False, True])
+
+    def test_a_protocol_and_an_assignment_open_their_own_pages(self):
+        _old, new = self.pages('farm:feedingprotocol_list')
+        row = next(each for each in props_of(new, 'list-page')['table']['rows']
+                   if each['cells']['protocol']['text'] == 'Test hall table')
+        self.assertEqual(row['cells']['status']['chip'], {'kind': 'ok', 'text': 'Active'})
+        self.assertEqual(row['cells']['in_force']['text'], '1')
+        self.assertEqual(row['cells']['temperatures']['sub'], ['2 columns'])
+        self.assertEqual(row['cells']['protocol']['href'], reverse('farm:feedingprotocol_edit', args=[row['key']]))
+        _old, new = self.pages('farm:protocolassignment_list')
+        row = next(each for each in props_of(new, 'list-page')['table']['rows']
+                   if each['cells']['protocol']['text'] == 'Test hall table')
+        self.assertEqual(row['cells']['unit']['text'], 'TT-01')
+        self.assertEqual(row['cells']['batch']['text'], 'whatever is in it')
+        self.assertEqual([action['label'] for action in row['actions']], ['Edit', 'Delete'])

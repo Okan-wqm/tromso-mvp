@@ -39,7 +39,8 @@ const EXPECTED: Record<string, string[]> = {
   'farm.tests.test_system_water_next': ['production-system-water-en'],
   'farm.tests.test_systems_next': ['production-systems-en'],
   // Operations › Feeding (farm/feeding/pages.py)
-  'farm.tests.test_feeding_pages_next': ['meal-board-en', 'meal-board-nb', 'meal-board-tr', 'records-en', 'records-days-en']
+  'farm.tests.test_feeding_pages_next': ['meal-board-en', 'meal-board-nb', 'meal-board-tr', 'records-en', 'records-days-en', 'protocols-en',
+    'assignments-en']
     .map((name) => `feeding-${name}`),
 };
 

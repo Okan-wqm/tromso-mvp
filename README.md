@@ -4014,7 +4014,9 @@ What works:
   quantity `uq_sensors_alarm_rule_default`, the trigger `trg_sensors_alarm_rule_default_kept` against a delete, an
   unmarking or a move to another quantity). A channel of such a quantity that no active "No fresh value" rule covers
   (its default switched off and none of its own) is said above the Alarm rules list and by the check `sensors.W001`
-  (`manage.py check --database default`). Going back past sensors 0015 leaves the rules as ordinary ones (their
+  (`manage.py check --database default`); the new look's list (`?ui=next`, `sensors/lists.py` `alarm_rules`) says the
+  same as the classic one: the Default chip, "at the channel's freshness", the reason under Inactive, no Delete, and
+  that warning. Going back past sensors 0015 leaves the rules as ordinary ones (their
   alarms are history); going forward again marks them the default once more.
   **One alarm per silent probe** (the review of 2026-11-23, F4, the coordinator's call): where the farm has its own
   active "No fresh value" rule of the quantity, or of the channel, the default stands aside there (`sensors.alarms._aside`;
@@ -6008,8 +6010,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `frontend/islands/pages/Production.tsx`): the design's layout over the very context the classic page is drawn from
   (`config/production_props.py`): "Today on the farm" as tiles (stock, feed, the water's critical and warning points,
   tasks, reports due, each with its source and time), Needs attention (each row its status chip, what and where, its
-  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, and the
-  way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
+  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, a unit
+  with fish whose oxygen has no fresh value saying why, a unit with no point of its own placed on its department and
+  site, and the way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
   HR board's bar (`config.views.team_today`, `core/stack`; the tiles add up to the people planned today) with the muster
   count and the late ones. What the design adds from real sources: the fish card's batch count
   (`farm.stock.views.overview`), the units under a medicine withdrawal today in Needs attention (hold chip, each batch's

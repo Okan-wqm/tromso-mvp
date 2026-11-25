@@ -11,7 +11,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sensors', '0014_rev_triggers'),
+        ('sensors', '0015_default_no_data_rules'),
     ]
 
     operations = [

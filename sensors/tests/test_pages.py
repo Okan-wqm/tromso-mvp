@@ -204,7 +204,7 @@ class DevicePageTests(PagesCase):
         from django.db.migrations.loader import MigrationLoader
 
         from core.management.commands.check_pending_constraints import pending_checks
-        migration = MigrationLoader(connection).graph.nodes[('sensors', '0015_broker_lines_plain')]
+        migration = MigrationLoader(connection).graph.nodes[('sensors', '0016_broker_lines_plain')]
         with connection.cursor() as cursor:
             # the deferred triggers of the rows the test made fire first: a table with pending trigger events is not altered
             cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')

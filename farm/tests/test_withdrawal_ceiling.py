@@ -26,7 +26,7 @@ from ..handling import check
 from ..health import withdrawal
 from ..models import Feed, HandlingAcknowledgement, WithdrawalAcknowledgement
 from ..stock import services as stock_services
-from .helpers import correction_window, going_on, role
+from .helpers import correction_window, going_on, may_record, role
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 
@@ -99,6 +99,7 @@ class UnknownEndCeilingTests(CeilingTestCase):
     def test_medicated_feed_with_no_treatment_gives_up_and_is_listed(self):
         feed = Feed.objects.create(name='Medisinfôr', code='MED-1', feed_type='medicated')
         with correction_window(3650):
+            may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
             record = going_on(feeding_services.record_feeding, self.user, unit=self.t2, day=self.day(200), feed=feed,
                               amount_kg=Decimal('2'))
             recent = going_on(feeding_services.record_feeding, self.user, unit=self.t2, day=self.day(100), feed=feed,

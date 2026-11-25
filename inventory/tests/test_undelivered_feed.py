@@ -10,7 +10,7 @@ from django.urls import reverse
 from farm.feeding import services as feeding_services
 from farm.models import Feed
 from farm.stock.dates import shown_date
-from farm.tests.helpers import correction_window, make_species, stock_fish
+from farm.tests.helpers import correction_window, make_species, may_record, stock_fish
 from farm.tests.test_stock import make_unit
 
 from .. import read
@@ -27,6 +27,7 @@ class UndeliveredFeedTests(StoreTestCase):
         stock_fish(self.user, self.tank, count=10000, weight='50', days_ago=20, species=make_species())
 
     def fed(self, kilos, days_ago, feed=None):
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         return feeding_services.record_feeding(self.user, unit=self.tank, day=self.day(days_ago),
                                                feed=feed or self.feed, amount_kg=D(kilos))
 

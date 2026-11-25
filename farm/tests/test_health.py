@@ -39,7 +39,7 @@ from ..stock import integrity, services as stock_services
 from ..stock.dates import local_today
 from ..feeding import services as feeding_services
 from .. import withdrawal_gate as gate
-from .helpers import going_on, make_facility, make_species, point_of, role, rows_data
+from .helpers import going_on, make_facility, make_species, may_record, point_of, role, rows_data
 from .test_stock import StockTestCase, make_unit
 from farm import withdrawal_gate
 
@@ -500,6 +500,7 @@ class WithdrawalTests(HealthTestCase):
 
     def test_medicated_feed_without_an_in_feed_treatment_has_an_unknown_end(self):
         feed = Feed.objects.create(name='Medisinfôr', code='MED-1', feed_type='medicated')
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         record = feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(2), feed=feed,
                                                  amount_kg=Decimal('2'))
         [held] = self.held()
@@ -1621,6 +1622,7 @@ class TreatmentHandlingTests(HealthTestCase):
 
     def fed(self, days_ago, hour):
         feed = Feed.objects.get_or_create(name='Grower 3 mm', code='GROWER-3', feed_type='grower')[0]
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         return feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(days_ago), feed=feed,
                                                amount_kg=Decimal('2'), time=time(hour))
 

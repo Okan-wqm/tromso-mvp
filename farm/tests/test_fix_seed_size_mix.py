@@ -22,7 +22,7 @@ from ..models import (
 )
 from ..models.feeding import FeedTarget
 from ..stock import integrity, read, services
-from .helpers import make_species
+from .helpers import make_species, may_record
 from .test_feeding import FeedingTestCase
 
 D = Decimal
@@ -277,6 +277,7 @@ class UnmigratedDryRunTests(TransactionTestCase):
         today = services.local_today(m01)
 
         def stock(unit, weight):
+            may_record(user, 'add_stockoperation')  # the stock service asks (L-6)
             return services.record_input(user, species=salmon, day=today, input_stage='smolt', origin='own_hatchery',
                                          lines=[(unit, 100, D(weight))], notes=f'{fix_seed_size_mix.MARK} [seed]',
                                          size_mix_ack=True).movements.get().batch

@@ -29,7 +29,7 @@ from ..models.site import zone_of
 from ..resources.feed import FeedResource
 from ..stock import services as stock_services
 from ..water import services as water_services
-from .helpers import correction_window, point_of, rows_data
+from .helpers import correction_window, may_record, point_of, rows_data
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 
@@ -50,6 +50,7 @@ class GuardTestCase(HarvestInsideTestCase):
         return Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
 
     def feed(self, days_ago, feed=None, **kwargs):
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         return feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(days_ago),
                                                feed=feed or self.medicated(), amount_kg=Decimal('2'), **kwargs)
 
@@ -170,6 +171,7 @@ class FeedMadeMedicatedTests(GuardTestCase):
             with correction_window(3650):
                 b = self.stock(shared, count=3000, days_ago=120)
                 x = self.stock(fed, count=3000, days_ago=120)
+                may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
                 feeding_services.record_feeding(self.user, unit=fed, day=self.day(100), feed=feed,
                                                 amount_kg=Decimal('2'))
                 stock_services.record_transfer(self.user, source=fed, batch=x, day=self.day(90),

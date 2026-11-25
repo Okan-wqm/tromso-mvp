@@ -24,7 +24,7 @@ from ..models.handling import HandlingKind
 from ..models.stock import OperationKind
 from ..stock import services as stock_services
 from ..stock.dates import shown_date
-from .helpers import going_on, make_facility, role
+from .helpers import going_on, make_facility, may_record, role
 from .test_cleaner_fish import CleanerFishTestCase
 from .test_harvest import HARVEST_KEEPER
 
@@ -43,6 +43,7 @@ class CleanerWithdrawalTestCase(CleanerFishTestCase):
                                        active_substance='azamethiphos', lice_report_code='AZAMETHIPHOS')
         with withdrawal_gate.opened('test fixture: a withdrawal row straight in the database'):
             MedicineWithdrawal.objects.create(medicine=bath, species=None, days=7, safety_margin_pct=0, note='')
+        may_record(self.user, 'add_treatment')  # the treatment service asks (L-6)
         self.treatment = health_services.record_treatment(
             self.user, units=[self.cage2], method='bath', reason='sea_lice', start_date=self.day(3),
             end_date=self.day(3), medicine=bath)

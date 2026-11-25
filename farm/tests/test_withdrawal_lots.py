@@ -31,7 +31,7 @@ from ..models import (Batch, Feed, HandlingAcknowledgement, Medicine, MedicineWi
                       WithdrawalAcknowledgement)
 from ..stock import services as stock_services
 from ..stock.dates import shown_date
-from .helpers import going_on
+from .helpers import going_on, may_record
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 from .test_withdrawal_cleaner_fish import CleanerWithdrawalTestCase
@@ -317,6 +317,7 @@ class Case5And6UnknownEndTests(LotsTestCase):
         b = self.stock(self.t2, count=3000, days_ago=9)
         self.move(self.a, self.t1, self.t3, 7, 300)                                 # split off before the feeding
         feed = Feed.objects.create(name='Medisinfôr', code='MED-1', feed_type='medicated')
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(5), feed=feed, amount_kg=Decimal('2'))
         self.move(self.a, self.t1, self.t2, 3, combines=[(b, 'T-02')])
         self.move(b, self.t2, self.t4, 2)

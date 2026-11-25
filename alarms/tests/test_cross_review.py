@@ -429,9 +429,11 @@ class StructuralClearTests(CrossReviewCase):
 
     def test_an_emptied_unit_clears_with_no_fish(self):
         from farm.stock import services as stock_services
+        from farm.tests.helpers import may_record
         from ..models import AlarmClearance
         self.sample(5.5, hours=1)
         self.loop()
+        may_record(self.keeper, 'delete_stockoperation')     # the stock service asks (L-6)
         stock_services.void(self.keeper, stock_services.StockOperation.objects.get(), 'Wrong unit')
         self.loop(seconds=1)
         self.assertEqual(set(AlarmClearance.objects.values_list('cause', flat=True)), {'structural'})

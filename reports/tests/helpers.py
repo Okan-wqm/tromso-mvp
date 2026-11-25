@@ -45,6 +45,9 @@ class ReportTestCase(StartedClock, TestCase):
         self.user = get_user_model().objects.create_user('kari', 'kari@example.com', 'x', first_name='Kari',
                                                          last_name='Nord')
         self.user.groups.add(role('Reporter', *REPORTER))
+        # the records the fixtures write through the farm's services, which ask who may (the data-layering audit, L-6)
+        may_record(self.user, 'add_stockoperation', 'delete_stockoperation', 'add_feedingrecord', 'add_licecount',
+                   'add_treatment')
         self.client.force_login(self.user)
         self.hatchery = Site.objects.create(name='Hatchery', code='HA', type='hatchery', lokalitetsnummer=12345,
                                             organisation_number='987654321')
@@ -79,7 +82,6 @@ class ReportTestCase(StartedClock, TestCase):
         self.assertEqual(integrity.problems(), [])
 
     def stock(self, unit, count, weight, on):
-        may_record(self.user, 'add_stockoperation')       # the stock service asks (the data-layering audit, L-6)
         operation = services.record_input(self.user, species=self.salmon, input_stage='smolt', origin='own_hatchery',
                                           day=on, lines=[(unit, count, Decimal(weight))])
         return operation.movements.get().batch

@@ -16,7 +16,7 @@ from core import access, database, navigation, softdelete
 from core.audit import english, private
 from core.models import AuditLog, EntryKey, Profile
 from core.widgets import NONE
-from farm.tests.helpers import stock_fish
+from farm.tests.helpers import may_record, stock_fish
 
 from .. import places, read, services
 from ..models import PLACES, Status, Task, TaskChecklistItem, TaskNote
@@ -199,6 +199,7 @@ class ListsOfferedTests(TasksTestCase):
         batch = stock_fish(self.stocker, self.t1)
         empty = stock_fish(self.stocker, self.t2)
         from farm.stock import services as stock
+        may_record(self.boss, 'add_stockoperation')  # the stock service asks (L-6)
         stock.record_mortality(self.boss, unit=self.t2, batch=empty, day=stock.local_today(self.t2), count=1000,
                                cause='disease')
         html = self.client.get(NEW).content.decode()
@@ -219,6 +220,7 @@ class ListsOfferedTests(TasksTestCase):
         batch = stock_fish(self.stocker, self.t1)
         task = self.make_task(batch=batch)
         from farm.stock import services as stock
+        may_record(self.boss, 'add_stockoperation')  # the stock service asks (L-6)
         stock.record_mortality(self.boss, unit=self.t1, batch=batch, day=stock.local_today(self.t1), count=1000,
                                cause='disease')
         response = self.client.post(edit_url(task), form_data(

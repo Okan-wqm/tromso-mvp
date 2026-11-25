@@ -32,7 +32,7 @@ from ..models.site import zone_of
 from ..stock import read as stock_read, services as stock_services
 from ..stock.dates import local_today
 from ..water.degree_days import BatchWater
-from .helpers import going_on, point_of, role
+from .helpers import going_on, may_record, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_harvest import HARVEST_KEEPER
 from .test_stock import make_unit
@@ -131,6 +131,7 @@ class Fixtures:
         return medicine
 
     def treat(self, medicine, units, days_ago):
+        may_record(self.user, 'add_treatment')  # the treatment service asks (L-6)
         return going_on(health_services.record_treatment, self.user, units=units, method='bath', reason='sea_lice',
                         start_date=self.day(days_ago), end_date=self.day(days_ago), medicine=medicine)
 

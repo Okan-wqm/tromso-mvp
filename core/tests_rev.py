@@ -597,6 +597,7 @@ class RepairTests(Gate, TestCase):
         hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
         unit = make_unit('T-01', hall)
         point = point_of(unit)
+        may_record(user, 'add_watermeasurement')  # the water service asks (L-6)
         water.record(user, point=point, measured_at=timezone.now() - timedelta(hours=1), source='manual',
                      values={'temperature_c': D('12.0')})
         rev.settle()

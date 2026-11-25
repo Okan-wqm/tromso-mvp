@@ -26,6 +26,7 @@ from ..models.stock import OperationKind
 from ..stock import services as stock_services
 from ..stock.dates import shown_date
 from .test_harvest_inside_withdrawal import ASKED, HarvestInsideTestCase
+from .helpers import may_record
 
 LOGGED = 'Handling warnings acknowledged'
 
@@ -183,6 +184,7 @@ class DeliveryWordingTests(LeavingTestCase):
         from three days ahead; each dialog says its own, in its own words."""
         fresh =self.stock(self.t2, count=1000, days_ago=5)
         feed = Feed.objects.create(name='Grower', code='GR-1', feed_type='grower')
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         feeding_services.record_feeding(self.user, unit=self.t2, day=self.day(1), feed=feed, amount_kg=Decimal('1'),
                                         time=time(18, 0))
         delivery = check.earliest(self.t2, fresh, kind=HandlingKind.TRANSPORT)

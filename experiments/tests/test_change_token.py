@@ -252,3 +252,47 @@ class LogOrderTests(TokenCase):
             narrowed = [entry.pk for entry in audit.sealed_out(AuditLog.objects.all()) if entry.pk in made]
         self.assertEqual(plain, sorted(made, reverse=True))
         self.assertEqual(narrowed, plain)
+
+
+class SealDepthTests(TokenCase):
+    """The stamp and the log's read-time rule follow every seal to its end (core.sealing.seal_depth), read from the
+    seals, never a fixed number of levels (landing review L4, W2): a sensor alarm's records hang on its event, the
+    event's rule, the rule's channel and the channel's bindings."""
+
+    def sensor_records(self, channel, point):
+        """A sensor rule's event and alarm on `channel` bound to `point`, and an acknowledgement of the alarm."""
+        from alarms import sources
+        from alarms.models import Acknowledgement
+        from sensors.models import AlarmEvent, AlarmRule, Binding
+        binding = Binding.objects.filter(channel=channel).first() or Binding.objects.create(
+            channel=channel, point=point, valid_from=timezone.now() - timedelta(days=3))
+        rule = AlarmRule.objects.create(channel=channel, kind='no_data', severity='warning')
+        event = AlarmEvent.objects.create(rule=rule, channel_no=channel.channel_no, binding=binding,
+                                          opened_at=timezone.now())
+        alarm = sources.mirror(event)
+        ack = Acknowledgement.objects.create(alarm=alarm, user=self.boss, acknowledged_at=timezone.now(), app='web')
+        return event, alarm, ack
+
+    def test_the_depth_is_read_from_the_seals(self):
+        from alarms.models import Acknowledgement, Alarm
+        from sensors.models import AlarmEvent, Binding
+        self.assertEqual([sealing.seal_depth(model) for model in (Binding, AlarmEvent, Alarm, Acknowledgement)],
+                         [0, 3, 4, 5])
+
+    def test_an_open_sensor_alarms_acknowledgement_is_stamped_with_no_work(self):
+        """W2: at a fixed depth the chain ran out before the binding and gave UNKNOWN, hiding an open tank's
+        acknowledgements from everyone with some work hidden."""
+        from alarms.models import Acknowledgement
+        _event, _alarm, ack = self.sensor_records(self.open_channel, point_of(self.open_tank))
+        self.assertEqual(sealing.works_of(Acknowledgement, [ack.pk]), {str(ack.pk): set()})
+
+    def test_an_unstamped_entry_about_a_sealed_sensor_event_is_left_out(self):
+        """L4: an entry with no stamp (before core/0016, or raw SQL) about a sensor event on X's channel is hidden by
+        the read-time rule alone, which reaches the channel's binding."""
+        event, _alarm, _ack = self.sensor_records(self.sealed_channel, self.sealed_point)
+        with mock.patch.object(audit, 'stamp'):
+            entry = audit.record(self.boss, AuditLog.Action.UPDATE, event, {'Note': [None, 'x']})
+        with sealing.as_viewer(self.researcher):
+            self.assertFalse(audit.sealed_out(AuditLog.objects.filter(pk=entry.pk)).exists())
+        with sealing.as_viewer(self.lead):
+            self.assertTrue(audit.sealed_out(AuditLog.objects.filter(pk=entry.pk)).exists())

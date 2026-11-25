@@ -387,7 +387,9 @@ class SealingStartsWithTheStartTests(ReviewCase):
 
     def test_a_draft_placed_on_a_tank_hides_nothing_of_it(self):
         from ..models import ExperimentGroup, Replicate, ReplicateUnit
-        draft = Experiment.objects.create(code='E-DRAFT-1', name='Draft on the open tank', site=self.site,
+        from core.codes import next_code
+        draft = Experiment.objects.create(code=next_code(Experiment, f'E-{self.today.year}-'),
+                                          name='Draft on the open tank', site=self.site,
                                           species=self.salmon, duration_days=30,
                                           starts_on=self.today - timedelta(days=10))
         group = ExperimentGroup.objects.create(experiment=draft, name='Only group')

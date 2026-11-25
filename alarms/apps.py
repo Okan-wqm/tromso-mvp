@@ -8,6 +8,6 @@ class AlarmsConfig(AppConfig):
     name = 'alarms'
 
     def ready(self):
-        from . import resources  # noqa: F401  declares the recipient rules' tab on Resource.registry
+        from . import checks, resources  # noqa: F401  registers the deployment check; declares the rules' tab
         from .sealing import declare_all
         declare_all()       # how this app's records are sealed (core.sealing)

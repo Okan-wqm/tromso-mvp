@@ -68,8 +68,10 @@ class SlotRuleTests(SimpleTestCase):
             cells = found.cols * found.rows
             self.assertGreaterEqual(cells * found.pages, count, where)             # no card without a cell
             self.assertLess((found.pages - 1) * cells, count, where)               # no page without a card
+            if found.pages > 1 and found.u < slots.FLOOR - 1e-6:
+                # paged, never shrunk: under the floor only one card a page, at the largest unit (a window too small)
+                self.assertEqual((found.cols, found.rows, found.pages), (1, 1, count), where)
             if found.pages > 1:
-                self.assertGreaterEqual(found.u, slots.FLOOR - 1e-6, where)        # paged, never shrunk
                 # ... and only when no grid that holds every card gives a unit that can be read
                 for cols in range(1, slots.MAX_COLS + 1):
                     for rows in range(-(-count // cols), slots.MAX_ROWS + 1):
@@ -84,7 +86,107 @@ class SlotRuleTests(SimpleTestCase):
         self.assertAlmostEqual(found.u, best)
         self.assertEqual(found.pages, 1)
 
+    def test_a_legible_unit_no_grid_reaches_gives_one_card_a_page_at_the_largest_unit(self):
+        """Review round 2, B3: a board read from farther than its screen allows got the DENSEST grid (4 to 6 px type);
+        it gets one card a page, at the largest unit a cell gives."""
+        room = named('small x 20 on 1920x1080')
+        largest = min((room['width'] - room['pad_x']) / room['mw'], (room['height'] - room['pad_y']) / room['mh'])
+        for inches, distance in ((24, 3), (24, 5), (55, 5)):
+            least = slots.legible_unit(inches, distance, 1920, 1080)
+            self.assertGreater(least, largest)
+            found = slots.slots(20, room['width'], room['height'], room['gap'], room['mw'], room['mh'], least,
+                                room['pad_x'], room['pad_y'])
+            self.assertEqual((found.cols, found.rows, found.pages), (1, 1, 20), (inches, distance))
+            self.assertAlmostEqual(found.u, largest)
+        draw = random.Random(20261124)
+        for _round in range(300):
+            count = draw.randint(1, 60)
+            width, height, gap = draw.uniform(600, 4600), draw.uniform(300, 2300), draw.uniform(0, 14)
+            mw, mh, pad_x, pad_y = draw.randint(12, 63), draw.randint(6, 63), draw.uniform(0, 40), draw.uniform(0, 20)
+            least = slots.FLOOR + draw.uniform(0, 200)
+            found = slots.slots(count, width, height, gap, mw, mh, least, pad_x, pad_y)
+            if found.u < least - 1e-6:
+                cell = max(height, mh * slots.FLOOR + pad_y)
+                self.assertEqual((found.cols, found.rows, found.pages), (1, 1, count))
+                self.assertAlmostEqual(found.u, min((width - pad_x) / mw, (cell - pad_y) / mh))
+
     def test_no_card_and_a_window_too_small_still_answer(self):
         self.assertEqual(slots.slots(0, 1900, 900, 8, 31, 10).pages, 1)
         tiny = slots.slots(8, 200, 100, 6, 31, 10)
         self.assertGreaterEqual(tiny.cols * tiny.rows * tiny.pages, 8)
+
+
+class LegibleUnitTests(SimpleTestCase):
+    """How large a wall's type must be to be read from where it is watched (slots.legible_unit, CONSENSUS §9)."""
+
+    def test_the_vectors_shared_with_the_browsers_rule(self):
+        self.assertGreaterEqual(len(VECTORS['legible']), 10)
+        for case in VECTORS['legible']:
+            with self.subTest(case=case):
+                self.assertAlmostEqual(slots.legible_unit(case['inches'], case['distance_m'], case['screen_w'],
+                                                          case['screen_h']), case['u'], places=5)
+
+    def test_the_state_word_and_the_smallest_text_subtend_what_the_standards_ask(self):
+        import math
+        # 20 arcmin for a state's word; 16 for every other text: the least character height of ANSI/HFES 100 and ISO
+        # 9241-303 (review round 2: 15 was under it)
+        self.assertEqual((slots.ARCMIN_CRITICAL, slots.ARCMIN_SECONDARY), (20, 16))
+        for inches, distance, width, height in ((55, 3, 3840, 2160), (24, 1, 1920, 1080), (65, 5, 1920, 1080)):
+            unit = slots.legible_unit(inches, distance, width, height)
+            px_mm = inches * 25.4 / math.hypot(width, height)
+
+            def arcmin(font):
+                return math.degrees(2 * math.atan(font * slots.CAP * px_mm / 2 / (distance * 1000))) * 60
+            self.assertGreaterEqual(arcmin(unit * slots.STEP_STATE), slots.ARCMIN_CRITICAL - 1e-6)
+            self.assertGreaterEqual(arcmin(unit * slots.STEP_SMALLEST), slots.ARCMIN_SECONDARY - 1e-6)
+            # and not a pixel more than the larger of the two asks (the wall keeps as many cards as it can)
+            self.assertTrue(math.isclose(arcmin(unit * slots.STEP_SMALLEST), slots.ARCMIN_SECONDARY, rel_tol=1e-9)
+                            or math.isclose(arcmin(unit * slots.STEP_STATE), slots.ARCMIN_CRITICAL, rel_tol=1e-9)
+                            or unit == slots.FLOOR)
+
+    def test_the_same_physical_screen_gives_the_same_physical_type_at_any_pixel_ratio(self):
+        # a 4K TV whose browser says 1920 x 1080 CSS px (a pixel ratio of 2) gets half the CSS px: the same millimetres
+        self.assertAlmostEqual(slots.legible_unit(55, 3, 3840, 2160), 2 * slots.legible_unit(55, 3, 1920, 1080))
+
+    def test_a_farther_wall_needs_larger_type_and_a_board_that_says_nothing_keeps_the_floor(self):
+        near, far = slots.legible_unit(55, 2, 1920, 1080), slots.legible_unit(55, 4, 1920, 1080)
+        self.assertAlmostEqual(far, 2 * near, places=6)
+        for missing in ((None, 3), (55, None), (0, 3)):
+            self.assertEqual(slots.legible_unit(*missing, 1920, 1080), slots.FLOOR)
+
+
+class ReachTests(SimpleTestCase):
+    """Whether a board's screen and distance can be met at all (slots.reach): what the board's form refuses or warns of
+    (review round 2, B3)."""
+
+    def test_the_reviewers_pairs_on_a_full_hd_screen(self):
+        small = builtin.SMALL_MEASURE
+        for inches, distance in ((24, 3), (24, 5), (55, 5)):
+            with self.subTest(inches=inches, distance=distance):
+                found = slots.reach(inches, distance, 1920, 1080, *small)
+                self.assertEqual(found.per_page, 0)
+                self.assertGreater(found.least, found.most)
+                # the farthest distance that works is said, and it does work
+                self.assertLess(found.farthest, distance)
+                self.assertGreaterEqual(slots.reach(inches, found.farthest, 1920, 1080, *small).per_page, 1)
+                self.assertEqual(slots.reach(inches, found.farthest + 0.1, 1920, 1080, *small).per_page, 0)
+        three = slots.reach(55, 3, 1920, 1080, *small)
+        self.assertEqual(three.per_page, 1)                                   # met, one card a page
+        self.assertGreaterEqual(slots.reach(55, 2, 1920, 1080, *small).per_page, 4)
+
+    def test_it_follows_the_wall_and_the_pixel_ratio_cancels_out(self):
+        small = builtin.SMALL_MEASURE
+        # the wall's own room for one card a page on 1920x1080 (slot_vectors.json, under a band of a sixth at most)
+        room = named('small x 20 on 1920x1080')
+        self.assertLessEqual(slots.reach(55, 3, 1920, 1080, *small).most,
+                             min((room['width'] - room['pad_x']) / small[0], (room['height'] - room['pad_y']) / small[1]))
+        # a 4K panel that says 3840 x 2160 and one that says 1920 x 1080 CSS px are the same screen
+        for inches, distance in ((55, 3), (24, 3), (65, 5)):
+            self.assertEqual(slots.reach(inches, distance, 3840, 2160, *small).per_page,
+                             slots.reach(inches, distance, 1920, 1080, *small).per_page)
+
+    def test_no_screen_or_no_distance_is_always_met(self):
+        found = slots.reach(None, 3, 1920, 1080, *builtin.SMALL_MEASURE)
+        self.assertEqual(found.least, slots.FLOOR)
+        self.assertGreater(found.per_page, 2)
+        self.assertIsNone(found.farthest)

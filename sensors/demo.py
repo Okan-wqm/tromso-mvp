@@ -69,6 +69,14 @@ def _places():
     return found, skipped
 
 
+def demo_channels(channel_nos):
+    """The channel numbers among these that belong to the live demo (a device of the demo's connection, found by its
+    marker `CLIENT_ID`): values from the Node-RED flow, not from a probe in real water, which a chart says ("Simulated
+    values"). A device marked simulated (`Device.is_simulated`) is another thing: its values are drawn nowhere."""
+    return set(Channel.all_objects.filter(channel_no__in=list(channel_nos), device__connection__client_id=CLIENT_ID)
+               .values_list('channel_no', flat=True))
+
+
 def setup(at=None):
     """Makes what is missing; returns a Report. Safe to run again."""
     at = at or timezone.now() - timedelta(minutes=1)

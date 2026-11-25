@@ -22,6 +22,12 @@ class DocumentFileInput(forms.ClearableFileInput):
     template_name = 'knowledge/widgets/file_input.html'
     clear_checkbox_label = _('Remove the file')
 
+    def current_url(self, value):
+        """The stored file's address on the library's own file view, which checks who may read it (the form layer of the
+        new look links it: core.formpayload)."""
+        from django.urls import reverse
+        return reverse('knowledge:document_file', args=[value.instance.pk])
+
     def is_initial(self, value):
         """A file the document already has (not one just chosen and refused)."""
         return bool(value) and getattr(value, 'instance', None) is not None and getattr(value, '_committed', False)

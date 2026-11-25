@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from core.crud import Resource, filter_by
 
 from ..forms.health import HealthEventForm
-from ..health import diseases, notices
+from ..health import diseases, lists, notices
 from ..health.read import with_deaths
 from ..models import HealthEvent, Site, Tank
 from ..stock import views as stock_views
@@ -25,6 +25,12 @@ class HealthEventResource(Resource):
                      'units__code']
     list_template = 'farm/health_event_list.html'
     icon = 'stethoscope'
+    # the new look's list (farm/health/lists.py) in the classic list's words (farm/health_event_list.html)
+    search_placeholder = _('Search findings, units, site or vet')
+    empty_text = _("What was seen, found or advised about the fish's health: observations, vet and fish-health visits, "
+                   'lab results and rises in mortality.')
+    list_rows = staticmethod(lists.events)
+    list_filters = staticmethod(lists.event_filters)
     actions = ('add', 'change')       # a health event is voided with a reason, not deleted
     page_size = 50
 

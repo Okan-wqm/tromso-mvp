@@ -148,6 +148,10 @@ AREAS = [
     # sent to may acknowledge it without Edit). Nothing in them is ever changed or deleted. Who is notified is the recipient
     # rules: read, create, edit, delete.
     Area(_('Alarms'), 'alarms.Alarm', actions=('view', 'change')),
+    # Snoozing an alarm (owner decision Q5: a right of its own, a reason, at most the severity's longest snooze): Read is
+    # the list of snoozes, Create snoozes an open alarm and ends a snooze early. A snoozed alarm is still raised and kept;
+    # nobody is notified of it and it is not escalated until the snooze ends.
+    Area(_('Alarm snoozes'), 'alarms.AlarmShelve', actions=('view', 'add')),
     Area(_('Alarm recipients'), 'alarms.RecipientRule'),
     # The alarm rules: per severity the delays, the escalation time and the delivery attempts (one seeded row each: Read,
     # Edit), per water parameter the deadband (read, create, edit, delete). The alarm admin's rights.

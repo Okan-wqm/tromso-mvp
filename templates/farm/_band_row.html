@@ -1,10 +1,10 @@
-{% load i18n %}{% comment %} One band of a feeding table's grid (farm/feeding_protocol_form.html): its weights, feed, meals,
+{% load i18n farm_words %}{% farm_words as fw %}{% comment %} One band of a feeding table's grid (farm/feeding_protocol_form.html): its weights, feed, meals,
    expected FCR, an SFR per temperature column, and Remove. The heading row names the fields.{% endcomment %}<tr class="band-row" data-row>
   {% for field in row.base_fields_shown %}
   <td class="{% if field.errors %}has-error{% endif %}">{% if forloop.first and row.non_field_errors %}<div class="form-error row-error">{{ row.non_field_errors }}</div>{% endif %}<label class="sr-only" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</td>
   {% endfor %}
   {% for field in row.cells %}
-  <td class="{% if field.errors %}has-error{% endif %}"><label class="sr-only" for="{{ field.id_for_label }}">{% blocktrans trimmed with temperature=field.label %}SFR at {{ temperature }}{% endblocktrans %}</label>{{ field }}{{ field.errors }}</td>
+  <td class="{% if field.errors %}has-error{% endif %}"><label class="sr-only" for="{{ field.id_for_label }}">{% sfr_at field.label %}</label>{{ field }}{{ field.errors }}</td>
   {% endfor %}
-  <td><label class="check check-remove">{{ row.DELETE }} {% trans "Remove" %}</label></td>
+  <td><label class="check check-remove">{{ row.DELETE }} {{ fw.remove }}</label></td>
 </tr>

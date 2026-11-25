@@ -1,15 +1,15 @@
 {% extends "crud/form.html" %}
 {% load i18n %}
 {# The equipment form adds a feeder's calibrations on a tab of their own, saved as a list (core.crud.RowList). #}
-{% block extra_tabs %}{% if form.chosen_type.takes_calibrations or calibrations %}<button type="button" role="tab" class="ui-tab" data-tab="calibration">{% trans "Feed calibration" %}</button>{% endif %}{% endblock %}
+{% block extra_tabs %}{% if form.chosen_type.takes_calibrations or calibrations %}<button type="button" role="tab" class="ui-tab" data-tab="calibration">{{ row_words.calibrations.title }}</button>{% endif %}{% endblock %}
 {% block extra_panels %}
 {% if form.chosen_type.takes_calibrations or calibrations %}
-{% trans "Feed calibration" as panel_title %}
-{% trans "For each feed size, how much feed one shot dispenses and how much the silo holds; at most 50 rows. They are saved separately from the equipment details." as help %}
-{% trans "No calibrations yet. Use “Add calibration” to add a row." as empty %}
-{% trans "Add calibration" as add %}
-{% trans "Save calibrations" as save %}
-{% if object %}{% url 'farm:equipment_calibrations' object.pk as action %}{% trans "Save the equipment with this feeder type first; then its calibrations can be added here." as pending %}{% else %}{% trans "Calibrations can be added once the equipment is created." as pending %}{% endif %}
-{% include "crud/_row_list.html" with rows=calibrations tab="calibration" legend=panel_title kind="calibration-row" %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
+{# #}
+{# #}
+{# #}
+{% if object %}{% url 'farm:equipment_calibrations' object.pk as action %}{% endif %}
+{% include "crud/_row_list.html" with rows=calibrations tab="calibration" words=row_words.calibrations kind="calibration-row" %}
 {% endif %}
 {% endblock %}

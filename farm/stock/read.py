@@ -23,8 +23,9 @@ from typing import NamedTuple
 from django.db.models import F, IntegerField, Max, Min, Q, Sum, Value
 
 from core import sealing
-from farm.models import Batch, Site, StockMovement, Tank
+from farm.models import Batch, Site, StockMovement, StockOperation, Tank
 from farm.models.feeding import FeedTarget
+from farm.models.stock import MovementKind
 
 from .dates import local_today
 from .fold import Line, Op, Share, fold
@@ -645,3 +646,10 @@ def movements(units, first, last):
                               line.count_delta, line.reason, grams.get(line.id), line.measured_weight_kg, other,
                               line.op.stocked_on is not None))
     return found
+
+
+def harvests_on(unit, first, last):
+    """The live harvest operations that took fish out of `unit` on a day from `first` to `last`, oldest first: the
+    harvests a unit's water history marks (Tank › Water)."""
+    return (StockOperation.objects.filter(movements__unit=unit, movements__kind=MovementKind.HARVEST, date__gte=first,
+                                          date__lte=last).distinct().order_by('date'))

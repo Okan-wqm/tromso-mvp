@@ -1,0 +1,12 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} The list page of a tab in the new look (core.crud.ListView, core/listprops.py): the island draws the toolbar,
+   the table, the empty state and the pager from the rows the same view read. The classic page is the tab's list_template
+   (crud/list.html). {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ group }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+{% if list_above %}{% include list_above %}{% endif %}
+{% trans "Loading the list…" as loading %}{% island "list-page" props label=loading %}
+{% endblock %}

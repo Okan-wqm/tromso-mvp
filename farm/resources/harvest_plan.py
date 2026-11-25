@@ -18,7 +18,7 @@ from core.dates import read_day
 from ..feeding import read as feeding_read
 from ..forms.harvest import FROM_ADDRESS, HandlingPlanItemForm, ProductionPlanForm, planned_kg
 from ..handling import check, fasting
-from ..harvest import forecast, views as harvest_views
+from ..harvest import forecast, lists, views as harvest_views
 from ..models import HandlingPlanItem, ProductionPlan, Site, StockMovement, Tank
 from ..models.harvest import PlanKind, PlanStatus
 from ..models.stock import MovementKind
@@ -48,6 +48,14 @@ class HandlingPlanItemResource(FromAddress, Resource):
     icon = 'calendar'
     page_size = 50
     from_address = FROM_ADDRESS
+    # the new look's list (farm/harvest/lists.py) in the classic list's words (farm/plan_item_list.html), under the strip
+    # of the Harvest group's pages
+    search_placeholder = _('Search by unit, batch, facility or vessel')
+    empty_text = _('Harvests and transports planned per unit and batch: the fish and kilos meant, where they go, and the '
+                   'fast before them.')
+    list_rows = staticmethod(lists.plan_items)
+    list_filters = staticmethod(lists.plan_filters)
+    list_above_next = 'farm/_harvest_tabs.html'
 
     @classmethod
     def queryset(cls):
@@ -137,6 +145,13 @@ class ProductionPlanResource(FromAddress, Resource):
     list_template = 'farm/production_plan_list.html'
     icon = 'target'
     from_address = ('batch',)
+    # the new look's list (farm/harvest/lists.py) in the classic list's words (farm/production_plan_list.html), under the
+    # strip of the Harvest group's pages
+    search_placeholder = _('Search unit, batch or species')
+    empty_text = _('The batches in stock with their target weight for harvest.')
+    list_rows = staticmethod(lists.production_plans)
+    list_filters = staticmethod(lists.production_filters)
+    list_above_next = 'farm/_harvest_tabs.html'
 
     @classmethod
     def queryset(cls):

@@ -1,13 +1,13 @@
-{% load i18n %}{% comment %} The tanks of an experiment as they stand (read.cells): each replicate with its tanks and the days they are booked
+{% load i18n experiments_words %}{% experiment_words as ew %}{% comment %} The tanks of an experiment as they stand (read.cells): each replicate with its tanks and the days they are booked
    to it. {% endcomment %}
 <div class="table-wrap">
   <table class="data-table">
-    <thead><tr><th scope="col">{% trans "Group" %}</th><th scope="col">{% trans "Replicate" %}</th><th scope="col">{% trans "Tank" %}</th><th scope="col">{% trans "From" %}</th><th scope="col">{% trans "Until" %}</th></tr></thead>
+    <thead><tr><th scope="col">{{ ew.group }}</th><th scope="col">{{ ew.replicate }}</th><th scope="col">{{ ew.tank }}</th><th scope="col">{{ ew.from }}</th><th scope="col">{{ ew.until }}</th></tr></thead>
     <tbody>
       {% for cell in cells %}
       <tr><td>{{ cell.group.name }}</td><td>R{{ cell.replicate.number }}</td><td>{{ cell.unit.code }} · {{ cell.unit.name }}</td><td class="nowrap">{{ cell.first|date:"DATE_FORMAT" }}</td><td class="nowrap">{{ cell.last|date:"DATE_FORMAT" }}</td></tr>
       {% empty %}
-      <tr><td colspan="5" class="muted">{% trans "No tank is placed." %}</td></tr>
+      <tr><td colspan="5" class="muted">{{ ew.no_tank_is_placed }}</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -1,0 +1,380 @@
+{
+ "today": {
+  "title": "Company today",
+  "meta": "Worked out 23.11.2026 13:42 · Europe/Oslo",
+  "tiles": [
+   {
+    "key": "sites",
+    "label": "Sites",
+    "figure": "2",
+    "href": "/sites/",
+    "sub": "2 active",
+    "source": "Sites"
+   },
+   {
+    "key": "biomass",
+    "label": "Biomass",
+    "figure": "495 kg",
+    "sub": "2 units stocked",
+    "source": "Stock ledger · 13:42",
+    "href": "/operations/units/"
+   },
+   {
+    "key": "alarms",
+    "label": "Open alarms",
+    "figure": "1",
+    "href": "/alarms/",
+    "status": "critical",
+    "statusLabel": "Critical",
+    "sub": "1 critical",
+    "sub2": "1 unit critical · 1 unit with no recent data",
+    "source": "Alarms · 13:42"
+   },
+   {
+    "key": "on_site",
+    "label": "On site now",
+    "figure": "3",
+    "href": "/hr/",
+    "sub": "Everyone clocked in, all teams",
+    "sub2": null,
+    "source": "Today & attendance · 13:42"
+   },
+   {
+    "key": "reports",
+    "label": "Reports due",
+    "figure": "0",
+    "href": "/reports/",
+    "status": null,
+    "statusLabel": null,
+    "sub": null,
+    "source": "Regulatory reports · 13:42"
+   },
+   {
+    "key": "messages",
+    "label": "Unread messages",
+    "figure": "33",
+    "href": "/messages/",
+    "sub": "in 3 conversations",
+    "source": "Messages · 13:42"
+   }
+  ]
+ },
+ "sites": {
+  "title": "Sites",
+  "link": {
+   "href": "/sites/",
+   "label": "Sites"
+  },
+  "columns": {
+   "site": "Site",
+   "type": "Type",
+   "units": "Units stocked",
+   "biomass": "Biomass",
+   "water": "Water",
+   "alarms": "Open alarms",
+   "onSite": "On site now"
+  },
+  "rows": [
+   {
+    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3",
+    "name": "Test Site North",
+    "code": "TSN",
+    "href": "/sites/69e9c2d3-e70f-4828-b665-938b19ef8da3/",
+    "type": "Land-based facility",
+    "status": "critical",
+    "units": "1",
+    "biomass": "45 kg",
+    "water": {
+     "kind": "critical",
+     "text": "O₂ (mg/L) 8.40"
+    },
+    "alarms": {
+     "figure": "1",
+     "sub": "1 unit critical"
+    },
+    "onSite": null
+   },
+   {
+    "key": "a7631506-d39d-419d-a7a4-1dfdda973ba1",
+    "name": "Test Site South",
+    "code": "TSS",
+    "href": "/sites/a7631506-d39d-419d-a7a4-1dfdda973ba1/",
+    "type": "Sea cage",
+    "status": "warning",
+    "units": "1",
+    "biomass": "450 kg",
+    "water": {
+     "kind": "nodata",
+     "text": "Not measured"
+    },
+    "alarms": {
+     "figure": "0",
+     "sub": "1 unit with no recent data"
+    },
+    "onSite": null
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "alarms": {
+  "title": "Open alarms",
+  "link": {
+   "href": "/alarms/",
+   "label": "Alarms"
+  },
+  "safety": "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every notification waits in the outbox on the Alarms page, with its recipient and level, and is sent once it is.",
+  "columns": {
+   "severity": "Severity",
+   "what": "What"
+  },
+  "rows": [
+   {
+    "key": "1",
+    "severity": "Critical",
+    "kind": "critical",
+    "what": "O₂ 5.8 mg/L, below 6.00 (critical)",
+    "href": "/alarms/1/",
+    "where": "TT-01 › Middle · Test Site North · 20.11.2026 13:42"
+   }
+  ],
+  "more": null,
+  "empty": null,
+  "units": {
+   "tone": "critical",
+   "text": "1 unit critical · 1 unit with no recent data"
+  }
+ },
+ "people": {
+  "title": "Office people today",
+  "link": {
+   "href": "/hr/",
+   "label": "Today & attendance"
+  },
+  "tiles": [
+   {
+    "key": "planned",
+    "label": "Planned today",
+    "figure": "0"
+   },
+   {
+    "key": "upcoming",
+    "label": "Upcoming",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "here",
+    "label": "Here now",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "not_in",
+    "label": "Not in yet",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "absent",
+    "label": "Absent",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "on_leave",
+    "label": "On leave",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "done",
+    "label": "Done",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "to_decide",
+    "label": "Leave to decide",
+    "figure": "0",
+    "href": "/hr/leave/"
+   }
+  ]
+ },
+ "upcoming": {
+  "title": "Upcoming reports",
+  "items": [],
+  "empty": null,
+  "badge": null,
+  "link": {
+   "href": "/reports/",
+   "label": "All reports"
+  },
+  "notSetUp": "2 sites with fish are not set up for reports: what they owe is not known, so nothing is listed as due for them."
+ },
+ "feed": {
+  "title": "Feed on hand",
+  "link": {
+   "href": "/operations/storage/",
+   "label": "Storage"
+  },
+  "columns": {
+   "item": "Site · item",
+   "onHand": "On hand",
+   "cover": "Days of cover"
+  },
+  "rows": [
+   {
+    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3-b5007070-d82f-40a4-a4bc-b5a165903c9f",
+    "item": "Test Grower 4 (TG-4)",
+    "site": "Test Site North",
+    "onHand": "1,475 kg",
+    "cover": null,
+    "status": "warning",
+    "note": "TS-01, below the reorder level of 2,000 kg"
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "messages": {
+  "title": "Unread messages",
+  "link": {
+   "href": "/messages/",
+   "label": "Messages"
+  },
+  "rows": [
+   {
+    "key": "9c2b0c5b-4afe-4973-892d-a964e6167ca0",
+    "title": "Test long channel",
+    "href": "/messages/9c2b0c5b-4afe-4973-892d-a964e6167ca0/",
+    "text": "Test message 60 of 60.",
+    "when": "23.11.2026 13:41"
+   },
+   {
+    "key": "f72a7254-70b5-465b-9c65-f1962920d32b",
+    "title": "Test channel",
+    "href": "/messages/f72a7254-70b5-465b-9c65-f1962920d32b/",
+    "text": "A test message to the channel.",
+    "when": "23.11.2026 12:41"
+   },
+   {
+    "key": "05771e1f-169f-451b-b66a-e009e120fe65",
+    "title": "Test Writer",
+    "href": "/messages/05771e1f-169f-451b-b66a-e009e120fe65/",
+    "text": "A second test answer,\non two lines.",
+    "when": "23.11.2026 12:40"
+   }
+  ],
+  "empty": null
+ },
+ "activity": {
+  "title": "Recent activity",
+  "link": {
+   "href": "/activity/",
+   "label": "Activity log"
+  },
+  "critical": "Critical",
+  "entries": [
+   {
+    "key": "dcdddff5-9433-4d9d-b6c0-538e6986115e",
+    "action": "Changed",
+    "critical": false,
+    "record": "Channel · TEST-2 › TEST-P",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "0bdd9348-0e55-4645-a246-8c00d0710881",
+    "action": "Changed",
+    "critical": false,
+    "record": "Channel · TEST-2 › TEST-P",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "854f244e-a2e8-43d3-8c9e-1c8ec84d92b7",
+    "action": "Changed",
+    "critical": false,
+    "record": "Knowledge entry · A reviewed test statement.",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "926d0cdc-d1b3-4725-bd4b-8e451e5f5fea",
+    "action": "Created",
+    "critical": false,
+    "record": "Knowledge entry · A reviewed test statement.",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "a3089ba3-41e8-4ba8-afef-5c4f4c0c6903",
+    "action": "Changed",
+    "critical": false,
+    "record": "Feeding protocol · Test assigned protocol",
+    "by": {
+     "before": "by",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   }
+  ],
+  "empty": null
+ },
+ "knowledge": {
+  "title": "Latest knowledge entries",
+  "link": {
+   "href": "/knowledge/entries/",
+   "label": "Knowledge entries"
+  },
+  "rows": [
+   {
+    "key": "9bdbec43-d1f6-4f78-8656-2138a1ec290b",
+    "text": "A reviewed test statement.",
+    "source": "Test document (n.d.)",
+    "href": "/knowledge/entries/9bdbec43-d1f6-4f78-8656-2138a1ec290b/view/",
+    "kind": "ok",
+    "chip": "Reviewed"
+   },
+   {
+    "key": "399dd24d-3265-4ee1-8c89-ee0925aa514a",
+    "text": "A test statement.",
+    "source": "Test document (n.d.)",
+    "href": "/knowledge/entries/399dd24d-3265-4ee1-8c89-ee0925aa514a/view/",
+    "kind": "neutral",
+    "chip": "Draft"
+   }
+  ],
+  "empty": null
+ }
+}

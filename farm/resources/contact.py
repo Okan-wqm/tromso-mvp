@@ -10,6 +10,12 @@ class ContactList(RowList):
 
     key, tab, label = 'contacts', 'contact', _('Contacts')
     saved = ngettext_lazy('%(count)d contact saved.', '%(count)d contacts saved.', 'count')
+    # Its panel on the Contact tab, in farm/_contacts.html's words (a record adds its help and pending sentence).
+    title, legend = _('Contacts'), _('Contact')
+    empty_text = _('No contacts yet. Use “Add contact” to add a row.')
+    add_label, save_label = _('Add contact'), _('Save contacts')
+    on_record_tab = True
+    field_labels = {'is_primary': _('Primary')}
     # The fields of a contact the log keeps private, in the order it says them, each under its field's name.
     PRIVATE = ('email', 'phone')
 

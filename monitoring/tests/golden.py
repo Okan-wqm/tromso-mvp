@@ -170,6 +170,54 @@ def cards_say(html, norm):
     return found
 
 
+def _root(html, scope):
+    """The node a page's facts are read from: the first element with the `scope` id or class, else <main>, else the
+    whole document (a report of its own)."""
+    nodes = list(Tree(html).root.walk())
+    if scope:
+        found = next((node for node in nodes if node.attrs.get('id') == scope or scope in node.classes), None)
+        if found is not None:
+            return found
+    return next((node for node in nodes if node.tag == 'main'), nodes[0])
+
+
+def page_says(html, norm, scope=''):
+    """What a page SAYS, whatever its markup (the cards' rule, `card_says`, for a whole page or report): {'headings':
+    the h1-h4 and captions, 'pairs': every (dt, dd) and every row's (th, td...) as label and values, 'texts': every
+    other run of text, 'links': (text, address) of every link}, each sorted and normalised. A redesign of the page must
+    still say every item (`multiset_missing` of the old in the new is empty); it may add. Scripts, styles, SVG text
+    (a chart's geometry and its labels are compared by the chart's own tests) and hidden templates are left out."""
+    root = _root(html, scope)
+    skip = {node for node in root.walk() if node.tag in ('script', 'style', 'svg', 'template', 'noscript')}
+    for node in list(skip):
+        skip |= set(node.walk())
+    nodes = [node for node in root.walk() if node not in skip]
+    taken, pairs = set(skip), []
+    headings = sorted(norm(node.text()) for node in nodes if node.tag in ('h1', 'h2', 'h3', 'h4', 'caption')
+                      and norm(node.text()))
+    taken |= {each for node in nodes if node.tag in ('h1', 'h2', 'h3', 'h4', 'caption') for each in node.walk()}
+    for node in nodes:
+        if node.tag == 'dt':
+            siblings = [child for child in node.parent.children if isinstance(child, Node)]
+            value = next((each for each in siblings[siblings.index(node) + 1:] if each.tag == 'dd'), None)
+            pairs.append([norm(node.text()), norm(value.text()) if value is not None else ''])
+            taken |= set(node.walk()) | (set(value.walk()) if value is not None else set())
+        elif node.tag == 'tr':
+            cells = [child for child in node.children if isinstance(child, Node) and child.tag in ('th', 'td')]
+            if cells:
+                pairs.append([norm(cell.text()) for cell in cells])
+                taken |= {each for cell in cells for each in cell.walk()}
+    texts = sorted(norm(text) for text in _leaves(root, taken) if norm(text))
+    links = sorted([norm(node.text()), link(node.attrs['href'], norm)] for node in nodes
+                   if node.tag == 'a' and node.attrs.get('href'))
+    return {'headings': headings, 'pairs': sorted(pairs), 'texts': texts, 'links': links}
+
+
+def says_missing(old, new):
+    """{part: items} of what `old` (page_says) says that `new` does not: empty when the new page says it all."""
+    return {part: missing for part in old if (missing := multiset_missing(old[part], new.get(part, [])))}
+
+
 def multiset_missing(old, new):
     """The items of `old` that `new` does not have (as many times as `old` has them)."""
     left = list(new)

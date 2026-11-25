@@ -41,7 +41,7 @@
 </form>
 {% endif %}
 <div class="form-actions">
-  <a class="button button-ghost" href="{% url 'messaging:leave' conversation.pk %}" data-modal>{% trans "Leave channel" %}</a>
+  <a class="button button-ghost" href="{% url 'messaging:leave' conversation.pk %}"{% if not UI_NEXT %} data-modal{% endif %}>{% trans "Leave channel" %}</a>
   <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Close" %}</a>
 </div>
 {% endblock %}

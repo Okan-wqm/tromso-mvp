@@ -552,7 +552,7 @@ Feeding records) and the operations, **Record feeding** first; for an empty unit
 and max biomass and "Stock this unit" with the unit chosen, or why it cannot be stocked; for every unit,
 with the water read, its **Water**: the latest value of every parameter with its age, status and limits,
 the worked-out NH₃-N and O₂ saturation, **Record water sample** (the unit fixed, back to the drawer) and
-its water history; for every unit its last 20 operations and 10 feedings, voided ones struck through with
+**History**, the unit's Tank › Water (`farm:tank_water`; in the classic look that address redirects to the unit's history on Water chemistry); for every unit its last 20 operations and 10 feedings, voided ones struck through with
 their reason, each with **Void** while it may be voided.
 
 **Operations**, each a dialog (in the shared dialog, or as a page) whose form is one call of the stock
@@ -741,6 +741,7 @@ answers for many units at once (the table is `monitoring/read.py`'s docstring):
 | open health events (every card), treatments and the latest sea-lice count (detailed) | `health.read.open_events`, `recent_treatments`, `latest_counts` |
 | open, overdue and due-today tasks (detailed) | `tasks.read.per_unit` |
 | the Deffeyes chart in its window | `water.calculation.chart_of` through `farm:water_unit_chart` (see Water chemistry) |
+| a unit's or a system's water history (Tank › Water, System › Water, behind `?ui=next`) | `farm:water_unit_chart` / `farm:water_system_chart` with `?view=history`: `sensors.read.water_history` (every parameter's `series` on one window, the NH₃-N worked out per sample, every live sample judged as the history page judges it, `judged`, sent as each sample's `status` and `status_text`; the limit bands `bands_of`), each chart in words (`sensors.chart.said`: latest, lowest, highest, gaps; `gap_text`) with its buckets from a backup or the system's channel marked (`buckets.other`, drawn as points of their own as the SVG chart's circles), the events each read by its area's reader (`farm.water.read.history_events` over `farm.feeding.read.fed_in`, `farm.health.read.treatments_on`, `farm.stock.read.harvests_on`, `alarms.read.opened_at`) for the person who may read that area, a day-dated one (treatment, harvest) said as its day or days, never 00:00 (`all_day`, `when`), the Deffeyes replay's address and the Deffeyes for the range (`range_deffeyes`: about 120 replay frames of the window, the diagram of the newest frame that has one from `deffeyes.render` with the pH labels the server placed, its star named with its time, "No diagram after <time>: <why>" in the warning's colour when the window's end has none, the water's path through the time broken where a frame has no diagram, a lone frame a dot, else the reason); a system's points side by side. The page's from and to are the shared date box (dd.mm.yyyy HH:MM); `?around=` 12 hours or more after now is refused (400). Its events are marks on every chart for the pointer (a 24 px handle; the plot under it free for the cursor and the zoom) and a list of links, the keyboard's and the screen reader's path; under 480 px the Deffeyes chart's labels give way to their words. In the new look a unit's row on Water chemistry opens `farm:tank_water`, and an alarm's detail at a unit's point links its water 12 hours each side of its opening (`?around=` on the site's clock); the classic look keeps its links |
 | the calculated CO₂ and the pH window of a card that shows them (the Small card) | `water.calculation.charts_of`: every such unit's chart at once, from the water the card read already holds and one read of the fish's limits |
 
 **The page** has a toolbar (a GET form that works without script: site, department, system, kind, fish (stocked by default,
@@ -873,6 +874,74 @@ kept today, the parameters no row judges (`water.read.missing_limits`). The valu
 trace (at most once a minute per source): a required one gives the 503 (the screen keeps its last picture and says it is not
 updated), an optional one says "Could not be read: Tasks" on the frame, where no template can hide it.
 
+**In the new look** (`?ui=next`, see The new look; 2026-11-24). The same page, the same card read (`read.cards`,
+`_ladder`, `water_rungs`), the same templates, fragment, pane and polls (poll.ts's start-up gate, the merge by key, the
+announcer): the new look is a skin, and the cards' markup is byte for byte the same in both looks
+(`monitoring/tests/test_next_pages.py`), so the change token does not need to know the look. `templates/monitoring/monitor.html`
+loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new look, and every rule of the second is under
+`html[data-ui="next"]`, so the classic page reads none of it. What it draws, from the design console:
+- **The state's glyph** as the design's icons (critical the octagon, warning the triangle, no recent data the clock, no
+  limit the gauge, note the bell, OK the check, empty the grid): `monitor-next.css` names each state's icon, and
+  `glyphs.css` (built by `scripts/icons.mjs` from `templates/icons` beside the islands' set; `npm run check:icons`)
+  draws it as a mask, under `@supports` with the `-webkit-` form: a page that lacks that sheet, or a browser without
+  masks, keeps the classic shapes, never seven identical squares. The glyph a script sets (the band's "page of the worst
+  card") follows; every rung keeps a glyph of its own and its word.
+- **The frame**: a square hairline plate (border longhands only: the classic look's edge STYLE of each state stays, dashed
+  for no recent data and no limit, dotted for empty, and the hatch strip of a card whose value is old, `ds.css`
+  `.monitor-card[data-stale]`), a critical card framed in the critical colour, the head of a card with no recent data
+  hatched (its stripe the control line half way to the plate: 1.5:1 or more in all six themes, measured by the page
+  test), every word of that head on a pad of the plate, so no text lies on a stripe (4.5:1 held by the page test against
+  the stripe, in the six themes); on a wall the frame and the edge grow with the type; in forced colours a critical or warning edge is 10 px, as
+  classic. The code in the text face, the figures in Barlow, OK in its green.
+- **One size per mode** (owner, 2026-11-24: "a card grows taller when a warning appears"). The Small card on the desk page
+  is the design's: a regular grid of equal cards (three to a row at 1440 px: at four the oxygen's saturation beside its
+  label was cut; four at 1920), with fixed slots: the head (the code, the name cut with an ellipsis and whole in its
+  title, the state's glyph and word, never cut), TWO lines of reason (the first in short and "+N"; the reason's figure
+  and the bound it is past never cut, its own words past two lines end in an ellipsis; every reason in full in its title,
+  for a screen reader, in the band's chips and on the pane's card; the fish line where there is no reason), the link to
+  the water at its end, then the four cells (a label of two lines, its name and "old" then the oxygen's saturation, a
+  figure in a slot of its own in `_value_fit.html`: only the name gives way, whole in its title; the figure never cut,
+  sized to its cell; where it came from and how old, cut with an ellipsis and whole in its title). The pH window is not in the design's Small card: it stays in the markup and on the wall, in the pane and
+  on the Big screen. An empty unit's card says the unit in four cells (status, volume, max density, max biomass:
+  `monitoring/_empty_cells.html`). Big cards on a desk (from 1100 px) are each at the Big template's proportion, as in the
+  pane; Simple and Detailed cards are as tall as the longest of them (rows of one fraction: nothing of a longer card is
+  cut). On a wall the cards are the fitted ones, sized by the slot rule.
+- **The toolbar and the band**: on the desk page the search first, the filters named for a screen reader only (each
+  select says its choice: "No board", "All sites"), the wall's buttons at the end (a wall keeps its own toolbar, the two
+  buttons fixed at the band's end: the page test checks that nothing lies over the band, a state word or the buttons); the band a plate on the desk page with the switch of
+  the cards as a segmented control on the right, the current one bold and underlined, not only tinted.
+- **The Big card's boxes** (dosing, other points, stock) say their names where their place has the room
+  (`render._titled`, from the validator's `fitted_place`).
+
+No safety word or figure is cut or faded: the page test holds every code, state word, figure, saturation, "old", and the
+first reason's figure and bound whole (en, nb, tr at 390, 1440 and 1920 px), the cards of one kind one size, and the wall's
+browser test runs every case again in the new look (`frontend/test/wall.browser.test.ts`, the parts of `manage.py
+layout_pages` under the new look's sheets). What the desk's Small card does NOT show, by the design (owner, 2026-11-24):
+the flip link to the other card, the pH window and its sentences ("The pH window cannot be drawn: ...", "no CO₂ limit"),
+the second and later reasons but for their count ("+N"), and the end of a long name, source line or reason sentence: they
+stay in the markup (so for a screen reader too, but for the flip link and the pH window, which are not displayed), in the
+titles, on the pane's Big card and on the wall.
+
+**A card links its tank's water history** (`templates/monitoring/_water_link.html`, `farm:tank_water`) in both looks, the
+pane's included, when its water section is readable: the page needs the right to read water samples, which the cards do
+not (`card.sections`), so a person who may see the cards but not the water gets no link that would answer 403. The chart
+icon, and "Water history" in words on a full-height card and a card that flows; on the Small card its words, for a screen
+reader, name the unit. Tank › Water in the new look, the unit's history on Water chemistry in the classic look (the address
+redirects there).
+
+Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py` `monitoring_world`: a unit in each
+of the seven states and an old critical one, and a wall board read from 2 m): each card says in the new look what it says
+in the classic one (the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on
+the Small, Simple, Detailed and Big cards and in the pane, in English, Norwegian and Turkish; the link resolves, and is
+absent for a person without the water right. And by `frontend/test/monitoring.pages.ts` (`npm run test:pages`, on the
+pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the product's policy and
+nonce, its polls answered with the real fragments, at 1440, 1920 and 390 px (no CSP violation, no serious axe finding,
+card text at 4.5:1, no sideways scroll, a glyph and a link on every card, nothing safety-relevant cut, one size per mode,
+the rail at its width beside a long strip), each state's edge style, the stale strip, one glyph per state and the classic
+shapes without `glyphs.css`, the hatch in six themes, the pane, the wall at 1920×1080 and 3840×2160 and a board's wall
+read from 2 m, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that
+fails said as "cannot be read".
+
 **Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The
 fragment `cards/?...&after=<token>` computes the **change token** first (`core.audit.revision()`: the newest audit entry and
 how many lie in the five minutes up to it, two indexed queries, read before any data, without the entries about work
@@ -897,8 +966,11 @@ rows of equal cells, chosen by the one **slot rule** (`monitoring/cards/slots.py
 `frontend/wall/slots.ts`, where the screen's size is known; both run `monitoring/tests/slot_vectors.json`): of every grid
 whose cells hold all the cards, the one that gives a card its largest unit; when that unit is under 14 px (the smallest
 text would be under 11 px) the wall turns PAGES rather than shrink the type: the grid with the most cells that can still
-be read, PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
-of its worst card. A card never moves, so a page is always the same cards. Twenty small cards are one page on 3440×1440,
+be read (when none can, ONE card a page at the largest unit a cell gives, never the densest grid: review round 2, B3),
+PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
+of its worst card. A card never moves, so a page is always the same cards. The cells share the room the grid really has
+under the band (`frontend/wall.ts` sets `--room`): a notice of the page above the wall (no alarm worker, no push
+transport) takes some of the screen, and a page still shows its own cards whole, never the top of the next page's. Twenty small cards are one page on 3440×1440,
 5120×1440, 2560×1440, 3840×2160 and 1920×1080 (5 by 4 on the two wide screens, 4 by 5 on 16:9); twenty-four are one
 page on the first four and two pages on 1920×1080 (`monitoring/tests/slot_vectors.json`). The line under each figure
 says where it came from in one word and how old it is ("sensor · 12 s", "sample · 3 h", "calc. · 7 d") at EVERY size
@@ -962,7 +1034,28 @@ board is refused) and one activity-log entry. Tables `monitor_boards` and `monit
 hold is a constraint (the name, the modes, the refresh range, one card per unit and board). A board holds only live units: the
 form offers live units, and a unit that is deleted keeps its row (a configuration, not history), its card hidden by the live join
 and back when the unit is restored; saving the list drops the row. There is no position: cards go in the farm's one order. A
-board is deleted and restored like any record (nothing depends on it). Anyone who may read Monitoring may choose a board in the
+board is deleted and restored like any record (nothing depends on it). Its **Wall screen** tab says which screen the board is shown on (a
+standard screen: 24″, 27″, 32″, 34″ and 49″ monitors, 55″ and 65″ TVs, or another screen with its diagonal typed) and
+from how far it is read (0.5 to 20 m; the owner's presets 1, 2, 3, 5 m in the help) (frontend-redesign CONSENSUS §9). With
+both, a wall of fitted cards never sets its type smaller than can be read from there: a state's word subtends at least
+20 arcmin (FHWA-RD-98-057, ch. 3) and every other text at least 16 (the least character height of ANSI/HFES 100-2007 and
+ISO 9241-303; 15 before review round 2), a character's height the
+text face's cap height (0.67 of its size); the screen's size in px is the browser's own, so the diagonal gives the
+millimetres of a px (the pixel ratio cancels out). That unit (`monitoring/cards/slots.py legible_unit`, the same rule in
+`frontend/wall/slots.ts legibleUnit`, both held to `slot_vectors.json`) is the slot rule's `min_u`, the cells' least
+height and the pane's: the wall turns pages rather than shrink its type, and the pane lies over the cards when a Big card
+beside them could not be read from there. The band's unit is raised the same way (its tally and chips at 20 arcmin), but
+never so far that the band takes more than a sixth of the screen's height (`frontend/wall.ts` bandUnit: the largest unit
+that fits; its tally wraps into rows rather than run off the screen). What it costs, measured from the rule on a Full HD
+screen: a 55″ TV read from 3 m gives a unit of 41.1 px, one Small card a page (twenty cards on twenty pages); from 2 m
+27.4 px, four a page; a 24″ monitor read from 1 m 31.4 px, two a page (the board's distance is how a farm trades cards a
+page against the distance they are read from). A pair at which not even one card a page can be read (a 24″ monitor from
+3 m, a 55″ TV from 5 m) is refused by the board's form (`MonitorBoard.clean`, `slots.reach` on the preset's resolution,
+another screen taken as 16:9: the answer follows the screen's shape, not its px), which says the farthest distance that
+works (1.9 m and 4.4 m there); a pair that leaves one or two cards a page is saved with a warning that says so. A wall
+whose distance cannot be met all the same (a screen of another shape) shows one card a page at the largest unit it can. Without a screen or a distance the wall is as it was
+(the 14 px floor). The constraints hold every rule a row can state (a preset is its own diagonal, another screen has one
+in range, none has none; the distance in range or empty). Anyone who may read Monitoring may choose a board in the
 picker (a board is configuration, not a record); the area Monitoring boards in the role matrix, after Tanks, ponds & cages, is for
 making and changing them. A window's place is remembered per board on each device.
 
@@ -1671,6 +1764,29 @@ without values it shows its defaults.
   follows the form, so a link opens the same view. The server is the one source of every number and of the
   SVG: the browser code (`frontend/poll.ts`, the live form, usable by any GET form) has no chemistry. Without
   the script the form has a Calculate button and the page is drawn again.
+- **The new look** (`?ui=next`, `core.ui.is_next`): the SAME templates, form and live parts, no island and no JSON, drawn
+  as the design console's calculator by the rules under `[data-ui="next"]` in `static/css/components.css` (the calculator
+  section): a values plate (where the values come from as its head, the tabs, a field a row with its value at the right,
+  Defaults and Print report), the charts' row on plates (the server's Deffeyes chart in the middle, its layers as chips
+  under it), the results plate (ammonia and hydrogen sulfide with the judged value as the figure, the values worked out,
+  the recipes across) and the simulator's steps last. Its only additions are the plates' titles "Values" and "Results"
+  (`UI_NEXT`) and wrappers that are no box in the classic look (`.calc-values-plate`, display: contents; `.ui-marks`
+  draws nothing there). The long texts (a card's method notes, the unit's fish limits, the references) stand under
+  closed `<details>` there, never on paper; a field's help follows the field-note rule (below); under 440 px the chart's labels give way to their words (`views.deffeyes_scale`, the rule
+  Tank › Water uses). The printed report takes the look too (`data-ui` on its own page, always on a day theme,
+  `PAPER_THEME`; on paper at the classic report's size, every row's value wrapped inside its column, in both looks). `farm/tests/test_calculator_said.py` holds the new look
+  to the classic one for every case on the page, the live parts and the report (`says_missing` empty), and
+  `farm.tests.test_island_pages` does so for the calculator from the test world's TT-01 and keeps the three pages for
+  `frontend/test/calculator.pages.ts` (`npm run test:pages`: the live update in a browser under the server's policy and
+  the page's own nonce, CSP, axe, 4.5:1, 1440 and 390 px, the report on A4 across).
+- **Field notes** (the rule): a field's help of more than 80 characters is a long reference note (a scale, a
+  conversion, a source: "As a pH meter or kit calibrated with NBS/NIST buffers reads it, …"); a shorter one is a hint
+  ("At most 20 characters") and stays under the field. Where a page asks for notes (`registration/_field.html` with
+  `notes`: today only the calculator in the new look; `crud.is_noted`, `NOTE_LONGER_THAN`), a note is a tooltip: the
+  mouse resting on the field for a second or the control's focus shows it, Esc closes it, an ⓘ button beside the label
+  opens and closes it (a finger has no hover); it wraps at a reading width, is never cut and stays inside the window
+  (`frontend/field-note.ts`, the pattern in `ds.css`). It is the server's help text, in the page and the control's
+  description (`aria-describedby`) whether open or not; without the script it is text under the field.
 - **Where the values come from**: entered here, or a unit or a loop. Choosing one puts in the latest value
   of each measured field of its water, its middle point's (temperature, pH, salinity, alkalinity, TAN,
   dissolved oxygen: `read.owner_water`, each
@@ -3856,7 +3972,12 @@ What works:
   a move ends one binding and starts the next, so a sensor's earlier values stay with the tank they were taken in; a
   whole device moves at once, between sites too, or is taken out of the water: see Portable sensors).
 - **Operations**: Charts (a place and a quantity over a preset or chosen time, drawn by the server; the CSV is exactly
-  the drawn buckets), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
+  the drawn buckets; `sensors:chart_data` gives the same chart as data for the redesigned page behind `?ui=next`:
+  `sensors/chart.py` `data`, exactly what the SVG draws, each manual sample with its source, meter or lab, the fish's
+  limit bands for a person who may read the water, the channel's newest value with its freshness, whether the drawn
+  values come from the live demo's channels ("Simulated values", `sensors/demo.py` `demo_channels`), and with
+  `compare=<place>` and `compare_quantity` a second chart read on exactly the same window; each bucket's sum adds its
+  rows in time order, so the same chart and CSV are the same on every read), Live values (every channel listened to, its last value at its quantity's decimals, the water parameter's
   own, as the water pages say it: `sensors/templatetags/sensors.py` `measured`, also the alarm thresholds and peaks; its
   age, fresh or stale, where it is bound),
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
@@ -4448,7 +4569,7 @@ production people in Production, with the same permission.
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
-## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm recipients `/alarms/recipients/`, Alarm severity rules `/alarms/severity-rules/`, Alarm deadbands `/alarms/deadbands/`)
+## Alarms (Company › Alarms: Alarms `/alarms/`, Alarm snoozes `/alarms/snoozes/`, Alarm recipients `/alarms/recipients/`, Alarm severity rules `/alarms/severity-rules/`, Alarm deadbands `/alarms/deadbands/`)
 
 The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push notifications through the coming mobile app
 (not e-mail: it gets too little attention), and every alarm, every notification and every acknowledgement (who, when,
@@ -4477,7 +4598,10 @@ from which device, how late) is logged. The server side is built; the push trans
   statement, so a subject never has two open alarms (defect 6). A warning is not notified while its critical is open.
 - **The rules are the user's reference data** (owner, alarm plan §7c): per severity the on-delay, the off-delay, the
   escalation time and the delivery attempts (Alarm severity rules, one row each: critical 0 s, 30 s, 5 min, 5; warning 30 s,
-  30 s, 30 min, 5), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
+  30 s, 30 min, 5), the time between two attempts (critical 30 s, warning 120 s; `alarms` 0016), the longest snooze
+  (critical 240 min, warning 720 min, owner decision Q5; `alarms` 0017; bounded at 480 and 1440) and a flood (3 alarms of
+  one kind within 120 s, both severities; `alarms` 0018) with a critical's follow-up time (5 s, at most 8 s; a
+  warning's 0; `alarms` 0021), per parameter the deadband (Alarm deadbands: dissolved oxygen 0.2 mg/L and 2 %, temperature 0.3 °C, pH
   0.05, CO₂ 1 mg/L, TAN 0.05, NH₃-N 0.002, NO₂-N 0.05 mg/L, salinity 0.5 ‰). These are the owner's defaults (§7a),
   seeded once by `alarms` 0002; from then on they are rows edited on their tabs by the alarm admin's rights, bounded by
   database checks, logged, read once per pass (`alarms/rules.py`): a change takes effect on the next pass. The bounds are
@@ -4555,8 +4679,85 @@ from which device, how late) is logged. The server side is built; the push trans
   never escalated.
 - **The outbox**: one notification per alarm, person, channel and level (push only; channels are pluggable). A transport
   per channel is named in `settings.ALARM_TRANSPORTS` (`alarms/transports.py`, an interface with a test double); none is
-  connected, so nothing is sent anywhere, every notification waits, and the pages say so. A failing transport is tried
-  again up to its severity's delivery attempts.
+  connected, so nothing is sent anywhere, every notification waits, and the pages say so. A pass only queues; the
+  worker's sender thread goes through the outbox every tick (`alarms/outbox.py`), outside any pass, transaction or
+  lock, so a transport that is slow or down never delays an alarm: critical first, then the oldest. A round reads the
+  outbox's queue (`alarm_outbox`, `alarms` 0019: the notifications still to be sent, removed once sent, covered or given
+  up), never the whole history. **A critical is never given up until someone has seen it** (the review, F1; N7 of the
+  last recheck): a critical alarm's notification is tried again until it is sent or its alarm is acknowledged, the wait
+  doubling from the severity's retry time up to its escalation time; clearing does not end it (a critical that came and
+  went while the push service failed is told once it answers, "Critical, now cleared"). Once its alarm is acknowledged
+  it has its delivery attempts like a warning's, which are tried their retry time apart and then failed (its alarm's
+  page says so). A critical notification of an unacknowledged alarm (open or cleared) that has failed for longer than
+  the escalation time cannot be delivered: a critical alarm of the alarm system says so ("notifications_undeliverable"; a snoozed alarm's never counts), and the pages' notice and the
+  health check too. **A critical is never behind a round of warnings** (F5): a round ends at `ALARM_WORKER_SEND_ROUND`
+  (5 s), and before a warning's group when a critical was queued since it began; the next round, a tick later, starts
+  with it (a critical that joins the queue during the round, whatever time it is stamped with). A round sends the
+  criticals first, then the summaries below, then the warnings (D8c). Each send gets `send_timeout` seconds (no answer
+  or a raise is a failed attempt). A notification whose own handling raises (its text, its kind, its due check, its
+  group's plan) gets a failed attempt, at most one per its severity's retry time, so it is retried and said
+  undeliverable like any failure; one that went before the error gets none. Each notification goes with its text in the
+  person's language (`outbox.text`). A critical alarm that opened and cleared before it could be sent (the transport
+  down or failing through an oxygen crash or a power cut) is still sent, never dropped (the coordinator's decision of
+  2026-11-24): one message saying it was critical and has cleared, when it opened and when it cleared, through the same
+  flood rules (cleared criticals of one kind go as the first and one follow-up naming each, below). A warning, or a word about a snooze, whose alarm
+  cleared before it was ever tried is given up, its attempt saying so, so a backlog of cleared warnings never goes out
+  when a transport is first connected. They are given up after the round's sending, never before it, a chunk a
+  round (`outbox.GIVE_UP_CHUNK`, 100, each chunk one transaction): 20,000 of them never delay a critical, and drain
+  over a few hundred rounds, a few minutes at a round a tick. So is a word about a snooze whose alarm has cleared since
+  (it would no longer be true). A round sends the criticals of open, unacknowledged alarms first, then the other
+  criticals, then the rest.
+  **Connecting a transport** (the go-live runbook's step): criticals that cleared more than 24 h before they could
+  first be sent (`outbox.SUMMARY_AFTER`: a channel's first connection, a long outage) are not told one by one: each
+  person gets ONE summary, "N critical alarms happened and cleared while no message could be sent; see the alarm log",
+  with the first opening and the last clearing, and each one's own notification is covered by it (grouped, said why).
+  Open criticals and those cleared within 24 h go out as usual. Before connecting the first transport, look at the
+  Alarms page: what is open there will be told at once; a channel without a transport is left out of a round in the database. One notification that cannot be
+  handled is logged and left for the next round, never stopping the others. The attempt, the queue's entry and the log
+  are written in one transaction, and a round drops an entry that already went. Never lost: a restart sends
+  what was not sent; a sender that died after the transport took one and before its attempt was written sends it again
+  (at least once; the notification's id is the push service's collapse key), and a notification is never written sent
+  twice (a unique constraint). Two senders never send one at once (a claim lock, then a second look). A round that fails
+  (the outbox itself unreadable) is the alarm system's step "send": a critical alarm. A second channel (e-mail, SMS: an
+  owner decision) joins as a `Channel` value and a transport in `ALARM_TRANSPORTS`; its notifications are queued,
+  retried, grouped and given up by the same rules.
+- **Snooze** (ISA-18.2 shelving; owner decision Q5): who holds Alarm snoozes: Create snoozes an open alarm from its page
+  for 1 to its severity's longest snooze, saying why; one at a time, all the snoozes of one alarm together at most that
+  longest (so a snooze is never renewed past it), never an alarm about the alarm system's own health (`alarms/health.py`:
+  not checked for a while, a step failing, notifications undeliverable, rules incomplete, and the sensors that cannot
+  be read, the farm being blind then; its alarms about one place, an oxygen with no fresh value, a unit or a value that
+  cannot be evaluated, are snoozed like any); ended early from the
+  same page. The people notified of the alarm are told who snoozed it, until when and why. While it lasts the alarm is
+  still raised, kept, listed and cleared; nobody new is notified, what was queued waits, and it is not escalated. Once
+  it ends (its time out, also while the worker was down, or ended early) notification goes on, the escalation time
+  counts again from the end, and, the alarm still open and unacknowledged, the people of its level are told again (once
+  per snooze; the coordinator's call on the review, F9). Snoozes are append-only (`alarm_shelves`, `alarm_shelve_ends`), logged
+  (critical for a critical alarm) and listed on Alarm snoozes; the Alarms list says "Snoozed until".
+- **Alarm floods** (ISA-18.2; the owner's burst requirement; `alarms/floods.py`): the kind of an alarm is its site, its
+  severity and what it is about (a water quantity, the oxygen in mg/L and % one; a sensor rule; a check of the alarm
+  system, each failed step its own). **Warnings**: in a round of the outbox, the due warnings of one person, channel and
+  kind go out as one flood message when, with the ones of that kind sent to them within the flood window, they reach
+  the flood count; the ones within the window after a flood message of open alarms are covered by it (outcome
+  "grouped", never sent on their own); a flood message that said its alarms had cleared covers nothing. **Criticals:
+  batched, never covered** (the coordinator's bar on the last recheck: no known way to drop or delay an open or newly
+  cleared critical on a connected transport). The first critical of a kind for a person goes at once, on its own. The
+  next ones of that kind for that person are collected while a message of the kind went to them less than the critical
+  rule's "Follow-up after" ago (5 s by default; at most 8 s, so a second critical still reaches the person within the
+  owner's 10 s from its value; 0 sends each at once), then go as ONE follow-up message, "N more
+  critical alarms of one kind since ..., M open now: ...", naming each (its summary names the unit, a cleared one
+  "(cleared ...)"), the open ones first; one alone goes with its own text. **Every text fits its transport** (REVIEW4,
+  F-A): each transport declares `max_bytes`, its service's payload limit in UTF-8 bytes (a Norwegian or Turkish letter
+  is two; a real push transport declares about 3,000 of its 4,096, the envelope being in it too; an SMS 160), and
+  `outbox.text` builds to it: a follow-up names what fits, whole, then "and K more, see the alarm list" (or only
+  "see the alarm list"), always with how many are open now; any other text too long is cut between two words and
+  marked "…". `manage.py check --deploy` (CI, a release) refuses a configured transport that cannot be imported, is
+  not a `Transport` or declares no whole `max_bytes` of at least 1 (`alarms/checks.py`, alarms.E001-E003); it is a
+  deployment check only, so a wrong setting never stops `run_alarm_worker`. One that reaches a round all the same
+  sends nothing: each attempt fails, saying so. Ones due in the same round as the first go with it, the rest as
+  the follow-up. So every critical reaches the person by name within the follow-up time of being queued, and a person
+  gets at most one message of a kind in that time. For criticals the flood count and window only mark a flood on the Alarms page. Grouping
+  is the outbox's only: every alarm is raised in its own pass, kept, acknowledged and escalated on its own. The Alarms
+  page names a flood of open alarms above the list; an alarm's history says "in a flood message of N alarms".
 - **Acknowledgement**: who, when, from which device and app ('console' from these pages, the app's name later), the
   notification answered; once per person; the delay is computed from the alarm's opening. Who holds Alarms: Edit may
   acknowledge, and so may anyone the alarm was sent to. The sensors' Alarm events page acknowledges through the same
@@ -4564,12 +4765,75 @@ from which device, how late) is logged. The server side is built; the push trans
 - **Append-only**: alarms, clearances, notifications, delivery attempts, escalations and acknowledgements are never changed
   or deleted (a database trigger, as for the activity log), and each is written with its activity-log entry (critical for
   a critical alarm). The Alarms page lists them, open first; an alarm's page shows its whole history in time order.
-- **The loop**: `manage.py run_alarms [--loop SECONDS]` (`alarms/engine.py`) checks the sensor rules and the water limits,
-  queues, escalates and hands what is queued to the connected transports. Each step (sensor rules, sensor events, water,
-  device clocks, notify, send, and the supervision last) runs in its own transaction under one advisory lock, so two loops never queue or send twice and a failing
-  step rolls back alone, logged and said in the pass's summary; a failed pass is logged and the loop goes on (defect 5).
-  The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a burst of alarms costs
-  the queries one costs (defect 7). Deployment runs it instead of `check_sensors` (the sensors' check alone).
+  Above them it names the units that need a look on the Monitoring screen, from the new look's strip's own reading
+  (`alarms.views.units_note`, README › The new look), with how many of them have critical or warning water and no open
+  water alarm at their own points (`Attention.unalarmed`); nothing is said of the rungs the engine never raises an alarm
+  for (blind, no limit, over capacity, weigh now), and nothing is promised.
+- **The pass** (`alarms/engine.py`) checks the sensor rules and the water limits, queues and escalates. Each step
+  (sensor rules, sensor events, water, device clocks, notify, and the supervision last) runs in its own transaction under
+  one advisory lock, so two passes never queue twice and a failing step rolls back alone, logged and said in the pass's
+  summary (defect 5). The writes are set-based and the routing is read once per pass (`alarms/routing.py` `Router`): a
+  burst of alarms costs the queries one costs (defect 7). `manage.py run_alarms` runs one pass and one round through the
+  outbox, for an operator.
+- **The alarm worker** (`manage.py run_alarm_worker`, `alarms/worker.py`; the compose service `alarms`, profile `alarms`:
+  `docker compose --profile alarms up -d`) keeps the alarms checked, a pass at a time, for as long as it runs:
+  - **within 10 s of a value's commit**: every tick (`ALARM_WORKER_TICK`, 1 s) it looks at what an alarm reads
+    (`alarms/changes.py`: the channel states' transaction ids, which every ingest commit moves, and the activity log's
+    revision, which every record written through the platform moves) and passes at once when it moved; at least every
+    sweep (`ALARM_WORKER_SWEEP`, 15 s) for what time alone moves (a value going stale, the delays, escalation). No
+    LISTEN/NOTIFY: a stalled listener makes the ingest's commits fail (live-arch ROUND2-F), and a look costs a few
+    milliseconds. The alarms never read a precomputed water store (live-arch stage 3);
+  - **one active per database**: a session advisory lock; a second worker waits as a hot standby and takes over within a
+    tick of the first one's session ending (its session's TCP keepalives end a dead worker's session within two thirds
+    of `stale_after`); only the active one sends. Each tick it checks that its connection is still the session that
+    holds the lock (`pg_backend_pid()`): a connection opened again after an error inside a pass is a new session, and
+    the lock is taken again on it with the session's settings (F4). A holder that is wedged (its process alive, its
+    session idle and never ending) is evicted by hand: `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE
+    application_name = 'alarm-worker' AND datname = current_database();` (the standby takes over within a tick). After
+    a network cut the database holds the lost worker's lock until its keepalives give the peer up: about 30 s with the
+    default `stale_after` of 45 s (15 s idle, then three probes 5 s apart), so the standby takes over before the pages
+    call the alarms unchecked;
+  - **its row** (`alarm_worker_status`, `alarms` 0015): running or stopped, its last pass and last good pass on the
+    database's clock, how long the pass took, the failed steps, the outbox's waiting notifications and the oldest;
+  - **what it survives and when it ends itself**: the database away, tried again after the tick doubled up to
+    `ALARM_WORKER_BACKOFF_MAX`, and exit 1 after `ALARM_WORKER_DB_DOWN_EXIT` (60 s); passes failing whole, exit 1 after
+    `ALARM_WORKER_MAX_FAILURES` (5); a pass running, or its loop not coming round, for longer than
+    `ALARM_WORKER_HANG_EXIT` (120 s), its watchdog exits 1 (the log flushed, never shut down); its statements bounded
+    (`statement_timeout`, `lock_timeout`); every connection of the platform gives up a connect after `DB_CONNECT_TIMEOUT`
+    (10 s) and finds a dead peer by TCP keepalives (`DB_KEEPALIVES_IDLE`, 30 s); its threads are waited for at most a
+    send's time when it stops. Docker starts it again (`restart: unless-stopped`); Docker
+    does not restart an unhealthy container, which is why the worker ends itself. SIGTERM: the pass under way finishes,
+    the row says stopped, exit 0. Its intervals are counted on the monotonic clock: a server clock that jumps neither
+    stops nor hurries them;
+  - its timings are the deployment's (`settings.ALARM_WORKER`, each from the environment, refused at start when they
+    make no sense), not the farm's rules; the Alarms page shows them read-only beside the worker's figures (state, last
+    pass and how long it took, last round through the outbox, notifications waiting and the oldest, criticals that
+    cannot be delivered; the coordinator's call on the review: no page edits them);
+  - **landing**: the worker is a compose service of its own, started with `docker compose --profile alarms up -d` (a
+    plain `docker compose up -d` starts only the database); without it the pages say the alarms are NOT being checked.
+- **The dead man: the farm is told when the worker stops** (owner decision of 2026-11-15, item H; `alarms/watch.py`, one
+  query). Every Alarms page (the alarms, snoozes, recipients, severity rules, deadbands, the sensors' alarm rules and
+  events), the water page, the monitoring wall and the Sensors overview say "The alarms are NOT being checked since
+  hh:mm" (no worker has ever run, it stopped, no pass for longer than its `stale_after` of 45 s, or its steps fail), "The
+  alarm notifications are NOT being sent" (its sender silent that long) or "N critical notifications cannot be
+  delivered", and nothing while all is well; the water page says when they were last checked; the wall and the Sensors
+  overview also say that nothing is sent while no transport is connected. On the wall, left open for hours, the notice
+  is asked for again every 15 s (`alarms:alarm_watch_notice`, `frontend/poll.ts`), so a worker that stops is said there
+  without a reload. `manage.py
+  alarm_worker_health` (the compose healthcheck) says the same with its exit code. A worker taking over after such a
+  stretch raises a critical alarm of the alarm system naming it ("The alarms were not checked from … to …"), notified
+  like any other and cleared after its off-delay; it is kept for the next pass until a supervision step passes (F7). Off the server (go-live): with `ALARM_DEADMAN_URL` (https) the worker
+  asks that address after each good pass, at most every `ALARM_DEADMAN_EVERY` seconds, on a thread a hang cannot hold,
+  and only while all it vouches for holds: the alarms checked and sent, no critical undeliverable, and the ingest alive
+  where there is one (F3, F11);
+  a heartbeat service on another network calls the on-call phone when the asks stop (owner decision Q6: a commercial
+  one; none is chosen yet, so it is off).
+- **The server is not a safety layer** (alarm plan §5). The platform's alarms tell people; they do not keep fish alive.
+  A server, a network link, a database or a phone can fail silently and at the worst moment, and push delivery has no
+  guaranteed delay. Every tank or system with live fish must have a local, hard-wired low-oxygen alarm (a DO controller
+  or PLC with its own setpoint, a siren or light on site, a relay that starts the oxygen backup) that works with the
+  server, the network and the IT power all down. The 10 s is from a value's commit to an open alarm on the server; it
+  says nothing about when a person is reached.
 
 ## Platform settings (Company › Administration, `/administration/platform-settings/`)
 
@@ -4620,7 +4884,7 @@ users; everyone else gets exactly what their roles allow. The Oversee column (Ex
   (read the page, a report and its exports; create = start a report, a notice or a correction; edit = fill in a draft and
   record it as filed; delete = discard a draft), Messages (read =
   use Messages, create = also create channels), Library and Knowledge entries (read, create, edit, delete; Edit
-  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm recipients (read, create, edit, delete), Alarm severity rules (read, edit), Alarm deadbands (read, create, edit, delete),
+  also reviews an entry), Employees (read, create, edit, All production and Everyone), Departments (the office departments: read, create, edit, delete), Shift schedule (and Crew), Attendance (read = Today & attendance and the Attendance page, create = enter presence by hand, edit = correct, delete = void), Leave requests (read, create, edit = also approves, rejects and cancels), Leave types, Shifts and Holidays (read, create, edit, delete; on the schedule Edit changes a plan and Delete clears a cell) and Scheduling settings (read, edit), Alarms (read, edit = acknowledge), Alarm snoozes (read, create = snooze an alarm and end a snooze), Alarm recipients (read, create, edit, delete), Alarm severity rules (read, edit), Alarm deadbands (read, create, edit, delete),
   Platform settings (read, edit: the platform owner's right), Opening balances (read; registering one is the platform owner's
   right) and Activity log (read).
   A new tab appears in the matrix by
@@ -5459,7 +5723,7 @@ validation and every chemistry judgement; the island draws the finished values i
   `./ui/SeriesChart.js`: an interactive series, gaps never bridged, colours from the chart roles). They draw the design system's classes (`static/css/ds.css`):
   a server-rendered page writes the same classes, so both look the same from one rule set. React Aria where a control
   needs behaviour (buttons, tabs); native `<select>`, `<dialog>` otherwise (no popover that would lock the scroll).
-  Icons come from `templates/icons/` (`scripts/icons.mjs` builds `ui/icon-shapes.ts`; `npm test` fails when it is stale).
+  Icons come from `templates/icons/` (`scripts/icons.mjs` builds `ui/icon-shapes.ts`, and `static/css/glyphs.css`: each icon as a CSS mask of the new look, `--glyph-<name>`, for a glyph drawn without markup; `npm test` fails when either is stale).
 - **Build.** `npm run build` runs `vite build` (`vite.config.mjs`, `scripts/islands.mjs`) into `static/islands/` (not
   committed): hashed names, no source maps, no inlined assets, no module-preload polyfill. There is **no dev server and
   no hot reload**: its injected scripts and styles would break the Content-Security-Policy. With no island yet the
@@ -5469,8 +5733,9 @@ validation and every chemistry judgement; the island draws the finished values i
   module, its chunks as `modulepreload` and every stylesheet they bring (at any depth), read from the build's manifest,
   `static/islands/manifest.json` (no dot-folder, so `collectstatic` copies it). **In production** it must be beside the
   islands it names: `STATIC_ROOT/islands/manifest.json` after `collectstatic` (read first when it is there), else the
-  build's own; `manage.py check --deploy` fails (core.E007) when it is missing or cannot be read, and the plain check
-  warns (core.W001). `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
+  build's own; `manage.py check --deploy` fails (core.E007) when it or an entry script of `static/js` is missing or
+  cannot be read, and the plain check warns (core.W001); both look where the server serves them, STATIC_ROOT first
+  (`assets.built`), so a server that serves STATIC_ROOT only passes with what it has. `settings.ISLANDS_MANIFEST` points elsewhere (the tests use `core/testdata/islands-manifest.json`). An unknown island
   raises; a missing build is core.W001. Props carry finished, translated values only; a form posts back to Django
   (`ServerForm` with the CSRF token from the props), whose errors come back as props and land on the fields.
 - **Rules** (`npm run check:ds`): an island writes no colour, no `style=` or style object, no markup string
@@ -5485,7 +5750,20 @@ validation and every chemistry judgement; the island draws the finished values i
   `frontend/test/page.browser.test.ts` loads a whole server-printed page of the new look (`frontend/test/pages/shell-next.html`,
   `manage.py layout_pages`: the shell, its scripts, the strip and an island) under the server's own policy and nonce;
   `frontend/test/classic.browser.test.ts` holds the classic look as it was. The browser tests read the policy from
-  `config/settings.py` (`frontend/test/csp.ts`). `core/tests_islands.py` holds the tag and the build checks.
+  `config/settings.py` (`frontend/test/csp.ts`). `core/tests_islands.py`
+  holds the tag and the build checks.
+- **Real pages in a browser.** An island page's props are made in the TEST database, through its real view, by a Django
+  test (`core/island_props.py`: `render_island` asks the view in the new look and the language given, `keep` writes the
+  props to `.build/island-props/`, never committed: the repository is public, so nothing recorded from a real database
+  is kept). `farm/tests/test_island_pages.py` makes those of Tank › Water and Sensors › Charts from THE test world
+  (`core/test_world.py`, the one builder, the clock at its `MOMENT`: TT-01's probe with an
+  outage and a pH silent for two hours, the channels' state as the ingest writes it, samples, limits, an alarm, a harvest,
+  a treatment and a feeding, the fish's NH₃-N and CO₂ limits, each part a function of its own);
+  `monitoring/tests/test_next_pages.py` keeps the monitoring pages the same way (`.build/monitor-pages`, Operations › Monitoring above);
+  `npm run test:pages` (`frontend/test/*.pages.ts`) then mounts the built islands on them under the product's policy
+  (CSP, axe, 4.5:1, no sideways scroll at 1440 and 390 px). CI runs it in the Django job right after the suite (a run
+  with labels makes the props too) and keeps its screenshots as the artifact `island-pages-shots`; missing props fail
+  it, never skip it.
 - **Notices.** `npm run build` writes `static/islands/THIRD_PARTY_NOTICES.txt` beside the bundles: the licence text of every
   package they may ship (package-lock.json, not dev), served with them.
 
@@ -5504,20 +5782,266 @@ The status strip: what needs a look, the people on site (`hr.read.muster`) and t
 see it.
 - **What needs a look** is `alarms.read.attention(now=None, site=None)`, with `attention_all()` (the farm and every site from
   one reading, for a page that shows both) and `attention_by_site()`: the open alarms and every
-  stocked unit on the monitoring cards' own ladder, rungs 1 to 4 (`monitoring.read.water_rungs`, which `_ladder` calls
-  too): critical, warning, blind (an old or missing temperature or oxygen, no point at all, live values not read),
-  unjudged (no limit for the fish). The strip says every count, none hidden behind another ("1 open alarm · 3 units
-  critical · 2 units with no recent data"), and "No open alarms" only when nothing is open and every stocked unit is OK
-  or a note. A unit whose water cannot be read is read on its own, as the engine reads it, and counted ("1 unit cannot be
-  read"); the others still are. A farm-wide alarm (on no site) counts on every site, marked `farm_wide`. The reading is
-  the same for every viewer and kept 15 s (`settings.ATTENTION_CACHE_SECONDS`): a farm's open pages ask the database once
-  in that time. One reader for the strip, an overview's open-alarms figure and a site's count.
+  stocked unit on the monitoring cards' own ladder, rungs 1 to 4, by the one rule the cards apply
+  (`monitoring.read.upper_state` over `water_rungs`, which `_ladder` calls too): critical, warning (from the water, the
+  stock over capacity, or an estimate that says weigh now), blind (an old or missing temperature or oxygen, no point at
+  all, live values not read), unjudged (no limit for the fish). The strip and the cards never disagree: a card that says
+  Over capacity or Weigh now is a unit with a warning on the strip too. The strip says every count, none hidden behind
+  another ("1 open alarm · 3 units critical · 2 units with no recent data"; the words are `core.ui.attention_words`, the
+  one wording of an Attention, with `core.ui.attention_said` its text-only form for the Overview), and "No open alarms" only when nothing is open and every stocked unit is OK or a note. A
+  unit whose water or feeding cannot be read is read on its own, as the engine reads it, and a unit whose state cannot be
+  worked out is caught on its own: either is counted ("1 unit cannot be read"; its water critical still says critical),
+  the others still are, and the strip never answers 500 for one unit. A farm-wide alarm (on no site) counts on every
+  site, marked `farm_wide`. The reading is the same for every viewer and kept 15 s (`settings.ATTENTION_CACHE_SECONDS`):
+  a farm's open pages ask the database once in that time. So a value recorded just after a reading shows on the strip
+  after up to 15 s plus the poll's 30 s (the engine's own alarm has an on-delay of the same order). One reader for the
+  strip, an overview's open-alarms figure and a site's count.
+- **Where it leads**: each count to the page that lists what it counts. The open alarms to the Alarms page; the units to
+  Operations › Monitoring (every stocked unit, the ones that need a look in its band first; it has no filter by state),
+  as plain words for a person who may not open Monitoring. With both, one link each in the same item ("1 open alarm" ·
+  "1 unit critical"). The Alarms page says, from the same reading, "On the Monitoring screen: 1 unit critical." and, for the units whose
+  water is critical or past a warning (what the engine raises a water alarm for) with no open water alarm at their own
+  points, "1 unit with critical or warning water has no open alarm." (never a promise that one will open; nothing for
+  blind, no limit, over capacity or weigh now), with a link to Monitoring (`alarms.views.units_note`), so a red strip
+  never leads to an empty
+  page (on a server where the alarm engine is not running, the cards' state is there before any alarm).
 - **Polled whole** (`core:ui_strip`, every 30 s): the clock and the muster count never stand still beside a live alarm
   count. The page draws it with "Reading the alarms…" (the reader looks at every unit's water, so the page never waits
   for it). It is asked for only while it is drawn (`data-poll-if-shown`: it is hidden under 1100 px), and is marked "Not
   updated: the alarms cannot be read" after ONE failed answer (`data-poll-stale-after="1"`), never an old "No open alarms"
   unmarked. A rise of its alarms is said in a live region beside it (`frontend/strip.ts`; a critical one assertively), never
-  the item every 30 s (`frontend/test/strip.browser.test.ts`).
+  the item every 30 s (`frontend/test/strip.browser.test.ts`). In the top bar it gives way before the language switch and the person's menu: its alarms item wraps onto a
+  second line, never cut and never pushing them past the window (found by the monitoring page test at 1440 px).
+
+Pages drawn by an island in the new look (the classic page is unchanged behind `?ui=classic`):
+
+- **Company › Overview** (`/`, `templates/home_next.html`, island `company`, `frontend/islands/pages/Company.tsx`): the
+  design's board. `config/company.py` reads each block by its area's own function (stock from the ledger, water from the
+  Water page's own rows, alarms, the office board and muster, reports due, unread messages, feed on hand and cover, the
+  latest log and knowledge entries), split per site from the same rows; `config/company_props.py` words it in the
+  request's language. A block is left out for a person who may not read its area. The water chip per site says the
+  sampling points' worst judgement (critical, warning, OK, or "Not measured"). The Open alarms tile and each site's
+  Open alarms are the status strip's one reader, the farm and its sites from one reading of the water
+  (`alarms.read.attention_all`): the figure counts open alarms (a site's holds the farm-wide ones too, and says how many
+  of them are for the whole farm); the line under it counts stocked units on the monitoring cards' ladder, in the strip's
+  words ("2 units critical", "1 unit with no recent data", "1 unit with no limit", "1 unit cannot be read"), so a
+  critical unit shows before its alarm is raised (one wording, `core.ui.attention_said`, the strip's and the Overview's). The Open alarms plate says "No alarm is open." only when nothing needs a look (`Attention.quiet`); else it says the units' line. A site's water chip says a value of a sampling point, never a count, and never "OK" while the site's units are flagged: then it says their line. A page load reads the shared, cached reading the strip reads. Held
+  to the classic page
+  by `core.pagesays` in three languages (`farm/tests/test_company_overview.py`); its island is checked in a browser in
+  every theme and language for CSP, axe and contrast (`frontend/test/company.browser.test.ts`).
+- **The create, edit and delete page of every tab on the shared `crud/form.html`** (`core.crud.FormView.page`, `DeleteView`; `templates/crud/form_next.html`,
+  `confirm_delete_next.html`; islands `record-form` and `confirm-delete`, `frontend/islands/pages/RecordForm.tsx` and
+  `ConfirmDelete.tsx`): the same view, form and address; the island draws `core.formpayload`'s form with the library's
+  form components (Field.tsx and FormParts.tsx: text, number, date and moment boxes tidied by `frontend/date-input.ts`,
+  selects that follow another field and keep their groups' headings and switched-off options, box groups, radios, a
+  single box, files with the stored one, the role matrix, link lists, the handling acknowledgement), the required fields
+  unmarked and the
+  others marked "optional", the server's errors on their fields and the tab that holds them open, a submit busy until
+  the answer, the History tab and the delete link; the delete confirmation says the delete plan in the old page's words.
+  `core/formprops.py` decides which forms the island draws (`drawable`: the shared crud/form.html or a template of its
+  own whose panels the tab words, no question asked before a save but the withdrawal guard's, no context of the page's
+  own the island does not draw, and every widget kind drawn, the rows' too; an unknown widget or several hidden values
+  in one field keep the classic page, never an error); a request for a dialog keeps the classic page.
+  **A tab with a form template of its own** (a site's and a supplier's contacts, a feeder's calibrations, a feed's
+  suitability, a medicine's withdrawal, a storage location's reorder levels, a board's cards, a channel's calibrations
+  and freshness, a task's and a recurring task's checklist, a device's channels and placement, a credential's Replace the
+  secret, a knowledge entry's review, a draft report's answer lists, a feeding protocol's table, an experiment's design,
+  places and team) words what its template adds in `Resource.next_panels` (`core/formpanels.py`, the
+  template's own msgids; a list's words are its `RowList`'s, `RowList.words`, the one source both looks read: the classic
+  templates get them as `row_words`, and `scripts/classic_snapshot.py` shows the classic pages byte-identical before and
+  after such a change; a panel of its own reads its app's `words.py` (experiments, farm, sensors, knowledge, tasks), which
+  the classic templates read through the app's words tag; every list of rows is the library's `RowGrid`): a panel is a tab of its own before History, or more on one
+  of the record's tabs after the record's form (a site's contacts on Contact); its blocks are help, notices, read-only
+  tables (`core.listprops` cells), a started checklist, one-button forms with their hidden fields, links, forms of their
+  own saved as a whole (`formpanels.form`: fields, formsets as tables with a heading row and rows added from the empty
+  form, buttons that say which was pressed, a field that changes the grid posting a draft), and lists
+  saved apart (`core.crud.RowList`: its own form to its own address, the record's version with it, the formset's rows
+  named by a heading row, a row added from the empty form taking the focus, one primary contact at a time, a refused
+  list opening its tab with its errors). The record's own form and Save stand with the record's tabs only. The
+  withdrawal guard's question (`core.formpanels.question`: its warnings and the box whose value is their fingerprint, or
+  why a second person must approve) is drawn above the record's tabs on a refused save (`question_template`: a feed, a
+  species, a unit, a sampling point, the platform settings) and above a medicine's withdrawal list. The card designer
+  stays classic (the monitoring branch's). A delete the plan blocks keeps its button off (`ServerForm` switches on only what it
+  switched off). Held: the props say
+  what the classic page says (`core/tests_formprops.py`, three languages); every field of every tab's form, new, refused
+  and editing a record, its row lists' rows and the handling acknowledgement, posts what the old page posts
+  (`frontend/islands/pages/RecordForm.test.tsx` against `frontend/test/pages/form-oracle.json`); the tabs, focus, busy
+  state, CSP and axe in a browser (`frontend/test/recordform.browser.test.ts`). A help built with links travels as its
+  words and its links to the application's own pages (`segments`, never markup); a stored file links to its own
+  permission-checked view (a widget's `current_url`); a link is the application's own only as a plain path
+  (`core.formpayload.own_path`: no scheme, host, backslash or control character). Every drawn tab, new and editing a
+  record of the test world, is held to its classic page (`core/tests_formprops.py`, EveryDrawableTabTests); every tab with
+  a template of its own, new, editing and with each list refused, in three languages; a Python model of what the island
+  posts (the props' names and values) saves each list, the feeding table and the design, and a draft saves nothing; the
+  guard's question on every tab that may ask it, and going past it saves a feed and a medicine's withdrawal
+  (`core/tests_formpanels.py`). In a real browser (`frontend/test/customforms.browser.test.ts`), every such page in three
+  languages at 1440 and 390, CSP and axe on every tab; what the browser itself posts: a list's own form (its rows,
+  management form, version, nothing of the record's), a one-button form, the experiment's Randomise, Save places and Add
+  factor (the pressed button's name and value: `ServerForm` sends a copy, as a switched-off button is not sent,
+  `frontend/test/serverform.browser.test.ts`), a draft refresh's marker, gone after a return from history; a row added,
+  one primary contact. The browser
+  tests run on props recorded from the test world; the Python tests (`unsaid`) are what link those props to the real
+  pages. In CI (CI=1 or CI=true) a missing browser fails the browser tests instead of skipping them.
+- **Every tab's list page** (`core.crud.ListView`; `templates/crud/list_next.html`, island `list-page`,
+  `frontend/islands/ui/ListPage.tsx`, built once for every list): the same view reads the same rows; `core/listprops.py`
+  words them: the search and the filters as one GET form (the server reads the address and is the only source of what is
+  listed; a view or tab in the address is kept), the link tabs of the list's views with their counts, notices, the table
+  (a cell's text, its link, sub-lines, chips) with each row's actions (a link, or a small POST with the page's CSRF
+  token), the empty state (no records yet, or none matching with the way back), the pager keeping the search and the
+  filters. Every word is the classic page's msgid. A tab opts in with `Resource.list_rows` (its columns and rows, built
+  with `core.listprops` helpers; `listprops.title` and `edit_delete` give the usual name link and Edit and Delete) and
+  `list_filters` (selects and day boxes from the values `filter_list` returns); a tab without `list_rows` keeps its
+  classic list in the new look. A row's title and its actions open the record's own page (the record form island), never
+  the classic dialog. Drawn now: the HR lists (Team, Departments, Attendance, Leave requests, Shifts, Holidays, Leave
+  types), under both mounts; Production's Recurring tasks (the Tasks page's views as its link tabs), Questions for the
+  authority and Experiments (its three views; the rows are the ones the list view read, so an experiment the classic
+  list does not show is not shown, and no field of it the classic list leaves out). Held: `hr/tests/test_list_next.py` (each list against its classic page on the test world in
+  three languages; the search, the filters and the pager are the address's); `frontend/islands/ui/ui.test.tsx` (the
+  markup); `frontend/test/listpage.browser.test.ts` (the GET form sends what the server reads; CSP and axe in every theme
+  at 1440 and 390) and `listpages.browser.test.ts` (every recorded list in three languages at both widths).
+- **HR's own pages** (behind `?ui=next`; the classic pages stay as they are). Today & attendance, Team overview and
+  Scheduling settings are drawn by the server with the design system's classes (`hr/today_next.html`,
+  `_board_next.html`, `overview_next.html`, `settings_next.html`; a tab whose list is not a table names its page in
+  `Resource.list_template_next`), so the one poll (`frontend/poll.ts`) draws Today's board again in the look the page
+  is in. The people planned today are a stacked bar of the board's own tiles (`core/stack.py`, `templates/ui/_stack.html`
+  and the library's `StackedBar` draw the same bar: an SVG whose viewBox is the whole, no style attribute). The
+  Organisation chart is the island `org-chart` with the library's `OrgTree` (nested lists in a named, scrolling frame;
+  the people behind a native disclosure). The Shift schedule is the island `roster` with the library's `RosterGrid`
+  (`Resource.list_next_props`): the arrow keys, Home and End move between the cells' controls; the paint works by
+  keyboard (toggle buttons choose the paint and select the cells) and posts to the same batch route with the CSRF
+  token, which plans all of them or none. A plan's link and "Plan this day" open the record's own page. They follow the design (Company Panel v2): a tile grid of one tile size (`data-fixed`: a secondary line too long for its
+  tile ends in an ellipsis and keeps its whole text in its title, never a figure or a state; six to a row on a wide screen,
+  two on a phone, four for the scheduling limits); Today's bar in the design's tones (here now in ink, not in yet dashed,
+  absent in the warning colour, on leave light) with each part's figure before its words; a week's Previous, range, Next
+  and Print in the page head; each shift's code in its own tone (`Shift.tone`, the tokens --tone-1..8); the roster's days
+  as equal columns and a finding on one line in its cell (the whole sentence in its title); the organisation chart's
+  children as a wrapping grid of boxes of one size. Held:
+  `hr/tests/test_today_next.py` (each page against its classic page on the test world, three languages, both mounts;
+  the paint's post), `frontend/islands/ui/ui.test.tsx`, `frontend/test/roster.browser.test.ts` (keyboard, paint, CSP and
+  axe in every theme at 1440 and 390) and the gallery's browser test.
+- **Production pages drawn by the server in the new look** (no island: the classic page's own context, the classic
+  view's reads, drawn with the design system's classes in a template of their own beside the classic one): Operations ›
+  Tasks (`TaskResource.list_template_next`, `templates/tasks/task_list_next.html`: its views with their counts, the
+  filters as one GET form, the overdue count, the table, and the drawer of the task picked as a plate beside it, its
+  buttons the classic forms posted to the task's own addresses), Operations › Storage (`inventory.views.storage`,
+  `templates/inventory/storage_next.html`: Overview, Stock, Movements and Counts, every warning of the classic page),
+  Regulatory reports (`ReportResource.list_template_next`, `templates/reports/report_list_next.html`: all eleven kinds,
+  where each stands, the reports and notices due, what the records no longer give, closed without filing, not set up)
+  and Messages (`messaging.views`, `templates/messaging/inbox_next.html`: the conversations and the open one as two
+  plates around the classic fragments the poll renders again; the open conversation's list is bounded in its plate, so it
+  opens at its newest message; on a phone one plate shows, as on the classic page). What opened a dialog on the classic
+  page (an action, an edit, a delete, New message, Members, Leave channel, a read page's Edit and Delete) opens its own
+  page; still classic, outside this batch: an experiment's read and edit pages (Start, Release, Replace, Copy) and Feeding records. Urgent
+  and high priority are marked as chips, as the classic page marks them in colour. Held: `core/tests_panel_next.py` (each
+  page, its views, tabs, kinds and the drawer, against the classic page on the test world in three languages; the
+  Experiments list's rows say nothing the classic list does not; no style attribute, no dialog link, in the seven pages
+  and in every page they open) and `frontend/test/panelpages.browser.test.ts` (the server's answers recorded from the
+  test world, `frontend/test/pages/panel/`: CSP, axe, no page-wide scroll, the rail's full width, a 60-message
+  conversation opening at its end; three languages, 1440 and 390).
+- **The Sensors pages** (Charts aside): every Sensors tab's list on the shared list page (Connections, Payload formats,
+  Devices, Channels, Credentials, Bindings, Alarm rules; their rows in `sensors/lists.py`, each tab's `list_rows`), and
+  Live values, Dead letters and Alarm events on the same island, their props made by `sensors/pages.py` from the rows
+  their own views read (the same page and filters as the classic page; the tabs' pager wording). A device marked
+  simulated says "Simulated" (the design's mark; its values are stored marked and used nowhere). Live values is one table
+  per device (the list page's `groups`, `listprops.group`): its head the device's code and name, Simulated, its site and
+  its number of channels; a channel's line is its "#number". A stale live value keeps
+  its "Stale" chip and its row the warning edge, never "Fresh". Resolve (a dead letter) and Acknowledge (an alarm event
+  nobody acknowledged) are the row's POST action with the page's token, for a person who may. "Nothing is sent yet" stays
+  on Alarm events while no push transport is connected. Acknowledge and Resolve show their word beside the icon (the
+  list page's `labelled` action: a safety state changes); a dead letter's payload, its hex and size are a closed
+  disclosure (`listprops.details`), as the classic page's `<details>`. Bindings: a channel's history (`?channel=`) is
+  drawn above its table as a timeline (`sensors.lists.binding_timeline` over the list's own rows; `ui/Timeline.tsx`: a
+  lane per place, each binding a span in % of the window from its first start to now, its words inside it and in the
+  lane's name for a screen reader); the site, role and "now bound" selects are `BindingResource.filter_list`'s (the
+  classic page reads the same address). A place's bindings (`?place=`) say whose they are and lead back
+  to every binding. Overview is island `sensors-home` (`frontend/islands/pages/SensorsHome.tsx`): the classic page's own
+  state and setup counts (`sensors.views.state_tiles`, each with its key) in the design's order, with the moment they were
+  worked out, the ingest's oldest heartbeat (the one that decides Down) and the offline devices; a status edge only for
+  what needs a look (an ingest down or never heard critical; an offline device, a stale channel, a dead letter, a lost
+  message a warning). "Open alarms" is the classic page's count of open sensor alarm events, said so under it ("Sensor
+  alarm events": not the strip's open alarms), critical while one of them is critical, a warning while only warnings are
+  open. Bindings and credentials are counted as their lists show them (`Resource.queryset`: a hidden binding is not). Held:
+  `sensors/tests/test_pages_next.py` (every page against its classic page on the test world plus `sensors_world`, in
+  three languages; nothing opens the classic dialog; the world's facts) and `frontend/test/prodrest.pages.ts` (each page
+  at 1440 and 390: CSP, axe, 4.5:1, no sideways scroll, the screenshots).
+- **Production › Overview** (`config.views.production_home`; `templates/production_home_next.html`, island `production`,
+  `frontend/islands/pages/Production.tsx`): the design's layout over the very context the classic page is drawn from
+  (`config/production_props.py`): "Today on the farm" as tiles (stock, feed, the water's critical and warning points,
+  tasks, reports due, each with its source and time), Needs attention (each row its status chip, what and where, its
+  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, and the
+  way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
+  HR board's bar (`config.views.team_today`, `core/stack`; the tiles add up to the people planned today) with the muster
+  count and the late ones. What the design adds from real sources: the fish card's batch count
+  (`farm.stock.views.overview`), the units under a medicine withdrawal today in Needs attention (hold chip, each batch's
+  "harvest from", a link to the unit's drawer) and the team bar. The head (status chips, Record water sample) is the
+  classic page's. Held: `farm/tests/test_production_overview_next.py` (every word of the classic page in three
+  languages; a value's title said by its chip and origin line, never for a value that was critical or a warning).
+- **Production › Production units** (`farm.stock.views.production_units`): the table on the shared list page
+  (`farm/stock/units_next.py`, from the rows the view read; the classic filter buttons are the toolbar's selects with the
+  same values; the kind and fish selects' first options say "All kinds" and "Stocked and empty" where the classic buttons
+  say "All"), the unit's drawer as the server draws it on the classic page, beside it (`farm/_unit_drawer.html`, every
+  section). A row's code and batch open the drawer, Edit the unit's form (`farm:tank_edit`, with the right to change
+  units). The density cell draws the share of capacity as the list page's gauge (`listprops.gauge`, `ui/Gauge.tsx`: the
+  bar and "12 % of capacity" in words, critical with its "Over" chip above capacity). A water value is its figure with
+  its origin and age; a warning, critical or stale one is in its status's chip, never drawn as OK; a stale one that was
+  critical or a warning when taken (F-244, `Reading.old_alert`) keeps its stale chip and says "Stale, was critical" and
+  its sample's moment (its age is the origin line's). Held:
+  `farm/tests/test_production_units_next.py` (the filter links, the bare "All" and the values' titles are the things said
+  another way, named there).
+- **System › Water** (`farm:system_water`, `/operations/systems/<id>/water/`; `farm/water/system_page.py`): the system's
+  points side by side, loop first, on one time axis, from `history_data` (the JSON of
+  `farm:water_system_chart?view=history`), drawn by Tank › Water's island; with more than one point the island heads each
+  point's charts with the point's name (and each chart's accessible name says it). Its window and words are Tank ›
+  Water's (`farm.water.views.window_props`, one helper for both pages). Without the new look the address is the system's
+  history on Water chemistry. Its way in: Setup › Systems in the new look (`SystemResource.list_rows`, the classic
+  list's words and filters, a nested system's "↳", its "Show them" notice; the classic template unchanged) gives each row a "Water of …" action
+  for a person who may read the water. Held: `farm/tests/test_system_water_next.py`, `farm/tests/test_systems_next.py`.
+- **Operations › Feeding, Harvest and Health** (every list and read page of the three groups on the shared list page; the
+  classic pages and their templates unchanged). A read page that is not a tab gets its props from
+  `core.listprops.page_props` (the one builder of a non-tab page, Sensors' too), built from the very context its view gives
+  the classic page: Meal board, Records and Records by unit and day (`farm/feeding/pages.py`), Harvested
+  (`farm/harvest/pages.py`), Treatments and Sea-lice counts (`farm/health/pages.py`); the tabs' `list_rows` and
+  `list_filters` are in `farm/feeding/lists.py` (Protocols, Assignments), `farm/harvest/lists.py` (Harvest plan,
+  Production plans) and `farm/health/lists.py` (Health events), with each classic list's search placeholder and empty text
+  as the tab's attributes (the same msgids). What the list page gained for them, each with its unit test: a check box
+  filter ("Show voided", `listprops.check`), a day's meals as pips (`listprops.pips`, `ui/Pips.tsx`, the classic
+  `.ui-pips`, named by "2 of 4 meals done"), a cell's figure drawn large (`figure`, the classic `.ui-readout`: the meal
+  board's next meal) and tables of their own above the list (`listprops.section`: Sea-lice counts' weekly averages).
+  The Meal board is a row per batch line, the unit's own cells (code, fed today, water, Record meal) on its first line;
+  a line without a ration says why where its next meal would be, never a figure; a temperature that is not fresh is its
+  stale chip with the classic warning; "Weigh now" critical, "Weigh soon" and an incomplete estimate warnings. Harvested's
+  totals per batch and per site (under the classic table) are the design's two other views (`?view=batch|site`, read in
+  the new look only, the filters kept), and the Harvest group's strip (`farm/_harvest_tabs.html`) stays above the three
+  Harvest pages. Food safety is the server's words: a treatment's withdrawal on each batch (`held_until`, and why:
+  `withdrawal_reason`) with a batch held today in the hold chip, a plan's or a batch's withdrawal (`harvest_from`) with
+  the Withdrawal chip and its row critical, "Medicine withdrawal not checked" and "Not checked" as on the classic pages,
+  "Notify Mattilsynet" as a critical notice above Health events with each event and the way to its notice, "Notify at
+  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. Every record
+  form and dialog these pages open (Record feeding or meal, Void, Record treatment, Last day, Record sea-lice count, the
+  plans' Record harvest or transfer) is opened as a page from the island (no classic dialog link), still the classic
+  form for now. Held: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
+  `test_health_pages_next.py` (every page against its classic page on the test world plus `feeding_ops_world`,
+  `health_ops_world` and `harvest_ops_world`, in three languages; Harvested's three views together against the classic
+  page; the safety facts) and `frontend/test/prodrest.pages.ts` (each page at 1440 and 390: CSP, axe, 4.5:1, no
+  sideways scroll, the screenshots).
+- **The browser tests' fixtures come from the test world, never from the development database.**
+  `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
+  migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture
+  names "Test …", addresses @example.com; `core/test_world.py`, one function per part: `company_world`, `hr_world`,
+  `panel_world` and its parts for tasks, questions, experiments, reports, storage and messages) in a transaction it
+  rolls back, and writes `form-oracle.json`, `company-props-<language>.json`, `list-props-<language>.json` and
+  `panel-props-<language>.json` (the production panel's lists), the pages the server draws (`panel/`).
+  `core/tests_fixtures_fresh.py` holds them fresh: it builds the test world in the test run with the clock pinned, renders
+  every fixture by the recorder's own function (`core.recorded_fixtures.render_all`), puts what varies from run to run in a
+  fixed form (record ids, a page's nonce and token, the assets' versions) and fails, naming the file and its first
+  differing line, when a committed one is not what the code renders today: run `scripts/record_test_world.sh` and commit
+  what it writes (`--check` compares without writing). It pushes every database sequence far ahead before building the
+  world, so a fixture that still writes a number the database counts (a row id, a channel number) fails in every run, not
+  only in the whole suite. `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
+  `frontend/islands` and `core/testdata` outside example.com and the `.example` domains.
+- **A test translates before it requests, inside one `translation.override`.** A request leaves the request's language
+  active, so words translated after it in the same block come out in that language: `core/tests_override_requests.py`
+  reads every test module and refuses the order.
 
 ## One format for every tab
 
@@ -5625,6 +6149,16 @@ What one tab needed and the next ones will too lives in `core/`:
   kind (tampering, a broken client) is refused with a reason on the form, never a server error (F7c).
 - `Output` (`core/widgets.py`): a value the form shows but nobody types (a unit's volume), on a
   disabled field so a posted value is never read.
+- `core/formpayload.py`: a form as the JSON a new page's island draws (`?ui=next`). It is what Django's own renderer is
+  handed for the old page (the bound field's label, help, required, errors; the widget's formatted value, attributes with
+  the server's bounds, options), projected to JSON, so the server stays the only validator and the island posts the same
+  names to the same address. Every widget of the project has a `kind` the island draws; another widget class, or a value
+  that is not plain JSON, is refused, never guessed. Help text built with `format_html` travels as markup, any other as
+  text. `core/tests_formpayload.py` builds every tab's form, new and sent empty, draws each field with the old field
+  template and holds the payload to it: the same controls posted with the same values, the same label, help and errors.
+  A whole new page is held to its old one by `core/pagesays.py`: every run of text, link address and control name of the
+  old page's `<main>` must be carried by the new page's payload (`unsaid` names what is not), the two pages read side
+  by side in one test on one fixture.
 - `core/query.py`: the numbers and years a page reads from its address (`?page=`, `?before=`, `?year=`), one rule for
   every page (F-006, F-176, F-120): a number in ASCII digits within its bounds, a year of the calendar `core.dates`
   reads; anything else is taken as not given and the page shows its default, as for a stale link, never a server error.
@@ -6055,7 +6589,7 @@ runs the server:
 | `core/codes.py` | The next generated code of a kind of record (a batch's, an experiment's), under an advisory lock |
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
-| `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the loop (`engine.py`, `manage.py run_alarms`), the transports (`transports.py`), the pages (`views.py`) |
+| `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the pass (`engine.py`), the worker (`worker.py`, `manage.py run_alarm_worker`) with its look at what changed (`changes.py`), the outbox's delivery (`outbox.py`) and floods (`floods.py`), whether the alarms are checked (`watch.py`, `{% alarm_watch %}`), the transports (`transports.py`), the pages (`views.py`) |
 | `core/platform.py` | The platform owner's settings as the code reads them: the correction window and second approval |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
@@ -6124,8 +6658,10 @@ under the wrong kind, fails.
 
 | Command | App | Kind | What it does | Who runs it |
 |---|---|---|---|---|
-| `run_alarms` | alarms | product | One pass of the alarms, or one every `--loop` seconds: opens, clears, notifies, escalates, sends | The deployment, as its loop (Alarms) |
-| `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the deployment runs `run_alarms` instead, which checks these too |
+| `run_alarm_worker` | alarms | product | The alarm worker: keeps the alarms checked until stopped (a pass within a tick of a change and every sweep, the outbox on its own thread, one active per database) | The deployment, as the compose service `alarms` (Alarms) |
+| `alarm_worker_health` | alarms | product | Exit 0 when the alarms are being checked, 1 and why when they are not | The compose service's healthcheck; anyone on the server |
+| `run_alarms` | alarms | product | One pass of the alarms and one round through the outbox, now: opens, clears, notifies, escalates, sends | An operator; the worker runs the same for as long as it runs |
+| `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the alarm worker checks these on every pass |
 | `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | A cron job (the Tasks pages do the same before they read) |
 | `sensors_housekeeping` | sensors | product | Deletes the dead letters last seen more than 90 days ago | A daily job |
 | `sensor_broker_sync` | sensors | product | Writes the MQTT broker's passwd and acl files from the sensors configuration | An operator, after the sensors configuration changed (the broker reloads the files) |

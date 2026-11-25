@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load dates i18n %}
+{% load alarm_watch dates i18n %}
 {% comment %} One alarm (alarms.views.alarm_detail): what it is and where, and everything that happened to it in time order:
    opened, each notification queued (recipient, channel, level, state) and each delivery attempt, the escalations, the
    acknowledgements (who, when, from which device and app, how late) and when it cleared. Nothing here is ever edited. {% endcomment %}
@@ -7,16 +7,29 @@
 {% block eyebrow %}{{ eyebrow }} · {{ title }}{% endblock %}
 {% block heading %}{{ alarm.summary }}{% endblock %}
 {% block content %}
+{% alarm_watch %}
 {% include "alarms/_not_sent.html" %}
 <section class="detail-section">
   <dl class="facts">
     <div><dt>{% trans "Severity" %}</dt><dd>{{ alarm.get_severity_display }}</dd></div>
     <div><dt>{% trans "Source" %}</dt><dd>{{ alarm.get_source_display }}</dd></div>
     <div><dt>{% trans "Where" %}</dt><dd>{{ alarm.production_department|default:alarm.site|default:"—" }}</dd></div>
+    {% if water_url %}<div><dt>{% trans "Water" %}</dt><dd><a href="{{ water_url }}">{% trans "The water 12 hours each side of the alarm" %}</a></dd></div>{% endif %}
     <div><dt>{% trans "State" %}</dt><dd>{% if is_open %}{% trans "Open" %}{% else %}{% trans "Cleared" %}{% endif %} · {% blocktrans trimmed with level=level %}level {{ level }}{% endblocktrans %}</dd></div>
   </dl>
   {% if nobody %}<p class="notice notice-warning">{% trans "Nobody to notify: no alarm recipient rule reaches this alarm. Add one under Alarm recipients." %}</p>{% endif %}
   {% if can_acknowledge %}<form method="post" action="{% url 'alarms:alarm_acknowledge' alarm.pk %}">{% csrf_token %}<button type="submit" class="button button-inline">{% trans "Acknowledge" %}</button></form>{% endif %}
+  {% if snooze %}
+  <p class="notice notice-warning">{% blocktrans trimmed with until=snooze.until|site_clock:alarm.site|date:"DATETIME_FORMAT" person=snooze.user.get_full_name|default:snooze.user.get_username reason=snooze.reason %}Snoozed by {{ person }} until {{ until }}: {{ reason }}. Nobody is notified of it and it is not escalated until then; it is still raised and kept.{% endblocktrans %}</p>
+  {% if can_snooze %}<form method="post" action="{% url 'alarms:alarm_snooze_end' alarm.pk %}">{% csrf_token %}<button type="submit" class="ui-btn">{% trans "End snooze" %}</button></form>{% endif %}
+  {% elif may_snooze %}
+  <form method="post" action="{% url 'alarms:alarm_snooze' alarm.pk %}" class="filters">{% csrf_token %}
+    <div class="field"><label for="snooze-minutes">{% trans "Snooze for (minutes)" %}</label><input id="snooze-minutes" type="number" name="minutes" min="1" max="{{ longest_snooze }}" required></div>
+    <div class="field"><label for="snooze-reason">{% trans "Why" %}</label><input id="snooze-reason" type="text" name="reason" maxlength="300" required></div>
+    <div class="filters-actions"><button type="submit" class="ui-btn">{% trans "Snooze" %}</button></div>
+  </form>
+  <p class="panel-help">{% blocktrans trimmed with minutes=longest_snooze %}At most {{ minutes }} minutes. While it is snoozed nobody is notified of this alarm and it is not escalated; it is still raised, kept and cleared.{% endblocktrans %}</p>
+  {% endif %}
 </section>
 <section class="detail-section">
   <h2 class="section-title">{% trans "History" %}</h2>
@@ -25,8 +38,10 @@
     <li><time datetime="{{ event.at|site_clock:alarm.site|date:'c' }}">{{ event.at|site_clock:alarm.site|date:"DATETIME_FORMAT" }}</time> ·
       {% if event.kind == "opened" %}{% trans "Opened" %}
       {% elif event.kind == "notified" %}{% with notification=event.row %}{% blocktrans trimmed with person=notification.recipient.get_full_name|default:notification.recipient.get_username channel=notification.get_channel_display level=notification.level %}Queued for {{ person }} ({{ channel }}, level {{ level }}){% endblocktrans %} · {% if event.state == "sent" %}{% trans "Sent" %}{% elif event.state == "failed" %}{% trans "Failed" %}{% else %}{% trans "Queued" %}{% endif %}{% endwith %}
-      {% elif event.kind == "delivered" %}{% with attempt=event.row %}{% blocktrans trimmed with person=attempt.notification.recipient.get_username outcome=attempt.get_outcome_display %}Delivery to {{ person }}: {{ outcome }}{% endblocktrans %}{% if attempt.detail %} · {{ attempt.detail }}{% endif %}{% endwith %}
+      {% elif event.kind == "delivered" %}{% with attempt=event.row %}{% blocktrans trimmed with person=attempt.notification.recipient.get_username outcome=attempt.get_outcome_display %}Delivery to {{ person }}: {{ outcome }}{% endblocktrans %}{% if attempt.flood_size %} · {% blocktrans trimmed count alarms=attempt.flood_size %}in a flood message of {{ alarms }} alarm{% plural %}in a flood message of {{ alarms }} alarms{% endblocktrans %}{% endif %}{% if attempt.detail %} · {{ attempt.detail }}{% endif %}{% endwith %}
       {% elif event.kind == "escalated" %}{% blocktrans trimmed with level=event.row.level %}Escalated to level {{ level }}: nobody acknowledged it in time{% endblocktrans %}
+      {% elif event.kind == "snoozed" %}{% with snooze=event.row %}{% blocktrans trimmed with person=snooze.user.get_full_name|default:snooze.user.get_username until=snooze.until|site_clock:alarm.site|date:"DATETIME_FORMAT" reason=snooze.reason %}Snoozed by {{ person }} until {{ until }}: {{ reason }}{% endblocktrans %}{% endwith %}
+      {% elif event.kind == "snooze_ended" %}{% with end=event.row %}{% blocktrans trimmed with person=end.user.get_full_name|default:end.user.get_username %}Snooze ended by {{ person }}{% endblocktrans %}{% endwith %}
       {% elif event.kind == "acknowledged" %}{% with ack=event.row %}{% blocktrans trimmed with person=ack.user.get_full_name|default:ack.user.get_username|default:"—" app=ack.app delay=ack.delay %}Acknowledged by {{ person }} from {{ app }}, {{ delay }} after it opened{% endblocktrans %}{% if ack.device %} · {{ ack.device }}{% endif %}{% endwith %}
       {% else %}{% trans "Cleared" %}{% endif %}
     </li>

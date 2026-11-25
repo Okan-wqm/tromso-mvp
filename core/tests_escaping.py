@@ -29,6 +29,8 @@ PLAIN_TEXT = {
 # beside it proves that with hostile text. A new entry needs the same: a reason and a test.
 MARKUP_BUILDERS = {
     'core/templatetags/assets.py': 'the import map: static file paths of this project only (core.tests_assets)',
+    'core/formpanels.py': 'the words of a row list for a classic template: &, <, > and " escaped, between tags only '
+                          '(core.tests_formpanels.TemplateWordsTests)',
     'knowledge/citation.py': 'a reference: every field escaped (CitationEscapingTests below)',
     'knowledge/search.py': 'a found passage: escaped, then only the markers become <mark> '
                            '(knowledge.tests.test_search ...test_a_passage_is_escaped_with_only_the_found_words_marked)',

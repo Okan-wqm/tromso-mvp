@@ -1,5 +1,6 @@
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
+from core import formpanels
 from core.crud import Resource, RowList, filter_by
 
 from ..forms import FeedForm, FeedSuitabilityFormSet
@@ -18,6 +19,14 @@ class FeedSuitabilityList(RowList):
 
     key, tab, label = 'suitability', 'suitability', _('Suitable for')
     formset = FeedSuitabilityFormSet
+    # Its panel's words (farm/feed_form.html).
+    title = _('Suitable for')
+    help_text = _('The species and life stages it is made for, and the fish weights in grams: from the lower weight up to, '
+                  'not including, the upper one; leave an end empty when it has none. One row per species and stage, at '
+                  'most 50. They are saved separately from the feed details.')
+    empty_text = _('No species yet. Use “Add species” to add a row.')
+    add_label, save_label = _('Add species'), _('Save suitability')
+    pending_text = _('Species and fish weights can be added once the feed is created.')
     saved = ngettext_lazy('%(count)d row saved.', '%(count)d rows saved.', 'count')
 
     @classmethod
@@ -48,6 +57,11 @@ class FeedResource(WithdrawalInput, Resource):
     icon = 'wheat'
     row_lists = (FeedSuitabilityList,)
     page_size = 50
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """farm/feed_form.html in the new look: its row lists."""
+        return formpanels.row_list_panels(cls, view, obj, extra)
 
     @classmethod
     def reached(cls, request, feed):

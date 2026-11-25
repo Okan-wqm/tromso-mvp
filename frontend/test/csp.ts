@@ -22,3 +22,6 @@ export function policy(nonce = ''): string {
     return [WORDS[source] ?? source];
   }).join(' ')}`).join('; ');
 }
+
+/** The policy without a nonce, for a page of islands (it runs no inline script): frontend/test/island-page.ts serves it. */
+export const CSP = policy();

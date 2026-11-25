@@ -1,0 +1,8 @@
+{% extends "production_home.html" %}
+{% load i18n assets %}
+{% comment %} Production › Overview in the new look (core.ui.is_next): the head (its status chips, Record water sample) is the
+   classic page's; the body is the island `production` (frontend/islands/pages/Production.tsx) over the props
+   config/production_props.py makes from the same context. The classic body is templates/_production_overview.html. {% endcomment %}
+{% block content %}
+{% trans "Loading the overview…" as loading %}{% island "production" props label=loading %}
+{% endblock %}

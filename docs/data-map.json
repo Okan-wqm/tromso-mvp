@@ -230,7 +230,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "cause",
@@ -250,7 +250,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -265,7 +265,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -603,6 +603,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_formprops.py",
         "core/tests_platform.py",
         "core/tests_workspaces.py",
         "alarms/tests/test_cross_review.py",
@@ -614,7 +615,7 @@
       "app": "alarms",
       "model": "DeliveryAttempt",
       "table": "alarm_delivery_attempts",
-      "description": "A transport took a notification (sent) or failed to (failed, with what it said).",
+      "description": "A transport took a notification (sent) or failed to (failed, with what it said), or a flood message to the same person covered it (grouped: alarms/floods.py).",
       "columns": [
         {
           "name": "id",
@@ -660,7 +661,8 @@
           "null": false,
           "choices": [
             "sent",
-            "failed"
+            "failed",
+            "grouped"
           ],
           "link": null,
           "on_form": [],
@@ -672,6 +674,28 @@
           "field": "detail",
           "type": "varchar(300)",
           "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "flood_key",
+          "field": "flood_key",
+          "type": "varchar(150)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by run_alarms from what the transport answered"
+        },
+        {
+          "name": "flood_size",
+          "field": "flood_size",
+          "type": "integer",
+          "null": true,
           "choices": [],
           "link": null,
           "on_form": [],
@@ -742,7 +766,16 @@
         "left_out": false
       },
       "tests": [
-        "alarms/tests/test_alarms.py"
+        "alarms/tests/test_alarms.py",
+        "alarms/tests/test_cleared_criticals.py",
+        "alarms/tests/test_floods.py",
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_recheck.py",
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py"
       ]
     },
     {
@@ -775,7 +808,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "level",
@@ -786,7 +819,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "escalated_at",
@@ -797,7 +830,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -821,7 +854,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -875,14 +908,15 @@
       },
       "tests": [
         "alarms/tests/test_alarms.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
       "app": "alarms",
       "model": "Notification",
       "table": "alarm_notifications",
-      "description": "The outbox: one alarm for one person through one channel at one level, queued by the alarm loop.",
+      "description": "The outbox: one alarm for one person through one channel at one level, queued by the alarm pass.",
       "columns": [
         {
           "name": "id",
@@ -908,7 +942,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "recipient_id",
@@ -923,7 +957,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "channel",
@@ -936,7 +970,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "level",
@@ -947,7 +981,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "rule_id",
@@ -962,7 +996,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "queued_at",
@@ -973,7 +1007,37 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
+        },
+        {
+          "name": "kind",
+          "field": "kind",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "alarm",
+            "snoozed",
+            "resumed"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
+        },
+        {
+          "name": "shelve_id",
+          "field": "shelve",
+          "type": "bigint",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "alarm_shelves",
+            "model": "alarms.AlarmShelve",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -986,6 +1050,23 @@
             "channel",
             "level"
           ],
+          "conditional": true
+        },
+        {
+          "name": "uq_alarm_notifications_snooze_once",
+          "kind": "unique",
+          "fields": [
+            "shelve",
+            "recipient",
+            "channel",
+            "kind"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_alarm_notifications_kind",
+          "kind": "check",
+          "fields": [],
           "conditional": false
         },
         {
@@ -1005,7 +1086,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -1048,11 +1129,86 @@
         "left_out": false
       },
       "tests": [
-        "experiments/tests/world.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_deadman.py",
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py",
+        "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "OutboxEntry",
+      "table": "alarm_outbox",
+      "description": "A notification still to be sent: the outbox's queue (alarms/outbox.py), written with the notification (services.queue_many) and removed once it is sent, covered by a flood message, or given up, so a round reads only what is waiting, however long the history.",
+      "columns": [
+        {
+          "name": "notification_id",
+          "field": "notification",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarm_notifications",
+            "model": "alarms.Notification",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written with each notification (alarms/services.py queue_many)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a row is the notification itself, never changed"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "removed by the outbox once the notification is sent, covered by a flood message or given up"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "the outbox's own queue (alarms/outbox.py); the notifications are on their alarm's page"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_cleared_criticals.py",
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_recheck.py",
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_review_transports.py"
       ]
     },
     {
@@ -1435,17 +1591,18 @@
       },
       "tests": [
         "core/tests_workspaces.py",
-        "experiments/tests/test_review.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
-        "alarms/tests/test_pages.py"
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_pages.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
       "app": "alarms",
       "model": "SeverityPolicy",
       "table": "alarm_severity_policies",
-      "description": "How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged): how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified, and how many times a failing transport is tried with one notification.",
+      "description": "How an alarm of a severity behaves, one row per severity (a person with the right edits them, every change logged): how long a condition must hold before the alarm is raised and how long it must be over before it clears (in data time, so a restart loses nothing), how long a level waits for an acknowledgement before the next level is notified, and how many times a failing transport is tried with one notification, and how long apart.",
       "columns": [
         {
           "name": "id",
@@ -1625,6 +1782,71 @@
           "why": ""
         },
         {
+          "name": "retry_seconds",
+          "field": "retry_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "shelve_max_minutes",
+          "field": "shelve_max_minutes",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "flood_count",
+          "field": "flood_count",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "flood_window_seconds",
+          "field": "flood_window_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "follow_up_seconds",
+          "field": "follow_up_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SeverityPolicyForm › Rule"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "clock_skew_seconds",
           "field": "clock_skew_seconds",
           "type": "integer",
@@ -1704,6 +1926,36 @@
           "conditional": false
         },
         {
+          "name": "chk_alarm_severity_policies_retry",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_shelve",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_flood",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_flood_window",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_severity_policies_follow_up",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
           "name": "chk_alarm_severity_policies_clock",
           "kind": "check",
           "fields": [],
@@ -1776,6 +2028,11 @@
             "off_delay_seconds": "Rule",
             "escalation_minutes": "Rule",
             "delivery_attempts": "Rule",
+            "retry_seconds": "Rule",
+            "shelve_max_minutes": "Rule",
+            "flood_count": "Rule",
+            "flood_window_seconds": "Rule",
+            "follow_up_seconds": "Rule",
             "clock_skew_seconds": "Device clock",
             "clock_skew_deadband_seconds": "Device clock",
             "clock_behind_window_seconds": "Device clock",
@@ -1801,7 +2058,301 @@
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
-        "alarms/tests/test_reference.py"
+        "alarms/tests/test_floods.py",
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_reference.py",
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_size.py",
+        "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "AlarmShelveEnd",
+      "table": "alarm_shelve_ends",
+      "description": "A person ended a snooze before its time.",
+      "columns": [
+        {
+          "name": "shelve_id",
+          "field": "shelve",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarm_shelves",
+            "model": "alarms.AlarmShelve",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person and the moment they ended a snooze early"
+        },
+        {
+          "name": "ended_at",
+          "field": "ended_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person and the moment they ended a snooze early"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snooze_end",
+              "url_names": [
+                "alarms:alarm_snooze_end"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/snooze/end/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "AlarmShelve",
+      "table": "alarm_shelves",
+      "description": "A person snoozed an open alarm (ISA-18.2 shelving; owner decision Q5): from `shelved_at` until `until`, for `reason`.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "alarm_id",
+          "field": "alarm",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "user_id",
+          "field": "user",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "shelved_at",
+          "field": "shelved_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "until",
+          "field": "until",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the person, the moment, until when and why, as they snoozed it"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarm_shelves_until",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_shelves_reason",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snooze",
+              "url_names": [
+                "alarms:alarm_snooze"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/snooze/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -1897,7 +2448,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -1936,6 +2487,392 @@
     },
     {
       "app": "alarms",
+      "model": "AlarmWorkerStatus",
+      "table": "alarm_worker_status",
+      "description": "The alarm worker's own row (alarms/worker.py; one per worker name, written only by the worker that holds the lock): whether it runs, when it last looked (`heartbeat_at`), when it last finished a pass and a pass with no failed step, how long that took, what failed, and the age after which the pages and the health check call the alarms unchecked (`stale_after_seconds`, the worker's own setting, so a reader needs no setting of its own).",
+      "columns": [
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(40)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "state",
+          "field": "state",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "running",
+            "stopped"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "host",
+          "field": "host",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "pid",
+          "field": "pid",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "started_at",
+          "field": "started_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "heartbeat_at",
+          "field": "heartbeat_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_pass_at",
+          "field": "last_pass_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_ok_pass_at",
+          "field": "last_ok_pass_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_pass_ms",
+          "field": "last_pass_ms",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "failed_steps",
+          "field": "failed_steps",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "consecutive_failures",
+          "field": "consecutive_failures",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_error",
+          "field": "last_error",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "stale_after_seconds",
+          "field": "stale_after_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "last_send_at",
+          "field": "last_send_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "outbox_waiting",
+          "field": "outbox_waiting",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "outbox_oldest_at",
+          "field": "outbox_oldest_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "undeliverable",
+          "field": "undeliverable",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        },
+        {
+          "name": "undeliverable_since",
+          "field": "undeliverable_since",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker, on the database clock"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarm_worker_status_state",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_alarm_worker_status_stale_after",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "the alarm worker writes its own row when it takes the lock (alarms/worker.py)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "only the worker moves its row: each pass, each look, and when it stops"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "the worker's row is kept: the time of its last pass is what says the alarms went unchecked"
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_list",
+              "url_names": [
+                "alarms:alarm_list"
+              ],
+              "routes": [
+                "/alarms/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_detail",
+              "url_names": [
+                "alarms:alarm_detail"
+              ],
+              "routes": [
+                "/alarms/<int:pk>/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_snoozes",
+              "url_names": [
+                "alarms:alarm_snoozes"
+              ],
+              "routes": [
+                "/alarms/snoozes/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms.views.alarm_watch_notice",
+              "url_names": [
+                "alarms:alarm_watch_notice"
+              ],
+              "routes": [
+                "/alarms/watch/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "farm:water",
+              "url_names": [
+                "farm:water"
+              ],
+              "routes": [
+                "/operations/water/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "monitoring:monitor",
+              "url_names": [
+                "monitoring:monitor"
+              ],
+              "routes": [
+                "/operations/monitoring/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:home",
+              "url_names": [
+                "sensors:home"
+              ],
+              "routes": [
+                "/sensors/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:recipientrule_list",
+              "url_names": [
+                "alarms:recipientrule_list"
+              ],
+              "routes": [
+                "/alarms/recipients/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:severitypolicy_list",
+              "url_names": [
+                "alarms:severitypolicy_list"
+              ],
+              "routes": [
+                "/alarms/severity-rules/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "alarms:parameterdeadband_list",
+              "url_names": [
+                "alarms:parameterdeadband_list"
+              ],
+              "routes": [
+                "/alarms/deadbands/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:alarmrule_list",
+              "url_names": [
+                "sensors:alarmrule_list"
+              ],
+              "routes": [
+                "/sensors/alarm-rules/"
+              ]
+            },
+            {
+              "how": "view",
+              "label": "sensors:alarm_events",
+              "url_names": [
+                "sensors:alarm_events"
+              ],
+              "routes": [
+                "/sensors/alarm-events/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "Read through alarms/watch.py: {% alarm_watch %} on these pages, and manage.py alarm_worker_health.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_deadman.py",
+        "alarms/tests/test_outbox.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_worker.py",
+        "alarms/tests/test_worker_process.py"
+      ]
+    },
+    {
+      "app": "alarms",
       "model": "Alarm",
       "table": "alarms",
       "description": "One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point.",
@@ -1964,7 +2901,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "sensor_event_id",
@@ -1979,7 +2916,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "point_id",
@@ -1994,7 +2931,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "parameter",
@@ -2005,7 +2942,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "device_id",
@@ -2020,7 +2957,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "severity",
@@ -2034,7 +2971,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "site_id",
@@ -2049,7 +2986,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "production_department_id",
@@ -2064,7 +3001,7 @@
           },
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "opened_at",
@@ -2075,7 +3012,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         {
           "name": "summary",
@@ -2086,7 +3023,7 @@
           "link": null,
           "on_form": [],
           "how": "system",
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         }
       ],
       "constraints": [
@@ -2113,7 +3050,7 @@
         "create": {
           "status": "none",
           "paths": [],
-          "why": "written by manage.py run_alarms (alarms/engine.py)"
+          "why": "written by the alarm pass (alarms/engine.py: the worker, manage.py run_alarm_worker, or run_alarms once)"
         },
         "edit": {
           "status": "none",
@@ -2166,20 +3103,33 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
-        "experiments/tests/world.py",
+        "farm/tests/test_company_overview.py",
+        "farm/tests/test_water_history_page.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_pages_next.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_deadman.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
+        "alarms/tests/test_outbox.py",
         "alarms/tests/test_pages.py",
+        "alarms/tests/test_reaction.py",
         "alarms/tests/test_reference.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py",
-        "alarms/tests/test_who_ends_a_level.py"
+        "alarms/tests/test_review_final.py",
+        "alarms/tests/test_review_fixes.py",
+        "alarms/tests/test_review_followup.py",
+        "alarms/tests/test_review_recheck.py",
+        "alarms/tests/test_snooze.py",
+        "alarms/tests/test_who_ends_a_level.py",
+        "alarms/tests/test_worker.py"
       ]
     },
     {
@@ -2535,17 +3485,6 @@
           "on_form": [],
           "how": "system",
           "why": "written by core.audit when the change is saved"
-        },
-        {
-          "name": "works",
-          "field": "works",
-          "type": "varchar(64)[]",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
         }
       ],
       "constraints": [
@@ -2613,6 +3552,7 @@
         "core/tests_crud_mount.py",
         "core/tests_entry_key.py",
         "core/tests_erasure.py",
+        "core/tests_formprops.py",
         "core/tests_platform.py",
         "core/tests_private_log.py",
         "core/tests_scope.py",
@@ -2703,15 +3643,11 @@
         "hr/tests/test_scheduling_settings.py",
         "hr/tests/test_scope.py",
         "hr/tests/test_services.py",
-        "experiments/tests/test_access.py",
         "experiments/tests/test_amend.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_confidential.py",
         "experiments/tests/test_copy.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_review.py",
         "experiments/tests/test_start.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_designer.py",
@@ -2729,192 +3665,8 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_pages.py",
-        "alarms/tests/test_reference.py"
-      ]
-    },
-    {
-      "app": "core",
-      "model": "AccessEvent",
-      "table": "core_access_events",
-      "description": "Who read which confidential record, when and how: the one read log (the activity log is for changes).",
-      "columns": [
-        {
-          "name": "id",
-          "field": "id",
-          "type": "bigint",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "primary key"
-        },
-        {
-          "name": "at",
-          "field": "at",
-          "type": "timestamp with time zone",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        },
-        {
-          "name": "user_id",
-          "field": "user_id",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        },
-        {
-          "name": "user_name",
-          "field": "user_name",
-          "type": "varchar(150)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        },
-        {
-          "name": "kind",
-          "field": "kind",
-          "type": "varchar(8)",
-          "null": false,
-          "choices": [
-            "view",
-            "export",
-            "denied",
-            "oversee",
-            "support"
-          ],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        },
-        {
-          "name": "entity_type",
-          "field": "entity_type",
-          "type": "varchar(64)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        },
-        {
-          "name": "entity_id",
-          "field": "entity_id",
-          "type": "varchar(64)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        },
-        {
-          "name": "part",
-          "field": "part",
-          "type": "varchar(8)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        },
-        {
-          "name": "route",
-          "field": "route",
-          "type": "varchar(120)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        },
-        {
-          "name": "reason",
-          "field": "reason",
-          "type": "varchar(300)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "written by core.sealing.log_access when the record is read"
-        }
-      ],
-      "constraints": [
-        {
-          "name": "chk_access_events_kind",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        }
-      ],
-      "screens": {
-        "create": {
-          "status": "none",
-          "paths": [],
-          "why": "written by the code: a read of a sealed experiment by someone outside its team (core.sealing.log_access)"
-        },
-        "edit": {
-          "status": "none",
-          "paths": [],
-          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
-        },
-        "delete": {
-          "status": "none",
-          "paths": [],
-          "why": "append-only: a database trigger refuses UPDATE and DELETE, even for the platform admin"
-        },
-        "read": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "view",
-              "label": "experiments:experiment_detail",
-              "url_names": [
-                "experiments:experiment_detail"
-              ],
-              "routes": [
-                "/research/experiments/<uuid:pk>/view/"
-              ]
-            }
-          ],
-          "why": ""
-        }
-      },
-      "note": "The read log of confidential records; an experiment’s lead reads its rows on the Who looked tab.",
-      "forms": [],
-      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
-      "soft_delete": false,
-      "restore": {
-        "status": "n/a",
-        "why": ""
-      },
-      "viewer": {
-        "section": "Administration",
-        "masked": [],
-        "left_out": false
-      },
-      "tests": [
-        "core/test_database.py",
-        "core/tests_sealing.py",
-        "experiments/tests/test_access.py",
-        "experiments/tests/test_oversee.py",
-        "experiments/tests/test_review.py"
+        "alarms/tests/test_reference.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -3607,7 +4359,6 @@
         "tasks/tests/test_pages.py",
         "hr/tests/test_forgotten.py",
         "experiments/tests/test_amend.py",
-        "experiments/tests/test_confidential.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_placements.py",
@@ -3616,7 +4367,9 @@
         "monitoring/tests/test_pages.py",
         "monitoring/tests/test_shell.py",
         "monitoring/tests/test_template_pages.py",
+        "alarms/tests/test_cleared_criticals.py",
         "alarms/tests/test_refused_water.py",
+        "alarms/tests/test_review_transports.py",
         "alarms/tests/test_who_ends_a_level.py"
       ]
     },
@@ -3957,14 +4710,10 @@
       },
       "tests": [
         "experiments/tests/__init__.py",
-        "experiments/tests/test_access.py",
         "experiments/tests/test_copy.py",
         "experiments/tests/test_design.py",
-        "experiments/tests/test_oversee.py",
         "experiments/tests/test_pages.py",
-        "experiments/tests/test_review.py",
-        "experiments/tests/test_triggers.py",
-        "experiments/tests/world.py"
+        "experiments/tests/test_triggers.py"
       ]
     },
     {
@@ -4149,8 +4898,7 @@
         "experiments/tests/__init__.py",
         "experiments/tests/test_constraints.py",
         "experiments/tests/test_design.py",
-        "experiments/tests/test_triggers.py",
-        "experiments/tests/world.py"
+        "experiments/tests/test_triggers.py"
       ]
     },
     {
@@ -4455,13 +5203,12 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "experiments/tests/__init__.py",
-        "experiments/tests/test_change_token.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
-        "experiments/tests/test_triggers.py",
-        "experiments/tests/world.py"
+        "experiments/tests/test_triggers.py"
       ]
     },
     {
@@ -4795,8 +5542,7 @@
         "experiments/tests/test_copy.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_pages.py",
-        "experiments/tests/test_triggers.py",
-        "experiments/tests/world.py"
+        "experiments/tests/test_triggers.py"
       ]
     },
     {
@@ -4868,32 +5614,6 @@
           "why": ""
         },
         {
-          "name": "valid_from",
-          "field": "valid_from",
-          "type": "timestamp with time zone",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "MemberForm"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "valid_until",
-          "field": "valid_until",
-          "type": "timestamp with time zone",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "MemberForm"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
           "name": "created_by_id",
           "field": "created_by",
           "type": "integer",
@@ -4929,12 +5649,6 @@
         },
         {
           "name": "chk_experiment_members_role",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_experiment_members_window",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -5006,16 +5720,14 @@
           "why": ""
         }
       },
-      "note": "The team list on the Team tab; a member is live inside their window (from, until), read at each request.",
+      "note": "",
       "forms": [
         {
           "form": "MemberForm",
           "module": "django.forms.widgets",
           "fields": {
             "user": "",
-            "role": "",
-            "valid_from": "",
-            "valid_until": ""
+            "role": ""
           }
         },
         {
@@ -5023,9 +5735,7 @@
           "module": "experiments.forms",
           "fields": {
             "user": "",
-            "role": "",
-            "valid_from": "",
-            "valid_until": ""
+            "role": ""
           }
         }
       ],
@@ -5041,303 +5751,12 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "experiments/tests/__init__.py",
-        "experiments/tests/test_access.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_collaborator.py",
         "experiments/tests/test_constraints.py",
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
-        "experiments/tests/test_preflight.py",
-        "experiments/tests/test_review.py",
-        "experiments/tests/test_sealing_schema.py",
-        "experiments/tests/test_start.py",
-        "experiments/tests/world.py"
-      ]
-    },
-    {
-      "app": "experiments",
-      "model": "ReplicateSystem",
-      "table": "experiment_replicate_systems",
-      "description": "A whole system booked to a replicate for a range of days, both included: the intent (\"this loop is replicate 2\") and the window for what is kept by system (its sampling points, its sensor bindings, its tasks).",
-      "columns": [
-        {
-          "name": "id",
-          "field": "id",
-          "type": "uuid",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "primary key"
-        },
-        {
-          "name": "created_at",
-          "field": "created_at",
-          "type": "timestamp with time zone",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "updated_at",
-          "field": "updated_at",
-          "type": "timestamp with time zone",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "created_by_id",
-          "field": "created_by",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "auth_user",
-            "model": "auth.User",
-            "on_delete": "SET_NULL"
-          },
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "updated_by_id",
-          "field": "updated_by",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "auth_user",
-            "model": "auth.User",
-            "on_delete": "SET_NULL"
-          },
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "version",
-          "field": "version",
-          "type": "integer",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "is_deleted",
-          "field": "is_deleted",
-          "type": "boolean",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "deleted_at",
-          "field": "deleted_at",
-          "type": "timestamp with time zone",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "deleted_by_id",
-          "field": "deleted_by",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "auth_user",
-            "model": "auth.User",
-            "on_delete": "SET_NULL"
-          },
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "replicate_id",
-          "field": "replicate",
-          "type": "uuid",
-          "null": false,
-          "choices": [],
-          "link": {
-            "table": "experiment_replicates",
-            "model": "experiments.Replicate",
-            "on_delete": "CASCADE"
-          },
-          "on_form": [],
-          "how": "computed",
-          "why": "written by the Places tab from a system chosen in the replicate’s row and its days"
-        },
-        {
-          "name": "system_id",
-          "field": "system",
-          "type": "uuid",
-          "null": false,
-          "choices": [],
-          "link": {
-            "table": "systems",
-            "model": "farm.System",
-            "on_delete": "PROTECT"
-          },
-          "on_form": [],
-          "how": "computed",
-          "why": "written by the Places tab from a system chosen in the replicate’s row and its days"
-        },
-        {
-          "name": "from_on",
-          "field": "from_on",
-          "type": "date",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "computed",
-          "why": "written by the Places tab from a system chosen in the replicate’s row and its days"
-        },
-        {
-          "name": "until_on",
-          "field": "until_on",
-          "type": "date",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "computed",
-          "why": "written by the Places tab from a system chosen in the replicate’s row and its days"
-        },
-        {
-          "name": "left_reason",
-          "field": "left_reason",
-          "type": "varchar(500)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "gap",
-          "why": "a booking keeps its days when one of its tanks is released; ending a booking early with its own reason has no dialog yet"
-        }
-      ],
-      "constraints": [
-        {
-          "name": "chk_experiment_bookings_period",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "excl_replicate_systems_system",
-          "kind": "exclusion",
-          "fields": [
-            "system",
-            "from_on",
-            "until_on"
-          ],
-          "conditional": true
-        }
-      ],
-      "screens": {
-        "create": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "view",
-              "label": "experiments:experiment_places",
-              "url_names": [
-                "experiments:experiment_places"
-              ],
-              "routes": [
-                "/research/experiments/<uuid:pk>/places/"
-              ]
-            }
-          ],
-          "why": ""
-        },
-        "edit": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "view",
-              "label": "experiments:experiment_places",
-              "url_names": [
-                "experiments:experiment_places"
-              ],
-              "routes": [
-                "/research/experiments/<uuid:pk>/places/"
-              ]
-            }
-          ],
-          "why": ""
-        },
-        "delete": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "view",
-              "label": "experiments:experiment_places",
-              "url_names": [
-                "experiments:experiment_places"
-              ],
-              "routes": [
-                "/research/experiments/<uuid:pk>/places/"
-              ]
-            }
-          ],
-          "why": ""
-        },
-        "read": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "view",
-              "label": "experiments:experiment_detail",
-              "url_names": [
-                "experiments:experiment_detail"
-              ],
-              "routes": [
-                "/research/experiments/<uuid:pk>/view/"
-              ]
-            }
-          ],
-          "why": ""
-        }
-      },
-      "note": "A whole system booked for a replicate, each nested system its own row, its tanks placed and tagged with it (services.save_places); no other experiment books the system or one of its tanks on those days.",
-      "forms": [],
-      "delete_kind": "soft delete through the delete plan",
-      "soft_delete": true,
-      "restore": {
-        "status": "none",
-        "why": "listed read-only in the admin: a voided record is entered again on its page, where the checks run"
-      },
-      "viewer": {
-        "section": "Research",
-        "masked": [],
-        "left_out": false
-      },
-      "tests": [
-        "experiments/tests/test_pages.py",
-        "experiments/tests/test_places.py",
-        "experiments/tests/test_sealing_schema.py",
-        "experiments/tests/world.py"
+        "experiments/tests/test_start.py"
       ]
     },
     {
@@ -5521,21 +5940,6 @@
           "on_form": [],
           "how": "system",
           "why": "typed in the Release or Replace dialog"
-        },
-        {
-          "name": "booking_id",
-          "field": "booking",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "experiment_replicate_systems",
-            "model": "experiments.ReplicateSystem",
-            "on_delete": "PROTECT"
-          },
-          "on_form": [],
-          "how": "computed",
-          "why": "the whole-system booking the Places tab tags the placement with"
         }
       ],
       "constraints": [
@@ -5679,10 +6083,7 @@
       },
       "tests": [
         "experiments/tests/__init__.py",
-        "experiments/tests/test_access.py",
         "experiments/tests/test_amend.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_confidential.py",
         "experiments/tests/test_constraints.py",
         "experiments/tests/test_copy.py",
         "experiments/tests/test_design.py",
@@ -5691,10 +6092,8 @@
         "experiments/tests/test_pages.py",
         "experiments/tests/test_placements.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
-        "experiments/tests/test_triggers.py",
-        "experiments/tests/world.py"
+        "experiments/tests/test_triggers.py"
       ]
     },
     {
@@ -5948,327 +6347,14 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
-        "experiments/tests/test_change_token.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_start.py",
-        "experiments/tests/test_triggers.py",
-        "experiments/tests/world.py"
-      ]
-    },
-    {
-      "app": "experiments",
-      "model": "ExperimentShare",
-      "table": "experiment_shares",
-      "description": "A part of an experiment given by its lead to a person or a role outside its team, for a time and with a reason.",
-      "columns": [
-        {
-          "name": "id",
-          "field": "id",
-          "type": "bigint",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "primary key"
-        },
-        {
-          "name": "experiment_id",
-          "field": "experiment",
-          "type": "uuid",
-          "null": false,
-          "choices": [],
-          "link": {
-            "table": "experiments",
-            "model": "experiments.Experiment",
-            "on_delete": "CASCADE"
-          },
-          "on_form": [],
-          "how": "system",
-          "why": "the experiment of the Sharing page"
-        },
-        {
-          "name": "user_id",
-          "field": "user",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "auth_user",
-            "model": "auth.User",
-            "on_delete": "PROTECT"
-          },
-          "on_form": [
-            "ShareForm.person"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "group_id",
-          "field": "group",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "auth_group",
-            "model": "auth.Group",
-            "on_delete": "PROTECT"
-          },
-          "on_form": [
-            "ShareForm.role"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "part",
-          "field": "part",
-          "type": "varchar(8)",
-          "null": false,
-          "choices": [
-            "design",
-            "results",
-            "systems",
-            "data",
-            "water"
-          ],
-          "link": null,
-          "on_form": [
-            "ShareForm.parts"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "valid_from",
-          "field": "valid_from",
-          "type": "timestamp with time zone",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "the moment the share is given"
-        },
-        {
-          "name": "valid_until",
-          "field": "valid_until",
-          "type": "timestamp with time zone",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "ShareForm.until"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "reason",
-          "field": "reason",
-          "type": "varchar(300)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "ShareForm"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "revoked_at",
-          "field": "revoked_at",
-          "type": "timestamp with time zone",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "the moment the lead revokes it (Revoke on the Sharing page)"
-        },
-        {
-          "name": "revoked_by_id",
-          "field": "revoked_by",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "auth_user",
-            "model": "auth.User",
-            "on_delete": "PROTECT"
-          },
-          "on_form": [],
-          "how": "system",
-          "why": "the lead who revoked it"
-        },
-        {
-          "name": "created_at",
-          "field": "created_at",
-          "type": "timestamp with time zone",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        },
-        {
-          "name": "created_by_id",
-          "field": "created_by",
-          "type": "integer",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "auth_user",
-            "model": "auth.User",
-            "on_delete": "SET_NULL"
-          },
-          "on_form": [],
-          "how": "system",
-          "why": "author, time, version or delete mark"
-        }
-      ],
-      "constraints": [
-        {
-          "name": "chk_experiment_shares_grantee",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_experiment_shares_part",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_experiment_shares_period",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_experiment_shares_length",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_experiment_shares_reason",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_experiment_shares_revoked",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "uq_experiment_shares_user_part",
-          "kind": "unique",
-          "fields": [
-            "experiment",
-            "user",
-            "part"
-          ],
-          "conditional": true
-        },
-        {
-          "name": "uq_experiment_shares_group_part",
-          "kind": "unique",
-          "fields": [
-            "experiment",
-            "group",
-            "part"
-          ],
-          "conditional": true
-        }
-      ],
-      "screens": {
-        "create": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "view",
-              "label": "experiments:experiment_sharing",
-              "url_names": [
-                "experiments:experiment_sharing"
-              ],
-              "routes": [
-                "/research/experiments/<uuid:pk>/sharing/"
-              ]
-            }
-          ],
-          "why": ""
-        },
-        "edit": {
-          "status": "none",
-          "paths": [],
-          "why": "a share is never changed: a new one for the same part replaces it, a revoke ends it"
-        },
-        "delete": {
-          "status": "none",
-          "paths": [],
-          "why": "never deleted: a revoked or ended share is kept as the history of who could read what"
-        },
-        "read": {
-          "status": "paths",
-          "paths": [
-            {
-              "how": "view",
-              "label": "experiments:experiment_sharing",
-              "url_names": [
-                "experiments:experiment_sharing"
-              ],
-              "routes": [
-                "/research/experiments/<uuid:pk>/sharing/"
-              ]
-            }
-          ],
-          "why": ""
-        }
-      },
-      "note": "The lead gives a person or a role one or more parts until a day, with a reason (services.share); each part a row; logged on the experiment as \"Shares\".",
-      "forms": [
-        {
-          "form": "ShareForm",
-          "module": "experiments.resources",
-          "fields": {
-            "person": "",
-            "role": "",
-            "parts": "",
-            "until": "",
-            "reason": ""
-          }
-        }
-      ],
-      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
-      "soft_delete": false,
-      "restore": {
-        "status": "n/a",
-        "why": ""
-      },
-      "viewer": {
-        "section": "Research",
-        "masked": [],
-        "left_out": false
-      },
-      "tests": [
-        "experiments/tests/test_access.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_collaborator.py",
-        "experiments/tests/test_confidential.py",
-        "experiments/tests/test_preflight.py",
-        "experiments/tests/test_review.py",
-        "experiments/tests/test_sealing_schema.py"
+        "experiments/tests/test_triggers.py"
       ]
     },
     {
@@ -6593,62 +6679,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "audience",
-          "field": "audience",
-          "type": "varchar(7)",
-          "null": false,
-          "choices": [
-            "open",
-            "sealed",
-            "private"
-          ],
-          "link": null,
-          "on_form": [
-            "AudienceForm"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "approval_ref",
-          "field": "approval_ref",
-          "type": "varchar(60)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "ExperimentForm › Approval"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "approval_valid_until",
-          "field": "approval_valid_until",
-          "type": "date",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "ExperimentForm › Approval"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "on_call_phone",
-          "field": "on_call_phone",
-          "type": "varchar(30)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "ExperimentForm › Approval"
-          ],
-          "how": "form",
-          "why": ""
         }
       ],
       "constraints": [
@@ -6668,18 +6698,6 @@
         },
         {
           "name": "chk_experiments_status",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_experiments_audience",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_experiments_approval",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -6783,7 +6801,7 @@
           "why": ""
         }
       },
-      "note": "A started experiment keeps every column but its status, name, notes, audience and approval (trg_experiments_frozen). Who may read it is set by its lead on the Sharing page.",
+      "note": "A started experiment keeps every column but its status, name and notes (trg_experiments_frozen).",
       "forms": [
         {
           "form": "ExperimentForm",
@@ -6797,17 +6815,7 @@
             "starts_on": "Details",
             "duration_days": "Details",
             "notes": "Details",
-            "approval_ref": "Approval",
-            "approval_valid_until": "Approval",
-            "on_call_phone": "Approval",
             "version": ""
-          }
-        },
-        {
-          "form": "AudienceForm",
-          "module": "experiments.resources",
-          "fields": {
-            "audience": ""
           }
         }
       ],
@@ -6824,29 +6832,21 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/test_world.py",
         "core/tests_entry_key.py",
-        "core/tests_sealing.py",
+        "core/tests_formpanels.py",
         "core/tests_workspaces.py",
         "experiments/tests/__init__.py",
-        "experiments/tests/test_access.py",
         "experiments/tests/test_amend.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_collaborator.py",
-        "experiments/tests/test_confidential.py",
         "experiments/tests/test_constraints.py",
         "experiments/tests/test_copy.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
-        "experiments/tests/test_oversee.py",
         "experiments/tests/test_overview.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_preflight.py",
-        "experiments/tests/test_review.py",
-        "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
-        "experiments/tests/test_triggers.py",
-        "experiments/tests/world.py"
+        "experiments/tests/test_triggers.py"
       ]
     },
     {
@@ -7389,7 +7389,7 @@
       },
       "tests": [
         "core/test_datamap.py",
-        "core/tests_sealing.py",
+        "core/test_world.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
@@ -7411,8 +7411,6 @@
         "reports/tests/test_lice.py",
         "reports/tests/test_probe_review.py",
         "tasks/tests/test_pages.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_confidential.py",
         "experiments/tests/test_deviations.py",
         "monitoring/tests/test_golden.py"
       ]
@@ -8050,8 +8048,8 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
-        "core/tests_sealing.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -8435,6 +8433,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -9414,6 +9413,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
@@ -9592,6 +9592,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "farm/tests/test_protocols.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_design.py",
@@ -9904,6 +9905,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_formpanels.py",
         "core/tests_workspaces.py",
         "farm/tests/test_one_column_table.py",
         "farm/tests/test_protocols.py",
@@ -10329,11 +10332,6 @@
         "farm/tests/test_size_mix_review.py",
         "farm/tests/test_withdrawal_gate.py",
         "reports/tests/test_compute.py",
-        "experiments/tests/test_access.py",
-        "experiments/tests/test_confidential.py",
-        "experiments/tests/test_oversee.py",
-        "experiments/tests/test_review.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_pages.py"
       ]
     },
@@ -10985,7 +10983,10 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_erasure.py",
+        "core/tests_formpanels.py",
+        "core/tests_pagesays.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
@@ -11026,7 +11027,6 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_start.py",
         "experiments/tests/test_triggers.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_pages.py"
       ]
     },
@@ -11857,6 +11857,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_fast_of_the_unit.py",
@@ -13027,8 +13028,8 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_entry_key.py",
-        "core/tests_sealing.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
         "farm/tests/test_overview_truth.py",
@@ -13037,10 +13038,6 @@
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
         "reports/tests/test_unexplained.py",
-        "experiments/tests/test_confidential.py",
-        "experiments/tests/test_oversee.py",
-        "experiments/tests/test_review.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_read.py"
       ]
@@ -13396,9 +13393,6 @@
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
-        "experiments/tests/test_confidential.py",
-        "experiments/tests/test_oversee.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_golden.py"
       ]
     },
@@ -13671,6 +13665,7 @@
         "core/test_languages.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_withdrawals.py",
+        "farm/tests/test_production_overview_next.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_withdrawal_cleaner_fish.py",
         "farm/tests/test_withdrawal_gate.py",
@@ -14141,10 +14136,13 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_health_pages_next.py",
         "farm/tests/test_migration_withdrawals.py",
+        "farm/tests/test_production_overview_next.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_row_list_refused.py",
         "farm/tests/test_species.py",
@@ -14154,7 +14152,6 @@
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_wording.py",
         "reports/tests/test_lice.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_read.py",
         "monitoring/tests/test_small.py",
         "monitoring/tests/test_token.py"
@@ -14695,14 +14692,18 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/test_world.py",
+        "core/tests_deletepayload.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
+        "core/tests_formpayload.py",
         "core/tests_query_pages.py",
         "core/tests_rev.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_company_overview.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -14746,10 +14747,10 @@
         "hr/tests/test_review.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
+        "hr/tests/test_team_today.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_places.py",
         "experiments/tests/test_start.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_alarms.py",
@@ -14757,7 +14758,8 @@
         "sensors/tests/test_portable.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_migration_reverse.py",
-        "alarms/tests/test_migration_subjects.py"
+        "alarms/tests/test_migration_subjects.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -15028,6 +15030,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_production_plans_reads.py"
@@ -15409,6 +15412,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
         "farm/tests/test_cleaner_ration.py",
@@ -16401,11 +16405,15 @@
         "core/test_database.py",
         "core/test_datamap.py",
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests.py",
         "core/tests_crud_mount.py",
+        "core/tests_deletepayload.py",
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
         "core/tests_erasure.py",
+        "core/tests_formpanels.py",
+        "core/tests_formpayload.py",
         "core/tests_private_log.py",
         "core/tests_query_pages.py",
         "core/tests_rev.py",
@@ -16417,6 +16425,7 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_clocks.py",
+        "farm/tests/test_company_overview.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_fast_of_the_unit.py",
@@ -16470,19 +16479,19 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_pages.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_review.py",
         "experiments/tests/test_start.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_migration.py",
         "alarms/tests/test_migration_reverse.py",
-        "alarms/tests/test_migration_subjects.py"
+        "alarms/tests/test_migration_subjects.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -16894,6 +16903,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_harvest.py"
@@ -17562,6 +17572,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
@@ -17588,7 +17599,6 @@
         "reports/tests/test_labels.py",
         "hr/tests/test_production_permissions.py",
         "experiments/tests/test_pages.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_templates_db.py"
       ]
     },
@@ -18144,8 +18154,6 @@
         "farm/tests/test_withdrawal_locks.py",
         "farm/tests/test_withdrawal_shared_unit.py",
         "reports/tests/test_cleaner.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_oversee.py",
         "experiments/tests/test_overview.py"
       ]
     },
@@ -18674,7 +18682,6 @@
       "tests": [
         "core/tests_entry_key.py",
         "core/tests_rev.py",
-        "core/tests_sealing.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
@@ -18699,8 +18706,6 @@
         "reports/tests/test_cleaner.py",
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
-        "experiments/tests/test_confidential.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_pages.py",
         "alarms/tests/test_cross_review.py"
       ]
@@ -19564,6 +19569,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_feeds.py",
@@ -19984,8 +19990,10 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
+        "core/tests_deletepayload.py",
+        "core/tests_formpayload.py",
         "core/tests_rev.py",
-        "core/tests_sealing.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_delete_plan.py",
@@ -19997,30 +20005,32 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_suppliers.py",
+        "farm/tests/test_system_water_next.py",
         "farm/tests/test_systems.py",
+        "farm/tests/test_systems_next.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_history_page.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "tasks/tests/__init__.py",
-        "experiments/tests/test_confidential.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_preflight.py",
-        "experiments/tests/test_sealing_schema.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "sensors/tests/test_replay.py",
-        "alarms/tests/__init__.py"
+        "sensors/tests/test_water_history.py",
+        "alarms/tests/__init__.py",
+        "alarms/tests/test_reaction.py"
       ]
     },
     {
@@ -21052,8 +21062,9 @@
       "tests": [
         "core/test_database.py",
         "core/test_languages.py",
+        "core/test_lean_endpoints.py",
+        "core/test_world.py",
         "core/tests_rev.py",
-        "core/tests_sealing.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
@@ -21061,26 +21072,34 @@
         "farm/tests/test_charts_of.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_core_refusal.py",
+        "farm/tests/test_drawer_water_history.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_island_pages.py",
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_ph_scale.py",
         "farm/tests/test_ph_scale_salt_added.py",
+        "farm/tests/test_production_overview_next.py",
         "farm/tests/test_production_plans_reads.py",
+        "farm/tests/test_production_units_next.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_range_deffeyes.py",
         "farm/tests/test_rederive_ph.py",
         "farm/tests/test_sensor_ph_scale.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
+        "farm/tests/test_system_water_next.py",
+        "farm/tests/test_tank_water_page.py",
         "farm/tests/test_tanks.py",
         "farm/tests/test_water.py",
+        "farm/tests/test_water_history_page.py",
         "farm/tests/test_water_origin.py",
         "farm/tests/test_water_oxygen_basis.py",
         "farm/tests/test_water_points.py",
@@ -21090,27 +21109,23 @@
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_lots.py",
         "inventory/tests/test_services.py",
-        "experiments/tests/test_access.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_confidential.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_deviations.py",
-        "experiments/tests/test_oversee.py",
         "experiments/tests/test_places.py",
-        "experiments/tests/test_preflight.py",
-        "experiments/tests/test_review.py",
-        "experiments/tests/test_seal_budget.py",
-        "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
-        "experiments/tests/world.py",
         "monitoring/tests/__init__.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
+        "monitoring/tests/test_next_pages.py",
+        "monitoring/tests/test_small.py",
         "monitoring/tests/test_token.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
+        "sensors/tests/test_water_history.py",
         "alarms/tests/test_cross_review.py"
       ]
     },
@@ -21805,9 +21820,6 @@
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_shared_unit.py",
         "reports/tests/test_lice.py",
-        "experiments/tests/test_confidential.py",
-        "experiments/tests/test_review.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_golden.py"
       ]
     },
@@ -22472,6 +22484,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
@@ -22484,8 +22497,11 @@
         "monitoring/tests/test_extras.py",
         "monitoring/tests/test_going_in.py",
         "monitoring/tests/test_small.py",
+        "sensors/tests/test_chart_data.py",
+        "sensors/tests/test_water_history.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_reaction.py",
         "alarms/tests/test_refused_sensor_ph.py",
         "alarms/tests/test_refused_water.py"
       ]
@@ -23304,9 +23320,6 @@
         "farm/tests/test_withdrawal_gate_coverage.py",
         "farm/tests/test_withdrawal_guard.py",
         "reports/tests/test_compute.py",
-        "experiments/tests/test_confidential.py",
-        "experiments/tests/test_oversee.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_pages.py"
       ]
     },
@@ -23766,7 +23779,6 @@
       },
       "tests": [
         "core/tests_rev.py",
-        "core/tests_sealing.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",
@@ -23782,7 +23794,6 @@
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
-        "experiments/tests/test_confidential.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_migration_subjects.py"
@@ -24126,6 +24137,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_formpanels.py",
         "farm/tests/test_emptied_unit.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_withdrawal_ceiling.py",
@@ -24486,6 +24498,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -24493,6 +24506,7 @@
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
         "hr/tests/test_hardening.py",
+        "hr/tests/test_list_next.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
@@ -24852,6 +24866,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
@@ -24865,6 +24880,7 @@
         "hr/tests/test_leave_correction.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_list_next.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_own_record.py",
         "hr/tests/test_production_permissions.py",
@@ -24875,7 +24891,8 @@
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
-        "hr/tests/test_services.py"
+        "hr/tests/test_services.py",
+        "hr/tests/test_today_next.py"
       ]
     },
     {
@@ -25141,6 +25158,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_leave.py",
@@ -25551,6 +25569,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_after_create.py",
         "hr/tests/test_attendance.py",
@@ -25879,6 +25898,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -26255,6 +26275,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_boundary.py",
@@ -26952,7 +26973,9 @@
         "hr/tests/test_on_shift.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_roster.py",
-        "hr/tests/test_scheduling_settings.py"
+        "hr/tests/test_scheduling_settings.py",
+        "hr/tests/test_team_today.py",
+        "hr/tests/test_today_next.py"
       ]
     },
     {
@@ -27274,6 +27297,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -27291,7 +27315,9 @@
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
         "hr/tests/test_roles.py",
-        "hr/tests/test_roster.py"
+        "hr/tests/test_roster.py",
+        "hr/tests/test_team_today.py",
+        "hr/tests/test_today_next.py"
       ]
     },
     {
@@ -27661,6 +27687,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
@@ -27683,7 +27710,8 @@
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
-        "experiments/tests/test_oversee.py"
+        "hr/tests/test_team_today.py",
+        "hr/tests/test_today_next.py"
       ]
     },
     {
@@ -27977,6 +28005,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py"
@@ -29143,6 +29172,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "inventory/tests/test_pages.py",
@@ -29352,6 +29382,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "inventory/tests/test_pages.py"
       ]
     },
@@ -29757,6 +29788,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
@@ -30611,6 +30643,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_escaping.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
@@ -31114,6 +31147,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
@@ -31838,6 +31872,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_panel_next.py",
         "messaging/tests/test_models.py",
         "messaging/tests/test_pages.py",
         "messaging/tests/test_services.py"
@@ -32119,6 +32154,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_panel_next.py",
         "core/tests_workspaces.py",
         "messaging/tests/test_models.py",
         "messaging/tests/test_pages.py",
@@ -32356,6 +32393,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "messaging/tests/test_models.py",
         "messaging/tests/test_pages.py",
         "messaging/tests/test_services.py"
@@ -32584,6 +32622,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
@@ -32796,6 +32835,54 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "screen",
+          "field": "screen",
+          "type": "varchar(8)",
+          "null": false,
+          "choices": [
+            "24",
+            "27",
+            "32",
+            "34",
+            "49",
+            "55",
+            "65",
+            "other"
+          ],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › Wall screen"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "screen_inches",
+          "field": "screen_inches",
+          "type": "numeric(4, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › Wall screen"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "distance_m",
+          "field": "distance_m",
+          "type": "numeric(4, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "MonitorBoardForm › Wall screen"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -32827,6 +32914,18 @@
         },
         {
           "name": "chk_monitor_boards_card_width",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_screen",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_monitor_boards_distance",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -32909,6 +33008,9 @@
             "default_template": "General",
             "card_width": "General",
             "refresh_seconds": "General",
+            "screen": "Wall screen",
+            "screen_inches": "Wall screen",
+            "distance_m": "Wall screen",
             "version": ""
           }
         }
@@ -32925,10 +33027,12 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "monitoring/tests/test_band.py",
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
+        "monitoring/tests/test_next_pages.py",
         "monitoring/tests/test_resolve.py",
         "monitoring/tests/test_shell.py",
         "monitoring/tests/test_small.py",
@@ -34776,6 +34880,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "reports/tests/test_ack.py",
         "reports/tests/test_questions.py"
@@ -36747,7 +36852,8 @@
         "left_out": false
       },
       "tests": [
-        "core/tests_sealing.py",
+        "core/test_world.py",
+        "core/tests_panel_next.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "reports/tests/helpers.py",
@@ -36938,10 +37044,12 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_pages.py"
       ]
     },
@@ -37337,10 +37445,12 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_alarms.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_floods.py",
         "alarms/tests/test_migration.py",
         "alarms/tests/test_migration_reverse.py",
         "alarms/tests/test_pages.py"
@@ -37758,14 +37868,14 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_rev.py",
-        "core/tests_sealing.py",
         "core/tests_workspaces.py",
-        "experiments/tests/world.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_portable.py"
       ]
     },
@@ -38021,7 +38131,8 @@
       "tests": [
         "sensors/tests/test_contract.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "alarms/tests/test_snooze.py"
       ]
     },
     {
@@ -38707,17 +38818,17 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_rev.py",
-        "core/tests_sealing.py",
         "core/tests_workspaces.py",
         "farm/tests/test_sensor_ph_scale.py",
-        "experiments/tests/test_confidential.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_ph_scale.py",
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
@@ -38930,8 +39041,10 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_history.py",
@@ -39337,11 +39450,13 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "alarms/tests/test_review_fixes.py"
       ]
     },
     {
@@ -39764,6 +39879,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
@@ -40060,6 +40176,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py"
@@ -40565,8 +40682,10 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
+        "sensors/tests/test_chart_data.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
@@ -40854,9 +40973,12 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py",
-        "alarms/tests/test_clock.py"
+        "sensors/tests/test_pages_next.py",
+        "alarms/tests/test_clock.py",
+        "alarms/tests/test_review_fixes.py"
       ]
     },
     {
@@ -41262,6 +41384,7 @@
         "sensors/tests/__init__.py",
         "sensors/tests/test_demo.py",
         "sensors/tests/test_pages.py",
+        "sensors/tests/test_pages_next.py",
         "sensors/tests/test_schema.py"
       ]
     },
@@ -41662,9 +41785,7 @@
         "masked": [],
         "left_out": false
       },
-      "tests": [
-        "experiments/tests/world.py"
-      ]
+      "tests": []
     },
     {
       "app": "tasks",
@@ -41872,10 +41993,10 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
-        "tasks/tests/test_series.py",
-        "experiments/tests/world.py"
+        "tasks/tests/test_series.py"
       ]
     },
     {
@@ -42050,9 +42171,7 @@
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_reopen_keeps.py",
-        "tasks/tests/test_series.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/world.py"
+        "tasks/tests/test_series.py"
       ]
     },
     {
@@ -42609,6 +42728,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_panel_next.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/test_models.py",
@@ -43598,8 +43719,10 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_formpanels.py",
+        "core/tests_panel_next.py",
         "core/tests_private_log.py",
-        "core/tests_sealing.py",
         "core/tests_workspaces.py",
         "tasks/tests/__init__.py",
         "tasks/tests/test_models.py",
@@ -43607,10 +43730,6 @@
         "tasks/tests/test_private_text.py",
         "tasks/tests/test_read.py",
         "tasks/tests/test_series.py",
-        "experiments/tests/test_change_token.py",
-        "experiments/tests/test_confidential.py",
-        "experiments/tests/test_oversee.py",
-        "experiments/tests/world.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_token.py"
       ]
@@ -43664,12 +43783,6 @@
       "what": "delete",
       "why": "no page deletes a conversation or a channel; a person only leaves a channel",
       "weight": 2
-    },
-    {
-      "table": "experiments.ReplicateSystem",
-      "what": "column left_reason",
-      "why": "a booking keeps its days when one of its tanks is released; ending a booking early with its own reason has no dialog yet",
-      "weight": 1
     },
     {
       "table": "farm.ProductionDepartment",

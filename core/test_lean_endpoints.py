@@ -30,11 +30,17 @@ ALLOWED = {
                              "past moment",
     'farm:water_system_chart': "a system's stored measurements, as a unit's chart (the same helper below)",
     '(no URL) farm.water.views._owner_chart': 'the helper of the unit and system charts above, reached only through them',
+    '(no URL) farm.water.views.history_data': "a unit's or a system's water history (Tank › Water): stored readings "
+                                              'and samples; the request names only the window (a preset, two moments or '
+                                              'the moment of an alarm), refused when it is not one',
+    '(no URL) farm.water.views._owner_history': 'the history as JSON (?view=history of the unit and system charts '
+                                                'above), reached only through them',
+    'farm:tank_water': "Tank › Water: a stored unit's history_data behind the water-reading permission",
     'sensors:deffeyes_frames': 'the replay: stored readings and samples of a unit or system the user may read; the '
                                'request names only the target, the range, the step and the page',
 }
 NO_URL = '(no URL) '
-UUID_ARGUMENT = {'farm:water_unit_chart', 'farm:water_system_chart'}
+UUID_ARGUMENT = {'farm:water_unit_chart', 'farm:water_system_chart', 'farm:tank_water'}
 
 
 def python_modules():

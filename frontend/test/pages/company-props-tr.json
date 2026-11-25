@@ -1,0 +1,380 @@
+{
+ "today": {
+  "title": "Bugün şirket",
+  "meta": "Hesaplandı 23.11.2026 13:42 · Europe/Oslo",
+  "tiles": [
+   {
+    "key": "sites",
+    "label": "Sahalar",
+    "figure": "2",
+    "href": "/sites/",
+    "sub": "2 aktif",
+    "source": "Sahalar"
+   },
+   {
+    "key": "biomass",
+    "label": "Biyokütle",
+    "figure": "495 kg",
+    "sub": "2 balıklı birim",
+    "source": "Stok defteri · 13:42",
+    "href": "/operations/units/"
+   },
+   {
+    "key": "alarms",
+    "label": "Açık alarmlar",
+    "figure": "1",
+    "href": "/alarms/",
+    "status": "critical",
+    "statusLabel": "Kritik",
+    "sub": "1 kritik",
+    "sub2": "1 birim kritik · 1 birimde güncel veri yok",
+    "source": "Alarmlar · 13:42"
+   },
+   {
+    "key": "on_site",
+    "label": "Şu an sahada",
+    "figure": "3",
+    "href": "/hr/",
+    "sub": "Giriş yapan herkes, tüm ekipler",
+    "sub2": null,
+    "source": "Bugün ve yoklama · 13:42"
+   },
+   {
+    "key": "reports",
+    "label": "Verilecek raporlar",
+    "figure": "0",
+    "href": "/reports/",
+    "status": null,
+    "statusLabel": null,
+    "sub": null,
+    "source": "Yasal raporlar · 13:42"
+   },
+   {
+    "key": "messages",
+    "label": "Okunmamış mesajlar",
+    "figure": "33",
+    "href": "/messages/",
+    "sub": "3 sohbette",
+    "source": "Mesajlar · 13:42"
+   }
+  ]
+ },
+ "sites": {
+  "title": "Sahalar",
+  "link": {
+   "href": "/sites/",
+   "label": "Sahalar"
+  },
+  "columns": {
+   "site": "Saha",
+   "type": "Tür",
+   "units": "Balıklı birimler",
+   "biomass": "Biyokütle",
+   "water": "Su",
+   "alarms": "Açık alarmlar",
+   "onSite": "Şu an sahada"
+  },
+  "rows": [
+   {
+    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3",
+    "name": "Test Site North",
+    "code": "TSN",
+    "href": "/sites/69e9c2d3-e70f-4828-b665-938b19ef8da3/",
+    "type": "Kara tesisi",
+    "status": "critical",
+    "units": "1",
+    "biomass": "45 kg",
+    "water": {
+     "kind": "critical",
+     "text": "O₂ (mg/L) 8,40"
+    },
+    "alarms": {
+     "figure": "1",
+     "sub": "1 birim kritik"
+    },
+    "onSite": null
+   },
+   {
+    "key": "a7631506-d39d-419d-a7a4-1dfdda973ba1",
+    "name": "Test Site South",
+    "code": "TSS",
+    "href": "/sites/a7631506-d39d-419d-a7a4-1dfdda973ba1/",
+    "type": "Deniz kafesi",
+    "status": "warning",
+    "units": "1",
+    "biomass": "450 kg",
+    "water": {
+     "kind": "nodata",
+     "text": "Ölçülmedi"
+    },
+    "alarms": {
+     "figure": "0",
+     "sub": "1 birimde güncel veri yok"
+    },
+    "onSite": null
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "alarms": {
+  "title": "Açık alarmlar",
+  "link": {
+   "href": "/alarms/",
+   "label": "Alarmlar"
+  },
+  "safety": "Henüz hiçbir şey gönderilmiyor: anlık bildirim aktarımı bağlı değil (mobil uygulama daha sonra gelecek). Her bildirim, alıcısı ve seviyesiyle Alarmlar sayfasındaki giden kutusunda bekler ve aktarım bağlandığında gönderilir.",
+  "columns": {
+   "severity": "Önem",
+   "what": "Ne"
+  },
+  "rows": [
+   {
+    "key": "1",
+    "severity": "Kritik",
+    "kind": "critical",
+    "what": "O₂ 5.8 mg/L, below 6.00 (critical)",
+    "href": "/alarms/1/",
+    "where": "TT-01 › Middle · Test Site North · 20.11.2026 13:42"
+   }
+  ],
+  "more": null,
+  "empty": null,
+  "units": {
+   "tone": "critical",
+   "text": "1 birim kritik · 1 birimde güncel veri yok"
+  }
+ },
+ "people": {
+  "title": "Bugün ofis çalışanları",
+  "link": {
+   "href": "/hr/",
+   "label": "Bugün ve yoklama"
+  },
+  "tiles": [
+   {
+    "key": "planned",
+    "label": "Bugün planlanan",
+    "figure": "0"
+   },
+   {
+    "key": "upcoming",
+    "label": "Yaklaşan",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "here",
+    "label": "Şu an burada",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "not_in",
+    "label": "Henüz gelmedi",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "absent",
+    "label": "Devamsız",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "on_leave",
+    "label": "İzinde",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "done",
+    "label": "Tamamlandı",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "to_decide",
+    "label": "Karar bekleyen izinler",
+    "figure": "0",
+    "href": "/hr/leave/"
+   }
+  ]
+ },
+ "upcoming": {
+  "title": "Yaklaşan raporlar",
+  "items": [],
+  "empty": null,
+  "badge": null,
+  "link": {
+   "href": "/reports/",
+   "label": "Tüm raporlar"
+  },
+  "notSetUp": "Balık bulunan 2 saha raporlar için ayarlanmamış: ne borçlu oldukları bilinmiyor, bu yüzden onlar için vadesi gelen hiçbir şey listelenmiyor."
+ },
+ "feed": {
+  "title": "Eldeki yem",
+  "link": {
+   "href": "/operations/storage/",
+   "label": "Depo"
+  },
+  "columns": {
+   "item": "Tesis · kalem",
+   "onHand": "Eldeki",
+   "cover": "Yeterlilik (gün)"
+  },
+  "rows": [
+   {
+    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3-b5007070-d82f-40a4-a4bc-b5a165903c9f",
+    "item": "Test Grower 4 (TG-4)",
+    "site": "Test Site North",
+    "onHand": "1.475 kg",
+    "cover": null,
+    "status": "warning",
+    "note": "TS-01, 2.000 kg yeniden sipariş düzeyinin altında"
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "messages": {
+  "title": "Okunmamış mesajlar",
+  "link": {
+   "href": "/messages/",
+   "label": "Mesajlar"
+  },
+  "rows": [
+   {
+    "key": "9c2b0c5b-4afe-4973-892d-a964e6167ca0",
+    "title": "Test long channel",
+    "href": "/messages/9c2b0c5b-4afe-4973-892d-a964e6167ca0/",
+    "text": "Test message 60 of 60.",
+    "when": "23.11.2026 13:41"
+   },
+   {
+    "key": "f72a7254-70b5-465b-9c65-f1962920d32b",
+    "title": "Test channel",
+    "href": "/messages/f72a7254-70b5-465b-9c65-f1962920d32b/",
+    "text": "A test message to the channel.",
+    "when": "23.11.2026 12:41"
+   },
+   {
+    "key": "05771e1f-169f-451b-b66a-e009e120fe65",
+    "title": "Test Writer",
+    "href": "/messages/05771e1f-169f-451b-b66a-e009e120fe65/",
+    "text": "A second test answer,\non two lines.",
+    "when": "23.11.2026 12:40"
+   }
+  ],
+  "empty": null
+ },
+ "activity": {
+  "title": "Son etkinlik",
+  "link": {
+   "href": "/activity/",
+   "label": "Etkinlik günlüğü"
+  },
+  "critical": "Kritik",
+  "entries": [
+   {
+    "key": "dcdddff5-9433-4d9d-b6c0-538e6986115e",
+    "action": "Değiştirildi",
+    "critical": false,
+    "record": "Kanal · TEST-2 › TEST-P",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "0bdd9348-0e55-4645-a246-8c00d0710881",
+    "action": "Değiştirildi",
+    "critical": false,
+    "record": "Kanal · TEST-2 › TEST-P",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "854f244e-a2e8-43d3-8c9e-1c8ec84d92b7",
+    "action": "Değiştirildi",
+    "critical": false,
+    "record": "Bilgi kaydı · A reviewed test statement.",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "926d0cdc-d1b3-4725-bd4b-8e451e5f5fea",
+    "action": "Oluşturuldu",
+    "critical": false,
+    "record": "Bilgi kaydı · A reviewed test statement.",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "a3089ba3-41e8-4ba8-afef-5c4f4c0c6903",
+    "action": "Değiştirildi",
+    "critical": false,
+    "record": "Yemleme protokolü · Test assigned protocol",
+    "by": {
+     "before": "",
+     "name": "test.admin",
+     "after": "tarafından"
+    },
+    "when": "23.11.2026 13:42"
+   }
+  ],
+  "empty": null
+ },
+ "knowledge": {
+  "title": "Son bilgi kayıtları",
+  "link": {
+   "href": "/knowledge/entries/",
+   "label": "Bilgi kayıtları"
+  },
+  "rows": [
+   {
+    "key": "9bdbec43-d1f6-4f78-8656-2138a1ec290b",
+    "text": "A reviewed test statement.",
+    "source": "Test document (t.y.)",
+    "href": "/knowledge/entries/9bdbec43-d1f6-4f78-8656-2138a1ec290b/view/",
+    "kind": "ok",
+    "chip": "İncelendi"
+   },
+   {
+    "key": "399dd24d-3265-4ee1-8c89-ee0925aa514a",
+    "text": "A test statement.",
+    "source": "Test document (t.y.)",
+    "href": "/knowledge/entries/399dd24d-3265-4ee1-8c89-ee0925aa514a/view/",
+    "kind": "neutral",
+    "chip": "Taslak"
+   }
+  ],
+  "empty": null
+ }
+}

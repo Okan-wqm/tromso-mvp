@@ -1,14 +1,14 @@
 {% extends "crud/form.html" %}
 {% load i18n %}
 {# The medicine form adds its withdrawal per species on a tab of its own, saved as a list (core.crud.RowList). #}
-{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="withdrawal">{% trans "Withdrawal" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="withdrawal">{{ row_words.withdrawals.title }}</button>{% endblock %}
 {% block extra_panels %}
-{% trans "Withdrawal" as panel_title %}
-{% trans "The withdrawal after the last treatment day, as the SPC states it: degree-days (døgngrader) and days, one or both, per species; leave the species empty for every species without a row of its own. Give both when the SPC gives both: the later end wins. 0 means none. The safety margin is your own, on top of the SPC’s value: the value used is rounded up, e.g. 150 degree-days and 20 % is 180. Fish of a species with no row (and no row for every species) are held with an unknown end. One row per species, at most 50. They are saved separately from the medicine details." as help %}
-{% trans "No withdrawal yet. Use “Add species” to add a row." as empty %}
-{% trans "Add species" as add %}
-{% trans "Save withdrawal" as save %}
-{% trans "The withdrawal can be added once the medicine is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
+{# #}
+{# #}
+{# #}
+{# #}
 {% if object %}{% url 'farm:medicine_withdrawals' object.pk as action %}{% endif %}
-{% include "crud/_row_list.html" with rows=withdrawals tab="withdrawal" legend=panel_title kind="withdrawal-row" extra="farm/_withdrawal_change.html" %}
+{% include "crud/_row_list.html" with rows=withdrawals tab="withdrawal" words=row_words.withdrawals kind="withdrawal-row" extra="farm/_withdrawal_change.html" %}
 {% endblock %}

@@ -1,13 +1,14 @@
 {% load i18n %}{% comment %} Rows a record owns, on an inner tab of its own and saved as one list (core.crud.RowList), with a
    heading row: a feeder's calibrations, a feed's suitability. `rows` is the formset (none until the record
-   can have them), `tab` the inner tab's key, `panel_title`, `help`, `action` where it is saved, `legend` (one row),
+   can have them), `tab` the inner tab's key, `words` its RowList's words (title, help, legend: one row, empty, add, save,
+   pending; core.crud.RowList.words), `action` where it is saved,
    `empty` (no rows yet), `add` and `save` (the buttons), `kind` (the class giving the rows their columns)
    and `pending`, said instead of the list while there is none; `extra`, a template shown above the rows (what the
    save asked first, e.g. the withdrawal guard's question).{% endcomment %}
 <section class="tab-panel row-list" data-panel="{{ tab }}" aria-labelledby="{{ tab }}-title">
-  <h3 class="panel-title" id="{{ tab }}-title">{{ panel_title }}</h3>
+  <h3 class="panel-title" id="{{ tab }}-title">{{ words.title }}</h3>
   {% if rows %}
-  <p class="panel-help">{{ help }}</p>
+  <p class="panel-help">{{ words.help }}</p>
   <form method="post" action="{{ action }}" novalidate data-formset>
     {% csrf_token %}
     {{ rows.management_form }}
@@ -19,14 +20,14 @@
     <div class="contact-rows" data-rows>
       {% for row in rows %}{% include "crud/_row.html" %}{% endfor %}
     </div>
-    <p class="contact-empty" data-empty{% if rows.forms %} hidden{% endif %}>{{ empty }}</p>
+    <p class="contact-empty" data-empty{% if rows.forms %} hidden{% endif %}>{{ words.empty }}</p>
     <template data-row-template>{% with row=rows.empty_form %}{% include "crud/_row.html" %}{% endwith %}</template>
     <div class="form-actions">
-      <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{{ add }}</button>
-      <button type="submit" class="button button-inline">{{ save }}</button>
+      <button type="button" class="button button-ghost" data-add-row>{% include "icons/_icon.html" with name="plus" %}{{ words.add }}</button>
+      <button type="submit" class="button button-inline">{{ words.save }}</button>
     </div>
   </form>
   {% else %}
-  <p class="panel-help">{{ pending }}</p>
+  <p class="panel-help">{{ words.pending }}</p>
   {% endif %}
 </section>

@@ -72,6 +72,8 @@ export interface ListGroup {
   rows: string[];
 }
 
+export interface ListSection { key: string; title: string; lines: string[]; columns: ListColumn[]; rows: ListRow[] }
+
 export interface ListFilterOption { value: string; label: string }
 export interface ListFilter {
   /** a select (the default), or a day typed the European way (frontend/date-input.ts tidies it) */
@@ -104,6 +106,9 @@ export interface ListPageProps {
   table: { label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string };
   /** the rows in groups, one plate and table each (optional: without it, one table) */
   groups?: ListGroup[] | null;
+  /** tables of their own above the list, each in a plate of its title with its lines (Sea-lice counts' weekly averages;
+   * optional): drawn whether or not the list has rows */
+  sections?: ListSection[] | null;
   /** a timeline of the listed rows above the table, in a plate of its title (a channel's bindings over time; optional) */
   timeline?: (TimelineProps & { title: string }) | null;
   /** said when there is no row: "No … yet" with what to do, or "No … match" with the way back */
@@ -241,7 +246,7 @@ function Groups({ groups, table, csrfToken }: { groups: ListGroup[]; table: List
   );
 }
 
-export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, timeline, empty, pager }: ListPageProps) {
+export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, sections, timeline, empty, pager }: ListPageProps) {
   return (
     <>
       {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
@@ -251,6 +256,17 @@ export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, grou
           {notice.text}{notice.link ? <> <a href={notice.link.href}>{notice.link.label}</a></> : null}
         </Notice>
       ))}
+      {sections && sections.length ? (
+        <Plates>
+          {sections.map((section) => (
+            <Plate key={section.key} title={section.title}>
+              {section.lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}
+              <RowsTable label={section.title} columns={section.columns} rows={section.rows} actionsLabel={table.actionsLabel}
+                csrfToken={csrfToken} />
+            </Plate>
+          ))}
+        </Plates>
+      ) : null}
       {table.rows.length ? (
         <>
           {timeline ? (

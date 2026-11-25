@@ -278,7 +278,7 @@ test('a list cell with pips draws them before its text; a check filter is a tick
   const page = html(<ListPage {...LIST_PROPS} toolbar={toolbar} table={{ ...LIST_PROPS.table, rows,
     columns: [{ key: 'name', label: 'Unit' }, { key: 'today', label: 'Today' }] }} />);
   assert.match(page, /<td><span class="ui-pips" role="img" aria-label="1 of 2 meals done">[^]*?<\/span><span>0\.40 kg left<\/span><\/td>/);
-  assert.match(page, /<label class="ui-check"><input type="checkbox" name="voided" value="1" checked=""\/> Show voided<\/label>/);
+  assert.match(page, /<label class="ui-check"><input type="checkbox" name="voided" checked="" value="1"\/> Show voided<\/label>/);
 });
 
 test('a list cell with a gauge draws its text and sub-lines, then the gauge under them', async () => {
@@ -289,6 +289,18 @@ test('a list cell with a gauge draws its text and sub-lines, then the gauge unde
   const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows,
     columns: [{ key: 'name', label: 'Unit' }, { key: 'density', label: 'Density · capacity' }] }} />);
   assert.match(page, /<td><span>7\.4 kg\/m³<\/span><span class="ui-cell-sub">Over<\/span><span class="ui-cell-sub"><span class="ui-gauge">[^]*?<span class="ui-gauge-text">12 % of capacity<\/span><\/span><\/span><\/td>/);
+});
+
+test('a list page with a section draws its plate, lines and table above the list, also over an empty list', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const sections = [{ key: 'weeks', title: 'Weekly averages', lines: ['The latest 12 weeks of counts, per site.'],
+    columns: [{ key: 'week', label: 'Week' }], rows: [{ key: 'w', cells: { week: { text: 'Week 47, 2026' } }, actions: [] }] }];
+  for (const rows of [LIST_PROPS.table.rows, []]) {
+    const page = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, rows }} sections={sections} />);
+    assert.match(page, /<section class="ui-plate"[^>]*>[^]*?<h2>Weekly averages<\/h2>[^]*?<p class="ui-cell-sub">The latest 12 weeks of counts, per site\.<\/p>[^]*?aria-label="Weekly averages"[^]*?Week 47, 2026/);
+    assert.ok(page.indexOf('Weekly averages') < page.indexOf(rows.length ? 'Ann Alfa' : 'ui-empty'), 'the section comes first');
+  }
 });
 
 test('a list page with groups draws a plate per group, its head and its own table of the shared columns', async () => {

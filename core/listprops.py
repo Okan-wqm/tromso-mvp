@@ -172,12 +172,12 @@ _pager = pager     # the earlier private name, kept for branches that still call
 
 
 def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, page=None, pager_query='', groups=None,
-               tabs=None, lines=(), add=None, keep=(), table_label=None):
+               tabs=None, lines=(), add=None, keep=(), table_label=None, sections=()):
     """The list-page island's props of a page that is not a tab (`list_props` is a tab's): its link tabs (`tabs`), filters
     (a GET form, `filters` as `choice`, `day`, `check`; what else the address holds is sent again, and `keep` (name,
     value) whatever it says), its Add link (`add`: (href, label)), notices, lines above the table, the table (in `groups`
     when given; `table_label` its accessible name, else `label`), what is said when there is no row (`empty`: a title, or
-    the whole {title, text, link, add}), and the pager."""
+    the whole {title, text, link, add}), the pager, and `sections` (`section`) drawn above the table."""
     shown = {each['name'] for each in filters} | {key for key, _value in keep} | {'page', ui.PARAM}
     return {
         'csrfToken': get_token(request),
@@ -193,7 +193,15 @@ def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, 
         'groups': groups,
         'empty': empty if isinstance(empty, dict) else {'title': str(empty), 'text': None, 'link': None, 'add': None},
         'pager': pager(page, pager_query),
+        'sections': list(sections),
     }
+
+
+def section(key, title, columns, rows, lines=()):
+    """A table of its own above a page's list, in a plate of its title with its lines (Sea-lice counts' weekly averages
+    over the counts): `columns` and `rows` as the list's (`column`, `row`)."""
+    return {'key': key, 'title': str(title), 'lines': [str(line) for line in lines if line], 'columns': columns,
+            'rows': rows}
 
 
 def toolbar(view, context, filters, keep=()):

@@ -849,3 +849,45 @@ def feeding_ops_world(admin):
     twice = services.record_feeding(admin, unit=tank, day=_days_back(tank, 2), feed=feed, amount_kg=D('0.6'),
                                     time=time(9, 0), notes='Test entry')
     services.void_feeding(admin, twice, 'Entered twice')
+
+
+def health_ops_world(admin):
+    """Health's pages (farm/tests/test_health_pages_next.py), after world(): TM-01 bathed with the forms world's Test
+    Medicine two days back (its withdrawal holds the fish), a sea-lice count of TM-01 yesterday over the limit (12 adult
+    females on 20 fish), a vet's suspicion of pancreas disease on Test Site South not yet notified (Notify Mattilsynet)
+    and a closed observation at Test Site North. Through the services where the record has one (the treatment, the
+    count), straight into the table otherwise (the events, as the health tests do)."""
+    from farm.health import services
+    from farm.models import HealthEvent, Medicine, Site, Tank
+
+    cage = Tank.objects.get(code='TM-01')
+    day = _days_back(cage, 2)
+    medicine = Medicine.objects.get(name='Test Medicine')
+    seen = services.handling([cage], day, 'bath', medicine, 'sea_lice').fingerprint
+    services.record_treatment(admin, units=[cage], method='bath', reason='sea_lice', start_date=day, end_date=day,
+                              medicine=medicine, dose_value=D('0.1'), dose_unit='mg_l', prescribed_by='Test Vet',
+                              prescription_ref='RX-TEST-1', handling_ack=seen or None)
+    services.record_lice_count(admin, unit=cage, day=_days_back(cage, 1), fish_counted=20, adult_females=12, mobile=10,
+                               attached=14)
+    suspicion = HealthEvent.objects.create(site=Site.objects.get(code='TSS'), date=_days_back(cage, 3), kind='vet_visit',
+                                           diagnosis='pd', confirmation='suspected', examined_by='Test Vet',
+                                           findings='Test findings: lethargy in the cage.')
+    suspicion.units.set([cage])
+    HealthEvent.objects.create(site=Site.objects.get(code='TSN'), date=_days_back(cage, 9), kind='observation',
+                               examined_by='Test Person', findings='Test findings: pale gills.',
+                               closed_on=_days_back(cage, 7), outcome='Test outcome: recovered.')
+
+
+def harvest_ops_world(admin):
+    """Harvest's pages (farm/tests/test_harvest_pages_next.py), after world() and health_ops_world(): a harvest of TM-01
+    planned in four days to the harvest world's Test Slaughterhouse (TM-01's withdrawal falls on it), a transport of TT-01
+    planned yesterday and not done (overdue), and a production plan of TT-01's batch (250 g)."""
+    from farm.models import HandlingPlanItem, ProductionPlan, SlaughterFacility, Tank
+
+    cage, tank = Tank.objects.get(code='TM-01'), Tank.objects.get(code='TT-01')
+    facility = SlaughterFacility.objects.get(name='Test Slaughterhouse')
+    HandlingPlanItem.objects.create(kind='harvest', date=_days_back(cage, -4), unit=cage, batch=_batch_of(cage),
+                                    planned_count=400, planned_kg=D('380'), facility=facility, vessel='Test Wellboat')
+    HandlingPlanItem.objects.create(kind='transport', date=_days_back(tank, 1), unit=tank, batch=_batch_of(tank),
+                                    planned_count=100, destination_unit=cage, notes='Test transport note')
+    ProductionPlan.objects.create(batch=_batch_of(tank), target_weight_g=D('250'))

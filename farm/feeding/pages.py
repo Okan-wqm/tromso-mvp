@@ -242,7 +242,7 @@ def records_props(request, context):
                L.column('feed', _('Feed')), L.column('given', _('Feed given'), numeric=True),
                L.column('meals', _('Meals'), numeric=True), L.column('feeder', _('Feeder')),
                L.column('by', _('Recorded by')), L.column('notes', _('Notes'))]
-    from ..templatetags.dates import site_clock
+    from core.templatetags.dates import site_clock
     rows = []
     for row in context['rows']:
         record = row['record']

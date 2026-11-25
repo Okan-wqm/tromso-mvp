@@ -140,7 +140,7 @@ class PageTests(AlarmCase):
             'scope': 'channel', 'channel': self.flow.pk, 'quantity': '', 'kind': 'high', 'threshold': '100',
             'for_s': '60', 'hysteresis': '2', 'severity': 'critical', 'is_active': 'on'})
         self.assertIn(response.status_code, (204, 302), response.context and response.context['form'].errors)
-        rule = AlarmRule.objects.get()
+        rule = AlarmRule.objects.get(is_default=False)        # beside the seeded default rules (sensors 0015)
         self.assertEqual((rule.channel, rule.threshold, rule.for_s, rule.hysteresis, rule.severity),
                          (self.flow, 100.0, 60, 2.0, 'critical'))
         response = self.client.post(reverse('sensors:alarmrule_create'), {

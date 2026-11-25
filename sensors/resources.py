@@ -15,10 +15,11 @@ from django.utils.translation import gettext as gettext_now, gettext_lazy as _, 
 
 from core import formpanels, listprops
 from core.crud import CreateView, Resource, RowList, done, filter_by, refusal_text, render_page
+from core.models import AuditLog
 from farm.models import Equipment, Site, System, Tank
 from farm.models.site import zone_of
 
-from . import bindings, credentials, lists, words
+from . import alarms, bindings, credentials, lists, words
 from .forms import (AlarmRuleForm, BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm,
                     CredentialForm, DeviceForm, PayloadFormatForm, place_of)
 from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat, Role
@@ -408,3 +409,27 @@ class AlarmRuleResource(Resource):
     @classmethod
     def queryset(cls):
         return super().queryset().select_related('channel__device')
+
+    @classmethod
+    def form(cls, request, *args, **kwargs):
+        """The form knows who edits: switching a default rule off takes the Delete right (forms.SWITCH_OFF)."""
+        return cls.form_class(*args, user=request.user, **kwargs)
+
+    @classmethod
+    def allowed(cls, request, obj, action):
+        """A default rule is switched off, never deleted (the database refuses it too: sensors 0015)."""
+        return not (action == 'delete' and obj.is_default)
+
+    @classmethod
+    def change_severity(cls, before, obj):
+        """Switching a default rule off is logged as critical: a probe of its quantity that stops sending is then warned
+        of by nothing (the activity log shows it apart, as going on past a warning that protects fish)."""
+        if obj.is_default and before.is_active and not obj.is_active:
+            return AuditLog.Severity.CRITICAL
+        return AuditLog.Severity.NORMAL
+
+    @classmethod
+    def filter_list(cls, request, objects):
+        """The list says which channels of a quantity the water limits judge no active "No fresh value" rule covers (as
+        the system check sensors.W001 does)."""
+        return objects, {'uncovered': alarms.uncovered()}

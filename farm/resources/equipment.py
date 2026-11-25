@@ -1,7 +1,7 @@
 from django.db.models import Count, Q
-from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
+from django.utils.translation import gettext, gettext_lazy as _, ngettext, ngettext_lazy
 
-from core import audit, formpanels
+from core import audit, formpanels, listprops as L
 from core.crud import NONE, Resource, RowList, filter_by
 from core.models import in_tree_order
 
@@ -127,4 +127,82 @@ class EquipmentResource(Resource):
             'types': types, 'chosen_type': chosen_type,
             'statuses': Equipment.Status.choices, 'chosen_status': chosen_status,
             'unlinked': unlinked.count(),
+        }
+
+    # The list in the new look (core/listprops.py), in the classic list's words (farm/equipment_list.html).
+    search_placeholder = _('Search by name, code or serial number')
+    empty_text = _('Pumps, filters, feeders, sensors and generators of a production department, linked to the systems they '
+                   'serve.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        department = lambda each: f'{each.site.name} · {each.name}' if each.site else each.name   # noqa: E731
+        return [
+            L.choice('site', _('Site'), context['chosen_site'],
+                     [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])]),
+            L.choice('production_department', _('Production department'), context['chosen_department'],
+                     [('', _('All production departments')), *((each.pk, department(each)) for each in context['departments'])]),
+            L.choice('system', _('System'), context['chosen_system'],
+                     [('', _('All systems')), (context['none_value'], _('Not linked to any system')),
+                      *((system.pk, f'{system.site.name} · {system.name}') for system in context['systems'])]),
+            L.choice('category', _('Category'), context['chosen_category'], [('', _('All categories')), *context['categories']]),
+            L.choice('type', _('Type'), context['chosen_type'],
+                     [('', _('All types')), *((kind.pk, str(kind)) for kind in context['types'])]),
+            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        from django.urls import reverse
+        from django.utils.http import urlencode
+
+        from .system import _nested
+        user = view.request.user
+
+        def systems(equipment):
+            links = equipment.live_links()
+            if not links:
+                return L.cell(chip=L.chip('warning', _('No system')))
+            primary = [link.system.name for link in links if link.is_primary]
+            return L.cell(', '.join(link.system.name for link in links),
+                          sub=[f"{_('Primary system')}: {name}" for name in primary])
+
+        def actions(equipment):
+            done = []
+            if user.has_perm('farm.view_samplingpoint'):
+                done.append(L.link(f"{reverse('farm:samplingpoint_list')}?{urlencode({'equipment': equipment.pk})}",
+                                   _('Sampling points of %(name)s') % {'name': equipment.name}, 'droplet'))
+            return done + L.edit_delete(view, context, equipment, equipment.name)
+
+        def department(equipment):
+            place = equipment.production_department
+            return L.cell(place.name, sub=[place.site.name]) if place.site else \
+                L.cell(place.name, chips=[L.chip('warning', _('No site'))])
+
+        notices = []
+        if context['unlinked']:
+            count = context['unlinked']
+            notices.append(L.notice('unlinked', 'warning', ngettext(
+                '%(count)s piece of equipment is not linked to any system.',
+                '%(count)s pieces of equipment are not linked to any system.', count) % {'count': count},
+                link=(f"?{urlencode({'system': context['none_value']})}", _('Show them'))))
+        return {
+            'columns': [L.column('equipment', _('Equipment')), L.column('type', _('Type')),
+                        L.column('department', _('Production department')), L.column('systems', _('Systems')),
+                        L.column('parts', _('Parts')), L.column('status', _('Status')),
+                        L.column('make', _('Make and model')), L.column('supplier', _('Supplier'))],
+            'notices': notices,
+            'rows': [L.row(equipment.pk, {
+                'equipment': L.title(view, context, equipment, _nested(equipment), sub=[' · '.join(
+                    [equipment.code, *([_('part of %(code)s') % {'code': equipment.parent.code}] if equipment.parent
+                                       else [])])]),
+                'type': L.cell(str(equipment.equipment_type), sub=[equipment.equipment_type.get_category_display()]),
+                'department': department(equipment),
+                'systems': systems(equipment),
+                'parts': L.cell(ngettext('%(count)s part', '%(count)s parts', equipment.parts) % {'count': equipment.parts}
+                                if equipment.parts else '–'),
+                'status': L.badge(equipment.status, equipment.get_status_display()),
+                'make': L.cell(' · '.join(part for part in (equipment.manufacturer, equipment.model) if part) or '–'),
+                'supplier': L.cell(equipment.supplier.name if equipment.supplier else '–'),
+            }, actions(equipment)) for equipment in objects],
         }

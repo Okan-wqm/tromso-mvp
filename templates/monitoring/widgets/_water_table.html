@@ -5,7 +5,7 @@
 {% if chosen.measure %}{% include "monitoring/widgets/_water_rows.html" %}{% else %}<section class="monitor-section monitor-water">
   {% if card.water and card.water.0.sensors_failed %}<p class="row-sub wq-warning" role="status">{% trans "Live sensor values could not be read: samples only." %}</p>{% endif %}
   {% if view.opts.points == "all" %}
-  {% for water in card.water %}{% include "monitoring/widgets/_water_point.html" with named=True %}
+  {% for water in card.water %}{% if water.point or water.readings %}{% include "monitoring/widgets/_water_point.html" with named=True %}{% else %}<p class="row-sub">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}</p>{% endif %}
   {% empty %}<p class="row-sub">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}</p>
   {% endfor %}
   {% else %}

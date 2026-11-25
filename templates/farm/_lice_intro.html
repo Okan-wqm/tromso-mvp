@@ -1,0 +1,3 @@
+{% load i18n %}{% comment %} What Record sea-lice count says before its fields (farm/lice_form.html). Drawn by the classic dialog and, as text blocks (core.formpanels.blocks_of), by the new look's dialog page: one source of its words. {% endcomment %}
+{% if not form.fields.unit.queryset.exists %}<p class="notice notice-warning">{% trans "No unit holds fish: lice are counted on the fish of a unit." %}</p>{% endif %}
+<p class="help">{% trans "Count every stage on every fish examined and enter the totals; the averages per fish are worked out (lakselusforskriften, Vedlegg 1)." %}</p>

@@ -16,10 +16,12 @@ from farm.templatetags.feeding import fcr, fed_on
 from farm.templatetags.health import harvest_from
 from farm.templatetags.stock import density, fish, grams, join_codes, kilos, percent
 from farm.templatetags.water import reading_figure, sample_clock, source, status_label
+from farm.water.evaluate import Status
 
 FCR_SAID = ('Biological feed conversion ratio: the feed given per kg of growth, dead fish credited, from stocking to the '
             'last weighing')
-VALUE_CHIP = {'critical': 'critical', 'warning': 'warning', 'stale': 'stale'}
+# a value that cannot be evaluated is never drawn as an OK one: its figure in the warning chip, as its point's status
+VALUE_CHIP = {'critical': 'critical', 'warning': 'warning', 'stale': 'stale', 'unevaluated': 'warning'}
 POINT_CHIP = {'critical': 'critical', 'warning': 'warning', 'unevaluated': 'warning', 'ok': 'ok', 'stale': 'stale',
               'not_measured': 'nodata'}
 
@@ -45,22 +47,45 @@ def was_said(reading):
     return ' · '.join(str(part) for part in parts)
 
 
-def value_cell(reading):
+def value_cell(reading, latest=True, whole=False):
     """One latest water value (farm/_water_face.html): its figure (in its status's chip when it is a warning, critical
     or stale), what was measured when it is stored converted, the unit's own older value a status keeps, and where it
     came from and how old it is. No value is "no data", never a dash. A stale value that was critical or a warning when
     it was taken (Reading.old_alert, F-244) keeps its stale chip and says in words what it was ("Stale, was critical"
-    and the sample's moment; its age is the origin line's): never only "stale"."""
+    and the sample's moment; its age is the origin line's): never only "stale".
+
+    `latest=False`: a value of a sample in the history (farm/_water_cell.html): no origin line (the row says the sample's
+    source and moment), and no value is "—". `whole`: also what the classic title says besides the status a chip draws
+    (Water chemistry, where a value is read for itself): that it was worked out, and by what (`provenance`, long: a closed
+    disclosure under the value, `listprops.cell` `more`), why it could not be (`note`: the "?" is never left without its
+    reason), and a status no chip draws in words (cannot be evaluated, no limit)."""
     if reading is None:
-        return L.cell(_('no data'))
-    said = source(reading)
+        return L.cell(_('no data') if latest else '—')
     figure = '?' if reading.value is None else str(reading_figure(reading))
-    sub = [reading.measured or '', getattr(reading, 'last_own_said', '') if reading.last_own else '',
-           f"{said['origin']} · {said['age']}"]
+    sub = [reading.measured or '', getattr(reading, 'last_own_said', '') if reading.last_own else '']
+    more = None
+    if whole and not reading.old_alert:
+        if reading.status in (Status.UNEVALUATED, Status.NO_LIMIT):
+            sub.insert(0, str(status_label(reading.status)))
+        worked = ''
+        if reading.derived:
+            worked = _('worked out from the sensors') if reading.sample.live else _('worked out from the sample')
+        # how it was worked out or converted (`provenance`: a formula and its inputs, long) is closed under the value,
+        # opened by the words that say it was ("worked out from the sample", or what was measured)
+        summary = worked or reading.measured
+        if reading.provenance and summary:
+            more = L.details(summary, [reading.provenance])
+        else:
+            sub += [str(each) for each in (worked, reading.provenance) if each]
+        if reading.note:
+            sub.append(str(reading.note))           # why a "?" could not be worked out: always in sight
+    if latest:
+        said = source(reading)
+        sub.append(f"{said['origin']} · {said['age']}")
     if reading.old_alert:
         sub.insert(0, was_said(reading))
     tone = VALUE_CHIP.get(reading.status)
-    return L.cell(chip=L.chip(tone, figure), sub=sub) if tone else L.cell(figure, sub=sub)
+    return L.cell(chip=L.chip(tone, figure), sub=sub, more=more) if tone else L.cell(figure, sub=sub, more=more)
 
 
 def unit_cell(row):

@@ -8,6 +8,15 @@
       "_ui-Ef56Gh78.js"
     ]
   },
+  "frontend/islands/record-form.tsx": {
+    "file": "record-form-Rf12Ab34.js",
+    "name": "record-form",
+    "src": "frontend/islands/record-form.tsx",
+    "isEntry": true,
+    "imports": [
+      "_ui-Ef56Gh78.js"
+    ]
+  },
   "frontend/islands/sensors-home.tsx": {
     "file": "sensors-home-Sh12Ab34.js",
     "name": "sensors-home",

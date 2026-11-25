@@ -63,7 +63,8 @@ class Outcome(models.TextChoices):
 
 class Alarm(models.Model):
     """One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps),
-    or a water value past a species' limit at a sampling point. `site` and `production_department` are where it is, set
+    or a water value past a species' limit at a sampling point (`point`; none for a unit read at its system's probes
+    where the system has no loop point: alarms/sources.py `_water_subjects`). `site` and `production_department` are where it is, set
     when it opens, for the recipient rules; `summary` says what it is, in English at rest (a value and a limit)."""
 
     id = models.BigAutoField(primary_key=True)
@@ -97,8 +98,7 @@ class Alarm(models.Model):
             models.CheckConstraint(
                 condition=Q(source=Source.SENSOR_RULE, sensor_event__isnull=False, point__isnull=True, parameter='',
                             device__isnull=True)
-                | (Q(source=Source.WATER_LIMIT, sensor_event__isnull=True, point__isnull=False, device__isnull=True)
-                   & ~Q(parameter=''))
+                | (Q(source=Source.WATER_LIMIT, sensor_event__isnull=True, device__isnull=True) & ~Q(parameter=''))
                 | (Q(source=Source.SYSTEM, sensor_event__isnull=True, point__isnull=True) & ~Q(parameter='')),
                 name='chk_alarms_shape'),
         ]

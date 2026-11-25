@@ -60,7 +60,8 @@ from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
 from farm.templatetags.water import value_past, water_value
 from farm.water import (
-    calculation as water_calculation, chemistry, deffeyes, parameters, read as water_read, views as water_views,
+    calculation as water_calculation, chemistry, deffeyes, messages as water_messages, parameters, read as water_read,
+    views as water_views,
 )
 from farm.water.evaluate import Status
 from tasks import read as tasks_read, views as tasks_views
@@ -537,14 +538,16 @@ def clock_notes(water, now):
 # ---- the state ---------------------------------------------------------------------------------------------------------
 def middle_of(water):
     """The PointWater of a unit's middle point out of its points' water (water_read.points_water: the middle one first,
-    when there is one), else None."""
+    when there is one), or, for a unit with no point of its own, its water read at its system (farm.water.read.latest
+    `units`: for_unit, no point), else None."""
     first = water[0] if water else None
-    return first if first is not None and first.point is not None and (
-        first.for_unit or first.point.kind == water_read.MIDDLE) else None
+    return first if first is not None and (first.for_unit or (
+        first.point is not None and first.point.kind == water_read.MIDDLE)) else None
 
 
 def _middle(card):
-    """The PointWater of the card's middle point (always the first, when there is one), else None."""
+    """The PointWater of the card's middle point (always the first, when there is one), or its water read at its system
+    (`middle_of`), else None."""
     return middle_of(card.water)
 
 
@@ -685,15 +688,20 @@ def water_rungs(middle, now):
     """The water's part of rungs 1 to 4 of the ladder (_ladder) from a stocked unit's middle point's water; `upper_state`
     adds the stock's and the feeding's warnings, and is the ONE rule the cards and the new look's status strip
     (alarms.read.attention) both apply. Critical and warning values (fresh or old, the old ones
-    marked); a value the chemistry core refuses to work out (beside a critical, else a warning); the unit's own stale
-    value its system stands in for. Blind: the temperature or the oxygen missing or older than its freshness, no middle
-    point at all (`middle` None), a timestamp in the future, the live sensors not read. Unjudged: a value no limit row
-    judges for these fish."""
+    marked), and the oxygen of a unit with fish that has no fresh value (`_silent`); a value the chemistry core refuses
+    to work out (beside a critical, else a warning); the unit's own stale value its system stands in for. Blind: the
+    temperature missing or older than its freshness, the oxygen where its water finds no fish that day, no middle point
+    at all (`middle` None), a timestamp in the future, the live sensors not read. Unjudged: a value no limit row judges
+    for these fish."""
     critical, warning, old = _alerts(middle, now)
     unevaluated = [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
     unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
-    if critical:
-        return WaterRungs(critical=(*critical, *unevaluated), old=tuple(text for text in old if text in critical))
+    # The oxygen of a unit with fish that has no fresh value (owner decision of 2026-11-23): critical, said as missing or
+    # old data, from the water's one judgement (farm.water.read.PointWater.silent_oxygen).
+    silent = _silent(middle)
+    if critical or silent:
+        return WaterRungs(critical=(*critical, *silent, *unevaluated),
+                          old=(*(text for text in old if text in critical), *silent))
     warning += unevaluated
     stale = []
     for label, reading in key_readings(middle):
@@ -748,12 +756,14 @@ def upper_state(rungs, over_capacity, drift, water=True, basis=()):
 def _ladder(card):
     """The one roll-up of a card, a ladder whose thresholds are the owners' and none invented here:
     1. critical: a water value judged critical, fresh or old (an old one says its age, and the card is marked old),
-       with a judged value the chemistry core refuses to work out said beside it;
+       or the oxygen of a unit that holds fish with no fresh value (owner decision of 2026-11-23, `_silent`), with a
+       judged value the chemistry core refuses to work out said beside it;
     2. warning: a value judged a warning (fresh or old, the same), a judged value the chemistry core refuses to work
        out ("cannot be evaluated", with its reason), the unit over its capacity, an estimate that says weigh now;
-    3. blind: a stocked unit whose temperature or oxygen is missing or older than its freshness (a fresh pH hides a
-       three-day-old oxygen in the water's own status: that status ranks OK above stale), with no middle point, or whose
-       live sensors could not be read; never OK, never red; not worked out when the water is hidden (the card says so);
+    3. blind: a stocked unit whose temperature is missing or older than its freshness (a fresh pH hides a three-day-old
+       temperature in the water's own status: that status ranks OK above stale), or whose oxygen is where its water
+       finds no fish that day, with no middle point, or whose live sensors could not be read; never OK, never red (but
+       an oxygen with fish: rung 1); not worked out when the water is hidden (the card says so);
     4. unjudged ("No limit"): a value of the stocked unit that no limit row judges for its fish (the owner has set
        none): what it means for the fish is not known, so it is never OK;
     5. note: a withdrawal in force (a chip, not an alarm: it lasts weeks), weigh soon, a ration that cannot be worked
@@ -789,6 +799,20 @@ def _ladder(card):
     if note:
         return State(NOTE, tuple(note), basis)
     return State(OK, (), basis)
+
+
+def _silent(middle):
+    """[Reason] of the middle point's oxygen that has no fresh value where the unit holds fish (PointWater.why_silent:
+    critical, owner decision of 2026-11-23), in short "O₂ (mg/L): no recent data" for the band's chip, so the units
+    it holds share one; none when an old critical oxygen value says it already (`_alerts`)."""
+    if middle is None or middle.silent_oxygen is None or any(
+            reading.code in OXYGEN_CODES and judged == Status.CRITICAL for reading, judged, _old in middle.alerts):
+        return []
+    short = str(water_messages.no_fresh_oxygen_short())
+    return [Reason(str(text), Brief(short, critical=True, old=True)) for text in middle.why_silent]
+
+
+OXYGEN_CODES = (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT)
 
 
 def attention(cards_):
@@ -876,13 +900,14 @@ def band(cards_, chips=None, codes=None):
 
 
 # ---- the change token -------------------------------------------------------------------------------------------------
-def change_token(user, canonical_query, board='', now=None, revision=None):
+def change_token(user, canonical_query, board='', now=None, revision=None, look=''):
     """What the screen asks "has anything changed?" with: a hash of the activity log's revision, the minute, the language,
     what the person may read, the board and the canonical address. No user id and no unit id: a unit made, edited or
     deleted writes a log entry, so the revision moves. The revision is read FIRST, before any data: a change between
     the two reads then makes the next token differ, never the other way round. The minute re-draws the figures that run
     on the clock (age, next meal) at most once a minute per screen. `revision`: audit.revision() as the caller has just
-    read it (the page's two tokens, the grid's and the pane's, read it once).
+    read it (the page's two tokens, the grid's and the pane's, read it once). `look`: the new look's name when the
+    screen is drawn in it (core.ui.NEXT: its cards are other markup, monitoring/_card_next.html), '' in the classic one.
 
     For a person who reads confidential work the digest of what they read is added (core.sealing.reach, read once a
     request): a grant, a share's end or an audience change that opens or closes some to them moves their token, and
@@ -890,7 +915,7 @@ def change_token(user, canonical_query, board='', now=None, revision=None):
     revision = audit.revision() if revision is None else revision
     now = now or timezone.now()
     parts = (revision, str(int(now.timestamp() // TOKEN_BUCKET)), translation.get_language() or '',
-             ','.join(sorted(sections_for(user))), board, canonical_query)
+             ','.join(sorted(sections_for(user))), board, canonical_query) + ((look,) if look else ())
     digest = sealing.reach().digest
     if digest:
         parts += (digest,)

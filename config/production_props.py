@@ -109,9 +109,14 @@ def _attention(context, clock):
         if row['loop']:
             where = f'{point.name}, {owner.site.name}'
         else:
+            # (a unit read at its system or nowhere is its own row, without a point: farm.water.views.overview)
             department = owner.production_department
-            where = f'{point.name}, {department.name}' + (f', {department.site.name}' if department.site else '')
-        rows.append(_row(f'water-{point.pk}', 'water', _chip(status, row['water'].old_alert), owner.code, where,
+            where = ', '.join([*([point.name] if point is not None else []), department.name,
+                               *([department.site.name] if department.site else [])])
+        # A unit with fish whose oxygen has no fresh value says why (PointWater.why_silent, owner decision of 2026-11-23).
+        where = ' · '.join([where, *(str(why) for why in row['water'].why_silent)])
+        key = f'water-{point.pk}' if point is not None else f'water-unit-{owner.pk}'
+        rows.append(_row(key, 'water', _chip(status, row['water'].old_alert), owner.code, where,
                          {'href': row['history_url'], 'label': _('History')},
                          'critical' if status == 'critical' else 'warning',
                          [value(reading, judged) for reading, judged, _old in row['water'].alerts]))

@@ -3,7 +3,11 @@ their clean readings only, never a page. An event is a row the Sensors overview 
 app makes each one an alarm and notifies its recipients (Company › Alarms; nothing is sent until a transport is connected).
 
 Per active rule and each channel it covers (its channel, or every active channel of its quantity on an active device):
-- no data: no fresh value for `for_s` seconds past the channel's freshness;
+- no data: no fresh value for `for_s` seconds past the channel's freshness, counted as the page counts it (the older
+  of the value's device time and its receipt, read.State.fresh_from); the default rule of each quantity the water
+  limits judge (AlarmRule.is_default) holds at the freshness itself, so a probe that stops sending is warned of the
+  moment its place shows "no recent data", whatever its pH scale, and only where its place's water concerns fish
+  (owner decision of 2026-11-23: a fallow or empty unit raises no alarm; farm.water.read.with_fish);
 - device offline: the channel's device sent nothing for three of its intervals;
 - above / below: every clean value of the last `for_s` seconds (and the current one) past the threshold; the event
   closes when the value is back past the threshold by the hysteresis;
@@ -25,10 +29,11 @@ from datetime import timedelta
 from django.db import connection, transaction
 from django.utils import timezone
 
+from farm.water import parameters as water_parameters, read as water_read, sources as water_sources
 from farm.water.parameters import PH
 
-from . import read
-from .models import AlarmEvent, AlarmKind, AlarmRule, Binding, Channel, ChannelStatus
+from . import quantities, read
+from .models import AlarmEvent, AlarmKind, AlarmRule, Binding, Channel, ChannelStatus, Severity
 from .models.binding import place_site
 from .quality import BAD_MASK
 
@@ -60,7 +65,10 @@ def _holds(rule, channel, state, online, now, opened, binding):
     hysteresis). `state` is already the place's (`_there`)."""
     value = state.value
     if rule.kind == AlarmKind.NO_DATA:
-        last = state.good_at or binding.valid_from                # nothing since it came: counted from then
+        # Counted from where the value's freshness is (State.fresh_from), so a backlog replayed at a reconnect, received
+        # now but measured long ago, keeps the rule holding as the page keeps saying "no recent data"; nothing since
+        # the channel came: from then.
+        last = state.fresh_from or binding.valid_from
         return now - last > timedelta(seconds=state.fresh_s + rule.for_s), value
     if rule.kind == AlarmKind.DEVICE_OFFLINE:
         return not online, value
@@ -92,17 +100,77 @@ def _further(rule, peak, value):
     return min(peak, value) if rule.kind == AlarmKind.LOW else max(peak, value)
 
 
-def evaluate(now=None):
-    """Checks every active rule now; returns how many events opened and closed."""
+def _aside():
+    """(quantities, channel ids) where the default "No fresh value" rule stands aside: a farm's own active "No fresh
+    value" rule covers them, of the whole quantity or of the channel (the review of 2026-11-23, F4: one silent probe is
+    one alarm, the farm's own rule's)."""
+    own = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True, is_default=False)
+    return (set(own.filter(channel__isnull=True).values_list('quantity', flat=True)),
+            set(own.filter(channel__isnull=False).values_list('channel_id', flat=True)))
+
+
+def close_switched_off(now):
+    """Closes at `now` the open events of a rule that is switched off or deleted (the review of 2026-11-23, F5): no pass
+    visits such a rule, so its alarm would stay open for ever, even after the probe sends again. Never an event of an
+    active rule. Their alarms clear with the rule's state said in the activity log (alarms/sources.py
+    `sensor_events`). Returns how many it closed."""
+    found = list(AlarmEvent.objects.select_for_update(of=('self',)).filter(closed_at__isnull=True)
+                 .exclude(rule__in=AlarmRule.objects.filter(is_active=True)))
+    for event in found:
+        close(event, now)
+    return len(found)
+
+
+class OxygenPass:
+    """One alarm pass's view of the silent oxygen probes (`silent_probes`) and of the places where the oxygen is known all
+    the same (farm.water.read.oxygen_known), each read once, when first asked, and shared by the pass's sensor rules
+    (`evaluate`: a default oxygen rule stands aside there) and the alarm system's warnings (alarms/sources.py): the pass
+    (alarms/engine.py `run_once`) makes one and hands it down (review 3 of the branch, N3). Not a cache across passes."""
+
+    def __init__(self, now):
+        self.now = now
+        self._probes = self._known = None
+
+    def probes(self):
+        if self._probes is None:
+            self._probes = silent_probes(OXYGEN, self.now)
+        return self._probes
+
+    def known(self):
+        if self._known is None:
+            probes = self.probes()
+            self._known = water_read.oxygen_known(set(probes), self.now) if probes else set()
+        return self._known
+
+
+def evaluate(now=None, oxygen=None):
+    """Checks every active rule now, after closing the events of the rules switched off (`close_switched_off`); returns
+    how many events opened and closed. `oxygen`: the pass's OxygenPass (one made here without it)."""
     now = now or timezone.now()
-    opened_count = closed_count = 0
+    oxygen = oxygen or OxygenPass(now)
+    opened_count = 0
+    with transaction.atomic():
+        closed_count = close_switched_off(now)
+    aside_quantities, aside_channels = _aside()
     for rule in AlarmRule.objects.filter(is_active=True).select_related('channel__device'):
         covered = _channels(rule)
+        if rule.is_default:
+            # The farm's own rule speaks for these (F4); an open event of the default there closes below.
+            covered = [] if rule.quantity in aside_quantities else [
+                channel for channel in covered if channel.pk not in aside_channels]
         places = {binding.channel_id: binding for binding in Binding.objects.visible().at(now)
                   .filter(channel__in=[channel.pk for channel in covered])}
         channels = [channel for channel in covered if channel.pk in places]                # bound now only
         states = read.latest([channel.channel_no for channel in channels], now)
         online = read.device_status({channel.device for channel in channels}, now)
+        # A default rule holds only where its place's water concerns fish (owner decision of 2026-11-23): one ask for
+        # every place of the rule's channels; an open event of a place whose fish are gone closes.
+        fished = (water_read.with_fish({place_of(places[channel.pk]) for channel in channels}, now)
+                  if rule.is_default and channels else None)
+        # A default oxygen rule's silent probe where the place's oxygen is fresh all the same (a typed sample, another
+        # probe): the alarm system's warning says it, not this rule's critical (review 2 of the branch, R3 p3); once
+        # nothing else is fresh, the rule holds again.
+        known = oxygen.known() if rule.is_default and rule.quantity in OXYGEN and channels else None
         with transaction.atomic():
             open_events = {event.channel_no: event for event in AlarmEvent.objects.select_for_update(of=('self',))
                            .filter(rule=rule, closed_at__isnull=True).select_related('binding')}
@@ -121,6 +189,8 @@ def evaluate(now=None):
                 state = _there(states[channel.channel_no], binding)
                 holds, value = _holds(rule, channel, state, online[channel.device_id].online, now, event is not None,
                                       binding)
+                holds = holds and (fished is None or place_of(binding) in fished) and (
+                    known is None or place_of(binding) not in known)
                 if holds and event is None:
                     AlarmEvent.objects.create(rule=rule, channel_no=channel.channel_no, binding=binding, opened_at=now,
                                               peak=value)
@@ -134,6 +204,87 @@ def evaluate(now=None):
     return opened_count, closed_count
 
 
+# The dissolved oxygen, one quantity in two units.
+OXYGEN = (water_parameters.OXYGEN_MG_L, water_parameters.OXYGEN_PCT)
+
+
+def _silent(channel, state, binding, now):
+    """Whether the channel sent no fresh value at its place for its freshness: what a default "No fresh value" rule
+    holds on (`_holds`, at the freshness itself)."""
+    last = _there(state, binding).fresh_from or binding.valid_from
+    return now - last > timedelta(seconds=state.fresh_s)
+
+
+# A binding's place and the place's production department (alarms/sources.py `_department_at`: where a probe's alarm is).
+PLACE_RELATED = ('point__unit__production_department', 'point__system__production_department',
+                 'point__equipment__production_department', 'system__production_department',
+                 'equipment__production_department')
+
+
+def silent_probes(codes, now=None):
+    """{place (`place_of`): [Binding, its channel loaded]} of the channels of `codes` an active default "No fresh
+    value" rule covers (not standing aside for a farm's own rule: `_aside`), active on an active device, bound now, that
+    sent no fresh value there (`_silent`): the probes whose silence the alarm system says as a warning where the place's
+    oxygen is fresh all the same (alarms/sources.py; review 2 of the branch, R3 p3). Each binding comes with its place
+    and the place's department, each channel with its device's site (where its warning is: no query a probe). Five
+    queries, whatever the number of probes."""
+    now = now or timezone.now()
+    defaults = set(AlarmRule.objects.filter(is_default=True, is_active=True, quantity__in=list(codes))
+                   .values_list('quantity', flat=True))
+    aside_quantities, aside_channels = _aside()
+    channels = [channel for channel in Channel.objects.filter(
+        quantity__in=defaults - aside_quantities, state=ChannelStatus.ACTIVE, device__is_active=True)
+        .select_related('device__site') if channel.pk not in aside_channels]
+    places = {binding.channel_id: binding for binding in Binding.objects.visible().at(now)
+              .filter(channel__in=[channel.pk for channel in channels])
+              .select_related(*PLACE_RELATED)}
+    channels = [channel for channel in channels if channel.pk in places]
+    states = read.latest([channel.channel_no for channel in channels], now)
+    found = {}
+    for channel in channels:
+        binding = places[channel.pk]
+        if _silent(channel, states[channel.channel_no], binding, now):
+            binding.channel = channel                       # (its device loaded: the alarm's site)
+            found.setdefault(place_of(binding), []).append(binding)
+    return found
+
+
+def place_of(binding):
+    """The place a binding holds its channel at, as the water read names it (farm.water.read.with_fish)."""
+    if binding.point_id:
+        return (water_sources.POINT, binding.point_id)
+    if binding.system_id:
+        return (water_sources.SYSTEM, binding.system_id)
+    return (water_read.EQUIPMENT, binding.equipment_id)
+
+
+def watched(codes, now=None):
+    """The places (`place_of`) where an active channel of a quantity of `codes` on an active device is bound now and a
+    rule that will itself raise a CRITICAL at the channel's freshness covers it: an active "No fresh value" rule, the
+    channel's own or its quantity's, critical, with no time past the freshness (`for_s` 0), and not a default standing
+    aside for a farm's own rule (`_aside`). A probe there that stops sending is that rule's to say, so the alarm system
+    raises no second alarm for the unit's water beside it (alarms/sources.py, the oxygen of a unit with fish that has no
+    fresh value: critical, owner decision of 2026-11-23). A farm's own warning or delayed rule, or the default lowered to
+    a warning, never makes the critical wait or weaken (review 6 of fresh-rule, M1). Four queries."""
+    now = now or timezone.now()
+    rules = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True, severity=Severity.CRITICAL, for_s=0)
+    aside_quantities, aside_channels = _aside()
+    by_quantity = {(quantity, is_default) for quantity, is_default in
+                   rules.filter(channel__isnull=True).values_list('quantity', 'is_default')}
+    by_channel = set(rules.filter(channel__isnull=False).values_list('channel_id', flat=True))
+
+    def speaks(channel):
+        if channel.pk in by_channel or (channel.quantity, False) in by_quantity:
+            return True
+        return ((channel.quantity, True) in by_quantity and channel.quantity not in aside_quantities
+                and channel.pk not in aside_channels)
+
+    return {place_of(binding) for binding in Binding.objects.visible().at(now).filter(
+                channel__quantity__in=list(codes), channel__state=ChannelStatus.ACTIVE, channel__device__is_active=True)
+            .select_related('channel')
+            if speaks(binding.channel)}
+
+
 def close(event, at):
     """Closes an open event at `at` (never before it opened)."""
     event.closed_at = max(at, event.opened_at)
@@ -144,6 +295,23 @@ def close_at_place(binding, at):
     """Closes the open events opened under `binding` at `at`: the channel left that place (a move, taken out)."""
     for event in AlarmEvent.objects.select_for_update(of=('self',)).filter(binding=binding, closed_at__isnull=True):
         close(event, at)
+
+
+def uncovered():
+    """The active channels on an active device of a quantity the water limits judge (quantities.JUDGED_CODES) that no
+    active "No fresh value" rule covers, its own or its quantity's (a default rule switched off, with its reason): a probe
+    of theirs that stops sending raises no alarm of its own. The dissolved oxygen's are not listed: where such a probe
+    stops, a unit with fish whose oxygen then has no fresh value is a critical alarm of the alarm system all the same,
+    unless a critical rule at the freshness says it (`watched`: a warning or delayed rule, or none, leaves it to the
+    alarm system; alarms/sources.py; review 2 of the branch, R5; review 6, M1). The system check sensors.W001 and the Alarm rules page list them.
+    Two queries."""
+    rules = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True)
+    quantities_covered = set(rules.filter(channel__isnull=True).values_list('quantity', flat=True))
+    return list(Channel.objects.filter(quantity__in=[code for code in quantities.JUDGED_CODES if code not in OXYGEN],
+                                       state=ChannelStatus.ACTIVE, device__is_active=True)
+                .exclude(quantity__in=quantities_covered)
+                .exclude(pk__in=rules.filter(channel__isnull=False).values('channel_id'))
+                .select_related('device').order_by('device__code', 'code'))
 
 
 def open_events(site=None):

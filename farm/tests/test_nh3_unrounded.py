@@ -43,7 +43,8 @@ class UnroundedJudgementTests(WaterTestCase):
     def test_just_over_the_limit_is_a_warning_though_it_reads_as_the_limit(self):
         share = self.share()
         tan = self.tan_between(share, LIMIT, LIMIT + HALF_STEP)
-        self.sample(hours=1, tan_mg_l=tan, ph=self.PH, temperature_c=self.TEMPERATURE)
+        # (the oxygen with it: a unit with fish and no fresh oxygen is critical, owner decision of 2026-11-23)
+        self.sample(hours=1, tan_mg_l=tan, ph=self.PH, temperature_c=self.TEMPERATURE, oxygen_mg_l='9.0')
         nh3 = self.nh3()
         self.assertEqual(nh3.value, LIMIT)                                  # shown at four decimals: 0.0103
         self.assertEqual(nh3.judged_value, tan * share)                     # judged as it is

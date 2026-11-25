@@ -1,8 +1,14 @@
 """Renders the CLASSIC pages of every form with a template of its own (new, editing each record of the test world, each
-row list sent back refused) into a folder, one file a page, the per-request values blanked (CSRF tokens, entry keys):
+row list sent back refused), of every tab's list and of Water chemistry's Latest and History into a folder, one file a
+page, the per-request values blanked (CSRF tokens, entry keys):
 run before and after a change to those templates and compare the folders (`diff -r`): the classic look must not change.
 Run it as scripts/record_test_world.py runs (SCRIPT=scripts/classic_snapshot.py scripts/record_test_world.sh /app/.build/FOLDER), in the throwaway database
-test_world: `python scripts/classic_snapshot.py <folder>`. Nothing is kept: one transaction, rolled back."""
+test_world: `python scripts/classic_snapshot.py <folder>`. Nothing is kept: one transaction, rolled back.
+
+`--monitoring` renders Operations › Monitoring instead (the test world and its monitoring units, core/test_world.py
+monitoring_world): the page, the cards' fragment of every screen (Small, Simple, Detailed, Big, the Operator board, the
+wall) and the pane, in English, Norwegian and Turkish, in the classic look: the cards' templates have a new-look
+renderer beside the classic one (templates/monitoring/_card.html), and the classic one must not change."""
 import os
 import re
 import sys
@@ -34,6 +40,7 @@ from core.crud import Resource  # noqa: E402
 from core.test_world import MOMENT, refused_rows_data, world  # noqa: E402
 
 OUT = sys.argv[1]
+MONITORING = '--monitoring' in sys.argv[2:]
 BLANK = [(re.compile(r'(name="csrfmiddlewaretoken" value=")[^"]*'), r'\1-'),
          (re.compile(r'(name="entry_key" value=")[^"]*'), r'\1-'),
          (re.compile(r'(id="[^"]*?)[0-9a-f]{32}'), r'\1-'),
@@ -48,6 +55,40 @@ class Rollback(Exception):
     pass
 
 
+def blanked(html):
+    for pattern, blank in BLANK:
+        html = pattern.sub(blank, html)
+    # a poll's change token (it hashes the moment it was read: monitoring/read.py change_token)
+    return re.sub(r'after=[^"&]*', 'after=-', html)
+
+
+def monitoring_pages(client, admin):
+    """Writes the classic monitoring page, every screen's cards and the pane (`--monitoring`); the number written."""
+    from core.test_world import TEST_OPERATOR_BOARD, TEST_WALL, monitoring_world
+    from farm.models import Tank
+    from monitoring.models import MonitorBoard
+
+    monitoring_world(admin)
+    boards = {board.name: str(board.pk) for board in MonitorBoard.objects.all()}
+    screens = {'small': {'mode': 'small'}, 'simple': {}, 'detailed': {'mode': 'detailed'}, 'big': {'mode': 'big'},
+               'operator': {'board': boards[TEST_OPERATOR_BOARD]}, 'wall': {'mode': 'small', 'wall': '1'},
+               'wall-board': {'board': boards[TEST_WALL], 'wall': '1'}}
+    focus = str(Tank.objects.get(code='TW-02').pk)
+    count = 0
+    for language in ('en', 'nb', 'tr'):
+        client.cookies['django_language'] = language
+        asked = [(f'cards-{name}', reverse('monitoring:cards'), {**query, 'occupancy': 'all'})
+                 for name, query in screens.items()]
+        asked += [('page-simple', reverse('monitoring:monitor'), {'occupancy': 'all', 'full': '1'}),
+                  ('pane', reverse('monitoring:pane'), {'mode': 'small', 'occupancy': 'all', 'focus': focus})]
+        for what, url, query in asked:
+            answer = client.get(url, {**query, 'ui': 'classic'})
+            with open(f'{OUT}/{language}-monitoring-{what}.html', 'w', encoding='utf-8') as out:
+                out.write(f'{answer.status_code}\n{blanked(answer.content.decode())}')
+            count += 1
+    return count
+
+
 def ported():
     return [resource for resource in Resource.registry if resource.form_class is not None
             and resource.form_template != 'crud/form.html']
@@ -57,10 +98,18 @@ try:
     with transaction.atomic(), mock.patch('django.utils.timezone.now', return_value=MOMENT), translation.override('en'):
         admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
         world(admin)
+        from farm.models import Tank  # noqa: E402
+        unit = Tank.objects.get(code='TT-01')
+        WATER = [('water-latest', reverse('farm:water')), ('water-history', f"{reverse('farm:water')}?view=history"),
+                 ('water-history-alerts', f"{reverse('farm:water')}?view=history&alerts=1"),
+                 ('water-unit', f"{reverse('farm:water')}?unit={unit.pk}")]
         client = Client(HTTP_HOST='localhost')
         client.force_login(admin)
         os.makedirs(OUT, exist_ok=True)
         count = 0
+        if MONITORING:
+            print(f'{monitoring_pages(client, admin)} classic monitoring pages written to {OUT}')
+            raise Rollback
         for language in ('en', 'nb', 'tr'):
             client.cookies['django_language'] = language
             for resource in ported():
@@ -87,6 +136,17 @@ try:
                     with open(f'{OUT}/{language}-{resource.__name__}-{what}.html', 'w', encoding='utf-8') as out:
                         out.write(f'{answer.status_code}\n{html}')
                     count += 1
+            # every tab's list page, and the pages a list-page island draws besides them (Water chemistry's Latest and
+            # History, with a filter and one unit's): a list ported to the new look keeps its classic page byte for byte
+            for name, url in [*((resource.__name__, reverse(resource.url_name('list'))) for resource in Resource.registry),
+                              *WATER]:
+                answer = client.get(url, {'ui': 'classic'})
+                html = answer.content.decode()
+                for pattern, blank in BLANK:
+                    html = pattern.sub(blank, html)
+                with open(f'{OUT}/{language}-list-{name}.html', 'w', encoding='utf-8') as out:
+                    out.write(f'{answer.status_code}\n{html}')
+                count += 1
         print(f'{count} classic pages written to {OUT}')
         raise Rollback
 except Rollback:

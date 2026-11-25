@@ -155,6 +155,7 @@ class MissingRuleTests(CrossReviewCase):
     def test_the_configuration_alarm_clears_when_the_row_is_back(self):
         from ..models import SeverityPolicy
         row = SeverityPolicy.objects.get(severity='warning')
+        self.sample(7.2)                        # T-01's water fine, its oxygen fresh: no other system alarm
         without_triggers("DELETE FROM alarm_severity_policies WHERE severity = 'warning'")
         self.loop()
         without_triggers('INSERT INTO alarm_severity_policies (id, severity, on_delay_seconds, off_delay_seconds, '
@@ -450,10 +451,12 @@ class TextTests(CrossReviewCase):
 
 
 class UnwatchedUnitTests(CrossReviewCase):
-    """F16: a unit with fish and no point to read its own water at (no middle point, no other own-water point) has no water
-    alarm at all, so it is a configuration warning of its own, on its site, until a point is there."""
+    """F16, and review 2 of fresh-rule (R2, 2026-11-23): a unit with fish and no point to read its own water at (no middle
+    point, no other own-water point) has no water alarm at all, and its oxygen has no fresh value: the alarm system's
+    critical, on its site (it was a configuration warning, which no longer holds beside it), until a point gives a fresh
+    oxygen."""
 
-    def test_a_stocked_unit_without_a_point_is_a_configuration_warning(self):
+    def test_a_stocked_unit_without_a_point_is_critical_its_oxygen_unknown(self):
         from farm.health.withdrawal import guarded_units
         from farm.models import SamplingPoint
         from .. import read
@@ -461,11 +464,13 @@ class UnwatchedUnitTests(CrossReviewCase):
                       lambda: SamplingPoint.objects.filter(unit=self.t1).update(is_active=False))
         self.loop()
         self.loop(seconds=31)
-        alarm = Alarm.objects.get(source='system', parameter='no_water_point')
-        self.assertEqual((alarm.severity, alarm.site), ('warning', self.bergen))
+        alarm = Alarm.objects.get(source='system', parameter='oxygen_mg_l')
+        self.assertEqual((alarm.severity, alarm.site), ('critical', self.bergen))
         self.assertIn('T-01', alarm.summary)
+        self.assertFalse(Alarm.objects.filter(parameter='no_water_point').exists())
         guarded_units(self.keeper, [self.t1.pk], None,
                       lambda: SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=True))
+        self.sample(7.2)                                            # its pH and its oxygen, fresh
         self.loop(minutes=1)
         self.loop(minutes=2)
         self.assertFalse(read.is_open(alarm))

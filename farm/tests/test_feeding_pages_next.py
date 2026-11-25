@@ -66,7 +66,8 @@ class FeedingPagesNextTests(FrozenClock, TestCase):
 
     PAGES = (('meal-board', 'farm:meal_board', {}), ('records', 'farm:feeding_records', {'voided': '1'}),
              ('records-days', 'farm:feeding_records', {'view': 'days'}),
-             ('protocols', 'farm:feedingprotocol_list', {}), ('assignments', 'farm:protocolassignment_list', {}))
+             ('protocols', 'farm:feedingprotocol_list', {}), ('assignments', 'farm:protocolassignment_list', {}),
+             ('choose', 'farm:feeding_new', {}))
 
     def test_each_page_says_everything_the_classic_page_says_in_three_languages(self):
         for key, name, query in self.PAGES:

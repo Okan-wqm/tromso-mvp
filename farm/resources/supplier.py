@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
-from core import formpanels
+from core import formpanels, listprops as L
 from core.crud import Resource, filter_by
 
 from ..forms import SupplierContactFormSet, SupplierForm
@@ -55,4 +55,50 @@ class SupplierResource(Resource):
             'categories': Supplier.Category.choices, 'chosen_category': chosen_category,
             'statuses': Supplier.Status.choices, 'chosen_status': chosen_status,
             'sites': sites, 'chosen_site': chosen_site,
+        }
+
+    # The list in the new look (core/listprops.py), in the classic list's words (farm/supplier_list.html).
+    search_placeholder = _('Search by name, code, organisation number, email or place')
+    empty_text = _('The companies the farm buys from: feed, live fish and eggs, equipment, medicines and services such as '
+                   'vets, divers and wellboats.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [
+            L.choice('supplies', _('Supplies'), context['chosen_category'],
+                     [('', _('Everything supplied')), *context['categories']]),
+            L.choice('site', _('Site'), context['chosen_site'],
+                     [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])]),
+            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        def contact(supplier):
+            person = supplier.primary_contact()
+            reach = ' · '.join(part for part in (supplier.email, supplier.phone) if part)
+            if person is None:
+                return L.cell(reach or '–')
+            return L.cell(person.name, sub=[person.role, reach])
+
+        def rating(supplier):
+            if not supplier.rating:
+                return L.cell('–')
+            return L.cell(f'{supplier.rating}/5', sub=[_('%(rating)s of 5') % {'rating': supplier.rating}])
+
+        return {
+            'columns': [L.column('supplier', _('Supplier')), L.column('supplies', _('Supplies')),
+                        L.column('contact', _('Contact')), L.column('place', _('Place')),
+                        L.column('sites', _('Sites served')), L.column('rating', _('Rating')),
+                        L.column('status', _('Status'))],
+            'rows': [L.row(supplier.pk, {
+                'supplier': L.title(view, context, supplier, supplier.name, sub=[' · '.join(
+                    part for part in (supplier.code, supplier.organisation_number) if part)]),
+                'supplies': L.cell(', '.join(str(each) for each in supplier.supplies_labels())),
+                'contact': contact(supplier),
+                'place': L.cell(', '.join(part for part in (supplier.city, supplier.country) if part) or '–'),
+                'sites': L.cell(', '.join(site.name for site in supplier.sites.all()) or '–'),
+                'rating': rating(supplier),
+                'status': L.badge(supplier.status, supplier.get_status_display()),
+            }, L.edit_delete(view, context, supplier, supplier.name)) for supplier in objects],
         }

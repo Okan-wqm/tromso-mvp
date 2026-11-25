@@ -58,18 +58,24 @@ def upcoming_props(upcoming):
 
 def _water_chip(water, now):
     """A site's water in a chip, as the design words it: its worst value as the Water page judges it ("CO₂ (mg/L) 15.6"),
-    with "No recent data" when that value is old; else "No recent data · <age>" for a point whose values grew old; else
-    "Not measured" or OK. The count of critical and warning points stays the tiles' and the Water page's."""
+    with "No recent data" when that value is old, a critical one first; then a unit with fish whose oxygen has no fresh
+    value ("O₂ (mg/L): no recent data", critical: owner decision of 2026-11-23, PointWater.silent_oxygen, for every
+    viewer); then a warning value; else "No recent data · <age>" for a point whose values grew old; else "Not measured"
+    or OK. The count of critical and warning points stays the tiles' and the Water page's."""
     from django.utils.timesince import timesince
 
+    from farm.water.messages import no_fresh_oxygen_short
     from farm.water.read import said_value
     if water is None:
         return None
-    if water['worst'] is not None:
-        reading, judged, old = water['worst']
+    worst = water['worst']
+    if worst is not None and (worst[1] == 'critical' or not water.get('silent')):
+        reading, judged, old = worst
         text = f'{reading.parameter.short} {said_value(reading)}'
         return {'kind': 'critical' if judged == 'critical' else 'warning',
                 'text': f"{text} · {_('No recent data')}" if old else text}
+    if water.get('silent'):
+        return {'kind': 'critical', 'text': str(no_fresh_oxygen_short())}
     if water['stale_since'] is not None:
         return {'kind': 'stale', 'text': f"{_('No recent data')} · {timesince(water['stale_since'], now, depth=1)}"}
     if not water['measured']:

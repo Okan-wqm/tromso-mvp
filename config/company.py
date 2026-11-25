@@ -55,15 +55,23 @@ def _sites(user, now, attention, asked=None):
         from farm.water.views import _latest
         latest = _latest(None)
         for row in rows.values():
-            row['water'] = {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0, 'worst': None, 'stale_since': None}
+            row['water'] = {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0, 'worst': None, 'stale_since': None,
+                            'silent': 0}
         for water_row in latest['rows']:
             point, water = water_row['point'], water_row['water']
-            site = _site_of_point(point) if point is not None else None
+            # A unit with no point of its own is a row of its own (farm.water.views._latest: read at its system, or its
+            # oxygen judged missing with fish), counted by the Water page's totals: on its department's site, never a point.
+            if point is not None:
+                site = _site_of_point(point)
+            else:
+                department = getattr(water_row['owner'], 'production_department', None)
+                site = department.site if department is not None else None
             if site is None or site.pk not in rows:
                 continue
             said = rows[site.pk]['water']
-            said['points'] += 1
-            said['measured'] += bool(water.readings)
+            said['points'] += point is not None
+            said['measured'] += bool(water.readings)     # a unit read at its system is measured there
+            said['silent'] += water.silent_oxygen is not None    # fish and no fresh oxygen: critical (2026-11-23)
             if water.point_status == Status.CRITICAL:
                 said['critical'] += 1
             elif water.point_status == Status.WARNING:

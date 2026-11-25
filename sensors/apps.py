@@ -7,7 +7,7 @@ class SensorsConfig(AppConfig):
     def ready(self):
         from farm.water import sources
 
-        from . import resources  # noqa: F401  declares the configuration tabs on Resource.registry
+        from . import checks, resources  # noqa: F401  registers the checks; declares the tabs on Resource.registry
         from .sealing import declare_all
         declare_all()       # how this app's records are sealed (core.sealing)
         from .provider import PROVIDER

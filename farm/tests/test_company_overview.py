@@ -62,8 +62,12 @@ class CompanyOverviewTests(CompanyFixture):
         self.assertEqual(sum(row['water']['critical'] for row in rows.values()), water['critical'])
         self.assertEqual(sum(row['water']['warning'] for row in rows.values()), water['warning'])
         self.assertEqual((rows['BG']['water']['critical'], rows['BG']['water']['warning']), (1, 1))
+        # M-01 has fish, no point of its own and no oxygen: critical (owner decision of 2026-11-23), counted on its site,
+        # never as a point
+        self.assertEqual((rows['TR']['water']['critical'], rows['TR']['water']['points'], rows['TR']['water']['silent']),
+                         (1, 0, 1))
         self.assertEqual(rows['AL']['water'], {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0, 'worst': None,
-                                              'stale_since': None})
+                                              'stale_since': None, 'silent': 0})
 
     def test_the_sites_are_counted_by_status_with_the_statuses_they_have(self):
         found = overview(self.admin)['sites']
@@ -251,6 +255,34 @@ class WaterChipTests(CompanyFixture):
         self.assertTrue(chips['BG']['text'].startswith(short), chips['BG'])
         self.assertIn('5', chips['BG']['text'])
         self.assertEqual(chips['AL'], {'kind': 'nodata', 'text': 'Not measured'})
+
+    def chips_for(self, person):
+        return {row['code']: row['water'] for row in overview_props(person)['sites']['rows']}
+
+    def reader_without_alarms(self):
+        """A person who may read the sites, the stock and the water, but not the alarms (no backstop from the cards'
+        ladder: the site's row has no `attention`)."""
+        person = get_user_model().objects.create_user('water.reader', 'water.reader@example.com', 'x')
+        person.groups.add(role('Water reader', 'view_site', 'view_stockoperation', 'view_watermeasurement'))
+        return get_user_model().objects.get(pk=person.pk)
+
+    def test_a_site_whose_unit_holds_fish_without_fresh_oxygen_is_critical_for_every_viewer(self):
+        """Review 6, B2: M-01 holds fish, has no point of its own and no oxygen: its site's Water cell is critical, saying
+        the oxygen has no recent data (owner decision of 2026-11-23), never "Not measured", with or without the Alarms
+        right."""
+        silent = {'kind': 'critical', 'text': 'O₂ (mg/L): no recent data'}
+        self.assertEqual(self.chips_for(self.admin)['TR'], silent)
+        self.assertEqual(self.chips_for(self.reader_without_alarms())['TR'], silent)
+
+    def test_a_site_whose_oxygen_probe_stopped_beside_fresh_values_is_never_ok(self):
+        """Review 6, B2: M-01's temperature is fresh, its oxygen a fine value grown old: no value is past a limit and none
+        is merely stale as the point counts it (its status is the silence's critical), so the cell said "OK"."""
+        self.sample(self.m1, hours=30, oxygen_mg_l='9')
+        self.sample(self.m1, hours=1, temperature_c='10')
+        silent = {'kind': 'critical', 'text': 'O₂ (mg/L): no recent data'}
+        self.assertEqual(self.chips_for(self.admin)['TR'], silent)
+        self.assertEqual(self.chips_for(self.reader_without_alarms())['TR'], silent)
+        self.assertEqual(self.chips_for(self.admin)['BG']['kind'], 'critical')      # a value past its limit says itself
 
     def test_a_point_without_an_alert_says_nothing_worse_than_its_judgement(self):
         from farm.water.evaluate import Status

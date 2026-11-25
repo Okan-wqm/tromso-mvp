@@ -49,7 +49,7 @@ from farm.models.water_point import site_of
 from farm.water import messages as water_messages, parameters, read as water_read
 from farm.water.read import LIMITED, OXYGEN
 from farm.water.evaluate import ALERTS, RANK, Status, judge, worst
-from sensors import clock as sensor_clock
+from sensors import alarms as sensor_alarms, clock as sensor_clock
 from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
@@ -62,9 +62,14 @@ SUMMARY_LENGTH = Alarm._meta.get_field('summary').max_length
 # ---- the sensor rules ------------------------------------------------------------------------------------------------
 def _department_of(channel, at):
     """The production department of the place the channel was bound to at `at`, or None."""
-    binding = (Binding.all_objects.filter(channel=channel, valid_from__lte=at)
-               .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=at))
-               .select_related('point__unit', 'point__system', 'point__equipment', 'system', 'equipment').first())
+    return _department_at(Binding.all_objects.filter(channel=channel, valid_from__lte=at)
+                          .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=at))
+                          .select_related(*sensor_alarms.PLACE_RELATED).first())
+
+
+def _department_at(binding):
+    """The production department of the place a binding holds its channel at (None without one), from the binding with
+    its place loaded (sensors.alarms.PLACE_RELATED): no query of its own."""
     if binding is None:
         return None
     place = binding.point.owner if binding.point_id else binding.system or binding.equipment
@@ -73,10 +78,14 @@ def _department_of(channel, at):
 
 def mirror(event):
     """The alarm of a sensor rule's event, opened at the event's moment where its channel's device is (and cleared at once
-    when the event has closed already)."""
+    when the event has closed already). It says the rule, the channel and the place it was bound to ('pH (NBS scale): No
+    fresh value · PROBE-1 › PH: S-01 › Middle'), in English at rest: a rule of every channel of a quantity (a default
+    "No fresh value") names no channel itself."""
     channel = Channel.all_objects.select_related('device__site').filter(channel_no=event.channel_no).first()
     with audit.source_language():
-        summary = f'{event.rule}' + (f' · {channel.device.code}' if channel is not None else f' #{event.channel_no}')
+        where = (str(event.binding) if event.binding is not None
+                 else channel.device.code if channel is not None else f'#{event.channel_no}')
+        summary = f'{event.rule} · {where}'[:SUMMARY_LENGTH]
     alarm = services.open_alarm(
         at=event.opened_at, severity=event.rule.severity, summary=summary,
         site=channel.device.site if channel is not None else None,
@@ -95,10 +104,23 @@ def sensor_events():
         opened += 1
         cleared += event.closed_at is not None
     for alarm in (Alarm.objects.filter(source=Source.SENSOR_RULE, clearance__isnull=True,
-                                       sensor_event__closed_at__isnull=False).select_related('sensor_event')):
-        services.clear(alarm, alarm.sensor_event.closed_at, ClearCause.EVENT_CLOSED)
+                                       sensor_event__closed_at__isnull=False).select_related('sensor_event__rule')):
+        services.clear_many([(alarm, alarm.sensor_event.closed_at, ClearCause.EVENT_CLOSED,
+                              _rule_off(alarm.sensor_event.rule))])
         cleared += 1
     return opened, cleared
+
+
+def _rule_off(rule):
+    """{label: text} the clearance's log entry says of a rule switched off or deleted (its event closed because no pass
+    visits it any more: sensors/alarms.py `close_switched_off`), in English at rest; None for an active rule."""
+    if rule.is_active and not rule.is_deleted:
+        return None
+    with audit.source_language():
+        said = {str(_('Alarm rule')): f'{rule} · {_("Deleted") if rule.is_deleted else _("Inactive")}'}
+        if rule.off_reason:
+            said[str(_('Why it is switched off'))] = rule.off_reason
+        return said
 
 
 # ---- the water limits ------------------------------------------------------------------------------------------------
@@ -107,12 +129,12 @@ HOLDS = {Severity.WARNING: ALERTS, Severity.CRITICAL: (Status.CRITICAL,)}
 UNJUDGED = (Status.NO_LIMIT, Status.NOT_MEASURED)
 
 
-def _summary(point, reading):
+def _summary(point, reading, unit=None):
     """'T-01 · Middle: pH (NBS scale) 5.50 (critical)', in English at rest. A reading without a value of its own that
     another fresh value judged (`decided`) names that value; a refused one judged on its limits' basis says "at least"
     before it, as the page does; one whose status the unit's own stale value keeps says "last own value …, measure this
     unit" (read.last_own)."""
-    owner = point.owner
+    owner = point.owner if point is not None else None
     with audit.source_language():
         label = str(parameters.get(reading.code).label)
         status = str(Status(reading.judged).label).lower()
@@ -120,7 +142,12 @@ def _summary(point, reading):
         value = figure_past(shown) or shown.value        # a value judged past a bound says the decimals that prove it
         if reading.value is not None and reading.refused:      # its limits' basis alone, as the page says it (F3-5)
             value = _('at least %(value)s') % {'value': value}
-        said = f'{getattr(owner, "code", owner)} · {point.name}: {label} {value} ({status})'
+        if point is None:                       # a unit read at its system's probes, no point anywhere (M1)
+            said = f'{unit.code}, from its system: {label} {value} ({status})'
+        else:
+            said = f'{getattr(owner, "code", owner)} · {point.name}: {label} {value} ({status})'
+            if unit is not None and getattr(point, 'unit_id', None) != unit.pk:   # a unit without a point: its system's
+                said = f'{unit.code}, from {said}'
         if reading.last_own is not None:        # the unit's own stale value keeps the level (read.last_own, F3-9)
             said = f'{said}; {water_messages.last_own(reading.last_own)}'
         return said[:SUMMARY_LENGTH]
@@ -334,12 +361,21 @@ ALARMS_UNCHECKED = 'alarms_unchecked'
 UNDELIVERABLE = 'notifications_undeliverable'
 NO_WATER_POINT = 'no_water_point'
 VALUE_UNEVALUATED = 'value_unevaluated'
+NO_FRESH_OXYGEN = 'no_fresh_oxygen'
+OXYGEN_PROBE_SILENT = 'oxygen_probe_silent'
 # Every value the limits judge: each may come without a number for a stated reason (read.Reading.refused): a worked-out
 # one the chemistry core refused (the NH₃), a sensor pH that could not be put on the NBS scale (the water-chemistry
 # audit of 2026-11-19, F1 and its review's M1: it was silent), and any value a later refusal comes to. A value that is
 # never refused costs a subject that never holds (no row is written for it).
 REFUSABLE = tuple(parameter.code for parameter in parameters.LIMITED)
 DEVICE_CLOCK = 'device_clock'
+
+
+def _read_nowhere(found):
+    """Whether a unit's water is read from nowhere: no water at all, or no point of its own and no system to read it at
+    (read.PointWater: `point` and `standing_place` both None). The one place it is decided: what the "no active sampling
+    point" warning is about (`water`)."""
+    return found is None or (found.point is None and found.standing_place is None)
 
 
 def _unit_where(unit):
@@ -388,9 +424,14 @@ def _removed(units, now):
     return found
 
 
-def _water_subjects(found, failed, rules, now):
-    """The water subjects of one unit's PointWater: per quantity, a warning and a critical level."""
-    subjects, unit_id = [], found.point.unit_id
+def _water_subjects(unit, found, failed, rules, now):
+    """The water subjects of one unit's PointWater: per quantity, a warning and a critical level. A unit with no point of
+    its own is read at its system (read.latest `units`): its levels are at the loop point, or, where the system has none,
+    without a point (alarms 0022), always on the unit's own site and department and said for the unit: a card at a
+    level has its alarm at that level (review 5 of the branch, M1)."""
+    subjects, unit_id = [], unit.pk
+    point = found.point or found.system_point
+    where = _where(point) if found.point is not None else _unit_where(unit)
     for slot, reading in _slots(found).items():
         for severity in HOLDS:
             subjects.append(Subject(
@@ -398,9 +439,9 @@ def _water_subjects(found, failed, rules, now):
                 lambda state, severity=severity, reading=reading: not failed and clear_evidence(
                     reading, severity, rules, state.last_bad_at, now, own_held=state.own_held, unit_id=unit_id),
                 seen_at(reading.worse or reading, now), severity,
-                lambda point=found.point, severity=severity, reading=reading: {
-                    'at': now, 'severity': severity, 'summary': _summary(point, reading), 'source': Source.WATER_LIMIT,
-                    'point': point, 'parameter': reading.code, **_where(point)},
+                lambda severity=severity, reading=reading: {
+                    'at': now, 'severity': severity, 'summary': _summary(point, reading, unit),
+                    'source': Source.WATER_LIMIT, 'point': point, 'parameter': reading.code, **where},
                 **_unjudged(reading), note=partial(_note_own, reading, severity, rules, unit_id)))
     return subjects
 
@@ -493,7 +534,7 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
     subjects = []
     for unit in units:
         found = found_water.get(unit.pk)
-        looked = found is not None and found.point is not None and unit.pk not in unevaluated
+        looked = found is not None and found.for_unit and unit.pk not in unevaluated
         for code in REFUSABLE:
             reading = found.get(code) if looked else None
             since = _unevaluated_since(reading, now) if reading is not None and reading.unevaluated else None
@@ -514,7 +555,94 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
     return subjects
 
 
-def water(now, rules):
+def _silent_subjects(units, found_water, unevaluated, failed, now, oxygen_levels=frozenset(), oxygen_pass=None):
+    """Owner decision of 2026-11-23: a unit that holds fish now whose oxygen has no fresh value (read.PointWater.silent_oxygen:
+    a typed sample grown old, a unit without sensors, a unit with no point to read its water at; mg/L and % being one
+    quantity) is a CRITICAL alarm of the alarm system, one per unit (subject `system:unit:<unit>:no_fresh_oxygen`), on
+    the unit's site: "<unit>: Dissolved oxygen (mg/L O₂): no recent data, 3 hours old". Its on-delay runs from when the
+    oxygen stopped being fresh (read.Silence.since). It stands aside, so one problem is one alarm:
+    - where an oxygen probe is bound to the unit's water (its own points or its system's) and a "No fresh value" rule
+      that raises a critical at the freshness covers it (sensors.alarms.watched; never a warning or delayed rule, nor
+      a default standing aside for one: review 6 of the branch, M1): that rule's alarm says it;
+    - while the CRITICAL level of the water limits holds or is open on the unit's oxygen (`oxygen_levels`: an old
+      oxygen value past its critical limit keeps that level, an alarm of its own; review 2 of the branch, R4 p5). An old
+      value only past its warning limit is a warning level, so the critical stays here (review 3, N1).
+    It ends "restored" once the oxygen is fresh again (or something else says it), "no fish in the unit any more" once
+    the unit holds none, and never on a pass that could not read the unit or the live values."""
+    oxygen = (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT)
+    watched = sensor_alarms.watched(oxygen, now)
+    subjects = []
+    for unit in units:
+        found = found_water.get(unit.pk)
+        looked = found is not None and unit.pk not in unevaluated
+        silence = found.silent_oxygen if looked else None
+        holds = silence is not None and not (found.targets & watched) and str(unit.pk) not in oxygen_levels
+        summary = ''
+        if holds:
+            with audit.source_language():
+                summary = f'{unit.code}: {found.why_silent[0]}'[:SUMMARY_LENGTH]
+        subject = system_subject(
+            f'unit:{unit.pk}:{NO_FRESH_OXYGEN}', holds, Severity.CRITICAL, summary, now,
+            parameter=parameters.OXYGEN_MG_L, where=_unit_where(unit), bad_at=silence.since if holds else None,
+            clear_ok=looked and not failed and not holds)
+        if looked and not found.holds_fish:
+            subject.structural = ClearCause.STRUCTURAL
+        subjects.append(subject)
+    return subjects + _probe_subjects(oxygen_pass or sensor_alarms.OxygenPass(now), failed, now)
+
+
+PROBE_PREFIX = f'{OXYGEN_PROBE_SILENT}:'
+
+
+def _probe_subjects(oxygen_pass, failed, now):
+    """A WARNING per silent oxygen probe (subject `system:oxygen_probe_silent:<channel>`, on its device's site and the
+    department of its place): a default rule's probe that sent no fresh value at its place while the oxygen of the units
+    holding fish there is fresh all the same (a typed sample, another probe: sensors.alarms.silent_probes,
+    read.oxygen_known), which its default rule then leaves to this warning (review 2 of the branch, R3 p3: the card
+    follows the fresh value): "PROBE-T › O2: T-02 › Middle: the oxygen probe is silent; the oxygen is measured otherwise
+    (by hand or by another probe)". Every such probe, wherever it is bound: a unit's own point, its loop, an inlet or a
+    piece of equipment no unit's water reads (review 3, N2). Once nothing else is fresh the rule's critical says it and
+    this one ends "restored", as it does once the probe sends again, is moved or taken out (its open row is visited
+    though the probe is no longer listed); never on a pass that could not read the live values."""
+    probes, known = oxygen_pass.probes(), oxygen_pass.known()          # read once in the pass (`OxygenPass`)
+    subjects, seen = [], set()
+    for place, bindings in probes.items():
+        for binding in bindings:
+            channel = binding.channel
+            seen.add(f'system:{PROBE_PREFIX}{channel.channel_no}')
+            holds = place in known
+            summary = ''
+            if holds:
+                summary = _text(_('%(probe)s: the oxygen probe is silent; the oxygen is measured otherwise (by hand or by '
+                                  'another probe).'), probe=str(binding))[:SUMMARY_LENGTH]
+            # where it is: read with the probes (sensors.alarms.silent_probes: the device's site, the place's
+            # department), and only for a warning that holds (review 4 of the branch, L2)
+            subjects.append(system_subject(
+                f'{PROBE_PREFIX}{channel.channel_no}', holds, Severity.WARNING, summary, now,
+                parameter=OXYGEN_PROBE_SILENT, clear_ok=not failed and not holds,
+                where={'site': channel.device.site, 'production_department': _department_at(binding)} if holds else None))
+    for key in AlarmSubjectState.objects.filter(key__startswith=f'system:{PROBE_PREFIX}',
+                                                open_alarm__isnull=False).values_list('key', flat=True):
+        if key not in seen:
+            subjects.append(Subject(key, False, not failed, now, Severity.WARNING, None, cause=ClearCause.RESTORED))
+    return subjects
+
+
+def _oxygen_levels(subjects):
+    """The ids of the units whose oxygen has the CRITICAL level of the water limits holding this pass or open
+    (`water_key`): the alarm system's oxygen critical stands aside for it (`_silent_subjects`), never for a warning level
+    (review 3 of the branch, N1)."""
+    def unit_of(key):
+        _water, _unit, unit_id, slot, severity = key.split(':')
+        return unit_id if slot == OXYGEN and severity == Severity.CRITICAL else None
+    levels = {subject.key: subject for subject in subjects if subject.key.startswith('water:unit:')
+              and unit_of(subject.key) is not None}
+    held = {unit_of(key) for key, subject in levels.items() if subject.holds}
+    return held | {unit_of(key) for key in AlarmSubjectState.objects.filter(key__in=list(levels), open_alarm__isnull=False)
+                   .values_list('key', flat=True)}
+
+
+def water(now, rules, oxygen_pass=None):
     """Raises and clears the water limits' levels at `now` (alarms.rules `rules`), and the system alarms of live sources
     that cannot be read and of units that cannot be evaluated: (opened, cleared). While the live sources cannot be read
     nothing clears: a sample alone must never end an alarm a sensor raised (alarm plan, defect 3). A unit that cannot be
@@ -528,15 +656,15 @@ def water(now, rules):
     found_water, unreadable = _read(units, now)
     failed = any(found.sensors_failed for found in found_water.values())
     subjects, unevaluated = [], {unit.pk for unit in unreadable}
-    unwatched = [unit.pk for unit in units if unit.pk not in unevaluated and (
-        found_water.get(unit.pk) is None or found_water[unit.pk].point is None)]
+    # A unit read nowhere: no point of its own and no system (read.latest `units`: its water stands at its system).
+    unwatched = [unit.pk for unit in units if unit.pk not in unevaluated and _read_nowhere(found_water.get(unit.pk))]
     stocked = {pk for pk, fish in stock_read.unit_counts(unwatched).items() if fish > 0} if unwatched else set()
     for unit in units:
         found = found_water.get(unit.pk)
-        if found is None or found.point is None or unit.pk in unevaluated:
+        if found is None or not found.for_unit or unit.pk in unevaluated:
             continue
         try:
-            subjects += _water_subjects(found, failed, rules, now)
+            subjects += _water_subjects(unit, found, failed, rules, now)
         except Exception:
             logger.exception('The water of unit %s could not be evaluated.', unit)
             unevaluated.add(unit.pk)
@@ -545,12 +673,16 @@ def water(now, rules):
     subjects += [system_subject(f'unit:{unit.pk}:{UNIT_UNEVALUATED}', unit.pk in unevaluated, Severity.CRITICAL, _text(_(
         '%(unit)s: the water could not be evaluated; its alarms are neither raised nor cleared until it can.'),
         unit=unit.code), now, parameter=UNIT_UNEVALUATED, where=_unit_where(unit)) for unit in units]
-    # A unit with fish and no point to read its own water at has no water alarm at all: a configuration warning of its
-    # own until it has one (cross review F16).
+    # A unit with fish read nowhere (no point of its own, no system) has no water alarm at all: a configuration warning
+    # of its own (cross review F16), but its oxygen then has no fresh value, the critical of `_silent_subjects` (review 2
+    # of the branch, R2), so it holds only for a unit counted with fish that the water does not find holding any now. A
+    # unit read at its system has its levels (review 5, M1): its note is the "From its system" its values say.
+    stocked = {pk for pk in stocked if found_water.get(pk) is None or found_water[pk].silent_oxygen is None}
     subjects += [system_subject(f'unit:{unit.pk}:{NO_WATER_POINT}', unit.pk in stocked, Severity.WARNING, _text(_(
         '%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm until it '
         'has one.'), unit=unit.code), now, parameter=NO_WATER_POINT, where=_unit_where(unit)) for unit in units]
     subjects += _refused_subjects(units, found_water, unevaluated, failed, now)
+    subjects += _silent_subjects(units, found_water, unevaluated, failed, now, _oxygen_levels(subjects), oxygen_pass)
     # A unit whose water is read no more (no point to read it at, the parameter gone) keeps its alarm open: nothing says it
     # is over. A unit removed has nothing left to judge: its alarms end (cause "unit removed").
     return settle(subjects + _removed(units, now), now, rules)

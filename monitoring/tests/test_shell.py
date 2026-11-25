@@ -19,6 +19,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
+from core import ui
 from core.models import Profile
 
 from .. import read
@@ -222,4 +223,18 @@ class ParityTests(ShellCase):
                     full = self.client.get(f'{PAGE}?{query}&full=1' if query else f'{PAGE}?full=1')
                     self.assertEqual(full.status_code, 200)
                     self.assertNotIn('data-key="loading"', full.content.decode())
+                    self.assertEqual(plain(self.spliced(query)), plain(full.content.decode()))
+
+    def test_in_the_new_look_too(self):
+        """The same in the new look, whose cards that flow are the design's (monitoring/_card_next.html): the first
+        answer of the shell's poll draws them as the full page does, and its token is the new look's."""
+        self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
+        self.sample(self.t2, hours=1, temperature_c='9.5', oxygen_mg_l='3.1', ph='7.2')
+        self.client.cookies[ui.COOKIE] = ui.NEXT
+        with mock.patch('django.utils.timezone.now', return_value=timezone.now()):
+            for query in ('', 'mode=detailed', 'mode=small', f'flip={self.t1.pk}', f'focus={self.t2.pk}&mode=small'):
+                with self.subTest(query=query):
+                    full = self.client.get(f'{PAGE}?{query}&full=1' if query else f'{PAGE}?full=1')
+                    self.assertEqual(full.status_code, 200)
+                    self.assertIn('data-ui="next"', full.content.decode())
                     self.assertEqual(plain(self.spliced(query)), plain(full.content.decode()))

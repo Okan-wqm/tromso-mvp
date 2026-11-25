@@ -57,6 +57,25 @@ class WidgetView:
     def large(self):
         return self.opts.get('size') == 'large'
 
+    @property
+    def next_renderer(self):
+        """Its markup on a card that flows in the new look (templates/monitoring/_card_next.html): its own where the
+        design draws it otherwise (NEXT_LOOK), else the classic one, which the new look's sheet restyles."""
+        return f'monitoring/widgets/next/_{self.type}.html' if self.type in NEXT_LOOK else self.renderer
+
+    @property
+    def in_foot(self):
+        """Whether the new look draws it in the card's foot, among the card's actions, rather than in its grid: the
+        Deffeyes chart's button, which opens the unit's chart in the movable window, as the design's button does."""
+        return self.type in FOOT
+
+
+# The widgets a card that flows draws with markup of its own in the new look (templates/monitoring/widgets/next/): the
+# feeding as the design's "Next meal" box. Every other widget keeps its classic markup there, restyled by
+# static/css/monitor-next.css. The ones it draws in the card's foot, as actions: the Deffeyes chart's button.
+NEXT_LOOK = frozenset({'feeding'})
+FOOT = frozenset({'deffeyes'})
+
 
 def _hidden(spec, sections):
     readable = [source for source in spec.sources
@@ -180,6 +199,8 @@ def reading_at(card, code, point_kind):
     for water in card.water:
         if water.point is not None and water.point.kind == point_kind:
             return water.get(code)
+        if water.point is None and water.for_unit and point_kind == water_read.MIDDLE:
+            return water.get(code)          # a unit without a point: its water read at its system stands for it
     return None
 
 

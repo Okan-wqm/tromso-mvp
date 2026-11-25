@@ -4,10 +4,11 @@ Assignments (farm/resources/feeding_protocol.py: `list_rows`, `list_filters`), w
 the one list view (core.crud.ListView) read for the classic page."""
 from django.template.defaultfilters import floatformat, truncatechars
 from django.utils import formats
-from django.utils.translation import gettext as _, ngettext, pgettext
+from django.utils.translation import gettext as _, ngettext
 
 from core import listprops as L
 
+from .. import words
 from ..words import WORDS
 
 from ..templatetags.feeding import celsius, fcr, weights
@@ -18,9 +19,9 @@ PROTOCOL_CHIP = {'active': 'ok', 'draft': 'neutral', 'retired': 'neutral'}
 
 
 def protocol_filters(view, context):
-    return [L.choice('species', pgettext('singular', 'Species'), context['chosen_species'],
-                     [('', _('All species')), *((each.pk, each.common_name) for each in context['species_list'])]),
-            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']])]
+    return [L.choice('species', str(words.SPECIES_SINGULAR), context['chosen_species'],
+                     [('', str(words.ALL_SPECIES)), *((each.pk, each.common_name) for each in context['species_list'])]),
+            L.choice('status', str(words.STATUS), context['chosen_status'], [('', str(words.ALL_STATUSES)), *context['statuses']])]
 
 
 def _band(band):
@@ -48,16 +49,16 @@ def protocols(view, objects, context):
                                 sub=[truncatechars(protocol.notes, 80) if protocol.notes else '']),
             'species': L.cell(protocol.species.common_name),
             'status': L.cell(chip=L.chip(PROTOCOL_CHIP.get(protocol.status, 'neutral'), protocol.get_status_display())),
-            'bands': L.cell(bands[0], sub=bands[1:]) if bands else L.cell(_('No table yet')),
+            'bands': L.cell(bands[0], sub=bands[1:]) if bands else L.cell(str(words.NO_TABLE_YET)),
             'temperatures': _temperatures(protocol),
             'fcr': L.cell(fcr(protocol.expected_fcr)),
             'in_force': L.cell(protocol.in_force or DASH),
         }, L.edit_delete(view, context, protocol, protocol.name)))
     return {
-        'columns': [L.column('protocol', _('Protocol')), L.column('species', pgettext('singular', 'Species')),
-                    L.column('status', _('Status')), L.column('bands', _('Weight bands')),
-                    L.column('temperatures', _('Temperatures')), L.column('fcr', _('Expected FCR'), numeric=True),
-                    L.column('in_force', _('In force today'), numeric=True)],
+        'columns': [L.column('protocol', str(words.PROTOCOL)), L.column('species', str(words.SPECIES_SINGULAR)),
+                    L.column('status', str(words.STATUS)), L.column('bands', str(words.WEIGHT_BANDS)),
+                    L.column('temperatures', str(words.TEMPERATURES)), L.column('fcr', str(words.EXPECTED_FCR), numeric=True),
+                    L.column('in_force', str(words.IN_FORCE_TODAY), numeric=True)],
         'notices': [L.notice('how', 'neutral', WORDS['a_protocol_gives_per_weight_band'])],
         'rows': rows,
     }
@@ -66,16 +67,16 @@ def protocols(view, objects, context):
 def assignment_filters(view, context):
     filters = []
     if len(context['sites']) > 1:
-        filters.append(L.choice('site', _('Site'), context['chosen_site'],
-                                [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])]))
+        filters.append(L.choice('site', str(words.SITE), context['chosen_site'],
+                                [('', str(words.ALL_SITES)), *((site.pk, site.name) for site in context['sites'])]))
     return filters + [
-        L.choice('unit', _('Unit'), context['chosen_unit'],
-                 [('', _('All units')), *((unit.pk, unit.code) for unit in context['units'])]),
-        L.choice('batch', _('Batch'), context['chosen_batch'],
-                 [('', _('All batches')), *((batch.pk, batch.code) for batch in context['batches'])]),
-        L.choice('protocol', _('Protocol'), context['chosen_protocol'],
-                 [('', _('All protocols')), *((each.pk, each.name) for each in context['protocol_list'])]),
-        L.choice('period', _('When'), context['chosen_period'], [('', _('Any time')), *context['periods']]),
+        L.choice('unit', str(words.UNIT), context['chosen_unit'],
+                 [('', str(words.ALL_UNITS)), *((unit.pk, unit.code) for unit in context['units'])]),
+        L.choice('batch', str(words.BATCH), context['chosen_batch'],
+                 [('', str(words.ALL_BATCHES)), *((batch.pk, batch.code) for batch in context['batches'])]),
+        L.choice('protocol', str(words.PROTOCOL), context['chosen_protocol'],
+                 [('', str(words.ALL_PROTOCOLS)), *((each.pk, each.name) for each in context['protocol_list'])]),
+        L.choice('period', str(words.WHEN), context['chosen_period'], [('', str(words.ANY_TIME)), *context['periods']]),
     ]
 
 
@@ -86,29 +87,29 @@ def assignments(view, objects, context):
 
     def unit_cell(row):
         if not row.unit:
-            return L.cell(_('wherever it is'))
+            return L.cell(str(words.WHEREVER_IT_IS))
         department = row.unit.production_department
-        return L.cell(row.unit.code, chips=[L.chip('neutral', _('Deleted'))] if row.unit.is_deleted else (),
+        return L.cell(row.unit.code, chips=[L.chip('neutral', str(words.DELETED))] if row.unit.is_deleted else (),
                       sub=[department.name + (f' · {department.site.name}' if department.site else '')])
 
     def batch_cell(row):
         if not row.batch:
-            return L.cell(_('whatever is in it'))
-        return L.cell(row.batch.code, chips=[L.chip('neutral', _('Voided'))] if row.batch.is_deleted else (),
+            return L.cell(str(words.WHATEVER_IS_IN_IT))
+        return L.cell(row.batch.code, chips=[L.chip('neutral', str(words.VOIDED))] if row.batch.is_deleted else (),
                       sub=[row.batch.species.common_name])
 
     def until(row):
-        said = [_('ended')] if row.valid_until and row.valid_until < today else (
-            [_('starts later')] if row.valid_from > today else [])
-        return L.cell(formats.date_format(row.valid_until, 'DATE_FORMAT') if row.valid_until else _('open'), sub=said)
+        said = [str(words.ENDED)] if row.valid_until and row.valid_until < today else (
+            [str(words.STARTS_LATER)] if row.valid_from > today else [])
+        return L.cell(formats.date_format(row.valid_until, 'DATE_FORMAT') if row.valid_until else str(words.OPEN), sub=said)
 
     def actions(row):
         # the classic row's bare Edit and Delete (not "Edit <name>": a row is not named)
         done = []
         if context.get('can_change') and resource.allowed(request, row, 'change'):
-            done.append(L.link(view.url('edit', row.pk), _('Edit'), 'pencil'))
+            done.append(L.link(view.url('edit', row.pk), str(words.EDIT), 'pencil'))
         if context.get('can_delete') and resource.allowed(request, row, 'delete'):
-            done.append(L.link(view.url('delete', row.pk), _('Delete'), 'trash', danger=True))
+            done.append(L.link(view.url('delete', row.pk), str(words.DELETE), 'trash', danger=True))
         return done
 
     rows = []
@@ -122,16 +123,12 @@ def assignments(view, objects, context):
             'unit': unit_cell(row), 'batch': batch_cell(row),
             'from': L.cell(formats.date_format(row.valid_from, 'DATE_FORMAT')),
             'until': until(row),
-            'fish': L.cell(fish(fed) if fed else _('no fish')),
+            'fish': L.cell(fish(fed) if fed else str(words.NO_FISH)),
         }, actions(row)))
     return {
-        'columns': [L.column('protocol', _('Protocol')), L.column('scope', _('Applies to')), L.column('unit', _('Unit')),
-                    L.column('batch', _('Batch')), L.column('from', _('From')), L.column('until', _('Until')),
-                    L.column('fish', _('Feeds now'), numeric=True)],
-        'notices': [L.notice('how', 'neutral', _(
-            'A protocol is assigned to units (it feeds whatever is in them), to a whole batch (it follows the batch into '
-            'every unit it is moved to) or to a batch in chosen units. For a batch in a unit the most specific row in '
-            'force applies: batch in unit, then unit, then whole batch. A row may be changed or deleted before its first '
-            'day; afterwards it is ended by its last day.'))],
+        'columns': [L.column('protocol', str(words.PROTOCOL)), L.column('scope', str(words.APPLIES_TO)), L.column('unit', str(words.UNIT)),
+                    L.column('batch', str(words.BATCH)), L.column('from', str(words.FROM)), L.column('until', str(words.UNTIL)),
+                    L.column('fish', str(words.FEEDS_NOW), numeric=True)],
+        'notices': [L.notice('how', 'neutral', str(words.A_PROTOCOL_IS_ASSIGNED_TO_UNITS_IT))],
         'rows': rows,
     }

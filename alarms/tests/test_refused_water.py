@@ -30,7 +30,10 @@ from farm.water import read as water_read
 from .. import engine, read, rules as alarm_rules, sources
 from ..models import Alarm, Severity
 
-WATER = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'alkalinity_mg_l': '80', 'tan_mg_l': '5.000'}
+# Its oxygen with it: a unit with fish and no fresh oxygen is critical (owner decision of 2026-11-23), which these tests
+# are not about (monitoring/tests/test_silent_oxygen.py).
+WATER = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'alkalinity_mg_l': '80', 'tan_mg_l': '5.000',
+         'oxygen_mg_l': '9.00'}
 # The same water at pH 7.00 and TAN 0.5: inside the limits on its basis.
 LOW = {**WATER, 'ph': '7.00', 'tan_mg_l': '0.500'}
 WHY = 'ionic strength above 0.5: outside the range of the Davies equation'
@@ -60,7 +63,11 @@ class RefusedWaterCase(WaterTestCase):
         return engine.run_once(self.now + timedelta(minutes=minutes))
 
     def open_alarms(self, **filters):
-        return Alarm.objects.filter(clearance__isnull=True, **filters).order_by('source', 'severity')
+        """The open alarms but the alarm system's oxygen one: a stocked unit of the fixture without a sample (T-01 where
+        only T-02 is sampled) holds fish and no fresh oxygen, critical (owner decision of 2026-11-23,
+        monitoring/tests/test_silent_oxygen.py); these tests are about the NH₃."""
+        return (Alarm.objects.filter(clearance__isnull=True, **filters).exclude(source='system', parameter='oxygen_mg_l')
+                .order_by('source', 'severity'))
 
     def opened(self):
         return [(alarm.source, alarm.severity, alarm.parameter) for alarm in self.open_alarms()]
@@ -133,7 +140,9 @@ class ReadingTests(RefusedWaterCase):
         water = self.unit_water(self.t2)
         self.assertEqual((water.get(NH3).status, water.unevaluated), ('no_limit', []))
         self.run_pass()
-        self.assertFalse(Alarm.objects.exists())
+        self.assertFalse(self.open_alarms().exists())
+        # none raised and cleared either: the only alarm of the pass is the unsampled T-01's oxygen (2026-11-23)
+        self.assertEqual(list(Alarm.objects.values_list('source', 'parameter')), [('system', 'oxygen_mg_l')])
 
     def test_the_history_row_says_it(self):
         for hours, (water, wanted) in enumerate(((LOW, 'unevaluated'), (WATER, 'critical')), start=1):

@@ -766,7 +766,9 @@ MONITORING_UNITS = (
     ('TW-01', 'Test tank OK', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-02', 'Test tank critical', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-03', 'Test tank warning', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '6.5', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
-    ('TW-04', 'Test tank old values', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
+    # its temperature 30 hours old, its oxygen fresh (FRESH_TOO): no recent data, never red (a unit with fish whose oxygen
+    # has no fresh value is critical, owner decision of 2026-11-23)
+    ('TW-04', 'Test tank old values', True, True, 30, {'temperature_c': '13', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-05', 'Test tank no limit', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2',
                                                    'nitrite_n_mg_l': '0.05'}),
     ('TW-06', 'Test tank no protocol', True, False, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
@@ -775,6 +777,8 @@ MONITORING_UNITS = (
     ('TW-08', 'Test tank old critical', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2',
                                                          'alkalinity_mg_l': '85'}),
 )
+# A unit's second sample, an hour before MOMENT: what stays fresh beside its old values.
+FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
 
 
 TEST_WALL = 'Test wall, Hall A'
@@ -784,8 +788,9 @@ TEST_OPERATOR_BOARD = 'Test operator board, Hall A'
 def monitoring_world(admin):
     """Eight more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
-    and its warning limit), no recent data (its water 30 hours old), no limit (a nitrite no limit row judges), a note (no
-    feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours old (critical, and stale).
+    and its warning limit), no recent data (its temperature 30 hours old, its oxygen fresh), no limit (a nitrite no
+    limit row judges), a note (no feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours
+    old (critical, and stale).
     1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where
@@ -819,6 +824,9 @@ def monitoring_world(admin):
         if values:
             water.record(admin, point=point_of(unit), measured_at=MOMENT - timedelta(hours=hours), source='manual',
                          values={key: D(value) for key, value in values.items()})
+        if code in FRESH_TOO:
+            water.record(admin, point=point_of(unit), measured_at=MOMENT - timedelta(hours=1), source='manual',
+                         values={key: D(value) for key, value in FRESH_TOO[code].items()})
     wall_board(hall)
     operator_board(hall)
 

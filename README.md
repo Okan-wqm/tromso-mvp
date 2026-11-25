@@ -6067,6 +6067,35 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `health_ops_world` and `harvest_ops_world`, in three languages; Harvested's three views together against the classic
   page; the safety facts) and `frontend/test/prodrest.pages.ts` (each page at 1440 and 390: CSP, axe, 4.5:1, no
   sideways scroll, the screenshots).
+- **The Setup lists** (each tab's `list_rows` and `list_filters`, the classic list template's words and filters; the
+  classic templates unchanged): Company's Sites (the classic page's cards: the list page's `cards`, `listprops.cards`,
+  a grid of cards of one size, its head the site's name, code and status chip, its facts Type, Location, Area and
+  Contact with an empty one left out, its foot "Created …" and the actions) and Storage locations; Production › Setup's
+  Production departments, Equipment, Tanks, ponds & cages, Monitoring boards, Sampling points, Species, Feeds, Water limits (a plate per
+  species, the list page's `groups`), Water freshness, Medicines, Handling rules, Card templates (Copy a post), Card
+  template rules, pH window scales, Slaughter facilities and Suppliers. A
+  status is its chip in the classic badge's tone (`listprops.badge`, `BADGE_CHIP`: active and operational the design's
+  OK, maintenance a warning, out of service critical); a missing fact the classic page marks (no site, no system, no
+  production department, a species' missing official code with why) is a warning chip; the classic pages' notices stay
+  (not on any site / not linked to any system with "Show them", a sampling point's outflow shares, Water limits' fish
+  with no limit as a warning with its list, `listprops.notice` `title` and `items`) and their help sentences are notices
+  with the info glyph (tone `info`). Sampling points of one owner (`?unit=`, `?system=`, `?equipment=`) say so with
+  "Show all · Add a point to it" (`notice` `more`); the owner is kept by the toolbar's form. Held:
+  `farm/tests/test_setup_lists_next.py` (each list against its classic page on the test world in three languages, one
+  owner's points, a search with no match) and `frontend/test/prodrest.pages.ts`.
+- **Water chemistry › Latest and History** (`farm.water.views.water_page` behind `?ui=next`; `farm/water/page_next.py`,
+  `templates/farm/water_next.html`): the tabs, the alarms' safety line (`{% alarm_watch promise=True %}`), "How values
+  are judged" and a history's heading are the server's, as on the classic page; the table is the shared list page over the
+  rows the view read. Latest: a row per point with its status chip in the classic words ("Warning, no recent data") and
+  why (no limit, cannot be evaluated), each value as Production units says it (`units_next.value_cell` with `whole`:
+  in its status's chip when critical, a warning, stale or cannot be evaluated, never drawn as OK; what was measured; the
+  unit's own older value; worked out and by what; why a "?" could not be worked out; its origin and age), its history.
+  History: the samples of the span a page at a time, each value judged, a voided sample struck through with who voided it
+  and why, Void (its word beside the icon) for a person who may; the filters are the classic form's (site, owner in
+  groups, its points, From, To and "Only warnings and criticals", the list page's `check` filter). Record sample opens its
+  page. Held: `farm/tests/test_water_page_next.py` (every word in three languages with and without filters; every word of
+  a value's title but its status's name and moment is in the props; the voided row; the safety line above the table).
+  `scripts/classic_snapshot.py` also renders every tab's classic list and these pages, so a port is proven byte for byte.
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

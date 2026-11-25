@@ -1,6 +1,6 @@
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
-from core import formpanels
+from core import formpanels, listprops as L
 from core.crud import Resource, RowList, filter_by
 
 from ..forms import FeedForm, FeedSuitabilityFormSet
@@ -89,4 +89,81 @@ class FeedResource(WithdrawalInput, Resource):
             'manufacturers': manufacturers, 'chosen_manufacturer': chosen_manufacturer,
             'species_list': species, 'chosen_species': chosen_species,
             'statuses': Feed.Status.choices, 'chosen_status': chosen_status,
+        }
+
+    # The list in the new look (core/listprops.py), in the classic list's words (farm/feed_list.html).
+    search_placeholder = _('Search by name, code or manufacturer')
+    empty_text = _('The feeds the farm uses: who makes them, their pellet and analysis, and the species and fish weights each '
+                   'one suits.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [
+            L.choice('type', _('Feed type'), context['chosen_type'], [('', _('All feed types')), *context['types']]),
+            L.choice('manufacturer', _('Manufacturer'), context['chosen_manufacturer'],
+                     [('', _('All manufacturers')), *((each.pk, each.name) for each in context['manufacturers'])]),
+            L.choice('species', _('Suitable for'), context['chosen_species'],
+                     [('', _('All species')), *((each.pk, each.common_name) for each in context['species_list'])]),
+            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        from django.template.defaultfilters import floatformat
+
+        def figure(value):
+            return floatformat(value, '-2')
+
+        def band(row):
+            """farm/_weight_band.html: ", 50–150 g", ", from 50 g", ", up to 150 g", or nothing."""
+            lower, upper = row.min_weight_g, row.max_weight_g
+            if lower is not None and upper is not None:
+                return f', {figure(lower)}–{figure(upper)} g'
+            if lower is not None:
+                return ', ' + _('from %(weight)s g') % {'weight': figure(lower)}
+            if upper is not None:
+                return ', ' + _('up to %(weight)s g') % {'weight': figure(upper)}
+            return ''
+
+        def manufacturer(feed):
+            if feed.manufacturer is None:
+                return L.cell('–')
+            maker = feed.manufacturer
+            return L.cell(maker.name, sub=[maker.get_status_display() if maker.status != 'active' else ''])
+
+        def analysis(feed):
+            if feed.protein_pct is None and feed.fat_pct is None:
+                return '–'
+            return f"{figure(feed.protein_pct) or '–'} / {figure(feed.fat_pct) or '–'} %"
+
+        def energy(feed):
+            gross = f'{figure(feed.gross_energy_mj_kg)} MJ/kg' if feed.gross_energy_mj_kg is not None else '–'
+            digestible = _('%(energy)s MJ/kg digestible') % {'energy': figure(feed.digestible_energy_mj_kg)} \
+                if feed.digestible_energy_mj_kg is not None else ''
+            return L.cell(gross, sub=[digestible])
+
+        def suits(feed):
+            lines = [f'{row.species.common_name} · {row.get_growth_stage_display()}{band(row)}'
+                     for row in feed.suitability.all()]
+            return L.cell('; '.join(lines) if lines else '–')
+
+        return {
+            'columns': [L.column('feed', _('Feed')), L.column('manufacturer', _('Manufacturer')),
+                        L.column('type', _('Feed type')), L.column('pellet', _('Pellet')),
+                        L.column('analysis', _('Protein / fat')), L.column('energy', _('Energy')),
+                        L.column('suits', _('Suitable for')), L.column('price', _('Price per kg')),
+                        L.column('status', _('Status'))],
+            'rows': [L.row(feed.pk, {
+                'feed': L.title(view, context, feed, feed.name, sub=[feed.code]),
+                'manufacturer': manufacturer(feed),
+                'type': L.cell(feed.get_feed_type_display()),
+                'pellet': L.cell(f'{figure(feed.pellet_size_mm)} mm' if feed.pellet_size_mm is not None else '–',
+                                 sub=[feed.get_buoyancy_display() if feed.buoyancy else '']),
+                'analysis': L.cell(analysis(feed)),
+                'energy': energy(feed),
+                'suits': suits(feed),
+                'price': L.cell(f"{floatformat(feed.price_per_kg, '2g')} {feed.currency}" if feed.price_per_kg is not None
+                                else '–'),
+                'status': L.badge(feed.status, feed.get_status_display()),
+            }, L.edit_delete(view, context, feed, feed.name)) for feed in objects],
         }

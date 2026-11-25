@@ -1,5 +1,6 @@
 """Renders the CLASSIC pages of every form with a template of its own (new, editing each record of the test world, each
-row list sent back refused) into a folder, one file a page, the per-request values blanked (CSRF tokens, entry keys):
+row list sent back refused), of every tab's list and of Water chemistry's Latest and History into a folder, one file a
+page, the per-request values blanked (CSRF tokens, entry keys):
 run before and after a change to those templates and compare the folders (`diff -r`): the classic look must not change.
 Run it as scripts/record_test_world.py runs (SCRIPT=scripts/classic_snapshot.py scripts/record_test_world.sh /app/.build/FOLDER), in the throwaway database
 test_world: `python scripts/classic_snapshot.py <folder>`. Nothing is kept: one transaction, rolled back."""
@@ -53,6 +54,11 @@ try:
     with transaction.atomic(), mock.patch('django.utils.timezone.now', return_value=MOMENT), translation.override('en'):
         admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')
         world(admin)
+        from farm.models import Tank  # noqa: E402
+        unit = Tank.objects.get(code='TT-01')
+        WATER = [('water-latest', reverse('farm:water')), ('water-history', f"{reverse('farm:water')}?view=history"),
+                 ('water-history-alerts', f"{reverse('farm:water')}?view=history&alerts=1"),
+                 ('water-unit', f"{reverse('farm:water')}?unit={unit.pk}")]
         client = Client(HTTP_HOST='localhost')
         client.force_login(admin)
         os.makedirs(OUT, exist_ok=True)
@@ -83,6 +89,17 @@ try:
                     with open(f'{OUT}/{language}-{resource.__name__}-{what}.html', 'w', encoding='utf-8') as out:
                         out.write(f'{answer.status_code}\n{html}')
                     count += 1
+            # every tab's list page, and the pages a list-page island draws besides them (Water chemistry's Latest and
+            # History, with a filter and one unit's): a list ported to the new look keeps its classic page byte for byte
+            for name, url in [*((resource.__name__, reverse(resource.url_name('list'))) for resource in Resource.registry),
+                              *WATER]:
+                answer = client.get(url, {'ui': 'classic'})
+                html = answer.content.decode()
+                for pattern, blank in BLANK:
+                    html = pattern.sub(blank, html)
+                with open(f'{OUT}/{language}-list-{name}.html', 'w', encoding='utf-8') as out:
+                    out.write(f'{answer.status_code}\n{html}')
+                count += 1
         print(f'{count} classic pages written to {OUT}')
         raise Rollback
 except Rollback:

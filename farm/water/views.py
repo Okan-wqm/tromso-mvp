@@ -193,15 +193,16 @@ def _latest(site, next_look=False):
     if site is not None:
         recent = recent.filter(Q(unit__production_department__site=site) | Q(system__site=site)
                                | Q(equipment__production_department__site=site))
-    middles = read.middle_points(units)
+    # Each unit's row is the point that stands for its water (read.anchors: its middle point, else its first own-water
+    # point, an outlet), as its card, the strip and the alarms read it (review 6 of fresh-rule, M2); a unit with neither
+    # is read at its system, in the same read (read.latest `units`; review 2 R2, review 4 L1).
+    own = read.own_water([unit.pk for unit in units])
+    middles = read.anchors(units, own)
     points = {point.pk: point for point in [*middles.values(), *recent]}
     by_owner = defaultdict(list)
     for point in points.values():
         by_owner[point.owner.pk].append(point)
-    # A unit with no point to read its own water at: its row's water read at its system, in the same read
-    # (read.latest `units`; review 2 of the branch R2, review 4 L1).
-    anchored = read.anchors(units)
-    water = read.latest(list(points.values()), units=read.unanchored(units, anchored))
+    water = read.latest(list(points.values()), own=own, units=read.unanchored(units, middles))
     entries = []
     for unit in units:
         if unit.pk not in middles:

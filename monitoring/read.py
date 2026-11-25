@@ -60,7 +60,8 @@ from farm.stock import read as stock_read, views as stock_views
 from farm.stock.dates import local_today
 from farm.templatetags.water import value_past, water_value
 from farm.water import (
-    calculation as water_calculation, chemistry, deffeyes, parameters, read as water_read, views as water_views,
+    calculation as water_calculation, chemistry, deffeyes, messages as water_messages, parameters, read as water_read,
+    views as water_views,
 )
 from farm.water.evaluate import Status
 from tasks import read as tasks_read, views as tasks_views
@@ -807,9 +808,8 @@ def _silent(middle):
     if middle is None or middle.silent_oxygen is None or any(
             reading.code in OXYGEN_CODES and judged == Status.CRITICAL for reading, judged, _old in middle.alerts):
         return []
-    short = str(parameters.get(parameters.OXYGEN_MG_L).short)
-    return [Reason(str(text), Brief(_('%(label)s: no recent data') % {'label': short}, critical=True, old=True))
-            for text in middle.why_silent]
+    short = str(water_messages.no_fresh_oxygen_short())
+    return [Reason(str(text), Brief(short, critical=True, old=True)) for text in middle.why_silent]
 
 
 OXYGEN_CODES = (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT)

@@ -394,6 +394,12 @@ def from_system(place):
     return _('From its system, %(place)s: the unit has no sampling point of its own.') % {'place': place}
 
 
+def no_fresh_oxygen_short():
+    """The same in short, as a chip says it ("O₂ (mg/L): no recent data"): the band's chip, the company overview's Water
+    cell (owner decision of 2026-11-23)."""
+    return _('%(label)s: no recent data') % {'label': parameters.get(parameters.OXYGEN_MG_L).short}
+
+
 def no_fresh_oxygen(silence):
     """What a unit with fish whose oxygen has no fresh value says (read.Silence; owner decision of 2026-11-23, critical):
     'Dissolved oxygen (mg/L O₂): no recent data, 3 hours old', or without an age when it has no oxygen value at all.

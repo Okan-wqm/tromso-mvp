@@ -12,6 +12,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
 from django.utils import formats, timezone
@@ -26,7 +27,7 @@ from farm.models import Site, Species, System, Tank
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
-from . import design as design_module, read, sealing, services, words
+from . import design as design_module, rawdata, read, sealing, services, words
 from .forms import (
     CopyForm, ExperimentForm, MemberFormSet, ReleaseForm, ReplaceForm, StartForm, design_forms, design_rows,
     place_rows, places_forms,
@@ -257,6 +258,7 @@ class ExperimentResource(Resource):
                                                           entity_id=str(experiment.pk))[:200]
         elif tab == 'data':
             can_amend = experiment.status == Status.RUNNING and request.user.has_perm(cls.perm('change'))
+            extras['raw_data_url'] = reverse('experiments:experiment_raw_data', args=[experiment.pk])
             extras['tanks'] = [{'data': item, 'links': data_links(request.user, item.cell),
                                 'actions': amend_links(experiment, item.cell) if can_amend and item.cell.last >= today
                                 else []} for item in read.data(experiment)]
@@ -322,7 +324,9 @@ class ExperimentResource(Resource):
                 path(f'{p}/<uuid:pk>/release/<uuid:placement>/', ExperimentReleaseView.as_view(resource=cls),
                      name='experiment_release'),
                 path(f'{p}/<uuid:pk>/replace/<uuid:placement>/', ExperimentReplaceView.as_view(resource=cls),
-                     name='experiment_replace')]
+                     name='experiment_replace'),
+                path(f'{p}/<uuid:pk>/raw-data.csv', ExperimentRawDataView.as_view(resource=cls),
+                     name='experiment_raw_data')]
 
 
 def design_panel(experiment, extra, copies):
@@ -778,6 +782,27 @@ class ExperimentSharingView(ResourceView):
             messages.success(request, gettext('Saved.'))
             return done(request, reverse('experiments:experiment_sharing', args=[experiment.pk]))
         return self.page(ShareForm(), experiment, status=422, audience_form=form)
+
+
+class ExperimentRawDataView(ResourceView):
+    """The experiment's raw data as one CSV (experiments/rawdata.py), for whoever reads its data: its team, a grantee of
+    the data or the results. Anyone else who may open the experiment is refused, and the refusal is logged; every
+    download goes to the read log (EXPORT), the team's too, so the lead sees on Who looked who took the data."""
+
+    action = 'view'
+
+    def get(self, request, pk):
+        experiment = self.get_object(pk)
+        if experiment.is_template or 'data' not in sealing.parts_of(experiment):
+            core_sealing.log_access(AccessEvent.Kind.DENIED, self.resource.entity_type(), experiment.pk, part='data',
+                                    route=request.path)
+            raise PermissionDenied
+        text = rawdata.csv_text(experiment)
+        core_sealing.log_access(AccessEvent.Kind.EXPORT, self.resource.entity_type(), experiment.pk, part='data',
+                                route=request.path)
+        response = HttpResponse(text, content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{rawdata.filename(experiment)}"'
+        return response
 
 
 class ExperimentRevokeView(ExperimentSharingView):

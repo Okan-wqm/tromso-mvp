@@ -1,6 +1,9 @@
 {% load i18n feeding %}{% comment %} The Data of an experiment (experiments.read.data): each tank with its days and the feeding records of them,
    and links to the farm's own lists with the tank and the days chosen (feeding records, treatments, sea-lice counts, water, the
-   unit's drawer: those the person may read). A count stands only where one of the farm's reads gives it. {% endcomment %}
+   unit's drawer: those the person may read). A count stands only where one of the farm's reads gives it. The
+   raw data of every tank: one CSV for the experiment's own analysis (experiments/rawdata.py; each download is in the read
+   log). {% endcomment %}
+<p><a class="button button-inline" href="{{ raw_data_url }}" download>{% trans "Download the raw data (CSV)" %}</a> <span class="muted">{% trans "Every value recorded on the tanks on their days: feeding, stock lines, sea-lice counts and water. Each download is logged." %}</span></p>
 <div class="table-wrap">
   <table class="data-table">
     <thead>

@@ -3490,7 +3490,18 @@ itself is never read on a poll. The activity log's pages and the database viewer
 at read time and also leave out an entry stamped with a work hidden from the person: an entry's text is written once
 and may name what its record reached then (a transfer from an open tank into a sealed one names both units). A person who reads no confidential work gets the token as before. The delete plan says that records the person may not see are
 reached, never how many. The seal reads the person when the SQL is compiled, so a queryset built at import is never
-bound to anyone (`core.sealing.Viewing`; `core/tests_boot.py` starts the server as a server).
+bound to anyone (`core.sealing.Viewing`; `core/tests_boot.py` starts the server as a server). It is decided from the
+person's Reach, read once a request (forgotten after a write that changes a grant, a team, an audience or a role): a
+person from whom no work is hidden reads with no seal in the statement, a holder of Oversee reads the farm facts with
+none, and anyone else's statement carries the hidden experiments' ids written in (`core.sealing.Sealed`, `HiddenWork`).
+
+**Raw data** (owner 2026-11-24): the platform keeps the fish's welfare, collects clean data and keeps it confidential;
+the analysis is the experiment owner's. The Data tab's **Download the raw data (CSV)** gives whoever reads the
+experiment's data (its team, a grantee of the data or the results) every value recorded on its tanks on their days:
+feeding fed to its fish, stock lines, sea-lice counts and the water of the tanks' own sampling points and their systems',
+one row per value (date dd.mm.yyyy, time, group, replicate, tank, record, source, variable, value), voided records out
+(`experiments/rawdata.py`). Every download is in the read log, the team's too; anyone else who may open the experiment
+is refused, and the refusal is logged.
 
 A booking held by an experiment the person may not read is said with its days only ("booked by another experiment
 from D to D"), never which one; the platform admin so still sees that a tank or system of a private experiment is

@@ -3869,6 +3869,7 @@
         "core/tests_sealing.py",
         "experiments/tests/test_access.py",
         "experiments/tests/test_oversee.py",
+        "experiments/tests/test_rawdata.py",
         "experiments/tests/test_review.py"
       ]
     },
@@ -6009,6 +6010,7 @@
         "experiments/tests/test_pages.py",
         "experiments/tests/test_preflight.py",
         "experiments/tests/test_review.py",
+        "experiments/tests/test_seal_budget.py",
         "experiments/tests/test_sealing_schema.py",
         "experiments/tests/test_start.py",
         "experiments/tests/world.py"
@@ -7227,7 +7229,9 @@
         "experiments/tests/test_collaborator.py",
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_preflight.py",
+        "experiments/tests/test_rawdata.py",
         "experiments/tests/test_review.py",
+        "experiments/tests/test_seal_budget.py",
         "experiments/tests/test_sealing_schema.py"
       ]
     },
@@ -11301,6 +11305,7 @@
         "experiments/tests/test_access.py",
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_oversee.py",
+        "experiments/tests/test_rawdata.py",
         "experiments/tests/test_review.py",
         "experiments/tests/world.py",
         "monitoring/tests/test_pages.py"

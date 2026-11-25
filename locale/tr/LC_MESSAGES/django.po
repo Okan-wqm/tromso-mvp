@@ -6410,6 +6410,9 @@ msgstr "İndir"
 msgid "Download the drawn values (CSV)"
 msgstr "Çizilen değerleri indir (CSV)"
 
+msgid "Download the raw data (CSV)"
+msgstr "Ham verileri indir (CSV)"
+
 #, python-format
 msgid "Download the rows below as CSV, up to %(limit)s rows"
 msgstr "Aşağıdaki satırları CSV olarak indir, en fazla %(limit)s satır"
@@ -6926,6 +6929,13 @@ msgstr "Her değer"
 
 msgid "Every value measured"
 msgstr "Ölçülen her değer"
+
+msgid ""
+"Every value recorded on the tanks on their days: feeding, stock lines, sea-lice counts and water."
+" Each download is logged."
+msgstr ""
+"Tankların günlerinde kaydedilen her değer: besleme, stok satırları, deniz biti sayımları ve su. "
+"Her indirme kaydedilir."
 
 msgid ""
 "Every water the species is farmed in. Atlantic salmon and rainbow trout grow up in fresh water "

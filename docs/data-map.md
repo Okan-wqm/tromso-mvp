@@ -445,7 +445,7 @@ Who read which confidential record, when and how: the one read log (the activity
 - **how it works**: The read log of confidential records; an experiment’s lead reads its rows on the Who looked tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › core_access_events
 - **constraints**: chk_access_events_kind (check)
-- **tests that mention it**: `core/test_database.py`, `core/tests_sealing.py`, `experiments/tests/test_access.py` and 2 more
+- **tests that mention it**: `core/test_database.py`, `core/tests_sealing.py`, `experiments/tests/test_access.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -684,7 +684,7 @@ A person of the experiment's team, with their part.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Research › experiment_members
 - **forms**: `MemberForm`, `MemberForm`
 - **constraints**: uq_experiment_members_user (unique: experiment, user); uq_experiment_members_lead (unique: experiment); chk_experiment_members_role (check); chk_experiment_members_window (check)
-- **tests that mention it**: `core/test_world.py`, `experiments/tests/__init__.py`, `experiments/tests/test_access.py` and 10 more
+- **tests that mention it**: `core/test_world.py`, `experiments/tests/__init__.py`, `experiments/tests/test_access.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -801,7 +801,7 @@ A part of an experiment given by its lead to a person or a role outside its team
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Research › experiment_shares
 - **forms**: `ShareForm`
 - **constraints**: chk_experiment_shares_grantee (check); chk_experiment_shares_part (check); chk_experiment_shares_period (check); chk_experiment_shares_length (check); chk_experiment_shares_reason (check); chk_experiment_shares_revoked (check); uq_experiment_shares_user_part (unique: experiment, user, part); uq_experiment_shares_group_part (unique: experiment, group, part)
-- **tests that mention it**: `experiments/tests/test_access.py`, `experiments/tests/test_change_token.py`, `experiments/tests/test_collaborator.py` and 4 more
+- **tests that mention it**: `experiments/tests/test_access.py`, `experiments/tests/test_change_token.py`, `experiments/tests/test_collaborator.py` and 6 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1179,7 +1179,7 @@ Feed given to one unit on one day: the farm's feeding record.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › feeding_records
 - **forms**: `FeedingForm`
 - **constraints**: chk_feeding_records_amount (check); chk_feeding_records_target (check); chk_feeding_records_meals (check); chk_feeding_records_void_reason (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 13 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

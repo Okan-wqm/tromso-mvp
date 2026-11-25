@@ -28,7 +28,9 @@ class SealBudgetTests(TestCase):
         world.build_sealed(cls)
 
     def test_a_sealed_read_costs_no_query_of_its_own(self):
-        """What the person may not read is read once (their Reach, one statement); every sealed read after it is one."""
+        """What the person may not read is read once (their Reach, one statement); every sealed read after it is one.
+        (Their rights, which Oversee is read from, Django loads once a request for any page: loaded first here.)"""
+        self.researcher.has_perm('experiments.oversee_experiment')
         with sealing.as_viewer(self.researcher):
             with CaptureQueriesContext(connection) as captured:
                 for _read in range(3):
@@ -59,7 +61,7 @@ class SealBudgetTests(TestCase):
 
     def test_a_grant_made_or_ended_inside_one_request_narrows_the_next_read(self):
         """The Reach is kept for the request, and read again after a write that changes what the person reads: a share
-        given (a save), a share ended (a queryset update), a team place."""
+        given (a save), a share ended (a queryset update), a team place (a bulk create, which sends no signal)."""
         from datetime import timedelta
         from django.utils import timezone
         from ..models import ExperimentShare, Member
@@ -69,9 +71,9 @@ class SealBudgetTests(TestCase):
             share = ExperimentShare.objects.create(experiment=self.experiment, user=self.researcher, part='systems',
                                                    reason='Audit', valid_until=timezone.now() + timedelta(days=5))
             self.assertTrue(Tank.objects.filter(pk=tank).exists())
-            ExperimentShare.objects.filter(pk=share.pk).update(revoked_at=timezone.now())
+            ExperimentShare.objects.filter(pk=share.pk).update(revoked_at=timezone.now(), revoked_by=self.lead)
             self.assertFalse(Tank.objects.filter(pk=tank).exists())
-            Member.objects.create(experiment=self.experiment, user=self.researcher)
+            Member.objects.bulk_create([Member(experiment=self.experiment, user=self.researcher)])
             self.assertTrue(Tank.objects.filter(pk=tank).exists())
 
     def test_the_farms_pages_never_load_the_viewer(self):

@@ -86,11 +86,16 @@ class CostTests(TokenCase):
             add_sealed(type(self), number)
         after = {name: [len(each) for each in self.poll(user)] for name, user in people.items()}
         self.assertEqual(after, before)
-        # Against the token as it was before confidentiality (nothing hidden, nothing read of the person): one query
-        # more, what the person reads (one statement), for the fill and the unchanged poll alike, for everyone.
+        # Against the token as it was before confidentiality (it reads nothing of the person): at most one query more,
+        # what the person reads (one statement). The fill's seal reads the same statement (core.sealing._reach), so
+        # there the token costs nothing of its own when the page reads a sealed record; the unchanged poll reads it
+        # for the token alone.
         with mock.patch.object(sealing, 'reach', return_value=sealing.SEES_ALL):
             plain = {name: [len(each) for each in self.poll(user)] for name, user in people.items()}
-        self.assertEqual(after, {name: [fill + 1, unchanged + 1] for name, (fill, unchanged) in plain.items()})
+        for name, (fill, unchanged) in plain.items():
+            with self.subTest(person=name):
+                self.assertIn(after[name][0], (fill, fill + 1))
+                self.assertEqual(after[name][1], unchanged + 1)
 
     def test_the_token_never_reads_the_seal(self):
         for user in (self.researcher, self.lead, self.keeper, self.boss):

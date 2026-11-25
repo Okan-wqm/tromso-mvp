@@ -428,22 +428,6 @@ class ReplicateUnit(AuditedModel):
         return f'{self.replicate} · {self.unit.code} · {self.from_on.isoformat()}'
 
 
-
-class GrantQuerySet(models.QuerySet):
-    """The rows that say who reads an experiment (a team place, a share): a change by a queryset update (a share renewed
-    or ended) makes the person looking read what they are granted again (core.sealing.forget), as a save or a delete
-    does (experiments/sealing.py, the signals)."""
-
-    def update(self, **kwargs):
-        from core import sealing
-        try:
-            return super().update(**kwargs)
-        finally:
-            sealing.forget()
-
-
-GrantManager = SealedManager.from_queryset(GrantQuerySet)
-
 class MemberRole(models.TextChoices):
     LEAD = 'lead', _('Lead')
     RESEARCHER = 'researcher', _('Researcher')
@@ -470,7 +454,7 @@ class Member(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+', verbose_name=_('Created by'))
 
-    objects = GrantManager()
+    objects = SealedManager()
 
     class Meta:
         db_table = 'experiment_members'
@@ -531,7 +515,7 @@ class ExperimentShare(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+', verbose_name=_('Created by'))
 
-    objects = GrantManager()
+    objects = SealedManager()
 
     class Meta:
         db_table = 'experiment_shares'

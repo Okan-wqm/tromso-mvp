@@ -207,6 +207,16 @@ def cells():
     return SealedCell.objects.all()
 
 
+def _grant_tables():
+    """The tables a write to which can change what someone reads (core.sealing.forget): the experiments (their
+    audience), the team places, the shares, a person's roles and rights, a role's rights."""
+    from django.contrib.auth.models import Group
+    user = get_user_model()
+    return tuple(model._meta.db_table for model in (
+        Experiment, Member, ExperimentShare, user, user.groups.through, user.user_permissions.through,
+        Group.permissions.through))
+
+
 class Provider:
     load = staticmethod(load)
     cells = staticmethod(cells)
@@ -217,31 +227,13 @@ class Provider:
     keepers = staticmethod(keepers)
 
 
-def _forgotten(**kwargs):
-    sealing.forget()
-
-
-def _forget_on_grant_changes(m):
-    """What the person looking reads is read again (core.sealing.forget) after any write that can change it: an
-    experiment (its audience), a team place, a share, a person's roles or rights, a role's rights. A queryset update
-    sends no signal: no code changes these by one."""
-    from django.contrib.auth.models import Group
-    from django.db.models import signals
-    user = get_user_model()
-    for model in (m.Experiment, m.Member, m.ExperimentShare):
-        signals.post_save.connect(_forgotten, sender=model, dispatch_uid=f'sealing-forget-save-{model.__name__}')
-        signals.post_delete.connect(_forgotten, sender=model, dispatch_uid=f'sealing-forget-delete-{model.__name__}')
-    for through in (user.groups.through, user.user_permissions.through, Group.permissions.through):
-        signals.m2m_changed.connect(_forgotten, sender=through, dispatch_uid=f'sealing-forget-m2m-{through.__name__}')
-
-
 def register():
     """The provider, and the seals of the experiments' own records: the experiment itself is shown to anyone granted any
     part of it; its design (factors, levels, groups, replicates) with the design; its placements and bookings with the
     systems; its team and shares with the shell (the lead's page says who may read it)."""
     from . import models as m
+    Provider.grant_tables = _grant_tables()
     sealing.register_provider(Provider)
-    _forget_on_grant_changes(m)
     sealing.declare(m.Experiment, part=SHELL, cls=sealing.SCIENCE, work='')
     for model, path in ((m.Factor, 'experiment'), (m.Level, 'factor__experiment'), (m.ExperimentGroup, 'experiment'),
                         (m.GroupLevel, 'experiment'), (m.Replicate, 'group__experiment')):

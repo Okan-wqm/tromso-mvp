@@ -319,7 +319,7 @@ def _reach_of_person():
     """The Reach of the person looking, or None when the provider reads none (the condition is then compiled whole)."""
     if _provider is None or not hasattr(_provider, 'reach'):
         return None
-    return reach()
+    return _reach()
 
 
 @dataclass(frozen=True)
@@ -337,7 +337,12 @@ SEES_ALL = Reach()
 
 
 def reach():
-    """The Reach of the person looking, once per request (`memo`); SEES_ALL for the system, which hides nothing."""
+    """The Reach of the person looking, once per request (`memo`); SEES_ALL for the system, which hides nothing. The
+    seal reads the same one (`_reach`), so the change token's read of it costs no statement of its own."""
+    return _reach()
+
+
+def _reach():
     current = _current.get()
     if not isinstance(current, _Lazy):
         if who() is None:
@@ -349,8 +354,9 @@ def reach():
 
 def forget():
     """What has been read of the person looking (their Reach, their Viewer, the memo) is read again on the next ask:
-    called when a grant, a team, an audience or a role changes (the provider's signals), so a read after it in the same
-    request or `as_viewer` block is narrowed by what holds now."""
+    called after any statement that writes a table that says who reads what (the provider's `grant_tables`, seen by the
+    connections' execute wrapper whatever wrote it: a save, a queryset update, a bulk create, SQL of its own), so a read
+    after it in the same request or `as_viewer` block is narrowed by what holds now."""
     current = _current.get()
     if isinstance(current, _Lazy):
         current.memo.clear()
@@ -387,8 +393,33 @@ def register_provider(provider):
     `cells()` (a queryset of the sealed cells: unit, system, from_on, until_on, work id), `hidden_work(part)` (a
     queryset of the ids of the work whoever is looking may not read for that part, built with Viewing so it is read
     when the statement runs) and `oversees()` (a queryset that has a row when whoever is looking holds Oversee)."""
-    global _provider
+    global _provider, _grant_tables
     _provider = provider
+    _grant_tables = tuple(f'"{table}"' for table in getattr(provider, 'grant_tables', ()))
+    from django.db import connections
+    from django.db.backends.signals import connection_created
+    connection_created.connect(_watch_grant_writes, dispatch_uid='core.sealing.watch_grant_writes')
+    for connection in connections.all(initialized_only=True):
+        _watch_grant_writes(connection=connection)
+
+
+_grant_tables = ()
+_WRITES = ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')
+
+
+def _forget_after_grant_writes(execute, sql, params, many, context):
+    """An execute wrapper: after a statement that writes one of the grant tables, `forget()`."""
+    try:
+        return execute(sql, params, many, context)
+    finally:
+        if (_grant_tables and isinstance(sql, str) and sql.lstrip()[:8].upper().startswith(_WRITES)
+                and any(table in sql for table in _grant_tables)):
+            forget()
+
+
+def _watch_grant_writes(sender=None, connection=None, **kwargs):
+    if _forget_after_grant_writes not in connection.execute_wrappers:
+        connection.execute_wrappers.append(_forget_after_grant_writes)
 
 
 def provider():
@@ -692,7 +723,7 @@ def stamp_shows_overseer(model):
     return all(seal.cls == FACT and seal.work is None for seal in _seals_reached(model))
 
 
-def works_of(model, pks, depth=WORKS_DEPTH):
+def works_of(model, pks, depth=WORKS_DEPTH, cells=None):
     """{pk as text: set of work ids as text} for the rows `pks` of `model`, read as the system (base managers, no
     viewer): every piece of confidential work whose seal reaches the row now, whatever its audience: its own work, each
     cell it lies in (on its day; a master record today), and those of the parents (`via`) and children (`any_of`,
@@ -702,7 +733,10 @@ def works_of(model, pks, depth=WORKS_DEPTH):
     UNKNOWN.
 
     The activity log stamps each entry with it when the entry is written (core.audit.stamp), so the change token leaves
-    out a change to a record of work hidden from the person looking without reading the seal on every poll."""
+    out a change to a record of work hidden from the person looking without reading the seal on every poll.
+
+    `cells`: whether any cell exists (read once per call tree): with none, no row lies in a cell, and the cells are
+    not looked up row by row (a farm without experiments, the alarm pass's thousands of entries)."""
     found = {str(pk): set() for pk in pks}
     seal = seal_of(model)
     if not found or seal is None or not seal.filters:
@@ -720,7 +754,9 @@ def works_of(model, pks, depth=WORKS_DEPTH):
     columns = {}
     if _provider is not None and seal.work is not None:
         columns['_work'] = models.F(f'{seal.work}__pk' if seal.work else 'pk')
-    if _provider is not None and (seal.unit or seal.system):
+    if cells is None:
+        cells = _provider is not None and _provider.cells().exists()
+    if cells and (seal.unit or seal.system):
         days = _day_filter(model, seal.day)
         for target, paths in (('unit', _paths(seal.unit)), ('system', _paths(seal.system))):
             for path in paths:
@@ -742,7 +778,7 @@ def works_of(model, pks, depth=WORKS_DEPTH):
     for key in set(keys.values()) - present:
         found[key].add(UNKNOWN)
     for link, children in parents.items():
-        theirs = works_of(model._meta.get_field(link).related_model, list(children), depth - 1)
+        theirs = works_of(model._meta.get_field(link).related_model, list(children), depth - 1, cells)
         for parent, rows_of in children.items():
             for key in rows_of:
                 found[key].update(theirs[parent])
@@ -750,7 +786,7 @@ def works_of(model, pks, depth=WORKS_DEPTH):
         if spec:
             child, link = _child(spec)
             pairs = list(child._base_manager.filter(**{f'{link}__in': list(present)}).values_list('pk', link))
-            theirs = works_of(child, [pk for pk, _parent in pairs], depth - 1)
+            theirs = works_of(child, [pk for pk, _parent in pairs], depth - 1, cells)
             for pk, parent in pairs:
                 found[str(parent)].update(theirs[str(pk)])
     return found

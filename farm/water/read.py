@@ -1769,6 +1769,26 @@ def samples_of(*, points=None, owner=None, site=None, since=None, before=None):
     return found.order_by('-measured_at', '-created_at')
 
 
+def measured(points, code, start, end):
+    """[(at, value, source)] of the live samples at `points` (SamplingPoints) with a value of the parameter `code` in
+    [start, end), oldest first; source 'manual' or 'lab' (farm.WaterMeasurement.Source): the values a place's chart
+    draws beside its sensors' (sensors.read.water_history)."""
+    return list(WaterMeasurement.objects.filter(point__in=list(points), measured_at__gte=start, measured_at__lt=end,
+                                                **{f'{code}__isnull': False})
+                .order_by('measured_at').values_list('measured_at', code, 'source'))
+
+
+def sampled(points, start, end, codes):
+    """The parameters of `codes` with a value in a live sample at `points` in [start, end), in the order given: one
+    query (each column's count of values)."""
+    points = list(points)
+    if not points or not codes:
+        return []
+    counts = WaterMeasurement.objects.filter(point__in=points, measured_at__gte=start, measured_at__lt=end).aggregate(
+        **{code: models.Count(code) for code in codes})
+    return [code for code in codes if counts[code]]
+
+
 def history(samples):
     """[HistoryRow] of the samples (with their points loaded, `samples_of`), in their order, each value judged
     for the fish of its day by the limits as they are now (owner decision 2). Voided samples are shown without a

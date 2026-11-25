@@ -14,8 +14,9 @@ from core.models import AuditLog
 from sensors.models.alarm import Severity
 
 from .health import OWN_HEALTH
-from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, AlarmSubjectState, DeliveryAttempt,
-                     Escalation, Notification, NotificationKind, Outcome, OutboxEntry, Source)
+from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, AlarmSubjectState,
+                     AlarmWorkerStatus, DeliveryAttempt, Escalation, Notification, NotificationKind, Outcome,
+                     OutboxEntry, Source, WorkerState)
 
 
 def _fit(model, field, text):
@@ -184,6 +185,24 @@ def escalate(alarm, level, now):
 
 
 # ---- delivery and acknowledgement --------------------------------------------------------------------------------------
+def drop_delivered():
+    """The queue's entries of notifications that were sent or covered by a flood message leave it: `attempt` removes its
+    own in the same transaction, so this finds only one an earlier round left (a round drops it before it reads)."""
+    OutboxEntry.objects.filter(notification__attempts__outcome__in=[Outcome.SENT, Outcome.GROUPED]).delete()
+
+
+def worker_running(name, **fields):
+    """The alarm worker `name` took the lock and runs: its row (alarms.AlarmWorkerStatus, made the first time) says so
+    with `fields`. The worker's row is written by the worker it describes only, through here and `worker_status`; it is
+    the worker's heartbeat, not history, so no activity-log entry (alarms/watch.py reads it)."""
+    AlarmWorkerStatus.objects.update_or_create(name=name, defaults={'state': WorkerState.RUNNING, **fields})
+
+
+def worker_status(name, **fields):
+    """The alarm worker `name`'s row takes `fields` (a heartbeat, a pass, a failure, a stop, the outbox's round)."""
+    AlarmWorkerStatus.objects.filter(name=name).update(**fields)
+
+
 def attempt(notification, result, now, *, flood_key='', flood_size=None, grouped=False):
     """What a transport did with a notification (alarms.transports Sent or Failed), or that a flood message covered it
     (`grouped`), logged on the notification; `flood_key` its kind of alarm, `flood_size` the alarms of the flood message

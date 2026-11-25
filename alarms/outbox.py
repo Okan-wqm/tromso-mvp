@@ -409,7 +409,7 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
     rules = alarm_rules.current()
     moment = (lambda: now) if now is not None else timezone.now
     began, started = moment(), clock()
-    OutboxEntry.objects.filter(notification__attempts__outcome__in=[Outcome.SENT, Outcome.GROUPED]).delete()
+    services.drop_delivered()
     channels = _connected()
     unsent = _queued()
     elsewhere = unsent.exclude(channel__in=channels).exclude(pk__in=_late().values('pk')).aggregate(

@@ -31,11 +31,11 @@ from django.db import connection, transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
+from farm.models import Equipment, SamplingPoint, System, Tank
 from farm.models.site import zone_of
 from farm.models.water_point import PointKind, site_of
 from farm.models.water import NBS
-from farm.water import calculation, deffeyes, messages, parameters
+from farm.water import calculation, deffeyes, messages, parameters, read as water_read
 from farm.water.evaluate import is_fresh
 from farm.water.parameters import PH
 from farm.water.read import (OWN_WATER_KINDS, WINDOW, Series as WaterSeries, as_parameter, assumed_salinity, choose,
@@ -381,9 +381,7 @@ def _samples(target, quantity, start, end):
     points = [point for point in places(target)[1] if point is not None]
     if not points:
         return []
-    return list(WaterMeasurement.objects.filter(point__in=points, measured_at__gte=start, measured_at__lt=end,
-                                                **{f'{quantity}__isnull': False})
-                .order_by('measured_at').values_list('measured_at', quantity, 'source'))
+    return water_read.measured(points, quantity, start, end)
 
 
 def bound_quantities(target, start, end):
@@ -431,8 +429,7 @@ def sampled_codes(target, start, end):
     points = [point for point in places(target)[1] if point is not None]
     if not points:
         return []
-    found = WaterMeasurement.objects.filter(point__in=points, measured_at__gte=start, measured_at__lt=end)
-    return [code for code in parameters.COLUMNS if found.filter(**{f'{code}__isnull': False}).exists()]
+    return water_read.sampled(points, start, end, parameters.COLUMNS)
 
 
 def bands_of(limits):
@@ -457,8 +454,6 @@ def water_history(target, start, end, *, now=None, max_points=MAX_POINTS):
     sample's own pH and temperature, judged as the history page judges it); every live sample's value judged as the
     history page judges it (`judged`: {code: {measured_at: status}}, for the fish of its day); the fish's limits as
     bands."""
-    from farm.water import read as water_read
-
     if end <= start:
         raise ValueError('The end comes after the start.')
     now = now or timezone.now()

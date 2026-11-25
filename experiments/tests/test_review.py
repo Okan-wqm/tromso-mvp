@@ -206,11 +206,74 @@ class AlarmTests(ReviewCase):
         from alarms.models import RecipientRule
         return RecipientRule.objects.create(level=0, created_by=self.boss, **fields)
 
-    def recipients(self):
+    def recipients(self, alarm=None):
         from alarms import routing
-        router = routing.Router(timezone.now())
-        router.prepare([self.alarm])
-        return {user.username: rule for user, rule in router.recipients(self.alarm, 0)}
+        alarm = alarm or self.alarm
+        return {user.username: rule for user, rule in routing.Router(timezone.now(), [alarm]).recipients(alarm, 0)}
+
+    def unit_alarms(self):
+        """A unit's value that could not be evaluated, and a unit read at its system with no point (alarms 0022): no
+        point, no sensor event, the unit only in the subject's key."""
+        from alarms import services
+        tank, now = self.sealed_tanks[0], timezone.now()
+        return services.raise_many([
+            (f'system:unit:{tank.pk}:unit_unevaluated', {
+                'at': now, 'severity': 'critical', 'summary': f'{tank.code}: the water could not be evaluated',
+                'source': 'system', 'parameter': 'unit_unevaluated'}),
+            (f'water:unit:{tank.pk}:oxygen:critical', {
+                'at': now, 'severity': 'critical', 'summary': f'{tank.code}, from its system: O2 3.1 (critical)',
+                'source': 'water_limit', 'parameter': 'oxygen_mg_l'})]).values()
+
+    def sensor_alarm(self):
+        """A sensor rule's alarm on X's oxygen channel, bound to X's tank's point (it has no point of its own)."""
+        from alarms import sources
+        from sensors.models import AlarmEvent, AlarmRule
+        rule = AlarmRule.objects.create(channel=self.sealed_channel, kind='no_data', severity='critical')
+        event = AlarmEvent.objects.create(rule=rule, channel_no=self.sealed_channel.channel_no, binding=self.binding,
+                                          opened_at=timezone.now())
+        return sources.mirror(event)
+
+    def test_an_alarm_about_a_unit_with_no_point_is_sealed_with_its_unit(self):
+        """Review L2, M1: a unit's own alarm with no point lies on the unit (alarms/place.py), so it does not exist
+        for whoever may not see the unit, and its people are the unit's."""
+        from alarms.models import Alarm
+        made = {alarm.pk for alarm in self.unit_alarms()}
+        self.assertEqual(self.seen(self.researcher, Alarm, pk__in=made), set())
+        self.assertEqual(self.seen(self.lead, Alarm, pk__in=made), made)
+        self.rule(user=self.researcher)
+        for alarm in Alarm.objects.filter(pk__in=made):
+            self.assertEqual(set(self.recipients(alarm)), {'lead', 'keeper'})
+
+    def test_a_sensor_alarm_on_a_sealed_cell_reaches_the_keepers(self):
+        """Review W4: a sensor rule's alarm has no point; its place is its channel's binding when it opened, so with
+        nobody on the rules who may see it the keepers of the fish are told."""
+        alarm = self.sensor_alarm()
+        self.assertEqual(alarm.unit_id, self.sealed_tanks[0].pk)
+        self.rule(user=self.researcher)
+        found = self.recipients(alarm)
+        self.assertEqual(set(found), {'lead', 'keeper'})
+
+    def test_a_router_routes_only_the_alarms_it_was_made_for(self):
+        """Review L1: a router reads which of its alarms are sealed when it is made; one asked about another alarm
+        refuses, never routes it as unsealed."""
+        from alarms import routing
+        router = routing.Router(timezone.now(), [])
+        with self.assertRaises(ValueError):
+            router.recipients(self.alarm, 0)
+
+    def test_a_snooze_reminder_reaches_only_who_may_see_the_alarm(self):
+        """Review L1: the reminder at a snooze's end (alarms.engine._remind) goes through the same seal."""
+        from alarms import engine
+        from alarms.models import AlarmShelve, Notification, NotificationKind
+        self.rule(user=self.researcher)
+        self.rule(user=self.lead)
+        now = timezone.now()
+        shelve = AlarmShelve.objects.create(alarm=self.alarm, user=self.lead, shelved_at=now - timedelta(hours=2),
+                                            until=now - timedelta(minutes=1), reason='Diver in the tank')
+        engine._remind([self.alarm], now, engine.Summary(), {self.alarm.pk: shelve})
+        told = set(Notification.objects.filter(alarm=self.alarm, kind=NotificationKind.RESUMED)
+                   .values_list('recipient__username', flat=True))
+        self.assertEqual(told, {'lead'})
 
     def test_a_sealed_cells_alarm_reaches_only_who_may_see_it(self):
         self.rule(user=self.researcher)

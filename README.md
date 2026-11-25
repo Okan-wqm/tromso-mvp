@@ -5951,8 +5951,13 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   every fixture by the recorder's own function (`core.recorded_fixtures.render_all`), puts what varies from run to run in a
   fixed form (record ids, a page's nonce and token, the assets' versions) and fails, naming the file and its first
   differing line, when a committed one is not what the code renders today: run `scripts/record_test_world.sh` and commit
-  what it writes (`--check` compares without writing). `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
+  what it writes (`--check` compares without writing). It pushes every database sequence far ahead before building the
+  world, so a fixture that still writes a number the database counts (a row id, a channel number) fails in every run, not
+  only in the whole suite. `core/tests_fixture_privacy.py` fails on any e-mail address under `frontend/test`,
   `frontend/islands` and `core/testdata` outside example.com and the `.example` domains.
+- **A test translates before it requests, inside one `translation.override`.** A request leaves the request's language
+  active, so words translated after it in the same block come out in that language: `core/tests_override_requests.py`
+  reads every test module and refuses the order.
 
 ## One format for every tab
 

@@ -168,4 +168,4 @@ class GaugeCellTests(SimpleTestCase):
             L.gauge(5, '5 %', 'ok')
         self.assertNotIn('gauge', L.cell('7.4 kg/m³'))
         self.assertEqual(L.cell('7.4 kg/m³', gauge=L.gauge(12, '12 %'))['gauge']['value'], 12.0)
-        self.assertIs(L._pager, L.pager)
+        self.assertFalse(hasattr(L, '_pager'))  # one name for the pager

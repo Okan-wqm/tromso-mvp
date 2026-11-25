@@ -111,3 +111,16 @@
   .chat-back { display: block; }
   .chat-messages { max-height: 65vh; }
 }
+
+/* The new look (templates/messaging/inbox_next.html): the open conversation sits in a plate with no height of its own, so
+   its list is bounded here; it scrolls inside, opens at its newest message (data-scroll-end, frontend/poll.ts) and keeps
+   the compose form in view on a desktop. */
+[data-ui="next"] .ui-plate .chat-messages { max-height: max(16rem, calc(100vh - 24rem)); }
+/* On a phone the new look shows one of the two plates, as the classic page does: the open conversation, its link back
+   to all conversations at its top; the list when none is open. */
+@media (max-width: 899px) {
+  [data-ui="next"] .ui-plates[data-chat-open] > .ui-plate:first-child { display: none; }
+}
+/* A message's screen-reader words (.sr-only, absolute) are placed in the list that scrolls, not on the page: without it
+   they hang below the page and make it as long as the whole conversation. */
+.chat-messages { position: relative; }

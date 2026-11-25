@@ -5203,6 +5203,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_design.py",
         "experiments/tests/test_overview.py",
@@ -5750,6 +5751,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_constraints.py",
         "experiments/tests/test_deviations.py",
@@ -6345,6 +6347,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_design.py",
@@ -6829,6 +6832,7 @@
       },
       "tests": [
         "core/test_datamap.py",
+        "core/test_world.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "experiments/tests/__init__.py",
@@ -17556,6 +17560,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_scope.py",
         "core/tests_workspaces.py",
@@ -19552,6 +19557,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_feeds.py",
@@ -27982,6 +27988,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
         "inventory/tests/test_services.py"
@@ -29148,6 +29155,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "inventory/tests/test_pages.py",
@@ -29357,6 +29365,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "inventory/tests/test_pages.py"
       ]
     },
@@ -29762,6 +29771,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "inventory/tests/helpers.py",
         "inventory/tests/test_pages.py",
@@ -31844,6 +31854,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_panel_next.py",
         "messaging/tests/test_models.py",
         "messaging/tests/test_pages.py",
         "messaging/tests/test_services.py"
@@ -32125,6 +32136,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_panel_next.py",
         "core/tests_workspaces.py",
         "messaging/tests/test_models.py",
         "messaging/tests/test_pages.py",
@@ -32362,6 +32375,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "messaging/tests/test_models.py",
         "messaging/tests/test_pages.py",
         "messaging/tests/test_services.py"
@@ -34848,6 +34862,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "reports/tests/test_ack.py",
         "reports/tests/test_questions.py"
@@ -36819,6 +36834,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_panel_next.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "reports/tests/helpers.py",
@@ -41958,6 +41975,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
         "tasks/tests/test_series.py"
@@ -42692,6 +42710,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_panel_next.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/test_models.py",
@@ -43681,6 +43701,8 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_panel_next.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
         "tasks/tests/__init__.py",

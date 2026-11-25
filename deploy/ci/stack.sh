@@ -113,19 +113,19 @@ network() {
   say "who reaches whom: a probe in each service's own network namespace (a throwaway container sharing it)"
   say "open: answered; closed: the host is reached, nothing listens; unreachable: no route, no name, no answer"
   local failures=0
-  probe() {  # probe SERVICE tcp|udp|tcp6|name HOST PORT open|closed|unreachable
-    local got
-    got=$(docker run --rm --network "container:farm-ci-$1-1" --entrypoint python balik-web:ci -c '
+  ask() {  # ask SERVICE tcp|udp|tcp6|name HOST PORT [DNS_ID]: prints open, closed ... or unreachable ...
+    docker run --rm --network "container:farm-ci-$1-1" --entrypoint python balik-web:ci -c '
 import socket, sys
 kind, host, port = sys.argv[1], sys.argv[2], int(sys.argv[3])
+question_id = sys.argv[4] if len(sys.argv) > 4 else "abcd"
 try:
     if kind == "name":                                    # a name, answered by the resolver of the service
         socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_STREAM)
         print("open")
-    elif kind == "udp":                                   # a DNS question: an answer is the way out
+    elif kind == "udp":                                   # a DNS question (example.com, A) with its own id
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(4)
-        s.sendto(bytes.fromhex("abcd01000001000000000000076578616d706c6503636f6d0000010001"), (host, port))
+        s.sendto(bytes.fromhex(question_id + "01000001000000000000076578616d706c6503636f6d0000010001"), (host, port))
         s.recvfrom(512)
         print("open")
     else:
@@ -138,9 +138,36 @@ try:
 except ConnectionRefusedError:
     print("closed ConnectionRefusedError")
 except OSError as error:                                  # no name, no route, no answer
-    print("unreachable", type(error).__name__, getattr(error, "errno", ""))' "$2" "$3" "$4" 2>&1)
+    print("unreachable", type(error).__name__, getattr(error, "errno", ""))' "$2" "$3" "$4" ${5:+"$5"} 2>&1
+  }
+  probe() {  # probe SERVICE tcp|udp|tcp6|name HOST PORT open|closed|unreachable
+    local got
+    got=$(ask "$1" "$2" "$3" "$4")
     if [ "${got%% *}" = "$5" ]; then echo "ok    $1 -> $2 $3:$4 $got"
     else echo "FAIL  $1 -> $2 $3:$4 $got (expected $5)"; failures=$((failures + 1)); fi
+  }
+  # The UDP way out of a service that has one. An answer proves it, but whether one comes is up to the runner's own
+  # network: on some GitHub hosts no answer from a public resolver comes back at all (run 45626819379, web and backup
+  # alike, while TCP to the same address was answered). So the proof that does not hang on the world outside is the
+  # question itself, seen leaving by the runner's uplink, picked out by a DNS id of its own (masqueraded, it carries
+  # the runner's address). way=answered, sent (no answer, but the question left) or shut (no answer, nothing left).
+  udp_way() {  # udp_way SERVICE HOST; sets way and way_line
+    local id got cap=$T/udp-way.pcap pid sent
+    id=$(od -An -N2 -tx1 /dev/urandom | tr -d ' \n')
+    sudo tcpdump -i "$uplink" -n -U -w "$cap" "udp and dst host $2 and dst port 53 and udp[8:2] = 0x$id" \
+      > "$cap.log" 2>&1 &
+    pid=$!
+    for _ in $(seq 1 20); do grep -q 'listening on' "$cap.log" && break; sleep 0.5; done
+    grep -q 'listening on' "$cap.log" || { cat "$cap.log"; echo "FAIL: the capture of the UDP question did not start"; exit 1; }
+    got=$(ask "$1" udp "$2" 53 "$id")
+    sleep 1
+    sudo kill -INT "$pid"
+    wait "$pid" || true
+    sent=$(sudo tcpdump -r "$cap" -n 2>/dev/null | wc -l)
+    if [ "${got%% *}" = open ]; then way=answered
+    elif [ "$sent" -gt 0 ]; then way=sent
+    else way=shut; fi
+    way_line="$1 -> udp $2:53 $way ($got; question id $id, $sent packet(s) of it left by $uplink)"
   }
   # The two DOCKER-USER rules, put in by deploy/scripts/docker-user-rules.sh as docs/ops/install.md has the host do it
   # (from the farm's settings; twice, as every Docker start does: never a duplicate; --check fails before, passes after),
@@ -190,9 +217,26 @@ except OSError as error:                                  # no name, no route, n
   # (the repository) have one
   for service in web backup; do
     probe "$service" tcp 1.1.1.1 443 open
-    probe "$service" udp 1.1.1.1 53 open
+    udp_way "$service" 1.1.1.1
+    if [ "$way" = shut ]; then echo "FAIL  $way_line (expected a way out)"; failures=$((failures + 1))
+    else echo "ok    $way_line"; fi
     probe "$service" tcp6 2606:4700:4700::1111 443 unreachable
   done
+  # udp_way itself, both ways, on the web server's network: with the answer dropped on its way back (what such a
+  # runner's network does) it still finds the way out by the question that left; with the question dropped on its
+  # way out, it finds none. Each rule is taken off again at once.
+  local egress
+  egress=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_egress)
+  sudo iptables -I DOCKER-USER -s 1.1.1.1 -d "$egress" -p udp --sport 53 -j DROP
+  udp_way web 1.1.1.1
+  sudo iptables -D DOCKER-USER -s 1.1.1.1 -d "$egress" -p udp --sport 53 -j DROP
+  if [ "$way" = sent ]; then echo "ok    the answer dropped on its way back: $way_line"
+  else echo "FAIL  the answer dropped on its way back: $way_line (expected sent)"; failures=$((failures + 1)); fi
+  sudo iptables -I DOCKER-USER -s "$egress" -d 1.1.1.1 -p udp --dport 53 -j DROP
+  udp_way web 1.1.1.1
+  sudo iptables -D DOCKER-USER -s "$egress" -d 1.1.1.1 -p udp --dport 53 -j DROP
+  if [ "$way" = shut ]; then echo "ok    the question dropped on its way out: $way_line"
+  else echo "FAIL  the question dropped on its way out: $way_line (expected shut)"; failures=$((failures + 1)); fi
   for service in db jobs proxy mosquitto ingest; do
     probe "$service" tcp 1.1.1.1 443 unreachable
     probe "$service" udp 1.1.1.1 53 unreachable

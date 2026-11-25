@@ -62,7 +62,10 @@ From an empty server to the sign-in page of one farm. Each farm gets its own ser
   answers nobody, from their own network: no outside name resolves for them. The go-live stack workflow runs the script
   twice (no duplicate; `--check` fails before and passes after), then probes every service's way out (TCP, UDP, IPv6 and
   outside names: only the web server and the backup agent have one) while it captures the runner's uplink: no packet
-  from `front` or `mqtt-edge` leaves, and the rules' counters show the drops.
+  from `front` or `mqtt-edge` leaves, and the rules' counters show the drops. A UDP way out counts when the DNS question
+  is answered or, since some runners' networks never answer a public resolver, when that question (its own id) is
+  seen leaving by the uplink; the probe is itself tested both ways (answer dropped: still a way out; question
+  dropped: none).
 - **Check from outside** after the start (another machine, not on the VPN):
   `nmap -Pn -p 22,80,443,1883,5432,8000,8080,8883 <public address>`: only 22 (from the operators' addresses) is
   open, and 80/443 only when public access was chosen.

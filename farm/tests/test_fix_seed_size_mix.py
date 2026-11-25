@@ -72,6 +72,7 @@ class SeedCagesTestCase(FeedingTestCase):
         self.assertEqual(integrity.problems(), [])
 
     def command(self, *extra, **options):
+        may_record(self.user, 'add_tank')        # the command makes cages as this person: their points' service asks (L-6)
         out = io.StringIO()
         call_command('fix_seed_size_mix', '--force', '--user', self.user.username, '--keep', self.grow.code,
                      '--move', f'{self.post.code}:TG-M03:Cage 3', '--move', f'{self.smolt.code}:TG-M04:Cage 4',

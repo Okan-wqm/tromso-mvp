@@ -169,7 +169,8 @@ class RecordedCountsTests(Counting, MonitoringCase):
         self.count(units[:1], 'big')
         self.assertEqual(self.count(units[:1], 'big') - self.savepoints, BIG_READS)
         self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS for mode, count in
-                                      {'simple': 4, 'detailed': 10, 'mixed': 10}.items()})   # chips; + treatments, lice, tasks
+                                      {'simple': 4, 'detailed': 12, 'mixed': 12}.items()})
+        # chips; + treatments, lice, tasks, and the task job's read (an optional source: its savepoint and release)
 
 
 class EndpointBudgetTests(MonitoringCase):

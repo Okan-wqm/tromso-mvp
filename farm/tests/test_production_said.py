@@ -65,7 +65,9 @@ class UnitsSaysTests(ProductionFarm):
         self.assertIn('16.0', ' '.join(rows['T-01']))
         self.assertIn('9.10', ' '.join(rows['T-01']))
         self.assertIn('Empty — ready to stock', ' '.join(rows['T-03']))
-        self.assertIn('1 critical', flat(found))
+        # T-01's CO₂, and T-02: fish and no fresh oxygen (owner decision of 2026-11-23)
+        self.assertIn('2 critical', flat(found))
+        self.assertIn('Critical, no recent data', ' '.join(rows['T-02']))
 
     def test_the_list_hides_the_water_from_a_person_who_may_not_read_it(self):
         found = self.said(UNITS, self.stock_reader())

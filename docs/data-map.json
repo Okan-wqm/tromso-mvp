@@ -3121,6 +3121,7 @@
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_deadman.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_derived_fresh.py",
         "alarms/tests/test_floods.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_pages.py",
@@ -22096,6 +22097,7 @@
       "tests": [
         "core/tests_rev.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_derived_fresh.py",
         "farm/tests/test_phosphate.py",
         "farm/tests/test_water_ionic_inputs.py",
         "alarms/tests/test_freshness.py"
@@ -41701,6 +41703,7 @@
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_bound_text.py",
+        "farm/tests/test_derived_fresh.py",
         "farm/tests/test_nh3_unrounded.py",
         "farm/tests/test_water_crossed.py",
         "knowledge/tests/test_extraction.py",
@@ -41708,7 +41711,8 @@
         "monitoring/tests/test_bound_text.py",
         "monitoring/tests/test_read.py",
         "monitoring/tests/test_render.py",
-        "sensors/tests/test_timescale.py"
+        "sensors/tests/test_timescale.py",
+        "alarms/tests/test_derived_fresh.py"
       ]
     },
     {

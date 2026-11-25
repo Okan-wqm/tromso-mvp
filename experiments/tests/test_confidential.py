@@ -268,6 +268,15 @@ class RouteWalkTests(WalkCase):
         self.canary, self.compare = world.SCIENCE, False
         self.assertWalkClean(keeper)
 
+    def test_a_grantee_of_the_water_never_meets_the_design(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from ..models import ExperimentShare
+        ExperimentShare.objects.create(experiment=self.experiment, user=self.researcher, part='water', reason='Audit',
+                                       valid_until=timezone.now() + timedelta(days=5))
+        self.canary, self.compare = world.DESIGN, False
+        self.assertWalkClean(self.researcher)
+
 
 class NewLookWalkTests(WalkCase):
     """The same walk in the new look (`?ui=next`): its pages are drawn from props (core/listprops.py, the islands' and
@@ -283,15 +292,6 @@ class NewLookWalkTests(WalkCase):
         keeper = world.person('keeper', *world.area_perms(exclude_apps=('reports',)), 'experiments.oversee_experiment')
         self.canary, self.compare = world.SCIENCE, False
         self.assertWalkClean(keeper, look='next')
-
-    def test_a_grantee_of_the_water_never_meets_the_design(self):
-        from datetime import timedelta
-        from django.utils import timezone
-        from ..models import ExperimentShare
-        ExperimentShare.objects.create(experiment=self.experiment, user=self.researcher, part='water', reason='Audit',
-                                       valid_until=timezone.now() + timedelta(days=5))
-        self.canary, self.compare = world.DESIGN, False
-        self.assertWalkClean(self.researcher)
 
 
 def where(before, after):

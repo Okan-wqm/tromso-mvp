@@ -856,7 +856,9 @@ class HiddenRows(models.Expression):
             condition = hidden(seal, self.part)
             if condition is None:
                 return 'FALSE', []
-            rows = seal.model._base_manager.filter(condition).order_by().values('pk')
+            # A plain QuerySet: a model's base manager may be sealed itself (base_manager_name = 'all_objects'), and
+            # narrowed it would leave out the very rows asked for here.
+            rows = models.QuerySet(seal.model).filter(condition).order_by().values('pk')
         finally:
             _building.reset(token)
         inner, inner_params = rows.query.get_compiler(connection=connection).as_sql()

@@ -54,7 +54,9 @@ def _handling(form):
     blocks = [formpanels.help_text(f'{title}: {note}') for note in handling.notes] or [formpanels.help_text(title)]
     if not handling.warnings:
         return blocks, ['handling_ack']
-    blocks.append(formpanels.notices(title, [warning.message for warning in handling.warnings]))
+    # a warning's message is a method of the check (the classic template calls it)
+    blocks.append(formpanels.notices(title, [warning.message() if callable(warning.message) else warning.message
+                                             for warning in handling.warnings]))
     if handling.second_person:
         blocks.append(formpanels.notice(handling.second_person, 'warning'))
         return blocks, ['handling_ack']

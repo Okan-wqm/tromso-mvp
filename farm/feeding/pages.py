@@ -381,8 +381,10 @@ def choose_props(request, context):
         department = unit.production_department
         said = squash(strip_tags(render_to_string('farm/_feeding_choice.html', {'item': item}, request=request)))
         rows.append(L.row(unit.pk, {
-            'unit': L.cell(unit.code, href=item['url'], strong=True, sub=[' · '.join(
-                part for part in (unit.name, department.name, department.site.name if department.site else '') if part)]),
+            # the classic link's line: the code, the unit's name, its department and site
+            'unit': L.cell(' · '.join(part for part in (unit.code, unit.name, department.name,
+                                                        department.site.name if department.site else '') if part),
+                           href=item['url'], strong=True),
             'fish': L.cell(said or None)}))
     return L.page_props(request, label=context['heading'], columns=[L.column('unit', str(words.UNIT)),
                                                                      L.column('fish', str(words.FISH))],

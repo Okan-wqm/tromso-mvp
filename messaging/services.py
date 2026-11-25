@@ -77,6 +77,7 @@ def _locked(conversation_id):
 def owner(user, conversation_id, lock=False):
     """The person's membership of a channel they own (the channel locked when asked); PermissionDenied when they
     are a member who does not own it."""
+    access.require(user, USE)                  # who may not use messaging is refused before any conversation is read
     if lock:
         _locked(conversation_id)
     actor = member(user, conversation_id)
@@ -208,6 +209,7 @@ def remove_member(user, conversation_id, participant_id):
 @transaction.atomic
 def leave(user, conversation_id):
     """The person leaves a channel. A direct conversation is not left: it is between two people."""
+    access.require(user, USE)
     _locked(conversation_id)
     actor = member(user, conversation_id)
     if not actor.conversation.is_channel:

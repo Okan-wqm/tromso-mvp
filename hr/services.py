@@ -22,11 +22,20 @@ from .models.leave import LeaveStatus
 POSTING_FIELDS = ['production_department', 'office_department', 'title', 'valid_from', 'valid_until']
 
 
-def _allowed(user, employee, perms=('hr.change_employee', 'hr.add_employee')):
+EMPLOYEE_VERBS = ('hr.change_employee', 'hr.add_employee')
+
+
+def _verb(user, perms):
+    """Who holds none of `perms` is refused before anything else is read (the data-layering audit, L-6)."""
+    if user is None or not user.is_active or not any(user.has_perm(perm) for perm in perms):
+        raise PermissionDenied
+
+
+def _allowed(user, employee, perms=EMPLOYEE_VERBS):
     """The verb (Edit, or Create for the placement a new person starts with), the person in the user's team, and not the
     user's own record unless they hold Everyone (`own_record`)."""
-    if not any(user.has_perm(perm) for perm in perms) or not scope.can_reach(user, employee) \
-            or own_record(user, employee):
+    _verb(user, perms)
+    if not scope.can_reach(user, employee) or own_record(user, employee):
         raise PermissionDenied
 
 
@@ -183,7 +192,9 @@ def leave_company(user, employee, on):
 
 def align_placements(user, employee):
     """Makes the placements agree with the person's last day: those that start after it are deleted, the one that runs
-    past it ends on it. Nothing is done for a person who has not left."""
+    past it ends on it. Nothing is done for a person who has not left. For who may create or edit people (the employee
+    tab's save and `leave_company` call it after their own check)."""
+    _verb(user, EMPLOYEE_VERBS)
     if employee.left_on is None:
         return
     with transaction.atomic():
@@ -266,6 +277,7 @@ def plan_shifts(user, cells, shift):
     are checked first (the verb each needs, the person in the user's team on that day) and the rules run for each
     person; a blocking finding refuses the whole batch and names the first conflicting cells. Returns the warnings as
     [(employee, Finding)], which are also written into the audit rows."""
+    _verb(user, PLAN_PERMISSIONS)              # who may plan no cell at all is refused before the cells are read
     by_person = {}
     for employee, day in cells:
         by_person.setdefault(employee.pk, (employee, {}))[1][day] = shift
@@ -430,6 +442,7 @@ def _lock(leave_request):
 def decide_leave(user, leave_request, approve, note=''):
     """Approves or rejects a pending request, with the decider and the time. Refused (nothing changes, nothing is logged)
     for someone who may not decide it, for the person's own request, and for one that is no longer pending."""
+    _verb(user, ('hr.change_leaverequest',))   # only a decider holds it (_decider); the request is read after
     note = (note or '').strip()
     if len(note) > LeaveRequest._meta.get_field('decision_note').max_length:
         raise ValidationError(_('The note is too long.'))
@@ -468,6 +481,7 @@ def cancel_leave(user, leave_request):
 def shorten_leave(user, leave_request, last_day):
     """Ends an approved request earlier: `last_day` from its first day to the day before its last (the person came back
     early). A decider only, within the correction window (`can_correct`); logged; the days after it are free again."""
+    _verb(user, ('hr.change_leaverequest',))   # only a decider corrects (can_correct); the request is read after
     with transaction.atomic():
         current = _lock(leave_request)
         if not can_correct(user, current):

@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from core import audit
+from core import access, audit
 from farm.models import Batch, Tank
 from farm.stock import read as stock_read
 from farm.models.species import SALMONID_CODES
@@ -17,6 +17,9 @@ from .models import (
     NARRATIVE, WITHOUT_REFERENCE, Channel, DueClosure, OpenQuestion, OutsideDutyDone, QuestionStatus, Report,
     ReportSnapshot,
 )
+
+# Who may (asked by each act itself, whoever calls: the data-layering audit, L-6): the report pages' rights.
+CHANGE, ADD = 'reports.change_report', 'reports.add_report'
 
 # The format of a notice that was recorded on the health event before notices existed (its time only).
 LEGACY_FORMAT = 0
@@ -49,6 +52,7 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
     record in between): the person looks again, and what is frozen is always what was previewed, or when the content rests
     on a question for the authority that is still open (`acknowledged`: the numbers the person confirmed by hand), which is
     logged with the question's text."""
+    access.require(user, CHANGE)
     with transaction.atomic():
         current = Report.objects.select_for_update().get(pk=report.pk)
         if current.version != version:
@@ -114,11 +118,13 @@ def submit(user, report, *, submitted_at, channel, reference, version, content_s
 def close_due(user, *, kind, place, period, reason):
     """Closes a report that is owed and will not be filed, with the reason: the due list stops listing it. Refused when
     nothing is owed there (it was filed, or is not due), or without a reason. Logged; `reopen` undoes it."""
+    access.require(user, CHANGE)
     if not reason.strip():
         raise ValidationError({'reason': [_('Say why it is closed.')]})
     with transaction.atomic():
-        # Owed is decided in the transaction that closes it (the data-layering audit, L-13): a closure or a filing that
-        # committed just before is seen, and the closure's own constraint refuses a second one at the same moment.
+        # Owed is read inside the transaction that closes it (the data-layering audit, L-13), so the read and the
+        # closure are one unit. No row is locked: under READ COMMITTED a closure or a filing that commits while this
+        # runs is not seen; the closure's own unique constraint is what refuses a second one at the same moment.
         if not any(row.kind == kind and row.place == place and row.period == period for row in due.due().rows):
             _refuse(_('Nothing is owed there: it was filed, closed already or is not due.'))
         closure = DueClosure(kind=kind, period_start=period.start, reason=reason.strip(), closed_by=user,
@@ -150,12 +156,14 @@ def _take_away(user, model, row):
 
 def reopen(user, closure):
     """Takes a closure away: the report is owed again. Logged."""
+    access.require(user, CHANGE)
     return _take_away(user, DueClosure, closure)
 
 
 def record_duty_done(user, *, duty, site, year, done_on, reference=''):
     """Records that an annual duty outside this system was done for a site and a year (not a report; nothing is sent). Refused when
     the duty does not bind the site, or the day is in the future. Logged."""
+    access.require(user, CHANGE)
     from . import duties
     found = duties.BY_CODE.get(duty)
     if found is None or not found.recordable:
@@ -182,12 +190,14 @@ def record_duty_done(user, *, duty, site, year, done_on, reference=''):
 
 def undo_duty_done(user, record):
     """Takes a record away: the duty is owed again. Logged."""
+    access.require(user, CHANGE)
     _take_away(user, OutsideDutyDone, record)
 
 
 def start_correction(user, report):
     """A new draft that corrects the filed `report`: its key and its answers, to be checked against the records as
     they are now and filed again. Refused for a report not filed or one that already has a live correction."""
+    access.require(user, ADD)
     from .resources import ReportResource
     with transaction.atomic():
         original = Report.objects.select_for_update().get(pk=report.pk)

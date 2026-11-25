@@ -9,7 +9,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from core import audit
+from core import access, audit
 from core.models import AuditLog
 from sensors.models.alarm import Severity
 
@@ -256,9 +256,10 @@ def shelve(alarm, user, minutes, reason, *, at=None):
     one alarm together at most its severity's longest snooze (Alarm severity rules), so a snooze is never renewed past
     it; never a critical alarm of the alarm system itself (it says the alarms are not working). The people notified of
     the alarm (but the snoozer) are told who snoozed it, until when and why. Logged, critical for a critical alarm. Who
-    may is asked by the caller (read.SHELVE)."""
-    from .read import snoozes
+    may is asked here (read.SHELVE: Alarm snoozes: Create), whoever calls (the data-layering audit, L-6)."""
+    from .read import SHELVE, snoozes
     from .rules import current
+    access.require(user, SHELVE)
     at = at or timezone.now()
     reason = ' '.join(str(reason or '').split())
     with transaction.atomic():
@@ -299,8 +300,10 @@ def shelve(alarm, user, minutes, reason, *, at=None):
 
 
 def unshelve(alarm, user, *, at=None):
-    """`user` ends the alarm's snooze before its time: notification and escalation go on from now. Logged."""
-    from .read import snoozes
+    """`user` ends the alarm's snooze before its time: notification and escalation go on from now. Logged. Who may is
+    asked here (read.SHELVE), as for a snooze."""
+    from .read import SHELVE, snoozes
+    access.require(user, SHELVE)
     at = at or timezone.now()
     with transaction.atomic():
         alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)

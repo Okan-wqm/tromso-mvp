@@ -894,4 +894,6 @@ class WaterFreshnessForm(TabbedForm):
         model = WaterFreshness
         fields = tab_fields(FRESHNESS_TABS)
         help_texts = {'fresh_hours': _('An older value is shown stale with its age, never OK, and never clears an alarm. '
-                                       '1 to 8760 hours (a year).')}
+                                       '1 to 8760 hours (a year). A worked-out value (NH₃-N, NH₄-N) is never fresher '
+                                       'than the oldest value it is worked out from (TAN, pH, temperature, salinity), '
+                                       'whatever its own hours.')}

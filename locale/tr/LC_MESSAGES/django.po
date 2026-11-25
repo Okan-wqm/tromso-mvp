@@ -3831,10 +3831,13 @@ msgstr "%(name)s için bir davet şu anda gönderiliyor: bekleyin, satır ne old
 
 msgid ""
 "An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
-"(a year)."
+"(a year). A worked-out value (NH₃-N, NH₄-N) is never fresher than the oldest value it is worked "
+"out from (TAN, pH, temperature, salinity), whatever its own hours."
 msgstr ""
 "Daha eski bir değer yaşıyla birlikte eski gösterilir, asla Normal değil, ve hiçbir alarmı "
-"kapatmaz. 1 ile 8760 saat (bir yıl)."
+"kapatmaz. 1 ile 8760 saat (bir yıl). Hesaplanan bir değer (NH₃-N, NH₄-N), kendi saatleri ne "
+"olursa olsun, hesaplandığı en eski değerden (TAN, pH, sıcaklık, tuzluluk) asla daha taze "
+"sayılmaz."
 
 msgid "An open alarm closes only once the value is back past the threshold by this much."
 msgstr "Açık bir alarm, ancak değer eşiğin bu kadar ötesine geri döndüğünde kapanır."

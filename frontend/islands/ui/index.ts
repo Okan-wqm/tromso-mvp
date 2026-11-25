@@ -22,6 +22,7 @@ export {
   ListPage, ListToolbar, Cell as ListCellView, type ListPageProps, type ListRow, type ListCell, type ListAction, type ListColumn, type ListFilter, type ListGroup,
 } from './ListPage.js';
 export { Gauge, type GaugeProps } from './Gauge.js';
+export { Pips, type PipsProps, type PipState } from './Pips.js';
 export { Timeline, type TimelineProps, type TimelineLane, type TimelineSpan } from './Timeline.js';
 export { StackedBar, type StackedBarProps, type StackPart, type StackTone } from './StackedBar.js';
 export { OrgTree, type OrgTreeProps, type OrgNode, type OrgPerson } from './OrgTree.js';

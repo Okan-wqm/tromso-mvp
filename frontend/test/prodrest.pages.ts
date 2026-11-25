@@ -26,7 +26,7 @@ const ISLANDS = resolve('static/islands');
 const PROPS = resolve('.build/island-props');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 // the pages of this test: the props files their Django tests keep, by name
-const PREFIXES = ['sensors-', 'production-'];
+const PREFIXES = ['sensors-', 'production-', 'feeding-'];
 // The keys each Django test keeps, by test: a test that ran keeps all of its keys (a renamed or lost page fails here,
 // never passes silently); a test left out of a labels run keeps none.
 const EXPECTED: Record<string, string[]> = {
@@ -38,6 +38,9 @@ const EXPECTED: Record<string, string[]> = {
     .concat(['production-units-drawer-en']),
   'farm.tests.test_system_water_next': ['production-system-water-en'],
   'farm.tests.test_systems_next': ['production-systems-en'],
+  // Operations › Feeding (farm/feeding/pages.py)
+  'farm.tests.test_feeding_pages_next': ['meal-board-en', 'meal-board-nb', 'meal-board-tr', 'records-en', 'records-days-en']
+    .map((name) => `feeding-${name}`),
 };
 
 /** an island's page ({island, props}), or a page the server draws in the new look ({html}: its <main>, scripts left out) */

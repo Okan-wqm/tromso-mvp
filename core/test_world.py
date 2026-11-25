@@ -825,3 +825,27 @@ def wall_board(hall):
     for unit in Tank.objects.filter(production_department=hall).order_by('code'):
         MonitorBoardUnit.objects.create(board=board, unit=unit)
     return board
+
+
+def feeding_ops_world(admin):
+    """Feeding's pages (farm/tests/test_feeding_pages_next.py), after world(): a protocol in force on TT-01 (one band of the
+    water world's test feed, 8 and 14 °C, so TT-01's 12 °C reads between the columns), a meal given to TT-01 today, and a
+    feeding of two days back entered twice and voided. TM-01 has no protocol: its line says why it has no ration. Through
+    the services where the record has one (the feedings, the void), straight into the tables otherwise (the protocol)."""
+    from farm.feeding import services
+    from farm.models import Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate, Tank
+
+    tank = Tank.objects.get(code='TT-01')
+    feed = Feed.objects.get(code='TF-3')
+    protocol = FeedingProtocol.objects.create(name='Test hall table', species=_batch_of(tank).species,
+                                              expected_fcr=D('1.00'), status='active')
+    band = ProtocolBand.objects.create(protocol=protocol, min_weight_g=D(0), max_weight_g=None, feed=feed,
+                                       meals_per_day=4, expected_fcr=None)
+    for column, sfr in (('8', '1.00'), ('14', '1.40')):
+        ProtocolRate.objects.create(band=band, temperature_c=D(column), sfr_pct=D(sfr))
+    ProtocolAssignment.objects.create(protocol=protocol, unit=tank, valid_from=_days_back(tank, 10))
+    services.record_feeding(admin, unit=tank, day=_days_back(tank, 0), feed=feed, amount_kg=D('0.15'), time=time(7, 30),
+                            meals=1)
+    twice = services.record_feeding(admin, unit=tank, day=_days_back(tank, 2), feed=feed, amount_kg=D('0.6'),
+                                    time=time(9, 0), notes='Test entry')
+    services.void_feeding(admin, twice, 'Entered twice')

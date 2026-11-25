@@ -15,6 +15,7 @@ import { CellLines, Table } from './Table.js';
 import { Chip, type ChipKind } from './Chip.js';
 import { Gauge, type GaugeProps } from './Gauge.js';
 import { Icon, type IconName } from './Icon.js';
+import { Pips, type PipsProps } from './Pips.js';
 import { Plate, Plates } from './Plate.js';
 import { Timeline, type TimelineProps } from './Timeline.js';
 import { EmptyState, Notice, type NoticeTone } from './States.js';
@@ -35,6 +36,8 @@ export interface ListCell {
   gauge?: GaugeProps | null;
   /** a closed disclosure in place of the text: its summary, and its lines shown when opened (a dead letter's payload) */
   details?: { summary: string; lines: string[] } | null;
+  /** a day's meals as pips before the text (the meal board), with their words */
+  pips?: PipsProps | null;
 }
 
 export interface ListAction {
@@ -72,7 +75,7 @@ export interface ListGroup {
 export interface ListFilterOption { value: string; label: string }
 export interface ListFilter {
   /** a select (the default), or a day typed the European way (frontend/date-input.ts tidies it) */
-  kind?: 'select' | 'day';
+  kind?: 'select' | 'day' | 'check';
   name: string;
   label: string;
   value: string;
@@ -123,6 +126,7 @@ export function Cell({ cell }: { cell: ListCell }) {
   const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);
   const sub = cell.sub && cell.sub.length ? cell.sub.join(' · ') : undefined;
   const lines = <CellLines strong={Boolean(cell.strong)} main={chips && chips.length ? <>{main} {chips}</> : main} sub={sub} />;
+  if (cell.pips) return <><Pips {...cell.pips} />{lines}</>;
   if (!cell.gauge) return lines;
   return <>{lines}<span className="ui-cell-sub"><Gauge {...cell.gauge} /></span></>;
 }
@@ -172,7 +176,12 @@ export function ListToolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) 
           </div>
         ) : null}
         {filters.map((filter) => (
-          <label key={filter.name}>
+          filter.kind === 'check' ? (
+            // on or off ("Show voided"): its word beside the box, as the classic page's
+            <label key={filter.name} className="ui-check">
+              <input type="checkbox" name={filter.name} value="1" defaultChecked={filter.value === '1'} /> {filter.label}
+            </label>
+          ) : <label key={filter.name}>
             <span className="sr-only">{filter.label}</span>
             {filter.kind === 'day' ? (
               <input type="text" name={filter.name} defaultValue={filter.value} placeholder={filter.placeholder}

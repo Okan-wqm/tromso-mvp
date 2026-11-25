@@ -262,6 +262,25 @@ test('a gauge: the bar as long as the share (full from 100), the share in words 
   assert.doesNotMatch(gauge + over, /style=/);
 });
 
+test('pips: one per planned meal in its state, named by their words, never the only cue, no style', async () => {
+  const { Pips } = await import('./index.js');
+  const pips = html(<Pips states={['done', 'next', '']} label="1 of 3 meals done" />);
+  assert.equal(pips, '<span class="ui-pips" role="img" aria-label="1 of 3 meals done"><span class="ui-pip" data-state="done"></span><span class="ui-pip" data-state="next"></span><span class="ui-pip"></span></span>');
+  assert.doesNotMatch(pips, /style=/);
+});
+
+test('a list cell with pips draws them before its text; a check filter is a ticked box with its word', async () => {
+  const { ListPage } = await import('./index.js');
+  const { LIST_PROPS } = await import('../../test/pages/list-props.js');
+  const rows = [{ key: '1', cells: { name: { text: 'TT-01', strong: true },
+    today: { text: '0.40 kg left', pips: { states: ['done' as const, '' as const], label: '1 of 2 meals done' } } }, actions: [] }];
+  const toolbar = { ...LIST_PROPS.toolbar, filters: [{ kind: 'check' as const, name: 'voided', label: 'Show voided', value: '1', options: [] }] };
+  const page = html(<ListPage {...LIST_PROPS} toolbar={toolbar} table={{ ...LIST_PROPS.table, rows,
+    columns: [{ key: 'name', label: 'Unit' }, { key: 'today', label: 'Today' }] }} />);
+  assert.match(page, /<td><span class="ui-pips" role="img" aria-label="1 of 2 meals done">[^]*?<\/span><span>0\.40 kg left<\/span><\/td>/);
+  assert.match(page, /<label class="ui-check"><input type="checkbox" name="voided" value="1" checked=""\/> Show voided<\/label>/);
+});
+
 test('a list cell with a gauge draws its text and sub-lines, then the gauge under them', async () => {
   const { ListPage } = await import('./index.js');
   const { LIST_PROPS } = await import('../../test/pages/list-props.js');

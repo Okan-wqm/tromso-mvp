@@ -8,7 +8,7 @@ import { mount } from '../../islands/ui/mount.js';
 import { SeriesChart } from '../../islands/ui/SeriesChart.js';
 import { ROSTER_PROPS } from '../pages/roster-props.js';
 import {
-  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RemoveBox, RowGrid, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, Gauge, IconButton, Timeline, LinkButton,
+  Acknowledge, AuditItem, Button, CellLines, Checkbox, FileField, LinkList, PermissionMatrix, RadioGroup, RemoveBox, RowGrid, ChartFrame, CheckboxGroup, Chip, Chips, EmptyState, ErrorState, FixedField, Gauge, Pips, IconButton, Timeline, LinkButton,
   LinkTabs, List, ListItem, LoadingState, Notice, OrgTree, Plate, Plates, RosterGrid, SelectField, ServerForm, StackedBar, Table, Tabs, TextField, Tile, Tiles,
 } from '../../islands/ui/index.js';
 
@@ -234,6 +234,12 @@ function Gallery({ rows, errors }: GalleryProps) {
           <CellLines main="7.4 kg/m³" sub={undefined} /><Gauge value={12} text="12 % of capacity" />
           <CellLines main="96.1 kg/m³" sub={undefined} /><Gauge value={124} text="124 % of capacity" status="critical" />
           <CellLines main="0.0 kg/m³" sub={undefined} /><Gauge value={0} text="0 % of capacity" />
+        </div>
+      </Plate>
+      <Plate title="Meals" span={6}>
+        <div className="ui-plate-body" id="pips">
+          <Pips states={['done', 'next', '', '']} label="1 of 4 meals done" /><CellLines main="10.58 kg left" sub={undefined} />
+          <Pips states={['done', 'done', 'done']} label="3 of 3 meals done" /><CellLines main="0 kg left" sub={undefined} />
         </div>
       </Plate>
     </Plates>

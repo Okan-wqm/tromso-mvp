@@ -1082,7 +1082,7 @@ Feed given to one unit on one day: the farm's feeding record.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › feeding_records
 - **forms**: `FeedingForm`
 - **constraints**: chk_feeding_records_amount (check); chk_feeding_records_target (check); chk_feeding_records_meals (check); chk_feeding_records_void_reason (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 8 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1198,7 +1198,7 @@ A harvest or a transport planned for the fish of one batch in one unit on a day:
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › handling_plan_items
 - **forms**: `HandlingPlanItemForm`
 - **constraints**: chk_handling_plan_items_kind (check); chk_handling_plan_items_destination (check); chk_handling_plan_items_count (check); chk_handling_plan_items_kg (check); chk_handling_plan_items_other_unit (check); uq_handling_plan_items_operation (unique: operation)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 17 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_cleaner_fish.py` and 18 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1307,7 +1307,7 @@ A health observation, a vet or fish-health visit, a lab result or a rise in mort
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › health_events
 - **forms**: `HealthEventForm`
 - **constraints**: chk_health_events_kind (check); chk_health_events_signs (check); chk_health_events_diagnosis (check); chk_health_events_confirmation (check); chk_health_events_closed_on (check); chk_health_events_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_entry_key.py` and 10 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_entry_key.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1348,7 +1348,7 @@ A sea-lice count in one unit (a cage) on one day, as lakselusforskriften's Vedle
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › lice_counts
 - **forms**: `LiceCountForm`
 - **constraints**: uq_lice_counts_unit_day (unique: unit, date); chk_lice_counts_fish (check); chk_lice_counts_lice (check); chk_lice_counts_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 2 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1772,7 +1772,7 @@ One thing a person did to the stock (a stocking, a mortality, a weighing), the u
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › stock_operations
 - **forms**: `MortalityForm`, `CullForm`, `WeighingForm`, `TransferForm`, `LegForm`, `GradingForm`, `OutputForm`, `HarvestForm`, `DeliveryForm`, `EscapeForm`, `InputLineForm`, `StockVoidForm`
 - **constraints**: chk_stock_operations_kind (check); chk_stock_operations_void_reason (check); chk_stock_operations_ack_on_arrival (check); chk_stock_operations_size_mix_ack_on_arrival (check); chk_stock_operations_health_event (check)
-- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 25 more
+- **tests that mention it**: `core/tests_entry_key.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 26 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1925,7 +1925,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 64 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 65 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2008,7 +2008,7 @@ One course given to the fish of one or more units of a site: a bath, a medicated
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › treatments
 - **forms**: `TreatmentForm`, `LastDayForm`
 - **constraints**: chk_treatments_method (check); chk_treatments_reason (check); chk_treatments_medicine (check); chk_treatments_dates (check); chk_treatments_dose (check); chk_treatments_amount (check); chk_treatments_dose_unit (check); chk_treatments_amount_unit (check); chk_treatments_bath_minutes (check); chk_treatments_dose_positive (check); chk_treatments_amount_positive (check); chk_treatments_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 11 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

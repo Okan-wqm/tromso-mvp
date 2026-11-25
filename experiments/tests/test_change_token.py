@@ -296,3 +296,27 @@ class SealDepthTests(TokenCase):
             self.assertFalse(audit.sealed_out(AuditLog.objects.filter(pk=entry.pk)).exists())
         with sealing.as_viewer(self.lead):
             self.assertTrue(audit.sealed_out(AuditLog.objects.filter(pk=entry.pk)).exists())
+
+
+class HistoryTabTests(TokenCase):
+    def test_a_records_history_tab_leaves_out_an_entry_stamped_with_hidden_work(self):
+        """L5: the record form's History tab reads the log through its sealed manager, as the activity log does: an
+        entry about a unit written while it lay in X's cell (stamped with X) is not shown to whoever may not read X,
+        though the unit is theirs to edit now."""
+        from farm.resources.tank import TankResource
+        editor = world.person('editor', *world.area_perms(actions=('view', 'change'), exclude_apps=('reports',)))
+
+        def stamped_with_x(entries):
+            for entry in entries:
+                entry.works = [str(self.experiment.pk)]
+        with mock.patch.object(audit, 'stamp', side_effect=stamped_with_x):
+            entry = audit.record(self.boss, AuditLog.Action.UPDATE, self.open_tank, {'Note': [None, 'QQV in the trial']},
+                                 entity_type=TankResource.entity_type())
+        self.client.force_login(editor)
+        page = self.client.get(reverse(TankResource.url_name('edit'), args=[self.open_tank.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertNotContains(page, 'QQV in the trial')
+        with sealing.as_viewer(self.lead):
+            self.assertTrue(AuditLog.objects.filter(pk=entry.pk).exists())
+        with sealing.as_viewer(editor):
+            self.assertFalse(AuditLog.objects.filter(pk=entry.pk).exists())

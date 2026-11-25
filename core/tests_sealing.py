@@ -157,79 +157,168 @@ class AccessLogTests(TestCase):
             AccessEvent.objects.create(user_name='kari', kind='peek', entity_type='experiment', entity_id='E1')
 
 
-# The places that read as the system, each with its reason (a figure that must count everything, the delete plan, the
-# booking check). Another use of `sealing.system(` fails here: say why in this list, or read as the viewer.
+# The places that read past the seal, each named by its call site (the file and the function it is in, review T3): a
+# new use in a file already listed fails here as surely as one in a new file. Say why in the list, or read as the viewer.
+# Reading as the system (`sealing.system(`, `reads_as_system`): a figure that must count everything, the delete plan,
+# the booking check.
 SYSTEM_CALLS = {
-    'core/sealing.py': 'the framework itself',
-    'core/softdelete.py': 'the delete plan reaches every record its links reach; what the person may not see is counted, '
-                          'never named, and a delete that reaches it is refused to them',
-    'experiments/read.py': 'the booking check: a booking holds its tank whoever may read it, and is said with its days '
-                           'only; the oversee card, which says only the trial, its lead, its approval and its days',
-    'experiments/preflight.py': 'the report before confidentiality goes live: counts and names every experiment',
-    'reports/compute/__init__.py': 'a regulatory report counts every unit (a legal figure is never partial); who opens '
-                                   'it is the right to read reports (owner amendment C1)',
-    'reports/compute/common.py': 'the fingerprint of the rows a filed report read, as compute read them',
-    'farm/health/withdrawal.py': 'the medicine withdrawal holds fish wherever they went, over every unit '
-                                 '(reads_as_system on its reader and the loaders of its facts); what is printed is '
-                                 'read as the person',
-    'inventory/read.py': 'the store’s book: feed drawn per site and day is a stock figure, every feeding counts',
-    'inventory/views.py': 'the store’s feeding per site, feed and day, the same figure as the book',
-    'reports/due.py': 'the regulatory due list: a duty is owed whoever looks (a sealed tank’s notifiable disease too)',
-    'experiments/sealing.py': 'the alarms’ fallback: who keeps the fish of a sealed cell (its lead, the Oversee '
-                              'holders), asked by the alarm loop',
-    'farm/stock/read.py': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is shown of it is '
-                          'narrowed where it is shown',
+    'core/softdelete.py:plan_delete': 'the delete plan reaches every record its links reach; what the person may not '
+                                      'see is counted, never named, and a delete that reaches it is refused to them',
+    'experiments/read.py:booked': 'the booking check: a booking holds its tank whoever may read it, and is said with '
+                                  'its days only',
+    'experiments/read.py:cards': 'the oversee card, which says only the trial, its lead, its approval, its days and '
+                                 'its care instructions',
+    'experiments/preflight.py:report': 'the report before confidentiality goes live: counts and names every experiment',
+    'reports/compute/__init__.py:compute': 'a regulatory report counts every unit (a legal figure is never partial); '
+                                           'who opens it is the right to read reports (owner amendment C1)',
+    'reports/compute/common.py:fingerprint': 'the fingerprint of the rows a filed report read, as compute read them',
+    'farm/health/withdrawal.py:Reader': 'the medicine withdrawal holds fish wherever they went, over every unit '
+                                        '(reads_as_system on its reader); what is printed is read as the person',
+    'farm/health/withdrawal.py:_harvest_lines': 'the withdrawal’s facts: the harvests of every unit',
+    'farm/health/withdrawal.py:_reached': 'the withdrawal’s facts: where the treated fish went',
+    'farm/health/withdrawal.py:guarded_ceiling': 'the withdrawal guard’s ceiling over every unit',
+    'inventory/read.py:_feeding': 'the store’s book: feed drawn per site and day is a stock figure, every feeding '
+                                  'counts',
+    'inventory/read.py:overview': 'the store’s book, its overview',
+    'inventory/read.py:undelivered': 'the store’s book, the feed not yet delivered',
+    'inventory/views.py:_feeding_days': 'the store’s feeding per site, feed and day, the same figure as the book',
+    'reports/due.py:due': 'the regulatory due list: a duty is owed whoever looks (a sealed tank’s notifiable '
+                          'disease too)',
+    'reports/due.py:no_longer_match': 'the due list’s duties that no longer match, over every unit',
+    'experiments/sealing.py:keepers': 'the alarms’ fallback: who keeps the fish of a sealed cell (its lead, the '
+                                      'Oversee holders), asked by the alarm loop',
+    'farm/stock/read.py:ledger': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is '
+                                 'shown of it is narrowed where it is shown',
+    'farm/stock/read.py:spans': 'the stock fold’s spans, over every line of a batch',
 }
-# The places that read with SQL of their own (a cursor, raw()), which the managers' seal does not reach, each with why it
-# reads nothing sealed or reads only what the seal already let through. Another one fails here.
+# Reading with SQL of its own (a cursor, raw(), RawSQL), which the managers' seal does not reach: each reads nothing
+# sealed or only what the seal already let through. Management commands read as the system and are not listed.
 RAW_SQL = {
-    'alarms/changes.py': 'the count and the sum of the transaction ids of sensors_channel_state: two numbers, no row '
-                         '(the alarm worker’s look, as the system)',
-    'alarms/engine.py': 'an advisory lock, no rows',
-    'alarms/outbox.py': 'an advisory lock per notification, no rows',
-    'alarms/worker.py': 'the worker’s advisory lock, its backend pid and application name, no rows',
-    'alarms/services.py': 'writes an alarm subject’s state for an alarm the engine raises, as the system (run_alarms)',
-    'core/checks.py': 'the database server’s version',
-    'core/rev.py': 'the revision counters of core_rev (core-rev): a scope, a key and a number, no row of a record',
-    'core/codes.py': 'the next number of a code sequence: a number, no record',
-    'core/database.py': 'the catalogue of a table (columns, constraints, indexes, the estimate of a hypertable’s rows); '
-                        'its rows are read through the seal (core.dbgrid)',
-    'core/erasure.py': 'the erasure of a person’s data by the platform admin’s command, as the system',
-    'inventory/services.py': 'an advisory lock, no rows',
-    'knowledge/search.py': 'the text search configuration’s stems of the typed words, no rows',
-    'sensors/alarms.py': 'the readings of a channel a sensor alarm rule watches, evaluated as the system (run_alarms)',
-    'sensors/provider.py': 'the readings of the bindings the sealed Binding manager returned, inside their windows',
-    'sensors/read.py': 'the readings and rollups of the channels the sealed managers returned (a channel number is '
-                       'never taken from a request without them)',
+    'alarms/changes.py:token': 'the count and the sum of the transaction ids of sensors_channel_state: two numbers, no '
+                               'row (the alarm worker’s look, as the system)',
+    'alarms/engine.py:_lock': 'an advisory lock, no rows',
+    'alarms/outbox.py:_claim': 'an advisory lock per notification, no rows',
+    'alarms/outbox.py:_release': 'an advisory lock per notification, no rows',
+    'alarms/services.py:_set_open': 'writes an alarm subject’s state for an alarm the engine raises, as the system',
+    'alarms/worker.py:Worker._finish': 'the worker’s advisory lock, no rows',
+    'alarms/worker.py:Worker._holds': 'the worker’s backend pid, no rows',
+    'alarms/worker.py:Worker._lead': 'the worker’s advisory lock and backend pid, no rows',
+    'alarms/worker.py:Worker._session': 'the worker’s application name, no rows',
+    'core/checks.py:plain_private_values': 'a deployment check over the log’s private values, as the system',
+    'core/codes.py:next_code': 'the next number of a code sequence: a number, no record',
+    'core/database.py:Table.counts': 'the estimate of a hypertable’s rows; its rows are counted through the seal',
+    'core/database.py:Table.structure': 'the catalogue of a table (columns, constraints, indexes)',
+    'core/database.py:hypertables': 'the names of the hypertables',
+    'core/erasure.py:_attempt': 'the erasure of a person’s data by the platform admin’s command, as the system',
+    'core/rev.py:ensure': 'the revision counters of core_rev: a scope, a key and a number, no row of a record',
+    'core/rev.py:mark_built': 'the revision counters of core_rev',
+    'core/rev.py:missing': 'the revision counters of core_rev',
+    'core/rev.py:rebuild': 'the revision counters of core_rev',
+    'core/rev.py:rev': 'the revision counters of core_rev',
+    'core/rev.py:settle': 'the revision counters of core_rev',
+    'core/rev.py:stamp': 'the revision counters of core_rev',
+    'inventory/services.py:item_for': 'an advisory lock, no rows',
+    'knowledge/search.py:parse': 'the text search configuration’s stems of the typed words, no rows',
+    'sensors/alarms.py:_extremes': 'the readings of a channel a sensor alarm rule watches, evaluated as the system',
+    'sensors/provider.py:SensorSource.values_at': 'the readings of the bindings the sealed Binding manager returned, '
+                                                  'inside their windows',
+    'sensors/read.py:_raw_rows': 'the readings of the channels the sealed managers returned',
+    'sensors/read.py:chart_rows': 'the readings and rollups of the channels the sealed managers returned',
+    'sensors/read.py:replay_rows': 'the readings of the channels the sealed managers returned',
+    'sensors/read.py:value_at': 'the reading of a channel the sealed managers returned',
 }
+# Reading the activity log past its seal (AuditLog._base_manager; its `objects` leaves out what the person may not see,
+# review L5).
+LOG_PAST_THE_SEAL = {
+    'core/audit.py:revision': 'the change token: it reads the entries’ stamps itself (`_left_out`), never the seal, '
+                              'so a poll costs two indexed queries',
+}
+
+
+def call_sites(found, skip_management=False):
+    """{'file:function'} of the project's code (no tests, migrations or tools) where `found(node, imported)` is true for a
+    node; `imported`: the names the module imports from core.sealing."""
+    import ast
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parent.parent
+    sites = set()
+    for path in root.rglob('*.py'):
+        relative = path.relative_to(root).as_posix()
+        if ('/tests' in f'/{relative}' or relative.startswith(('node_modules', '.venv', 'static', 'scripts'))
+                or '/migrations/' in relative or relative.split('/')[-1].startswith(('test_', 'tests_'))
+                or relative == 'core/sealing.py' or (skip_management and '/management/' in relative)):
+            continue
+        tree = ast.parse(path.read_text(encoding='utf-8'))
+        imported = {alias.asname or alias.name for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
+                    and node.module == 'core.sealing' for alias in node.names}
+
+        def walk(node, where):
+            for child in ast.iter_child_nodes(node):
+                inner = where
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    inner = f'{where}.{child.name}' if where else child.name
+                if found(child, imported):
+                    sites.add(f'{relative}:{where or "<module>"}')
+                walk(child, inner)
+        walk(tree, '')
+    return sites
+
+
+def _called(node):
+    """(owner name or '', attribute or function name) of a call, or None."""
+    import ast
+    if not isinstance(node, ast.Call):
+        return None
+    func = node.func
+    if isinstance(func, ast.Attribute):
+        return (func.value.id if isinstance(func.value, ast.Name) else '<expr>'), func.attr
+    if isinstance(func, ast.Name):
+        return '', func.id
+    return None
+
+
+def reads_as_system(node, imported):
+    called = _called(node)
+    if called is None:
+        return False
+    owner, name = called
+    if name not in ('system', 'reads_as_system'):
+        return False
+    return owner in ('sealing', 'core_sealing') or (owner == '' and name in imported)
+
+
+def reads_with_sql(node, imported):
+    called = _called(node)
+    if called is None:
+        return False
+    owner, name = called
+    return (owner != '' and name in ('cursor', 'raw')) or (owner == '' and name == 'RawSQL')
+
+
+def reads_the_log_past_its_seal(node, imported):
+    import ast
+    return (isinstance(node, ast.Attribute) and node.attr in ('_base_manager', '_default_manager')
+            and isinstance(node.value, ast.Name) and node.value.id == 'AuditLog')
 
 
 class SystemCallSiteTests(SimpleTestCase):
     def test_only_the_named_places_read_as_the_system(self):
-        import pathlib
-        import re
-        root = pathlib.Path(__file__).resolve().parent.parent
-        found = set()
-        for path in root.rglob('*.py'):
-            relative = path.relative_to(root).as_posix()
-            if '/tests' in f'/{relative}' or relative.startswith(('node_modules', '.venv')) or '/migrations/' in relative:
-                continue
-            if re.search(r'\bsealing\.(system|reads_as_system)\(|^\s*with system\(', path.read_text(encoding='utf-8'), re.M):
-                found.add(relative)
-        found.add('core/sealing.py')
-        self.assertEqual(sorted(found), sorted(SYSTEM_CALLS))
+        self.assertEqual(sorted(call_sites(reads_as_system)), sorted(SYSTEM_CALLS))
 
 
 class RawSqlSiteTests(SimpleTestCase):
     def test_only_the_named_places_read_with_sql_of_their_own(self):
-        import pathlib
-        import re
-        root = pathlib.Path(__file__).resolve().parent.parent
-        found = set()
-        for path in root.rglob('*.py'):
-            relative = path.relative_to(root).as_posix()
-            if '/tests' in f'/{relative}' or relative.startswith(('node_modules', '.venv')) or '/migrations/' in relative                     or '/management/' in relative or relative.split('/')[-1].startswith('test_'):
-                continue
-            if re.search(r'\.cursor\(\)|\.raw\(|RawSQL\(', path.read_text(encoding='utf-8')):
-                found.add(relative)
-        self.assertEqual(sorted(found), sorted(RAW_SQL))
+        self.assertEqual(sorted(call_sites(reads_with_sql, skip_management=True)), sorted(RAW_SQL))
+
+
+class LogReadSiteTests(SimpleTestCase):
+    def test_only_the_named_places_read_the_activity_log_past_its_seal(self):
+        self.assertEqual(sorted(call_sites(reads_the_log_past_its_seal)), sorted(LOG_PAST_THE_SEAL))
+
+    def test_a_new_site_in_a_listed_file_is_found(self):
+        """T3: a site is a function, not a file: a second system read in a file already listed is a new site."""
+        import ast
+        tree = ast.parse('from core import sealing\ndef listed():\n    with sealing.system("x"):\n        pass\n'
+                         'def another():\n    with sealing.system("y"):\n        pass\n')
+        calls = [node for node in ast.walk(tree) if reads_as_system(node, set())]
+        self.assertEqual(len(calls), 2)

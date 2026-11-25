@@ -430,6 +430,8 @@
 /* the fields of a form, two or more to a row, a wide one across (the drawer's grid) */
 .ui-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--space-4) var(--space-5); }
 .ui-form-grid > [data-wide] { grid-column: 1 / -1; }
+/* a check box's words in a form's grid wrap inside its column (a long label never runs into the next field) */
+[data-ui="next"] .ui-form-grid .field .check { white-space: normal; }
 .ui-form-group { grid-column: 1 / -1; margin: var(--space-2) 0 calc(-1 * var(--space-1)); padding-top: 10px; border-top: 1px solid var(--line-hair); font-family: var(--font-display); font-size: var(--fs-body); font-weight: 600; }
 .ui-form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 

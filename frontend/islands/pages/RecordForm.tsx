@@ -62,6 +62,8 @@ export interface RecordFormProps {
   danger?: boolean;
   /** a dialog's rows posted with its form (a transfer's units: core.formpanels.grid), after its fields */
   grid?: GridPart | null;
+  /** a dialog's fields after its rows, next to the submit (the box that goes on past a check's warnings) */
+  last?: Field[];
 }
 
 /** The withdrawal guard's question (core.formpanels.question): the warnings, and the box to go on or why a second person
@@ -407,7 +409,7 @@ function PanelBlocks({ panel, label, csrfToken, optional }: { panel: Panel; labe
 }
 
 export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabel, hasErrors, openTab, delete: remove, history,
-  question, panels = [], intro = [], danger = false, grid = null }: RecordFormProps) {
+  question, panels = [], intro = [], danger = false, grid = null, last = [] }: RecordFormProps) {
   const fields = form.tabs.flatMap((tab) => tab.fieldsets.flatMap((fieldset) => fieldset.fields));
   const initialValues: Record<string, string> = {};
   for (const field of fields) {
@@ -496,6 +498,7 @@ export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabe
       {question ? <div data-wide=""><QuestionBox question={question} /></div> : null}
       <div className="ui-form-body" data-wide="" ref={holder} onChange={changed} onBlur={left}>{body}</div>
       {grid ? <div data-wide=""><GridOf part={grid} optional={optional} /></div> : null}
+      {last.length ? <div className="ui-form-grid" data-wide="">{last.map(fieldOf)}</div> : null}
     </ServerForm>
   );
   // more on a record's tab: in sight while that tab is (every tab's while there are no tabs)

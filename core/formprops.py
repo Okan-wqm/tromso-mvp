@@ -100,18 +100,22 @@ def confirm_delete_props(request, obj, plan, *, name, action, cancel):
 
 
 def dialog_props(request, form, *, action, submit, cancel, intro=(), fieldsets=None, leave_out=(), question=None,
-                 danger=False, grid=None):
+                 danger=False, grid=None, last=()):
     """The record-form island's props of a dialog that is not a tab's form (a feeding, a treatment, a void: the classic
     dialog opened as a page in the new look): the form as core.formpayload gives it, posted to `action`, `submit` its
     button's word (the dialog's heading: Record feeding, Void), `cancel` the way back, `intro` the blocks the dialog says
     before its fields (core.formpanels.blocks_of over the classic partial), the withdrawal guard's `question`, `danger`
     for a submit that undoes (Void). `fieldsets`: (legend, [field names]) as the classic template groups them, the fields
     no group names last; `leave_out`: the fields the classic dialog does not show now (a box not asked for yet), never
-    sent; `grid`: the dialog's rows posted with its form (core.formpanels.grid: a transfer's units)."""
+    sent; `grid`: the dialog's rows posted with its form (core.formpanels.grid: a transfer's units); `last`: the fields
+    drawn after the rows, next to the submit (the boxes that go on past a check's warnings, as the classic dialog's)."""
     props = record_form_props(request, form, action=action, name='', obj=None, list_url=cancel, delete_url='',
                               history=(), history_url='', question=question)
-    gone = set(leave_out)
+    gone, ending = set(leave_out), []
     for tab in props['form']['tabs']:
+        for fieldset in tab['fieldsets']:
+            ending += [field for field in fieldset['fields'] if field['name'] in last and field['name'] not in gone]
+        gone |= {field['name'] for field in ending}
         fields = [field for fieldset in tab['fieldsets'] for field in fieldset['fields'] if field['name'] not in gone]
         if fieldsets:
             by_name = {field['name']: field for field in fields}
@@ -124,5 +128,5 @@ def dialog_props(request, form, *, action, submit, cancel, intro=(), fieldsets=N
             for fieldset in tab['fieldsets']:
                 fieldset['fields'] = [field for field in fieldset['fields'] if field['name'] not in gone]
     props.update(submit=str(submit), tabsLabel=str(submit), intro=[block for block in intro if block], danger=bool(danger),
-                 grid=grid)
+                 grid=grid, last=ending)
     return props

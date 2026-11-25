@@ -51,7 +51,9 @@ def _handling(form):
     if handling is None or 'handling_ack' not in form.fields:
         return [], []
     title = formpanels.said(words.BEFORE_HANDLING)
-    blocks = [formpanels.help_text(f'{title}: {note}') for note in handling.notes] or [formpanels.help_text(title)]
+    blocks = [formpanels.help_text(f'{title}: {note}') for note in handling.notes]
+    if not blocks and not handling.warnings:
+        blocks.append(formpanels.help_text(title))
     if not handling.warnings:
         return blocks, ['handling_ack']
     # a warning's message is a method of the check (the classic template calls it)
@@ -69,7 +71,8 @@ def _dialog(request, context, intro, *, fieldsets=None, submit=None, danger=Fals
     return dialog_props(request, form, action=request.get_full_path(), submit=submit or context['heading'],
                         cancel=context['back_url'], intro=[*intro, *handling], fieldsets=fieldsets,
                         leave_out=[*_unshown_acks(form), *hidden],
-                        question=formpanels.question(getattr(form, 'withdrawal_change', None)), danger=danger, grid=grid)
+                        question=formpanels.question(getattr(form, 'withdrawal_change', None)), danger=danger, grid=grid,
+                        last=['handling_ack', *getattr(form, 'ack_fields', ())])
 
 
 def operation(request, context):
@@ -111,7 +114,7 @@ def treatment(request, context):
         (words.WHAT_WAS_GIVEN, ['method', 'medicine', 'reason', 'start_date', 'end_date', 'bath_minutes']),
         (words.DOSE_AND_AMOUNT, ['dose_value', 'dose_unit', 'amount_value', 'amount_unit']),
         (words.PRESCRIPTION, ['prescribed_by', 'prescription_ref', 'vet', 'health_event']),
-        ('', ['notes']), (words.BEFORE_HANDLING, ['handling_ack'])])
+        ('', ['notes'])])
 
 
 def last_day(request, context):

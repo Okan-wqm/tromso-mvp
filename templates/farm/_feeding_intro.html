@@ -1,0 +1,8 @@
+{% load i18n stock feeding %}{% comment %} What the feeding dialog says before its fields (farm/feeding_form.html). Drawn by the classic dialog and, as text blocks (core.formpanels.blocks_of), by the new look's dialog page: one source of its words. {% endcomment %}
+{% if fasting %}<p class="notice notice-warning">{{ fasting }} {% trans "A feeding can still be recorded." %}</p>{% endif %}
+{% if split %}
+<p class="op-batch">{% if split.at_start %}{% blocktrans trimmed with date=split.day|date:"DATE_FORMAT" %}Split by the book biomass at the start of {{ date }}:{% endblocktrans %}{% else %}{% blocktrans trimmed with date=split.day|date:"DATE_FORMAT" %}Split by the book biomass at the end of {{ date }}:{% endblocktrans %}{% endif %}
+  {% for code, share in split.parts %}{% if not forloop.first %}, {% endif %}{{ code }} {{ share|percent }}{% endfor %}</p>
+{% endif %}
+{% if meal %}<p class="op-batch">{% blocktrans trimmed with kilos=meal.amount_kg|feed_kg %}The next meal on the Meal board: {{ kilos }}, filled in below.{% endblocktrans %}</p>{% endif %}
+{% if form.suiting %}<p class="help">{% trans "The feeds that suit the species and average weight of these fish (Reference data › Feeds) come first." %}</p>{% endif %}

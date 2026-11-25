@@ -1,0 +1,3 @@
+{% load i18n %}{% comment %} The health event to be voided (farm/health_event_void.html). Drawn by the classic dialog and, as text blocks (core.formpanels.blocks_of), by the new look's dialog page: one source of its words. {% endcomment %}
+<p class="confirm-question">{% blocktrans trimmed with event=event site=event.site.name %}Void the health event “{{ event }}” of {{ site }}?{% endblocktrans %}</p>
+<p>{% trans "It stops counting and stays in the history with its reason. An event that was right but is over is closed on its form instead." %}</p>

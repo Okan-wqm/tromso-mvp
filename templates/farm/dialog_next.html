@@ -1,0 +1,12 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} A farm operation dialog in the new look (farm/dialogs.py: a feeding, a treatment, its last day, a sea-lice count, a
+   void), opened as a page: the record-form island draws the dialog's form, posted to the same address, with what the
+   classic dialog says before its fields. The classic dialog is its own template (farm/feeding_form.html …). {% endcomment %}
+{% block title %}{{ heading }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block measure %}form{% endblock %}
+{% block content %}
+{% trans "Loading the form…" as loading %}{% island "record-form" props label=loading %}
+{% endblock %}

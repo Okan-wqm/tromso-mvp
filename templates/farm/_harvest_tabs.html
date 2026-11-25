@@ -1,6 +1,6 @@
-{% load i18n %}{# The pages of Operations › Harvest the person may read (farm.harvest.views.tabs), as tabs. #}
+{% load i18n farm_words %}{% farm_words as fw %}{# The pages of Operations › Harvest the person may read (farm.harvest.views.tabs), as tabs. #}
 {% if tabs|length > 1 %}
-<nav class="ui-tabs" aria-label="{% trans "Harvest" %}">
+<nav class="ui-tabs" aria-label="{{ fw.harvest }}">
   {% for tab in tabs %}<a class="ui-tab" href="{{ tab.url }}"{% if tab.current %} aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
 </nav>
 {% endif %}

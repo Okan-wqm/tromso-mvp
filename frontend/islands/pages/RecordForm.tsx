@@ -55,6 +55,13 @@ export interface RecordFormProps {
   question?: Question | null;
   /** what the tab's own form page adds (core/formpanels.py): tabs of their own, or more on one of the record's tabs */
   panels?: Panel[];
+  /** what a dialog says before its fields (core.formprops.dialog_props: the unit and its fish, a fast, the record to be
+   * voided), drawn first inside the form */
+  intro?: Block[];
+  /** the submit changes a safety state for good (Void): drawn as the danger button */
+  danger?: boolean;
+  /** a dialog's rows posted with its form (a transfer's units: core.formpanels.grid), after its fields */
+  grid?: GridPart | null;
 }
 
 /** The withdrawal guard's question (core.formpanels.question): the warnings, and the box to go on or why a second person
@@ -400,7 +407,7 @@ function PanelBlocks({ panel, label, csrfToken, optional }: { panel: Panel; labe
 }
 
 export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabel, hasErrors, openTab, delete: remove, history,
-  question, panels = [] }: RecordFormProps) {
+  question, panels = [], intro = [], danger = false, grid = null }: RecordFormProps) {
   const fields = form.tabs.flatMap((tab) => tab.fieldsets.flatMap((fieldset) => fieldset.fields));
   const initialValues: Record<string, string> = {};
   for (const field of fields) {
@@ -481,11 +488,14 @@ export function RecordForm({ form, csrfToken, submit, cancel, optional, tabsLabe
       actions={<>
         {remove ? <LinkButton href={remove.href} variant="danger-text">{remove.label}</LinkButton> : null}
         <LinkButton href={cancel.href}>{cancel.label}</LinkButton>
-        <Button variant="primary" type="submit">{submit}</Button>
+        <Button variant={danger ? 'danger' : 'primary'} type="submit">{submit}</Button>
       </>}>
       {form.hidden.map((hidden) => <input key={hidden.name} type="hidden" name={hidden.name} value={str(hidden.value)} />)}
+      {intro.length ? <div data-wide=""><PanelBlocks panel={{ key: 'intro', label: null, tab: null, hasErrors: false, blocks: intro }}
+        label={submit} csrfToken={csrfToken} optional={optional} /></div> : null}
       {question ? <div data-wide=""><QuestionBox question={question} /></div> : null}
       <div className="ui-form-body" data-wide="" ref={holder} onChange={changed} onBlur={left}>{body}</div>
+      {grid ? <div data-wide=""><GridOf part={grid} optional={optional} /></div> : null}
     </ServerForm>
   );
   // more on a record's tab: in sight while that tab is (every tab's while there are no tabs)

@@ -225,3 +225,49 @@ def row_list_panels(resource, view, obj, extra, only=None):
     """The panels of the tab's RowLists (`only`: those of them the page shows), in their order."""
     return [found for row_list in resource.row_lists if only is None or row_list in only
             for found in [row_list_panel(view, obj, row_list, extra)] if found]
+
+
+def blocks_of(html):
+    """A classic dialog's own sentences, rendered by the very partial its classic template includes (farm/_feeding_intro.html,
+    _operation_context.html, a void's entry …), as the island's blocks, in their order: a warning notice
+    (`notice notice-warning`), an info notice (`notice`), every other paragraph and every list item a help. The words
+    are the partial's, so one template says them in both looks; its markup (a strong code, a sub-line) is read as text."""
+    from html.parser import HTMLParser
+
+    from .pagesays import squash
+
+    class Blocks(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.found, self.open, self.depth = [], None, 0
+
+        def handle_starttag(self, tag, attrs):
+            if self.open is not None:
+                if tag == self.open[0]:
+                    self.depth += 1
+                return
+            if tag in ('p', 'li', 'div'):
+                classes = (dict(attrs).get('class') or '').split()
+                tone = 'warning' if 'notice-warning' in classes else ('info' if 'notice' in classes else None)
+                self.open, self.depth = (tag, tone, []), 0
+
+        def handle_endtag(self, tag):
+            if self.open is None or tag != self.open[0]:
+                return
+            if self.depth:
+                self.depth -= 1
+                return
+            _tag, tone, parts = self.open
+            text = squash(''.join(parts))
+            if text:
+                self.found.append(notice(text, tone) if tone else {'kind': 'help', 'text': text})
+            self.open = None
+
+        def handle_data(self, data):
+            if self.open is not None:
+                self.open[2].append(data)
+
+    parser = Blocks()
+    parser.feed(str(html))
+    parser.close()
+    return parser.found

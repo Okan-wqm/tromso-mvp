@@ -11,6 +11,7 @@ from django.utils.translation import gettext as _
 
 from core import listprops as L
 
+from .. import words
 from ..models.harvest import PlanKind, PlanStatus
 from ..templatetags.feeding import fed_on
 from ..templatetags.health import harvest_from
@@ -33,12 +34,12 @@ def _unit(unit):
 def plan_filters(view, context):
     chosen = context['chosen']
     return [
-        L.choice('kind', _('Plan'), chosen['kind'], [('', _('Harvests and transports')), *context['kinds']]),
-        L.choice('status', _('Status'), chosen['status'], [('', _('All statuses')), *context['statuses']]),
-        L.choice('site', _('Site'), chosen['site'], [('', _('All sites')), *((s.pk, s.name) for s in context['sites'])]),
-        L.choice('unit', _('Unit'), chosen['unit'],
-                 [('', _('All units')), *((u.pk, f'{u.code} · {u.name}') for u in context['units'])]),
-        L.day('from', _('From'), chosen['from']), L.day('to', _('To'), chosen['to']),
+        L.choice('kind', str(words.PLAN), chosen['kind'], [('', str(words.HARVESTS_AND_TRANSPORTS)), *context['kinds']]),
+        L.choice('status', str(words.STATUS), chosen['status'], [('', str(words.ALL_STATUSES)), *context['statuses']]),
+        L.choice('site', str(words.SITE), chosen['site'], [('', str(words.ALL_SITES)), *((s.pk, s.name) for s in context['sites'])]),
+        L.choice('unit', str(words.UNIT), chosen['unit'],
+                 [('', str(words.ALL_UNITS)), *((u.pk, f'{u.code} · {u.name}') for u in context['units'])]),
+        L.day('from', str(words.FROM), chosen['from']), L.day('to', str(words.TO), chosen['to']),
     ]
 
 
@@ -54,7 +55,7 @@ def _before(row):
     for block in row['withdrawal'] or ():
         lines.append(_('%(batch)s: medicine withdrawal, %(end)s') % {'batch': block.batch.code, 'end': harvest_from(block)})
     if row['withdrawal'] is None and row['status'] not in (PlanStatus.DONE, PlanStatus.CANCELLED):
-        lines.append(_('Medicine withdrawal not checked'))
+        lines.append(str(words.MEDICINE_WITHDRAWAL_NOT_CHECKED))
         worry = worry or 'warning'
     earliest = row['earliest']
     if earliest is not None and earliest.decides:
@@ -78,13 +79,13 @@ def plan_items(view, objects, context):
             worry = worry or 'warning'
         actions = []
         if row['record_url']:
-            actions.append(L.link(row['record_url'], _('Record harvest') if item.kind == PlanKind.HARVEST
-                                  else _('Record transfer'), 'package-check' if item.kind == PlanKind.HARVEST
+            actions.append(L.link(row['record_url'], str(words.RECORD_HARVEST) if item.kind == PlanKind.HARVEST
+                                  else str(words.RECORD_TRANSFER), 'package-check' if item.kind == PlanKind.HARVEST
                                   else 'truck', labelled=True))
         if context.get('can_change') and resource.allowed(request, item, 'change'):
-            actions.append(L.link(view.url('edit', item.pk), _('Edit or cancel'), 'pencil'))
+            actions.append(L.link(view.url('edit', item.pk), str(words.EDIT_OR_CANCEL), 'pencil'))
         if context.get('can_delete') and resource.allowed(request, item, 'delete'):
-            actions.append(L.link(view.url('delete', item.pk), _('Delete'), 'trash', danger=True))
+            actions.append(L.link(view.url('delete', item.pk), str(words.DELETE), 'trash', danger=True))
         target = item.facility.name if item.facility else (item.destination_unit.code if item.destination_unit else DASH)
         carrier = ' · '.join(part for part in ((item.transport.name if item.transport else ''), item.vessel) if part)
         rows.append(L.row(item.pk, {
@@ -102,15 +103,13 @@ def plan_items(view, objects, context):
             'before': before,
         }, actions, status=None if row['status'] in (PlanStatus.DONE, PlanStatus.CANCELLED) else worry,
             voided=row['status'] == PlanStatus.CANCELLED))
-    notice_link = (context['plan_transport_url'], _('Plan transport')) if context.get('can_add') else None
+    notice_link = (context['plan_transport_url'], str(words.PLAN_TRANSPORT)) if context.get('can_add') else None
     return {
-        'columns': [L.column('date', _('Date')), L.column('plan', _('Plan')), L.column('unit', _('Unit')),
-                    L.column('batch', _('Batch')), L.column('planned', _('Planned'), numeric=True), L.column('to', _('To')),
-                    L.column('status', _('Status')), L.column('actual', _('Actual'), numeric=True),
-                    L.column('before', _('Before handling'))],
-        'notices': [L.notice('how', 'neutral', _(
-            'A plan is done when the harvest or transfer recorded from it counts; voiding that operation plans it again. '
-            'The fast a plan asks of its unit starts at the start of its day less the handling rule’s hours.'),
+        'columns': [L.column('date', str(words.DATE)), L.column('plan', str(words.PLAN)), L.column('unit', str(words.UNIT)),
+                    L.column('batch', str(words.BATCH)), L.column('planned', str(words.PLANNED), numeric=True), L.column('to', str(words.TO)),
+                    L.column('status', str(words.STATUS)), L.column('actual', str(words.ACTUAL), numeric=True),
+                    L.column('before', str(words.BEFORE_HANDLING))],
+        'notices': [L.notice('how', 'neutral', str(words.A_PLAN_IS_DONE_WHEN_THE_HARVEST),
             link=notice_link)],
         'rows': rows,
     }
@@ -119,8 +118,8 @@ def plan_items(view, objects, context):
 def production_filters(view, context):
     if len(context['sites']) <= 1:
         return []
-    return [L.choice('site', _('Site'), context['chosen_site'],
-                     [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])])]
+    return [L.choice('site', str(words.SITE), context['chosen_site'],
+                     [('', str(words.ALL_SITES)), *((site.pk, site.name) for site in context['sites'])])]
 
 
 def _forecast(row):
@@ -131,7 +130,7 @@ def _forecast(row):
         sub, chips = [_('target on %(date)s, at %(temperature)s °C held') % {
             'date': _day(forecast.day), 'temperature': floatformat(forecast.temperature_c, '1')}], ()
     elif forecast.reached:
-        sub, chips = [], [L.chip('ok', _('target reached'))]
+        sub, chips = [], [L.chip('ok', str(words.TARGET_REACHED))]
     else:
         sub, chips = [str(forecast.why)] if forecast.why else [], ()
     return L.cell(grams(forecast.now_g), sub=sub, chips=chips)
@@ -141,11 +140,11 @@ def _withdrawal(row):
     """The fish's withdrawal today, in the server's words: Not checked, the blocks (each with its end), or None."""
     earliest = [str(row['earliest'].text())] if row['earliest'] is not None and row['earliest'].decides else []
     if row['withdrawal'] is None:
-        return L.cell(_('Not checked'), sub=earliest)
+        return L.cell(str(words.NOT_CHECKED), sub=earliest)
     if row['withdrawal']:
         said = [f'{block.batch.code}: {harvest_from(block)}' for block in row['withdrawal']]
         return L.cell(said[0], chips=[L.chip('hold', _('Withdrawal'))], sub=said[1:] + earliest)
-    return L.cell(_('None'), sub=earliest)
+    return L.cell(str(words.NONE), sub=earliest)
 
 
 def production_plans(view, objects, context):
@@ -160,19 +159,19 @@ def production_plans(view, objects, context):
         if plan is not None:
             target = L.cell(grams(plan.target_weight_g),
                             href=reverse('farm:productionplan_edit', args=[plan.pk]) if can_change else None)
-        delete = [L.link(reverse('farm:productionplan_delete', args=[plan.pk]), _('Delete'), 'trash', danger=True)] \
+        delete = [L.link(reverse('farm:productionplan_delete', args=[plan.pk]), str(words.DELETE), 'trash', danger=True)] \
             if plan is not None and can_delete else []
         if share is None:
             rows.append(L.row(f'gone-{plan.pk}', {
                 'unit': L.cell(DASH), 'batch': L.cell(plan.batch.code, sub=[plan.batch.species.common_name]),
-                'fish': L.cell(_('No longer in stock')), 'target': target}, delete))
+                'fish': L.cell(str(words.NO_LONGER_IN_STOCK)), 'target': target}, delete))
             continue
         batch = share.batch
         if target is None:
-            target = L.cell(_('Set target'), href=f"{reverse('farm:productionplan_create')}?batch={batch.pk}") \
+            target = L.cell(str(words.SET_TARGET), href=f"{reverse('farm:productionplan_create')}?batch={batch.pk}") \
                 if can_add else L.cell(DASH)
-        weighed = _('weighed %(date)s') % {'date': _day(share.last_weighed)} if share.last_weighed else _('as stocked')
-        actions = [L.link(row['plan_harvest_url'], _('Plan harvest'), 'calendar', labelled=True)] \
+        weighed = _('weighed %(date)s') % {'date': _day(share.last_weighed)} if share.last_weighed else str(words.AS_STOCKED)
+        actions = [L.link(row['plan_harvest_url'], str(words.PLAN_HARVEST), 'calendar', labelled=True)] \
             if row['plan_harvest_url'] else []
         rows.append(L.row(f"{row['unit'].pk}-{batch.pk}", {
             'unit': _unit(row['unit']),
@@ -186,16 +185,12 @@ def production_plans(view, objects, context):
             'withdrawal': _withdrawal(row),
         }, actions + delete, status='critical' if row['withdrawal'] else None))
     return {
-        'columns': [L.column('unit', _('Unit')), L.column('batch', _('Batch')), L.column('fish', _('Fish'), numeric=True),
-                    L.column('average', _('Avg. weight'), numeric=True),
-                    L.column('target', _('Target weight'), numeric=True),
-                    L.column('forecast', _('Estimated now · target reached')),
-                    L.column('expected', _('Expected harvest')), L.column('fed', _('Last fed')),
-                    L.column('withdrawal', _('Medicine withdrawal'))],
-        'notices': [L.notice('how', 'neutral', _(
-            'The target weight each batch is grown to for harvest. The estimated weight now is the feeding protocols’ '
-            'estimate; the day it reaches the target walks it forward on the ration of each day, at the unit’s latest '
-            'temperature held, with no growth on a fasting day. The expected harvest is the date given when the batch '
-            'was stocked.'))],
+        'columns': [L.column('unit', str(words.UNIT)), L.column('batch', str(words.BATCH)), L.column('fish', str(words.FISH), numeric=True),
+                    L.column('average', str(words.AVG_WEIGHT), numeric=True),
+                    L.column('target', str(words.TARGET_WEIGHT), numeric=True),
+                    L.column('forecast', str(words.ESTIMATED_NOW_TARGET_REACHED)),
+                    L.column('expected', str(words.EXPECTED_HARVEST)), L.column('fed', str(words.LAST_FED)),
+                    L.column('withdrawal', str(words.MEDICINE_WITHDRAWAL))],
+        'notices': [L.notice('how', 'neutral', str(words.THE_TARGET_WEIGHT_EACH_BATCH_IS_GROWN))],
         'rows': rows,
     }

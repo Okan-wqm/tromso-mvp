@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock harvest dates %}
+{% load i18n stock harvest dates farm_words %}
 {% comment %} Operations › Harvest › Harvested (farm.harvest.views.harvests): one row per harvest, newest first, with
    the round kilos weighed against the kilos the book took out, where the fish went and the plan it fulfilled;
    filters in the address; totals per batch and per site of the harvests the filters choose. Voided harvests,
@@ -7,43 +7,43 @@
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
-{% block content %}
+{% block content %}{% farm_words as fw %}
 {% include "farm/_harvest_tabs.html" %}
 <div class="toolbar">
   <form method="get" class="toolbar-filter feeding-filters" data-omit-empty>
-    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <label class="sr-only" for="site-filter">{{ fw.site }}</label>
     <select id="site-filter" name="site" data-autosubmit>
-      <option value="">{% trans "All sites" %}</option>
+      <option value="">{{ fw.all_sites }}</option>
       {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
     </select>
-    <label class="sr-only" for="department-filter">{% trans "Production department" %}</label>
+    <label class="sr-only" for="department-filter">{{ fw.production_department }}</label>
     <select id="department-filter" name="department" data-autosubmit>
-      <option value="">{% trans "All production departments" %}</option>
+      <option value="">{{ fw.all_production_departments }}</option>
       {% for department in choices.department %}<option value="{{ department.pk }}"{% if params.department == department.pk|stringformat:"s" %} selected{% endif %}>{{ department.name }}</option>{% endfor %}
     </select>
-    <label class="sr-only" for="unit-filter">{% trans "Unit" %}</label>
+    <label class="sr-only" for="unit-filter">{{ fw.unit }}</label>
     <select id="unit-filter" name="unit" data-autosubmit>
-      <option value="">{% trans "All units" %}</option>
+      <option value="">{{ fw.all_units }}</option>
       {% for unit in choices.unit %}<option value="{{ unit.pk }}"{% if params.unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}
     </select>
-    <label class="sr-only" for="batch-filter">{% trans "Batch" %}</label>
+    <label class="sr-only" for="batch-filter">{{ fw.batch }}</label>
     <select id="batch-filter" name="batch" data-autosubmit>
-      <option value="">{% trans "All batches" %}</option>
+      <option value="">{{ fw.all_batches }}</option>
       {% for batch in choices.batch %}<option value="{{ batch.pk }}"{% if params.batch == batch.pk|stringformat:"s" %} selected{% endif %}>{{ batch.code }}{% if batch.name %} · {{ batch.name }}{% endif %}</option>{% endfor %}
     </select>
-    <label class="sr-only" for="species-filter">{% trans "Species" context "singular" %}</label>
+    <label class="sr-only" for="species-filter">{{ fw.species_singular }}</label>
     <select id="species-filter" name="species" data-autosubmit>
-      <option value="">{% trans "All species" %}</option>
+      <option value="">{{ fw.all_species }}</option>
       {% for species in choices.species %}<option value="{{ species.pk }}"{% if params.species == species.pk|stringformat:"s" %} selected{% endif %}>{{ species.common_name }}</option>{% endfor %}
     </select>
-    <label class="sr-only" for="facility-filter">{% trans "Slaughter facility" %}</label>
+    <label class="sr-only" for="facility-filter">{{ fw.slaughter_facility }}</label>
     <select id="facility-filter" name="facility" data-autosubmit>
-      <option value="">{% trans "All slaughter facilities" %}</option>
+      <option value="">{{ fw.all_slaughter_facilities }}</option>
       {% for facility in choices.facility %}<option value="{{ facility.pk }}"{% if params.facility == facility.pk|stringformat:"s" %} selected{% endif %}>{{ facility.name }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "From" %} {% day_input "from" params.from %}</label>
-    <label class="date-filter">{% trans "To" %} {% day_input "to" params.to %}</label>
-    <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
+    <label class="date-filter">{{ fw.from }} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{{ fw.to }} {% day_input "to" params.to %}</label>
+    <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {{ fw.show_voided }}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
 </div>
@@ -54,11 +54,11 @@
 <div class="empty">
   {% include "icons/_icon.html" with name="package-check" %}
   {% if filtered %}
-  <h2>{% trans "No harvest matches these filters." %}</h2>
-  <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
+  <h2>{{ fw.no_harvest_matches_these_filters }}</h2>
+  <p><a href="{{ clear_url }}">{{ fw.clear_filters }}</a></p>
   {% else %}
-  <h2>{% trans "No harvest recorded yet" %}</h2>
-  <p>{% trans "A harvest is recorded from its unit’s drawer on Production units, or from its plan." %}</p>
+  <h2>{{ fw.no_harvest_recorded_yet }}</h2>
+  <p>{{ fw.a_harvest_is_recorded_from_its_unit }}</p>
   {% endif %}
 </div>
 {% else %}
@@ -66,19 +66,19 @@
   <table class="data-table harvest-table">
     <thead>
       <tr>
-        <th scope="col">{% trans "Date" %}</th>
-        <th scope="col">{% trans "Unit" %}</th>
-        <th scope="col">{% trans "Batch" %}</th>
-        <th scope="col" class="num">{% trans "Fish" %}</th>
-        <th scope="col" class="num"><abbr title="{% trans "The live weight as weighed at the harvest, before bleeding and gutting" %}">{% trans "Round weight" %}</abbr></th>
-        <th scope="col" class="num">{% trans "Avg. weight" %}</th>
-        <th scope="col" class="num"><abbr title="{% trans "What the stock book took out for these fish: their batch’s average in the unit, the last fish the rest of the book" %}">{% trans "Book" %}</abbr></th>
-        <th scope="col" class="num">{% trans "Difference" %}</th>
-        <th scope="col" class="num">{% trans "Unaccounted loss" %}</th>
-        <th scope="col">{% trans "Slaughter facility" %}</th>
-        <th scope="col">{% trans "Transport" %}</th>
-        <th scope="col">{% trans "Recorded by" %}</th>
-        <th scope="col">{% trans "Notes" %}</th>
+        <th scope="col">{{ fw.date }}</th>
+        <th scope="col">{{ fw.unit }}</th>
+        <th scope="col">{{ fw.batch }}</th>
+        <th scope="col" class="num">{{ fw.fish }}</th>
+        <th scope="col" class="num"><abbr title="{% trans "The live weight as weighed at the harvest, before bleeding and gutting" %}">{{ fw.round_weight }}</abbr></th>
+        <th scope="col" class="num">{{ fw.avg_weight }}</th>
+        <th scope="col" class="num"><abbr title="{% trans "What the stock book took out for these fish: their batch’s average in the unit, the last fish the rest of the book" %}">{{ fw.book }}</abbr></th>
+        <th scope="col" class="num">{{ fw.difference }}</th>
+        <th scope="col" class="num">{{ fw.unaccounted_loss }}</th>
+        <th scope="col">{{ fw.slaughter_facility }}</th>
+        <th scope="col">{{ fw.transport }}</th>
+        <th scope="col">{{ fw.recorded_by }}</th>
+        <th scope="col">{{ fw.notes }}</th>
         <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
       </tr>
     </thead>
@@ -97,8 +97,8 @@
         <td>{% if harvest.record %}{{ harvest.record.facility.name }}<span class="row-sub">{{ harvest.record.facility.approval_number }}</span>{% else %}—{% endif %}</td>
         <td>{% if harvest.record.transport %}{{ harvest.record.transport.name }}{% else %}—{% endif %}{% if harvest.record.vessel %}<span class="row-sub">{{ harvest.record.vessel }}</span>{% endif %}</td>
         <td>{{ operation.created_by.get_username|default:"system" }}<span class="row-sub">{{ operation.created_at|company_clock|date:"DATETIME_FORMAT" }}</span></td>
-        <td>{{ operation.notes }}{% if harvest.plan %}<span class="row-sub">{% blocktrans trimmed with date=harvest.plan.date|date:"DATE_FORMAT" %}Planned for {{ date }}{% endblocktrans %}</span>{% endif %}{% if harvest.acknowledged %}<span class="row-sub"><span class="badge badge-critical" title="{% for ack in harvest.acknowledged %}{{ ack.get_warning_display }} {% endfor %}">{% trans "Handling warning acknowledged" %}</span></span>{% endif %}{% if operation.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=operation.void_reason name=operation.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
-        <td>{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% elif operation.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% endif %}</td>
+        <td>{{ operation.notes }}{% if harvest.plan %}<span class="row-sub">{% blocktrans trimmed with date=harvest.plan.date|date:"DATE_FORMAT" %}Planned for {{ date }}{% endblocktrans %}</span>{% endif %}{% if harvest.acknowledged %}<span class="row-sub"><span class="badge badge-critical" title="{% for ack in harvest.acknowledged %}{{ ack.get_warning_display }} {% endfor %}">{{ fw.handling_warning_acknowledged }}</span></span>{% endif %}{% if operation.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=operation.void_reason name=operation.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td>{% if row.void_url %}<a class="op-void" href="{{ row.void_url }}" data-modal>{{ fw.void }}</a>{% elif operation.is_deleted %}<span class="badge badge-voided">{{ fw.voided }}</span>{% endif %}</td>
       </tr>
       {% endwith %}{% endwith %}{% endfor %}
     </tbody>
@@ -108,8 +108,8 @@
 
 {% if by_batch %}
 <div class="harvest-totals">
-  {% include "farm/_harvest_totals.html" with caption=_("Per batch") totals=by_batch %}
-  {% include "farm/_harvest_totals.html" with caption=_("Per site") totals=by_site %}
+  {% include "farm/_harvest_totals.html" with caption=fw.per_batch totals=by_batch %}
+  {% include "farm/_harvest_totals.html" with caption=fw.per_site totals=by_site %}
 </div>
 {% endif %}
 {% endif %}

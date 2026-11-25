@@ -1,0 +1,7 @@
+{% load i18n stock %}{% comment %} The stock operation to be voided (farm/stock_void.html). Drawn by the classic dialog and, as text blocks (core.formpanels.blocks_of), by the new look's dialog page: one source of its words. {% endcomment %}
+  <p class="confirm-question">{% blocktrans trimmed with operation=operation.get_kind_display|lower date=operation.date|date:"DATE_FORMAT" %}Void the {{ operation }} of {{ date }}?{% endblocktrans %}</p>
+  <ul class="op-lines">
+    {% for line in lines %}<li>{{ line.unit.code }} · {{ line.batch.code }}: {% if line.kind == "weighing" %}{% blocktrans trimmed with weight=line.avg_weight_g|grams %}average {{ weight }}{% endblocktrans %}{% else %}{% blocktrans trimmed with fish=line.count_delta|signed %}{{ fish }} fish{% endblocktrans %}{% endif %}</li>{% endfor %}
+  </ul>
+  <p>{% trans "The stock is worked out again without it, from its date on. A stocking that is voided takes its batch with it. To correct an operation, void it and enter it again." %}</p>
+  

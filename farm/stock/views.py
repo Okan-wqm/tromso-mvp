@@ -37,7 +37,7 @@ from ..forms.stock import (
     PlannedForm, StockVoidForm, TransferForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
-from .. import placements
+from .. import dialogs, placements
 from ..models import Batch, HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
 from ..models.stock import takes_fish
 from ..templatetags.stock import fish, number, tonnes
@@ -452,7 +452,7 @@ def record_operation(request, pk, kind):
     if not present:
         # No fish now and none on a day that may still be dated: said, on a GET and on a POST alike (a POST saves
         # nothing, and says so with a refusal's status).
-        response = render_page(request, 'farm/stock_operation.html', context)
+        response = dialogs.page(request, 'farm/stock_operation.html', context)
         if request.method == 'POST':
             response.status_code = 422
         return response
@@ -461,7 +461,7 @@ def record_operation(request, pk, kind):
     if request.method == 'POST' and DRAFT in request.POST and form_class.refresh_on:
         # A weighing's batch, date or weight changed: the dialog again with the estimate for them, nothing saved.
         form = form_class(initial=request.POST.dict(), unit=unit, present=present)
-        return render_page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': None,
+        return dialogs.page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': None,
                                                                   'estimate': _estimate(unit, form)})
     if request.method == 'POST':
         form = form_class(request.POST, unit=unit, present=present, events=_events(request, unit),
@@ -478,15 +478,15 @@ def record_operation(request, pk, kind):
             else:
                 messages.success(request, _recorded(operation))
                 return done(request, _back(request, unit))
-        return _refused(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows,
-                                                               'estimate': _estimate(unit, form)})
+        return dialogs.page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows,
+                                                               'estimate': _estimate(unit, form)}, refused=True)
     form = form_class(unit=unit, present=present, events=_events(request, unit), **form_kwargs)
     if request.GET.get('batch') in form.present:
         form.initial['batch'] = request.GET['batch']
     planned_leg = plan is not None and plan.destination_unit_id
     initial = [{'unit': plan.destination_unit_id, 'count': plan.planned_count}] if planned_leg else []
     rows = form_class.rows(initial=initial, **row_kwargs) if form_class.rows else None
-    return render_page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows,
+    return dialogs.page(request, 'farm/stock_operation.html', {**context, 'form': form, 'rows': rows,
                                                               'estimate': _estimate(unit, form)})
 
 
@@ -564,8 +564,8 @@ def void_operation(request, pk):
                 messages.success(request, _('%(operation)s of %(date)s voided.') % {
                     'operation': operation.get_kind_display(), 'date': services.shown_date(operation.date)})
                 return done(request, _back(request, unit))
-        return _refused(request, 'farm/stock_void.html', {**context, 'form': form})
-    return render_page(request, 'farm/stock_void.html', {**context, 'form': StockVoidForm()})
+        return dialogs.page(request, 'farm/stock_void.html', {**context, 'form': form}, refused=True)
+    return dialogs.page(request, 'farm/stock_void.html', {**context, 'form': StockVoidForm()})
 
 
 def overview_tiles(user, units=None, stock=None):

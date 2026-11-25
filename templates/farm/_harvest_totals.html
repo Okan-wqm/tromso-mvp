@@ -1,9 +1,9 @@
-{% load i18n stock harvest %}{# The live harvests of the filtered rows added up per batch or per site (farm.harvest.read.totals). #}
+{% load i18n stock harvest farm_words %}{% farm_words as fw %}{# The live harvests of the filtered rows added up per batch or per site (farm.harvest.read.totals). #}
 <div class="table-wrap">
   <table class="data-table totals-table">
     <caption>{{ caption }}</caption>
     <thead>
-      <tr><th scope="col"><span class="sr-only">{{ caption }}</span></th><th scope="col" class="num">{% trans "Harvests" %}</th><th scope="col" class="num">{% trans "Fish" %}</th><th scope="col" class="num">{% trans "Round weight" %}</th><th scope="col" class="num">{% trans "Avg. weight" %}</th><th scope="col" class="num">{% trans "Book" %}</th><th scope="col" class="num">{% trans "Difference" %}</th></tr>
+      <tr><th scope="col"><span class="sr-only">{{ caption }}</span></th><th scope="col" class="num">{{ fw.harvests }}</th><th scope="col" class="num">{{ fw.fish }}</th><th scope="col" class="num">{{ fw.round_weight }}</th><th scope="col" class="num">{{ fw.avg_weight }}</th><th scope="col" class="num">{{ fw.book }}</th><th scope="col" class="num">{{ fw.difference }}</th></tr>
     </thead>
     <tbody>
       {% for total in totals %}

@@ -6059,10 +6059,23 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `withdrawal_reason`) with a batch held today in the hold chip, a plan's or a batch's withdrawal (`harvest_from`) with
   the Withdrawal chip and its row critical, "Medicine withdrawal not checked" and "Not checked" as on the classic pages,
   "Notify Mattilsynet" as a critical notice above Health events with each event and the way to its notice, "Notify at
-  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. Every record
-  form and dialog these pages open (Record feeding or meal, Void, Record treatment, Last day, Record sea-lice count, the
-  plans' Record harvest or transfer) is opened as a page from the island (no classic dialog link), still the classic
-  form for now. Held: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
+  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. The words
+  these builders share with the classic templates are `farm/words.py` constants (the templates say `{{ fw.name }}`, the
+  builders `str(words.NAME)`; sentences with values in them are still the templates' msgids said again in Python).
+- **The farm's operation dialogs** (`farm/dialogs.py`): Record feeding or a meal, a treatment, its last day, a sea-lice
+  count, a stock operation (a mortality, a cull, a harvest or a transfer, from its plan too, a transfer's or a
+  grading's units posted with it as rows) and the voids of a feeding, a treatment, a health event, a count and a stock
+  operation, opened as a page in the new look (the islands' links have no `data-modal`) and drawn by the record-form
+  island from the same form, view, address and context (`core.formprops.dialog_props`: the dialog's submit word, its
+  intro blocks before the fields, a Void as the danger button, its rows as `grid`). What a dialog says before its fields
+  is the partial its classic template includes (`farm/_operation_context.html`, `_operation_lines.html`,
+  `_feeding_intro.html`, `_treatment_intro.html`, a void's `_…_entry.html`), rendered and read as blocks
+  (`core.formpanels.blocks_of`): one source of its words. A handling check's warnings and box, the withdrawal guard's
+  question and a refused save (422, the reasons on their fields) are the form's. The classic dialog stays for an
+  X-Modal request (a drawer's link), a weighing (its estimate is drawn again as it is typed) and a unit without fish to
+  record. Record feeding's unit choice is a list page (`farm/feeding/pages.py choose_props`). Held:
+  `farm/tests/test_farm_dialogs_next.py` (each dialog against its classic one, a save and a refused save through the
+  new page, the classic dialog for X-Modal) and the browser test's `dialog-*` pages. Held, the lists: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
   `test_health_pages_next.py` (every page against its classic page on the test world plus `feeding_ops_world`,
   `health_ops_world` and `harvest_ops_world`, in three languages; Harvested's three views together against the classic
   page; the safety facts) and `frontend/test/prodrest.pages.ts` (each page at 1440 and 390: CSP, axe, 4.5:1, no

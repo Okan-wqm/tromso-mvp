@@ -275,7 +275,9 @@ _VARIES = (
     (re.compile(r"'nonce-[^']*'"), "'nonce-N'"),
     (re.compile(r'(name="csrfmiddlewaretoken" value=")[^"]*'), r'\1T'),
     (re.compile(r'("csrfToken": ")[^"]*'), r'\1T'),
-    (re.compile(r'\?v=\d+'), '?v=V'),                                   # an asset's version: its file's time
+    (re.compile(r'\?v=\d+'), ''),                                        # an asset's version: its file's time, none
+                                                                        # where the file is not built (a test run)
+    (re.compile(r'(<script type="importmap"[^>]*>)[^<]*'), r'\1IMPORTS'),  # the built scripts' map: a build's, not a page's
     (re.compile(r'/static/islands/[^"\'\s]+'), '/static/islands/I'),    # a build's file names
     (re.compile(r'(?<=/)\d+(?=/)'), 'N'),                               # a numbered record in an address
     (re.compile(r'\b(id="m|href="#m|after=|before=)\d+'), r'\1N'),      # a message's number

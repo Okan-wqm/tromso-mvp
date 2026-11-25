@@ -175,12 +175,13 @@ class WalkCase(TestCase):
     # not looked into for the canary (the regulatory reports name every unit by law, owner amendment C1).
     canary, compare, skip = world.CANARY, True, ()
 
-    def walk(self, user, language=''):
-        """Every route as `user`, in `language` (their saved one) when given: [finding]."""
+    def walk(self, user, language='', look=''):
+        """Every route as `user`, in `language` (their saved one) when given, in the new look (`look` 'next': the
+        islands' props, core/listprops.py and the pages' own) when asked: [finding]."""
         if language:
             from core.models import Profile
             Profile.objects.update_or_create(user=user, defaults={'language': language})
-        client = Client()
+        client = in_look(Client(), look)
         client.force_login(user)
         findings = []
         logged = AuditLog.objects.count()
@@ -224,9 +225,18 @@ class WalkCase(TestCase):
                              f'{unknown.status_code} (or another page)')
         return found
 
-    def assertWalkClean(self, user, language=''):
-        findings = self.walk(user, language)
+    def assertWalkClean(self, user, language='', look=''):
+        findings = self.walk(user, language, look)
         self.assertFalse(findings, f'{len(findings)} findings as {user}:\n' + '\n'.join(findings[:150]))
+
+
+def in_look(client, look):
+    """`client` drawing every page in `look` ('next': the new look, kept by its cookie as a person's browser keeps it,
+    core/ui.py; '': the classic look)."""
+    if look:
+        from core import ui
+        client.cookies[ui.COOKIE] = look
+    return client
 
 
 class RouteWalkTests(WalkCase):
@@ -257,6 +267,22 @@ class RouteWalkTests(WalkCase):
         self.canary, self.compare = world.SCIENCE, False
         self.assertWalkClean(keeper)
 
+
+class NewLookWalkTests(WalkCase):
+    """The same walk in the new look (`?ui=next`): its pages are drawn from props (core/listprops.py, the islands' and
+    the pages' own builders), which must hold the seal as the classic pages do."""
+
+    def test_an_unrelated_researcher(self):
+        self.assertWalkClean(self.researcher, look='next')
+
+    def test_staff_who_read_every_farm_page(self):
+        self.assertWalkClean(self.staff, look='next')
+
+    def test_a_person_holding_oversee_never_meets_the_science(self):
+        keeper = world.person('keeper', *world.area_perms(exclude_apps=('reports',)), 'experiments.oversee_experiment')
+        self.canary, self.compare = world.SCIENCE, False
+        self.assertWalkClean(keeper, look='next')
+
     def test_a_grantee_of_the_water_never_meets_the_design(self):
         from datetime import timedelta
         from django.utils import timezone
@@ -285,8 +311,8 @@ STOCK_FIGURES = ('inventory:storage',)
 class NonInterferenceTests(TestCase):
     """What an outsider reads on every list is the same before X exists and after."""
 
-    def lists(self, user):
-        client = Client()
+    def lists(self, user, look=''):
+        client = in_look(Client(), look)
         client.force_login(user)
         pages = {}
         for route in routes():
@@ -305,10 +331,12 @@ class NonInterferenceTests(TestCase):
         still.start()
         self.addCleanup(still.stop)
         world.build_open(self)
-        without = self.lists(self.researcher)
+        looks = ('', 'next')                        # the classic look and the new one (`?ui=next`)
+        without = {f'{look}:{name}': page for look in looks for name, page in self.lists(self.researcher, look).items()}
         world.build_sealed(self, mixed=False)       # (a mixed batch's open line is the open tank's history: shown)
-        with_x = self.lists(self.researcher)
+        with_x = {f'{look}:{name}': page for look in looks for name, page in self.lists(self.researcher, look).items()}
         # The store's book counts every feeding, a sealed tank's too: feed drawn from the store is a stock figure, the
         # same for everyone (review F5, the coordinator's decision), so the store's page tells that feed was fed.
-        differ = sorted(name for name in without if without[name] != with_x.get(name) and name not in STOCK_FIGURES)
+        differ = sorted(name for name in without
+                        if without[name] != with_x.get(name) and name.partition(':')[2] not in STOCK_FIGURES)
         self.assertFalse(differ, '\n'.join(f'{name}: {where(without[name], with_x.get(name))}' for name in differ))

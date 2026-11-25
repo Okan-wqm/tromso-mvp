@@ -6647,9 +6647,18 @@ data-layering audit of 24.11.2026, M-5; a scan of the production modules, no dat
   events, the alarms, the readings) outside the owning package stand only in `READS_ALLOWED`, frozen per module and
   model: a ratchet that may only fall.
 - **Fish present now** is `farm.stock.read.present`; no other module sums the ledger for it.
+- **The new look's props builders** (an area's `pages.py` and `lists.py`, `config/*_props.py`, core's `listprops`,
+  `formprops`, `formpanels`, `formpayload`, `pagesays`) shape what their view read through the area's reader: they
+  neither query (no manager, no `get_object_or_404`, no cursor) nor write. A module named like a builder is one, or is
+  listed with its reason. `config/` (the overviews) is scanned like the apps.
+- **The alarm worker's own row and the outbox's queue** are written by `alarms.services` (`worker_running`,
+  `worker_status`, `drop_delivered`), not by the worker or the sender thread.
 Each ceiling is the count found: a fix lowers it in the same change, nothing raises it, a new entry needs its reason in
 review. Reference rows the code reads (the freshness rules, the platform and scheduling settings) are kept by the
-database and only read (`core.operations.KeepRows`).
+database and only read (`core.operations.KeepRows`). A test that reads such rows is a `TestCase`: a TransactionTestCase
+empties its worker's database when it ends, and only TestCases are sure to run before every one of them
+(`core/tests_simple_db.py` holds every SimpleTestCase that declares a database to a list that reads the schema or the
+role only).
 
 ## Tests
 

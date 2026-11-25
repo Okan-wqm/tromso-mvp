@@ -8985,6 +8985,9 @@ msgstr "Hangi sistemlerin seçilebileceğini bunun sahası belirler."
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Görevleri bu günden itibaren, iki hafta öncesine kadar oluşturulur."
 
+msgid "Its tasks for today are missing from the counts until the task job runs."
+msgstr "Bugünün görevleri, görev işi çalışana kadar sayımlarda yok."
+
 #, python-format
 msgid "Its units have stock records on %(site)s: restore that site and choose it."
 msgstr "Birimlerinin %(site)s sahasında stok kayıtları var: o sahayı geri yükleyip onu seçin."

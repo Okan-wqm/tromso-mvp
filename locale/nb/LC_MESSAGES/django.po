@@ -8948,6 +8948,9 @@ msgstr "Lokaliteten avgjør hvilke systemer som kan velges."
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Oppgavene lages fra denne dagen, opptil to uker fram."
 
+msgid "Its tasks for today are missing from the counts until the task job runs."
+msgstr "Oppgavene for i dag mangler i tallene til oppgavejobben har kjørt."
+
 #, python-format
 msgid "Its units have stock records on %(site)s: restore that site and choose it."
 msgstr "Enhetene har lagerposter på %(site)s: gjenopprett den lokaliteten og velg den."

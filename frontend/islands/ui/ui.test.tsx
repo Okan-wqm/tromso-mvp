@@ -444,7 +444,7 @@ test('a list page as cards: a card per row of one grid, its title and chip, its 
   assert.doesNotMatch(page, /<table/, 'cards, no table');
   const cards = page.split('<li class="ui-list-card"').slice(1);
   assert.equal(cards.length, 2);
-  assert.match(cards[0] ?? '', /<h2 class="ui-list-card-title"><a href="\/sites\/1\/edit\/">Site 1<\/a><span class="ui-cell-sub">S-1<\/span><\/h2><span class="ui-chip"[^>]*>[^]*?Active/);
+  assert.match(cards[0] ?? '', /<h2 class="ui-list-card-title"><a href="\/sites\/1\/edit\/">Site 1<\/a><span class="ui-cell-sub">S-1<\/span><\/h2><span><span class="ui-chip" data-status="ok">[^]*?Active/);
   assert.match(cards[0] ?? '', /<dt>Type<\/dt><dd><span>Sea<\/span><\/dd><\/div><div><dt>Contact<\/dt><dd><span>a@example\.com<\/span><\/dd>/);
   assert.doesNotMatch(cards[1] ?? '', /<dt>Contact<\/dt>/, 'a fact with nothing to say is left out');
   assert.doesNotMatch(cards[0] ?? '', /<dt>Created<\/dt>|<dt>Status<\/dt>/, 'the chip and the foot are not facts');
@@ -458,7 +458,7 @@ test('a list filter may be a box ticked or not, named by its words in sight', as
   const toolbar = { ...LIST_PROPS.toolbar, filters: [
     { kind: 'check' as const, name: 'alerts', label: 'Only warnings and criticals', value: '1', checked: true, options: [] }] };
   const page = html(<ListPage {...LIST_PROPS} toolbar={toolbar} />);
-  assert.match(page, /<label class="ui-check"><input type="checkbox" name="alerts" value="1" checked=""\/><span>Only warnings and criticals<\/span><\/label>/);
+  assert.match(page, /<label class="ui-check"><input type="checkbox" name="alerts" checked="" value="1"\/><span>Only warnings and criticals<\/span><\/label>/);
   const off = html(<ListPage {...LIST_PROPS} toolbar={{ ...toolbar, filters: [{ ...toolbar.filters[0]!, checked: false }] }} />);
   assert.doesNotMatch(off, /checked=""/);
 });

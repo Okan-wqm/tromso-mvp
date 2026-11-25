@@ -44,17 +44,17 @@ class GoldenFarm(MonitoringCase):
         # The recording characterises the cards before card templates, when a missing or old oxygen was grey "no recent
         # data"; the owner's decision of 2026-11-23 (a unit with fish whose oxygen has no fresh value is critical) is
         # held by monitoring/tests/test_silent_oxygen.py. It stands aside here for the three units recorded grey alone
-        # (RECORDED_GREY), so every other card is read through the production path of the decision (review 6, m3).
+        # (RECORDED_GREY: their water is read as if they held no fish, which only the silence asks), so every other card
+        # is read through the production path of the decision (review 6, m3).
+        from farm.models import Tank as Unit
         from farm.water import read as water_read
-        real_silence = water_read._silence
+        real_holds = water_read.Context.holds_fish
 
-        def recorded_grey_aside(point_water, holds_fish, moment):
-            real_silence(point_water, holds_fish, moment)
-            point = point_water.point
-            if point is not None and point.unit_id and point.unit.code in RECORDED_GREY:
-                point_water.silent_oxygen = None
+        def holds_unless_recorded_grey(context, place, day):
+            unit = place if isinstance(place, Unit) else (place.unit if place.unit_id else None)
+            return real_holds(context, place, day) and (unit is None or unit.code not in RECORDED_GREY)
 
-        silence = mock.patch('farm.water.read._silence', recorded_grey_aside)
+        silence = mock.patch.object(water_read.Context, 'holds_fish', holds_unless_recorded_grey)
         silence.start()
         self.addCleanup(silence.stop)
         super().setUp()

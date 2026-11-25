@@ -24,6 +24,14 @@ MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'isla
 SFR_TITLE = re.compile(r'<span class="ui-sub" title="([^"]*)"><abbr')
 
 
+def twice(language):
+    """The classic row's Edit and Delete say their word twice, as the link's title and its hidden text (a layout repeat:
+    the new action says it once, as its name): said once at least (`unsaid`'s `once`; a word of three letters or fewer,
+    Turkish "Sil", is counted, not looked for inside a sentence)."""
+    with translation.override(language):
+        return {gettext('Edit'), gettext('Delete')}
+
+
 def said_another_way(old, language):
     """The words the new page says another way, in `language` (see the module's docstring)."""
     import html
@@ -67,7 +75,8 @@ class FeedingPagesNextTests(FrozenClock, TestCase):
                     old, new = self.pages(name, language, **query)
                     props = props_of(new, 'list-page')
                     self.assertTrue(props['table']['rows'])
-                    self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old, language)), [])
+                    self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old, language),
+                                            once=twice(language)), [])
                     if language == 'en' or key == 'meal-board':
                         keep(f'feeding-{key}-{language}', {'island': 'list-page', 'props': props})
 

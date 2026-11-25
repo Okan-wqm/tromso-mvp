@@ -8,6 +8,8 @@ from django.utils.translation import gettext as _, ngettext, pgettext
 
 from core import listprops as L
 
+from ..words import WORDS
+
 from ..templatetags.feeding import celsius, fcr, weights
 from ..templatetags.stock import fish
 
@@ -56,10 +58,7 @@ def protocols(view, objects, context):
                     L.column('status', _('Status')), L.column('bands', _('Weight bands')),
                     L.column('temperatures', _('Temperatures')), L.column('fcr', _('Expected FCR'), numeric=True),
                     L.column('in_force', _('In force today'), numeric=True)],
-        'notices': [L.notice('how', 'neutral', _(
-            'A protocol gives, per weight band of the fish, the feed, the meals a day and the specific feeding rate (SFR, '
-            '% of the body weight a day) at each temperature column, with the FCR it expects. A ration is worked out from '
-            'it on read: the fish, their estimated weight and the unit’s temperature (Meal board).'))],
+        'notices': [L.notice('how', 'neutral', WORDS['a_protocol_gives_per_weight_band'])],
         'rows': rows,
     }
 

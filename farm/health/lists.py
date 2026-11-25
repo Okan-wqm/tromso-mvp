@@ -86,7 +86,7 @@ def events(view, objects, context):
                            chips=[L.chip('neutral', _('Voided'))] if event.is_deleted else ()),
             'event': _event(view, context, event),
             'where': L.cell(event.site.name, sub=[', '.join(units) if units else _('Whole site')]),
-            'signs': L.cell(', '.join(str(label) for label in event.sign_labels) or DASH),
+            'signs': L.cell(', '.join(str(label) for label in event.sign_labels()) or DASH),
             'told': told,
             'examined': L.cell(event.examined_by or DASH, sub=examined),
             'deaths': L.cell(fish(event.deaths)),

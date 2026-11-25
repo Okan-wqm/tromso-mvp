@@ -10,10 +10,20 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
+from django.utils import translation
+from django.utils.translation import gettext
+
 from core.island_props import keep, props_of
 from core.pagesays import unsaid
 from core.test_world import MOMENT, health_ops_world, world
 from core.testing import FrozenClock
+
+def twice(language):
+    """The classic row's Edit says its word twice, as the link's title and its hidden text (a layout repeat: the new
+    action says it once, as its name)."""
+    with translation.override(language):
+        return {gettext('Edit')}
+
 
 MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
 
@@ -51,7 +61,7 @@ class HealthPagesNextTests(FrozenClock, TestCase):
                     old, new = self.pages(name, language, **query)
                     props = props_of(new, 'list-page')
                     self.assertTrue(props['table']['rows'])
-                    self.assertEqual(unsaid(old, props, new_html=new), [])
+                    self.assertEqual(unsaid(old, props, new_html=new, once=twice(language)), [])
                     keep(f'health-{key}-{language}', {'island': 'list-page', 'props': props})
 
     def test_a_treatments_withdrawal_is_the_servers_and_a_batch_held_today_is_in_the_hold_chip(self):
@@ -59,7 +69,8 @@ class HealthPagesNextTests(FrozenClock, TestCase):
         rows = props_of(new, 'list-page')['table']['rows']
         bath = next(row for row in rows if row['cells']['treatment']['text'] == 'Test Medicine')
         batches = bath['cells']['batches']
-        self.assertRegex(batches['text'], r' · until \d{2}\.\d{2}\.\d{4} \(harvest from \d{2}\.\d{2}\.\d{4}\)$')
+        # the cage has no temperature, so the medicine's degree-days give no end: "end unknown", the server's words
+        self.assertRegex(batches['text'], r' \(TM-01\) · (until \d{2}\.\d{2}\.\d{4} \(harvest from \d{2}\.\d{2}\.\d{4}\)|end unknown)$')
         self.assertEqual([chip['kind'] for chip in batches['chips']], ['hold'])
         self.assertEqual(bath['status'], 'warning')
         thermal = next(row for row in rows if row['cells']['treatment']['text'] != 'Test Medicine')

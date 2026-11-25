@@ -14,6 +14,9 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
+from django.utils import translation
+from django.utils.translation import gettext
+
 from core.island_props import keep, props_of
 from core.pagesays import unsaid
 from core.test_world import MOMENT, harvest_ops_world, health_ops_world, world
@@ -21,6 +24,13 @@ from core.testing import FrozenClock
 
 MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
 ABBR = re.compile(r'<abbr title="([^"]*)">')
+
+
+def twice(language):
+    """The classic row's Edit or cancel and Delete say their words twice, as the link's title and its hidden text (a
+    layout repeat: the new action says it once, as its name; Turkish "Sil" is short enough to be counted)."""
+    with translation.override(language):
+        return {gettext('Edit or cancel'), gettext('Delete')}
 
 
 @override_settings(ISLANDS_MANIFEST=MANIFEST)
@@ -70,7 +80,7 @@ class HarvestPagesNextTests(FrozenClock, TestCase):
                     old, new = self.pages(name, language)
                     props = props_of(new, 'list-page')
                     self.assertTrue(props['table']['rows'])
-                    self.assertEqual(unsaid(old, props, new_html=new), [])
+                    self.assertEqual(unsaid(old, props, new_html=new, once=twice(language)), [])
                     self.assertIn('aria-label="Harvest"' if language == 'en' else 'class="ui-tabs"', new)
                     if language == 'en':
                         keep(f'harvest-{key}-en', {'island': 'list-page', 'props': props})

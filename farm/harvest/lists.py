@@ -47,7 +47,7 @@ def _before(row):
     the earliest suitable day when it decides, the plan's notes."""
     item, lines, chips, worry = row['item'], [], [], None
     if row['fast']:
-        lines.append(str(row['fast'].why))
+        lines.append(str(row['fast'].why()))
     if row['withdrawal']:
         chips.append(L.chip('hold', _('Withdrawal')))
         worry = 'critical'
@@ -58,7 +58,7 @@ def _before(row):
         worry = worry or 'warning'
     earliest = row['earliest']
     if earliest is not None and earliest.decides:
-        lines.append(str(earliest.text))
+        lines.append(str(earliest.text()))
         if earliest.day is None or item.date < earliest.day:
             worry = worry or 'warning'
     if item.notes:
@@ -139,7 +139,7 @@ def _forecast(row):
 
 def _withdrawal(row):
     """The fish's withdrawal today, in the server's words: Not checked, the blocks (each with its end), or None."""
-    earliest = [str(row['earliest'].text)] if row['earliest'] is not None and row['earliest'].decides else []
+    earliest = [str(row['earliest'].text())] if row['earliest'] is not None and row['earliest'].decides else []
     if row['withdrawal'] is None:
         return L.cell(_('Not checked'), sub=earliest)
     if row['withdrawal']:

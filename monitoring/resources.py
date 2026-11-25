@@ -81,6 +81,48 @@ class MonitorBoardResource(Resource):
         return super().queryset().select_related('default_template').annotate(
             cards=Coalesce(Subquery(cards, output_field=IntegerField()), Value(0))).order_by('name')
 
+    # The list in the new look (core/listprops.py), in the classic list's words.
+    search_placeholder = _('Search by name')
+    empty_text = _(
+        'A board is a named wall screen: the units it shows and how each card is drawn. Everyone who may read '
+        'Monitoring can open it.')
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        """Monitoring boards (monitoring/board_list.html): a board, how its cards are drawn, its cards, its refresh, its
+        screen and the distance it is read from; Open (its wall), Edit and Delete."""
+        from django.urls import reverse
+        from django.utils.formats import localize
+        from django.utils.http import urlencode
+        from django.utils.translation import gettext
+
+        from core import listprops as L
+
+        def screen(board):
+            if not board.screen:
+                shown = '—'
+            elif board.screen == 'other':
+                shown = gettext('%(inches)s″ screen') % {'inches': localize(board.screen_inches)}
+            else:
+                shown = board.get_screen_display()
+            return L.cell(shown, sub=[gettext('Read from %(metres)s m') % {'metres': localize(board.distance_m)}
+                                      if board.distance_m else ''])
+
+        return {
+            'columns': [L.column('board', _('Board')), L.column('template', _('Cards are drawn with')),
+                        L.column('cards', _('Cards'), numeric=True), L.column('refresh', _('Refresh (s)'), numeric=True),
+                        L.column('screen', _('Wall screen'))],
+            'rows': [L.row(board.pk, {
+                'board': L.title(view, context, board, board.name, sub=[board.description]),
+                'template': L.cell(str(board.default_template) if board.default_template else _('As the rules say')),
+                'cards': L.cell(localize(board.cards)),
+                'refresh': L.cell(localize(board.refresh_seconds) if board.refresh_seconds else '—'),
+                'screen': screen(board),
+            }, [L.link(f"{reverse('monitoring:monitor')}?{urlencode({'board': board.pk})}",
+                       gettext('Open %(name)s') % {'name': board.name}, 'monitor'),
+                *L.edit_delete(view, context, board, board.name)]) for board in objects],
+        }
+
 
 def _count(queryset, link):
     """A subquery counting the rows of `queryset` per template through `link` (an edit locks the row FOR UPDATE,
@@ -136,6 +178,48 @@ class CardTemplateResource(Resource):
         return [path(f'{cls.url_prefix}/preview/', views.preview, name='cardtemplate_preview'), *super().urls(),
                 path(f'{cls.url_prefix}/<uuid:pk>/copy/', views.copy_template, name='cardtemplate_copy')]
 
+    # The list in the new look (core/listprops.py), in the classic list's words.
+    search_placeholder = _('Search by name')
+    empty_text = _(
+        'A card template places widgets on a monitoring card; the card’s frame (the unit, its state and why) is '
+        'always shown.')
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        """Card templates (monitoring/template_list.html): the built-ins first (shown, copied, never changed), each with
+        how many rules, boards and board cards use it; Copy (a post), Edit (the designer's page) and Delete."""
+        from django.urls import reverse
+        from django.utils.formats import localize
+        from django.utils.translation import gettext
+
+        from core import listprops as L
+
+        def actions(template):
+            name = template.shown_name
+            done = [L.post(reverse('monitoring:cardtemplate_copy', args=[template.pk]),
+                           gettext('Copy %(name)s') % {'name': name}, 'plus')] if context.get('can_add') else []
+            if not template.is_builtin:
+                if context.get('can_change'):
+                    done.append(L.link(view.url('edit', template.pk), gettext('Edit %(name)s') % {'name': name}, 'pencil'))
+                if context.get('can_delete'):
+                    done.append(L.link(view.url('delete', template.pk), gettext('Delete %(name)s') % {'name': name}, 'trash',
+                                       danger=True))
+            return done
+
+        return {
+            'columns': [L.column('template', _('Template')), L.column('rules', _('Rules'), numeric=True),
+                        L.column('boards', _('Boards'), numeric=True), L.column('cards', _('Cards'), numeric=True)],
+            'rows': [L.row(template.pk, {
+                'template': L.cell(template.shown_name, strong=True,
+                                   href=view.url('edit', template.pk) if context.get('can_change') and not template.is_builtin
+                                   else None, sub=[template.description],
+                                   chips=[L.chip('neutral', _('Built in'))] if template.is_builtin else ()),
+                'rules': L.cell(localize(template.rules)),
+                'boards': L.cell(localize(template.boards)),
+                'cards': L.cell(localize(template.cards)),
+            }, actions(template)) for template in objects],
+        }
+
 
 class CardTemplateAssignmentResource(Resource):
     model = CardTemplateAssignment
@@ -156,6 +240,38 @@ class CardTemplateAssignmentResource(Resource):
         return (super().queryset().select_related('template', 'unit', 'system', 'species')
                 .annotate(rank=rank).order_by('rank', 'created_at'))
 
+    # The list in the new look (core/listprops.py), in the classic list's words.
+    search_placeholder = _('Search by template, unit, system or species')
+    empty_text = _(
+        'A rule gives a template to a unit, a system, a type of system, a species or a kind of unit; the most '
+        'specific rule wins.')
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        """Card template rules (monitoring/rule_list.html), in the ladder's order: what a rule is for and its template; the
+        global rule is never deleted."""
+        from django.utils.translation import gettext
+
+        from core import listprops as L
+
+        def actions(rule):
+            name = rule.scope_label
+            done = [L.link(view.url('edit', rule.pk), gettext('Edit %(name)s') % {'name': name}, 'pencil')] \
+                if context.get('can_change') else []
+            if context.get('can_delete') and not rule.is_global:
+                done.append(L.link(view.url('delete', rule.pk), gettext('Delete %(name)s') % {'name': name}, 'trash',
+                                   danger=True))
+            return done
+
+        return {
+            'columns': [L.column('scope', _('For')), L.column('template', _('Template'))],
+            'rows': [L.row(rule.pk, {
+                'scope': L.cell(rule.scope_label, strong=True,
+                                href=view.url('edit', rule.pk) if context.get('can_change') else None),
+                'template': L.cell(str(rule.template.shown_name)),
+            }, actions(rule)) for rule in objects],
+        }
+
 
 class PhWindowScaleResource(Resource):
     """Setup › Reference data › pH window scales: per water type, the two ends of the pH window on the monitoring cards
@@ -169,138 +285,28 @@ class PhWindowScaleResource(Resource):
     list_template = 'monitoring/ph_scale_list.html'
     icon = 'gauge'
 
+    # The list in the new look (core/listprops.py), in the classic list's words.
+    search_placeholder = _('Search')
+    empty_text = _(
+        'One row per water type is made by the platform; it is changed, never added or deleted.')
 
-# ---- the lists in the new look (core/listprops.py), in the classic lists' words -----------------------------------------
-def _board_rows(cls, view, objects, context):
-    """Monitoring boards (monitoring/board_list.html): a board, how its cards are drawn, its cards, its refresh, its
-    screen and the distance it is read from; Open (its wall), Edit and Delete."""
-    from django.urls import reverse
-    from django.utils.formats import localize
-    from django.utils.http import urlencode
-    from django.utils.translation import gettext
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        """pH window scales (monitoring/ph_scale_list.html): per water type, the two ends of a card's pH window, and the
+        help sentence the classic page says under it."""
+        from django.utils.formats import localize
+        from django.utils.translation import gettext
 
-    from core import listprops as L
-
-    def screen(board):
-        if not board.screen:
-            shown = '—'
-        elif board.screen == 'other':
-            shown = gettext('%(inches)s″ screen') % {'inches': localize(board.screen_inches)}
-        else:
-            shown = board.get_screen_display()
-        return L.cell(shown, sub=[gettext('Read from %(metres)s m') % {'metres': localize(board.distance_m)}
-                                  if board.distance_m else ''])
-
-    return {
-        'columns': [L.column('board', _('Board')), L.column('template', _('Cards are drawn with')),
-                    L.column('cards', _('Cards'), numeric=True), L.column('refresh', _('Refresh (s)'), numeric=True),
-                    L.column('screen', _('Wall screen'))],
-        'rows': [L.row(board.pk, {
-            'board': L.title(view, context, board, board.name, sub=[board.description]),
-            'template': L.cell(str(board.default_template) if board.default_template else _('As the rules say')),
-            'cards': L.cell(localize(board.cards)),
-            'refresh': L.cell(localize(board.refresh_seconds) if board.refresh_seconds else '—'),
-            'screen': screen(board),
-        }, [L.link(f"{reverse('monitoring:monitor')}?{urlencode({'board': board.pk})}",
-                   gettext('Open %(name)s') % {'name': board.name}, 'monitor'),
-            *L.edit_delete(view, context, board, board.name)]) for board in objects],
-    }
-
-
-def _template_rows(cls, view, objects, context):
-    """Card templates (monitoring/template_list.html): the built-ins first (shown, copied, never changed), each with
-    how many rules, boards and board cards use it; Copy (a post), Edit (the designer's page) and Delete."""
-    from django.urls import reverse
-    from django.utils.formats import localize
-    from django.utils.translation import gettext
-
-    from core import listprops as L
-
-    def actions(template):
-        name = template.shown_name
-        done = [L.post(reverse('monitoring:cardtemplate_copy', args=[template.pk]),
-                       gettext('Copy %(name)s') % {'name': name}, 'plus')] if context.get('can_add') else []
-        if not template.is_builtin:
-            if context.get('can_change'):
-                done.append(L.link(view.url('edit', template.pk), gettext('Edit %(name)s') % {'name': name}, 'pencil'))
-            if context.get('can_delete'):
-                done.append(L.link(view.url('delete', template.pk), gettext('Delete %(name)s') % {'name': name}, 'trash',
-                                   danger=True))
-        return done
-
-    return {
-        'columns': [L.column('template', _('Template')), L.column('rules', _('Rules'), numeric=True),
-                    L.column('boards', _('Boards'), numeric=True), L.column('cards', _('Cards'), numeric=True)],
-        'rows': [L.row(template.pk, {
-            'template': L.cell(template.shown_name, strong=True,
-                               href=view.url('edit', template.pk) if context.get('can_change') and not template.is_builtin
-                               else None, sub=[template.description],
-                               chips=[L.chip('neutral', _('Built in'))] if template.is_builtin else ()),
-            'rules': L.cell(localize(template.rules)),
-            'boards': L.cell(localize(template.boards)),
-            'cards': L.cell(localize(template.cards)),
-        }, actions(template)) for template in objects],
-    }
-
-
-def _rule_rows(cls, view, objects, context):
-    """Card template rules (monitoring/rule_list.html), in the ladder's order: what a rule is for and its template; the
-    global rule is never deleted."""
-    from django.utils.translation import gettext
-
-    from core import listprops as L
-
-    def actions(rule):
-        name = rule.scope_label
-        done = [L.link(view.url('edit', rule.pk), gettext('Edit %(name)s') % {'name': name}, 'pencil')] \
-            if context.get('can_change') else []
-        if context.get('can_delete') and not rule.is_global:
-            done.append(L.link(view.url('delete', rule.pk), gettext('Delete %(name)s') % {'name': name}, 'trash',
-                               danger=True))
-        return done
-
-    return {
-        'columns': [L.column('scope', _('For')), L.column('template', _('Template'))],
-        'rows': [L.row(rule.pk, {
-            'scope': L.cell(rule.scope_label, strong=True,
-                            href=view.url('edit', rule.pk) if context.get('can_change') else None),
-            'template': L.cell(str(rule.template.shown_name)),
-        }, actions(rule)) for rule in objects],
-    }
-
-
-def _scale_rows(cls, view, objects, context):
-    """pH window scales (monitoring/ph_scale_list.html): per water type, the two ends of a card's pH window, and the
-    help sentence the classic page says under it."""
-    from django.utils.formats import localize
-    from django.utils.translation import gettext
-
-    from core import listprops as L
-    return {
-        'columns': [L.column('water', _('Water type')), L.column('low', _('From pH'), numeric=True),
-                    L.column('high', _('To pH'), numeric=True)],
-        'notices': [L.notice('scale', 'info', _('A card’s pH window is drawn on the scale of its unit’s water type. A pH '
-                                                'beyond the scale is shown as an arrow and the number.'))],
-        'rows': [L.row(row.pk, {
-            'water': L.cell(row.get_water_type_display(), strong=True),
-            'low': L.cell(localize(row.ph_low)),
-            'high': L.cell(localize(row.ph_high)),
-        }, [L.link(view.url('edit', row.pk), gettext('Edit'), 'pencil')] if context.get('can_change') else [])
-            for row in objects],
-    }
-
-
-# each tab's list in the new look, with its classic template's search placeholder and empty sentence (the same msgids)
-for _tab, _rows, _placeholder, _empty in (
-        (MonitorBoardResource, _board_rows, _('Search by name'), _(
-            'A board is a named wall screen: the units it shows and how each card is drawn. Everyone who may read '
-            'Monitoring can open it.')),
-        (CardTemplateResource, _template_rows, _('Search by name'), _(
-            'A card template places widgets on a monitoring card; the card’s frame (the unit, its state and why) is '
-            'always shown.')),
-        (CardTemplateAssignmentResource, _rule_rows, _('Search by template, unit, system or species'), _(
-            'A rule gives a template to a unit, a system, a type of system, a species or a kind of unit; the most '
-            'specific rule wins.')),
-        (PhWindowScaleResource, _scale_rows, _('Search'), _(
-            'One row per water type is made by the platform; it is changed, never added or deleted.'))):
-    _tab.list_rows, _tab.search_placeholder, _tab.empty_text = classmethod(_rows), _placeholder, _empty
+        from core import listprops as L
+        return {
+            'columns': [L.column('water', _('Water type')), L.column('low', _('From pH'), numeric=True),
+                        L.column('high', _('To pH'), numeric=True)],
+            'notices': [L.notice('scale', 'info', _('A card’s pH window is drawn on the scale of its unit’s water type. A pH '
+                                                    'beyond the scale is shown as an arrow and the number.'))],
+            'rows': [L.row(row.pk, {
+                'water': L.cell(row.get_water_type_display(), strong=True),
+                'low': L.cell(localize(row.ph_low)),
+                'high': L.cell(localize(row.ph_high)),
+            }, [L.link(view.url('edit', row.pk), gettext('Edit'), 'pencil')] if context.get('can_change') else [])
+                for row in objects],
+        }

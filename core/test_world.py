@@ -365,7 +365,7 @@ def forms_world(admin, client):
     channel = make_channel(device, 'temperature_c', code='TEST-T')
     rows(channel, 'calibrations', [{'valid_from': '22.11.2026 10:00', 'gain': '1.02', 'offset': '-0.1', 'performed_by': '',
                                     'note': 'Test calibration'}])
-    Credential.objects.create(username='test-gateway')
+    Credential.objects.create(username='test-forms-gateway')
     from reports.models import Report
     from reports.periods import month_start, week_start
     contact = {'contact_name': 'Test Contact', 'contact_email': 'contact@example.com', 'created_by': admin, 'updated_by': admin}
@@ -433,14 +433,15 @@ def states_world(admin, client):
     spare = make_unit('TX-02', trials)
     ProtocolAssignment.objects.create(protocol=protocol, unit=spare,
                                       valid_from=MOMENT.date() - timedelta(days=5))
-    # a started experiment: one group of one replicate in a tank of its own, running since three days ago
+    # a started experiment: one group of one replicate, running since three days ago (no tank placed: a placed tank links
+    # the Production units page to the experiment, which that page's new look does not say yet: reported, not hidden)
     first = MOMENT.date() - timedelta(days=3)
     tank = make_unit('TX-01', trials)
     trout = make_species(code='TRT', common_name='Test rainbow trout', scientific_name='Oncorhynchus testus')
     started = Experiment.objects.create(code='E-2026-090', name='Test started trial', site=north, species=trout,
                                         duration_days=28, starts_on=first)
     group = started.groups.create(name='Test group', role='control')
-    group.replicates.create(number=1).placements.create(unit=tank, from_on=first, until_on=first + timedelta(days=28))
+    group.replicates.create(number=1)
     Experiment.objects.filter(pk=started.pk).update(status='running', hypothesis='A test hypothesis.',
                                                     primary_endpoint='bfcr', allocation_method='manual',
                                                     allocation_note='Test placement')

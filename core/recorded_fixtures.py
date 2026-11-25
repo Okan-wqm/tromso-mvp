@@ -219,7 +219,19 @@ def _record_form(html, url):
     block = re.search(r'<script id="island-record-form-1" type="application/json">(.*?)</script>', html, re.S)
     if block is None:
         raise LookupError(f'{url} has no record-form island')
-    return {**json.loads(block.group(1)), 'csrfToken': 'test-token'}      # a session's token is no fixture
+    return _numbered({**json.loads(block.group(1)), 'csrfToken': 'test-token'})   # a session's token is no fixture
+
+
+def _numbered(value):
+    """A row's numbered id (a hidden <prefix>-<n>-id of a list whose rows the database counts) is the count the database
+    reached, not the fixture's content: written N."""
+    if isinstance(value, dict):
+        if str(value.get('name', '')).endswith('-id') and re.fullmatch(r'\d+', str(value.get('value', ''))):
+            return {**value, 'value': 'N'}
+        return {key: _numbered(each) for key, each in value.items()}
+    if isinstance(value, list):
+        return [_numbered(each) for each in value]
+    return value
 
 
 class _Asked:

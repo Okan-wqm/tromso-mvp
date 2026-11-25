@@ -67,7 +67,8 @@ NONCE = re.compile(rb'''(nonce="|'nonce-)[A-Za-z0-9+/=_-]+''')
 # What else is new on every answer: a form's sending key and the Expires header. The clock stands still while two worlds
 # are compared (`still`), so a time shown on a page and the monitoring screen's change token are compared as they are:
 # the token moves only with what the person may read (review F9).
-FRESH = [re.compile(rb'(name="entry_key" value=")[^"]+'), re.compile(rb'(Expires: )[^\n]+')]
+FRESH = [re.compile(rb'(name="entry_key" value=")[^"]+'), re.compile(rb'("name": "entry_key", "value": ")[^"]+'),
+         re.compile(rb'(Expires: )[^\n]+')]
 
 
 @dataclass(frozen=True)

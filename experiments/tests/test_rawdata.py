@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import AccessEvent
+from farm import withdrawal_gate
 from farm.models import FeedingRecord
 
 from .. import rawdata
@@ -52,6 +53,7 @@ class RawDataTests(TestCase):
         self.assertTrue(any(row[4] == tank and row[5] == 'stock' and row[7] == 'count_delta' for row in rows))
         self.assertFalse([row for row in rows if row[4] not in {each.code for each in self.sealed_tanks}])
 
+    @withdrawal_gate.opened('test: a feeding voided straight in the database')
     def test_a_voided_record_is_not_in_it(self):
         FeedingRecord.objects.filter(pk=self.feeding.pk).update(is_deleted=True, void_reason='Typed twice')
         rows = self.table(self.download(self.lead))[1:]

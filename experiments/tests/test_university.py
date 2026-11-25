@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from core import sealing
 from core.codes import next_code
+from farm import withdrawal_gate
 from farm.models import FeedingRecord, StockMovement, System, Tank, WaterMeasurement
 from farm.tests.helpers import point_of, stock_fish
 from farm.tests.test_stock import make_unit
@@ -30,6 +31,7 @@ SCIENCE = 'SCQ'
 
 class UniversityScenarioTests(TestCase):
     @classmethod
+    @withdrawal_gate.opened('test fixture: the scenario’s feedings written straight in the database')
     def setUpTestData(cls):
         world.build_open(cls)
         began = cls.today - timedelta(days=world.BEGAN)

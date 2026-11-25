@@ -183,7 +183,11 @@ SYSTEM_CALLS = {
 # The places that read with SQL of their own (a cursor, raw()), which the managers' seal does not reach, each with why it
 # reads nothing sealed or reads only what the seal already let through. Another one fails here.
 RAW_SQL = {
+    'alarms/changes.py': 'the count and the sum of the transaction ids of sensors_channel_state: two numbers, no row '
+                         '(the alarm worker’s look, as the system)',
     'alarms/engine.py': 'an advisory lock, no rows',
+    'alarms/outbox.py': 'an advisory lock per notification, no rows',
+    'alarms/worker.py': 'the worker’s advisory lock, its backend pid and application name, no rows',
     'alarms/services.py': 'writes an alarm subject’s state for an alarm the engine raises, as the system (run_alarms)',
     'core/checks.py': 'the database server’s version',
     'core/rev.py': 'the revision counters of core_rev (core-rev): a scope, a key and a number, no row of a record',

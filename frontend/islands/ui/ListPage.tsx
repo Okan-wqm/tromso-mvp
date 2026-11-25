@@ -36,6 +36,8 @@ export interface ListCell {
   gauge?: GaugeProps | null;
   /** a closed disclosure in place of the text: its summary, and its lines shown when opened (a dead letter's payload) */
   details?: { summary: string; lines: string[] } | null;
+  /** the text is the row's figure, drawn large (the meal board's next meal: the design's readout) */
+  figure?: boolean;
   /** a day's meals as pips before the text (the meal board), with their words */
   pips?: PipsProps | null;
 }
@@ -127,7 +129,7 @@ export function Cell({ cell }: { cell: ListCell }) {
     );
   }
   const main = cell.chip ? <Chip kind={cell.chip.kind}>{cell.chip.text}</Chip>
-    : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.text;
+    : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.figure ? <span className="ui-readout">{cell.text}</span> : cell.text;
   const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);
   const sub = cell.sub && cell.sub.length ? cell.sub.join(' · ') : undefined;
   const lines = <CellLines strong={Boolean(cell.strong)} main={chips && chips.length ? <>{main} {chips}</> : main} sub={sub} />;

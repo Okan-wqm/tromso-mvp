@@ -54,7 +54,7 @@ def _next_meal(line):
     if share.next_meal_kg is not None:
         band = basis.band
         sub = [band.feed.code + (f', {_pellet(band.feed)}' if band.feed.pellet_size_mm else '')] if band else ()
-        return L.cell(feed_kg(share.next_meal_kg), strong=True, sub=sub)
+        return L.cell(feed_kg(share.next_meal_kg), figure=True, sub=sub)
     if share.remaining_kg is not None:
         return L.cell(_('meals done'))
     return L.cell(_('no data'))

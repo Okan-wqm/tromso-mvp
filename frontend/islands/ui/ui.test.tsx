@@ -277,6 +277,9 @@ test('a list cell with pips draws them before its text; a check filter is a tick
   const toolbar = { ...LIST_PROPS.toolbar, filters: [{ kind: 'check' as const, name: 'voided', label: 'Show voided', value: '1', options: [] }] };
   const page = html(<ListPage {...LIST_PROPS} toolbar={toolbar} table={{ ...LIST_PROPS.table, rows,
     columns: [{ key: 'name', label: 'Unit' }, { key: 'today', label: 'Today' }] }} />);
+  const big = html(<ListPage {...LIST_PROPS} table={{ ...LIST_PROPS.table, columns: [{ key: 'next', label: 'Next meal' }],
+    rows: [{ key: '1', cells: { next: { text: '0.40 kg', figure: true, sub: ['TF-3, 3 mm'] } }, actions: [] }] }} />);
+  assert.match(big, /<span><span class="ui-readout">0\.40 kg<\/span><\/span><span class="ui-cell-sub">TF-3, 3 mm<\/span>/);
   assert.match(page, /<td><span class="ui-pips" role="img" aria-label="1 of 2 meals done">[^]*?<\/span><span>0\.40 kg left<\/span><\/td>/);
   assert.match(page, /<label class="ui-check"><input type="checkbox" name="voided" checked="" value="1"\/> Show voided<\/label>/);
 });

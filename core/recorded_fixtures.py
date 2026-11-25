@@ -219,7 +219,39 @@ def _record_form(html, url):
     block = re.search(r'<script id="island-record-form-1" type="application/json">(.*?)</script>', html, re.S)
     if block is None:
         raise LookupError(f'{url} has no record-form island')
-    return _numbered({**json.loads(block.group(1)), 'csrfToken': 'test-token'})   # a session's token is no fixture
+    props = _numbered({**json.loads(block.group(1)), 'csrfToken': 'test-token'})   # a session's token is no fixture
+    return _chosen(props, _people())
+
+
+def _options(value):
+    """Every option ({'value', 'label'}) under a widget."""
+    if isinstance(value, dict):
+        if 'value' in value and 'label' in value and not isinstance(value.get('value'), (list, dict)):
+            yield value
+        for each in value.values():
+            yield from _options(each)
+    elif isinstance(value, list):
+        for each in value:
+            yield from _options(each)
+
+
+def _chosen(value, people):
+    """A widget's chosen person or role by its name (`user:<user name>`, `role:<name>`) as _stable_people writes its
+    options: its id is a number the database counts on."""
+    if isinstance(value, dict):
+        if 'groups' in value and 'value' in value:
+            names = {}
+            for option in _options(value['groups']):
+                stable = _named(people, str(option['value']), option['label'])
+                if stable is not None:
+                    names[str(option['value'])] = stable
+            chosen = value['value']
+            value = {**value, 'value': [names.get(str(each), each) for each in chosen] if isinstance(chosen, list)
+                     else names.get(str(chosen), chosen)}
+        return {key: _chosen(each, people) for key, each in value.items()}
+    if isinstance(value, list):
+        return [_chosen(each, people) for each in value]
+    return value
 
 
 def _numbered(value):

@@ -6,6 +6,8 @@
 // every poll. static/css/monitor.css does the rest ("the wall of fitted cards", "the dock").
 //   --cols, --rows   the grid, on .monitor-grid
 //   --mh             the cards' height in card units (the template's measure), for the least height of a cell
+//   --room           on .monitor-grid: the height its cells share under the band, as measured (a notice of the page
+//                    above the wall takes some of the screen: the cells are never as high as the whole screen's share)
 //   --u-floor        on .monitor-grid: the smallest unit a card may be drawn at: 14 px, or the board's legible unit
 //                    (its screen's diagonal and viewing distance, data-screen-inches and data-distance-m on the grid:
 //                    wall/slots.ts legibleUnit, CONSENSUS §9), so a wall read from across the room turns pages rather
@@ -115,7 +117,7 @@ function legible(wall: HTMLElement): { card: number; band: number } {
 }
 
 function clear(wall: HTMLElement): void {
-  for (const name of ['--cols', '--rows', '--mh', '--band', '--dock-space', '--u-floor']) wall.style.removeProperty(name);
+  for (const name of ['--cols', '--rows', '--mh', '--band', '--room', '--dock-space', '--u-floor']) wall.style.removeProperty(name);
   document.documentElement.style.removeProperty('--wu');
   delete wall.dataset.page;
   delete wall.dataset.pageCount;
@@ -155,6 +157,8 @@ function lay(keep: boolean, again = false): void {
     wall.style.setProperty('--band', `${Math.max(least, band.offsetHeight)}px`);
   }
   const height = wall.clientHeight - (band ? band.offsetHeight + gap : 0);
+  // (the cells' room as the grid really has it: a notice of the page above the wall takes some of the screen)
+  wall.style.setProperty('--room', `${height}px`);
   const own = getComputedStyle(fitted.card);
   const padX = number(own.paddingLeft) + number(own.paddingRight) + number(own.borderLeftWidth) + number(own.borderRightWidth);
   const padY = number(own.paddingTop) + number(own.paddingBottom) + number(own.borderTopWidth) + number(own.borderBottomWidth);

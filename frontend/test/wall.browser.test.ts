@@ -435,6 +435,40 @@ for (const [name, prefix] of [['', ''], [' in the new look', 'next-']] as const)
       assert.equal((await look(tab)).pages, before.pages);
     });
 
+    // (a notice of the page above the wall, as the shell prints when no alarm worker runs: the cells are as high as the
+    // room the grid really has, so a page shows its own cards whole and no card of the next page peeks in under them)
+    for (const [width, height] of [[1920, 1080], [3840, 2160], [1280, 720]] as const) {
+      await t.test(`a notice above the wall at ${width}x${height}: the page shows its own cards whole, no other`, async () => {
+        await open(tab, origin, prefix + 'en', width, height);
+        await tab.evaluate(() => {
+          const notice = document.createElement('p');
+          notice.textContent = 'The alarms are NOT being checked: no alarm worker has run here.';
+          notice.style.cssText = 'margin: 0; padding: 40px 0; font-size: 40px';
+          document.querySelector('.monitor-grid')?.before(notice);
+          window.dispatchEvent(new Event('resize'));
+        });
+        await tab.waitForTimeout(150);
+        const seen = await look(tab);
+        const shown = await tab.evaluate(() => {
+          const grid = document.querySelector('.monitor-grid') as HTMLElement;
+          const frame = grid.getBoundingClientRect();
+          const cards = Array.from(grid.querySelectorAll<HTMLElement>(':scope > .monitor-card'));
+          const partly = cards.filter((card) => {
+            const at = card.getBoundingClientRect();
+            const visible = at.bottom > frame.top + 1 && at.top < Math.min(frame.bottom, innerHeight) - 1;
+            return visible && (at.top < frame.top - 1 || at.bottom > Math.min(frame.bottom, innerHeight) + 1);
+          });
+          return { partly: partly.map((card) => card.querySelector('h3')?.textContent?.trim() ?? '?'),
+                   whole: cards.filter((card) => !partly.includes(card) && (() => { const at = card.getBoundingClientRect();
+                     return at.top >= frame.top - 1 && at.bottom <= Math.min(frame.bottom, innerHeight) + 1; })()).length };
+        });
+        assert.deepEqual(shown.partly, [], 'no card lies half on the screen');
+        assert.equal(shown.whole, Math.min(Number(seen.cols) * Number(seen.rows), 20 - (Number(seen.page) - 1) * Number(seen.cols) * Number(seen.rows)));
+        assert.equal(seen.pageScrolls, false);
+        assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
+      });
+    }
+
     // (review round 2, B3: the reviewer's pairs; on a Full HD screen 24" from 3 m or 5 m and 55" from 5 m ask more than
     // one card a page can give, 55" from 3 m does not)
     for (const [inches, distance] of [[24, 3], [55, 5], [24, 5], [55, 3]] as const) {

@@ -967,7 +967,9 @@ whose cells hold all the cards, the one that gives a card its largest unit; when
 text would be under 11 px) the wall turns PAGES rather than shrink the type: the grid with the most cells that can still
 be read (when none can, ONE card a page at the largest unit a cell gives, never the densest grid: review round 2, B3),
 PageDown and PageUp (and the band's buttons) turn the page, the band says "2 / 3", and the wall opens on the page
-of its worst card. A card never moves, so a page is always the same cards. Twenty small cards are one page on 3440×1440,
+of its worst card. A card never moves, so a page is always the same cards. The cells share the room the grid really has
+under the band (`frontend/wall.ts` sets `--room`): a notice of the page above the wall (no alarm worker, no push
+transport) takes some of the screen, and a page still shows its own cards whole, never the top of the next page's. Twenty small cards are one page on 3440×1440,
 5120×1440, 2560×1440, 3840×2160 and 1920×1080 (5 by 4 on the two wide screens, 4 by 5 on 16:9); twenty-four are one
 page on the first four and two pages on 1920×1080 (`monitoring/tests/slot_vectors.json`). The line under each figure
 says where it came from in one word and how old it is ("sensor · 12 s", "sample · 3 h", "calc. · 7 d") at EVERY size

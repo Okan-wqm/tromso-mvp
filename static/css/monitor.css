@@ -250,7 +250,8 @@ html[data-wall] .monitor-grid:has(> .is-fit) {
   flex: 1 1 auto; min-height: 0; overflow: hidden auto; scrollbar-width: none;
   grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   grid-template-rows: var(--band);
-  grid-auto-rows: max(calc((100dvh - 2 * var(--wall-pad) - var(--band) - var(--rows, 3) * var(--wall-gap)) / var(--rows, 3)), calc(var(--mh, 10) * var(--u-floor) + 1.2 * var(--wall-pad) + 2px));
+  /* (a row: its share of the room under the band, as wall.ts measures it, --room; the whole screen's without the script) */
+  grid-auto-rows: max(calc((var(--room, 100dvh - 2 * var(--wall-pad) - var(--band) - var(--wall-gap)) - (var(--rows, 3) - 1) * var(--wall-gap)) / var(--rows, 3)), calc(var(--mh, 10) * var(--u-floor) + 1.2 * var(--wall-pad) + 2px));
   gap: var(--wall-gap); align-items: stretch;
 }
 html[data-wall] .monitor-band { position: sticky; top: 0; z-index: 2; padding-right: calc(5.4 * var(--wu)); background: var(--surface-canvas); font-size: var(--wu); }

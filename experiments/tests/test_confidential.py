@@ -280,7 +280,15 @@ class RouteWalkTests(WalkCase):
 
 class NewLookWalkTests(WalkCase):
     """The same walk in the new look (`?ui=next`): its pages are drawn from props (core/listprops.py, the islands' and
-    the pages' own builders), which must hold the seal as the classic pages do."""
+    the pages' own builders), which must hold the seal as the classic pages do. The clock stands still: the new look's
+    status strip shows the company's time, and a minute turning between a sealed id's answer and an unknown one's is
+    not a finding."""
+
+    def setUp(self):
+        super().setUp()
+        still = mock.patch(CLOCK, return_value=timezone.now())
+        still.start()
+        self.addCleanup(still.stop)
 
     def test_an_unrelated_researcher(self):
         self.assertWalkClean(self.researcher, look='next')

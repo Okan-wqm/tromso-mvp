@@ -62,6 +62,9 @@ class CompanyOverviewTests(CompanyFixture):
         self.assertEqual(sum(row['water']['critical'] for row in rows.values()), water['critical'])
         self.assertEqual(sum(row['water']['warning'] for row in rows.values()), water['warning'])
         self.assertEqual((rows['BG']['water']['critical'], rows['BG']['water']['warning']), (1, 1))
+        # M-01 has fish, no point of its own and no oxygen: critical (owner decision of 2026-11-23), counted on its site,
+        # never as a point
+        self.assertEqual((rows['TR']['water']['critical'], rows['TR']['water']['points']), (1, 0))
         self.assertEqual(rows['AL']['water'], {'critical': 0, 'warning': 0, 'points': 0, 'measured': 0, 'worst': None,
                                               'stale_since': None})
 

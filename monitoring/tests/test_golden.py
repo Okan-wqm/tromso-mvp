@@ -23,6 +23,9 @@ from ..cards.builtin import DETAILED
 from farm import withdrawal_gate
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
+# The units with fish the recording says grey "no recent data" for a missing or old oxygen (T-01: no water; G-03: its
+# water 30 h old; G-04: never sampled): red since the owner's decision of 2026-11-23 (`GoldenFarm.setUp`).
+RECORDED_GREY = frozenset({'T-01', 'G-03', 'G-04'})
 
 
 class GoldenFarm(MonitoringCase):
@@ -40,8 +43,18 @@ class GoldenFarm(MonitoringCase):
         self.addCleanup(clock.stop)
         # The recording characterises the cards before card templates, when a missing or old oxygen was grey "no recent
         # data"; the owner's decision of 2026-11-23 (a unit with fish whose oxygen has no fresh value is critical) is
-        # held by monitoring/tests/test_silent_oxygen.py, and stood aside here so the recording stays the one it is.
-        silence = mock.patch('farm.water.read._silence', lambda point_water, *args: None)
+        # held by monitoring/tests/test_silent_oxygen.py. It stands aside here for the three units recorded grey alone
+        # (RECORDED_GREY), so every other card is read through the production path of the decision (review 6, m3).
+        from farm.water import read as water_read
+        real_silence = water_read._silence
+
+        def recorded_grey_aside(point_water, holds_fish, moment):
+            real_silence(point_water, holds_fish, moment)
+            point = point_water.point
+            if point is not None and point.unit_id and point.unit.code in RECORDED_GREY:
+                point_water.silent_oxygen = None
+
+        silence = mock.patch('farm.water.read._silence', recorded_grey_aside)
         silence.start()
         self.addCleanup(silence.stop)
         super().setUp()

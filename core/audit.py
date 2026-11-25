@@ -56,7 +56,11 @@ def entity_types(model):
 
 
 def sealed_out(entries):
-    """`entries` without those about a record whoever is looking may not see (read when the query runs, core.sealing)."""
+    """`entries` without those about a record whoever is looking may not see (read when the query runs, core.sealing).
+    Nothing is built for a reader from whom nothing is hidden (the system, and everyone on a farm with no confidential
+    work): the log's every read goes through here (AuditLogManager)."""
+    if not any(sealing.reach().hidden.values()):
+        return entries
     for seal in sealing.registry():
         if not seal.filters:
             continue
@@ -249,7 +253,7 @@ def revision():
     # token, so its timing tells them nothing (review F8). Read from the works each entry was stamped with when it was
     # written (`stamp`) and what the person reads (core.sealing.reach, one statement a request): two indexed queries
     # still, the seal itself is never read here. A person from whom nothing is hidden reads the plain log.
-    entries = AuditLog.objects.all()
+    entries = AuditLog._base_manager.all()            # the stamps, never the seal: `_left_out` below
     left_out = _left_out(sealing.reach())
     if left_out is not None:
         entries = entries.exclude(left_out)

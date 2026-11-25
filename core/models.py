@@ -182,7 +182,12 @@ class AuditSeverity(models.TextChoices):
     CRITICAL = 'critical', _('Critical')
 
 
-class AuditLogManager(models.Manager):
+class AuditLogManager(SealedMixin, models.Manager):
+    """The log as the person looking may read it: every read through it leaves out the entries about a record they may
+    not see (core.sealing's ABOUT rule, core.audit.sealed_out: the seals at read time and the entries' stamps), so no
+    page, tab or later reader shows one by reading the log plainly (landing review L5). The few readers that must read
+    every entry (the change token reads the stamps itself) take the base manager, by name (core/tests_sealing.py)."""
+
     def bulk_create(self, objs, *args, **kwargs):
         """The entries stamped with their works first (core.audit.stamp), as `save` does for one."""
         from .audit import stamp

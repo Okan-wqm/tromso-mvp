@@ -6,6 +6,7 @@ courses as the person may see them; F5 the store's feed book the same for everyo
 disease still owed; F7 Oversee keeps the fish of a private experiment, never its science; F8 every read of the platform
 admin logged, the change token, a results share, the search, the alarms and their fallback, the delete plan's words;
 the lead's on-call number on the Oversee card."""
+import uuid
 from datetime import timedelta
 from io import StringIO
 
@@ -199,6 +200,36 @@ class ShareTests(ReviewCase):
         self.assertNotContains(self.client.get(url, {'q': 'more protein'}), 'XQZ diet trial')
         self.give('design')
         self.assertContains(self.client.get(url, {'q': 'more protein'}), 'XQZ diet trial')
+
+    def test_the_list_counts_the_groups_and_replicates_only_for_who_reads_the_design(self):
+        """L7: the list's counts are read through the design's sealed managers, never a join past them."""
+        self.give('water')
+        url = reverse('experiments:experiment_list')
+        counts = {}
+        for user in (self.researcher, self.lead):
+            self.client.force_login(user)
+            rows = {row.pk: row for row in self.client.get(url).context['objects']}
+            counts[user.username] = (rows[self.experiment.pk].group_count, rows[self.experiment.pk].replicate_count)
+        self.assertEqual(counts, {'researcher': (0, 0), 'lead': (1, 2)})
+
+
+class ManyToManyAndKeyTests(ReviewCase):
+    """L8: a treatment's units (a table Django makes) and the form keys (core.models.EntryKey, which name a record by
+    its model's label) are hidden with the record they are about, from the platform admin too when it is private."""
+
+    def test_a_private_treatments_units_and_a_hidden_records_form_key_are_left_out(self):
+        from core.models import EntryKey
+        self.private()
+        EntryKey.note(uuid.uuid4(), self.treatment)
+        through = Treatment.units.through
+        with sealing.as_viewer(self.boss):
+            units = set(sealing.narrow(through._base_manager.all()).values_list('treatment_id', flat=True))
+            keys = set(sealing.narrow(EntryKey._base_manager.all()).values_list('entity_id', flat=True))
+        self.assertNotIn(self.treatment.pk, units)
+        self.assertNotIn(str(self.treatment.pk), keys)
+        with sealing.as_viewer(self.lead):
+            self.assertIn(self.treatment.pk, set(sealing.narrow(through._base_manager.all())
+                                                 .values_list('treatment_id', flat=True)))
 
 
 class AlarmTests(ReviewCase):

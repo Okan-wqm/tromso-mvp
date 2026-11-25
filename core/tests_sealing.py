@@ -18,7 +18,9 @@ KEYED = ('farm.Tank', 'farm.System', 'farm.Batch', 'farm.SamplingPoint', 'farm.E
 
 class RegistryTests(SimpleTestCase):
     def test_every_keyed_model_declares_its_seal(self):
-        self.assertEqual(sealing.undeclared(apps.get_models()), [])
+        """Django's own many-to-many tables too (review T4): a treatment's units are a treatment's rows."""
+        self.assertEqual(sealing.undeclared(apps.get_models(include_auto_created=True)), [])
+        self.assertIsNotNone(sealing.seal_of(apps.get_model('farm', 'Treatment').units.through))
 
     def test_the_keyed_records_are_the_ones_named(self):
         self.assertEqual(sorted(sealing.KEYED), sorted(KEYED))
@@ -27,6 +29,7 @@ class RegistryTests(SimpleTestCase):
         """A filtered model's managers (`objects` and `all_objects`) both carry the seal; only Django's base manager,
         which a link to one record follows, does not."""
         unsealed = [f'{seal.model._meta.label}.{manager.name}' for seal in sealing.registry() if seal.filters
+                    and not seal.model._meta.auto_created
                     for manager in seal.model._meta.managers if not isinstance(manager, sealing.SealedMixin)]
         self.assertEqual(unsealed, [])
 

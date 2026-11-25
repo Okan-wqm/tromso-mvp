@@ -3524,6 +3524,12 @@ deleted ones too, and restores an experiment with the parts its delete took alon
 - **Private**: its team and its shares only, not the platform admin either (amendment C4).
 - **Open**: everyone who reads experiments, as before.
 
+**When sealing starts** (the coordinator's decision of 2026-11-25 on the landing review, W3): a draft seals nothing,
+however its tanks are placed; the sealed cells are a started experiment's (`experiment_cells`, migration 0007). A
+record of a tank before its experiment starts stays the farm's own. Starting a sealed or private experiment whose day 0
+has already passed, or making a started open experiment sealed or private, seals the records of the days already
+passed, so a person who holds Oversee does it (`experiments.services._may_seal_past`); anyone else is refused.
+
 A **share** gives a person or a role one or more of five parts until a day (at most two years), with a reason; the
 results bring the data, the design and the systems with them, the data the design and the systems, the water the
 systems. Revoked or ended shares

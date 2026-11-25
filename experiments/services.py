@@ -33,7 +33,7 @@ from farm.stock.dates import site_today
 from farm.stock.read import batches_ever_in
 from farm.stock.services import locked as stock_locked
 
-from . import allocation, read
+from . import allocation, read, sealing
 from . import design as design_module
 from .models import (
     DETAIL_FIELDS, TRANSITIONS, AllocationMethod, Experiment, ExperimentGroup, Factor, FactorKind, GroupLevel, GroupRole, Level,
@@ -708,6 +708,7 @@ def start(user, experiment, seen, version):
             raise _refused(_('A template is not started: copy it into an experiment.'))
         if Status.RUNNING not in TRANSITIONS[locked.status]:
             raise _refused(_('This experiment cannot be started.'))
+        _may_seal_past(user, locked, locked.audience)
         assessment = design_module.assess(locked)
         if assessment.errors:
             raise _refused(*[finding.text for finding in assessment.errors])
@@ -1010,6 +1011,18 @@ def revoke(user, row):
     return row
 
 
+def _may_seal_past(user, experiment, audience):
+    """Refused unless `user` may seal the days of `experiment` already passed (the coordinator's decision of 2026-11-25
+    on landing review W3): a draft seals nothing (experiment_cells holds a started experiment's cells), so a record of
+    its tanks before it is started is the farm's own; starting a sealed or private experiment whose day 0 has passed,
+    or sealing a started open one, makes those days' records the experiment's, and only a person who holds Oversee
+    (who keeps every tank's fish) does that."""
+    if (audience != Experiment.Audience.OPEN and experiment.starts_on is not None
+            and experiment.starts_on < site_today(experiment.site) and not user.has_perm('.'.join(sealing.OVERSEE))):
+        raise _refused(_('Day 0 has passed: this seals the records of its tanks since then, so a person who holds '
+                         'Oversee does it.'))
+
+
 def set_audience(user, experiment, audience):
     """The lead makes the experiment sealed (its team and shares) or open (everyone who reads experiments). Logged."""
     _lead_only(user, experiment)
@@ -1019,6 +1032,8 @@ def set_audience(user, experiment, audience):
         locked = Experiment.objects.select_for_update().get(pk=experiment.pk)
         if locked.audience == audience:
             return locked
+        if locked.status != Status.DRAFT and locked.audience == Experiment.Audience.OPEN:
+            _may_seal_past(user, locked, audience)
         before = locked.get_audience_display()
         locked.audience = audience
         locked.version += 1

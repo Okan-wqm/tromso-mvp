@@ -50,9 +50,12 @@ def readable(user, entries=None):
 
 
 def entity_types(model):
-    """Every name the log may give a record of `model`: its own, and that of each tab that serves it."""
+    """Every name a row about a record of `model` may give it: the log's (its own, and that of each tab that serves it)
+    and the model's label (`app_label.model_name`, as the form keys name it: core.models.EntryKey, review L8), so the
+    rule that hides such rows with their record matches them all."""
     from .crud import Resource
-    return sorted({entity_type_of(model), *(tab.entity_type() for tab in Resource.registry if tab.model is model)})
+    return sorted({entity_type_of(model), model._meta.label_lower,
+                   *(tab.entity_type() for tab in Resource.registry if tab.model is model)})
 
 
 def sealed_out(entries):

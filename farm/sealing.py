@@ -36,5 +36,8 @@ def declare_all():
     declare(m.ProtocolAssignment, unit='unit', day=('valid_from', 'valid_until'), via=('batch',))
     declare(m.Treatment, unit='units', day=('start_date', 'end_date'))
     declare(m.HealthEvent, unit='units', day='date')
+    # Their units' rows (the many-to-many tables Django makes), hidden with their treatment or event (review L8).
+    declare(m.Treatment.units.through, via=('treatment',))
+    declare(m.HealthEvent.units.through, via=('healthevent',))
     declare(m.LiceCount, unit='unit', day='date')
     declare(m.WaterMeasurement, part='water', unit='point__unit', system='point__system', day='measured_at')

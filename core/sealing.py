@@ -565,13 +565,16 @@ def check_registry(app_configs=None, models=None, **kwargs):
     """E101: a model reaching a unit, a system or another keyed record without a seal. E102: a filtering seal whose
     model has a manager without SealedMixin."""
     from django.apps import apps
-    model_list = models if models is not None else apps.get_models()
+    # Many-to-many tables Django makes on its own count too (a treatment's units: review T4, L8).
+    model_list = models if models is not None else apps.get_models(include_auto_created=True)
     errors = [checks.Error(f'{label} reaches a unit, a system or another sealed record and declares no seal.',
                            hint='Declare it with core.sealing.declare(...) in its app\'s ready(), or exempt it with a '
                                 'reason.', id='core.E101')
               for label in undeclared(model_list)]
     for seal in registry():
-        if seal.filters:
+        # A many-to-many table Django makes is read through its two ends' sealed managers, or narrowed (the database
+        # viewer, `narrow`): it has no manager of its own to seal.
+        if seal.filters and not seal.model._meta.auto_created:
             for manager in seal.model._meta.managers:
                 if not isinstance(manager, SealedMixin):
                     errors.append(checks.Error(f'{seal.model._meta.label}.{manager.name} reads past the seal.',

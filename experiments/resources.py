@@ -11,7 +11,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
@@ -32,7 +33,8 @@ from .forms import (
     CopyForm, ExperimentForm, MemberFormSet, ReleaseForm, ReplaceForm, StartForm, design_forms, design_rows,
     place_rows, places_forms,
 )
-from .models import AllocationMethod, Experiment, ExperimentShare, Member, ReplicateUnit, SharePart, Status
+from .models import (AllocationMethod, Experiment, ExperimentGroup, ExperimentShare, Member, Replicate, ReplicateUnit,
+                     SharePart, Status)
 
 EXPERIMENTS, MINE, TEMPLATES = '', 'mine', 'templates'
 VIEWS = (EXPERIMENTS, MINE, TEMPLATES)
@@ -40,6 +42,12 @@ ADD_FACTOR = 'add_factor'          # the marker of the button that adds a factor
 READ_TABS = {'overview': _('Overview'), 'data': _('Data'), 'team': _('Team'), 'looked': _('Who looked')}
 # The part a read tab shows (experiments.sealing): a grantee sees the tabs of the parts they hold; Team is the shell.
 TAB_PARTS = {'overview': 'results', 'data': 'data'}
+
+
+def counted(rows, by):
+    """The number of `rows` (a sealed queryset with an outer reference, grouped `by` the field it names it with) as an
+    annotation: a subquery, so the rows are counted as the person may read them, 0 when none is."""
+    return Coalesce(Subquery(rows.order_by().values(by).annotate(n=Count('pk')).values('n')[:1]), 0)
 
 
 def data_links(user, cell):
@@ -156,11 +164,12 @@ class ExperimentResource(Resource):
         objects, chosen_site = filter_by(request, objects, 'site', sites, 'site_id')
         objects, chosen_species = filter_by(request, objects, 'species', species, 'species_id')
         objects, chosen_status = filter_by(request, objects, 'status', Status.choices, 'status')
-        live = Q(groups__is_deleted=False)
+        # Counted through the design's own sealed managers (a subquery each), never a join, which would count past the
+        # design's seal: a grantee of the water reads no count of the groups or replicates (review L7).
         objects = objects.annotate(
-            group_count=Count('groups', filter=live, distinct=True),
-            replicate_count=Count('groups__replicates', filter=live & Q(groups__replicates__is_deleted=False),
-                                  distinct=True))
+            group_count=counted(ExperimentGroup.objects.filter(experiment=OuterRef('pk')), 'experiment'),
+            replicate_count=counted(Replicate.objects.filter(group__experiment=OuterRef('pk'), group__is_deleted=False),
+                                    'group__experiment'))
         # The list shows the experiments it finds: a sealed one outside the person's team is a read (review F8).
         sealing.note_reads(list(objects.values_list('pk', flat=True)[:cls.page_size]), 'experiments:experiment_list')
         return objects, {'view': view, 'views': [(EXPERIMENTS, _('Experiments')), (MINE, _('Mine')),

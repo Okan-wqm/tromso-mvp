@@ -11122,9 +11122,6 @@ msgstr ""
 "Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert "
 "varsel venter i utboksen nedenfor, med mottaker og nivå, og sendes når den er det."
 
-msgid "Nothing is shared."
-msgstr "Ingenting er delt."
-
 msgid ""
 "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
 "notification waits in the outbox on the Alarms page, with its recipient and level, and is sent "
@@ -11139,6 +11136,9 @@ msgid ""
 msgstr ""
 "Ingenting sendes ennå: push-transporten er ikke tilkoblet. Alarmene utløses og listes (Selskap › "
 "Alarmer); varslene deres venter."
+
+msgid "Nothing is shared."
+msgstr "Ingenting er delt."
 
 msgid "Nothing needs attention"
 msgstr "Ingenting trenger oppfølging"
@@ -13470,11 +13470,11 @@ msgstr "Si hvorfor det deles."
 msgid "Say why it is voided."
 msgstr "Skriv hvorfor den annulleres."
 
-msgid "Say why the experiment is taken over."
-msgstr "Si hvorfor forsøket overtas."
-
 msgid "Say why the alarm is snoozed."
 msgstr "Oppgi hvorfor alarmen slumres."
+
+msgid "Say why the experiment is taken over."
+msgstr "Si hvorfor forsøket overtas."
 
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "

@@ -11149,9 +11149,6 @@ msgstr ""
 "gelecek). Her bildirim, alıcısı ve seviyesiyle aşağıdaki giden kutusunda bekler ve aktarım "
 "bağlandığında gönderilir."
 
-msgid "Nothing is shared."
-msgstr "Hiçbir şey paylaşılmadı."
-
 msgid ""
 "Nothing is sent yet: the push transport is not connected (the mobile app comes later). Every "
 "notification waits in the outbox on the Alarms page, with its recipient and level, and is sent "
@@ -11167,6 +11164,9 @@ msgid ""
 msgstr ""
 "Henüz hiçbir şey gönderilmiyor: push aktarımı bağlı değil. Alarmlar açılır ve listelenir (Şirket "
 "› Alarmlar); bildirimleri bekler."
+
+msgid "Nothing is shared."
+msgstr "Hiçbir şey paylaşılmadı."
 
 msgid "Nothing needs attention"
 msgstr "Dikkat gerektiren bir şey yok"
@@ -13502,11 +13502,11 @@ msgstr "Neden paylaşıldığını yazın."
 msgid "Say why it is voided."
 msgstr "Neden iptal edildiğini yazın."
 
-msgid "Say why the experiment is taken over."
-msgstr "Deneyin neden devralındığını yazın."
-
 msgid "Say why the alarm is snoozed."
 msgstr "Alarmın neden ertelendiğini yazın."
+
+msgid "Say why the experiment is taken over."
+msgstr "Deneyin neden devralındığını yazın."
 
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "

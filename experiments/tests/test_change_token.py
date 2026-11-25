@@ -320,3 +320,30 @@ class HistoryTabTests(TokenCase):
             self.assertTrue(AuditLog.objects.filter(pk=entry.pk).exists())
         with sealing.as_viewer(editor):
             self.assertFalse(AuditLog.objects.filter(pk=entry.pk).exists())
+
+
+class ExperimentLogTests(TokenCase):
+    """L6: an experiment's own log entries hold its design and its places: a grantee of its water (who may open the
+    experiment's shell) reads none of them; whoever reads its data (design and systems with it) does."""
+
+    def give(self, part):
+        ExperimentShare.objects.create(experiment=self.experiment, user=self.researcher, part=part, reason='Audit',
+                                       valid_until=timezone.now() + timedelta(days=5))
+
+    def entries(self, stamped):
+        changes = {'Design': [None, 'XQZ factor: temperature'], 'Places': [None, 'XQZ-1']}
+        if stamped:
+            return [audit.record(self.boss, AuditLog.Action.UPDATE, self.experiment, changes).pk]
+        with mock.patch.object(audit, 'stamp'):
+            return [audit.record(self.boss, AuditLog.Action.UPDATE, self.experiment, changes).pk]
+
+    def seen(self, ids):
+        with sealing.as_viewer(self.researcher):
+            return set(audit.readable(self.researcher, AuditLog.objects.filter(pk__in=ids)).values_list('pk', flat=True))
+
+    def test_a_water_grantee_reads_no_entry_of_the_experiment_a_data_grantee_does(self):
+        ids = self.entries(stamped=True) + self.entries(stamped=False)
+        self.give('water')
+        self.assertEqual(self.seen(ids), set())
+        self.give('data')
+        self.assertEqual(self.seen(ids), set(ids))

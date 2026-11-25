@@ -9355,6 +9355,9 @@ msgstr "Laster skjemaet …"
 msgid "Loading the list…"
 msgstr "Laster listen …"
 
+msgid "Loading the organization chart…"
+msgstr "Laster organisasjonskartet…"
+
 msgid "Loading the overview…"
 msgstr "Laster oversikten …"
 

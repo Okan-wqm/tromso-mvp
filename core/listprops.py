@@ -172,8 +172,6 @@ def pager(page, pager_query):
     }
 
 
-_pager = pager     # the earlier private name, kept for branches that still call it
-
 
 def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, page=None, pager_query='', groups=None,
                tabs=None, lines=(), add=None, keep=(), table_label=None, sections=()):

@@ -1,7 +1,9 @@
 """The browser tests' recorded fixtures (frontend/test/pages) are what the code renders today: the test world is built in
 the test run's database with the clock pinned to its MOMENT, every fixture is rendered by the one function its recorder
 uses (core.recorded_fixtures.render_all), and each committed file must say the same once what varies from run to run is
-put in a fixed form (record ids, a page's nonce and token, the assets' versions). A changed template, reader, model,
+put in a fixed form (record ids, a page's nonce and token, the assets' versions). Every database sequence is pushed far
+ahead first (AHEAD), as the whole suite's earlier tests push it, so a number the database counts (a row id, a channel
+number) that a fixture still writes as a figure fails here in every run, not only in the whole suite. A changed template, reader, model,
 form or word that a fixture shows fails here, naming the file and its first differing line: run
 scripts/record_test_world.sh and commit what it writes. A change no fixture shows does not."""
 from pathlib import Path
@@ -9,12 +11,22 @@ from unittest import mock
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.test import TestCase, override_settings
 from django.utils import translation
 
 from core import recorded_fixtures
 
 PAGES = Path(settings.BASE_DIR) / 'frontend' / 'test' / 'pages'
+AHEAD = 7919     # how far every sequence is pushed before the world is built: never the recorder's numbers
+
+
+def push_sequences_ahead(by=AHEAD):
+    """Moves every sequence of the public schema `by` numbers on (sequences are not rolled back with the test)."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'")
+        for (name,) in cursor.fetchall():
+            cursor.execute('SELECT setval(%s, nextval(%s) + %s)', [f'public."{name}"', f'public."{name}"', by])
 
 
 # the islands' build in the test run is the committed manifest the list pages' tests use; its file names are put in a
@@ -24,6 +36,7 @@ PAGES = Path(settings.BASE_DIR) / 'frontend' / 'test' / 'pages'
 class FixturesAreFreshTests(TestCase):
     def test_every_recorded_fixture_is_what_the_code_renders_today(self):
         from core.test_world import MOMENT, ticking, world
+        push_sequences_ahead()
         with translation.override('en'):
             with mock.patch('django.utils.timezone.now', side_effect=ticking()):     # as the recorder builds it
                 admin = get_user_model().objects.create_superuser('test.admin', 'test.admin@example.com', 'x')

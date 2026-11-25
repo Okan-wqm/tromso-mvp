@@ -772,6 +772,7 @@ MONITORING_UNITS = (
 
 
 TEST_WALL = 'Test wall, Hall A'
+TEST_OPERATOR_BOARD = 'Test operator board, Hall A'
 
 
 def monitoring_world(admin):
@@ -813,6 +814,7 @@ def monitoring_world(admin):
             water.record(admin, point=point_of(unit), measured_at=MOMENT - timedelta(hours=hours), source='manual',
                          values={key: D(value) for key, value in values.items()})
     wall_board(hall)
+    operator_board(hall)
 
 
 def wall_board(hall):
@@ -822,6 +824,20 @@ def wall_board(hall):
     from monitoring.models import MonitorBoard, MonitorBoardUnit
 
     board = MonitorBoard.objects.create(name=TEST_WALL, screen='55', screen_inches=D(55), distance_m=D(2))
+    for unit in Tank.objects.filter(production_department=hall).order_by('code'):
+        MonitorBoardUnit.objects.create(board=board, unit=unit)
+    return board
+
+
+def operator_board(hall):
+    """A desk board of Test Hall A's units (TEST_OPERATOR_BOARD) whose cards are the built-in Operator view (the board's
+    default template): the oxygen and the temperature first and large, then the fish, the feeding and the Deffeyes
+    chart's button, so the monitoring pages and their browser test draw that template too."""
+    from farm.models import Tank
+    from monitoring.cards import builtin
+    from monitoring.models import MonitorBoard, MonitorBoardUnit
+
+    board = MonitorBoard.objects.create(name=TEST_OPERATOR_BOARD, default_template_id=builtin.OPERATOR)
     for unit in Tank.objects.filter(production_department=hall).order_by('code'):
         MonitorBoardUnit.objects.create(board=board, unit=unit)
     return board

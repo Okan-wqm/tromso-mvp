@@ -35,14 +35,17 @@ def titles(old):
 def title_unsaid(old, props, language):
     """The words of each classic value title (farm/_water_value.html: "Warning · 23.11.2026 11:42 · 1 hour ago · worked
     out from the sample · …") the new page does not carry: each part but a status's name (the chip draws it, or its lines
-    say it) and the sample's moment (the age and the row say when) must be in a string of the props, its case aside."""
+    say it), the sample's moment and its age in words ("0 minutes ago": the origin line says it as every page with a
+    latest value does, "12 s ago"; the row of a sample says its moment) must be in a string of the props, its case aside."""
     with translation.override(language):
         labels = {str(status.label) for status in Status}
+        before, _sep, after = translation.gettext('%(age)s ago').partition('%(age)s')
     carried = [each.casefold() for each in strings(props)]
     missing = []
     for title in titles(old):
         for part in title.split(' · '):
-            if part in labels or MOMENT_SAID.search(part):
+            aged = part.startswith(before) and part.endswith(after) and any(char.isdigit() for char in part)
+            if part in labels or MOMENT_SAID.search(part) or aged:
                 continue
             if not any(part.casefold() in each for each in carried):
                 missing.append(part)

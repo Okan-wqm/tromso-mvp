@@ -68,7 +68,10 @@ class SetupListsNextTests(FrozenClock, TestCase):
         old, new = self.pages(route, query, language)
         props = props_of(new, 'list-page')
         self.assertNotIn('class="data-table"', new)
-        self.assertEqual(unsaid(old, props, new_html=new), [])
+        # Sites' cards: the classic card repeats its facts' labels (Type, Location, …) on every card, as layout; the new
+        # cards draw them from the columns' labels, each said once at least (`once`)
+        once = {column['label'] for column in props['table']['columns']} if props.get('cards') else ()
+        self.assertEqual(unsaid(old, props, new_html=new, once=once), [])
         main = new[new.index('<main'):new.index('</main>')]
         self.assertIsNone(re.search(r'\sdata-modal[\s>=]', main), 'nothing opens the classic dialog')
         return props

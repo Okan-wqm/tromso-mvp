@@ -73,9 +73,13 @@ def gauge(share, text, status=None):
     return {'value': round(value, 1), 'text': str(text), 'status': status}
 
 
-def link(href, label, icon, danger=False):
-    """A row action that opens a page (the record's edit, its delete confirmation)."""
-    return {'kind': 'link', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger)}
+def link(href, label, icon, danger=False, labelled=False):
+    """A row action that opens a page (the record's edit, its delete confirmation); `labelled` draws its word beside the icon
+    (an action that changes a record for good: a sample's Void)."""
+    said = {'kind': 'link', 'href': href, 'label': str(label), 'icon': _icon(icon), 'danger': bool(danger)}
+    if labelled:
+        said['labelled'] = True
+    return said
 
 
 def post(href, label, icon, fields=(), danger=False, labelled=False):

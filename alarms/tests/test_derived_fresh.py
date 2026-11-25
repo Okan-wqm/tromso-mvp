@@ -2,7 +2,7 @@
 `freshness.derived_until`: never fresher than its oldest input): an NH₃ whose temperature has run out is stale, and a
 stale value never ends an alarm, exactly as the stale temperature it was worked out from does not. T-01 stocked, NH₃-N
 limits 0.0125 (warning) and 0.025 (critical), a temperature limit 11 °C (critical above) beside it as the measured
-control. Raised 40 h ago by a full sample (NH₃-N 0.8924, 12 °C); then a full sample inside both limits."""
+control (a critical opens the warning level beside it). Raised 40 h ago by a full sample (NH₃-N 0.8924, 12 °C); then a full sample inside both limits."""
 from datetime import timedelta
 
 from farm.tests.test_water import WaterTestCase
@@ -25,7 +25,7 @@ class DerivedStaleAlarmTests(WaterTestCase):
         self.sample(self.t1, hours=40, **BAD)
         self.passes(-2380, -2379, -2320)
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
-        self.assertEqual(self.outcome(TEMPERATURE), {'critical': OPEN})
+        self.assertEqual(self.outcome(TEMPERATURE), {'critical': OPEN, 'warning': OPEN})
 
     def passes(self, *minutes):
         for each in minutes:
@@ -43,7 +43,7 @@ class DerivedStaleAlarmTests(WaterTestCase):
         fresh, its temperature (24 h) is not. The NH₃ is stale and holds both levels, as the temperature holds its own."""
         self.sample(self.t1, hours=30, **GOOD)
         self.passes(0, 1, 60, 120, 600)
-        self.assertEqual(self.outcome(TEMPERATURE), {'critical': OPEN})
+        self.assertEqual(self.outcome(TEMPERATURE), {'critical': OPEN, 'warning': OPEN})
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
         reading = self.unit_water().get(NH3)
         self.assertEqual(reading.status, 'stale')
@@ -53,5 +53,5 @@ class DerivedStaleAlarmTests(WaterTestCase):
         """The control: the good sample 10 h old, every input fresh: both end, as the temperature's does."""
         self.sample(self.t1, hours=10, **GOOD)
         self.passes(0, 1, 60, 120, 600)
-        self.assertEqual(self.outcome(TEMPERATURE), {'critical': 'returned'})
+        self.assertEqual(self.outcome(TEMPERATURE), {'critical': 'returned', 'warning': 'returned'})
         self.assertEqual(self.outcome(NH3), {'critical': 'returned', 'warning': 'returned'})

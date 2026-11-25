@@ -30,9 +30,10 @@ built and read.
                                       an assigned protocol, a started experiment, a reviewed entry, a placed device
     panel_world(admin, client)        the production panel's pages: tasks_world, questions_world, experiments_world,
                                       reports_world, storage_world, messages_world
-    stale_water_world(admin)          after world(), for Production units' and Overview's tests only: TM-01's oxygen
+    stale_water_world(admin)          after world(), for Production units', Overview's and Water chemistry's tests: TM-01's oxygen
                                       stale and critical when taken (80 hours back)
-    sensors_world(admin)              after world(), for the Sensors pages' tests only: a simulated device, credentials,
+    water_page_world(admin)           after world(), for Water chemistry's tests only: a sample on TM-01 voided
+    sensors_world(admin)            after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat
     monitoring_world(admin)           eight more units of Test Hall A, one in each state a monitoring card can be in
                                       (OK, critical, warning, no recent data, no limit, note, empty, an old critical),
@@ -825,3 +826,16 @@ def wall_board(hall):
     for unit in Tank.objects.filter(production_department=hall).order_by('code'):
         MonitorBoardUnit.objects.create(board=board, unit=unit)
     return board
+
+
+def water_page_world(admin):
+    """After world(), for Water chemistry's tests only (farm/tests/test_water_page_next.py): a sample entered on TM-01 by
+    mistake three hours before MOMENT and voided with its reason, so the history has a voided row (struck through, who
+    voided it and why, no Void of its own)."""
+    from farm.models import Tank
+    from farm.tests.helpers import point_of
+    from farm.water import services as water
+    sample = water.record(admin, point=point_of(Tank.objects.get(code='TM-01')), measured_at=MOMENT - timedelta(hours=3),
+                          source='manual', values={'temperature_c': D('11.5')}, notes='Test entered on the wrong unit')
+    water.void(admin, sample, 'Test sample of another unit')
+    return sample

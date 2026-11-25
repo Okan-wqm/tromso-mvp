@@ -107,15 +107,12 @@ class _Lazy:
 
     def __init__(self, user):
         self.user = user
-        self.loaded = None
         self.light = None
         self.read = False
         self.memo = {}
 
     def get(self):
-        if self.loaded is None:
-            self.loaded = load(self.user)
-        return self.loaded
+        return memo(('viewer',), lambda: load(self.user))
 
     def who(self):
         if self.light is None:
@@ -369,11 +366,37 @@ def forget():
     """What has been read of the person looking (their Reach, their Viewer, the memo) is read again on the next ask:
     called after any statement that writes a table that says who reads what (the provider's `grant_tables`, seen by the
     connections' execute wrapper whatever wrote it: a save, a queryset update, a bulk create, SQL of its own), so a read
-    after it in the same request or `as_viewer` block is narrowed by what holds now."""
+    after it in the same request or `as_viewer` block is narrowed by what holds now. It forgets for every reading in the
+    process, not only the one of the moment: a grant written inside `system(...)` or a `reads_as_system` function is
+    seen by the request around it too (landing review S1)."""
+    global _generation
+    _generation += 1
     current = _current.get()
     if isinstance(current, _Lazy):
         current.memo.clear()
-        current.loaded = None
+
+
+# How many times a grant has been written in this process (`forget`): a value kept before the last one is read again.
+_generation = 0
+
+
+def _kept_while():
+    """When a value read now may be used again: until the next grant write (`_generation`), and, when read inside a
+    transaction block, only while that block is open (the savepoints open now): a block rolled back may have written a
+    grant the value saw, and Django says nothing of a rollback (landing review S2). One read outside a block holds until
+    the next grant write."""
+    from django.db import connection
+    return _generation, tuple(connection.savepoint_ids) if connection.in_atomic_block else None
+
+
+def _still_good(kept):
+    from django.db import connection
+    generation, block = kept
+    if generation != _generation:
+        return False
+    if block is None:
+        return True
+    return connection.in_atomic_block and tuple(connection.savepoint_ids[:len(block)]) == block
 
 
 def memo(key, compute):
@@ -382,9 +405,11 @@ def memo(key, compute):
     current = _current.get()
     if not isinstance(current, _Lazy):
         return compute()
-    if key not in current.memo:
-        current.memo[key] = compute()
-    return current.memo[key]
+    kept = current.memo.get(key)
+    if kept is None or not _still_good(kept[1]):
+        when = _kept_while()
+        kept = current.memo[key] = (compute(), when)
+    return kept[0]
 
 
 def system_reason():

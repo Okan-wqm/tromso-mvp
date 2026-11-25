@@ -253,6 +253,26 @@ class AlarmTests(ReviewCase):
         found = self.recipients(alarm)
         self.assertEqual(set(found), {'lead', 'keeper'})
 
+    def test_the_attention_snapshot_is_never_served_across_what_people_read(self):
+        """Review L3, T2: the snapshot the strip and the overviews count is kept for a while (the cache ON here); a
+        copy made for the lead is never served to an outsider, nor an outsider's to the lead, whoever comes first."""
+        from django.core.cache import cache
+        from django.test.utils import override_settings
+        from alarms import read as alarms_read
+        sealed = self.sealed_tanks[0].pk
+
+        def units(user):
+            with sealing.as_viewer(user):
+                alarms, _rungs = alarms_read.snapshot()
+            return {unit for _site, _severity, unit in alarms}
+        with override_settings(ATTENTION_CACHE_SECONDS=15):
+            for first, then in ((self.lead, self.researcher), (self.researcher, self.lead)):
+                cache.clear()
+                self.addCleanup(cache.clear)
+                with self.subTest(first=first.username):
+                    self.assertEqual(sealed in units(first), first == self.lead)
+                    self.assertEqual(sealed in units(then), then == self.lead)
+
     def test_a_router_routes_only_the_alarms_it_was_made_for(self):
         """Review L1: a router reads which of its alarms are sealed when it is made; one asked about another alarm
         refuses, never routes it as unsealed."""

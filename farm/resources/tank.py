@@ -1,6 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
-from core import audit
+from core import audit, listprops as L
 from core.crud import NONE, Resource, filter_by
 
 from ..forms import TankForm
@@ -68,4 +68,71 @@ class TankResource(WithdrawalInput, Resource):
             'kinds': Tank.Kind.choices, 'chosen_kind': chosen_kind,
             'statuses': Tank.Status.choices, 'chosen_status': chosen_status,
             'water_types': Tank.WaterType.choices, 'chosen_water_type': chosen_water,
+        }
+
+    # The list in the new look (core/listprops.py), in the classic list's words (farm/tank_list.html).
+    search_placeholder = _('Search by name, code or regulatory unit ID')
+    empty_text = _('The tanks, ponds and cages fish are held in, each in a production department and, when it has one, a '
+                   'system.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        department = lambda each: f'{each.site.name} · {each.name}' if each.site else each.name   # noqa: E731
+        return [
+            L.choice('site', _('Site'), context['chosen_site'],
+                     [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])]),
+            L.choice('production_department', _('Production department'), context['chosen_department'],
+                     [('', _('All production departments')), *((each.pk, department(each)) for each in context['departments'])]),
+            L.choice('system', _('System'), context['chosen_system'],
+                     [('', _('All systems')), (context['none_value'], _('Not in a system')),
+                      *((system.pk, f'{system.site.name} · {system.name}') for system in context['systems'])]),
+            L.choice('kind', _('Kind'), context['chosen_kind'], [('', _('All kinds')), *context['kinds']]),
+            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']]),
+            L.choice('water_type', _('Water type'), context['chosen_water_type'],
+                     [('', _('All water types')), *context['water_types']]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        from django.template.defaultfilters import floatformat
+        from django.urls import reverse
+        from django.utils.http import urlencode
+        user = view.request.user
+
+        def figure(value):
+            return L.cell('–' if value is None else floatformat(value, '-2g'))
+
+        def department(unit):
+            place = unit.production_department
+            return L.cell(place.name, sub=[place.site.name]) if place.site else \
+                L.cell(place.name, chips=[L.chip('warning', _('No site'))])
+
+        def actions(unit):
+            done = []
+            if user.has_perm('farm.view_samplingpoint'):
+                done.append(L.link(f"{reverse('farm:samplingpoint_list')}?{urlencode({'unit': unit.pk})}",
+                                   _('Sampling points of %(name)s') % {'name': unit.name}, 'droplet'))
+            return done + L.edit_delete(view, context, unit, unit.name)
+
+        return {
+            'columns': [L.column('unit', _('Unit')), L.column('kind', _('Kind')),
+                        L.column('department', _('Production department')), L.column('system', _('System')),
+                        L.column('volume', _('Volume (m³)'), numeric=True),
+                        L.column('water_volume', _('Water volume (m³)'), numeric=True),
+                        L.column('density', _('Max density (kg/m³)'), numeric=True),
+                        L.column('biomass', _('Max biomass (kg)'), numeric=True),
+                        L.column('water_type', _('Water type')), L.column('status', _('Status'))],
+            'rows': [L.row(unit.pk, {
+                'unit': L.title(view, context, unit, unit.name, sub=[' · '.join(
+                    part for part in (unit.code, unit.regulatory_unit_id) if part)]),
+                'kind': L.cell(unit.get_kind_display(), sub=[unit.subtype()]),
+                'department': department(unit),
+                'system': L.cell(unit.system.name if unit.system else '–'),
+                'volume': figure(unit.volume_m3),
+                'water_volume': figure(unit.water_volume_m3),
+                'density': figure(unit.max_density_kg_m3),
+                'biomass': figure(unit.max_biomass_kg),
+                'water_type': L.cell(unit.get_water_type_display()),
+                'status': L.badge(unit.status, unit.get_status_display()),
+            }, actions(unit)) for unit in objects],
         }

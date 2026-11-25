@@ -841,7 +841,7 @@ A piece of equipment of a production department: a pump, a drum filter, a feeder
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › equipment
 - **forms**: `EquipmentForm`
 - **constraints**: uq_equipment_code_live (unique: code); uq_equipment_serial_number_live (unique: serial_number); chk_equipment_not_its_own_parent (check); chk_equipment_warranty_after_purchase (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 11 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1588,7 +1588,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 89 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 90 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1925,7 +1925,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 65 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 67 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2171,7 +2171,7 @@ Where a water sample is taken: a named place on one unit, one system’s loop or
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_sampling_points
 - **forms**: `SamplingPointForm`
 - **constraints**: chk_water_sampling_points_one_owner (check); chk_water_sampling_points_kind (check); chk_water_sampling_points_name (check); chk_water_sampling_points_depth (check); chk_water_sampling_points_flow (check); chk_water_sampling_points_share (check); uq_water_sampling_points_unit_name (unique: unit, name); uq_water_sampling_points_unit_middle (unique: unit); uq_water_sampling_points_system_name (unique: system, name); uq_water_sampling_points_system_middle (unique: system); uq_water_sampling_points_equipment_name (unique: equipment, name); uq_water_sampling_points_equipment_middle (unique: equipment)
-- **tests that mention it**: `core/tests_rev.py`, `core/tests_workspaces.py`, `farm/tests/helpers.py` and 16 more
+- **tests that mention it**: `core/tests_rev.py`, `core/tests_workspaces.py`, `farm/tests/helpers.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

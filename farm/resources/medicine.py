@@ -1,6 +1,6 @@
 from django.utils.translation import gettext as _now, gettext_lazy as _, ngettext_lazy
 
-from core import formpanels
+from core import formpanels, listprops as L
 from core.crud import Resource, RowList, filter_by
 from core.models import AuditLog
 
@@ -95,4 +95,56 @@ class MedicineResource(Resource):
             'kinds': Medicine.Kind.choices, 'chosen_kind': chosen_kind,
             'administrations': Medicine.Administration.choices, 'chosen_administration': chosen_administration,
             'statuses': Medicine.Status.choices, 'chosen_status': chosen_status,
+        }
+
+    # The list in the new look (core/listprops.py), in the classic list's words (farm/medicine_list.html).
+    search_placeholder = _('Search by name, substance, MT number or manufacturer')
+    empty_text = _('The medicines and vaccines the farm uses, with their withdrawal before harvest.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [
+            L.choice('kind', _('Kind'), context['chosen_kind'], [('', _('All kinds')), *context['kinds']]),
+            L.choice('administration', _('Administration'), context['chosen_administration'],
+                     [('', _('Every way of giving')), *context['administrations']]),
+            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        from django.template.defaultfilters import floatformat
+
+        def withdrawal_cell(medicine):
+            lines = withdrawal.rule_lines(medicine)
+            if not lines:
+                return L.cell(_('Not recorded'),
+                              sub=[_('A treatment with it holds the fish with an unknown end until a withdrawal is added.')])
+            several = len(medicine.withdrawals.all()) > 1
+            return L.cell('; '.join(f'{who}: {rule.text()}' if several else rule.text() for who, rule in lines),
+                          sub=[rule.row.note for _who, rule in lines])
+
+        notices = [L.notice('withdrawal', 'info', _(
+            'The withdrawal is the product’s, as its SPC states it per species, in degree-days, days or both, with your own '
+            'safety margin on top; nothing is filled in for you. A treatment counts it from its last day, on the water '
+            'temperature of the fish’s units (Operations › Treatments). Fish of a species with no withdrawal recorded are '
+            'held with an unknown end.'))]
+        return {
+            'columns': [L.column('medicine', _('Medicine')), L.column('kind', _('Kind')),
+                        L.column('substance', _('Active substance')), L.column('strength', _('Strength')),
+                        L.column('withdrawal', _('Withdrawal')), L.column('manufacturer', _('Manufacturer')),
+                        L.column('status', _('Status'))],
+            'notices': notices,
+            'rows': [L.row(medicine.pk, {
+                'medicine': L.title(view, context, medicine, medicine.name, sub=[' · '.join(
+                    str(part) for part in (medicine.marketing_authorisation,
+                                           _('Prescription only') if medicine.prescription_only else '') if part)]),
+                'kind': L.cell(medicine.get_kind_display(), sub=[medicine.get_administration_display()]),
+                'substance': L.cell(medicine.active_substance, sub=[
+                    medicine.get_lice_report_code_display() if medicine.lice_report_code else '']),
+                'strength': L.cell(f'{floatformat(medicine.strength_value, "-3")} {medicine.get_strength_unit_display()}'
+                                   if medicine.strength_value is not None else '—'),
+                'withdrawal': withdrawal_cell(medicine),
+                'manufacturer': L.cell(medicine.manufacturer.name if medicine.manufacturer else '—'),
+                'status': L.badge(medicine.status, medicine.get_status_display()),
+            }, L.edit_delete(view, context, medicine, medicine.name)) for medicine in objects],
         }

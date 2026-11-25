@@ -1,0 +1,22 @@
+{% extends "farm/water.html" %}
+{% load alarm_watch i18n assets %}
+{% comment %} Operations › Water chemistry's Latest and History in the new look (farm.water.views.water_page behind ?ui=next):
+   the tabs, the alarms' safety line, "How values are judged" and a history's heading as the classic page draws them, then
+   the table on the shared list page (island list-page, props of farm/water/page_next.py). The head (the counts, Round,
+   Record sample) is the classic page's; Record sample opens its page, not the classic dialog. {% endcomment %}
+{% block head_actions %}{% if can_record %}
+<div class="ui-head-actions">
+  <a class="ui-btn" href="{{ round_url }}">{% trans "Round" %}</a>
+  <a class="ui-btn" data-variant="primary" href="{{ record_url }}">{% include "icons/_icon.html" with name="plus" %}{% trans "Record sample" %}</a>
+</div>
+{% endif %}{% endblock %}
+{% block content %}
+{% include "farm/_water_tabs.html" with current=showing_history|yesno:"history,latest" %}
+{% alarm_watch promise=True %}
+<details class="ui-explain">
+  <summary>{% trans "How values are judged" %}</summary>
+  <p class="panel-help">{% blocktrans trimmed %}Each value is judged on read against the water limits as they are now, for the fish in the unit that day; a sample of a loop for every unit of the loop. A unit without fish shows its values with no limit. Each value says which sampling point it was taken at; the water of a unit is that of its middle point.{% endblocktrans %}</p>
+</details>
+{% if showing_history %}{% if point %}<h2 class="water-point">{% blocktrans trimmed with point=point %}History of {{ point }}{% endblocktrans %}</h2>{% elif owner %}<h2 class="water-point">{% blocktrans trimmed with owner=owner.code %}History of {{ owner }}{% endblocktrans %}</h2>{% endif %}{% endif %}
+{% trans "Loading the list…" as loading %}{% island "list-page" props label=loading %}
+{% endblock %}

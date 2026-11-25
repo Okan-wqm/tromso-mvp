@@ -6,7 +6,8 @@ import type { ReactNode } from 'react';
 import { Button } from './Button.js';
 import { Icon } from './Icon.js';
 
-export type NoticeTone = 'warning' | 'ok' | 'critical' | 'neutral';
+// info: a page's help sentence (the classic panel-help), drawn as neutral with the info glyph
+export type NoticeTone = 'warning' | 'ok' | 'critical' | 'neutral' | 'info';
 
 export interface NoticeProps {
   tone?: NoticeTone;
@@ -17,11 +18,11 @@ export interface NoticeProps {
   closeLabel?: string;
 }
 
-const NOTICE_GLYPH = { warning: 'alert', ok: 'check-circle', critical: 'octagon', neutral: 'hourglass' } as const;
+const NOTICE_GLYPH = { warning: 'alert', ok: 'check-circle', critical: 'octagon', neutral: 'hourglass', info: 'info' } as const;
 
 export function Notice({ tone = 'neutral', title, children, onClose, closeLabel }: NoticeProps) {
   return (
-    <div className="ui-notice" data-tone={tone === 'neutral' ? undefined : tone} role={tone === 'critical' ? 'alert' : 'status'}>
+    <div className="ui-notice" data-tone={tone === 'neutral' || tone === 'info' ? undefined : tone} role={tone === 'critical' ? 'alert' : 'status'}>
       <Icon name={NOTICE_GLYPH[tone]} />
       <div className="ui-notice-body">
         {title ? <strong className="ui-notice-title">{title}</strong> : null}

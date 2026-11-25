@@ -4,6 +4,7 @@ from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
+from core import listprops as L
 from core.crud import Resource, filter_by
 
 from ..forms.water_point import OWNER_TYPES, SamplingPointForm
@@ -113,4 +114,73 @@ class SamplingPointResource(WithdrawalInput, Resource):
             'kinds': PointKind.choices, 'chosen_kind': chosen_kind,
             'narrowed': owner, 'narrowed_type': owner_type, 'share_notes': points.share_notes(sites.filter(pk=chosen_site).first()
                                                                   if chosen_site else None),
+        }
+
+    # The list in the new look (core/listprops.py), in the classic list's words (farm/samplingpoint_list.html).
+    search_placeholder = _('Search by point or owner')
+    empty_text = _('A point is a named place on a unit, a loop or a piece of equipment where water is sampled: its inlet, its '
+                   'middle, its outlets. A new unit or system gets its points when it is created.')
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [
+            L.choice('site', _('Site'), context['chosen_site'],
+                     [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])]),
+            L.choice('owner_type', _('Owner'), context['chosen_owner_type'],
+                     [('', _('All owners')), *context['owner_types']]),
+            L.choice('kind', _('Kind'), context['chosen_kind'], [('', _('All kinds')), *context['kinds']]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        from django.template.defaultfilters import floatformat
+        from django.urls import reverse
+        from django.utils.http import urlencode
+        user = view.request.user
+        owner_word = {UNIT: _('Unit'), SYSTEM: _('System'), EQUIPMENT: _('Equipment')}
+
+        def figure(value, digits='-2g'):
+            return L.cell('–' if value is None else floatformat(value, digits))
+
+        def owner(point):
+            kind = UNIT if point.unit_id else SYSTEM if point.system_id else EQUIPMENT
+            return L.cell(point.owner.code, strong=True, sub=[f'{point.owner.name} · {owner_word[kind]}'])
+
+        def actions(point):
+            done = []
+            if user.has_perm('farm.view_watermeasurement'):
+                done.append(L.link(f"{reverse('farm:water')}?{urlencode({'point': point.pk})}", _('History'), 'history'))
+            return done + L.edit_delete(view, context, point, str(point))
+
+        notices = []
+        narrowed, narrowed_type = context['narrowed'], context['narrowed_type']
+        if narrowed is not None:
+            more = [(f"{context['create_url']}?{urlencode({narrowed_type: narrowed.pk})}", _('Add a point to it'))] \
+                if context.get('can_add') else []
+            notices.append(L.notice('narrowed', 'info', _('The points of %(owner)s.') % {'owner': narrowed.code},
+                                    link=(context['list_url'], _('Show all')), more=more))
+        for note in context['share_notes']:
+            said = {'owner': note.owner.code, 'total': floatformat(note.total, '-2')}
+            notices.append(L.notice(f'share-{note.owner.pk}', 'warning', (
+                _('The outlets of %(owner)s take %(total)s %% of its outflow: more than 100 %%. Correct the shares.')
+                if note.over else _('The outlets of %(owner)s take %(total)s %% of its outflow, not 100 %%.')) % said))
+        notices.append(L.notice('points', 'info', _(
+            'A sample says where it was taken: at one of these points. A unit’s water, as the rations, the withdrawal and '
+            'the Production units page read it, is its middle point. The flow and the share of the outflow are the design '
+            'or last-known figures a mass balance will start from; nothing here is measured.')))
+        return {
+            'columns': [L.column('owner', _('Owner')), L.column('point', _('Sampling point')), L.column('kind', _('Kind')),
+                        L.column('flow', _('Flow (m³/h)'), numeric=True),
+                        L.column('share', _('Share of the outflow (%)'), numeric=True),
+                        L.column('depth', _('Depth (m)'), numeric=True), L.column('status', _('Status'))],
+            'notices': notices,
+            'rows': [L.row(point.pk, {
+                'owner': owner(point),
+                'point': L.title(view, context, point, point.name, sub=[point.description]),
+                'kind': L.cell(point.get_kind_display(), sub=[point.role.label]),
+                'flow': figure(point.flow_m3_h),
+                'share': figure(point.flow_share_pct),
+                'depth': figure(point.depth_m, '-1g'),
+                'status': L.badge('active', _('Active')) if point.is_active else L.badge('inactive', _('Inactive')),
+            }, actions(point), voided=not point.is_active) for point in objects],
         }

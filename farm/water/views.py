@@ -163,6 +163,10 @@ def water_page(request):
         round_url=reverse('farm:water_round') + (f'?{urlencode({"site": site.pk})}' if site else ''),
     )
     context.update(_history(request, site, place) if showing_history else _latest(site, ui.is_next(request)))
+    if ui.is_next(request):
+        # the new look: the same rows on the shared list page (farm/water/page_next.py)
+        from .page_next import page_props
+        return render_page(request, 'farm/water_next.html', {**context, 'props': page_props(request, context)})
     return render_page(request, 'farm/water.html', context)
 
 

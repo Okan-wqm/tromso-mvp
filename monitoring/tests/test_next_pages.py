@@ -3,9 +3,12 @@
 
 - the cards SAY in the new look what they say in the classic look, card for card and state for state (the golden
   extractor, monitoring/tests/golden.py: the state word, the reasons, every labelled figure and every link the same;
-  every text and title of the classic card still there), on the Small, Simple, Detailed and Big cards and in the pane;
+  every text and title of the classic card still there), on the Small, Simple, Detailed, Operator view and Big cards
+  and in the pane;
 - every card links its tank's water history (Tank › Water) in both looks, and the link resolves (the classic look's to
-  the unit's history on Water chemistry); the cards are the same markup in both looks;
+  the unit's history on Water chemistry); the cards that flow (Simple, Detailed, Operator view) are the design's card
+  in the new look (monitoring/_card_next.html), the fitted ones the same markup in both looks, and a screen's change
+  token is its look's own;
 - the classic page loads none of the new look's sheets, the new one both;
 - the pages are kept for the browser test (frontend/test/monitoring.pages.ts, `npm run test:pages`) under
   .build/monitor-pages/ (never committed: the repository is public, and nothing here comes from a real database):
@@ -23,7 +26,7 @@ from django.urls import reverse
 
 from core import ui
 from core.language import save_account_language
-from core.test_world import MOMENT, MONITORING_UNITS, TEST_WALL, monitoring_world, world
+from core.test_world import MOMENT, MONITORING_UNITS, TEST_OPERATOR_BOARD, TEST_WALL, monitoring_world, world
 from core.testing import FrozenClock
 from farm.models import Tank
 from farm.tests.helpers import point_of
@@ -38,6 +41,8 @@ SCREENS = {'small': {'mode': 'small', 'occupancy': 'all'}, 'simple': {'occupancy
            'detailed': {'mode': 'detailed', 'occupancy': 'all'}, 'big': {'mode': 'big', 'occupancy': 'all'},
            'wall': {'mode': 'small', 'occupancy': 'all', 'wall': '1'}}
 STATES = {'Critical', 'Warning', 'No recent data', 'No limit', 'Note', 'OK', 'Empty'}
+# The screens whose cards flow (their templates have no measure): the design's card in the new look.
+FLOWING = ('simple', 'detailed', 'operator')
 
 
 class NextPagesTests(FrozenClock, TestCase):
@@ -53,6 +58,10 @@ class NextPagesTests(FrozenClock, TestCase):
             raise AssertionError(f'the test world was not built: {refused}')
         monitoring_world(cls.admin)
         cls.units = {unit.code: unit for unit in Tank.objects.all()}
+        # (and the board of Operator view cards: its address names the board's id)
+        from monitoring.models import MonitorBoard
+        operator = MonitorBoard.objects.get(name=TEST_OPERATOR_BOARD)
+        cls.screens = {**SCREENS, 'operator': {'board': str(operator.pk), 'occupancy': 'all'}}
 
     def setUp(self):
         self.client.force_login(self.admin)
@@ -82,7 +91,7 @@ class NextPagesTests(FrozenClock, TestCase):
         self.assertEqual(len(MONITORING_UNITS), len(expected))
 
     def test_every_card_says_in_the_new_look_what_it_says_in_the_classic_one(self):
-        for name, query in SCREENS.items():
+        for name, query in self.screens.items():
             for language in ('en', 'nb', 'tr'):
                 classic = cards_say(self.fragment(query, look='', language=language), self.norm)
                 new = cards_say(self.fragment(query, language=language), self.norm)
@@ -156,13 +165,48 @@ class NextPagesTests(FrozenClock, TestCase):
             self.assertEqual(address in self.ask(PANE, focus).content.decode(), shown)
             self.assertEqual(self.client.get(address).status_code in (200, 302), shown)
 
-    def test_the_cards_are_the_same_markup_in_both_looks(self):
-        """The new look is a skin: the fragment and the pane are byte for byte the classic ones (the change token
-        need not know the look)."""
-        for name, query in SCREENS.items():
-            self.assertEqual(self.fragment(query), self.fragment(query, look=''), name)
+    def test_the_flowing_cards_are_the_designs_in_the_new_look_and_the_fitted_ones_the_same_markup(self):
+        """A card that flows (Simple, Detailed, Operator view) is the design's card in the new look, every card of the
+        screen, and never in the classic look (monitoring/_card_next.html: what it says is the classic card's, the test
+        above; the classic card is the golden one, test_golden); a fitted card (Small, Big, the pane's, a wall's) is the
+        same markup in both looks, byte for byte."""
+        for name, query in self.screens.items():
+            new, classic = self.fragment(query), self.fragment(query, look='')
+            cards = classic.count('<article class="monitor-card ')
+            self.assertTrue(cards, name)
+            self.assertNotIn(' is-next"', classic, name)
+            if name in FLOWING:
+                self.assertEqual(new.count(' is-next"'), cards, name)
+            else:
+                self.assertEqual(new, classic, name)
         focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
         self.assertEqual(self.ask(PANE, focus).content, self.ask(PANE, focus, look='').content)
+
+    def test_a_screens_change_token_is_its_looks_own(self):
+        """The cards of a screen are other markup in each look, so the token a poll of one look carries never answers
+        "nothing changed" (204) to the other: a person who switches the look gets the cards drawn in it at once."""
+        from urllib.parse import parse_qs, urlsplit
+        for name in ('simple', 'small'):
+            query = self.screens[name]
+            for look, other in ((ui.NEXT, ''), ('', ui.NEXT)):
+                after = parse_qs(urlsplit(self.ask(CARDS, query, look=look)['X-Poll-Next']).query)['after'][0]
+                with self.subTest(screen=name, look=look):
+                    self.assertEqual(self.ask(CARDS, {**query, 'after': after}, look=look).status_code, 204)
+                    self.assertEqual(self.ask(CARDS, {**query, 'after': after}, look=other).status_code, 200)
+
+    def test_every_widget_has_a_new_look(self):
+        """Every widget a card that flows can hold (one that may be placed: the trend is catalogued, not yet drawn) is
+        drawn in the new look: by its own markup where the design draws it otherwise (render.NEXT_LOOK), else its
+        classic one; the Deffeyes chart's button in the card's foot."""
+        from django.template.loader import get_template
+        from monitoring.cards import catalogue
+        from monitoring.cards.render import FOOT, NEXT_LOOK, WidgetView
+        for spec in (spec for spec in catalogue.WIDGETS.values() if spec.enabled):
+            view = WidgetView('w1', spec.type, 0, 0, 1, 1, spec.renderer, {}, {}, '', False, 'w-1-w1')
+            get_template(view.next_renderer)
+            self.assertEqual(view.next_renderer != spec.renderer, spec.type in NEXT_LOOK, spec.type)
+            self.assertEqual(view.in_foot, spec.type in FOOT, spec.type)
+        self.assertEqual(FOOT, {'deffeyes'})
 
     def test_the_classic_page_loads_none_of_the_new_looks_sheets(self):
         for look, expected in (('', False), (ui.NEXT, True)):
@@ -179,7 +223,7 @@ class NextPagesTests(FrozenClock, TestCase):
     def test_the_pages_are_kept_for_the_browser_test(self):
         index = {}
         for language in ('en', 'nb', 'tr'):
-            for name, query in SCREENS.items():
+            for name, query in self.screens.items():
                 page = self.ask(PAGE, query, language=language)
                 html = page.content.decode()
                 self.assertIn('data-poll-state="loading"', html)                  # the shell: no card yet

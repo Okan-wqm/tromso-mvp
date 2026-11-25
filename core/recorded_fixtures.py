@@ -255,14 +255,17 @@ def _chosen(value, people):
 
 
 def _numbered(value):
-    """A row's numbered id (a hidden <prefix>-<n>-id of a list whose rows the database counts) is the count the database
-    reached, not the fixture's content: written N."""
+    """A row's numbered id (a hidden <prefix>-<n>-id of a list whose rows the database counts) and a channel's number
+    (`<name> · #<n>`, drawn from sensors.models.channel.CHANNEL_NO_SEQUENCE) are the count the database reached, not the
+    fixture's content: written N."""
     if isinstance(value, dict):
         if str(value.get('name', '')).endswith('-id') and re.fullmatch(r'\d+', str(value.get('value', ''))):
             return {**value, 'value': 'N'}
         return {key: _numbered(each) for key, each in value.items()}
     if isinstance(value, list):
         return [_numbered(each) for each in value]
+    if isinstance(value, str):
+        return re.sub(r' · #\d+$', ' · #N', value)
     return value
 
 

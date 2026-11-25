@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "1f183280-a2eb-4613-b2e1-7ef2c97860cf",
+    "key": "bfe0e0c4-1e0d-4853-8de8-087640dc9f23",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/1f183280-a2eb-4613-b2e1-7ef2c97860cf/",
+    "href": "/sites/bfe0e0c4-1e0d-4853-8de8-087640dc9f23/",
     "type": "Kara tesisi",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "b16351cb-3e7a-48d4-af16-099030ad0b40",
+    "key": "908b73d1-3b68-4b10-9ab5-ee833b875f04",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/b16351cb-3e7a-48d4-af16-099030ad0b40/",
+    "href": "/sites/908b73d1-3b68-4b10-9ab5-ee833b875f04/",
     "type": "Deniz kafesi",
     "status": "warning",
     "units": "1",
@@ -237,7 +237,7 @@
   },
   "rows": [
    {
-    "key": "1f183280-a2eb-4613-b2e1-7ef2c97860cf-7894e038-bb25-4f31-a381-33ea57eb2a94",
+    "key": "bfe0e0c4-1e0d-4853-8de8-087640dc9f23-202aa324-3144-4e8f-b2a9-3b6b4bb918a6",
     "item": "Test Grower 4 (TG-4)",
     "site": "Test Site North",
     "onHand": "1.475 kg",
@@ -257,23 +257,23 @@
   },
   "rows": [
    {
-    "key": "9b303ebb-be72-402f-b91a-32cc60f8cc4e",
+    "key": "c8a29338-1bf0-4d14-9781-c68cde6f9638",
     "title": "Test long channel",
-    "href": "/messages/9b303ebb-be72-402f-b91a-32cc60f8cc4e/",
+    "href": "/messages/c8a29338-1bf0-4d14-9781-c68cde6f9638/",
     "text": "Test message 60 of 60.",
     "when": "23.11.2026 13:41"
    },
    {
-    "key": "11825cb4-afd7-4869-b169-cab4008a7458",
+    "key": "7b1e1441-1d60-4574-92a5-b1a6209f3ca3",
     "title": "Test channel",
-    "href": "/messages/11825cb4-afd7-4869-b169-cab4008a7458/",
+    "href": "/messages/7b1e1441-1d60-4574-92a5-b1a6209f3ca3/",
     "text": "A test message to the channel.",
     "when": "23.11.2026 12:41"
    },
    {
-    "key": "f5a9f187-6354-4644-be8f-d9f386f74d10",
+    "key": "b0cbf6d5-52aa-429a-944c-b147111e8b2f",
     "title": "Test Writer",
-    "href": "/messages/f5a9f187-6354-4644-be8f-d9f386f74d10/",
+    "href": "/messages/b0cbf6d5-52aa-429a-944c-b147111e8b2f/",
     "text": "A second test answer,\non two lines.",
     "when": "23.11.2026 12:40"
    }
@@ -289,7 +289,7 @@
   "critical": "Kritik",
   "entries": [
    {
-    "key": "4d70cdae-864c-4625-a69b-25ac7cd66003",
+    "key": "a6317e3b-0844-408b-a42f-aa65082389b6",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Kanal · TEST-2 › TEST-P",
@@ -301,7 +301,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "330a4668-2864-4b94-b37e-24ea219b1137",
+    "key": "8a2df6c3-ee9e-4aba-b2c0-c4502a7e5461",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Kanal · TEST-2 › TEST-P",
@@ -313,7 +313,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "87f9f081-cc13-4c8c-b382-2918dcca4a3b",
+    "key": "80444c76-9595-408f-9f6b-651cf3d816fa",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Bilgi kaydı · A reviewed test statement.",
@@ -325,7 +325,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "df2a6d83-ecd4-4792-9386-e047ec8d8cf6",
+    "key": "0d20e3d2-0106-4c57-92f3-a2d39c763ef4",
     "action": "Oluşturuldu",
     "critical": false,
     "record": "Bilgi kaydı · A reviewed test statement.",
@@ -337,7 +337,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "99701c30-0eca-454e-a7d4-d446164ab247",
+    "key": "e6d703bf-af2d-4573-8dd5-510e70e38207",
     "action": "Değiştirildi",
     "critical": false,
     "record": "Yemleme protokolü · Test assigned protocol",
@@ -359,18 +359,18 @@
   },
   "rows": [
    {
-    "key": "09309f78-af18-4d65-ac8f-b7f2a78cb7eb",
+    "key": "363eac5e-0243-44dc-b45a-b22cddc429ae",
     "text": "A reviewed test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/09309f78-af18-4d65-ac8f-b7f2a78cb7eb/view/",
+    "href": "/knowledge/entries/363eac5e-0243-44dc-b45a-b22cddc429ae/view/",
     "kind": "ok",
     "chip": "İncelendi"
    },
    {
-    "key": "a10493a7-3295-43d4-a005-5487cb706b3e",
+    "key": "5f4abdab-400f-4d72-8409-ffb1acc4d740",
     "text": "A test statement.",
     "source": "Test document (t.y.)",
-    "href": "/knowledge/entries/a10493a7-3295-43d4-a005-5487cb706b3e/view/",
+    "href": "/knowledge/entries/5f4abdab-400f-4d72-8409-ffb1acc4d740/view/",
     "kind": "neutral",
     "chip": "Taslak"
    }

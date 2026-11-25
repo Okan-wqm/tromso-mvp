@@ -18,6 +18,10 @@ no database, about a second.
 - **Rule P, fish present now.** `Sum('count_delta')` stands only in the stock reader (farm/stock/read.py, `present`) and
   the places of PRESENT_ALLOWED (a different figure, said why).
 - **Rule F, feed given.** `Sum('amount_kg')` stands only in the feeding reader (farm/feeding/read.py, `given`).
+- **Rule V, the new look's props builders** (an area's `pages.py` and `lists.py`, `config/*_props.py`, and core's
+  shared builders, PRESENTATION): they shape what their view read through the area's reader into an island's props, so
+  they neither write nor query (no manager, no `get_object_or_404`, no cursor). Every module named like a builder is one
+  of them or is listed in NOT_PRESENTATION with its reason.
 
 The scan is by name: it sees the usual spellings (a write through `getattr` or a variable holding a manager is not
 seen). It keeps developers inside the layers; the database's roles keep a mistake or a compromise from rewriting
@@ -30,7 +34,8 @@ from django.test import SimpleTestCase
 
 ROOT = Path(__file__).resolve().parent.parent
 APPS = ('alarms', 'core', 'experiments', 'farm', 'hr', 'inventory', 'knowledge', 'messaging', 'monitoring', 'reports',
-        'sensors', 'tasks')
+        'sensors', 'tasks',
+        'config')        # not an app: the project's own pages (the overviews, their props builders, the navigation)
 
 # ---- rule W ------------------------------------------------------------------------------------------------------------
 WRITE_CALLS = {'save', 'create', 'bulk_create', 'bulk_update', 'get_or_create', 'update_or_create', 'delete', 'update'}
@@ -127,7 +132,6 @@ READS_ALLOWED = {
     ('reports/forms.py', 'HealthEvent'): 2,
     ('reports/forms.py', 'StockMovement'): 1,
     ('reports/resources.py', 'HealthEvent'): 5,
-    ('sensors/read.py', 'WaterMeasurement'): 3,
 }
 
 # ---- rule P ------------------------------------------------------------------------------------------------------------
@@ -138,6 +142,28 @@ PRESENT_ALLOWED = {
                                'the ledger, not a count of fish now',
     'farm/health/read.py': 'the fish a health event recorded, per event: what was handled, not what is there',
 }
+
+# ---- rule V ------------------------------------------------------------------------------------------------------------
+# core's builders shared by every area's (the list, the form, its panels and payload, the page's sayings).
+SHARED_BUILDERS = ('core/listprops.py', 'core/formprops.py', 'core/formpanels.py', 'core/formpayload.py',
+                   'core/pagesays.py')
+# {module: reason}: named like a builder, not one.
+NOT_PRESENTATION = {
+    'core/island_props.py': "the tests' reader of a page's props (props_of, render_island): it signs a test person's "
+                            'language in, as the account page does',
+}
+QUERY_CALLS = ('get_object_or_404', 'get_list_or_404')
+
+
+def is_presentation(module):
+    name = module.rsplit('/', 1)[-1]
+    return module in SHARED_BUILDERS or name in ('pages.py', 'lists.py') or (
+        module.startswith('config/') and name.endswith('_props.py'))
+
+
+def named_like_a_builder(module):
+    name = module.rsplit('/', 1)[-1]
+    return name in ('pages.py', 'lists.py') or name.endswith('props.py')
 
 
 def production_modules():
@@ -178,6 +204,7 @@ def _literal(node):
 class _Scan(ast.NodeVisitor):
     def __init__(self, module):
         self.module, self.writes, self.reads, self.present, self.given = module, [], [], [], []
+        self.queries = []           # rule V: a manager, a shortcut that queries, a cursor
 
     def visit_Call(self, node):
         func = node.func
@@ -189,11 +216,15 @@ class _Scan(ast.NodeVisitor):
                 text = _literal(node.args[0])
                 if text and text.lstrip().upper().startswith(SQL_WRITES):
                     self.writes.append((node.lineno, f'execute({text.lstrip()[:30]!r})'))
+            if any(name in ('objects', 'all_objects', '_base_manager') for name in receiver) or func.attr == 'cursor':
+                self.queries.append((node.lineno, '.'.join([*receiver, func.attr])))
             for index, name in enumerate(receiver):
                 if name in OWNED and index + 1 < len(receiver) and receiver[index + 1] in (
                         'objects', 'all_objects', '_base_manager'):
                     self.reads.append((node.lineno, name))
                     break
+        if isinstance(func, ast.Name) and func.id in QUERY_CALLS:
+            self.queries.append((node.lineno, func.id))
         if isinstance(func, ast.Name) and func.id == 'Sum' and node.args and isinstance(node.args[0], ast.Constant):
             if node.args[0].value == 'count_delta':
                 self.present.append(node.lineno)
@@ -228,7 +259,7 @@ def scan():
                     model_writes.update(child.lineno for child in ast.walk(node) if isinstance(child, ast.Call))
         writes = [(line, call) for line, call in visitor.writes if line not in model_writes]
         found[module] = {'writes': writes, 'reads': Counter(model for _line, model in visitor.reads),
-                         'present': visitor.present, 'given': visitor.given}
+                         'present': visitor.present, 'given': visitor.given, 'queries': visitor.queries}
     return found
 
 
@@ -345,3 +376,29 @@ class ReadersImportNoViewTests(SimpleTestCase):
                 if any(name.split('.')[-1] == 'views' or '.views.' in f'{name}.' for name in names):
                     found.setdefault(module, []).append(node.lineno)
         self.assertEqual(found, {})
+
+
+class PropsBuildersOnlyShapeTests(SimpleTestCase):
+    """Rule V: the new look's props builders shape what their view read through the area's reader; a query or a write
+    in one is a read or a write outside the layers that no page test would see."""
+
+    def test_no_props_builder_queries_or_writes(self):
+        found = scan()
+        bad = {module: [f'{line}: {call}' for line, call in data['queries'] + data['writes']]
+               for module, data in found.items() if is_presentation(module) and (data['queries'] or data['writes'])}
+        self.assertEqual(bad, {}, "A props builder shapes rows its view read: ask the area's read.py in the view and "
+                                  'pass the rows in.')
+
+    def test_every_module_named_like_a_builder_is_one_or_is_listed(self):
+        found = scan()
+        named = {module for module in found if named_like_a_builder(module)}
+        self.assertEqual({module for module in named if not is_presentation(module)}, set(NOT_PRESENTATION))
+        for module in SHARED_BUILDERS:
+            with self.subTest(module=module):
+                self.assertIn(module, found)
+
+    def test_the_scan_sees_a_query_and_a_shortcut(self):
+        visitor = _Scan('x/pages.py')
+        visitor.visit(ast.parse('Tank.objects.filter(a=1)' + chr(10) + 'get_object_or_404(Tank, pk=1)' + chr(10)
+                                + 'connection.cursor()'))
+        self.assertEqual([line for line, _call in visitor.queries], [1, 2, 3])

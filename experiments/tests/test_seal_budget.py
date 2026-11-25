@@ -99,3 +99,38 @@ class SealBudgetTests(TestCase):
                 with self.subTest(page=name):
                     self.assertEqual(client.get(path).status_code, 200)
         self.assertEqual(load.call_count, 0)
+
+
+class ForgetTests(TestCase):
+    """What a request has read of the person (their Reach) is read again after a grant is written, wherever it was
+    written (landing review S1), and is never kept past a rollback of the block it was read in (S2)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        world.build_open(cls)
+        world.build_sealed(cls)
+
+    def sees(self):
+        return Tank.objects.filter(pk=self.sealed_tanks[0].pk).exists()
+
+    def test_a_grant_written_inside_a_system_read_is_seen_by_the_request_around_it(self):
+        from ..models import Member
+        with sealing.as_viewer(self.researcher):
+            self.assertFalse(self.sees())
+            with sealing.system('a test: a grant written while reading as the system'):
+                Member.objects.create(experiment=self.experiment, user=self.researcher)
+            self.assertTrue(self.sees())
+
+    def test_a_grant_rolled_back_is_not_kept(self):
+        from django.db import transaction
+        from ..models import Member
+        with sealing.as_viewer(self.researcher):
+            self.assertFalse(self.sees())
+            try:
+                with transaction.atomic():
+                    Member.objects.create(experiment=self.experiment, user=self.researcher)
+                    self.assertTrue(self.sees())
+                    raise RuntimeError('the save fails after the grant')
+            except RuntimeError:
+                pass
+            self.assertFalse(self.sees())

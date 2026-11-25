@@ -738,7 +738,7 @@ A trial of one species on one site: its design, its allocation and its dates; al
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Research › experiments
 - **forms**: `ExperimentForm`
 - **constraints**: uq_experiments_code (unique: code); chk_experiments_code (check); chk_experiments_status (check); chk_experiments_endpoint (check); chk_experiments_duration (check); chk_experiments_template (check); chk_experiments_started (check); chk_experiments_allocation (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/test_world.py`, `core/tests_entry_key.py` and 12 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_world.py`, `core/tests_entry_key.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -841,7 +841,7 @@ A piece of equipment of a production department: a pump, a drum filter, a feeder
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › equipment
 - **forms**: `EquipmentForm`
 - **constraints**: uq_equipment_code_live (unique: code); uq_equipment_serial_number_live (unique: serial_number); chk_equipment_not_its_own_parent (check); chk_equipment_warranty_after_purchase (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 10 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -905,7 +905,7 @@ A kind of equipment and the technical specifications it has: a centrifugal pump 
 - **read**: **GAP**: no page lists the equipment catalogue: a type only shows as the choice on the Equipment form
 - **how it works**: The Equipment form offers the active types and shows the chosen type's specification fields.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › equipment_types
-- **tests that mention it**: `core/test_languages.py`, `core/tests_rev.py`, `farm/tests/test_equipment.py` and 8 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1051,7 +1051,7 @@ A feeding table for one species: weight bands with their feed, meals and expecte
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeding_protocols
 - **forms**: `ProtocolForm`
 - **constraints**: uq_feeding_protocols_name_live (unique: name); chk_feeding_protocols_status (check); chk_feeding_protocols_expected_fcr (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_one_column_table.py` and 7 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_formpanels.py`, `core/tests_workspaces.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1119,7 +1119,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeds
 - **forms**: `FeedForm`
 - **constraints**: uq_feeds_code_live (unique: code); uq_feeds_name_live (unique: name); chk_feeds_code (check); chk_feeds_feed_type (check); chk_feeds_feed_form (check); chk_feeds_buoyancy (check); chk_feeds_status (check); chk_feeds_pellet_size (check); chk_feeds_protein_pct (check); chk_feeds_fat_pct (check); chk_feeds_nfe_pct (check); chk_feeds_fibre_pct (check); chk_feeds_ash_pct (check); chk_feeds_moisture_pct (check); chk_feeds_phosphorus_pct (check); chk_feeds_gross_energy_mj_kg (check); chk_feeds_digestible_energy_mj_kg (check); chk_feeds_fractions (check); chk_feeds_phosphorus_in_ash (check); chk_feeds_digestible_energy (check); chk_feeds_price (check); chk_feeds_price_currency (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_erasure.py`, `core/tests_pagesays.py` and 41 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_erasure.py`, `core/tests_formpanels.py` and 42 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1408,7 +1408,7 @@ A medicine or vaccine the farm uses.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › medicines
 - **forms**: `MedicineForm`
 - **constraints**: uq_medicines_name_live (unique: name); chk_medicines_kind (check); chk_medicines_administration (check); chk_medicines_status (check); chk_medicines_lice_report_code (check); chk_medicines_strength (check); chk_medicines_strength_positive (check); chk_medicines_strength_unit (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py` and 15 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_workspaces.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1588,7 +1588,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 88 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 89 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2207,7 +2207,7 @@ One warning a person went on past when a write changed a medicine withdrawal (th
 - **how it works**: One row for each warning of the withdrawal guard (farm.health.withdrawal.guarded) the person went on past: a harvest or a live delivery already recorded brought inside a withdrawal, fish held today freed by the write, or fish held again by a longer ceiling.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › withdrawal_acknowledgements
 - **constraints**: chk_withdrawal_acknowledgements_warning (check); chk_withdrawal_acknowledgements_harvest (check)
-- **tests that mention it**: `farm/tests/test_emptied_unit.py`, `farm/tests/test_harvest_inside_withdrawal.py`, `farm/tests/test_withdrawal_ceiling.py` and 7 more
+- **tests that mention it**: `core/tests_formpanels.py`, `farm/tests/test_emptied_unit.py`, `farm/tests/test_harvest_inside_withdrawal.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2834,7 +2834,7 @@ A piece of knowledge in a person's own words, with its source: "In Atlantic salm
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Knowledge › knowledge_entries
 - **forms**: `KnowledgeEntryForm`
 - **constraints**: chk_knowledge_entries_statement (check); chk_knowledge_entries_topics (check); chk_knowledge_entries_topics_not_empty (check); chk_knowledge_entries_source_kind (check); chk_knowledge_entries_document_source (check); chk_knowledge_entries_external_source (check); chk_knowledge_entries_expert_source (check); chk_knowledge_entries_quote (check); chk_knowledge_entries_url (check); chk_knowledge_entries_review (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `knowledge/tests/test_documents.py`, `knowledge/tests/test_entries.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `knowledge/tests/test_documents.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -4071,7 +4071,7 @@ A job at one place for one or more people, due on a day on the clock of the plac
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › tasks
 - **forms**: `TaskForm`
 - **constraints**: chk_tasks_one_place (check); chk_tasks_title (check); chk_tasks_category (check); chk_tasks_priority (check); chk_tasks_status (check); chk_tasks_started (check); chk_tasks_in_progress_started (check); chk_tasks_open_not_started (check); chk_tasks_done (check); chk_tasks_cancelled (check); chk_tasks_occurrence (check); uq_tasks_series_occurrence (unique: series, occurrence_date)
-- **tests that mention it**: `core/test_world.py`, `core/tests_panel_next.py`, `core/tests_private_log.py` and 9 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_formpanels.py`, `core/tests_panel_next.py` and 10 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

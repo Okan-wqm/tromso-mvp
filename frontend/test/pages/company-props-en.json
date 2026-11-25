@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "3bf42092-a2a3-4ad4-b190-b3f54955152f",
+    "key": "50f94a53-9dde-4e08-84c6-01fc30c7ad06",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/3bf42092-a2a3-4ad4-b190-b3f54955152f/",
+    "href": "/sites/50f94a53-9dde-4e08-84c6-01fc30c7ad06/",
     "type": "Land-based facility",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "0c028847-7f78-4343-a25d-39d537db0a27",
+    "key": "51a11b64-d722-481a-a7dd-03247329926b",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/0c028847-7f78-4343-a25d-39d537db0a27/",
+    "href": "/sites/51a11b64-d722-481a-a7dd-03247329926b/",
     "type": "Sea cage",
     "status": "warning",
     "units": "1",
@@ -237,7 +237,7 @@
   },
   "rows": [
    {
-    "key": "3bf42092-a2a3-4ad4-b190-b3f54955152f-2449d149-7e6d-4cdb-a063-c283cd0ce777",
+    "key": "50f94a53-9dde-4e08-84c6-01fc30c7ad06-e7705a84-d003-45e5-a7f1-17e512d666ce",
     "item": "Test Grower 4 (TG-4)",
     "site": "Test Site North",
     "onHand": "1,475 kg",
@@ -257,23 +257,23 @@
   },
   "rows": [
    {
-    "key": "bce8f4e4-7b4a-4840-b068-56c1f40b0400",
+    "key": "ea15370a-0b34-4310-9b80-174b6eb8ce99",
     "title": "Test long channel",
-    "href": "/messages/bce8f4e4-7b4a-4840-b068-56c1f40b0400/",
+    "href": "/messages/ea15370a-0b34-4310-9b80-174b6eb8ce99/",
     "text": "Test message 60 of 60.",
     "when": "23.11.2026 13:41"
    },
    {
-    "key": "1a44bd90-8fc3-4275-acc4-d569637e6996",
+    "key": "108c6d96-8e20-4bbe-ab07-ae697443530d",
     "title": "Test channel",
-    "href": "/messages/1a44bd90-8fc3-4275-acc4-d569637e6996/",
+    "href": "/messages/108c6d96-8e20-4bbe-ab07-ae697443530d/",
     "text": "A test message to the channel.",
     "when": "23.11.2026 12:41"
    },
    {
-    "key": "5f3ae3de-0c65-4cf9-8027-7bbad8a785e6",
+    "key": "d755869a-622f-4d45-8aca-ec442118713d",
     "title": "Test Writer",
-    "href": "/messages/5f3ae3de-0c65-4cf9-8027-7bbad8a785e6/",
+    "href": "/messages/d755869a-622f-4d45-8aca-ec442118713d/",
     "text": "A second test answer,\non two lines.",
     "when": "23.11.2026 12:40"
    }
@@ -289,10 +289,10 @@
   "critical": "Critical",
   "entries": [
    {
-    "key": "a1452f9c-3179-44d7-8ff4-b970eb14b1ec",
-    "action": "Created",
+    "key": "681a21a3-ead2-46a4-9f94-a44c2163a89e",
+    "action": "Changed",
     "critical": false,
-    "record": "Channel · Test long channel",
+    "record": "Channel · TEST-2 › TEST-P",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -301,10 +301,10 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "94f70087-b9f4-40a8-bf85-9145bb3d0078",
-    "action": "Created",
+    "key": "133659ca-3634-46cd-bae3-cd52c0bfb968",
+    "action": "Changed",
     "critical": false,
-    "record": "Channel · Test channel",
+    "record": "Channel · TEST-2 › TEST-P",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -313,10 +313,10 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "b2c05246-0742-4142-b3c0-9c9cb57cd63d",
-    "action": "Created",
+    "key": "aeff789e-36d1-43f9-b6fb-e5bcfb117e31",
+    "action": "Changed",
     "critical": false,
-    "record": "Inventory operation · Count · TS-01 · TG-4 TL-1, TG-4 TL-2 · 2026-11-21",
+    "record": "Knowledge entry · A reviewed test statement.",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -325,10 +325,10 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "bc7b4df7-8ece-4e1d-9507-205bedcb3161",
-    "action": "Voided",
+    "key": "3d9018cb-5ed6-4c89-95fd-8d233cbdd224",
+    "action": "Created",
     "critical": false,
-    "record": "Inventory operation · Write-off · TS-01 · TG-4 TL-2 · 2026-11-19",
+    "record": "Knowledge entry · A reviewed test statement.",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -337,10 +337,10 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "2e482183-f961-4a88-b3ce-0c94b23de767",
-    "action": "Created",
+    "key": "2fe99f57-182d-498d-950e-3192b11c9b3b",
+    "action": "Changed",
     "critical": false,
-    "record": "Inventory operation · Write-off · TS-01 · TG-4 TL-2 · 2026-11-19",
+    "record": "Feeding protocol · Test assigned protocol",
     "by": {
      "before": "by",
      "name": "test.admin",
@@ -359,10 +359,18 @@
   },
   "rows": [
    {
-    "key": "0253881e-e8f6-4f69-8728-26bdc31160e5",
+    "key": "1d7cde8f-a2cb-4df7-a6a8-5b7078d37a3e",
+    "text": "A reviewed test statement.",
+    "source": "Test document (n.d.)",
+    "href": "/knowledge/entries/1d7cde8f-a2cb-4df7-a6a8-5b7078d37a3e/view/",
+    "kind": "ok",
+    "chip": "Reviewed"
+   },
+   {
+    "key": "91a2e52b-cc7b-4fca-aff3-278a1df61998",
     "text": "A test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/0253881e-e8f6-4f69-8728-26bdc31160e5/view/",
+    "href": "/knowledge/entries/91a2e52b-cc7b-4fca-aff3-278a1df61998/view/",
     "kind": "neutral",
     "chip": "Draft"
    }

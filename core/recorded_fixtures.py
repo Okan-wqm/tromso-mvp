@@ -182,7 +182,9 @@ def list_props(admin, lists=LISTS):
 
 def _records(resource):
     """The records of a tab whose edit pages are recorded, in an order two renderings share (by their words): up to five."""
-    return sorted(resource.queryset(), key=lambda record: (str(record), str(record.pk)))[:5]
+    # by their words, then by when they were made (the world's ticking clock: the same on every run), never by their random id
+    return sorted(resource.queryset(), key=lambda record: (str(record), str(getattr(record, 'created_at', '')),
+                                                         str(record.pk)))[:5]
 
 
 def form_props(admin):
@@ -366,7 +368,11 @@ def render_all(admin):
             texts[f'{name}-props-{language}.json'] = _json(pages)
     for page, html in panel_html(admin).items():
         texts[f'panel/{page}.html'] = html
-    for language, pages in form_props(admin).items():
+    # a draft experiment offers a fresh random seed on each rendering (experiments.forms.places_forms): a fixed one here
+    from unittest import mock
+    with mock.patch('experiments.forms.secrets.randbelow', return_value=424242):
+        props = form_props(admin)
+    for language, pages in props.items():
         texts[f'form-props-{language}.json'] = _json(pages)
     return {name: _stable_people(text, people) for name, text in texts.items()}, missing
 

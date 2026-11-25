@@ -361,7 +361,7 @@ def forms_world(admin, client):
     series.set_place(tank)
     series.save()
     rows(series, 'checklist', [{'text': 'Test round step'}])
-    device = make_device(make_connection('Test broker'), make_format('Test format'), north, code='TEST-1')
+    device = make_device(make_connection('Test forms broker'), make_format('Test forms format'), north, code='TEST-1')
     channel = make_channel(device, 'temperature_c', code='TEST-T')
     rows(channel, 'calibrations', [{'valid_from': '22.11.2026 10:00', 'gain': '1.02', 'offset': '-0.1', 'performed_by': '',
                                     'note': 'Test calibration'}])

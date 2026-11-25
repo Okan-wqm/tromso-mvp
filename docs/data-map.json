@@ -6834,6 +6834,7 @@
         "core/test_datamap.py",
         "core/test_world.py",
         "core/tests_entry_key.py",
+        "core/tests_formpanels.py",
         "core/tests_workspaces.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_amend.py",
@@ -8047,6 +8048,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
@@ -8431,6 +8433,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_rev.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -9903,6 +9906,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_formpanels.py",
         "core/tests_workspaces.py",
         "farm/tests/test_one_column_table.py",
         "farm/tests/test_protocols.py",
@@ -10981,6 +10985,7 @@
       "tests": [
         "core/test_world.py",
         "core/tests_erasure.py",
+        "core/tests_formpanels.py",
         "core/tests_pagesays.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
@@ -14129,6 +14134,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
@@ -16402,6 +16408,7 @@
         "core/tests_design_shell.py",
         "core/tests_entry_key.py",
         "core/tests_erasure.py",
+        "core/tests_formpanels.py",
         "core/tests_formpayload.py",
         "core/tests_private_log.py",
         "core/tests_query_pages.py",
@@ -24125,6 +24132,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_formpanels.py",
         "farm/tests/test_emptied_unit.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_withdrawal_ceiling.py",
@@ -31134,6 +31142,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
@@ -43706,6 +43715,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_formpanels.py",
         "core/tests_panel_next.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",

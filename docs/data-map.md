@@ -782,7 +782,7 @@ A group of fish that came in together: its identity and origin, no counts.
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › batches
 - **forms**: `BatchDetailsForm`, `BatchInputForm`, `OpeningBalanceForm`
 - **constraints**: uq_batches_code (unique: code); chk_batches_code (check); chk_batches_stage (check); chk_batches_origin (check); chk_batches_supplier (check); chk_batches_provenance (check); chk_batches_origin_provenance (check); chk_batches_year_class (check); chk_batches_harvest_after_input (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/test_world.py`, `farm/tests/test_batch_details.py` and 22 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_world.py`, `core/tests_data_access.py` and 23 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1119,7 +1119,7 @@ A feed the farm uses: its maker, what it is made for, its pellet and its analysi
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeds
 - **forms**: `FeedForm`
 - **constraints**: uq_feeds_code_live (unique: code); uq_feeds_name_live (unique: name); chk_feeds_code (check); chk_feeds_feed_type (check); chk_feeds_feed_form (check); chk_feeds_buoyancy (check); chk_feeds_status (check); chk_feeds_pellet_size (check); chk_feeds_protein_pct (check); chk_feeds_fat_pct (check); chk_feeds_nfe_pct (check); chk_feeds_fibre_pct (check); chk_feeds_ash_pct (check); chk_feeds_moisture_pct (check); chk_feeds_phosphorus_pct (check); chk_feeds_gross_energy_mj_kg (check); chk_feeds_digestible_energy_mj_kg (check); chk_feeds_fractions (check); chk_feeds_phosphorus_in_ash (check); chk_feeds_digestible_energy (check); chk_feeds_price (check); chk_feeds_price_currency (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_erasure.py` and 44 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_erasure.py` and 45 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1165,7 +1165,7 @@ One warning a person went on past when recording a handling (a harvest, a transf
 - **how it works**: One row for each warning the person went on past, written with the operation or the treatment it was given for. The pages show that a warning was acknowledged (its kind in a tooltip on Harvested), not the values it kept.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › handling_acknowledgements
 - **constraints**: chk_handling_acknowledgements_warning (check); chk_handling_acknowledgements_shape (check); chk_handling_acknowledgements_fasted (check); chk_handling_acknowledgements_fasted_degree_days (check); chk_handling_acknowledgements_one_record (check); uq_handling_acknowledgements_one_fast (unique: operation)
-- **tests that mention it**: `farm/tests/test_fast_of_the_unit.py`, `farm/tests/test_fasting_sentence.py`, `farm/tests/test_fix_seed_size_mix.py` and 16 more
+- **tests that mention it**: `core/tests_data_access.py`, `farm/tests/test_fast_of_the_unit.py`, `farm/tests/test_fasting_sentence.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1267,7 +1267,7 @@ Where a harvest went: the slaughter facility (required) and, when someone else c
 - **read**: farm.stock.views.production_units (`/operations/units/`); farm.harvest.views.harvests (`/operations/harvests/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › harvest_records
 - **forms**: `HarvestForm`
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_harvest.py`
+- **tests that mention it**: `core/tests_data_access.py`, `core/tests_workspaces.py`, `farm/tests/test_harvest.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1348,7 +1348,7 @@ A sea-lice count in one unit (a cage) on one day, as lakselusforskriften's Vedle
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › lice_counts
 - **forms**: `LiceCountForm`
 - **constraints**: uq_lice_counts_unit_day (unique: unit, date); chk_lice_counts_fish (check); chk_lice_counts_lice (check); chk_lice_counts_void_reason (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_entry_key.py`, `core/tests_workspaces.py` and 2 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_data_access.py`, `core/tests_entry_key.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2078,7 +2078,7 @@ The water a species is kept in: for one parameter, the bounds outside which a va
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_limits
 - **forms**: `WaterLimitForm`
 - **constraints**: uq_water_limits_live (unique: species, parameter, water_type); chk_water_limits_parameter (check); chk_water_limits_water_type (check); chk_water_limits_any_bound (check); chk_water_limits_critical_low (check); chk_water_limits_warning_low (check); chk_water_limits_warning_high (check); chk_water_limits_critical_high (check); chk_water_limits_order (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 18 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_data_access.py` and 19 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3988,7 +3988,7 @@ A recurring task: the rule that plans a task at one place for its people, every 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Tasks › task_series
 - **forms**: `TaskSeriesForm`
 - **constraints**: chk_task_series_one_place (check); chk_task_series_title (check); chk_task_series_category (check); chk_task_series_priority (check); chk_task_series_frequency (check); chk_task_series_interval (check); chk_task_series_weekdays (check); chk_task_series_weekly (check); chk_task_series_monthly (check); chk_task_series_ends_after_start (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_panel_next.py`, `core/tests_private_log.py` and 6 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_panel_next.py`, `core/tests_private_log.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

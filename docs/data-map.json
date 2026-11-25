@@ -7406,6 +7406,7 @@
       "tests": [
         "core/test_datamap.py",
         "core/test_world.py",
+        "core/tests_data_access.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
@@ -11047,7 +11048,8 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_start.py",
         "experiments/tests/test_triggers.py",
-        "monitoring/tests/test_pages.py"
+        "monitoring/tests/test_pages.py",
+        "monitoring/tests/test_render.py"
       ]
     },
     {
@@ -11404,6 +11406,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_fasting_sentence.py",
         "farm/tests/test_fix_seed_size_mix.py",
@@ -12404,6 +12407,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py"
       ]
@@ -13411,6 +13415,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_data_access.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_health.py",
@@ -22515,6 +22520,7 @@
       "tests": [
         "core/test_languages.py",
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_rev.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
@@ -42785,7 +42791,8 @@
         "tasks/tests/test_pages.py",
         "tasks/tests/test_pages_only_read.py",
         "tasks/tests/test_private_text.py",
-        "tasks/tests/test_series.py"
+        "tasks/tests/test_series.py",
+        "monitoring/tests/test_render.py"
       ]
     },
     {

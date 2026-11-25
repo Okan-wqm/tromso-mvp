@@ -3204,10 +3204,12 @@ own checklist, copied to each task. The dates are worked out from the first day 
 nothing drifts and a daylight-saving weekend moves nothing (`TaskSeries.dates`). Its tasks are **real tasks**,
 made up to `TASK_HORIZON_DAYS` (14) ahead; the first time, or after a gap, the missed days are made back to
 at most `TASK_BACKFILL_DAYS` (7), and they are overdue (owner decision 3). They are made when a recurring
-task is saved and by the task job, `manage.py generate_tasks`, which the server's jobs run every hour; the pages only
-read (the data-layering audit, M-3: a page writes nothing, and the overview never fails on the planning). When the job
-is behind, so that a recurring task has its tasks not made up to its site's today (`tasks.read.unplanned`), the Tasks
-and Recurring tasks pages and the production overview say how many, since their counts then miss those tasks;
+task is saved and by the task job, `manage.py generate_tasks`. The server's jobs run it every hour once the
+production deployment (wip/go-live) has landed; until then nothing in the repository schedules it, and it is run by
+hand. The pages only read (the data-layering audit, M-3: a page writes nothing, and the overview never fails on the
+planning). When the job is behind, so that a recurring task has its tasks not made up to its site's today or its last
+day (`tasks.read.unplanned`), the Tasks and Recurring tasks pages, the production overview and the monitoring cards'
+task counts say how many, since their counts then miss those tasks;
 one recurring task per transaction, locked, and a unique key per recurring task and day, so each day is made
 once however often and however concurrently. A planned task that nobody touched (open, never edited, no tick,
 no note) is only the rule's projection: **changing, pausing or deleting** the recurring task replaces or
@@ -6653,7 +6655,7 @@ under the wrong kind, fails.
 | `alarm_worker_health` | alarms | product | Exit 0 when the alarms are being checked, 1 and why when they are not | The compose service's healthcheck; anyone on the server |
 | `run_alarms` | alarms | product | One pass of the alarms and one round through the outbox, now: opens, clears, notifies, escalates, sends | An operator; the worker runs the same for as long as it runs |
 | `check_sensors` | sensors | product | The sensor alarm rules once, or every `--loop` seconds | An operator; the alarm worker checks these on every pass |
-| `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | A scheduled job, every hour (the pages only read and say when it is behind) |
+| `generate_tasks` | tasks | product | Makes the planned tasks of every active recurring task | The server's jobs, every hour, once the production deployment has landed; by hand until then (the pages only read and say when it is behind) |
 | `sensors_housekeeping` | sensors | product | Deletes the dead letters last seen more than 90 days ago | A daily job |
 | `sensor_broker_sync` | sensors | product | Writes the MQTT broker's passwd and acl files from the sensors configuration | An operator, after the sensors configuration changed (the broker reloads the files) |
 | `sensors_ingest_role` | sensors | product | Lets the ingest's database role sign in with the password in a file, or stops it | An operator, at set-up |
@@ -6685,22 +6687,32 @@ development dump taken before it holds the mixed cages, and a restore of one nee
 ### Who writes and who reads (the layering contract)
 
 One write path and one read API per area, held by a test that reads the code (`core/tests_data_access.py`, the
-data-layering audit of 24.11.2026, M-5; a scan of the production modules, no database, about a second):
-- **Writes.** An ORM write or an SQL INSERT, UPDATE, DELETE or DDL stands only in an area's `services.py`, a declared
-  write-path module (`WRITE_PATHS`: crud, the delete plan, the activity log, the feeding protocols, the sampling points,
-  the sensors' bindings, credentials and rule events, ...), a model's own save and delete, a management command, or
-  `WRITES_ALLOWED` with a ceiling and a reason (six modules today: a person's language, the revisions' repair, the
-  equipment types' seed, an equipment's system links, the role presets, the sensors' demo tool). Never in a view, a
-  reader (`read.py`, `fold.py`) or a template tag. A service that writes for a person asks who may itself
-  (`core.access.require`), so a caller that is not the page cannot skip it.
-- **Reads of the safety data** (`OWNED`: the stock ledger, the feedings, the water samples, the treatments and health
-  events, the alarms, the readings) outside the owning package stand only in `READS_ALLOWED`, frozen per module and
-  model: a ratchet that may only fall.
-- **Fish present now** is `farm.stock.read.present`; no other module sums the ledger for it.
-- **The new look's props builders** (an area's `pages.py` and `lists.py`, `config/*_props.py`, core's `listprops`,
-  `formprops`, `formpanels`, `formpayload`, `pagesays`) shape what their view read through the area's reader: they
-  neither query (no manager, no `get_object_or_404`, no cursor) nor write. A module named like a builder is one, or is
-  listed with its reason. `config/` (the overviews) is scanned like the apps.
+data-layering audit of 24.11.2026, M-5; a scan of the production modules of the apps and `config/`, no database, a few
+seconds). **The scan is by name**: it sees the usual spellings listed here, not a write or a query behind `getattr`, a
+helper function in another module, a related object or a model method.
+- **Writes.** An ORM write (on a manager's chain, a model, or a queryset held in a local name) or an SQL INSERT,
+  UPDATE, DELETE or DDL stands only in an area's `services.py`, a declared write-path module (`WRITE_PATHS`: crud, the
+  delete plan, the activity log, the feeding protocols and assignments, the sampling points, the handling
+  acknowledgements, the sensors' bindings and credentials, ...), a model class's own save, delete and soft delete, a
+  management command, or `WRITES_ALLOWED` with a counted ceiling and a reason (a person's language, the revisions'
+  repair, the equipment types' seed, an equipment's system links, the role presets, the sensors' demo tool, and the
+  withdrawal module, the pH re-derivation and the sensor rules' events, counted rather than exempt). Never in a view, a
+  reader (`read.py`, `fold.py`) or a template tag. SQL run from a name rather than a literal is listed per module
+  (`NON_LITERAL_SQL`), since its verb cannot be read.
+- **Who may.** Every service that writes for a person asks who may itself (`core.access.require`, or HR's and
+  messaging's own rule), so a caller that is not the page cannot skip it: `core/tests_service_rights.py` finds every
+  public function with a `user` parameter in every `services.py` and write path, and calls it as a person with no
+  right; the questions, the steps inside a checked call and one's own leave request are listed with why.
+- **Reads of the safety data** (`OWNED`: the stock ledger and the batches, the feedings, the water samples and
+  limits, the treatments, lice counts and health events, the handling acknowledgements, the harvests, the alarms, the
+  readings) outside the owning package stand only in `READS_ALLOWED`, frozen per module and model: a ratchet that may
+  only fall.
+- **Fish present now** is `farm.stock.read.present`, **feed given** `farm.feeding.read.given`: no other module sums
+  `count_delta` or `amount_kg` (as `Sum`, `models.Sum`, through a relation or with `F`; a sum in Python is not seen).
+- **The new look's props builders**, found by what they are wherever they live: a `list_rows`, `list_next_props` or
+  `next_panels`, a function named `*_props`, or a function that builds with `core.listprops` (`L.row`, `L.cell`, ...),
+  and every function of core's shared builders. Their own bodies neither query (no manager, no `get_object_or_404`,
+  no cursor) nor write; a query through a related object or a model method they call is not seen.
 - **The alarm worker's own row and the outbox's queue** are written by `alarms.services` (`worker_running`,
   `worker_status`, `drop_delivered`), not by the worker or the sender thread.
 Each ceiling is the count found: a fix lowers it in the same change, nothing raises it, a new entry needs its reason in

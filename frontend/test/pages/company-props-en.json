@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "bfe0e0c4-1e0d-4853-8de8-087640dc9f23",
+    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/bfe0e0c4-1e0d-4853-8de8-087640dc9f23/",
+    "href": "/sites/69e9c2d3-e70f-4828-b665-938b19ef8da3/",
     "type": "Land-based facility",
     "status": "critical",
     "units": "1",
@@ -95,10 +95,10 @@
     "onSite": null
    },
    {
-    "key": "908b73d1-3b68-4b10-9ab5-ee833b875f04",
+    "key": "a7631506-d39d-419d-a7a4-1dfdda973ba1",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/908b73d1-3b68-4b10-9ab5-ee833b875f04/",
+    "href": "/sites/a7631506-d39d-419d-a7a4-1dfdda973ba1/",
     "type": "Sea cage",
     "status": "warning",
     "units": "1",
@@ -237,7 +237,7 @@
   },
   "rows": [
    {
-    "key": "bfe0e0c4-1e0d-4853-8de8-087640dc9f23-202aa324-3144-4e8f-b2a9-3b6b4bb918a6",
+    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3-b5007070-d82f-40a4-a4bc-b5a165903c9f",
     "item": "Test Grower 4 (TG-4)",
     "site": "Test Site North",
     "onHand": "1,475 kg",
@@ -257,23 +257,23 @@
   },
   "rows": [
    {
-    "key": "c8a29338-1bf0-4d14-9781-c68cde6f9638",
+    "key": "9c2b0c5b-4afe-4973-892d-a964e6167ca0",
     "title": "Test long channel",
-    "href": "/messages/c8a29338-1bf0-4d14-9781-c68cde6f9638/",
+    "href": "/messages/9c2b0c5b-4afe-4973-892d-a964e6167ca0/",
     "text": "Test message 60 of 60.",
     "when": "23.11.2026 13:41"
    },
    {
-    "key": "7b1e1441-1d60-4574-92a5-b1a6209f3ca3",
+    "key": "f72a7254-70b5-465b-9c65-f1962920d32b",
     "title": "Test channel",
-    "href": "/messages/7b1e1441-1d60-4574-92a5-b1a6209f3ca3/",
+    "href": "/messages/f72a7254-70b5-465b-9c65-f1962920d32b/",
     "text": "A test message to the channel.",
     "when": "23.11.2026 12:41"
    },
    {
-    "key": "b0cbf6d5-52aa-429a-944c-b147111e8b2f",
+    "key": "05771e1f-169f-451b-b66a-e009e120fe65",
     "title": "Test Writer",
-    "href": "/messages/b0cbf6d5-52aa-429a-944c-b147111e8b2f/",
+    "href": "/messages/05771e1f-169f-451b-b66a-e009e120fe65/",
     "text": "A second test answer,\non two lines.",
     "when": "23.11.2026 12:40"
    }
@@ -289,7 +289,7 @@
   "critical": "Critical",
   "entries": [
    {
-    "key": "a6317e3b-0844-408b-a42f-aa65082389b6",
+    "key": "dcdddff5-9433-4d9d-b6c0-538e6986115e",
     "action": "Changed",
     "critical": false,
     "record": "Channel · TEST-2 › TEST-P",
@@ -301,7 +301,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "8a2df6c3-ee9e-4aba-b2c0-c4502a7e5461",
+    "key": "0bdd9348-0e55-4645-a246-8c00d0710881",
     "action": "Changed",
     "critical": false,
     "record": "Channel · TEST-2 › TEST-P",
@@ -313,7 +313,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "80444c76-9595-408f-9f6b-651cf3d816fa",
+    "key": "854f244e-a2e8-43d3-8c9e-1c8ec84d92b7",
     "action": "Changed",
     "critical": false,
     "record": "Knowledge entry · A reviewed test statement.",
@@ -325,7 +325,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "0d20e3d2-0106-4c57-92f3-a2d39c763ef4",
+    "key": "926d0cdc-d1b3-4725-bd4b-8e451e5f5fea",
     "action": "Created",
     "critical": false,
     "record": "Knowledge entry · A reviewed test statement.",
@@ -337,7 +337,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "e6d703bf-af2d-4573-8dd5-510e70e38207",
+    "key": "a3089ba3-41e8-4ba8-afef-5c4f4c0c6903",
     "action": "Changed",
     "critical": false,
     "record": "Feeding protocol · Test assigned protocol",
@@ -359,18 +359,18 @@
   },
   "rows": [
    {
-    "key": "363eac5e-0243-44dc-b45a-b22cddc429ae",
+    "key": "9bdbec43-d1f6-4f78-8656-2138a1ec290b",
     "text": "A reviewed test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/363eac5e-0243-44dc-b45a-b22cddc429ae/view/",
+    "href": "/knowledge/entries/9bdbec43-d1f6-4f78-8656-2138a1ec290b/view/",
     "kind": "ok",
     "chip": "Reviewed"
    },
    {
-    "key": "5f4abdab-400f-4d72-8409-ffb1acc4d740",
+    "key": "399dd24d-3265-4ee1-8c89-ee0925aa514a",
     "text": "A test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/5f4abdab-400f-4d72-8409-ffb1acc4d740/view/",
+    "href": "/knowledge/entries/399dd24d-3265-4ee1-8c89-ee0925aa514a/view/",
     "kind": "neutral",
     "chip": "Draft"
    }

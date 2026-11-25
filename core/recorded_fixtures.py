@@ -211,8 +211,33 @@ def form_props(admin):
             for what, url in urls.items():
                 pages[f'{resource.__name__} {what}'] = _record_form(client.get(f'{url}?ui=next').content.decode(), url)
         pages.update(refused_with_question(client))
-        found[language] = pages
+        found[language] = _channels_numbered(pages, language)
     return found
+
+
+def _channels_numbered(value, language):
+    """`value` with each channel's number in the sentence its Storing tab says it in (sensors.words.fresh_for) written N:
+    the number is drawn from sensors.models.channel.CHANNEL_NO_SEQUENCE, the count the database reached."""
+    import copy
+
+    from django.utils import translation
+
+    from sensors.models import Channel
+    from sensors.words import fresh_for
+    with translation.override(language):
+        said = {}
+        for channel in Channel.objects.all():
+            stand_in = copy.copy(channel)
+            stand_in.channel_no = 'N'
+            said[fresh_for(channel)] = fresh_for(stand_in)
+
+    def numbered(each):
+        if isinstance(each, dict):
+            return {key: numbered(one) for key, one in each.items()}
+        if isinstance(each, list):
+            return [numbered(one) for one in each]
+        return said.get(each, each) if isinstance(each, str) else each
+    return numbered(value)
 
 
 def _record_form(html, url):

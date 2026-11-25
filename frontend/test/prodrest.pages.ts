@@ -26,7 +26,7 @@ const ISLANDS = resolve('static/islands');
 const PROPS = resolve('.build/island-props');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 // the pages of this test: the props files their Django tests keep, by name
-const PREFIXES = ['sensors-', 'production-'];
+const PREFIXES = ['sensors-', 'production-', 'setup-'];
 // The keys each Django test keeps, by test: a test that ran keeps all of its keys (a renamed or lost page fails here,
 // never passes silently); a test left out of a labels run keeps none.
 const EXPECTED: Record<string, string[]> = {
@@ -38,6 +38,12 @@ const EXPECTED: Record<string, string[]> = {
     .concat(['production-units-drawer-en']),
   'farm.tests.test_system_water_next': ['production-system-water-en'],
   'farm.tests.test_systems_next': ['production-systems-en'],
+  'farm.tests.test_setup_lists_next': ['sites', 'storage', 'departments', 'equipment', 'tanks', 'sampling', 'species', 'feeds',
+    'limits', 'freshness', 'medicines', 'handling', 'slaughter', 'suppliers', 'boards', 'cardtemplates', 'cardrules', 'phscales']
+    .map((name) => `setup-${name}-en`)
+    .concat(['setup-sites-nb', 'setup-sites-tr', 'setup-limits-nb', 'setup-limits-tr']),
+  'farm.tests.test_water_page_next': ['production-water-latest-en', 'production-water-latest-nb', 'production-water-latest-tr',
+    'production-water-history-en'],
 };
 
 /** an island's page ({island, props}), or a page the server draws in the new look ({html}: its <main>, scripts left out) */
@@ -119,7 +125,7 @@ test('the rest of Production and Sensors in a browser', { skip: skipWithout(BROW
   try {
     for (const key of keys) {
       const { island } = kept(key);
-      const drawn = island ? `[data-island="${island}"][data-mounted] :is(table, .ui-tiles, .ui-empty, .ui-plate)` : 'main :is(.ui-sheet, .ui-plate, table, .empty)';
+      const drawn = island ? `[data-island="${island}"][data-mounted] :is(table, .ui-tiles, .ui-empty, .ui-plate, .ui-list-cards)` : 'main :is(.ui-sheet, .ui-plate, table, .empty)';
       for (const width of [1440, 390]) {
         await t.test(`${key} at ${width} px: drawn, no dialog link, no CSP violation, no serious axe finding, 4.5:1, no sideways scroll`, async () => {
           const tab = await browser.newPage({ viewport: { width, height: 900 } });

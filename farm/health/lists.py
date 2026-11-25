@@ -98,10 +98,11 @@ def events(view, objects, context):
             'A listed disease is suspected or confirmed and Mattilsynet has not been notified: notify at once '
             '(dyrehelseforskriften § 7), then record the filing of the notice.')))
         for event, url in context['to_notify']:
+            # each event as the classic list names it, and the way to file its notice (or its form, to record the filing)
             href = url or (view.url('edit', event.pk) if context.get('can_change') else None)
-            said = f'{event.site.name} · {event.get_confirmation_display()}'
-            notices.append(L.notice(f'notify-{event.pk}', 'critical', said, link=(href, str(event)) if href else None)
-                           if href else L.notice(f'notify-{event.pk}', 'critical', f'{event} · {said}'))
+            notices.append(L.notice(f'notify-{event.pk}', 'critical',
+                                    f'{event} · {event.site.name} · {event.get_confirmation_display()}',
+                                    link=(href, _('Notify Mattilsynet')) if href else None))
     return {
         'columns': [L.column('date', _('Date')), L.column('event', _('Event')), L.column('where', _('Where')),
                     L.column('signs', _('Signs')), L.column('told', _('Mattilsynet')),

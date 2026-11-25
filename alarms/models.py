@@ -316,6 +316,8 @@ class OutboxEntry(models.Model):
     notification = models.OneToOneField(Notification, primary_key=True, on_delete=models.CASCADE,
                                         related_name='outbox_entry', verbose_name=_('Notification'))
 
+    objects = SealedManager()      # sealed with its alarm (alarms/sealing.py)
+
     class Meta:
         db_table = 'alarm_outbox'
         verbose_name = _('alarm outbox entry')
@@ -436,6 +438,8 @@ class AlarmShelve(models.Model):
     until = models.DateTimeField(_('Snoozed until'))
     reason = models.CharField(_('Why'), max_length=300)
 
+    objects = SealedManager()      # sealed with its alarm (alarms/sealing.py)
+
     class Meta:
         db_table = 'alarm_shelves'
         ordering = ['-shelved_at', '-id']
@@ -463,6 +467,8 @@ class AlarmShelveEnd(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='+',
                              verbose_name=_('Ended by'))
     ended_at = models.DateTimeField(_('Ended at'))
+
+    objects = SealedManager()      # sealed with its alarm (alarms/sealing.py)
 
     class Meta:
         db_table = 'alarm_shelve_ends'

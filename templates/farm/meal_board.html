@@ -1,5 +1,5 @@
 {% extends base_template %}
-{% load i18n stock feeding %}
+{% load i18n stock feeding farm_words %}
 {% comment %} Operations › Feeding › Meal board (farm.feeding.views.meal_board): today on the farm's clock, a row per unit
    with fish and a line per batch in it. The ration is computed on read from the estimated weight (the measured one
    plus the feed since, farm/feeding/projection.py), the unit's temperature and the protocol that applies; a unit whose
@@ -14,45 +14,45 @@
   <span class="ui-chip" data-status="neutral">{% blocktrans trimmed count count=rows|length %}{{ count }} unit{% plural %}{{ count }} units{% endblocktrans %}</span>
 </div>
 {% endblock %}
-{% block content %}
+{% block content %}{% farm_words as fw %}
 <form method="get" class="ui-toolbar toolbar-filter" data-omit-empty>
   {% if choices.site|length > 1 %}
-  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <label class="sr-only" for="site-filter">{{ fw.site }}</label>
   <select class="ui-select" id="site-filter" name="site" data-autosubmit>
-    <option value="">{% trans "All sites" %}</option>
+    <option value="">{{ fw.all_sites }}</option>
     {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
   </select>
   {% endif %}
-  <label class="sr-only" for="department-filter">{% trans "Production department" %}</label>
+  <label class="sr-only" for="department-filter">{{ fw.production_department }}</label>
   <select class="ui-select" id="department-filter" name="department" data-autosubmit>
-    <option value="">{% trans "All production departments" %}</option>
+    <option value="">{{ fw.all_production_departments }}</option>
     {% for department in choices.department %}<option value="{{ department.pk }}"{% if params.department == department.pk|stringformat:"s" %} selected{% endif %}>{{ department.name }}</option>{% endfor %}
   </select>
   {% if choices.system %}
-  <label class="sr-only" for="system-filter">{% trans "System" %}</label>
+  <label class="sr-only" for="system-filter">{{ fw.system }}</label>
   <select class="ui-select" id="system-filter" name="system" data-autosubmit>
-    <option value="">{% trans "All systems" %}</option>
+    <option value="">{{ fw.all_systems }}</option>
     {% for system in choices.system %}<option value="{{ system.pk }}"{% if params.system == system.pk|stringformat:"s" %} selected{% endif %}>{{ system.name }}</option>{% endfor %}
   </select>
   {% endif %}
   <noscript><button type="submit" class="ui-btn">{% trans "Filter" %}</button></noscript>
 </form>
 
-<p class="ui-safety">{% include "icons/_icon.html" with name="alert" %}{% trans "Over- and underfeeding are not flagged yet." %}</p>
+<p class="ui-safety">{% include "icons/_icon.html" with name="alert" %}{{ fw.over_and_underfeeding_are_not_flagged_yet }}</p>
 <details class="ui-explain">
-  <summary>{% trans "How rations are worked out" %}</summary>
-  <p class="panel-help">{% trans "The ration is the estimated biomass times the SFR of the protocol’s band at the unit’s temperature, read between the table’s columns. The estimated weight is the last measured one plus the feed given since, divided by the expected FCR (feed above a day’s ration is not counted as growth); after each meal the next one is worked out again. Over- and underfeeding are not flagged yet: compare the fed and remaining amounts." %}</p>
+  <summary>{{ fw.how_rations_are_worked_out }}</summary>
+  <p class="panel-help">{{ fw.the_ration_is_the_estimated_biomass_times }}</p>
 </details>
 
 {% if not rows %}
 <div class="empty">
   {% include "icons/_icon.html" with name="utensils" %}
   {% if filtered %}
-  <h2>{% trans "No unit with fish matches these filters." %}</h2>
-  <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
+  <h2>{{ fw.no_unit_with_fish_matches_these_filters }}</h2>
+  <p><a href="{{ clear_url }}">{{ fw.clear_filters }}</a></p>
   {% else %}
-  <h2>{% trans "No unit holds fish" %}</h2>
-  <p>{% trans "The board lists the units with fish, from Production units." %}</p>
+  <h2>{{ fw.no_unit_holds_fish }}</h2>
+  <p>{{ fw.the_board_lists_the_units_with_fish }}</p>
   {% endif %}
 </div>
 {% else %}

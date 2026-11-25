@@ -59,6 +59,10 @@ class NeedsAttentionTests(OverviewTestCase):
         self.stock()
         self.stock(self.t2)
         self.limit('co2_mg_l', warning_high=12, critical_high=15)
+        # Both units' oxygen, fresh: a unit with fish and no fresh oxygen is critical (owner decision of 2026-11-23),
+        # which these tests are not about.
+        for unit in (self.t1, self.t2):
+            self.sample(unit, hours=1, oxygen_mg_l='9')
 
     def test_the_critical_point_comes_first_with_its_value_origin_and_age(self):
         side = SamplingPoint.objects.create(unit=self.t2, name='East side outlet', kind='side_outlet')

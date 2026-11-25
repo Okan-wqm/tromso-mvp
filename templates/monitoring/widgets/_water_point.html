@@ -1,5 +1,5 @@
 {% load water feeding cards %}{% key_water as water_labels %}<div class="monitor-point">
-  {% if named %}<p class="row-sub">{{ water.point.name }}</p>{% endif %}
+  {% if named %}<p class="row-sub">{% if water.point %}{{ water.point.name }}{% else %}{{ water.standing_said }}{% endif %}</p>{% endif %}
   <dl class="metrics">
     {% if view.opts.parameters == "all" %}{% for reading in water.readings.values %}
     <div><dt>{{ reading.parameter.short }}</dt><dd>{% include "farm/_water_value.html" with latest=True tag="span" %}</dd>{% with said=reading|face:card.now %}{% if not said.missing %}<dd class="row-sub wq-said">{% include "farm/_water_source.html" with origin=said.origin age=said.age %}</dd>{% endif %}{% endwith %}</div>

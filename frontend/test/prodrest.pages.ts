@@ -26,7 +26,7 @@ const ISLANDS = resolve('static/islands');
 const PROPS = resolve('.build/island-props');
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 // the pages of this test: the props files their Django tests keep, by name
-const PREFIXES = ['sensors-', 'production-', 'feeding-', 'harvest-', 'health-'];
+const PREFIXES = ['sensors-', 'production-', 'feeding-', 'harvest-', 'health-', 'dialog-', 'setup-'];
 // The keys each Django test keeps, by test: a test that ran keeps all of its keys (a renamed or lost page fails here,
 // never passes silently); a test left out of a labels run keeps none.
 const EXPECTED: Record<string, string[]> = {
@@ -38,13 +38,22 @@ const EXPECTED: Record<string, string[]> = {
     .concat(['production-units-drawer-en']),
   'farm.tests.test_system_water_next': ['production-system-water-en'],
   'farm.tests.test_systems_next': ['production-systems-en'],
+  'farm.tests.test_setup_lists_next': ['sites', 'storage', 'departments', 'equipment', 'tanks', 'sampling', 'species', 'feeds',
+    'limits', 'freshness', 'medicines', 'handling', 'slaughter', 'suppliers', 'boards', 'cardtemplates', 'cardrules', 'phscales']
+    .map((name) => `setup-${name}-en`)
+    .concat(['setup-sites-nb', 'setup-sites-tr', 'setup-limits-nb', 'setup-limits-tr']),
+  'farm.tests.test_water_page_next': ['production-water-latest-en', 'production-water-latest-nb', 'production-water-latest-tr',
+    'production-water-history-en'],
   // Operations › Feeding (farm/feeding/pages.py)
   'farm.tests.test_feeding_pages_next': ['meal-board-en', 'meal-board-nb', 'meal-board-tr', 'records-en', 'records-days-en', 'protocols-en',
-    'assignments-en']
+    'assignments-en', 'choose-en']
     .map((name) => `feeding-${name}`),
   // Operations › Harvest (farm/harvest/pages.py, lists.py) and Health (farm/health/pages.py, lists.py)
   'farm.tests.test_harvest_pages_next': ['harvested-en', 'harvested-nb', 'harvested-tr', 'harvested-batch-en', 'plan-en',
     'targets-en'].map((name) => `harvest-${name}`),
+  // the farm's operation dialogs opened as pages (farm/dialogs.py)
+  'farm.tests.test_farm_dialogs_next': ['feed', 'meal', 'feed-void', 'treat', 'last-day', 'treat-void', 'event-void', 'lice',
+    'lice-void', 'harvest', 'transfer', 'stock-void'].map((name) => `dialog-${name}-en`).concat(['dialog-treat-nb', 'dialog-treat-tr']),
   'farm.tests.test_health_pages_next': ['treatments', 'events', 'lice'].flatMap((name) => ['en', 'nb', 'tr']
     .map((language) => `health-${name}-${language}`)),
 };
@@ -128,7 +137,7 @@ test('the rest of Production and Sensors in a browser', { skip: skipWithout(BROW
   try {
     for (const key of keys) {
       const { island } = kept(key);
-      const drawn = island ? `[data-island="${island}"][data-mounted] :is(table, .ui-tiles, .ui-empty, .ui-plate)` : 'main :is(.ui-sheet, .ui-plate, table, .empty)';
+      const drawn = island ? `[data-island="${island}"][data-mounted] :is(table, .ui-tiles, .ui-empty, .ui-plate, .ui-list-cards, form)` : 'main :is(.ui-sheet, .ui-plate, table, .empty)';
       for (const width of [1440, 390]) {
         await t.test(`${key} at ${width} px: drawn, no dialog link, no CSP violation, no serious axe finding, 4.5:1, no sideways scroll`, async () => {
           const tab = await browser.newPage({ viewport: { width, height: 900 } });

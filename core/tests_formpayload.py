@@ -325,6 +325,14 @@ class FormPayloadTests(TestCase):
         with self.assertRaises(UnsafeValue):
             plain({'when': object()})
 
+    def test_a_uuid_key_is_carried_as_the_text_the_markup_writes(self):
+        import uuid
+
+        from .formpayload import plain
+
+        key = uuid.UUID('12345678-1234-5678-1234-567812345678')
+        self.assertEqual(plain({'value': key}), {'value': '12345678-1234-5678-1234-567812345678'})
+
     def test_markup_built_by_code_is_carried_as_markup_and_plain_text_as_text(self):
         from django import forms
         from django.utils.html import format_html

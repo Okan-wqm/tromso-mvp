@@ -27,7 +27,7 @@
     "status": "critical",
     "statusLabel": "Critical",
     "sub": "1 critical",
-    "sub2": "1 unit critical · 1 unit with no recent data",
+    "sub2": "2 units critical",
     "source": "Alarms · 13:42"
    },
    {
@@ -76,10 +76,10 @@
   },
   "rows": [
    {
-    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3",
+    "key": "20b44ae7-b4f5-449e-95cb-2ce0071ce71a",
     "name": "Test Site North",
     "code": "TSN",
-    "href": "/sites/69e9c2d3-e70f-4828-b665-938b19ef8da3/",
+    "href": "/sites/20b44ae7-b4f5-449e-95cb-2ce0071ce71a/",
     "type": "Land-based facility",
     "status": "critical",
     "units": "1",
@@ -95,21 +95,21 @@
     "onSite": null
    },
    {
-    "key": "a7631506-d39d-419d-a7a4-1dfdda973ba1",
+    "key": "886a3ed3-6518-4ab2-acb0-053bc010aa09",
     "name": "Test Site South",
     "code": "TSS",
-    "href": "/sites/a7631506-d39d-419d-a7a4-1dfdda973ba1/",
+    "href": "/sites/886a3ed3-6518-4ab2-acb0-053bc010aa09/",
     "type": "Sea cage",
-    "status": "warning",
+    "status": "critical",
     "units": "1",
     "biomass": "450 kg",
     "water": {
-     "kind": "nodata",
-     "text": "Not measured"
+     "kind": "critical",
+     "text": "O₂ (mg/L): no recent data"
     },
     "alarms": {
      "figure": "0",
-     "sub": "1 unit with no recent data"
+     "sub": "1 unit critical"
     },
     "onSite": null
    }
@@ -142,7 +142,7 @@
   "empty": null,
   "units": {
    "tone": "critical",
-   "text": "1 unit critical · 1 unit with no recent data"
+   "text": "2 units critical"
   }
  },
  "people": {
@@ -237,7 +237,7 @@
   },
   "rows": [
    {
-    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3-b5007070-d82f-40a4-a4bc-b5a165903c9f",
+    "key": "20b44ae7-b4f5-449e-95cb-2ce0071ce71a-adcdc1ae-d575-41ee-baae-7497cffbb43b",
     "item": "Test Grower 4 (TG-4)",
     "site": "Test Site North",
     "onHand": "1,475 kg",
@@ -257,23 +257,23 @@
   },
   "rows": [
    {
-    "key": "9c2b0c5b-4afe-4973-892d-a964e6167ca0",
+    "key": "baba71da-b4f2-4d1f-a483-221ead1c2bf3",
     "title": "Test long channel",
-    "href": "/messages/9c2b0c5b-4afe-4973-892d-a964e6167ca0/",
+    "href": "/messages/baba71da-b4f2-4d1f-a483-221ead1c2bf3/",
     "text": "Test message 60 of 60.",
     "when": "23.11.2026 13:41"
    },
    {
-    "key": "f72a7254-70b5-465b-9c65-f1962920d32b",
+    "key": "5af5d303-f6bf-411a-b621-3fa8d5adf329",
     "title": "Test channel",
-    "href": "/messages/f72a7254-70b5-465b-9c65-f1962920d32b/",
+    "href": "/messages/5af5d303-f6bf-411a-b621-3fa8d5adf329/",
     "text": "A test message to the channel.",
     "when": "23.11.2026 12:41"
    },
    {
-    "key": "05771e1f-169f-451b-b66a-e009e120fe65",
+    "key": "33dda986-81f9-4e46-a461-35a6e0a7a11e",
     "title": "Test Writer",
-    "href": "/messages/05771e1f-169f-451b-b66a-e009e120fe65/",
+    "href": "/messages/33dda986-81f9-4e46-a461-35a6e0a7a11e/",
     "text": "A second test answer,\non two lines.",
     "when": "23.11.2026 12:40"
    }
@@ -289,7 +289,7 @@
   "critical": "Critical",
   "entries": [
    {
-    "key": "dcdddff5-9433-4d9d-b6c0-538e6986115e",
+    "key": "46881397-d192-46f5-a92b-cfc76c6286bf",
     "action": "Changed",
     "critical": false,
     "record": "Channel · TEST-2 › TEST-P",
@@ -301,7 +301,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "0bdd9348-0e55-4645-a246-8c00d0710881",
+    "key": "1b1cec36-711a-4912-afef-ae264ba5a403",
     "action": "Changed",
     "critical": false,
     "record": "Channel · TEST-2 › TEST-P",
@@ -313,7 +313,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "854f244e-a2e8-43d3-8c9e-1c8ec84d92b7",
+    "key": "b7b80bbe-4555-479a-a815-56801093c5cf",
     "action": "Changed",
     "critical": false,
     "record": "Knowledge entry · A reviewed test statement.",
@@ -325,7 +325,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "926d0cdc-d1b3-4725-bd4b-8e451e5f5fea",
+    "key": "5c222c3c-4954-46c7-83ef-df02613fc87f",
     "action": "Created",
     "critical": false,
     "record": "Knowledge entry · A reviewed test statement.",
@@ -337,7 +337,7 @@
     "when": "23.11.2026 13:42"
    },
    {
-    "key": "a3089ba3-41e8-4ba8-afef-5c4f4c0c6903",
+    "key": "87ac18aa-22ca-4269-8280-e09fcf2f194d",
     "action": "Changed",
     "critical": false,
     "record": "Feeding protocol · Test assigned protocol",
@@ -359,18 +359,18 @@
   },
   "rows": [
    {
-    "key": "9bdbec43-d1f6-4f78-8656-2138a1ec290b",
+    "key": "c5c18ee4-763e-4aae-90a0-ddf21487bf91",
     "text": "A reviewed test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/9bdbec43-d1f6-4f78-8656-2138a1ec290b/view/",
+    "href": "/knowledge/entries/c5c18ee4-763e-4aae-90a0-ddf21487bf91/view/",
     "kind": "ok",
     "chip": "Reviewed"
    },
    {
-    "key": "399dd24d-3265-4ee1-8c89-ee0925aa514a",
+    "key": "0bdf30a5-5001-4b87-a848-f2e4716aca02",
     "text": "A test statement.",
     "source": "Test document (n.d.)",
-    "href": "/knowledge/entries/399dd24d-3265-4ee1-8c89-ee0925aa514a/view/",
+    "href": "/knowledge/entries/0bdf30a5-5001-4b87-a848-f2e4716aca02/view/",
     "kind": "neutral",
     "chip": "Draft"
    }

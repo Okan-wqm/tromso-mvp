@@ -14,7 +14,7 @@ from alarms.models import Alarm
 from alarms.tests import D, AlarmsCase
 from core import ui
 from farm.models import WaterLimit
-from farm.tests.helpers import role, stock_fish
+from farm.tests.helpers import point_of, role, stock_fish
 from farm.tests.test_stock import make_unit
 from farm.water import services as water
 
@@ -294,33 +294,44 @@ class StripAlarmsTests(AlarmsCase):
         self.assertEqual(self.agree(), {self.t1.pk: 'warning'})
         self.assertIn('1 unit with a warning', self.fragment())
 
-    def test_blind_a_fresh_ph_alone(self):
-        """Review H1: a fresh pH hid the missing temperature and oxygen; the card says no recent data, so does the strip."""
+    def test_blind_a_fresh_ph_and_oxygen_without_a_temperature(self):
+        """Review H1: a fresh pH hid the missing temperature; the card says no recent data, so does the strip (the oxygen
+        is fresh: with fish and none fresh it is critical, owner decision of 2026-11-23, below)."""
         self.limits()
-        self.water(ph='7.2')
+        self.water(ph='7.2', oxygen_mg_l=10)
         self.assertEqual(self.agree(), {self.t1.pk: 'blind'})
         html = self.fragment()
         self.assertNotIn('No open alarms', html)
         self.assertIn('data-status="warning"', html)
         self.assertIn('1 unit with no recent data', html)
 
-    def test_blind_an_oxygen_three_days_old(self):
+    def test_critical_an_oxygen_three_days_old_with_fish(self):
+        """A unit with fish whose oxygen has no fresh value is critical on the card and on the strip (owner decision of
+        2026-11-23; it was "no recent data")."""
         self.limits()
         self.water(hours=72, oxygen_mg_l=10)
         self.water(ph='7.2', temperature_c=9)
+        self.assertEqual(self.agree(), {self.t1.pk: 'critical'})
+        self.assertIn('1 unit critical', self.fragment())
+
+    def test_blind_a_temperature_three_days_old(self):
+        self.limits()
+        self.water(hours=72, temperature_c=9)
+        self.water(ph='7.2', oxygen_mg_l=10)
         self.assertEqual(self.agree(), {self.t1.pk: 'blind'})
         self.assertIn('1 unit with no recent data', self.fragment())
 
-    def test_blind_a_stocked_unit_with_no_point(self):
-        """A unit with fish and no sampling point of its own: nothing is known of its water (the card says no recent data)."""
+    def test_critical_a_stocked_unit_with_no_point(self):
+        """A unit with fish, no sampling point of its own and no system: nothing is known of its water, its oxygen none:
+        critical on the card and on the strip (owner decision of 2026-11-23; it was "no recent data")."""
         self.limits()
         self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)
         bare = make_unit('T-02', self.hall)                           # no point (the fixture's T-01 has its middle one)
         stock_fish(self.keeper, bare, 500, '50', 10, species=self.salmon)
-        self.assertEqual(self.agree(), {self.t1.pk: 'ok', bare.pk: 'blind'})
+        self.assertEqual(self.agree(), {self.t1.pk: 'ok', bare.pk: 'critical'})
         html = self.fragment()
         self.assertNotIn('No open alarms', html)
-        self.assertIn('1 unit with no recent data', html)
+        self.assertIn('1 unit critical', html)
 
     def test_unjudged_no_limit_for_the_fish(self):
         self.water(ph='7.2', temperature_c=9, oxygen_mg_l=10)        # no temperature or oxygen limit (the fixture)
@@ -375,6 +386,7 @@ class StripAlarmsTests(AlarmsCase):
         t2 = make_unit('T-02', hall_b)
         stock_fish(self.keeper, t2, 500, '50', 10, species=self.salmon)
         self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)
+        self.water(point=point_of(t2), ph='7.2', oxygen_mg_l=10)       # T-02: no temperature, no recent data
         Alarm.objects.create(source='system', parameter='sensors_failed', severity='critical', opened_at=self.now,
                              summary='The live water values (the sensors) cannot be read.')
         by_site = alarms_read.attention_by_site()
@@ -450,6 +462,7 @@ class StripAlarmsTests(AlarmsCase):
         t2 = make_unit('T-02', self.hall)
         stock_fish(self.keeper, t2, 500, '50', 10, species=self.salmon)
         self.water(ph='5.5', temperature_c=9, oxygen_mg_l=10)          # T-01 critical
+        self.water(point=point_of(t2), ph='7.2', temperature_c=9, oxygen_mg_l=10)     # T-02 fine
         real = feeding_read.figures
 
         def failing(stock, *args, **kwargs):

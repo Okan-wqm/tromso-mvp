@@ -1,4 +1,5 @@
-"""What alarms 0007, 0009 and 0010 do going back with clearances of the causes they added (round-2 review N2). The
+"""What alarms 0007, 0009, 0010 and 0022 do going back with rows the alarms before them have no shape or word for (round-2
+review N2; review 6 of fresh-rule, m4). The
 clearances are append-only (a trigger), so the trigger is set aside for the one statement, in the migration's own
 transaction, and set back; each changed clearance is said in the activity log. Not a migration (the underscore)."""
 from core.migrations._log import system_entry
@@ -32,3 +33,13 @@ def refuse(apps, cause, migration, why):
         raise RuntimeError(f'alarms {migration} cannot be reversed: {found} alarm clearance(s) say {why}, which the '
                            f'alarms before it have no word for, and the clearances are append-only (never rewritten '
                            f'to a cause that is not true). Restore a backup taken before it instead.')
+
+
+def refuse_alarms(apps, migration, why, **condition):
+    """Refuses to go back while an alarm of `condition` exists (the alarms are append-only: never removed nor rewritten to
+    a shape the alarms before the migration hold), saying why."""
+    found = apps.get_model('alarms', 'Alarm').objects.filter(**condition).count()
+    if found:
+        raise RuntimeError(f'alarms {migration} cannot be reversed: {found} alarm(s) {why}, which the alarms before it '
+                           f'cannot hold, and the alarms are append-only (never removed nor rewritten). Restore a '
+                           f'backup taken before it instead.')

@@ -850,10 +850,11 @@ window cannot be drawn: no value of Salinity (‰, g/kg).").
 
 **The state** is one ladder (`state_of`, the thresholds are the owners', none invented here): critical (a water reading judged
 critical, an old one too: "CO₂: Critical, no recent data", the water page's rule through
-`PointWater.alerts`); warning (a warning reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
-temperature or oxygen is missing or older than its 24 hours, or with no middle point, or whose live sensors could not be read:
-the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is
-printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
+`PointWater.alerts`; and **the oxygen of a unit that holds fish with no fresh value**, see below); warning (a warning
+reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
+temperature is missing or older than its freshness, or with no middle point, or whose live sensors could not be read:
+the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old temperature; never OK, never red, the
+age is printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
 every species of its fish, "pH (NBS scale): no limit for these fish": a row for the salmon does not judge it for the lumpfish
 beside them (`Limits.uncovered`); what it means for the fish is not known, so it is never OK. The dissolved oxygen is one
 quantity (owner, 2026-11-07): a % with no row of its own is worked out to mg/L with the solubility (its own observation's
@@ -867,6 +868,11 @@ worked out with its reason, an open health event); ok; empty. Word, shape and re
 (`Reading.judged` beside `status`, farm/water/read.py): an old critical nitrite keeps the card critical ("Nitrite: Critical, no
 recent data, 8 days old") and marks the article `data-stale`, so the announcer says it ("T-01 is now Critical, no recent data"; it takes the order of the states from the page, `data-states`,
 never from a list of its own);
+the same for a probe that stopped, whatever its pH scale (owner decision of 2026-11-20): a TRIS probe's last pH is put on
+the NBS scale at its own moment and says "pH (NBS scale): Critical, no recent data" on the Small and Big cards, the wall,
+the pane and the band's chip (one chip with an NBS probe's tank past the same bound), never "cannot be evaluated"; its
+silence itself is the alarm of its quantity's default "No fresh value" rule (Sensors; critical for the oxygen), which is
+on Company › Alarms, not on the card (monitoring/tests/test_stopped_probe.py);
 a card that falls to no recent data from any state is said too, and the grid's own notices (not updated, signed out, updated
 again) are said in the assertive region. Reference data › Water limits lists **Fish with no limit**: per species and water type
 kept today, the parameters no row judges (`water.read.missing_limits`). The value-against-limits bar draws each stretch as
@@ -1090,7 +1096,61 @@ Production units, which keeps the page title and eyebrow); the fragment has the 
 Decisions of the owner (2026-11-04): a wall page extends its session once a day; Production units stops printing bFCR and last fed
 to roles without feeding rights; the chart's temperature is the unit's own point's (superseded by A9 on 2026-11-07: the loop's fresh value stands in
 when the unit has none of its own); the chart refused and
-says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind.
+says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind
+(for the oxygen superseded on 2026-11-23, below).
+
+**A unit with no sampling point of its own** is read at its system (review 4 of the branch, L1): `read.latest(points,
+units=...)` reads it in the same pass as every point, keyed by the unit, its system's tier as a unit point's (A9: the
+loop point's samples and probes, or the system's probes where there is no loop point), each value judged for the unit's
+own fish and saying "From its system, RAS 1 › Middle: the unit has no sampling point of its own." (nb, tr). Every
+reader takes it there: the card (its middle water, its values, its state), the water page's row, Production units and
+the overview (counted and listed), and the alarms: its water-limit levels at the loop point ("N-05, from R5 · Middle:
+…"), or, where the system has no loop point, without a point ("N-05, from its system: …", alarms 0022), always on the
+unit's own site and department, so a card at critical or at warning has its alarm at that level (review 5, M1). The
+drawer and the card's water table say "From its system, …" above those values. The "no active sampling point" warning
+is about a unit read from nowhere (no point of its own, no system: alarms/sources.py `_read_nowhere`), whose oxygen is
+then the critical of no fresh value, so it holds only for a unit the stock counts with fish that the water finds holding
+none now. A unit with a point is read exactly as before.
+
+**A unit with fish whose oxygen has no fresh value is critical** (owner decisions of 2026-11-23; they replace, for the
+dissolved oxygen alone, the grey "no recent data … never red" of 2026-11-04). Where the unit holds fish NOW (after its
+day's operations, `SpeciesBook.holds`: a unit harvested or emptied earlier today holds none; review 2, R1) and neither
+its oxygen in mg/L nor in % has a fresh value for the place (its own, else its system's: A9), never measured included,
+and also a unit with fish and no point of its own whose system does not measure its oxygen either (review 2 R2: it was
+grey, with the alarm system's "no active sampling point" warning, which no longer holds beside the critical), the water's
+one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
+in `status` and `point_status`) makes it critical: the Small and Big cards, the wall, the pane and the band's chip say
+"Dissolved oxygen (mg/L O₂): no recent data, 3 hours old" (the chip "O₂ (mg/L): no recent data", one chip for every unit
+it holds), the water page's row (in both looks; a unit's row is the point that stands for it, `read.anchors`: its middle point,
+else an outlet, review 6, M2), Production units and the production overview say "Critical, no recent data" with that
+sentence. The alarms say it too, once per unit: a silent oxygen probe is its default "No fresh value" rule's critical
+alarm (Sensors); a typed oxygen sample grown old, or a unit with no oxygen probe watched by a "No fresh value" rule, is a
+critical alarm of the alarm system, "T-01: Dissolved oxygen (mg/L O₂): no recent data, 1 day old" (`alarms/sources.py`
+`_silent_subjects`, subject `system:unit:<unit>:no_fresh_oxygen`), never a second one beside the probe's where a rule
+that raises a critical at the channel's freshness covers it (`sensors.alarms.watched`; a farm's own warning or delayed
+rule, or the default lowered to a warning, never makes the critical wait or weaken: review 6, M1); it ends once the oxygen is fresh again, or "no fish in the unit any more". **Fish present
+guard** (the coordinator's call of 2026-11-23, against false alarms): all of it only where the unit holds fish; a fallow
+or empty unit stays grey "no recent data" and raises no alarm, and so do the sensors' default "No fresh value" rules
+(they hold only where their place's water concerns fish, `farm.water.read.with_fish`; a farm's own rule holds whatever
+the fish). The other parameters keep their rule: a silent probe of them is a warning (its default rule), and an old
+value of them changes no card's state (`monitoring/tests/test_silent_oxygen.py`).
+One alarm per problem (review 2 of the branch, the coordinator's calls): a silent oxygen probe beside a FRESH typed
+oxygen (or another probe) is a warning of the alarm system, one per probe wherever it is bound (a unit's point, its
+loop, an inlet or a piece of equipment no unit's water reads: review 3, N2), "PROBE-T › O2: T-02 › Middle: the oxygen
+probe is silent; the oxygen is measured otherwise (by hand or by another probe)" (subject
+`system:oxygen_probe_silent:<channel>`), the card following the fresh value; its default rule stands aside while that
+value is fresh (`read.oxygen_known`) and says its critical once it is not, and the warning ends (R3 p3). One pass of the
+alarm loop reads the silent probes and where the oxygen is known once, for its sensor rules and its warnings
+(`sensors.alarms.OxygenPass`, made by `alarms.engine.run_once` and handed down). An old typed
+oxygen past its CRITICAL limit keeps its critical level of the water limits, which says it: the alarm system's oxygen
+critical stands aside while that level holds or is open on the unit's oxygen (R4 p5); past its warning limit only, its
+warning level stands beside the alarm system's critical, so a critical card is never only a warning alarm (review 3,
+N1). That the critical level and the warning level of one value are two alarms is main's design (ISA-18.2 L and LL: the
+warning is not notified while the critical is open). Two probes of one unit silent together (mg/L and %, or
+a primary and a backup) are an alarm each, one per channel as every sensor rule is (R4 p6). A farm's own "No fresh
+value" rule keeps the severity the farm gave it, a warning too: the farm's explicit choice (R3 p2). The check
+`sensors.W001` and the Alarm rules page do not list an oxygen channel without a rule: a unit with fish whose oxygen has
+no fresh value is the alarm system's critical all the same (R5).
 
 Not built, on purpose: any figure recomputed in `monitoring`, a feed-due alarm (the protocols have meals per day, no clock), trend
 sparklines, a stored calculation, a server cache or a push channel (a measured miss first), a stored status, an "open in the
@@ -2005,12 +2065,16 @@ without values it shows its defaults.
     place's temperature (a sample's) where it is fresh at the pH's own time, as the oxygen's other unit, the replay and
     the trail take it (the review's C2; the provenance then says "The temperature is manual, 19.11.2026 10:00."), and the
     salinity of the same moment (a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for sea water
-    of 5 ‰ or more and never for fresh water with salt added, while the pH is fresh. It is then shown as the typed
+    of 5 ‰ or more and never for fresh water with salt added. A pH no longer fresh is put on the NBS scale the same way
+    at its own moment, with the place's sensor temperature and salinity fresh THEN (each channel's value at that moment,
+    `read._at_moment`), never with today's, and is shown stale with its value and what the limits said of it, as an NBS
+    one is (owner decision of 2026-11-20: one behaviour for every scale); that its probe stopped is its default "No
+    fresh value" rule's to say (Sensors). It is then shown as the typed
     sample's is ("measured 7.95 on the total scale" beside 8.06; "Measured 7.95 on the total scale by the sensor; put on
     the NBS scale by formula 4 with 12.0 °C and 34.0 ‰ of the same moment."), and its NH₃ is the typed sample's: a TRIS
     probe at 12 °C and S 34 gives the judged NH₃-N the same water typed as a total-scale sample gives. Otherwise (no
-    temperature fresh at its time, no salinity, fresh or salt-added water, a water the core cannot work out at all,
-    a pH no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
+    temperature fresh at its time, no salinity of its moment, fresh or salt-added water, a water the core cannot work
+    out at all; before 2026-11-20 also a pH only no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
     refused the water, never "not sea water": C5), and so is an NH₃ worked out from it; the unconverted number is shown
     and used nowhere (a worse fresh sample still decides the status). **It is never silent for the alarms** (the
     review's M1): the unit gets the alarm system's warning "<unit>: pH (NBS scale) cannot be evaluated: <why>" (Alarms,
@@ -3931,6 +3995,39 @@ What works:
   Dead letters (what the ingest could not store, counted, the payload shown escaped as text and hex; resolved by a
   person, logged), Alarm rules and Alarm events (each event is an alarm of Company › Alarms, which notifies its recipients and keeps
   who acknowledged it; the Acknowledge button here writes that record).
+- **A probe that stops sending** (owner decision of 2026-11-20, the second review of the water-chemistry audit,
+  question 3): every quantity the water limits judge (`quantities.JUDGED_CODES`: each one a limit can be set on,
+  derived from `farm/water/parameters.py` LIMITED, which holds every input of the judged NH₃) has a **default "No
+  fresh value" rule**, seeded by sensors 0015 on every channel of the quantity, so the channels there are and every
+  channel made later, by any door, are covered by the rule's scope (no row per channel) and take its severity:
+  **critical for the dissolved oxygen** (mg/L and %), a warning for every other quantity (owner decision of
+  2026-11-20, `quantities.default_severity`; an existing rule a migration marks the default keeps its own). It holds only
+  where its place's water concerns fish on the units' own day (owner decision of 2026-11-23: a fallow or empty unit
+  with its probes off raises no alarm, and an open event closes when the fish are gone; `farm.water.read.with_fish`),
+  and there exactly when the place's value is no longer fresh, at the channel's own freshness (its heartbeat times its fresh heartbeats,
+  tuned per channel), counted as the page counts it (the older of the value's device time and its receipt: a backlog
+  replayed at a reconnect keeps it open, as the page keeps saying "no recent data"): the page and the alarm agree to
+  the second, a restart or a change of a pH channel's scale opens or closes nothing, and the alarm closes with the
+  probe's next fresh value. Whatever the pH scale: a stale total-scale pH is no "cannot be evaluated" any more (Water
+  chemistry). The alarm says the rule, the channel and its place: "pH (NBS scale): No fresh value · PROBE-1 › PH:
+  S-01 › Middle". The farm sets its severity; it stays at the freshness (no time past it, no threshold), and switching
+  it off takes the Delete right on Alarm rules (said under the area in the role matrix) and a reason, logged as
+  critical; it is never deleted. The database holds all of it (the check `chk_sensors_alarm_rule_default`, one per
+  quantity `uq_sensors_alarm_rule_default`, the trigger `trg_sensors_alarm_rule_default_kept` against a delete, an
+  unmarking or a move to another quantity). A channel of such a quantity that no active "No fresh value" rule covers
+  (its default switched off and none of its own) is said above the Alarm rules list and by the check `sensors.W001`
+  (`manage.py check --database default`); the new look's list (`?ui=next`, `sensors/lists.py` `alarm_rules`) says the
+  same as the classic one: the Default chip, "at the channel's freshness", the reason under Inactive, no Delete, and
+  that warning. Going back past sensors 0015 leaves the rules as ordinary ones (their
+  alarms are history); going forward again marks them the default once more.
+  **One alarm per silent probe** (the review of 2026-11-23, F4, the coordinator's call): where the farm has its own
+  active "No fresh value" rule of the quantity, or of the channel, the default stands aside there (`sensors.alarms._aside`;
+  an open event of the default closes), so the farm's rule is the one alarm; switched off, the default comes back. An
+  existing rule that sensors 0015 adopts as the default keeps its severity, except the dissolved oxygen's, raised to
+  critical where it was a warning (the owner's decision), the activity log saying so (and going back gives it its own
+  severity again). **A rule switched off or deleted** (F5): the next pass closes its open events, which no pass visits
+  any more (`close_switched_off`; never an active rule's), and their alarms clear with the rule's state and the reason
+  it was switched off in the activity log, so no ghost alarm stays open after the probe sends again.
 - **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once
   when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
   the activity log).
@@ -4135,7 +4232,8 @@ the device.
   `demo/<code>`, eight water channels each covering every measured parameter together, bound to the tank's middle point
   or the system, a simulator credential with its secret shown once); it is idempotent, touches only what it made (found
   again by its connection's client id, its format's name and its credential's user name), and `--remove` deletes exactly that.
-- `manage.py check_sensors [--loop 60]` checks the alarm rules; `manage.py sensors_housekeeping` (daily) deletes dead
+- `manage.py check_sensors [--loop 60]` checks the alarm rules; `manage.py check --database default` warns of a channel of
+  a judged water quantity without an active "No fresh value" rule (`sensors.W001`); `manage.py sensors_housekeeping` (daily) deletes dead
   letters older than 90 days.
 - `manage.py bench_sensors --confirm-database NAME` writes synthetic readings into a database named on the command line
   (never a farm's) and prints the storage and read figures, the replay's page and its diagrams included (`--frames`,
@@ -4525,7 +4623,9 @@ The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push no
 from which device, how late) is logged. The server side is built; the push transport plugs in with the app.
 
 - **What raises an alarm** is judged where it is judged today (`alarms/sources.py`): the sensor alarm rules (each event of
-  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes) and the water limits: one read of every live
+  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes, saying the rule, the channel and its place;
+  among them the default "No fresh value" rule of every water quantity the limits judge, so a probe that stops sending
+  is a warning (critical for the dissolved oxygen) whatever its pH scale: Sensors) and the water limits: one read of every live
   unit's water (`farm/water/read.py` `unit_water`: its middle point, its other own points and its system standing in, the
   worst fresh value deciding), so an inlet raises nothing and a depth point or the loop raises its unit's alarm (alarm plan,
   defect 1). A water alarm's subject is the unit's quantity at a level (`water:unit:<unit>:<slot>:<severity>`), never the
@@ -5771,7 +5871,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   Water page's own rows, alarms, the office board and muster, reports due, unread messages, feed on hand and cover, the
   latest log and knowledge entries), split per site from the same rows; `config/company_props.py` words it in the
   request's language. A block is left out for a person who may not read its area. The water chip per site says the
-  sampling points' worst judgement (critical, warning, OK, or "Not measured"). The Open alarms tile and each site's
+  sampling points' worst judgement (critical, warning, OK, or "Not measured"), and a unit with fish whose oxygen has
+  no fresh value as "O₂ (mg/L): no recent data", critical, for every viewer (after a critical value, before a warning;
+  a unit with no point of its own counts on its site: review 6, B2). The Open alarms tile and each site's
   Open alarms are the status strip's one reader, the farm and its sites from one reading of the water
   (`alarms.read.attention_all`): the figure counts open alarms (a site's holds the farm-wide ones too, and says how many
   of them are for the whole farm); the line under it counts stocked units on the monitoring cards' ladder, in the strip's
@@ -5919,8 +6021,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `frontend/islands/pages/Production.tsx`): the design's layout over the very context the classic page is drawn from
   (`config/production_props.py`): "Today on the farm" as tiles (stock, feed, the water's critical and warning points,
   tasks, reports due, each with its source and time), Needs attention (each row its status chip, what and where, its
-  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, and the
-  way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
+  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, a unit
+  with fish whose oxygen has no fresh value saying why, a unit with no point of its own placed on its department and
+  site, and the way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
   HR board's bar (`config.views.team_today`, `core/stack`; the tiles add up to the people planned today) with the muster
   count and the late ones. What the design adds from real sources: the fish card's batch count
   (`farm.stock.views.overview`), the units under a medicine withdrawal today in Needs attention (hold chip, each batch's
@@ -5967,14 +6070,56 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `withdrawal_reason`) with a batch held today in the hold chip, a plan's or a batch's withdrawal (`harvest_from`) with
   the Withdrawal chip and its row critical, "Medicine withdrawal not checked" and "Not checked" as on the classic pages,
   "Notify Mattilsynet" as a critical notice above Health events with each event and the way to its notice, "Notify at
-  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. Every record
-  form and dialog these pages open (Record feeding or meal, Void, Record treatment, Last day, Record sea-lice count, the
-  plans' Record harvest or transfer) is opened as a page from the island (no classic dialog link), still the classic
-  form for now. Held: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
+  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. The words
+  these builders share with the classic templates are `farm/words.py` constants (the templates say `{{ fw.name }}`, the
+  builders `str(words.NAME)`; sentences with values in them are still the templates' msgids said again in Python).
+- **The farm's operation dialogs** (`farm/dialogs.py`): Record feeding or a meal, a treatment, its last day, a sea-lice
+  count, a stock operation (a mortality, a cull, a harvest or a transfer, from its plan too, a transfer's or a
+  grading's units posted with it as rows) and the voids of a feeding, a treatment, a health event, a count and a stock
+  operation, opened as a page in the new look (the islands' links have no `data-modal`) and drawn by the record-form
+  island from the same form, view, address and context (`core.formprops.dialog_props`: the dialog's submit word, its
+  intro blocks before the fields, a Void as the danger button, its rows as `grid`). What a dialog says before its fields
+  is the partial its classic template includes (`farm/_operation_context.html`, `_operation_lines.html`,
+  `_feeding_intro.html`, `_treatment_intro.html`, a void's `_…_entry.html`), rendered and read as blocks
+  (`core.formpanels.blocks_of`): one source of its words. A handling check's warnings and box, the withdrawal guard's
+  question and a refused save (422, the reasons on their fields) are the form's. The classic dialog stays for an
+  X-Modal request (a drawer's link), a weighing (its estimate is drawn again as it is typed) and a unit without fish to
+  record. Record feeding's unit choice is a list page (`farm/feeding/pages.py choose_props`). Held:
+  `farm/tests/test_farm_dialogs_next.py` (each dialog against its classic one, a save and a refused save through the
+  new page, the classic dialog for X-Modal) and the browser test's `dialog-*` pages. Held, the lists: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
   `test_health_pages_next.py` (every page against its classic page on the test world plus `feeding_ops_world`,
   `health_ops_world` and `harvest_ops_world`, in three languages; Harvested's three views together against the classic
   page; the safety facts) and `frontend/test/prodrest.pages.ts` (each page at 1440 and 390: CSP, axe, 4.5:1, no
   sideways scroll, the screenshots).
+- **The Setup lists** (each tab's `list_rows` and `list_filters`, the classic list template's words and filters; the
+  classic templates unchanged): Company's Sites (the classic page's cards: the list page's `cards`, `listprops.cards`,
+  a grid of cards of one size, its head the site's name, code and status chip, its facts Type, Location, Area and
+  Contact with an empty one left out, its foot "Created …" and the actions) and Storage locations; Production › Setup's
+  Production departments, Equipment, Tanks, ponds & cages, Monitoring boards, Sampling points, Species, Feeds, Water limits (a plate per
+  species, the list page's `groups`), Water freshness, Medicines, Handling rules, Card templates (Copy a post), Card
+  template rules, pH window scales, Slaughter facilities and Suppliers. A
+  status is its chip in the classic badge's tone (`listprops.badge`, `BADGE_CHIP`: active and operational the design's
+  OK, maintenance a warning, out of service critical); a missing fact the classic page marks (no site, no system, no
+  production department, a species' missing official code with why) is a warning chip; the classic pages' notices stay
+  (not on any site / not linked to any system with "Show them", a sampling point's outflow shares, Water limits' fish
+  with no limit as a warning with its list, `listprops.notice` `title` and `items`) and their help sentences are notices
+  with the info glyph (tone `info`). Sampling points of one owner (`?unit=`, `?system=`, `?equipment=`) say so with
+  "Show all · Add a point to it" (`notice` `more`); the owner is kept by the toolbar's form. Held:
+  `farm/tests/test_setup_lists_next.py` (each list against its classic page on the test world in three languages, one
+  owner's points, a search with no match) and `frontend/test/prodrest.pages.ts`.
+- **Water chemistry › Latest and History** (`farm.water.views.water_page` behind `?ui=next`; `farm/water/page_next.py`,
+  `templates/farm/water_next.html`): the tabs, the alarms' safety line (`{% alarm_watch promise=True %}`), "How values
+  are judged" and a history's heading are the server's, as on the classic page; the table is the shared list page over the
+  rows the view read. Latest: a row per point with its status chip in the classic words ("Warning, no recent data") and
+  why (no limit, cannot be evaluated), each value as Production units says it (`units_next.value_cell` with `whole`:
+  in its status's chip when critical, a warning, stale or cannot be evaluated, never drawn as OK; what was measured; the
+  unit's own older value; worked out and by what; why a "?" could not be worked out; its origin and age), its history.
+  History: the samples of the span a page at a time, each value judged, a voided sample struck through with who voided it
+  and why, Void (its word beside the icon) for a person who may; the filters are the classic form's (site, owner in
+  groups, its points, From, To and "Only warnings and criticals", the list page's `check` filter). Record sample opens its
+  page. Held: `farm/tests/test_water_page_next.py` (every word in three languages with and without filters; every word of
+  a value's title but its status's name and moment is in the props; the voided row; the safety line above the table).
+  `scripts/classic_snapshot.py` also renders every tab's classic list and these pages, so a port is proven byte for byte.
 - **The browser tests' fixtures come from the test world, never from the development database.**
   `scripts/record_test_world.sh` starts a throwaway database (its own server and network, no host port, data in memory),
   migrates it and runs `scripts/record_test_world.py`, which refuses any other database, makes the test world (fixture

@@ -21,7 +21,8 @@ READER = ('view_stockoperation', 'view_watermeasurement', 'view_report')
 class UnmeasuredUnitTests(OverviewTestCase):
     def test_a_stocked_unit_without_a_water_sample_needs_attention_and_an_empty_one_does_not(self):
         self.stock()
-        self.sample(self.t1, co2_mg_l='8')
+        # (each sample with its oxygen: a unit with fish and no fresh oxygen is critical, owner decision of 2026-11-23)
+        self.sample(self.t1, co2_mg_l='8', oxygen_mg_l='9')
         self.assertIn('Nothing needs attention', section(self.page(), 'Needs attention'))   # T-02 is empty: not asked
         self.stock(self.t2)
         html = self.page()
@@ -33,7 +34,7 @@ class UnmeasuredUnitTests(OverviewTestCase):
         self.assertNotIn('T-01', attention)
         self.assertIn('Fish, and no water sample in the last 30 days.', attention)
         self.assertIn(reverse('farm:water'), attention)
-        self.sample(self.t2, co2_mg_l='8')
+        self.sample(self.t2, co2_mg_l='8', oxygen_mg_l='9')
         self.assertIn('Nothing needs attention', section(self.page(), 'Needs attention'))
 
     def test_a_person_who_may_not_read_the_water_is_told_nothing_of_it(self):

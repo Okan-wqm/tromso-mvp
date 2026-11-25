@@ -1,55 +1,55 @@
 {% extends "crud/list.html" %}
-{% load i18n stock dates health %}
+{% load i18n stock dates health farm_words %}
 {% comment %} Operations › Harvest › Harvest plan (farm.resources.harvest_plan): the planned harvests and transports,
    each with its derived status, planned against actual, the fast it asks of its unit and a medicine
    withdrawal on its day; "Record harvest" / "Record transfer" opens the stock's dialog started from it.{% endcomment %}
 {% block above %}{% include "farm/_harvest_tabs.html" %}{% endblock %}
 {% block search_placeholder %}{% trans "Search by unit, batch, facility or vessel" %}{% endblock %}
-{% block filters %}
+{% block filters %}{% farm_words as fw %}
 <form method="get" class="toolbar-filter feeding-filters" data-omit-empty>
   {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
-  <label class="sr-only" for="kind-filter">{% trans "Plan" %}</label>
+  <label class="sr-only" for="kind-filter">{{ fw.plan }}</label>
   <select id="kind-filter" name="kind" data-autosubmit>
-    <option value="">{% trans "Harvests and transports" %}</option>
+    <option value="">{{ fw.harvests_and_transports }}</option>
     {% for value, label in kinds %}<option value="{{ value }}"{% if chosen.kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
   </select>
-  <label class="sr-only" for="status-filter">{% trans "Status" %}</label>
+  <label class="sr-only" for="status-filter">{{ fw.status }}</label>
   <select id="status-filter" name="status" data-autosubmit>
-    <option value="">{% trans "All statuses" %}</option>
+    <option value="">{{ fw.all_statuses }}</option>
     {% for value, label in statuses %}<option value="{{ value }}"{% if chosen.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
   </select>
-  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <label class="sr-only" for="site-filter">{{ fw.site }}</label>
   <select id="site-filter" name="site" data-autosubmit>
-    <option value="">{% trans "All sites" %}</option>
+    <option value="">{{ fw.all_sites }}</option>
     {% for site in sites %}<option value="{{ site.pk }}"{% if chosen.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
   </select>
-  <label class="sr-only" for="unit-filter">{% trans "Unit" %}</label>
+  <label class="sr-only" for="unit-filter">{{ fw.unit }}</label>
   <select id="unit-filter" name="unit" data-autosubmit>
-    <option value="">{% trans "All units" %}</option>
+    <option value="">{{ fw.all_units }}</option>
     {% for unit in units %}<option value="{{ unit.pk }}"{% if chosen.unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}
   </select>
-  <label class="date-filter">{% trans "From" %} {% day_input "from" chosen.from %}</label>
-  <label class="date-filter">{% trans "To" %} {% day_input "to" chosen.to %}</label>
+  <label class="date-filter">{{ fw.from }} {% day_input "from" chosen.from %}</label>
+  <label class="date-filter">{{ fw.to }} {% day_input "to" chosen.to %}</label>
   <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
 </form>
-{% if can_add %}<a class="button button-ghost" href="{{ plan_transport_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Plan transport" %}</a>{% endif %}
+{% if can_add %}<a class="button button-ghost" href="{{ plan_transport_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{{ fw.plan_transport }}</a>{% endif %}
 {% endblock %}
-{% block notice %}<p class="panel-help">{% trans "A plan is done when the harvest or transfer recorded from it counts; voiding that operation plans it again. The fast a plan asks of its unit starts at the start of its day less the handling rule’s hours." %}</p>{% endblock %}
+{% block notice %}{% farm_words as fw %}<p class="panel-help">{{ fw.a_plan_is_done_when_the_harvest }}</p>{% endblock %}
 {% block empty_text %}{% trans "Harvests and transports planned per unit and batch: the fish and kilos meant, where they go, and the fast before them." %}{% endblock %}
-{% block items %}
+{% block items %}{% farm_words as fw %}
 <div class="table-wrap">
   <table class="data-table plan-table">
     <thead>
       <tr>
-        <th scope="col">{% trans "Date" %}</th>
-        <th scope="col">{% trans "Plan" %}</th>
-        <th scope="col">{% trans "Unit" %}</th>
-        <th scope="col">{% trans "Batch" %}</th>
-        <th scope="col" class="num">{% trans "Planned" %}</th>
-        <th scope="col">{% trans "To" %}</th>
-        <th scope="col">{% trans "Status" %}</th>
-        <th scope="col" class="num">{% trans "Actual" %}</th>
-        <th scope="col">{% trans "Before handling" %}</th>
+        <th scope="col">{{ fw.date }}</th>
+        <th scope="col">{{ fw.plan }}</th>
+        <th scope="col">{{ fw.unit }}</th>
+        <th scope="col">{{ fw.batch }}</th>
+        <th scope="col" class="num">{{ fw.planned }}</th>
+        <th scope="col">{{ fw.to }}</th>
+        <th scope="col">{{ fw.status }}</th>
+        <th scope="col" class="num">{{ fw.actual }}</th>
+        <th scope="col">{{ fw.before_handling }}</th>
         <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
       </tr>
     </thead>
@@ -64,11 +64,11 @@
         <td>{% if item.facility %}{{ item.facility.name }}{% elif item.destination_unit %}{{ item.destination_unit.code }}{% else %}—{% endif %}{% if item.transport or item.vessel %}<span class="row-sub">{{ item.transport.name|default:"" }}{% if item.transport and item.vessel %} · {% endif %}{{ item.vessel }}</span>{% endif %}</td>
         <td><span class="badge badge-plan-{{ row.status }}">{{ row.status.label }}</span>{% if item.cancelled_reason %}<span class="row-sub">{{ item.cancelled_reason }}</span>{% endif %}</td>
         <td class="num">{% if row.actual_count is not None %}{% blocktrans trimmed with fish=row.actual_count|fish %}{{ fish }} fish{% endblocktrans %}<span class="row-sub">{{ row.actual_kg|kilos }}</span>{% else %}—{% endif %}</td>
-        <td>{% if row.fast %}<span class="row-sub">{{ row.fast.why }}</span>{% endif %}{% for block in row.withdrawal %}<span class="row-sub over-text">{% blocktrans trimmed with batch=block.batch.code end=block|harvest_from %}{{ batch }}: medicine withdrawal, {{ end }}{% endblocktrans %}</span>{% endfor %}{% if row.withdrawal is None and row.status != "done" and row.status != "cancelled" %}<span class="row-sub">{% trans "Medicine withdrawal not checked" %}</span>{% endif %}{% if row.earliest.decides %}<span class="row-sub{% if row.earliest.day is None or item.date < row.earliest.day %} over-text{% endif %}">{{ row.earliest.text }}</span>{% endif %}{% if item.notes %}<span class="row-sub">{{ item.notes }}</span>{% endif %}</td>
+        <td>{% if row.fast %}<span class="row-sub">{{ row.fast.why }}</span>{% endif %}{% for block in row.withdrawal %}<span class="row-sub over-text">{% blocktrans trimmed with batch=block.batch.code end=block|harvest_from %}{{ batch }}: medicine withdrawal, {{ end }}{% endblocktrans %}</span>{% endfor %}{% if row.withdrawal is None and row.status != "done" and row.status != "cancelled" %}<span class="row-sub">{{ fw.medicine_withdrawal_not_checked }}</span>{% endif %}{% if row.earliest.decides %}<span class="row-sub{% if row.earliest.day is None or item.date < row.earliest.day %} over-text{% endif %}">{{ row.earliest.text }}</span>{% endif %}{% if item.notes %}<span class="row-sub">{{ item.notes }}</span>{% endif %}</td>
         <td class="row-actions">
-          {% if row.record_url %}<a class="button button-inline" href="{{ row.record_url }}" data-modal>{% if item.kind == "harvest" %}{% trans "Record harvest" %}{% else %}{% trans "Record transfer" %}{% endif %}</a>{% endif %}
-          {% if can_change %}<a class="icon-button" href="{% url 'farm:handlingplanitem_edit' item.pk %}" data-modal title="{% trans "Edit or cancel" %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Edit or cancel" %}</span></a>{% endif %}
-          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:handlingplanitem_delete' item.pk %}" data-modal title="{% trans "Delete" %}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{% trans "Delete" %}</span></a>{% endif %}
+          {% if row.record_url %}<a class="button button-inline" href="{{ row.record_url }}" data-modal>{% if item.kind == "harvest" %}{{ fw.record_harvest }}{% else %}{{ fw.record_transfer }}{% endif %}</a>{% endif %}
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:handlingplanitem_edit' item.pk %}" data-modal title="{{ fw.edit_or_cancel }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{{ fw.edit_or_cancel }}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:handlingplanitem_delete' item.pk %}" data-modal title="{{ fw.delete }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{{ fw.delete }}</span></a>{% endif %}
         </td>
       </tr>
       {% endwith %}{% endfor %}

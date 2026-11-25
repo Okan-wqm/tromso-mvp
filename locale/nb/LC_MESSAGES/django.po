@@ -1329,6 +1329,14 @@ msgid "%(point)s is inactive: it takes no new samples."
 msgstr "%(point)s er inaktivt: det tar ikke nye prøver."
 
 #, python-format
+msgid ""
+"%(probe)s: the oxygen probe is silent; the oxygen is measured otherwise (by hand or by another "
+"probe)."
+msgstr ""
+"%(probe)s: oksygensonden er stille; oksygenet måles på annen måte (for hånd eller med en annen "
+"sonde)."
+
+#, python-format
 msgid "%(protocol)s, assigned to %(unit)s, is for %(protocol_species)s; these fish are %(species)s."
 msgstr "%(protocol)s, tildelt %(unit)s, er for %(protocol_species)s; denne fisken er %(species)s."
 
@@ -2283,6 +2291,13 @@ msgid ""
 msgstr ""
 "Et dødbånd på %(value)s er finere enn presisjonen til %(quantity)s, %(step)s: en mindre endring "
 "er støy."
+
+msgid ""
+"A default rule is the “No fresh value” of every channel of its quantity, at the channel’s own "
+"freshness; it is switched off with a reason, never deleted."
+msgstr ""
+"En standardregel er «Ingen fersk verdi» for hver kanal for parameteren sin, ved kanalens egen "
+"ferskhet; den slås av med en begrunnelse og slettes aldri."
 
 msgid "A delivery puts stock into a location."
 msgstr "Et varemottak legger beholdning inn på en lagerplass."
@@ -6000,6 +6015,9 @@ msgstr "Standard 15 mg/L, en vanlig retningslinje for laksefisk."
 msgid "Default 2 µg/L, the US EPA criterion for un-ionised H₂S (1986)."
 msgstr "Standard 2 µg/L, US EPAs kriterium for uionisert H₂S (1986)."
 
+msgid "Default rule"
+msgstr "Standardregel"
+
 msgid "Defaults"
 msgstr "Standardverdier"
 
@@ -6058,6 +6076,18 @@ msgstr "Slett %(name)s"
 #, python-format
 msgid "Delete %(object)s"
 msgstr "Slett %(object)s"
+
+msgid ""
+"Delete also switches off the default “No fresh value” rule of a water quantity (with a reason, "
+"logged as critical): a probe of that quantity that stops sending then raises no alarm of its own "
+"(for the dissolved oxygen of a unit with fish, the alarm system’s critical alarm still says it, "
+"as it does when only a warning or delayed rule covers the probe). A default rule is never "
+"deleted."
+msgstr ""
+"Slett slår også av standardregelen «Ingen fersk verdi» for en vannparameter (med en begrunnelse, "
+"logget som kritisk): en sonde for den parameteren som slutter å sende, gir da ingen egen alarm "
+"(for løst oksygen i en enhet med fisk sier alarmsystemets kritiske alarm det likevel, også når "
+"bare en varsel- eller forsinket regel dekker sonden). En standardregel slettes aldri."
 
 msgid "Delete message"
 msgstr "Slett melding"
@@ -7737,6 +7767,10 @@ msgstr "Fra og til"
 
 msgid "From end to end; each end is a half circle as wide as the tank."
 msgstr "Fra ende til ende; hver ende er en halvsirkel like bred som karet."
+
+#, python-format
+msgid "From its system, %(place)s: the unit has no sampling point of its own."
+msgstr "Fra systemet, %(place)s: enheten har ikke noe eget prøvepunkt."
 
 msgid "From lokalitetsnummer"
 msgstr "Fra lokalitetsnummer"
@@ -10033,6 +10067,13 @@ msgid "Natural gas"
 msgstr "Naturgass"
 
 msgid ""
+"Needed to switch a default rule off: what then tells that a probe of this quantity stopped "
+"sending. Logged."
+msgstr ""
+"Kreves for å slå av en standardregel: hva som da varsler om at en sonde for denne parameteren har"
+" sluttet å sende. Logges."
+
+msgid ""
 "Needed with a pH on another scale than NBS: the conversion takes the temperature and the salinity"
 " of the same sample."
 msgstr ""
@@ -11260,6 +11301,20 @@ msgstr ""
 
 msgid "One card per unit."
 msgstr "Ett kort per enhet."
+
+#, python-format
+msgid ""
+"One channel of a water quantity the limits judge has no active “No fresh value” rule: if its "
+"probe stops sending, nothing raises an alarm."
+msgid_plural ""
+"%(counter)s channels of a water quantity the limits judge have no active “No fresh value” rule: "
+"if their probes stop sending, nothing raises an alarm."
+msgstr[0] ""
+"Én kanal for en vannparameter som grensene vurderer, har ingen aktiv «Ingen fersk verdi»-regel: "
+"slutter sonden å sende, gir ingenting alarm."
+msgstr[1] ""
+"%(counter)s kanaler for en vannparameter som grensene vurderer, har ingen aktiv «Ingen fersk "
+"verdi»-regel: slutter sondene å sende, gir ingenting alarm."
 
 msgid "One county names 1 March of the next year, by e-mail (Møre og Romsdal, 2027)"
 msgstr "Ett fylke oppgir 1. mars året etter, på e-post (Møre og Romsdal, 2027)"
@@ -13319,6 +13374,13 @@ msgid "Say why the alarm is snoozed."
 msgstr "Oppgi hvorfor alarmen slumres."
 
 msgid ""
+"Say why the default rule is switched off: a probe of this quantity that stops sending is then "
+"warned of by nothing."
+msgstr ""
+"Si hvorfor standardregelen slås av: en sonde for denne parameteren som slutter å sende, varsles "
+"da ikke av noe."
+
+msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
 msgstr ""
@@ -14521,6 +14583,9 @@ msgstr "Svensk"
 msgid "Switch panel"
 msgstr "Bytt panel"
 
+msgid "Switching a default rule off takes the Delete right on Alarm rules."
+msgstr "Å slå av en standardregel krever Slett-retten på Alarmregler."
+
 msgid "System"
 msgstr "System"
 
@@ -15116,6 +15181,17 @@ msgstr "Ukedagene den har frist."
 
 msgid "The deepest point cannot be shallower than the average depth."
 msgstr "Det dypeste punktet kan ikke være grunnere enn gjennomsnittsdybden."
+
+msgid ""
+"The default rule of this quantity: every channel of it raises this alarm once its value is no "
+"longer fresh (its heartbeat times its fresh heartbeats, set on the channel), whatever its pH "
+"scale. Its severity can be changed; switching it off takes the Delete right on Alarm rules and a "
+"reason."
+msgstr ""
+"Standardregelen for denne parameteren: hver kanal for den gir denne alarmen så snart verdien ikke"
+" lenger er fersk (hjerteslaget ganger antall ferske hjerteslag, satt på kanalen), uansett pH-"
+"skala. Alvorligheten kan endres; å slå den av krever Slett-retten på Alarmregler og en "
+"begrunnelse."
 
 #, python-format
 msgid "The degree-days are not reached in %(days)d days at these temperatures."
@@ -17088,6 +17164,9 @@ msgstr "Denne produksjonsavdelingen er ikke på noen lokalitet; velg en som er d
 msgid "This production department is not on the site."
 msgstr "Denne produksjonsavdelingen ligger ikke på lokaliteten."
 
+msgid "This quantity has its default rule already."
+msgstr "Denne parameteren har allerede sin standardregel."
+
 msgid "This removes it permanently. The activity log keeps a record that it was deleted."
 msgstr "Dette fjerner den permanent. Aktivitetsloggen beholder en oppføring om at den ble slettet."
 
@@ -18377,6 +18456,9 @@ msgstr "Hvorfor"
 msgid "Why it is closed"
 msgstr "Hvorfor den er lukket"
 
+msgid "Why it is switched off"
+msgstr "Hvorfor den er slått av"
+
 msgid "Why the text could not be read"
 msgstr "Hvorfor teksten ikke kunne leses"
 
@@ -18721,10 +18803,6 @@ msgstr ""
 " %(why)s"
 
 #, python-format
-msgid "a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh"
-msgstr "en pH på %(scale)s regnes om til NBS-skalaen bare mens den er fersk, og den er ikke lenger fersk"
-
-#, python-format
 msgid ""
 "a pH on the %(scale)s is put on the NBS scale with a temperature of its moment, a sensor’s or a "
 "sample’s, and none is fresh then"
@@ -18936,6 +19014,9 @@ msgstr "minst: grunnlaget for den sikre siden"
 
 msgid "at once"
 msgstr "straks"
+
+msgid "at the channel’s freshness"
+msgstr "ved kanalens ferskhet"
 
 msgid "attendance outside these days"
 msgstr "oppmøte utenfor disse dagene"

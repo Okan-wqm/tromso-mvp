@@ -1,20 +1,14 @@
 {% extends base_template %}
-{% load i18n stock %}
+{% load i18n stock farm_words %}
 {% comment %} Voiding a stock operation (farm.stock.views.void_operation): it stops counting and stays in the history
    with its reason. Refused, with the reason, when later operations need its fish. A feeding is voided
    with the same dialog (farm/feeding_void.html fills the blocks).{% endcomment %}
 {% block title %}{{ heading }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ heading }}{% endblock %}
-{% block content %}
+{% block content %}{% farm_words as fw %}
 <div class="confirm">
-  {% block entry %}
-  <p class="confirm-question">{% blocktrans trimmed with operation=operation.get_kind_display|lower date=operation.date|date:"DATE_FORMAT" %}Void the {{ operation }} of {{ date }}?{% endblocktrans %}</p>
-  <ul class="op-lines">
-    {% for line in lines %}<li>{{ line.unit.code }} · {{ line.batch.code }}: {% if line.kind == "weighing" %}{% blocktrans trimmed with weight=line.avg_weight_g|grams %}average {{ weight }}{% endblocktrans %}{% else %}{% blocktrans trimmed with fish=line.count_delta|signed %}{{ fish }} fish{% endblocktrans %}{% endif %}</li>{% endfor %}
-  </ul>
-  <p>{% trans "The stock is worked out again without it, from its date on. A stocking that is voided takes its batch with it. To correct an operation, void it and enter it again." %}</p>
-  {% endblock %}
+  {% block entry %}{% include "farm/_stock_void_entry.html" %}{% endblock %}
   <form method="post" action="{{ request.get_full_path }}" novalidate>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="form-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
@@ -25,7 +19,7 @@
     {% endfor %}
     <div class="form-actions">
       <a class="button button-ghost" href="{{ back_url }}" data-modal-close>{% trans "Cancel" %}</a>
-      <button type="submit" class="button button-inline button-danger">{% trans "Void" %}</button>
+      <button type="submit" class="button button-inline button-danger">{{ fw.void }}</button>
     </div>
   </form>
 </div>

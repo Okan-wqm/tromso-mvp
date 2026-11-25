@@ -32,6 +32,7 @@ from ..models.health import MedicineKind
 from ..stock import read as stock_read, views as stock_views
 from ..stock.dates import earliest, shown_date
 from ..stock.services import AlreadyRecorded
+from .. import dialogs
 from . import notices, pages, read, services, withdrawal
 
 TREATMENTS = {'view': 'farm.view_treatment', 'add': 'farm.add_treatment', 'change': 'farm.change_treatment',
@@ -199,8 +200,8 @@ def record_treatment(request):
                     'units': ', '.join(each.code for each in treatment.units.order_by('code')),
                     'start': shown_date(treatment.start_date), 'end': shown_date(treatment.end_date)})
                 return done(request, back)
-        return stock_views._refused(request, 'farm/treatment_form.html', {**context, 'form': form})
-    return render_page(request, 'farm/treatment_form.html', {**context, 'form': TreatmentForm(units=units, unit=unit)})
+        return dialogs.page(request, 'farm/treatment_form.html', {**context, 'form': form}, refused=True)
+    return dialogs.page(request, 'farm/treatment_form.html', {**context, 'form': TreatmentForm(units=units, unit=unit)})
 
 
 @permission_required(TREATMENTS['change'], raise_exception=True)
@@ -220,8 +221,8 @@ def change_last_day(request, pk):
                 messages.success(request, _('The last day of the treatment is now %(date)s.') % {
                     'date': shown_date(form.cleaned_data['end_date'])})
                 return done(request, back)
-        return stock_views._refused(request, 'farm/treatment_last_day.html', {**context, 'form': form})
-    return render_page(request, 'farm/treatment_last_day.html', {**context, 'form': LastDayForm(treatment=treatment)})
+        return dialogs.page(request, 'farm/treatment_last_day.html', {**context, 'form': form}, refused=True)
+    return dialogs.page(request, 'farm/treatment_last_day.html', {**context, 'form': LastDayForm(treatment=treatment)})
 
 
 @permission_required(TREATMENTS['delete'], raise_exception=True)
@@ -242,8 +243,8 @@ def void_treatment(request, pk):
                 messages.success(request, _('Treatment of %(date)s voided.') % {
                     'date': shown_date(treatment.start_date)})
                 return done(request, back)
-        return stock_views._refused(request, 'farm/treatment_void.html', {**context, 'form': form})
-    return render_page(request, 'farm/treatment_void.html', {**context, 'form': VoidForm()})
+        return dialogs.page(request, 'farm/treatment_void.html', {**context, 'form': form}, refused=True)
+    return dialogs.page(request, 'farm/treatment_void.html', {**context, 'form': VoidForm()})
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------
@@ -339,8 +340,8 @@ def record_lice_count(request):
                 messages.success(request, _('Sea-lice count recorded: %(unit)s on %(date)s.') % {
                     'unit': count.unit.code, 'date': shown_date(count.date)})
                 return done(request, back)
-        return stock_views._refused(request, 'farm/lice_form.html', {**context, 'form': form})
-    return render_page(request, 'farm/lice_form.html', {**context, 'form': LiceCountForm(units=units, unit=unit)})
+        return dialogs.page(request, 'farm/lice_form.html', {**context, 'form': form}, refused=True)
+    return dialogs.page(request, 'farm/lice_form.html', {**context, 'form': LiceCountForm(units=units, unit=unit)})
 
 
 @permission_required(COUNTS['delete'], raise_exception=True)
@@ -359,8 +360,8 @@ def void_lice_count(request, pk):
                 messages.success(request, _('Sea-lice count of %(date)s in %(unit)s voided.') % {
                     'date': shown_date(count.date), 'unit': count.unit.code})
                 return done(request, back)
-        return stock_views._refused(request, 'farm/lice_void.html', {**context, 'form': form})
-    return render_page(request, 'farm/lice_void.html', {**context, 'form': VoidForm()})
+        return dialogs.page(request, 'farm/lice_void.html', {**context, 'form': form}, refused=True)
+    return dialogs.page(request, 'farm/lice_void.html', {**context, 'form': VoidForm()})
 
 
 # ---- health events ------------------------------------------------------------------------------------
@@ -380,8 +381,8 @@ def void_event(request, pk):
             else:
                 messages.success(request, _('Health event “%(event)s” voided.') % {'event': event})
                 return done(request, back)
-        return stock_views._refused(request, 'farm/health_event_void.html', {**context, 'form': form})
-    return render_page(request, 'farm/health_event_void.html', {**context, 'form': VoidForm()})
+        return dialogs.page(request, 'farm/health_event_void.html', {**context, 'form': form}, refused=True)
+    return dialogs.page(request, 'farm/health_event_void.html', {**context, 'form': VoidForm()})
 
 
 # ---- what Production units shows --------------------------------------------------------------------

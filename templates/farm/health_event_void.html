@@ -2,7 +2,4 @@
 {% load i18n %}
 {% comment %} Voiding a health event recorded by mistake (farm.health.views.void_event): the stock's void dialog; the event
    stays in the history, struck through, with its reason.{% endcomment %}
-{% block entry %}
-<p class="confirm-question">{% blocktrans trimmed with event=event site=event.site.name %}Void the health event “{{ event }}” of {{ site }}?{% endblocktrans %}</p>
-<p>{% trans "It stops counting and stays in the history with its reason. An event that was right but is over is closed on its form instead." %}</p>
-{% endblock %}
+{% block entry %}{% include "farm/_event_void_entry.html" %}{% endblock %}

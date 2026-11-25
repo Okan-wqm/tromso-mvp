@@ -163,6 +163,10 @@ def water_page(request):
         round_url=reverse('farm:water_round') + (f'?{urlencode({"site": site.pk})}' if site else ''),
     )
     context.update(_history(request, site, place) if showing_history else _latest(site, ui.is_next(request)))
+    if ui.is_next(request):
+        # the new look: the same rows on the shared list page (farm/water/page_next.py)
+        from .page_next import page_props
+        return render_page(request, 'farm/water_next.html', {**context, 'props': page_props(request, context)})
     return render_page(request, 'farm/water.html', context)
 
 
@@ -189,12 +193,16 @@ def _latest(site, next_look=False):
     if site is not None:
         recent = recent.filter(Q(unit__production_department__site=site) | Q(system__site=site)
                                | Q(equipment__production_department__site=site))
-    middles = read.middle_points(units)
+    # Each unit's row is the point that stands for its water (read.anchors: its middle point, else its first own-water
+    # point, an outlet), as its card, the strip and the alarms read it (review 6 of fresh-rule, M2); a unit with neither
+    # is read at its system, in the same read (read.latest `units`; review 2 R2, review 4 L1).
+    own = read.own_water([unit.pk for unit in units])
+    middles = read.anchors(units, own)
     points = {point.pk: point for point in [*middles.values(), *recent]}
     by_owner = defaultdict(list)
     for point in points.values():
         by_owner[point.owner.pk].append(point)
-    water = read.latest(list(points.values()))
+    water = read.latest(list(points.values()), own=own, units=read.unanchored(units, middles))
     entries = []
     for unit in units:
         if unit.pk not in middles:
@@ -204,7 +212,7 @@ def _latest(site, next_look=False):
                                                          key=point_order)]
     rows = []
     for owner, point in entries:
-        point_water = water[point.pk] if point is not None else read.PointWater(None)
+        point_water = water[point.pk] if point is not None else water.get(owner.pk, read.PointWater(None))
         rows.append({'owner': owner, 'point': point, 'loop': isinstance(owner, System), 'water': point_water,
                      'history_url': reverse('farm:tank_water', args=[owner.pk]) if next_look and isinstance(owner, Tank)
                      else history_url(point or owner)})
@@ -904,7 +912,9 @@ def overview(user):
     if not user.has_perm(VIEW):
         return None
     latest = _latest(None)
-    alerting = [row for row in latest['rows'] if row['point'] is not None and row['water'].point_status in ALERTS]
+    # (a unit read at its system or nowhere is its own row, without a point: it is counted, so it is listed)
+    alerting = [row for row in latest['rows'] if (row['point'] is not None or isinstance(row['owner'], Tank))
+                and row['water'].point_status in ALERTS]
     alerting.sort(key=lambda row: row['water'].point_status != Status.CRITICAL)
     # The units that hold fish and have no water value at all inside the page's window (no row of theirs has a reading:
     # "Not measured" on this page): nothing is known about their water, which is not "nothing needs attention" (flow

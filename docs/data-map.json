@@ -318,6 +318,7 @@
         "left_out": false
       },
       "tests": [
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
@@ -2875,7 +2876,7 @@
       "app": "alarms",
       "model": "Alarm",
       "table": "alarms",
-      "description": "One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point.",
+      "description": "One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEvent, which the sensors' check keeps), or a water value past a species' limit at a sampling point (`point`; none for a unit read at its system's probes where the system has no loop point: alarms/sources.py `_water_subjects`).",
       "columns": [
         {
           "name": "id",
@@ -3104,11 +3105,15 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_matrix_notes.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/test_company_overview.py",
         "farm/tests/test_water_history_page.py",
+        "monitoring/tests/test_silent_oxygen.py",
+        "monitoring/tests/test_stopped_probe.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_pages_next.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
@@ -3658,6 +3663,7 @@
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bench.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_ph_scale.py",
@@ -8053,6 +8059,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
+        "farm/tests/test_setup_lists_next.py",
         "farm/tests/test_suppliers.py",
         "farm/tests/test_water_points.py",
         "inventory/tests/test_pages.py",
@@ -10325,6 +10332,7 @@
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_farm_dialogs_next.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
@@ -11860,6 +11868,7 @@
         "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
+        "farm/tests/test_farm_dialogs_next.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_plan_form_notice.py",
@@ -13031,6 +13040,7 @@
         "core/test_world.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_farm_dialogs_next.py",
         "farm/tests/test_health.py",
         "farm/tests/test_overview_truth.py",
         "reports/tests/test_due.py",
@@ -13392,6 +13402,7 @@
         "core/test_languages.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_farm_dialogs_next.py",
         "farm/tests/test_health.py",
         "monitoring/tests/test_golden.py"
       ]
@@ -16444,6 +16455,7 @@
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_row_list_refused.py",
+        "farm/tests/test_setup_lists_next.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_sites.py",
         "farm/tests/test_species_size_limit.py",
@@ -18686,6 +18698,7 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_escape_delivery.py",
+        "farm/tests/test_farm_dialogs_next.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
@@ -18707,6 +18720,7 @@
         "reports/tests/test_notices.py",
         "reports/tests/test_tabs.py",
         "monitoring/tests/test_pages.py",
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_cross_review.py"
       ]
     },
@@ -20019,10 +20033,12 @@
         "experiments/tests/test_design.py",
         "experiments/tests/test_places.py",
         "monitoring/tests/test_resolve.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "monitoring/tests/test_templates_db.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_demo.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_pages_next.py",
         "sensors/tests/test_portable.py",
@@ -21074,6 +21090,7 @@
         "farm/tests/test_core_refusal.py",
         "farm/tests/test_drawer_water_history.py",
         "farm/tests/test_escape_delivery.py",
+        "farm/tests/test_farm_dialogs_next.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_feeding.py",
         "farm/tests/test_fix_seed_size_mix.py",
@@ -21092,6 +21109,7 @@
         "farm/tests/test_range_deffeyes.py",
         "farm/tests/test_rederive_ph.py",
         "farm/tests/test_sensor_ph_scale.py",
+        "farm/tests/test_setup_lists_next.py",
         "farm/tests/test_site_structure.py",
         "farm/tests/test_species_size_limit.py",
         "farm/tests/test_stock.py",
@@ -21102,6 +21120,7 @@
         "farm/tests/test_water_history_page.py",
         "farm/tests/test_water_origin.py",
         "farm/tests/test_water_oxygen_basis.py",
+        "farm/tests/test_water_page_next.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_resolver.py",
         "farm/tests/test_withdrawal_delivery_paths.py",
@@ -21117,7 +21136,9 @@
         "monitoring/tests/test_boards.py",
         "monitoring/tests/test_golden.py",
         "monitoring/tests/test_next_pages.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "monitoring/tests/test_small.py",
+        "monitoring/tests/test_stopped_probe.py",
         "monitoring/tests/test_token.py",
         "sensors/tests/test_chart_data.py",
         "sensors/tests/test_pages.py",
@@ -21811,6 +21832,7 @@
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_emptied_unit.py",
+        "farm/tests/test_farm_dialogs_next.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_health.py",
         "farm/tests/test_second_approval_said_first.py",
@@ -23788,12 +23810,14 @@
         "farm/tests/test_production_overview.py",
         "farm/tests/test_water.py",
         "farm/tests/test_water_followups.py",
+        "farm/tests/test_water_page_next.py",
         "farm/tests/test_water_points.py",
         "farm/tests/test_water_review3.py",
         "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
         "reports/tests/test_lice.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_migration_subjects.py"
@@ -37046,7 +37070,9 @@
       "tests": [
         "core/test_world.py",
         "core/tests_workspaces.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
@@ -37309,6 +37335,30 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "is_default",
+          "field": "is_default",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "off_reason",
+          "field": "off_reason",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "AlarmRuleForm › Alarm rule"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -37347,6 +37397,20 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_sensors_alarm_rule_default",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_sensors_alarm_rule_default",
+          "kind": "unique",
+          "fields": [
+            "quantity"
+          ],
+          "conditional": true
         }
       ],
       "screens": {
@@ -37429,6 +37493,7 @@
             "hysteresis": "Alarm rule",
             "severity": "Alarm rule",
             "is_active": "Alarm rule",
+            "off_reason": "Alarm rule",
             "version": ""
           }
         }
@@ -37447,7 +37512,9 @@
       "tests": [
         "core/test_world.py",
         "core/tests_workspaces.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "sensors/tests/test_alarms.py",
+        "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
@@ -38827,6 +38894,7 @@
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_pages_next.py",
         "sensors/tests/test_ph_scale.py",
@@ -39042,11 +39110,13 @@
       },
       "tests": [
         "core/test_world.py",
+        "monitoring/tests/test_stopped_probe.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bindings.py",
         "sensors/tests/test_chart_data.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_demo.py",
+        "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_history.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_ph_scale.py",

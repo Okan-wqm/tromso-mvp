@@ -152,7 +152,8 @@ export function Acknowledge({ name, title, children, label, value, defaultChecke
   const id = useId();
   const invalid = Boolean(errors && errors.length);
   return (
-    <div className="ui-notice ui-ack" data-tone="critical" role="group" aria-labelledby={`${id}-title`}>
+    // a whole row of a form's grid: the warning it answers is read in full, never in one column
+    <div className="ui-notice ui-ack" data-tone="critical" role="group" aria-labelledby={`${id}-title`} data-wide="">
       <Icon name="octagon" />
       <div className="ui-notice-body">
         <strong className="ui-notice-title" id={`${id}-title`}>{title}</strong>

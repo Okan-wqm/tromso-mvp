@@ -23,6 +23,7 @@ from core.widgets import MomentInput
 from . import bindings, quantities
 from .models import (AlarmRule, Binding, Calibration, Channel, Connection, Credential, Device, PayloadFormat, Shape,
                      TimeUnit)
+from .models.alarm import DEFAULT_FIXED
 
 DECIMAL = {'inputmode': 'decimal'}
 # A whole-second device time cannot tell apart two messages of one second, and the readings' key is (channel, time):
@@ -564,11 +565,18 @@ class DeviceMoveForm(forms.Form):
 
 
 ALARM_TABS = [('general', gettext_lazy('Alarm rule'), ['channel', 'quantity', 'kind', 'threshold', 'for_s', 'hysteresis',
-                                                        'severity', 'is_active'])]
+                                                        'severity', 'is_active', 'off_reason'])]
+# The right that switches a default rule off (owner decision of 2026-11-20): Delete on Alarm rules, the right that ends a
+# rule's alarms (config/access.py says it under the area); a default rule itself is never deleted.
+SWITCH_OFF = 'sensors.delete_alarmrule'
 
 
 class AlarmRuleForm(TabbedForm):
-    """An alarm rule: on one channel or on every channel of a quantity. Its events are alarms (Company › Alarms)."""
+    """An alarm rule: on one channel or on every channel of a quantity. Its events are alarms (Company › Alarms).
+
+    A default rule (AlarmRule.is_default) keeps what it is (DEFAULT_FIXED, shown and not editable): its severity is the
+    farm's, and switching it off takes the Delete right (SWITCH_OFF) and a reason, which goes when it is switched on
+    again. Another rule has no reason field."""
 
     tabs = ALARM_TABS
 
@@ -586,8 +594,31 @@ class AlarmRuleForm(TabbedForm):
             'for_s': gettext_lazy('Above or below: every value of this time must be past the threshold. No fresh value: '
                                   'this long past the channel’s freshness. A rate: the change over this time.'),
             'hysteresis': gettext_lazy('An open alarm closes only once the value is back past the threshold by this much.'),
+            'off_reason': gettext_lazy('Needed to switch a default rule off: what then tells that a probe of this '
+                                       'quantity stopped sending. Logged.'),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
         self.fields['channel'].queryset = Channel.objects.select_related('device').order_by('device__code', 'code')
+        if not self.instance.is_default:
+            del self.fields['off_reason']
+            return
+        for name in DEFAULT_FIXED:
+            self.fields[name].disabled = True
+            self.fields[name].required = False
+        self.tab_help['general'] = gettext_lazy(
+            'The default rule of this quantity: every channel of it raises this alarm once its value is no longer fresh '
+            '(its heartbeat times its fresh heartbeats, set on the channel), whatever its pH scale. Its severity can be '
+            'changed; switching it off takes the Delete right on Alarm rules and a reason.')
+
+    def clean(self):
+        cleaned = super().clean()
+        if not self.instance.is_default or 'is_active' not in cleaned:
+            return cleaned
+        if cleaned['is_active']:
+            cleaned['off_reason'] = ''                  # on again: the reason it was off goes, logged as a change
+        elif self.initial.get('is_active') and (self.user is None or not self.user.has_perm(SWITCH_OFF)):
+            self.add_error('is_active', _('Switching a default rule off takes the Delete right on Alarm rules.'))
+        return cleaned

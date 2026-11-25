@@ -30,9 +30,10 @@ built and read.
                                       an assigned protocol, a started experiment, a reviewed entry, a placed device
     panel_world(admin, client)        the production panel's pages: tasks_world, questions_world, experiments_world,
                                       reports_world, storage_world, messages_world
-    stale_water_world(admin)          after world(), for Production units' and Overview's tests only: TM-01's oxygen
+    stale_water_world(admin)          after world(), for Production units', Overview's and Water chemistry's tests: TM-01's oxygen
                                       stale and critical when taken (80 hours back)
-    sensors_world(admin)              after world(), for the Sensors pages' tests only: a simulated device, credentials,
+    water_page_world(admin)           after world(), for Water chemistry's tests only: a sample on TM-01 voided
+    sensors_world(admin)            after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat
     monitoring_world(admin)           eight more units of Test Hall A, one in each state a monitoring card can be in
                                       (OK, critical, warning, no recent data, no limit, note, empty, an old critical),
@@ -766,7 +767,9 @@ MONITORING_UNITS = (
     ('TW-01', 'Test tank OK', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-02', 'Test tank critical', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-03', 'Test tank warning', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '6.5', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
-    ('TW-04', 'Test tank old values', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
+    # its temperature 30 hours old, its oxygen fresh (FRESH_TOO): no recent data, never red (a unit with fish whose oxygen
+    # has no fresh value is critical, owner decision of 2026-11-23)
+    ('TW-04', 'Test tank old values', True, True, 30, {'temperature_c': '13', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
     ('TW-05', 'Test tank no limit', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2',
                                                    'nitrite_n_mg_l': '0.05'}),
     ('TW-06', 'Test tank no protocol', True, False, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85'}),
@@ -775,6 +778,8 @@ MONITORING_UNITS = (
     ('TW-08', 'Test tank old critical', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2',
                                                          'alkalinity_mg_l': '85'}),
 )
+# A unit's second sample, an hour before MOMENT: what stays fresh beside its old values.
+FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
 
 
 TEST_WALL = 'Test wall, Hall A'
@@ -784,8 +789,9 @@ TEST_OPERATOR_BOARD = 'Test operator board, Hall A'
 def monitoring_world(admin):
     """Eight more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
-    and its warning limit), no recent data (its water 30 hours old), no limit (a nitrite no limit row judges), a note (no
-    feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours old (critical, and stale).
+    and its warning limit), no recent data (its temperature 30 hours old, its oxygen fresh), no limit (a nitrite no
+    limit row judges), a note (no feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours
+    old (critical, and stale).
     1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where
@@ -819,6 +825,9 @@ def monitoring_world(admin):
         if values:
             water.record(admin, point=point_of(unit), measured_at=MOMENT - timedelta(hours=hours), source='manual',
                          values={key: D(value) for key, value in values.items()})
+        if code in FRESH_TOO:
+            water.record(admin, point=point_of(unit), measured_at=MOMENT - timedelta(hours=1), source='manual',
+                         values={key: D(value) for key, value in FRESH_TOO[code].items()})
     wall_board(hall)
     operator_board(hall)
 
@@ -835,6 +844,17 @@ def wall_board(hall):
     return board
 
 
+def water_page_world(admin):
+    """After world(), for Water chemistry's tests only (farm/tests/test_water_page_next.py): a sample entered on TM-01 by
+    mistake three hours before MOMENT and voided with its reason, so the history has a voided row (struck through, who
+    voided it and why, no Void of its own)."""
+    from farm.models import Tank
+    from farm.tests.helpers import point_of
+    from farm.water import services as water
+    sample = water.record(admin, point=point_of(Tank.objects.get(code='TM-01')), measured_at=MOMENT - timedelta(hours=3),
+                          source='manual', values={'temperature_c': D('11.5')}, notes='Test entered on the wrong unit')
+    water.void(admin, sample, 'Test sample of another unit')
+    return sample
 def operator_board(hall):
     """A desk board of Test Hall A's units (TEST_OPERATOR_BOARD) whose cards are the built-in Operator view (the board's
     default template): the oxygen and the temperature first and large, then the fish, the feeding and the Deffeyes

@@ -956,6 +956,7 @@ msgstr "%(hours)s t"
 msgid "%(hours)s h %(minutes)s min"
 msgstr "%(hours)s t %(minutes)s min"
 
+#, python-format
 msgid "%(inches)s″ screen"
 msgstr "%(inches)s″ skjerm"
 
@@ -14199,14 +14200,14 @@ msgstr "Rustfritt stål"
 msgid "Stale"
 msgstr "Utdatert"
 
-msgid "Standard week"
-msgstr "Standarduke"
-
 msgid "Stale, was critical"
 msgstr "Utdatert, var kritisk"
 
 msgid "Stale, was warning"
 msgstr "Utdatert, var advarsel"
+
+msgid "Standard week"
+msgstr "Standarduke"
 
 msgid "Standard week (minutes)"
 msgstr "Standarduke (minutter)"

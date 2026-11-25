@@ -960,6 +960,7 @@ msgstr "%(hours)s sa"
 msgid "%(hours)s h %(minutes)s min"
 msgstr "%(hours)s sa %(minutes)s dk"
 
+#, python-format
 msgid "%(inches)s″ screen"
 msgstr "%(inches)s″ ekran"
 
@@ -14233,14 +14234,14 @@ msgstr "Paslanmaz çelik"
 msgid "Stale"
 msgstr "Eski"
 
-msgid "Standard week"
-msgstr "Standart hafta"
-
 msgid "Stale, was critical"
 msgstr "Eski, kritikti"
 
 msgid "Stale, was warning"
 msgstr "Eski, uyarıydı"
+
+msgid "Standard week"
+msgstr "Standart hafta"
 
 msgid "Standard week (minutes)"
 msgstr "Standart hafta (dakika)"

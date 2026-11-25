@@ -310,8 +310,8 @@ def where(before, after):
         return f'status {before[0]} / {after[0]}'
     first, second = before[1], after[1]
     at = next((index for index, (one, two) in enumerate(zip(first, second)) if one != two), min(len(first), len(second)))
-    return (f'…{first[max(0, at - 120):at + 120].decode(errors="replace")}… / '
-            f'…{second[max(0, at - 120):at + 120].decode(errors="replace")}…')
+    return (f'…{first[max(0, at - 120):at + 600].decode(errors="replace")}… / '
+            f'…{second[max(0, at - 120):at + 600].decode(errors="replace")}…')
 
 
 STOCK_FIGURES = ('inventory:storage',)

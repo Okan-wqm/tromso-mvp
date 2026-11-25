@@ -5,7 +5,6 @@ view in sensors/views.py exactly as for the classic page (the same rows, the sam
 worded with the classic template's msgids (templates/sensors/home.html, live.html, dead_letters.html,
 alarm_events.html), so core.pagesays holds each new page to its old one. A stale value is never drawn as fresh: the
 state is the classic page's (read.latest's `fresh`), its chip the stale one."""
-from django.middleware.csrf import get_token
 from django.template.defaultfilters import truncatechars
 from django.urls import reverse
 from django.utils.translation import gettext as _, ngettext
@@ -19,24 +18,9 @@ from .lists import DASH, moment
 from .templatetags.sensors import measured
 
 
-def page_props(request, *, label, columns, rows, filters=(), notices=(), empty, page=None, pager_query='', groups=None):
-    """The list-page island's props of a page that is not a tab (core/listprops.py `list_props` is a tab's): its filters
-    (a GET form, `filters` as listprops.choice), notices, table (in `groups`, listprops.group, when given), the sentence
-    said when there is no row, and the pager."""
-    shown = {each['name'] for each in filters} | {'page', 'ui'}
-    return {
-        'csrfToken': get_token(request),
-        'tabs': None,
-        'toolbar': {'label': label, 'search': None,
-                    'keep': [{'name': key, 'value': value} for key, value in request.GET.items() if key not in shown],
-                    'filters': list(filters), 'submit': _('Filter'), 'add': None},
-        'notices': list(notices),
-        'lines': [],
-        'table': {'label': label, 'columns': columns, 'rows': rows, 'actionsLabel': _('Actions')},
-        'groups': groups,
-        'empty': {'title': empty, 'text': None, 'link': None, 'add': None},
-        'pager': L.pager(page, pager_query),     # the tabs' pager (core/listprops.py), the one wording of it
-    }
+def page_props(request, **said):
+    """The list-page island's props of a page that is not a tab: core/listprops.py's `page_props`, the one builder."""
+    return L.page_props(request, **said)
 
 
 def live_props(request, rows):

@@ -15,6 +15,7 @@ import { CellLines, Table } from './Table.js';
 import { Chip, type ChipKind } from './Chip.js';
 import { Gauge, type GaugeProps } from './Gauge.js';
 import { Icon, type IconName } from './Icon.js';
+import { Pips, type PipsProps } from './Pips.js';
 import { Plate, Plates } from './Plate.js';
 import { Timeline, type TimelineProps } from './Timeline.js';
 import { EmptyState, Notice, type NoticeTone } from './States.js';
@@ -35,6 +36,10 @@ export interface ListCell {
   gauge?: GaugeProps | null;
   /** a closed disclosure in place of the text: its summary, and its lines shown when opened (a dead letter's payload) */
   details?: { summary: string; lines: string[] } | null;
+  /** the text is the row's figure, drawn large (the meal board's next meal: the design's readout) */
+  figure?: boolean;
+  /** a day's meals as pips before the text (the meal board), with their words */
+  pips?: PipsProps | null;
 }
 
 export interface ListAction {
@@ -69,10 +74,12 @@ export interface ListGroup {
   rows: string[];
 }
 
+export interface ListSection { key: string; title: string; lines: string[]; columns: ListColumn[]; rows: ListRow[] }
+
 export interface ListFilterOption { value: string; label: string }
 export interface ListFilter {
   /** a select (the default), or a day typed the European way (frontend/date-input.ts tidies it) */
-  kind?: 'select' | 'day';
+  kind?: 'select' | 'day' | 'check';
   name: string;
   label: string;
   value: string;
@@ -101,6 +108,9 @@ export interface ListPageProps {
   table: { label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string };
   /** the rows in groups, one plate and table each (optional: without it, one table) */
   groups?: ListGroup[] | null;
+  /** tables of their own above the list, each in a plate of its title with its lines (Sea-lice counts' weekly averages;
+   * optional): drawn whether or not the list has rows */
+  sections?: ListSection[] | null;
   /** a timeline of the listed rows above the table, in a plate of its title (a channel's bindings over time; optional) */
   timeline?: (TimelineProps & { title: string }) | null;
   /** said when there is no row: "No … yet" with what to do, or "No … match" with the way back */
@@ -119,10 +129,11 @@ export function Cell({ cell }: { cell: ListCell }) {
     );
   }
   const main = cell.chip ? <Chip kind={cell.chip.kind}>{cell.chip.text}</Chip>
-    : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.text;
+    : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.figure ? <span className="ui-readout">{cell.text}</span> : cell.text;
   const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);
   const sub = cell.sub && cell.sub.length ? cell.sub.join(' · ') : undefined;
   const lines = <CellLines strong={Boolean(cell.strong)} main={chips && chips.length ? <>{main} {chips}</> : main} sub={sub} />;
+  if (cell.pips) return <><Pips {...cell.pips} />{lines}</>;
   if (!cell.gauge) return lines;
   return <>{lines}<span className="ui-cell-sub"><Gauge {...cell.gauge} /></span></>;
 }
@@ -172,7 +183,12 @@ export function ListToolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) 
           </div>
         ) : null}
         {filters.map((filter) => (
-          <label key={filter.name}>
+          filter.kind === 'check' ? (
+            // on or off ("Show voided"): its word beside the box, as the classic page's
+            <label key={filter.name} className="ui-check">
+              <input type="checkbox" name={filter.name} value="1" defaultChecked={filter.value === '1'} /> {filter.label}
+            </label>
+          ) : <label key={filter.name}>
             <span className="sr-only">{filter.label}</span>
             {filter.kind === 'day' ? (
               <input type="text" name={filter.name} defaultValue={filter.value} placeholder={filter.placeholder}
@@ -232,7 +248,7 @@ function Groups({ groups, table, csrfToken }: { groups: ListGroup[]; table: List
   );
 }
 
-export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, timeline, empty, pager }: ListPageProps) {
+export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, sections, timeline, empty, pager }: ListPageProps) {
   return (
     <>
       {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
@@ -242,6 +258,17 @@ export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, grou
           {notice.text}{notice.link ? <> <a href={notice.link.href}>{notice.link.label}</a></> : null}
         </Notice>
       ))}
+      {sections && sections.length ? (
+        <Plates>
+          {sections.map((section) => (
+            <Plate key={section.key} title={section.title}>
+              {section.lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}
+              <RowsTable label={section.title} columns={section.columns} rows={section.rows} actionsLabel={table.actionsLabel}
+                csrfToken={csrfToken} />
+            </Plate>
+          ))}
+        </Plates>
+      ) : null}
       {table.rows.length ? (
         <>
           {timeline ? (

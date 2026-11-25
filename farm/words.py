@@ -30,6 +30,10 @@ MEDICINE_WITHDRAWAL = _('Medicine withdrawal')
 GO_ON_DESPITE_THESE_WARNINGS = _('Go on despite these warnings')
 FISH_UNDER_A_MEDICINE_WITHDRAWAL_MUST = _('Fish under a medicine withdrawal must not go to food. Going on is stored with what is shown here '
       'and logged as critical.')
+A_PROTOCOL_GIVES_PER_WEIGHT_BAND = _('A protocol gives, per weight band of the fish, the feed, the meals a day and the '
+                                     'specific feeding rate (SFR, %% of the body weight a day) at each temperature column, '
+                                     'with the FCR it expects. A ration is worked out from it on read: the fish, their '
+                                     'estimated weight and the unit’s temperature (Meal board).')
 
 # For a template: {name in lower case: the words}, said as the template's trans tag said them (a msgid's per cent signs are
 # doubled, as a template's msgid has them: core.formpanels.said).

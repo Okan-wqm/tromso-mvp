@@ -1,0 +1,44 @@
+{% load i18n health %}{% comment %} A card that FLOWS (Simple, Detailed, Operator view, a farm's template without a measure) in the new look: the
+   design console's card (F:\dev\balik-notes\design-in, "Suderra Console.dc.html", Monitoring, the flowing cards),
+   included by monitoring/_card.html in place of the classic one. It is the same card: the same frame (the unit, its
+   state word and shape, its reasons, the withdrawal, the unit's status, the flip link, a source that could not be read,
+   a template that cannot be drawn, what the state is from and which template draws it and why) and the same widgets in
+   the same reading order on the same 12-column grid (monitoring/cards/render.py build), each in its classic markup
+   unless the design draws it otherwise (WidgetView.next_renderer). It says what the classic card says, pair for pair,
+   text for text, title for title and link for link (monitoring/tests/test_next_pages.py, the golden extractor).
+   What the design moves:
+   - the head: the code large, the name under it, the state as the design's chip on the right; the withdrawal is a
+     chip of its own under the head (an hourglass, as the design's);
+   - the reasons: each with the state's glyph, in the state's tone;
+   - the actions at the foot, as the design's: the Deffeyes chart's button (it opens the unit's chart in the movable
+     window, frontend/windows.ts, as the design's button opens its window "Deffeyes chart of <unit>"), the link to the
+     tank's water history, then the line of what the state is from and which template draws the card, and the flip
+     link on its right.
+   The same keys, ids and classes the scripts read (data-key, data-state, data-stale, #card-, .monitor-flip,
+   [data-window]), so the poll, the announcer, the wall and the windows work on it unchanged. {% endcomment %}
+<article class="monitor-card monitor-{{ state.key }} is-next" data-key="card:{{ unit.pk }}" data-state="{{ state.key }}"{% if state.stale %} data-stale{% endif %} data-template="{{ chosen.template.pk|default:'' }}"{% if row.preview %} data-preview{% endif %} id="card-{{ unit.pk }}" aria-labelledby="card-title-{{ unit.pk }}">
+  <header class="monitor-card-head">
+    <div class="monitor-card-name">
+      <h3 id="card-title-{{ unit.pk }}"><a href="{% url 'farm:production_units' %}?unit={{ unit.pk }}">{{ unit.code }}</a></h3>
+      <p class="row-sub">{{ unit.name }}{% if unit.production_department %} · {{ unit.production_department.name }}{% endif %}</p>
+      {% if unit.status != "active" %}<p class="row-sub monitor-status">{{ unit.get_status_display }}</p>{% endif %}
+    </div>
+    <div class="monitor-card-state">{% include "monitoring/_state_word.html" %}</div>
+  </header>
+  {% if card.withdrawal %}<p class="monitor-chips"><span class="badge badge-note" title="{% for block in card.withdrawal %}{{ block.batch.code }}: {{ block|harvest_from }} {% endfor %}">{% include "icons/_icon.html" with name="hourglass" %}{% trans "Withdrawal" %} · {{ card.withdrawal.0|harvest_from }}</span></p>{% endif %}
+  {% if state.reasons %}<ul class="monitor-reasons" role="list">{% for reason in state.reasons %}<li><span class="monitor-shape monitor-shape-{{ state.key }}" aria-hidden="true"></span>{{ reason }}</li>{% endfor %}</ul>{% endif %}
+  {% if card.failed %}<p class="monitor-failed row-sub" role="status">{% trans "Could not be read" %}: {{ card.failed_text }}</p>{% endif %}
+  {% if chosen.error %}<p class="monitor-template-error">{% blocktrans trimmed with name=chosen.name %}Template error: “{{ name }}” cannot be drawn; this card is shown as Detailed.{% endblocktrans %}</p>{% endif %}
+  {% if state.key == "empty" %}<p class="empty-unit">{% trans "Empty" %}</p>{% endif %}
+  <div class="card-grid">{% for view in card.widgets %}{% if not view.in_foot %}
+    <div class="w w-{{ view.type }} {{ view.place }}">{% if view.hidden %}{% if view.hidden == "feeding" %}{% include "monitoring/_card_hidden.html" with section=_("Feeding") %}{% elif view.hidden == "water" %}{% include "monitoring/_card_hidden.html" with section=_("Water") %}{% elif view.hidden == "health" %}{% include "monitoring/_card_hidden.html" with section=_("Health") %}{% else %}{% include "monitoring/_card_hidden.html" with section=_("Tasks") %}{% endif %}{% elif view.failed %}<p class="monitor-hidden row-sub">{% trans "no data" %}</p>{% else %}{% include view.next_renderer %}{% endif %}</div>{% endif %}{% endfor %}
+  </div>
+  <div class="monitor-card-actions">{% for view in card.widgets %}{% if view.in_foot %}{% if view.failed %}<p class="monitor-hidden row-sub">{% trans "no data" %}</p>{% else %}{% include view.renderer %}{% endif %}{% endif %}{% endfor %}{% if "water" in card.sections and not row.preview %}{% include "monitoring/_water_link.html" %}{% endif %}</div>
+  <footer class="monitor-card-foot">
+    <div class="monitor-card-basis">
+      <p class="row-sub">{% trans "State from" %}: {% for name in state.basis %}{% if name == "stock" %}{% trans "Fish" %}{% elif name == "feeding" %}{% trans "Feeding" %}{% elif name == "water" %}{% trans "Water" %}{% else %}{% trans "Health" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+      <p class="row-sub monitor-why">{% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}</p>
+    </div>
+    {% if chosen.flip_to %}<a class="monitor-flip" id="flip-{{ unit.pk }}" href="{{ row.flip.page }}" data-poll-url="{{ row.flip.poll }}">{{ chosen.flip_to.shown_name }}</a>{% endif %}
+  </footer>
+</article>

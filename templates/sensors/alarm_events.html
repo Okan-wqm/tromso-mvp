@@ -1,11 +1,12 @@
 {% extends "app_base.html" %}
-{% load i18n sensors dates %}
+{% load alarm_watch i18n sensors dates %}
 {% comment %} Sensors › Operations › Alarm events (sensors.views.alarm_events): the times a rule held, the open ones first, written
    by the sensors' check; each is an alarm of Company › Alarms, which keeps who was notified and who acknowledged it. {% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
+{% alarm_watch %}
 {% include "alarms/_not_sent.html" %}
 {% if events %}
 <div class="table-wrap">

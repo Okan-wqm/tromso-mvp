@@ -1,0 +1,2525 @@
+{
+ "team": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Search employees",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search employees",
+    "placeholder": "Search by name or number"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "department",
+     "label": "Department",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All departments"
+      }
+     ],
+     "groups": [
+      {
+       "label": "Office departments",
+       "options": [
+        {
+         "value": "office:194622bf-1695-4ede-8925-fac0241337d9",
+         "label": "Test Accounts (TAC)"
+        },
+        {
+         "value": "office:0c361323-3ca8-462e-abe4-e0225bd1b014",
+         "label": "Test Office (TOF)"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "select",
+     "name": "type",
+     "label": "Employment type",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All types"
+      },
+      {
+       "value": "staff",
+       "label": "Staff"
+      },
+      {
+       "value": "student",
+       "label": "Student"
+      },
+      {
+       "value": "researcher",
+       "label": "Researcher"
+      },
+      {
+       "value": "technician",
+       "label": "Technician"
+      },
+      {
+       "value": "advisor",
+       "label": "Advisor"
+      },
+      {
+       "value": "contractor",
+       "label": "Contractor"
+      },
+      {
+       "value": "volunteer",
+       "label": "Volunteer"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Status",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Any status"
+      },
+      {
+       "value": "current",
+       "label": "Working here"
+      },
+      {
+       "value": "left",
+       "label": "Left"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/hr/team/new/",
+    "label": "Add employee"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Team list",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Employee",
+     "numeric": false
+    },
+    {
+     "key": "type",
+     "label": "Type",
+     "numeric": false
+    },
+    {
+     "key": "department",
+     "label": "Department",
+     "numeric": false
+    },
+    {
+     "key": "title",
+     "label": "Title",
+     "numeric": false
+    },
+    {
+     "key": "joined",
+     "label": "Joined",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "c73059e2-b014-4abf-87e2-ddca52a7e454",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Former",
+       "href": "/hr/team/c73059e2-b014-4abf-87e2-ddca52a7e454/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9003"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "Not placed"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "–",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "neutral",
+        "text": "Left 30.06.2026"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/team/c73059e2-b014-4abf-87e2-ddca52a7e454/view/",
+       "label": "Show Test Former",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/team/c73059e2-b014-4abf-87e2-ddca52a7e454/",
+       "label": "Edit Test Former",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "5888b4e6-9727-42f9-a60f-ae1807ba37f4",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Person",
+       "href": "/hr/team/5888b4e6-9727-42f9-a60f-ae1807ba37f4/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9001"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Office",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test coordinator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/team/5888b4e6-9727-42f9-a60f-ae1807ba37f4/view/",
+       "label": "Show Test Person",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/team/5888b4e6-9727-42f9-a60f-ae1807ba37f4/",
+       "label": "Edit Test Person",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No employees yet",
+   "text": "The people of your team appear here. Someone who manages a department sees the people placed in it.",
+   "link": null,
+   "add": {
+    "href": "/hr/team/new/",
+    "label": "Add employee"
+   }
+  },
+  "pager": null
+ },
+ "team-production": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Search employees",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search employees",
+    "placeholder": "Search by name or number"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "department",
+     "label": "Department",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All departments"
+      }
+     ],
+     "groups": [
+      {
+       "label": "Production departments",
+       "options": [
+        {
+         "value": "production:c180228d-8f77-4916-8bb1-d8b56d19946b",
+         "label": "Test Cages (TCG)"
+        },
+        {
+         "value": "production:72d001af-06ac-4566-a555-a745550bc00d",
+         "label": "Test Hall A (THA)"
+        },
+        {
+         "value": "production:2ef115be-c669-47d2-b3b9-fb844587e017",
+         "label": "Test Trial Hall (TTH)"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "kind": "select",
+     "name": "type",
+     "label": "Employment type",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "All types"
+      },
+      {
+       "value": "staff",
+       "label": "Staff"
+      },
+      {
+       "value": "student",
+       "label": "Student"
+      },
+      {
+       "value": "researcher",
+       "label": "Researcher"
+      },
+      {
+       "value": "technician",
+       "label": "Technician"
+      },
+      {
+       "value": "advisor",
+       "label": "Advisor"
+      },
+      {
+       "value": "contractor",
+       "label": "Contractor"
+      },
+      {
+       "value": "volunteer",
+       "label": "Volunteer"
+      }
+     ],
+     "groups": []
+    },
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Status",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Any status"
+      },
+      {
+       "value": "current",
+       "label": "Working here"
+      },
+      {
+       "value": "left",
+       "label": "Left"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/production/team/people/new/",
+    "label": "Add employee"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Team list",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Employee",
+     "numeric": false
+    },
+    {
+     "key": "type",
+     "label": "Type",
+     "numeric": false
+    },
+    {
+     "key": "department",
+     "label": "Department",
+     "numeric": false
+    },
+    {
+     "key": "title",
+     "label": "Title",
+     "numeric": false
+    },
+    {
+     "key": "joined",
+     "label": "Joined",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "84bf6398-eb5a-4aba-89e0-68f80d47b9b5",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Absent",
+       "href": "/production/team/people/84bf6398-eb5a-4aba-89e0-68f80d47b9b5/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9105"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/84bf6398-eb5a-4aba-89e0-68f80d47b9b5/view/",
+       "label": "Show Test Absent",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/84bf6398-eb5a-4aba-89e0-68f80d47b9b5/",
+       "label": "Edit Test Absent",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "c99a2253-d4f3-4988-9e1d-adf309fd56a2",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Away",
+       "href": "/production/team/people/c99a2253-d4f3-4988-9e1d-adf309fd56a2/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9106"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/c99a2253-d4f3-4988-9e1d-adf309fd56a2/view/",
+       "label": "Show Test Away",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/c99a2253-d4f3-4988-9e1d-adf309fd56a2/",
+       "label": "Edit Test Away",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "a02f73d6-2522-4943-9453-6b9904120204",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Done",
+       "href": "/production/team/people/a02f73d6-2522-4943-9453-6b9904120204/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9107"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/a02f73d6-2522-4943-9453-6b9904120204/view/",
+       "label": "Show Test Done",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/a02f73d6-2522-4943-9453-6b9904120204/",
+       "label": "Edit Test Done",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "e4fc1134-01c5-4d50-b360-b85579d4fd8e",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Late",
+       "href": "/production/team/people/e4fc1134-01c5-4d50-b360-b85579d4fd8e/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9103"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/e4fc1134-01c5-4d50-b360-b85579d4fd8e/view/",
+       "label": "Show Test Late",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/e4fc1134-01c5-4d50-b360-b85579d4fd8e/",
+       "label": "Edit Test Late",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "954f8674-e59c-4ea1-bd72-3867b6365061",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Present",
+       "href": "/production/team/people/954f8674-e59c-4ea1-bd72-3867b6365061/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9102"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/954f8674-e59c-4ea1-bd72-3867b6365061/view/",
+       "label": "Show Test Present",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/954f8674-e59c-4ea1-bd72-3867b6365061/",
+       "label": "Edit Test Present",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "3e369c49-18d2-4437-a6dd-056330604610",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Second",
+       "href": "/production/team/people/3e369c49-18d2-4437-a6dd-056330604610/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9002"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test technician",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/3e369c49-18d2-4437-a6dd-056330604610/view/",
+       "label": "Show Test Second",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/3e369c49-18d2-4437-a6dd-056330604610/",
+       "label": "Edit Test Second",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "fa71c7be-4da1-4418-95c9-04405f001382",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Upcoming",
+       "href": "/production/team/people/fa71c7be-4da1-4418-95c9-04405f001382/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9101"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/fa71c7be-4da1-4418-95c9-04405f001382/view/",
+       "label": "Show Test Upcoming",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/fa71c7be-4da1-4418-95c9-04405f001382/",
+       "label": "Edit Test Upcoming",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    },
+    {
+     "key": "f874f3a2-1700-4176-8270-8f0553c20460",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Waiting",
+       "href": "/production/team/people/f874f3a2-1700-4176-8270-8f0553c20460/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "E-9104"
+       ]
+      },
+      "type": {
+       "text": "Staff",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "department": {
+       "text": "Test Hall A",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "title": {
+       "text": "Test operator",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "joined": {
+       "text": "01.01.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Working here"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/production/team/people/f874f3a2-1700-4176-8270-8f0553c20460/view/",
+       "label": "Show Test Waiting",
+       "icon": "search",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/production/team/people/f874f3a2-1700-4176-8270-8f0553c20460/",
+       "label": "Edit Test Waiting",
+       "icon": "pencil",
+       "danger": false
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No employees yet",
+   "text": "The people of your team appear here. Someone who manages a department sees the people placed in it.",
+   "link": null,
+   "add": {
+    "href": "/production/team/people/new/",
+    "label": "Add employee"
+   }
+  },
+  "pager": null
+ },
+ "departments": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Search office departments",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search office departments",
+    "placeholder": "Search by name or code"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "select",
+     "name": "status",
+     "label": "Status",
+     "value": "",
+     "options": [
+      {
+       "value": "",
+       "label": "Any status"
+      },
+      {
+       "value": "active",
+       "label": "Active"
+      },
+      {
+       "value": "inactive",
+       "label": "Inactive"
+      }
+     ],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/hr/departments/new/",
+    "label": "Add office department"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Departments",
+   "columns": [
+    {
+     "key": "department",
+     "label": "Department",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    },
+    {
+     "key": "site",
+     "label": "Site",
+     "numeric": false
+    },
+    {
+     "key": "manager",
+     "label": "Manager",
+     "numeric": false
+    },
+    {
+     "key": "people",
+     "label": "People",
+     "numeric": true
+    }
+   ],
+   "rows": [
+    {
+     "key": "0c361323-3ca8-462e-abe4-e0225bd1b014",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "department": {
+       "text": "Test Office",
+       "href": "/hr/departments/0c361323-3ca8-462e-abe4-e0225bd1b014/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "TOF"
+       ]
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "site": {
+       "text": "Test Site North",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "manager": {
+       "text": "test.admin",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "people": {
+       "text": "1",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/departments/0c361323-3ca8-462e-abe4-e0225bd1b014/",
+       "label": "Edit Test Office",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/departments/0c361323-3ca8-462e-abe4-e0225bd1b014/delete/",
+       "label": "Delete Test Office",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "194622bf-1695-4ede-8925-fac0241337d9",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "department": {
+       "text": "Test Accounts",
+       "href": "/hr/departments/194622bf-1695-4ede-8925-fac0241337d9/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "TAC · in Test Office"
+       ]
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "site": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "No site"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "manager": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "No manager"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "people": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/departments/194622bf-1695-4ede-8925-fac0241337d9/",
+       "label": "Edit Test Accounts",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/departments/194622bf-1695-4ede-8925-fac0241337d9/delete/",
+       "label": "Delete Test Accounts",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No office departments yet",
+   "text": "The office departments of the company, such as Finance. The production departments are under Production.",
+   "link": null,
+   "add": {
+    "href": "/hr/departments/new/",
+    "label": "Add office department"
+   }
+  },
+  "pager": null
+ },
+ "attendance": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Search attendance records",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search attendance records",
+    "placeholder": "Search by name or number"
+   },
+   "keep": [],
+   "filters": [
+    {
+     "kind": "day",
+     "name": "from",
+     "label": "From",
+     "value": "09.11.2026",
+     "placeholder": "26.10.2026",
+     "options": [],
+     "groups": []
+    },
+    {
+     "kind": "day",
+     "name": "to",
+     "label": "To",
+     "value": "23.11.2026",
+     "placeholder": "26.10.2026",
+     "options": [],
+     "groups": []
+    }
+   ],
+   "submit": "Filter",
+   "add": {
+    "href": "/hr/time/attendance/new/",
+    "label": "Add attendance record"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Attendance",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Employee",
+     "numeric": false
+    },
+    {
+     "key": "in",
+     "label": "Clock in",
+     "numeric": false
+    },
+    {
+     "key": "out",
+     "label": "Clock out",
+     "numeric": false
+    },
+    {
+     "key": "how",
+     "label": "How",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "9ad9c0b9-84ed-4d5a-a6c5-3ee96584f18d",
+     "status": "warning",
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Person",
+       "href": "/hr/time/attendance/9ad9c0b9-84ed-4d5a-a6c5-3ee96584f18d/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "in": {
+       "text": "21.11.2026 13:42",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "out": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "warning",
+        "text": "Clock-out forgotten"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "how": {
+       "text": "Entered by hand",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/time/attendance/9ad9c0b9-84ed-4d5a-a6c5-3ee96584f18d/",
+       "label": "Correct",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/time/attendance/9ad9c0b9-84ed-4d5a-a6c5-3ee96584f18d/delete/",
+       "label": "Void",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No attendance records yet",
+   "text": "The clock-ins of your team in these days appear here.",
+   "link": null,
+   "add": {
+    "href": "/hr/time/attendance/new/",
+    "label": "Add attendance record"
+   }
+  },
+  "pager": null
+ },
+ "leave": {
+  "csrfToken": "test-token",
+  "tabs": {
+   "label": "Status",
+   "tabs": [
+    {
+     "href": "?tab=pending",
+     "label": "Pending",
+     "count": "0",
+     "current": true
+    },
+    {
+     "href": "?tab=approved",
+     "label": "Approved",
+     "count": "1",
+     "current": false
+    },
+    {
+     "href": "?tab=rejected",
+     "label": "Rejected",
+     "count": "0",
+     "current": false
+    },
+    {
+     "href": "?tab=all",
+     "label": "All",
+     "count": "1",
+     "current": false
+    }
+   ]
+  },
+  "toolbar": {
+   "label": "Search leave requests",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search leave requests",
+    "placeholder": "Search by name or type"
+   },
+   "keep": [],
+   "filters": [],
+   "submit": "Filter",
+   "add": {
+    "href": "/hr/leave/new/",
+    "label": "Add leave request"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Leave requests",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Employee",
+     "numeric": false
+    },
+    {
+     "key": "type",
+     "label": "Leave type",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Days",
+     "numeric": false
+    },
+    {
+     "key": "charged",
+     "label": "Charged",
+     "numeric": true
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    },
+    {
+     "key": "decided",
+     "label": "Decided by",
+     "numeric": false
+    }
+   ],
+   "rows": [],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No leave requests yet",
+   "text": "Requests for leave of your team appear here, with who may approve them.",
+   "link": null,
+   "add": {
+    "href": "/hr/leave/new/",
+    "label": "Add leave request"
+   }
+  },
+  "pager": null
+ },
+ "leave-all": {
+  "csrfToken": "test-token",
+  "tabs": {
+   "label": "Status",
+   "tabs": [
+    {
+     "href": "?tab=pending",
+     "label": "Pending",
+     "count": "0",
+     "current": false
+    },
+    {
+     "href": "?tab=approved",
+     "label": "Approved",
+     "count": "1",
+     "current": false
+    },
+    {
+     "href": "?tab=rejected",
+     "label": "Rejected",
+     "count": "0",
+     "current": false
+    },
+    {
+     "href": "?tab=all",
+     "label": "All",
+     "count": "1",
+     "current": true
+    }
+   ]
+  },
+  "toolbar": {
+   "label": "Search leave requests",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search leave requests",
+    "placeholder": "Search by name or type"
+   },
+   "keep": [
+    {
+     "name": "tab",
+     "value": "all"
+    }
+   ],
+   "filters": [],
+   "submit": "Filter",
+   "add": {
+    "href": "/hr/leave/new/",
+    "label": "Add leave request"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Leave requests",
+   "columns": [
+    {
+     "key": "employee",
+     "label": "Employee",
+     "numeric": false
+    },
+    {
+     "key": "type",
+     "label": "Leave type",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Days",
+     "numeric": false
+    },
+    {
+     "key": "charged",
+     "label": "Charged",
+     "numeric": true
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    },
+    {
+     "key": "decided",
+     "label": "Decided by",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "0bb58f4f-38c9-4c93-b104-9b301bd48ace",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "employee": {
+       "text": "Test Person",
+       "href": "/hr/leave/0bb58f4f-38c9-4c93-b104-9b301bd48ace/view/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "type": {
+       "text": "Test annual leave",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "days": {
+       "text": "13.11.2026 – 15.11.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "charged": {
+       "text": "1",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Approved"
+       },
+       "chips": [],
+       "sub": []
+      },
+      "decided": {
+       "text": "test.admin",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "post",
+       "href": "/hr/leave/0bb58f4f-38c9-4c93-b104-9b301bd48ace/cancel/",
+       "label": "Cancel the request",
+       "icon": "calendar-off",
+       "danger": true,
+       "fields": [
+        {
+         "name": "next",
+         "value": "/hr/leave/?tab=all&ui=next"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No leave requests yet",
+   "text": "Requests for leave of your team appear here, with who may approve them.",
+   "link": null,
+   "add": {
+    "href": "/hr/leave/new/",
+    "label": "Add leave request"
+   }
+  },
+  "pager": null
+ },
+ "shifts": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Search shifts",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search shifts",
+    "placeholder": "Search by name or code"
+   },
+   "keep": [],
+   "filters": [],
+   "submit": "Filter",
+   "add": {
+    "href": "/hr/settings/shifts/new/",
+    "label": "Add shift"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Shifts",
+   "columns": [
+    {
+     "key": "shift",
+     "label": "Shift",
+     "numeric": false
+    },
+    {
+     "key": "hours",
+     "label": "Hours",
+     "numeric": false
+    },
+    {
+     "key": "break",
+     "label": "Break (minutes)",
+     "numeric": true
+    },
+    {
+     "key": "grace",
+     "label": "Grace (minutes)",
+     "numeric": true
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "1a1b68e4-70a4-4cdb-a379-f11f98b6f545",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test early shift",
+       "href": "/hr/settings/shifts/1a1b68e4-70a4-4cdb-a379-f11f98b6f545/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TE1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "06:00–10:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/1a1b68e4-70a4-4cdb-a379-f11f98b6f545/",
+       "label": "Edit Test early shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/1a1b68e4-70a4-4cdb-a379-f11f98b6f545/delete/",
+       "label": "Delete Test early shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "aed5549d-6ca5-4454-97de-886bdc1690ed",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test day shift",
+       "href": "/hr/settings/shifts/aed5549d-6ca5-4454-97de-886bdc1690ed/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TD"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "07:00–15:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "30",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "10",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/aed5549d-6ca5-4454-97de-886bdc1690ed/",
+       "label": "Edit Test day shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/aed5549d-6ca5-4454-97de-886bdc1690ed/delete/",
+       "label": "Delete Test day shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "390570e7-3388-4f8c-ab8b-a2f7ddd4e4de",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test morning shift",
+       "href": "/hr/settings/shifts/390570e7-3388-4f8c-ab8b-a2f7ddd4e4de/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TD1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "07:00–15:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/390570e7-3388-4f8c-ab8b-a2f7ddd4e4de/",
+       "label": "Edit Test morning shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/390570e7-3388-4f8c-ab8b-a2f7ddd4e4de/delete/",
+       "label": "Delete Test morning shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "7b17dd07-3d4f-4f58-8ca0-44e9a741ad6f",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test midday shift",
+       "href": "/hr/settings/shifts/7b17dd07-3d4f-4f58-8ca0-44e9a741ad6f/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TM1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "12:00–20:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/7b17dd07-3d4f-4f58-8ca0-44e9a741ad6f/",
+       "label": "Edit Test midday shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/7b17dd07-3d4f-4f58-8ca0-44e9a741ad6f/delete/",
+       "label": "Delete Test midday shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "4108ab3c-ba4d-4244-86f8-e7b23b2fb28b",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test later shift",
+       "href": "/hr/settings/shifts/4108ab3c-ba4d-4244-86f8-e7b23b2fb28b/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TL1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "13:30–21:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/4108ab3c-ba4d-4244-86f8-e7b23b2fb28b/",
+       "label": "Edit Test later shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/4108ab3c-ba4d-4244-86f8-e7b23b2fb28b/delete/",
+       "label": "Delete Test later shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "1f15c1ae-1089-4d2b-a139-ccdba673c676",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test evening shift",
+       "href": "/hr/settings/shifts/1f15c1ae-1089-4d2b-a139-ccdba673c676/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TV1"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "18:00–23:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "break": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/1f15c1ae-1089-4d2b-a139-ccdba673c676/",
+       "label": "Edit Test evening shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/1f15c1ae-1089-4d2b-a139-ccdba673c676/delete/",
+       "label": "Delete Test evening shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    },
+    {
+     "key": "8b4084ca-3ee1-49f3-92f1-93390171244f",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "shift": {
+       "text": "Test night shift",
+       "href": "/hr/settings/shifts/8b4084ca-3ee1-49f3-92f1-93390171244f/",
+       "strong": true,
+       "chip": null,
+       "chips": [
+        {
+         "kind": "note",
+         "text": "TN"
+        }
+       ],
+       "sub": []
+      },
+      "hours": {
+       "text": "22:00–06:00",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "next day"
+       ]
+      },
+      "break": {
+       "text": "30",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "grace": {
+       "text": "0",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/8b4084ca-3ee1-49f3-92f1-93390171244f/",
+       "label": "Edit Test night shift",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/shifts/8b4084ca-3ee1-49f3-92f1-93390171244f/delete/",
+       "label": "Delete Test night shift",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No shifts yet",
+   "text": "A shift is a start and an end on the wall clock of the site, with a break. Add the shifts the roster uses.",
+   "link": null,
+   "add": {
+    "href": "/hr/settings/shifts/new/",
+    "label": "Add shift"
+   }
+  },
+  "pager": null
+ },
+ "holidays": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Search holidays",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search holidays",
+    "placeholder": "Search by name"
+   },
+   "keep": [],
+   "filters": [],
+   "submit": "Filter",
+   "add": {
+    "href": "/hr/settings/holidays/new/",
+    "label": "Add holiday"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Holidays",
+   "columns": [
+    {
+     "key": "day",
+     "label": "Day",
+     "numeric": false
+    },
+    {
+     "key": "holiday",
+     "label": "Holiday",
+     "numeric": false
+    },
+    {
+     "key": "site",
+     "label": "Site",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "da2eedcb-b49e-4c8b-ac0d-5f2630cbfd56",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "day": {
+       "text": "25.12.2026",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "Friday"
+       ]
+      },
+      "holiday": {
+       "text": "Test holiday",
+       "href": "/hr/settings/holidays/da2eedcb-b49e-4c8b-ac0d-5f2630cbfd56/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "site": {
+       "text": "Every site",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/holidays/da2eedcb-b49e-4c8b-ac0d-5f2630cbfd56/",
+       "label": "Edit Test holiday",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/holidays/da2eedcb-b49e-4c8b-ac0d-5f2630cbfd56/delete/",
+       "label": "Delete Test holiday",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No holidays yet",
+   "text": "Add the public holidays and other days off of the company; a leave request is not charged for them.",
+   "link": null,
+   "add": {
+    "href": "/hr/settings/holidays/new/",
+    "label": "Add holiday"
+   }
+  },
+  "pager": null
+ },
+ "leave-types": {
+  "csrfToken": "test-token",
+  "tabs": null,
+  "toolbar": {
+   "label": "Search leave types",
+   "search": {
+    "name": "q",
+    "value": "",
+    "label": "Search leave types",
+    "placeholder": "Search by name or code"
+   },
+   "keep": [],
+   "filters": [],
+   "submit": "Filter",
+   "add": {
+    "href": "/hr/settings/leave-types/new/",
+    "label": "Add leave type"
+   }
+  },
+  "notices": [],
+  "lines": [],
+  "table": {
+   "label": "Leave types",
+   "columns": [
+    {
+     "key": "type",
+     "label": "Leave type",
+     "numeric": false
+    },
+    {
+     "key": "days",
+     "label": "Days a year",
+     "numeric": true
+    },
+    {
+     "key": "approval",
+     "label": "Needs approval",
+     "numeric": false
+    },
+    {
+     "key": "status",
+     "label": "Status",
+     "numeric": false
+    }
+   ],
+   "rows": [
+    {
+     "key": "fd405fde-d82e-48da-bb94-35dc788da7c3",
+     "status": null,
+     "voided": false,
+     "cells": {
+      "type": {
+       "text": "Test annual leave",
+       "href": "/hr/settings/leave-types/fd405fde-d82e-48da-bb94-35dc788da7c3/",
+       "strong": true,
+       "chip": null,
+       "chips": [],
+       "sub": [
+        "TAL"
+       ]
+      },
+      "days": {
+       "text": "25",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "approval": {
+       "text": "Yes",
+       "href": null,
+       "strong": false,
+       "chip": null,
+       "chips": [],
+       "sub": []
+      },
+      "status": {
+       "text": null,
+       "href": null,
+       "strong": false,
+       "chip": {
+        "kind": "ok",
+        "text": "Active"
+       },
+       "chips": [],
+       "sub": []
+      }
+     },
+     "actions": [
+      {
+       "kind": "link",
+       "href": "/hr/settings/leave-types/fd405fde-d82e-48da-bb94-35dc788da7c3/",
+       "label": "Edit Test annual leave",
+       "icon": "pencil",
+       "danger": false
+      },
+      {
+       "kind": "link",
+       "href": "/hr/settings/leave-types/fd405fde-d82e-48da-bb94-35dc788da7c3/delete/",
+       "label": "Delete Test annual leave",
+       "icon": "trash",
+       "danger": true
+      }
+     ]
+    }
+   ],
+   "actionsLabel": "Actions"
+  },
+  "timeline": null,
+  "empty": {
+   "title": "No leave types yet",
+   "text": "A leave type is a kind of leave, such as annual or parental leave. Add the types the company uses.",
+   "link": null,
+   "add": {
+    "href": "/hr/settings/leave-types/new/",
+    "label": "Add leave type"
+   }
+  },
+  "pager": null
+ }
+}

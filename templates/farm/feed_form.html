@@ -1,14 +1,14 @@
 {% extends "crud/form.html" %}
 {% load i18n %}
 {# The feed form adds the species and fish weights it suits on a tab of their own, saved as a list (core.crud.RowList). #}
-{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="suitability">{% trans "Suitable for" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="suitability">{{ row_words.suitability.title }}</button>{% endblock %}
 {% block extra_panels %}
-{% trans "Suitable for" as panel_title %}
-{% trans "The species and life stages it is made for, and the fish weights in grams: from the lower weight up to, not including, the upper one; leave an end empty when it has none. One row per species and stage, at most 50. They are saved separately from the feed details." as help %}
-{% trans "No species yet. Use “Add species” to add a row." as empty %}
-{% trans "Add species" as add %}
-{% trans "Save suitability" as save %}
-{% trans "Species and fish weights can be added once the feed is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
+{# #}
+{# #}
+{# #}
+{# #}
 {% if object %}{% url 'farm:feed_suitability' object.pk as action %}{% endif %}
-{% include "crud/_row_list.html" with rows=suitability tab="suitability" legend=panel_title kind="suitability-row" %}
+{% include "crud/_row_list.html" with rows=suitability tab="suitability" words=row_words.suitability kind="suitability-row" %}
 {% endblock %}

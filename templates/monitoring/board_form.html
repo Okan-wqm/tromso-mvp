@@ -1,14 +1,14 @@
 {% extends "crud/form.html" %}
 {% load i18n %}
 {# A monitoring board's form adds its cards on a tab of their own, saved as a list (core.crud.RowList). #}
-{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="units">{% trans "Units" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="units">{{ row_words.units.title }}</button>{% endblock %}
 {% block extra_panels %}
-{% trans "Units" as panel_title %}
-{% trans "One card per unit, in the farm’s order. A card is drawn as the board says unless its row says otherwise. A unit that is deleted keeps its row and its card comes back when the unit does; saving this list drops the row. The cards are saved separately from the board’s details." as help %}
-{% trans "No cards yet. Use “Add unit” to add a row." as empty %}
-{% trans "Add unit" as add %}
-{% trans "Save cards" as save %}
-{% trans "Cards can be added once the board is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
+{# #}
+{# #}
+{# #}
+{# #}
 {% if object %}{% url 'monitoring:monitorboard_units' object.pk as action %}{% endif %}
-{% include "crud/_row_list.html" with rows=units tab="units" legend=panel_title kind="monitor-board-row" %}
+{% include "crud/_row_list.html" with rows=units tab="units" words=row_words.units kind="monitor-board-row" %}
 {% endblock %}

@@ -26,6 +26,7 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext
 from core import navigation
 from core.crud import DRAFT, done, render_page
 from core.dates import read_day
+from core.ui import is_next
 from farm.forms.stock import VoidForm
 from farm.models import Feed, Site, Supplier
 from farm.stock.dates import shown_date, site_earliest, site_today
@@ -83,7 +84,8 @@ def storage(request):
                        actions=actions, can_record=can_record, can_void=request.user.has_perm(VOID))
     context.update({'overview': _overview, 'stock': _stock, 'movements': _movements, 'counts': _counts}[tab](
         request, context))
-    return render_page(request, 'inventory/storage.html', context)
+    # the new look (core.ui.is_next) draws the same context with the design system's classes (inventory/storage_next.html)
+    return render_page(request, 'inventory/storage_next.html' if is_next(request) else 'inventory/storage.html', context)
 
 
 def _overview(request, context):

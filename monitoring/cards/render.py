@@ -46,6 +46,7 @@ class WidgetView:
     hidden: str          # '' or the section the person may not read ('feeding', 'water', 'health', 'tasks')
     failed: bool         # a source of it could not be read: it says "no data"
     dom_id: str          # w-<unit>-<widget id>: what a focusable element in it is called (poll.ts restores focus by id)
+    titled: bool = False  # it says its name over what it shows (a box of the Big card), where its place has the room
 
     @property
     def place(self):
@@ -65,11 +66,27 @@ def _hidden(spec, sections):
     return HIDDEN_AS[spec.sources[0]]
 
 
+# The boxes of a fitted card that say their name over what they show (the design's three boxes under the Big card's
+# values: Dosing advice, Other sampling points, Stock), when their place is this many card units higher than what they
+# print needs (catalogue fit_units): the name is one line of the smallest step, never squeezed into a place too low.
+TITLED = frozenset({'dosing', 'points', 'stock'})
+TITLE_UNITS = 1.2
+
+
+def _titled(spec, widget, rows, measure):
+    if spec.type not in TITLED or not measure or not spec.fit_units:
+        return False
+    from .validate import fitted_place
+    return fitted_place(widget, rows, measure)[1] >= spec.fit_units[1] + TITLE_UNITS
+
+
 def build(card):
     """The card's widgets to draw, in reading order; on the card of a unit with no fish, only the ones that belong
     there (the experiments' chips, the Deffeyes chart button)."""
     views = []
     widgets = sorted(card.template.layout['widgets'], key=lambda widget: (widget['y'], widget['x']))
+    rows = max((widget['y'] + widget['h'] for widget in widgets), default=0)
+    measure = getattr(card.template, 'measure', None)
     for widget in widgets:
         spec = catalogue.WIDGETS[widget['type']]
         if card.stock is None and not spec.on_empty:
@@ -80,7 +97,8 @@ def build(card):
         views.append(WidgetView(
             widget['id'], spec.type, widget['x'], widget['y'], widget['w'], widget['h'], spec.renderer,
             widget.get('opts', {}), widget.get('bind', {}), hidden,
-            any(source in card.failed for source in spec.sources), f'w-{card.unit.pk}-{widget["id"]}'))
+            any(source in card.failed for source in spec.sources), f'w-{card.unit.pk}-{widget["id"]}',
+            _titled(spec, widget, rows, measure)))
     return tuple(views)
 
 

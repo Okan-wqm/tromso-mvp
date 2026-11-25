@@ -1,14 +1,14 @@
-{% load i18n %}{% comment %} What is wrong with an experiment's design (experiments.design.problems): the errors, which block starting it, and the
+{% load i18n experiments_words %}{% experiment_words as ew %}{% comment %} What is wrong with an experiment's design (experiments.design.problems): the errors, which block starting it, and the
    warnings, which are shown and acknowledged at the start. `findings` is a design.Assessment.{% endcomment %}
 {% if findings.errors %}
 <div class="notice notice-error" role="alert">
-  <strong>{% trans "To fix before it can start" %}</strong>
+  <strong>{{ ew.to_fix_before_it_can_start }}</strong>
   <ul>{% for finding in findings.errors %}<li>{{ finding.text }}</li>{% endfor %}</ul>
 </div>
 {% endif %}
 {% if findings.warnings %}
 <div class="notice notice-warning">
-  <strong>{% trans "To read before it starts" %}</strong>
+  <strong>{{ ew.to_read_before_it_starts }}</strong>
   <ul>{% for finding in findings.warnings %}<li>{{ finding.text }}</li>{% endfor %}</ul>
 </div>
 {% endif %}

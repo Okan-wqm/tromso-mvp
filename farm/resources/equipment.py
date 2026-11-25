@@ -1,7 +1,7 @@
 from django.db.models import Count, Q
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
-from core import audit
+from core import audit, formpanels
 from core.crud import NONE, Resource, RowList, filter_by
 from core.models import in_tree_order
 
@@ -20,6 +20,19 @@ class FeederCalibrations(RowList):
 
     key, tab, label = 'calibrations', 'calibration', _('Feed calibrations')
     formset = FeederCalibrationFormSet
+    # Its panel's words (farm/equipment_form.html).
+    title = _('Feed calibration')
+    help_text = _('For each feed size, how much feed one shot dispenses and how much the silo holds; at most 50 rows. They '
+                  'are saved separately from the equipment details.')
+    empty_text = _('No calibrations yet. Use “Add calibration” to add a row.')
+    add_label, save_label = _('Add calibration'), _('Save calibrations')
+
+    @classmethod
+    def words(cls, equipment):
+        """Before the list applies: a new piece of equipment, or one whose saved type takes no calibrations yet."""
+        return {**super().words(equipment), 'pending': _(
+            'Save the equipment with this feeder type first; then its calibrations can be added here.') if equipment
+            else _('Calibrations can be added once the equipment is created.')}
     saved = ngettext_lazy('%(count)d calibration saved.', '%(count)d calibrations saved.', 'count')
 
     @classmethod
@@ -45,6 +58,15 @@ class EquipmentResource(Resource):
     form_template = 'farm/equipment_form.html'
     icon = 'wrench'
     row_lists = (FeederCalibrations,)
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """farm/equipment_form.html in the new look: the calibrations' tab when the chosen type takes them, or the piece
+        has them."""
+        chosen = getattr(form, 'chosen_type', None)
+        if chosen is not None and chosen.takes_calibrations or extra.get(FeederCalibrations.key):
+            return formpanels.row_list_panels(cls, view, obj, extra)
+        return []
 
     @classmethod
     def queryset(cls):

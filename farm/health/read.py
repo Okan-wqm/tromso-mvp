@@ -204,3 +204,10 @@ def stocked_by_site(units_with_fish):
     for unit in units_with_fish:
         found[unit.production_department.site_id] += 1
     return found
+
+
+def treatments_on(unit, first, last):
+    """The live treatments of `unit` on any day from `first` to `last` (one with no last day still runs), first day
+    first: the treatments a unit's water history marks (Tank › Water)."""
+    return (Treatment.objects.filter(units=unit, start_date__lte=last)
+            .filter(Q(end_date__isnull=True) | Q(end_date__gte=first)).order_by('start_date'))

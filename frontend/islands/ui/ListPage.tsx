@@ -1,0 +1,302 @@
+// A list page (core.crud.ListView behind ?ui=next, core/listprops.py): the toolbar of a tab's list (its search and its
+// filters, one GET form: the server reads the address and stays the only source of what is listed), the link tabs of its
+// views, its notices, the table with each row's actions, the empty state and the pager. Built once for every list page;
+// the server words every label, every cell and every address, and this component only draws them with the library.
+// A row's title opens the record's own page (the new record form), never the classic dialog. A row action is a link or a
+// small POST form with the page's CSRF token (cancelling a request): the server checks it like the classic page's.
+// Rows may come in groups (`groups`, Live values' one plate per device): each group a plate with its own table of the
+// shared columns; without groups the page is one table, as before.
+import { useId, type FocusEvent, type FormEvent } from 'react';
+
+import { tidy } from '../../date-input.js';
+
+import { Button, LinkButton } from './Button.js';
+import { CellLines, Table } from './Table.js';
+import { Chip, type ChipKind } from './Chip.js';
+import { Gauge, type GaugeProps } from './Gauge.js';
+import { Icon, type IconName } from './Icon.js';
+import { Pips, type PipsProps } from './Pips.js';
+import { Plate, Plates } from './Plate.js';
+import { Timeline, type TimelineProps } from './Timeline.js';
+import { EmptyState, Notice, type NoticeTone } from './States.js';
+import { LinkTabs, type LinkTab } from './Tabs.js';
+
+export interface ListLink { href: string; label: string }
+
+/** One cell: its main text (a link when it opens the record), a sub-line or two, or a status chip. */
+export interface ListCell {
+  text?: string | null;
+  href?: string | null;
+  strong?: boolean;
+  chip?: { kind: ChipKind; text: string } | null;
+  /** chips after the text (a "Platform admin" mark), each a word of its own */
+  chips?: { kind: ChipKind; text: string }[];
+  sub?: string[];
+  /** a share drawn as a bar with the share in words beside it (a unit's capacity), under the text and its sub-lines */
+  gauge?: GaugeProps | null;
+  /** a closed disclosure in place of the text: its summary, and its lines shown when opened (a dead letter's payload) */
+  details?: { summary: string; lines: string[] } | null;
+  /** the text is the row's figure, drawn large (the meal board's next meal: the design's readout) */
+  figure?: boolean;
+  /** a day's meals as pips before the text (the meal board), with their words */
+  pips?: PipsProps | null;
+}
+
+export interface ListAction {
+  kind: 'link' | 'post';
+  href: string;
+  label: string;
+  icon: IconName;
+  danger?: boolean;
+  /** a post's own fields besides the CSRF token (`next`) */
+  fields?: { name: string; value: string }[];
+  /** the word beside the icon (an action that changes a safety state: Acknowledge, Resolve), not the icon alone */
+  labelled?: boolean;
+}
+
+export interface ListRow {
+  key: string;
+  status?: 'critical' | 'warning' | null;
+  voided?: boolean;
+  cells: Record<string, ListCell>;
+  actions: ListAction[];
+}
+
+export interface ListColumn { key: string; label: string; numeric?: boolean }
+
+/** A group of the table's rows drawn as a plate of its own (Live values: one per device): its title, chips beside it
+ *  (each a word), a meta line, and the keys of its rows in `table.rows` (every row in one group; the columns shared). */
+export interface ListGroup {
+  key: string;
+  title: string;
+  chips?: { kind: ChipKind; text: string }[];
+  meta?: string | null;
+  rows: string[];
+}
+
+export interface ListSection { key: string; title: string; lines: string[]; columns: ListColumn[]; rows: ListRow[] }
+
+export interface ListFilterOption { value: string; label: string }
+export interface ListFilter {
+  /** a select (the default), or a day typed the European way (frontend/date-input.ts tidies it) */
+  kind?: 'select' | 'day' | 'check';
+  name: string;
+  label: string;
+  value: string;
+  placeholder?: string;
+  options: ListFilterOption[];
+  /** options under group labels (an optgroup each), after `options` */
+  groups?: { label: string; options: ListFilterOption[] }[];
+}
+
+export interface ListPageProps {
+  csrfToken: string;
+  tabs: { label: string; tabs: LinkTab[] } | null;
+  toolbar: {
+    label: string;
+    search: { name: string; value: string; label: string; placeholder: string } | null;
+    /** what the address holds that the form has no control for (a view, a tab): sent again, so a search keeps it */
+    keep: { name: string; value: string }[];
+    filters: ListFilter[];
+    submit: string;
+    add: ListLink | null;
+  };
+  /** sentences above the table; one may end in a link (Systems' "Show them") */
+  notices: { key: string; tone: NoticeTone; text: string; link?: ListLink | null }[];
+  /** lines above the table ("Showing 200 of 250 requests.") */
+  lines: string[];
+  table: { label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string };
+  /** the rows in groups, one plate and table each (optional: without it, one table) */
+  groups?: ListGroup[] | null;
+  /** tables of their own above the list, each in a plate of its title with its lines (Sea-lice counts' weekly averages;
+   * optional): drawn whether or not the list has rows */
+  sections?: ListSection[] | null;
+  /** a timeline of the listed rows above the table, in a plate of its title (a channel's bindings over time; optional) */
+  timeline?: (TimelineProps & { title: string }) | null;
+  /** said when there is no row: "No … yet" with what to do, or "No … match" with the way back */
+  empty: { title: string; text: string | null; link: ListLink | null; add: ListLink | null };
+  pager: { label: string; range: string; page: string; previous: ListLink | null; next: ListLink | null } | null;
+}
+
+/** One cell of a list's table, as the server worded it: also a read-only table of a record's page (core/formpanels.py). */
+export function Cell({ cell }: { cell: ListCell }) {
+  if (cell.details) {
+    return (
+      <details className="ui-cell-details">
+        <summary>{cell.details.summary}</summary>
+        {cell.details.lines.map((line, index) => <span key={index} className="ui-cell-sub">{line}</span>)}
+      </details>
+    );
+  }
+  const main = cell.chip ? <Chip kind={cell.chip.kind}>{cell.chip.text}</Chip>
+    : cell.href ? <a href={cell.href}>{cell.text}</a> : cell.figure ? <span className="ui-readout">{cell.text}</span> : cell.text;
+  const chips = cell.chips?.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>);
+  const sub = cell.sub && cell.sub.length ? cell.sub.join(' · ') : undefined;
+  const lines = <CellLines strong={Boolean(cell.strong)} main={chips && chips.length ? <>{main} {chips}</> : main} sub={sub} />;
+  if (cell.pips) return <><Pips {...cell.pips} />{lines}</>;
+  if (!cell.gauge) return lines;
+  return <>{lines}<span className="ui-cell-sub"><Gauge {...cell.gauge} /></span></>;
+}
+
+function Action({ action, csrfToken }: { action: ListAction; csrfToken: string }) {
+  const className = action.danger ? 'icon-button icon-button-danger' : 'icon-button';
+  if (action.kind === 'post') {
+    return (
+      <form method="post" action={action.href}>
+        <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />
+        {action.fields?.map((field) => <input key={field.name} type="hidden" name={field.name} value={field.value} />)}
+        {action.labelled
+          ? <button type="submit" className="ui-btn" data-variant={action.danger ? 'danger-text' : undefined}><Icon name={action.icon} />{action.label}</button>
+          : <button type="submit" className={className} aria-label={action.label} title={action.label}><Icon name={action.icon} /></button>}
+      </form>
+    );
+  }
+  if (action.labelled) {
+    return <a className="ui-btn" data-variant={action.danger ? 'danger-text' : undefined} href={action.href}><Icon name={action.icon} />{action.label}</a>;
+  }
+  return <a className={className} href={action.href} aria-label={action.label} title={action.label}><Icon name={action.icon} /></a>;
+}
+
+/** The shared date box's rule (frontend/date-input.ts): a day typed the European way is put dd.mm.yyyy. */
+function tidied(input: EventTarget | null) {
+  if (input instanceof HTMLInputElement && input.dataset.dateInput) input.value = tidy(input.value, input.dataset.dateInput === 'moment');
+}
+
+/** The list's toolbar: the search and the filters as one GET form, and the Add link (also the Shift schedule's). */
+export function ListToolbar({ toolbar }: { toolbar: ListPageProps['toolbar'] }) {
+  const { search, filters, keep } = toolbar;
+  const searchId = useId();
+  if (!search && !filters.length) return toolbar.add ? <div className="ui-toolbar"><LinkButton href={toolbar.add.href} variant="primary" icon="plus">{toolbar.add.label}</LinkButton></div> : null;
+  return (
+    <div className="ui-toolbar">
+      {/* a day box is tidied when it is left, and before the form goes (Enter sends it without leaving the box) */}
+      <form method="get" role="search" aria-label={toolbar.label} className="ui-list-filters"
+        onBlur={(event: FocusEvent<HTMLFormElement>) => tidied(event.target)}
+        onSubmit={(event: FormEvent<HTMLFormElement>) => { for (const box of event.currentTarget.querySelectorAll('input[data-date-input]')) tidied(box); }}>
+        {keep.map((each) => <input key={each.name} type="hidden" name={each.name} value={each.value} />)}
+        {search ? (
+          // the frame is a div (ds.css draws a label holding its control as a labelled filter, label above it)
+          <div className="ui-search">
+            <Icon name="search" />
+            <label className="sr-only" htmlFor={searchId}>{search.label}</label>
+            <input id={searchId} type="search" name={search.name} defaultValue={search.value} placeholder={search.placeholder} />
+          </div>
+        ) : null}
+        {filters.map((filter) => (
+          filter.kind === 'check' ? (
+            // on or off ("Show voided"): its word beside the box, as the classic page's
+            <label key={filter.name} className="ui-check">
+              <input type="checkbox" name={filter.name} value="1" defaultChecked={filter.value === '1'} /> {filter.label}
+            </label>
+          ) : <label key={filter.name}>
+            <span className="sr-only">{filter.label}</span>
+            {filter.kind === 'day' ? (
+              <input type="text" name={filter.name} defaultValue={filter.value} placeholder={filter.placeholder}
+                autoComplete="off" data-date-input="day" />
+            ) : <select name={filter.name} defaultValue={filter.value}>
+              {filter.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              {filter.groups?.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </optgroup>
+              ))}
+            </select>}
+          </label>
+        ))}
+        <Button type="submit" variant="ghost" icon="search">{toolbar.submit}</Button>
+      </form>
+      {toolbar.add ? <LinkButton href={toolbar.add.href} variant="primary" icon="plus">{toolbar.add.label}</LinkButton> : null}
+    </div>
+  );
+}
+
+function RowsTable({ label, columns, rows, actionsLabel, csrfToken }: {
+  label: string; columns: ListColumn[]; rows: ListRow[]; actionsLabel: string; csrfToken: string;
+}) {
+  return (
+    <Table<ListRow>
+      label={label}
+      rows={rows}
+      rowKey={(row) => row.key}
+      rowStatus={(row) => row.status ?? undefined}
+      rowVoided={(row) => Boolean(row.voided)}
+      columns={columns.map((column, index) => ({
+        key: column.key, label: column.label, numeric: Boolean(column.numeric), rowHeader: index === 0,
+        render: (row: ListRow) => { const cell = row.cells[column.key]; return cell ? <Cell cell={cell} /> : null; },
+      }))}
+      {...(rows.some((row) => row.actions.length) ? {
+        actions: (row: ListRow) => row.actions.map((action) => <Action key={action.href + action.label} action={action} csrfToken={csrfToken} />),
+        actionsLabel,
+      } : {})}
+    />
+  );
+}
+
+/** The rows in their groups: a plate each, its title, chips and meta in the head, its own table of the shared columns. */
+function Groups({ groups, table, csrfToken }: { groups: ListGroup[]; table: ListPageProps['table']; csrfToken: string }) {
+  const byKey = new Map(table.rows.map((row) => [row.key, row]));
+  return (
+    <Plates>
+      {groups.map((group) => (
+        <Plate key={group.key} title={group.title} {...(group.meta ? { meta: group.meta } : {})}
+          {...(group.chips?.length ? { badge: <>{group.chips.map((each) => <Chip key={each.text} kind={each.kind}>{each.text}</Chip>)}</> } : {})}>
+          <RowsTable label={group.title} columns={table.columns} actionsLabel={table.actionsLabel} csrfToken={csrfToken}
+            rows={group.rows.flatMap((key) => { const row = byKey.get(key); return row ? [row] : []; })} />
+        </Plate>
+      ))}
+    </Plates>
+  );
+}
+
+export function ListPage({ csrfToken, tabs, toolbar, notices, lines, table, groups, sections, timeline, empty, pager }: ListPageProps) {
+  return (
+    <>
+      {tabs ? <LinkTabs label={tabs.label} tabs={tabs.tabs} /> : null}
+      <ListToolbar toolbar={toolbar} />
+      {notices.map((notice) => (
+        <Notice key={notice.key} tone={notice.tone}>
+          {notice.text}{notice.link ? <> <a href={notice.link.href}>{notice.link.label}</a></> : null}
+        </Notice>
+      ))}
+      {sections && sections.length ? (
+        <Plates>
+          {sections.map((section) => (
+            <Plate key={section.key} title={section.title}>
+              {section.lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}
+              <RowsTable label={section.title} columns={section.columns} rows={section.rows} actionsLabel={table.actionsLabel}
+                csrfToken={csrfToken} />
+            </Plate>
+          ))}
+        </Plates>
+      ) : null}
+      {table.rows.length ? (
+        <>
+          {timeline ? (
+            <Plates>
+              <Plate title={timeline.title}><Timeline label={timeline.label} ticks={timeline.ticks} lanes={timeline.lanes} /></Plate>
+            </Plates>
+          ) : null}
+          {lines.map((line) => <p key={line} className="ui-cell-sub">{line}</p>)}
+          {groups && groups.length ? <Groups groups={groups} table={table} csrfToken={csrfToken} />
+            : <RowsTable label={table.label} columns={table.columns} rows={table.rows} actionsLabel={table.actionsLabel}
+              csrfToken={csrfToken} />}
+          {pager ? (
+            <nav className="pager list-pager" aria-label={pager.label}>
+              <span>{pager.range}</span>
+              <span className="pager-links">
+                {pager.previous ? <LinkButton href={pager.previous.href} variant="ghost">{pager.previous.label}</LinkButton> : null}
+                <span>{pager.page}</span>
+                {pager.next ? <LinkButton href={pager.next.href} variant="ghost">{pager.next.label}</LinkButton> : null}
+              </span>
+            </nav>
+          ) : null}
+        </>
+      ) : (
+        <EmptyState title={empty.title} action={empty.add
+          ? <LinkButton href={empty.add.href} variant="primary" icon="plus">{empty.add.label}</LinkButton> : undefined}>
+          {empty.text || empty.link ? <>{empty.text}{empty.link ? <> <a href={empty.link.href}>{empty.link.label}</a></> : null}</> : null}
+        </EmptyState>
+      )}
+    </>
+  );
+}

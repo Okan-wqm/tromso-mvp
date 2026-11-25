@@ -1,5 +1,5 @@
 {% extends "crud/list.html" %}
-{% load i18n stock feeding %}
+{% load i18n stock feeding farm_words %}
 {% comment %} Operations › Feeding › Protocols: the feeding tables, each for one species, with their bands, their
    temperature columns, the expected FCR and how many assignments are in force today.{% endcomment %}
 {% block search_placeholder %}{% trans "Search by name, species or notes" %}{% endblock %}
@@ -19,7 +19,7 @@
   <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
 </form>
 {% endblock %}
-{% block notice %}<p class="panel-help">{% trans "A protocol gives, per weight band of the fish, the feed, the meals a day and the specific feeding rate (SFR, % of the body weight a day) at each temperature column, with the FCR it expects. A ration is worked out from it on read: the fish, their estimated weight and the unit’s temperature (Meal board)." %}</p>{% endblock %}
+{% block notice %}{% farm_words as fw %}<p class="panel-help">{{ fw.a_protocol_gives_per_weight_band }}</p>{% endblock %}
 {% block empty_text %}{% trans "The feeding tables the farm feeds by: per weight band and water temperature, the feed and the share of the body weight given a day." %}{% endblock %}
 {% block items %}
 <div class="table-wrap">

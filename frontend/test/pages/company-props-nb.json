@@ -1,0 +1,380 @@
+{
+ "today": {
+  "title": "Selskapet i dag",
+  "meta": "Beregnet 23.11.2026 13:42 · Europe/Oslo",
+  "tiles": [
+   {
+    "key": "sites",
+    "label": "Lokaliteter",
+    "figure": "2",
+    "href": "/sites/",
+    "sub": "2 aktiv",
+    "source": "Lokaliteter"
+   },
+   {
+    "key": "biomass",
+    "label": "Biomasse",
+    "figure": "495 kg",
+    "sub": "2 enheter med fisk",
+    "source": "Beholdningsboken · 13:42",
+    "href": "/operations/units/"
+   },
+   {
+    "key": "alarms",
+    "label": "Åpne alarmer",
+    "figure": "1",
+    "href": "/alarms/",
+    "status": "critical",
+    "statusLabel": "Kritisk",
+    "sub": "1 kritisk",
+    "sub2": "1 enhet kritisk · 1 enhet uten nye data",
+    "source": "Alarmer · 13:42"
+   },
+   {
+    "key": "on_site",
+    "label": "På lokaliteten nå",
+    "figure": "3",
+    "href": "/hr/",
+    "sub": "Alle innstemplet, alle team",
+    "sub2": null,
+    "source": "I dag og oppmøte · 13:42"
+   },
+   {
+    "key": "reports",
+    "label": "Rapporter som skal sendes",
+    "figure": "0",
+    "href": "/reports/",
+    "status": null,
+    "statusLabel": null,
+    "sub": null,
+    "source": "Lovpålagte rapporter · 13:42"
+   },
+   {
+    "key": "messages",
+    "label": "Uleste meldinger",
+    "figure": "33",
+    "href": "/messages/",
+    "sub": "i 3 samtaler",
+    "source": "Meldinger · 13:42"
+   }
+  ]
+ },
+ "sites": {
+  "title": "Lokaliteter",
+  "link": {
+   "href": "/sites/",
+   "label": "Lokaliteter"
+  },
+  "columns": {
+   "site": "Lokalitet",
+   "type": "Type",
+   "units": "Enheter med fisk",
+   "biomass": "Biomasse",
+   "water": "Vann",
+   "alarms": "Åpne alarmer",
+   "onSite": "På lokaliteten nå"
+  },
+  "rows": [
+   {
+    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3",
+    "name": "Test Site North",
+    "code": "TSN",
+    "href": "/sites/69e9c2d3-e70f-4828-b665-938b19ef8da3/",
+    "type": "Landbasert anlegg",
+    "status": "critical",
+    "units": "1",
+    "biomass": "45 kg",
+    "water": {
+     "kind": "critical",
+     "text": "O₂ (mg/L) 8,40"
+    },
+    "alarms": {
+     "figure": "1",
+     "sub": "1 enhet kritisk"
+    },
+    "onSite": null
+   },
+   {
+    "key": "a7631506-d39d-419d-a7a4-1dfdda973ba1",
+    "name": "Test Site South",
+    "code": "TSS",
+    "href": "/sites/a7631506-d39d-419d-a7a4-1dfdda973ba1/",
+    "type": "Merd",
+    "status": "warning",
+    "units": "1",
+    "biomass": "450 kg",
+    "water": {
+     "kind": "nodata",
+     "text": "Ikke målt"
+    },
+    "alarms": {
+     "figure": "0",
+     "sub": "1 enhet uten nye data"
+    },
+    "onSite": null
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "alarms": {
+  "title": "Åpne alarmer",
+  "link": {
+   "href": "/alarms/",
+   "label": "Alarmer"
+  },
+  "safety": "Ingenting sendes ennå: push-transporten er ikke koblet til (mobilappen kommer senere). Hvert varsel venter i utboksen på Alarmer-siden, med mottaker og nivå, og sendes når den er det.",
+  "columns": {
+   "severity": "Alvorlighet",
+   "what": "Hva"
+  },
+  "rows": [
+   {
+    "key": "1",
+    "severity": "Kritisk",
+    "kind": "critical",
+    "what": "O₂ 5.8 mg/L, below 6.00 (critical)",
+    "href": "/alarms/1/",
+    "where": "TT-01 › Middle · Test Site North · 20.11.2026 13:42"
+   }
+  ],
+  "more": null,
+  "empty": null,
+  "units": {
+   "tone": "critical",
+   "text": "1 enhet kritisk · 1 enhet uten nye data"
+  }
+ },
+ "people": {
+  "title": "Kontorfolk i dag",
+  "link": {
+   "href": "/hr/",
+   "label": "I dag og oppmøte"
+  },
+  "tiles": [
+   {
+    "key": "planned",
+    "label": "Planlagt i dag",
+    "figure": "0"
+   },
+   {
+    "key": "upcoming",
+    "label": "Kommende",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "here",
+    "label": "Her nå",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "not_in",
+    "label": "Ikke kommet ennå",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "absent",
+    "label": "Fraværende",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "on_leave",
+    "label": "På permisjon",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "done",
+    "label": "Utført",
+    "figure": "0",
+    "status": null,
+    "statusLabel": null,
+    "sub": null
+   },
+   {
+    "key": "to_decide",
+    "label": "Permisjon til avgjørelse",
+    "figure": "0",
+    "href": "/hr/leave/"
+   }
+  ]
+ },
+ "upcoming": {
+  "title": "Kommende rapporter",
+  "items": [],
+  "empty": null,
+  "badge": null,
+  "link": {
+   "href": "/reports/",
+   "label": "Alle rapporter"
+  },
+  "notSetUp": "2 lokaliteter med fisk er ikke satt opp for rapporter: hva de skylder er ikke kjent, så ingenting er oppført som forfalt for dem."
+ },
+ "feed": {
+  "title": "Fôr på lager",
+  "link": {
+   "href": "/operations/storage/",
+   "label": "Lager"
+  },
+  "columns": {
+   "item": "Lokalitet · vare",
+   "onHand": "På lager",
+   "cover": "Dager dekning"
+  },
+  "rows": [
+   {
+    "key": "69e9c2d3-e70f-4828-b665-938b19ef8da3-b5007070-d82f-40a4-a4bc-b5a165903c9f",
+    "item": "Test Grower 4 (TG-4)",
+    "site": "Test Site North",
+    "onHand": "1 475 kg",
+    "cover": null,
+    "status": "warning",
+    "note": "TS-01, under bestillingsnivået på 2 000 kg"
+   }
+  ],
+  "none": "—",
+  "empty": null
+ },
+ "messages": {
+  "title": "Uleste meldinger",
+  "link": {
+   "href": "/messages/",
+   "label": "Meldinger"
+  },
+  "rows": [
+   {
+    "key": "9c2b0c5b-4afe-4973-892d-a964e6167ca0",
+    "title": "Test long channel",
+    "href": "/messages/9c2b0c5b-4afe-4973-892d-a964e6167ca0/",
+    "text": "Test message 60 of 60.",
+    "when": "23.11.2026 13:41"
+   },
+   {
+    "key": "f72a7254-70b5-465b-9c65-f1962920d32b",
+    "title": "Test channel",
+    "href": "/messages/f72a7254-70b5-465b-9c65-f1962920d32b/",
+    "text": "A test message to the channel.",
+    "when": "23.11.2026 12:41"
+   },
+   {
+    "key": "05771e1f-169f-451b-b66a-e009e120fe65",
+    "title": "Test Writer",
+    "href": "/messages/05771e1f-169f-451b-b66a-e009e120fe65/",
+    "text": "A second test answer,\non two lines.",
+    "when": "23.11.2026 12:40"
+   }
+  ],
+  "empty": null
+ },
+ "activity": {
+  "title": "Siste aktivitet",
+  "link": {
+   "href": "/activity/",
+   "label": "Aktivitetslogg"
+  },
+  "critical": "Kritisk",
+  "entries": [
+   {
+    "key": "dcdddff5-9433-4d9d-b6c0-538e6986115e",
+    "action": "Endret",
+    "critical": false,
+    "record": "Kanal · TEST-2 › TEST-P",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "0bdd9348-0e55-4645-a246-8c00d0710881",
+    "action": "Endret",
+    "critical": false,
+    "record": "Kanal · TEST-2 › TEST-P",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "854f244e-a2e8-43d3-8c9e-1c8ec84d92b7",
+    "action": "Endret",
+    "critical": false,
+    "record": "Kunnskapsoppføring · A reviewed test statement.",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "926d0cdc-d1b3-4725-bd4b-8e451e5f5fea",
+    "action": "Opprettet",
+    "critical": false,
+    "record": "Kunnskapsoppføring · A reviewed test statement.",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   },
+   {
+    "key": "a3089ba3-41e8-4ba8-afef-5c4f4c0c6903",
+    "action": "Endret",
+    "critical": false,
+    "record": "Fôringsprotokoll · Test assigned protocol",
+    "by": {
+     "before": "av",
+     "name": "test.admin",
+     "after": ""
+    },
+    "when": "23.11.2026 13:42"
+   }
+  ],
+  "empty": null
+ },
+ "knowledge": {
+  "title": "Nyeste kunnskapsoppføringer",
+  "link": {
+   "href": "/knowledge/entries/",
+   "label": "Kunnskapsoppføringer"
+  },
+  "rows": [
+   {
+    "key": "9bdbec43-d1f6-4f78-8656-2138a1ec290b",
+    "text": "A reviewed test statement.",
+    "source": "Test document (u.å.)",
+    "href": "/knowledge/entries/9bdbec43-d1f6-4f78-8656-2138a1ec290b/view/",
+    "kind": "ok",
+    "chip": "Gjennomgått"
+   },
+   {
+    "key": "399dd24d-3265-4ee1-8c89-ee0925aa514a",
+    "text": "A test statement.",
+    "source": "Test document (u.å.)",
+    "href": "/knowledge/entries/399dd24d-3265-4ee1-8c89-ee0925aa514a/view/",
+    "kind": "neutral",
+    "chip": "Utkast"
+   }
+  ],
+  "empty": null
+ }
+}

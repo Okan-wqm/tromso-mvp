@@ -8,7 +8,7 @@
   {% if water_point.point %}<p class="row-sub">{% blocktrans trimmed with point=water_point.point %}at {{ point }}{% endblocktrans %}</p>
   {% else %}<p class="muted">{% trans "This unit has no active middle sampling point, so no water is shown for it." %}{% if water_points_url %} <a href="{{ water_points_url }}">{% trans "Sampling points" %}</a>{% endif %}</p>{% endif %}
   {% if water_readings %}
-  <div class="table-wrap">
+  <div class="table-wrap" tabindex="0" role="region" aria-label="{% trans "Water" %}">
     <table class="data-table drawer-table water-drawer">
       <tbody>
         {% for reading in water_readings %}

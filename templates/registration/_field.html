@@ -1,6 +1,6 @@
-{% load i18n %}{# One form field, also for Django's own layouts (templates/django/forms). A group of boxes (roles, the permission matrix) is a fieldset named by its legend. The help text is text: markup only from code that built it with format_html. #}
-{% with tag=field.use_fieldset|yesno:"fieldset,div" %}
-<{{ tag }} class="field{% if field.use_fieldset %} field-set{% endif %}{% if field.errors %} has-error{% endif %}">
+{% load i18n crud %}{# One form field, also for Django's own layouts (templates/django/forms). A group of boxes (roles, the permission matrix) is a fieldset named by its legend. The help text is text: markup only from code that built it with format_html. `notes` (optional, the calculator in the new look): a long help is a note, a tooltip on the field (frontend/field-note.ts) with an ⓘ button beside the label, still the input's description (aria-describedby) and still in the page; a short one stays under the field. #}
+{% firstof notes "" as notes_asked %}{% with tag=field.use_fieldset|yesno:"fieldset,div" noted=field|is_noted:notes_asked %}
+<{{ tag }} class="field{% if field.use_fieldset %} field-set{% endif %}{% if field.errors %} has-error{% endif %}{% if noted %} has-note{% endif %}"{% if noted %} data-field-note{% endif %}>
   {% if field.use_fieldset %}
   <legend>{{ field.label }}</legend>
   {{ field }}
@@ -13,11 +13,14 @@
     {% trans "Show" as show_label %}{% trans "Hide" as hide_label %}
     <button type="button" class="reveal" data-reveal="{{ field.id_for_label }}" aria-controls="{{ field.id_for_label }}" aria-pressed="false" data-label-show="{{ show_label }}" data-label-hide="{{ hide_label }}">{{ show_label }}</button>
   </div>
+  {% elif noted %}
+  <span class="field-head"><label for="{{ field.id_for_label }}">{{ field.label }}</label><button type="button" class="ui-note-toggle" data-note-toggle aria-controls="{{ field.auto_id }}_helptext" aria-expanded="false" aria-label="{% blocktrans trimmed with field=field.label %}About {{ field }}{% endblocktrans %}">{% include "icons/_icon.html" with name="info" %}</button></span>
+  {{ field }}
   {% else %}
   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
   {{ field }}
   {% endif %}
-  {% if field.help_text %}<div class="help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>{% endif %}
+  {% if field.help_text %}<div class="help{% if noted %} ui-note{% endif %}" id="{{ field.auto_id }}_helptext"{% if noted %} role="tooltip" data-note{% endif %}>{{ field.help_text }}</div>{% endif %}
   {{ field.errors }}
 </{{ tag }}>
 {% endwith %}

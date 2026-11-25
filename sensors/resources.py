@@ -10,17 +10,18 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, F, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.translation import gettext as gettext_now, gettext_lazy as _, ngettext_lazy
 
-from core.crud import CreateView, Resource, RowList, done, refusal_text, render_page
-from farm.models import Equipment, System, Tank
+from core import formpanels, listprops
+from core.crud import CreateView, Resource, RowList, done, filter_by, refusal_text, render_page
+from farm.models import Equipment, Site, System, Tank
 from farm.models.site import zone_of
 
-from . import bindings, credentials
+from . import bindings, credentials, lists, words
 from .forms import (AlarmRuleForm, BindForm, BindingForm, CalibrationFormSet, ChannelForm, ConnectionForm,
                     CredentialForm, DeviceForm, PayloadFormatForm, place_of)
-from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat
+from .models import AlarmRule, Binding, Channel, Connection, Credential, Device, PayloadFormat, Role
 
 
 def _count(model, link, **condition):
@@ -40,6 +41,11 @@ class ConnectionResource(Resource):
     icon = 'plug'
     page_size = 50
 
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.connections)
+    search_placeholder = _('Search by name, host or client id')
+    empty_text = _('A connection is an MQTT broker the ingest service listens to. Its devices say which topics.')
+
     @classmethod
     def queryset(cls):
         return super().queryset().annotate(device_count=_count(Device, 'connection'))
@@ -54,6 +60,12 @@ class PayloadFormatResource(Resource):
     list_template = 'sensors/payloadformat_list.html'
     icon = 'braces'
     page_size = 50
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.payload_formats)
+    search_placeholder = _('Search by name')
+    empty_text = _('A payload format says how a kind of device writes its messages: where the time is, and where each '
+                   'value is.')
 
     @classmethod
     def queryset(cls):
@@ -70,6 +82,13 @@ class DeviceResource(Resource):
     form_template = 'sensors/device_form.html'
     icon = 'cpu'
     page_size = 50
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.devices)
+    list_filters = staticmethod(lists.device_filters)
+    search_placeholder = _('Search by code, name, topic or model')
+    empty_text = _('A device publishes on one topic of a connection: a probe, a PLC, a gateway. Its channels are the '
+                   'values it sends.')
 
     @classmethod
     def queryset(cls):
@@ -91,11 +110,62 @@ class DeviceResource(Resource):
         return {**super().edit_extras(request, obj), 'channels': obj.channels.order_by('code'),
                 'placed_at': bindings.placements([obj])[obj.pk], 'placement_history': bindings.placement_history(obj)}
 
+    next_extras = frozenset({'channels', 'placed_at', 'placement_history'})
+
+    @classmethod
+    def next_panels(cls, view, form, device, extra):
+        """sensors/device_form.html in the new look: an existing device's Channels (each opens its own form) and its
+        Placement (where it is now, Move device for a person who may bind, where it was), on the device site's clock."""
+        if device is None:
+            return []
+        channels = list(extra.get('channels', ()))
+        channel_table = formpanels.table(words.CHANNELS, [
+            listprops.column('channel', words.CHANNEL), listprops.column('quantity', words.QUANTITY),
+            listprops.column('value', words.VALUE), listprops.column('heartbeat', words.HEARTBEAT_S, numeric=True),
+            listprops.column('state', words.STATE)], [
+            listprops.row(channel.pk, {
+                'channel': listprops.cell(channel.code, href=reverse('sensors:channel_edit', args=[channel.pk]), strong=True,
+                                          sub=[f'{channel.name} · #{channel.channel_no}']),
+                'quantity': listprops.cell(channel.get_quantity_display()),
+                'value': listprops.cell(channel.value_path or channel.item_name),
+                'heartbeat': listprops.cell(formats.localize(channel.heartbeat_s)),
+                'state': listprops.cell(channel.get_state_display())}) for channel in channels])
+        places = [str(place) for place in extra.get('placed_at') or ()]
+        history = list(extra.get('placement_history') or ())
+        where = (f"{words.PLACED_AT}: {', '.join(places)}." if places
+                 else words.NOT_PLACED_OUT_OF_THE_WATER)
+        return [
+            formpanels.panel('channels', words.CHANNELS, [channel_table] if channels else [
+                formpanels.help_text(words.NO_CHANNELS_YET_ADD_THEM_ON)]),
+            formpanels.panel('placement', words.PLACEMENT, [
+                formpanels.help_text(where),
+                formpanels.link(f"{reverse('sensors:device_move')}?device={device.pk}", words.MOVE_DEVICE, 'target')
+                if view.request.user.has_perm('sensors.add_binding') else None,
+                formpanels.table(words.PLACEMENT, [
+                    listprops.column('where', words.WHERE), listprops.column('from', words.FROM),
+                    listprops.column('until', words.UNTIL)], [
+                    listprops.row(index, {
+                        'where': listprops.cell(stay.places[0] if stay.places else '', sub=stay.places[1:]),
+                        'from': listprops.cell(formpanels.moment(stay.start, device.site)),
+                        'until': listprops.cell(formpanels.moment(stay.end, device.site)) if stay.end
+                        else listprops.cell(chip=listprops.chip('neutral', words.NOW))})
+                    for index, stay in enumerate(history)]) if history else formpanels.help_text(words.NEVER_PLACED_YET)]),
+        ]
+
 
 class ChannelCalibrations(RowList):
     """A channel's calibrations, saved as a whole list on its Calibration tab; needs the right to edit channels."""
 
     key, tab, label = 'calibrations', 'calibration', _('Calibrations')
+    # Its panel's words (sensors/channel_form.html).
+    title = _('Calibration')
+    help_text = _('Value = gain × raw value + offset, from the moment given on the site’s clock, applied by the ingest at the '
+                  'device’s time before the unit conversion. Stored values are calibrated; a later calibration never changes '
+                  'them. The earliest calibration also covers the time before it. The calibrations are saved separately from '
+                  'the channel’s details.')
+    empty_text = _('No calibrations: values are stored as the device sends them (after the unit conversion).')
+    add_label, save_label = _('Add calibration'), _('Save calibrations')
+    pending_text = _('Calibrations can be added once the channel is created.')
     formset = CalibrationFormSet
     saved = ngettext_lazy('%(count)d calibration saved.', '%(count)d calibrations saved.', 'count')
 
@@ -117,6 +187,21 @@ class ChannelResource(Resource):
     icon = 'activity'
     row_lists = (ChannelCalibrations,)
     page_size = 100
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.channels)
+    list_filters = staticmethod(lists.channel_filters)
+    search_placeholder = _('Search by code, name or device')
+    empty_text = _('A channel is one value a device sends: what it measures, where it is in the message and how it is '
+                   'stored.')
+
+    @classmethod
+    def next_panels(cls, view, form, channel, extra):
+        """sensors/channel_form.html in the new look: on its Storing tab how long a value stays fresh, and its
+        calibrations."""
+        fresh = [formpanels.panel('reduction', None, [formpanels.help_text(words.fresh_for(channel))], tab='reduction')
+                 ] if channel is not None else []
+        return fresh + formpanels.row_list_panels(cls, view, channel, extra)
 
     @classmethod
     def queryset(cls):
@@ -172,6 +257,23 @@ class CredentialResource(Resource):
     icon = 'key-round'
     page_size = 50
     create_view = CredentialCreateView
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.credentials)
+    search_placeholder = _('Search by user name')
+    empty_text = _('A credential is the name and secret a device or gateway signs in to the broker with. The secret is '
+                   'shown once, when it is made.')
+
+    @classmethod
+    def next_panels(cls, view, form, credential, extra):
+        """sensors/credential_form.html in the new look: on an existing credential, for a person who may edit it, the
+        button that replaces its secret (shown once on the next page)."""
+        if credential is None or not (cls.allows('change') and view.request.user.has_perm(cls.perm('change'))):
+            return []
+        return [formpanels.panel('general', None, [
+            formpanels.help_text(words.REPLACING_THE_SECRET_MAKES_A_NEW),
+            formpanels.post(reverse('sensors:credential_rotate', args=[credential.pk]), words.REPLACE_THE_SECRET,
+                            [('version', credential.version)])], tab='general')]
 
     @classmethod
     def queryset(cls):
@@ -247,24 +349,43 @@ class BindingResource(Resource):
     create_view = BindView
     page_size = 100
 
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.bindings)
+    search_placeholder = _('Search by channel, device or place')
+    empty_text = _("A binding says where a channel's values belong from a moment on: a sampling point or a system for a "
+                   'water value, a piece of equipment or a system for a process value.')
+
     @classmethod
     def queryset(cls):
         return (Binding.objects.visible()
                 .select_related('channel__device', 'point__unit', 'point__system', 'point__equipment', 'system',
                                 'equipment').order_by('-valid_from'))
 
+    list_filters = staticmethod(lists.binding_filters)
+
     @classmethod
     def filter_list(cls, request, objects):
         """The bindings of one channel (its history), or of one place (`?place=unit:…`: the sensors there now, then
-        those there before), when the address names it."""
+        those there before), when the address names it; then by the channel's device's site (`site`), the role (`role`)
+        and those that hold now (`bound=now`), the new look's selects (the classic page has no control for them: its
+        address narrows it the same way)."""
         channel = request.GET.get('channel', '')
+        place = None
         if _uuid(channel):
-            return objects.filter(channel_id=channel), {'channel': channel, 'place': None}
-        place = place_of(request.GET.get('place', ''))
-        if place is not None:
-            found = objects.filter(_at_place(place)).order_by(F('valid_to').desc(nulls_first=True), '-valid_from')
-            return found, {'channel': '', 'place': place}
-        return objects, {'channel': '', 'place': None}
+            objects = objects.filter(channel_id=channel)
+        else:
+            channel = ''
+            place = place_of(request.GET.get('place', ''))
+            if place is not None:
+                objects = objects.filter(_at_place(place)).order_by(F('valid_to').desc(nulls_first=True), '-valid_from')
+        sites = Site.objects.filter(sensor_devices__isnull=False).distinct().order_by('name')
+        objects, chosen_site = filter_by(request, objects, 'site', sites, 'channel__device__site_id')
+        objects, chosen_role = filter_by(request, objects, 'role', Role.choices, 'role')
+        bound = 'now' if request.GET.get('bound') == 'now' else ''
+        if bound:
+            objects = objects.at(timezone.now())
+        return objects, {'channel': channel, 'place': place, 'sites': sites, 'chosen_site': chosen_site,
+                         'roles': Role.choices, 'chosen_role': chosen_role, 'chosen_bound': bound}
 
 
 class AlarmRuleResource(Resource):
@@ -276,6 +397,13 @@ class AlarmRuleResource(Resource):
     list_template = 'sensors/alarmrule_list.html'
     icon = 'bell'
     page_size = 100
+
+    # The new look's list (sensors/lists.py, core/listprops.py): the classic template's words.
+    list_rows = staticmethod(lists.alarm_rules)
+    list_above_next = 'sensors/_alarm_watch.html'     # the classic list's {% alarm_watch %}, drawn by the server
+    search_placeholder = _('Search by channel or quantity')
+    empty_text = _('A rule says when a channel needs a look: no fresh value, its device offline, a value above or below '
+                   'a threshold, or a change too fast.')
 
     @classmethod
     def queryset(cls):

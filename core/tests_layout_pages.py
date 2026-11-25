@@ -35,3 +35,10 @@ class LayoutPagesTests(SimpleTestCase):
         self.assertIn('is-fit mw-48 mh-61', pages['dock-big-tr.html'])
         self.assertIn('class="monitor-chart-svg', pages['dock-big-tr.html'])
         self.assertIn('id="open-', pages['wall-small-tr.html'])
+        # the strip beside the wall: its units lead to Monitoring; with an open alarm, one link each
+        from django.urls import reverse
+        monitor, alarms = reverse('monitoring:monitor'), reverse('alarms:alarm_list')
+        self.assertIn(f'<a class="ui-strip-item" href="{monitor}" data-strip="alarms" data-status="critical">',
+                      pages['strip-units.html'])
+        self.assertIn(f'href="{alarms}" data-strip-part="alarms">1 open alarm</a>', pages['strip-split.html'])
+        self.assertIn(f'href="{monitor}" data-strip-part="units">', pages['strip-split.html'])

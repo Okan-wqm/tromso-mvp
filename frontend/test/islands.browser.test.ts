@@ -14,17 +14,12 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { extname, join, resolve } from 'node:path';
 
-import type { Page } from 'playwright-core';
-
 import { BROWSERS, browser as launch, skipWithout } from './browsers.js';
-import { policy } from './csp.js';
 import { linksOf } from './sheets.js';
+import { CSP, lowContrast, watchCsp } from './checks.js';
 
 const THEMES = ['industry', 'fjord', 'polarnatt', 'nordlys', 'tang', 'laks'];
 const GALLERY = resolve('.build/gallery');
-// The product's policy (config/settings.py, SECURE_CSP, read by frontend/test/csp.ts), without a nonce: a page of islands
-// runs no inline script.
-const CSP = policy();
 const TYPES: Record<string, string> = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml' };
 
 // The gallery's entry in the build's manifest, as {% island %} reads it: its module and its stylesheets (uPlot's).
@@ -78,48 +73,6 @@ function serve(): Promise<Server> {
   return new Promise((done) => server.listen(0, '127.0.0.1', () => done(server)));
 }
 
-async function watchCsp(tab: Page): Promise<string[]> {
-  const violations: string[] = [];
-  tab.on('console', (message) => { if (/Content.Security.Policy|Refused to/i.test(message.text())) violations.push(message.text()); });
-  await tab.exposeFunction('__cspViolation', (text: string) => { violations.push(text); });
-  await tab.addInitScript(() => {
-    document.addEventListener('securitypolicyviolation', (event) => {
-      (window as unknown as { __cspViolation: (text: string) => void }).__cspViolation(`${event.violatedDirective} ${event.blockedURI} ${event.sample}`);
-    });
-  });
-  return violations;
-}
-
-// [selector of a text element, its text colour, the colour of the ground it stands on, contrast] for every low pair
-async function lowContrast(tab: Page): Promise<string[]> {
-  return tab.evaluate(() => {
-    const parse = (value: string): number[] => (value.match(/[\d.]+/g) ?? []).map(Number);
-    const lum = ([r = 0, g = 0, b = 0]: number[]): number => {
-      const c = [r, g, b].map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
-      return 0.2126 * (c[0] ?? 0) + 0.7152 * (c[1] ?? 0) + 0.0722 * (c[2] ?? 0);
-    };
-    const ground = (element: Element): number[] => {
-      for (let at: Element | null = element; at; at = at.parentElement) {
-        const value = parse(getComputedStyle(at).backgroundColor);
-        if (value.length === 3 || (value[3] ?? 0) > 0.5) return value.slice(0, 3);
-      }
-      return parse(getComputedStyle(document.body).backgroundColor).slice(0, 3);
-    };
-    const low: string[] = [];
-    // a busy button (data-pending) is read too: its label is the only progress text (review M6)
-    const selector = '.ui-btn:not(:disabled):not([aria-disabled="true"]), .ui-btn[data-pending], .ui-chip > span, .ui-tile-label, .ui-tile-figure, .ui-tile-sub, .ui-tile-source, .ui-notice-body, .ui-plate-head h2, .ui-plate-meta, .ui-plate-link, .help, .errorlist li, .ui-table th, .ui-table td, .ui-tab, .ui-empty-text, .ui-chart-caption, .field label';
-    for (const element of document.querySelectorAll(selector)) {
-      if (!element.textContent?.trim()) continue;
-      const fore = parse(getComputedStyle(element).color).slice(0, 3);
-      const back = ground(element);
-      const [high, lower] = [lum(fore), lum(back)].sort((a, b) => b - a);
-      const ratio = ((high ?? 0) + 0.05) / ((lower ?? 0) + 0.05);
-      if (ratio < 4.5) low.push(`${element.className || element.tagName} "${element.textContent.trim().slice(0, 30)}" ${ratio.toFixed(2)}`);
-    }
-    return low;
-  });
-}
-
 test('the islands\' component library in a browser', { skip: skipWithout(BROWSERS) }, async (t) => {
   const server = await serve();
   const address = server.address();
@@ -168,6 +121,19 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
       // the series is drawn by uPlot on a canvas; a frame without values says so in words
       await tab.waitForSelector('.ui-series canvas');
       assert.equal(await tab.locator('.ui-chart-empty').first().textContent(), 'No values in this range.');
+      // the full series: its marks over the canvas, a link with a Tab stop and a named one; listed marks take no Tab stop;
+      // a mark's label shows on hover of its handle, and the plot under the marks is free for the cursor
+      await tab.waitForSelector('#series-full .ui-chart-mark');
+      assert.equal(await tab.locator('#series-full a.ui-chart-mark[href="#calibrated"]').count(), 1);
+      assert.equal(await tab.locator('#series-full g.ui-chart-mark[tabindex="0"][aria-label="04:30 · O₂ 6.2 mg/L"]').count(), 1);
+      await tab.waitForSelector('#series-listed .ui-chart-mark');
+      assert.equal(await tab.locator('#series-listed .ui-chart-mark[aria-hidden="true"]:not([tabindex])').count(), 1);
+      assert.equal(await tab.locator('#series-listed a').count(), 0);
+      const handle = tab.locator('#series-full g.ui-chart-mark .ui-chart-mark-handle');
+      await handle.hover();
+      assert.equal(await tab.locator('#series-full g.ui-chart-mark .ui-chart-mark-label').evaluate((label) => getComputedStyle(label).visibility), 'visible');
+      assert.equal(await tab.locator('#series-full .ui-chart-mark-hit').first().evaluate((line) => getComputedStyle(line).pointerEvents), 'none');
+      await tab.mouse.move(0, 0);
       for (const selector of ['#b-primary', '#b-secondary', '#b-ghost', '#b-danger', 'input[name="name"]', 'select[name="site"]']) {
         await tab.focus(selector);
         await tab.keyboard.press('Shift+Tab');
@@ -218,7 +184,7 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
       await tab.keyboard.press('Tab');
       assert.equal(await tab.evaluate(() => document.activeElement?.textContent), 'Every alarm');
       await tab.keyboard.press('Enter');
-      assert.match(tab.url(), /#all$/);
+      await tab.waitForURL(/#all$/);          // a same-document navigation: its URL arrives after the press (review of batch 1)
       await tab.close();
     });
 
@@ -244,6 +210,23 @@ test('the islands\' component library in a browser', { skip: skipWithout(BROWSER
         const rows = await tab.evaluate(() => new Set([...document.querySelectorAll('[aria-label="Company today"] .ui-tile')]
           .map((tile) => Math.round(tile.getBoundingClientRect().top))).size);
         assert.equal(rows, width === 1440 ? 1 : 3);
+        // a tile's label has a slot of two lines: the figures of a row stand level whatever their labels' length, and a
+        // label longer than its slot is clamped with its whole text kept as its title
+        const level = await tab.evaluate(() => {
+          const tiles = [...document.querySelectorAll('[aria-label="Label slot"] .ui-tile')];
+          const byRow = new Map<number, Set<number>>();
+          for (const tile of tiles) {
+            const top = Math.round(tile.getBoundingClientRect().top);
+            const figure = tile.querySelector('.ui-tile-figure')?.getBoundingClientRect().top ?? -1;
+            byRow.set(top, (byRow.get(top) ?? new Set()).add(Math.round(figure - top)));
+          }
+          const long = tiles[2]?.querySelector<HTMLElement>('.ui-tile-label-text');
+          return { offsets: [...byRow.values()].map((each) => each.size), clamped: long ? long.scrollHeight > long.clientHeight : false,
+            title: long?.title ?? '' };
+        });
+        assert.ok(level.offsets.every((size) => size === 1), `figures not level: ${JSON.stringify(level.offsets)}`);
+        assert.ok(level.clamped, 'the long label is not clamped');
+        assert.match(level.title, /^QoS 0 messages dropped on a full queue of the ingest/);
         if (process.env.SHOTS) {
           mkdirSync(process.env.SHOTS, { recursive: true });
           await tab.screenshot({ path: join(process.env.SHOTS, `gallery-${width}.png`), fullPage: true });

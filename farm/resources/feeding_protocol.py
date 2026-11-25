@@ -8,9 +8,11 @@ from django.db.models import Count, Prefetch, Q
 from django.urls import path, reverse
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
+from core import formpanels, listprops
 from core.crud import DRAFT, CreateView, Resource, ResourceView, UpdateView, done, filter_by
 
-from ..feeding import assignments, protocols
+from .. import words
+from ..feeding import assignments, lists, protocols
 from ..feeding.ration import Policy, band_range
 from ..feeding.read import tables
 from ..forms.feeding_protocol import (
@@ -34,6 +36,12 @@ class FeedingProtocolResource(Resource):
     form_template = 'farm/feeding_protocol_form.html'
     icon = 'table'
     page_size = 50
+    # the new look's list (farm/feeding/lists.py) in the classic list's words (farm/feeding_protocol_list.html)
+    search_placeholder = gettext_lazy('Search by name, species or notes')
+    empty_text = gettext_lazy('The feeding tables the farm feeds by: per weight band and water temperature, the feed and '
+                              'the share of the body weight given a day.')
+    list_rows = staticmethod(lists.protocols)
+    list_filters = staticmethod(lists.protocol_filters)
 
     @classmethod
     def queryset(cls):
@@ -61,6 +69,62 @@ class FeedingProtocolResource(Resource):
                 'duplicate_url': reverse('farm:feedingprotocol_duplicate', args=[obj.pk])
                 if request.user.has_perm(cls.perm('add')) else '',
                 'table_notices': table_notices(obj)}
+
+    next_extras = frozenset({'table_form', 'bands', 'frozen', 'table_url', 'duplicate_url', 'table_notices'})
+
+    @classmethod
+    def next_panels(cls, view, form, protocol, extra):
+        """farm/feeding_protocol_form.html in the new look: the Feeding table tab, the grid of weight bands by temperature
+        columns saved as a whole (the columns typed render the grid again: a draft), or, once the protocol is assigned,
+        the table as it is; the notices of its bands, and Duplicate."""
+        from ..templatetags.feeding import celsius, fcr, weights
+        from ..templatetags.stock import percent
+        title = words.FEEDING_TABLE
+        if protocol is None:
+            return [formpanels.panel('table', title, [
+                formpanels.help_text(words.THE_FEEDING_TABLE_CAN_BE_FILLED)])]
+        table_form, bands = extra['table_form'], extra['bands']
+        if extra.get('frozen'):
+            columns = protocol.columns()
+            blocks = [formpanels.notice(words.THE_PROTOCOL_IS_ASSIGNED_SO_ITS),
+                formpanels.table(title, [
+                    listprops.column('band', words.WEIGHT_BAND), listprops.column('feed', words.FEED),
+                    listprops.column('meals', words.MEALS_A_DAY, numeric=True),
+                    listprops.column('fcr', words.EXPECTED_FCR, numeric=True),
+                    *(listprops.column(f't{index}', celsius(temperature), numeric=True)
+                      for index, temperature in enumerate(columns))], [
+                    listprops.row(band.pk, {
+                        'band': listprops.cell(weights(band)), 'feed': listprops.cell(band.feed),
+                        'meals': listprops.cell(band.meals_per_day),
+                        'fcr': listprops.cell(fcr(band.expected_fcr or protocol.expected_fcr)),
+                        **{f't{index}': listprops.cell(percent(rate.sfr_pct, 2))
+                           for index, rate in enumerate(band.rates.all())}})
+                    for band in protocol.bands.all()])]
+        else:
+            columns = list(bands.columns)
+            cells = {column_name(temperature) for temperature in columns}
+            blocks = [formpanels.help_text(words.ONE_ROW_PER_WEIGHT_BAND_FROM),
+                formpanels.form(extra['table_url'], title, [
+                    formpanels.fields(table_form['temperatures']),
+                    formpanels.grid(
+                        bands, [words.FROM_G, words.UP_TO_G, words.FEED, words.MEALS_A_DAY, words.EXPECTED_FCR,
+                                *(words.sfr_at(celsius(each)) for each in columns)],
+                        lambda row: [[bound] for bound in row.base_fields_shown] + [[bound] for bound in row.cells]
+                        + [[row['DELETE']]],
+                        legend=title, add=words.ADD_BAND, can_add=bool(columns),
+                        empty_text=words.NO_BAND_YET_USE_ADD_BAND if columns
+                        else words.GIVE_THE_TEMPERATURE_COLUMNS_FIRST_THE,
+                        label_of=lambda bound: words.sfr_at(bound.label)
+                        if bound.name in cells else bound.label)],
+                    hidden=[table_form['version']],
+                    errors=[*table_form.non_field_errors(), *bands.non_form_errors()],
+                    actions=[formpanels.button(words.SAVE_TABLE, primary=True)])]
+        blocks += [formpanels.notice(text, 'warning') for text in extra.get('table_notices', ())]
+        if extra.get('duplicate_url'):
+            blocks += [formpanels.post(extra['duplicate_url'], words.DUPLICATE),
+                       formpanels.help_text(words.A_DRAFT_COPY_WITH_THIS_TABLE)]
+        refused = bands.is_bound and (bool(bands.non_form_errors()) or any(bands.errors)) or bool(table_form.errors)
+        return [formpanels.panel('table', title, blocks, has_errors=refused)]
 
     @classmethod
     def urls(cls):
@@ -180,6 +244,11 @@ class ProtocolAssignmentResource(Resource):
     icon = 'link'
     create_view = AssignmentCreateView
     page_size = 50
+    # the new look's list (farm/feeding/lists.py) in the classic list's words (farm/protocol_assignment_list.html)
+    search_placeholder = gettext_lazy('Search by protocol, unit or batch')
+    empty_text = gettext_lazy('Which feeding protocol feeds which fish, from which day.')
+    list_rows = staticmethod(lists.assignments)
+    list_filters = staticmethod(lists.assignment_filters)
 
     @classmethod
     def form(cls, request, *args, **kwargs):

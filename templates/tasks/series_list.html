@@ -27,7 +27,7 @@
     <tbody>
       {% for series in objects %}{% with place=series.place %}
       <tr>
-        <td>{% if can_change %}<a class="row-title" href="{% url 'tasks:taskseries_edit' series.pk %}" data-modal>{{ series.title }}</a>{% else %}<span class="row-title">{{ series.title }}</span>{% endif %}<span class="row-sub">{{ series.get_category_display }} · <span class="priority-{{ series.priority }}">{{ series.get_priority_display }}</span></span></td>
+        <td>{% if can_change %}<a class="row-title" href="{% url 'tasks:taskseries_edit' series.pk %}" data-modal>{{ series.title }}</a>{% else %}<span class="row-title">{{ series.title }}</span>{% endif %}<span class="row-sub"><span>{{ series.get_category_display }}</span> · <span class="priority-{{ series.priority }}">{{ series.get_priority_display }}</span></span></td>
         <td>{{ series|rule_text }}<span class="row-sub">{% blocktrans trimmed with first=series.starts_on|date:"DATE_FORMAT" %}from {{ first }}{% endblocktrans %}{% if series.ends_on %} · {% blocktrans trimmed with last=series.ends_on|date:"DATE_FORMAT" %}until {{ last }}{% endblocktrans %}{% endif %}</span></td>
         <td>{{ place|place_label }}<span class="row-sub nowrap">{{ place|place_context }}</span></td>
         <td>{% with names=series.assignees.all|people %}{% if names %}{{ names }}{% else %}<span class="over-text">{% trans "Nobody" %}</span>{% endif %}{% endwith %}</td>

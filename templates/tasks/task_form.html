@@ -1,26 +1,26 @@
 {% extends "crud/form.html" %}
-{% load i18n tasks assets dates %}
+{% load i18n tasks assets dates task_words %}
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/tasks.css' %}">{% endblock %}
 {% comment %} A task's form adds its checklist on a tab of its own, saved as a list (core.crud.RowList) until a line is
    ticked; after that the lines are shown as they are, ticked on the Tasks page.{% endcomment %}
-{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="checklist">{% trans "Checklist" %}</button>{% endblock %}
-{% block extra_panels %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="checklist">{{ row_words.checklist.title }}</button>{% endblock %}
+{% block extra_panels %}{% task_words as tw %}
 {% if checklist_started %}
 <section class="tab-panel" data-panel="checklist" aria-labelledby="checklist-title">
-  <h3 class="panel-title" id="checklist-title">{% trans "Checklist" %}</h3>
-  <p class="panel-help">{% trans "The checklist has been started: its lines can no longer be changed. Add a note instead." %}</p>
+  <h3 class="panel-title" id="checklist-title">{{ row_words.checklist.title }}</h3>
+  <p class="panel-help">{{ tw.the_checklist_has_been_started_its }}</p>
   <ul class="task-checklist">
     {% for line in checklist_lines %}<li class="{% if line.done_at %}is-done{% endif %}"><span aria-hidden="true">{% if line.done_at %}☑{% else %}☐{% endif %}</span> {{ line.text }}{% if line.done_at %}<span class="row-sub">{{ line.done_by|person }} · {{ line.done_at|site_clock:object.place_site|date:"DATETIME_FORMAT" }}</span>{% endif %}</li>{% endfor %}
   </ul>
 </section>
 {% else %}
-{% trans "Checklist" as panel_title %}
-{% trans "The steps of the job, one per line, at most 30; each is ticked on the Tasks page with who and when. The list can be changed until its first line is ticked. It is saved separately from the task." as help %}
-{% trans "No lines yet. Use “Add line” to add one." as empty %}
-{% trans "Add line" as add %}
-{% trans "Save checklist" as save %}
-{% trans "A checklist can be added once the task is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
+{# #}
+{# #}
+{# #}
+{# #}
 {% if object %}{% url 'tasks:task_checklist' object.pk as action %}{% endif %}
-{% include "crud/_row_list.html" with rows=checklist tab="checklist" legend=panel_title kind="checklist-row" %}
+{% include "crud/_row_list.html" with rows=checklist tab="checklist" words=row_words.checklist kind="checklist-row" %}
 {% endif %}
 {% endblock %}

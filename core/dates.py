@@ -135,6 +135,18 @@ def on_clock(wall, zone):
     return first
 
 
+def on_clock_or_earlier(wall, zone):
+    """`on_clock`, but a wall time the clocks show twice (an autumn night) is the earlier of the two, not refused: for a
+    moment that only names a neighbourhood (an alarm's opening in a link, the 12 hours each side of it). A skipped time
+    is still refused (ValidationError, code 'skipped')."""
+    try:
+        return on_clock(wall, zone)
+    except ValidationError as error:
+        if error.code != 'repeated':
+            raise
+        return wall.replace(fold=0, tzinfo=zone)
+
+
 def _shaped(text):
     """Whether `text` is a real calendar date in an accepted shape, inside the window or not."""
     for shape in formats.get_format('DATE_INPUT_FORMATS'):
@@ -149,6 +161,12 @@ def _shaped(text):
 def show_day(day):
     """A date as an input shows it: dd.mm.yyyy."""
     return formats.localize_input(day) if day else ''
+
+
+def weekday_day(day):
+    """A day with its weekday, as a week's day header says it: the language's short weekday and dd.mm.yyyy
+    ("Mon 23.11.2026", "man 23.11.2026", "Pzt 23.11.2026"). The one shape for a day in a week's columns, the server's and the islands'."""
+    return f"{formats.date_format(day, 'D')} {formats.date_format(day, 'DATE_FORMAT')}" if day else ''
 
 
 def _in_window(value):

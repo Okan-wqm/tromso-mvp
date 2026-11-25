@@ -374,6 +374,28 @@ def pairs(points):
 class GeometryTests(SimpleTestCase):
     PIXEL = 1e-4           # the SVG rounds to 0.01 px: 0.005 px is 5.8e-5 on a 6-unit axis of 520 px
 
+    def test_the_ph_labels_never_run_over_each_other_and_stay_on_their_lines_inside_the_plot(self):
+        # (owner's answer, 2026-11-23: the server places them; the test world's fresh water bunched them at pH 7.5-9.5)
+        for water in ({}, {'salinity_ppt': 0, 'ph': 7.3, 'alkalinity_mg_l': 85, 'temperature_c': 12.0},
+                      {'salinity_ppt': 33, 'ph': 8.0, 'alkalinity_mg_l': 120}):
+            chart = deffeyes.draw(default_analysis(**water))
+            boxes = []
+            for isoline in chart.isolines:
+                label = isoline['label']
+                if label is None:
+                    continue
+                cx, cy, angle = float(label['x']), float(label['y']), float(label['angle'])
+                (x1, y1), (x2, y2) = pairs(isoline['points'])
+                self.assertAlmostEqual((cx - x1) * (y2 - y1) - (cy - y1) * (x2 - x1), 0, delta=0.05 * math.dist((x1, y1), (x2, y2)))
+                box = deffeyes._label_box(cx, cy, angle, len(label['text']))
+                plot = chart.plot
+                self.assertTrue(all(plot['left'] <= x <= plot['right'] and plot['top'] <= y <= plot['bottom'] for x, y in box),
+                                (water, label))
+                boxes.append((label['text'], box))
+            crossed = [(one, two) for index, (one, first) in enumerate(boxes) for two, second in boxes[index + 1:]
+                       if deffeyes._overlap(first, second)]
+            self.assertEqual(crossed, [], water)
+
     def test_the_isolines_are_the_formulas_lines(self):
         result = default_analysis()
         chart = deffeyes.draw(result)

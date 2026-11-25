@@ -224,10 +224,10 @@ class OutboxTests(AlarmsCase):
 
     @override_settings(ALARM_TRANSPORTS=PUSH_FAILING)
     def test_a_failing_transport_is_tried_again_up_to_the_severitys_attempts(self):
-        SeverityPolicy.objects.filter(severity='critical').update(delivery_attempts=3)
+        SeverityPolicy.objects.filter(severity='warning').update(delivery_attempts=3)
         self.rule()
-        self.sample(5.5)
-        for minute in range(6):
+        self.sample(6.2)                                       # a warning (a critical is tried until it is answered)
+        for minute in range(8):
             self.loop(minutes=minute)
         self.assertEqual(DeliveryAttempt.objects.filter(outcome='failed').count(), 3)
         self.assertEqual(read.status(Notification.objects.get()), 'failed')

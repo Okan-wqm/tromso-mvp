@@ -14,10 +14,12 @@
 //                         (date-input.ts)
 //   data-print            a button, hidden without this script, that prints the page (the browser's Print does
 //                         the same without it)
+//   data-field-note       a field whose long note is a tooltip (field-note.ts)
 // The code has no UI text of its own: the templates render every text into a data attribute (e.g. the
 // dialog's data-forbidden), translated by the server, and `label()` reads it.
 // Everything is set up on the page and again on whatever the dialog loads.
 import { initDateInputs } from './date-input.js';
+import { initFieldNotes } from './field-note.js';
 import { label, required } from './dom.js';
 
 // ---- inner tabs ----------------------------------------------------------------------------
@@ -297,6 +299,7 @@ function init(root: Element | Document): void {
   initLinkLists(root);
   initOmitEmpty(root);
   initPrint(root);
+  initFieldNotes(root);
 }
 
 // ---- dialog --------------------------------------------------------------------------------

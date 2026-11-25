@@ -1,0 +1,11 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} The create/edit form of a tab in the new look (core.crud.FormView.page, core/formprops.py): the island draws
+   the form core.formpayload gives it and posts it to the same address. The classic page is crud/form.html. {% endcomment %}
+{% block title %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
+{% block eyebrow %}{{ group }} · {{ title }}{% endblock %}
+{% block heading %}{% if object %}{{ object }}{% else %}{% blocktrans trimmed %}New {{ name }}{% endblocktrans %}{% endif %}{% endblock %}
+{% block measure %}form{% endblock %}
+{% block content %}
+{% trans "Loading the form…" as loading %}{% island "record-form" props label=loading %}
+{% endblock %}

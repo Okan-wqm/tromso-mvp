@@ -13,16 +13,19 @@ question 3): a probe of a quantity the water limits judge that stops sending is 
   a channel no active rule covers is the system check sensors.W001's warning and said on the Alarm rules page."""
 import importlib
 from datetime import timedelta
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.core.checks import run_checks
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from core.island_props import props_of
 from core.models import AuditLog
+from core.pagesays import unsaid
 from farm.models import System
 from farm.tests.helpers import make_species, role, stock_fish
 from farm.tests.test_stock import make_unit
@@ -34,6 +37,7 @@ from sensors.models import AlarmEvent, AlarmRule, Channel, ChannelState
 from . import SensorsCase, make_channel
 
 KEEPER = ('view_alarmrule', 'change_alarmrule', 'view_channel')
+MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
 
 
 def default(code):
@@ -430,6 +434,27 @@ class PageTests(FreshRuleCase):
         self.assertContains(page, 'The pH probes are out for service until Friday.')
         self.assertContains(page, 'has no active “No fresh value” rule')
         self.assertContains(page, 'PROBE-1 › PH')
+
+    @override_settings(ISLANDS_MANIFEST=MANIFEST)
+    def test_the_new_look_says_it_all_as_the_classic_list_does(self):
+        """The new look's list (sensors/lists.py alarm_rules) says what the classic list says (core.pagesays): the rule
+        marked Default, its time as the channel's freshness, no Delete, why it is switched off, and the channels left
+        without a rule, as a warning."""
+        self.allow_switching_off()
+        AlarmRule.objects.filter(pk=self.rule.pk).update(is_active=False, off_reason='The pH probes are out for service.')
+        old = self.client.get(reverse('sensors:alarmrule_list'), {'ui': 'classic'}).content.decode()
+        new = self.client.get(reverse('sensors:alarmrule_list'), {'ui': 'next'}).content.decode()
+        props = props_of(new, 'list-page')
+        self.assertEqual(unsaid(old, props, new_html=new), [])
+        row = next(row for row in props['table']['rows'] if row['key'] == str(self.rule.pk))
+        self.assertIn({'kind': 'neutral', 'text': 'Default'}, row['cells']['rule']['chips'])
+        self.assertEqual(row['cells']['for']['text'], 'at the channel’s freshness')
+        self.assertEqual(row['cells']['state']['sub'], ['The pH probes are out for service.'])
+        self.assertEqual([action['icon'] for action in row['actions']], ['pencil'])
+        [uncovered] = [notice for notice in props['notices'] if notice['key'] == 'uncovered']
+        self.assertEqual(uncovered['tone'], 'warning')
+        self.assertIn('has no active “No fresh value” rule', uncovered['text'])
+        self.assertIn('PROBE-1 › PH', uncovered['text'])
 
     def test_switched_on_again_its_reason_goes(self):
         AlarmRule.objects.filter(pk=self.rule.pk).update(is_active=False, off_reason='Probes out for service.')

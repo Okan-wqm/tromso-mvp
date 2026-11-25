@@ -13,15 +13,19 @@ The other parameters keep their rule: a silent pH probe is a warning, and the ca
 
 Real sensor channels, the real pages and the real alarm engine (the fixture of test_stopped_probe)."""
 from datetime import timedelta
+from pathlib import Path
 from unittest import mock
 
 from django.db import connection
+from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import translation
 
 from alarms import engine
 from alarms.models import Alarm
+from core.island_props import props_of
+from core.pagesays import unsaid
 from farm.models import SamplingPoint, System, Tank
 from farm.stock import services as stock_services
 from farm.tests.helpers import point_of, stock_fish
@@ -42,6 +46,7 @@ from .test_stopped_probe import PAGE, PANE, OXYGEN, SALINITY, TEMPERATURE, Stopp
 SILENT = 'Dissolved oxygen (mg/L O₂): no recent data'
 NO_FRESH_OXYGEN = 'no_fresh_oxygen'
 PROBE_SILENT = 'oxygen_probe_silent'
+MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
 
 
 class SilentOxygenCase(StoppedProbeCase):
@@ -578,6 +583,21 @@ class CardHasItsAlarmTests(SilentOxygenCase):
         unit, _none = self.bare('Q6', system=False)
         water = self.overview()
         self.assertIn(unit.pk, {row['owner'].pk for row in water['alerts']})
+
+    @override_settings(ISLANDS_MANIFEST=MANIFEST)
+    def test_the_new_look_overview_lists_it_and_says_why_as_the_classic_one_does(self):
+        """The new look's Production › Overview (config/production_props.py) lists that unit too, without a point, on its
+        department and site, saying why it is critical, and says all the classic page says (core.pagesays)."""
+        from farm.tests.test_production_overview_next import as_next, figures, said_another_way
+        unit, _none = self.bare('Q6', system=False)
+        old = as_next(self.client.get(reverse('production_home'), {'ui': 'classic'}).content.decode())
+        new = self.client.get(reverse('production_home'), {'ui': 'next'}).content.decode()
+        props = props_of(new, 'production')
+        self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old), once=figures(old)), [])
+        [row] = [row for row in props['attention']['rows'] if row['title'] == unit.code]
+        self.assertEqual((row['key'], row['kind'], row['status']), (f'water-unit-{unit.pk}', 'water', 'critical'))
+        self.assertTrue(row['sub'].startswith(f'{self.hall.name}, '), row['sub'])
+        self.assertIn(SILENT, row['sub'])
 
     def test_the_drawer_and_the_card_name_the_system_the_values_come_from(self):
         """A unit read at its system: the drawer says "From its system, …" (never "no water is shown"), and the card's

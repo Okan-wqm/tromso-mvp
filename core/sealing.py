@@ -692,10 +692,12 @@ def hidden(seal, part=None, depth=None):
 
 
 def _shown(model, part, depth):
-    """The rows of a parent or child model the person may see: its sealed manager (`depth` None), or, for a bounded
-    reading (the activity log's exclusion, `depth` levels of parents and children), its own condition that far."""
+    """The rows of a parent or child model the person may see: every row as stored, narrowed by its seal alone (`depth`
+    None), or, for a bounded reading, its own condition that far. Never through a manager that also leaves rows out for
+    another reason: a voided or deleted parent is not a hidden one, and a child of it stays as visible as it was
+    (review W1: a voided harvest kept its record, a deleted sensor rule its alarms)."""
     if depth is None:
-        return model._default_manager.all()
+        return narrow(unsealed(model))
     seal = seal_of(model)
     condition = None if depth == 0 or seal is None or not seal.filters else hidden(seal, None, depth - 1)
     rows = unsealed(model)

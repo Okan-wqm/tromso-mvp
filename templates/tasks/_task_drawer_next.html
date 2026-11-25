@@ -1,0 +1,76 @@
+{% load i18n tasks dates %}
+{% comment %} The drawer of the task picked on Operations › Tasks in the new look (?task=): the classic drawer's facts, checklist,
+   notes and actions (tasks/_task_drawer.html, the same context from tasks.resources.drawer_context) as a plate beside the
+   table. Every button is the classic form posted to the task's own address, which comes back here (next); Complete, Edit,
+   Cancel and Delete open their own pages, never the classic dialog. {% endcomment %}
+{% with task=drawer place=drawer_place %}
+<aside class="ui-plate" data-span="4" aria-labelledby="drawer-title">
+  <div class="ui-plate-head">
+    <h2 class="ui-plate-title" id="drawer-title">{{ task.title }}</h2>
+    <a class="icon-button" href="{{ close_url }}" aria-label="{% trans "Close" %}" title="{% trans "Close" %}">{% include "icons/_icon.html" with name="x" %}</a>
+  </div>
+  <div class="ui-plate-body">
+    <p>{% include "tasks/_status_chip.html" %}{% if task.overdue %} {% trans "Overdue" as overdue %}{% include "ui/_chip.html" with kind="warning" text=overdue %}{% endif %} · {{ task.get_category_display }} · {% include "tasks/_priority_next.html" with item=task %}</p>
+    <dl class="facts">
+      <div><dt>{% trans "Location" %}</dt><dd>{{ place|place_label }}{% if place.is_deleted %} {% trans "Place deleted" as deleted %}{% include "ui/_chip.html" with kind="neutral" text=deleted %}{% endif %}<span class="ui-cell-sub">{{ place|place_kind }} · {{ place|place_context }}</span></dd></div>
+      {% if task.batch %}<div><dt>{% trans "Batch" %}</dt><dd>{{ task.batch.code }}{% if task.batch.is_deleted %} {% trans "Voided" as voided %}{% include "ui/_chip.html" with kind="neutral" text=voided %}{% endif %}</dd></div>{% endif %}
+      <div><dt>{% trans "Due" %}</dt><dd>{{ task.due_date|date:"DATE_FORMAT" }}{% if task.due_time %} {{ task.due_time|time:"TIME_FORMAT" }}{% endif %}</dd></div>
+      <div><dt>{% trans "Assignees" %}</dt><dd>{% with names=task.assignees.all|people %}{% if names %}{{ names }}{% else %}{% trans "Nobody" as nobody %}{% include "ui/_chip.html" with kind="warning" text=nobody %}{% endif %}{% endwith %}</dd></div>
+      {% if task.series %}<div><dt>{% trans "Recurring task" %}</dt><dd>{{ task.series.title }}{% if task.series.is_deleted %} {% trans "Deleted" as gone %}{% include "ui/_chip.html" with kind="neutral" text=gone %}{% endif %}<span class="ui-cell-sub">{% blocktrans trimmed with date=task.occurrence_date|date:"DATE_FORMAT" %}planned for {{ date }}{% endblocktrans %}</span></dd></div>{% endif %}
+      {% if task.started_at %}<div><dt>{% trans "Started" %}</dt><dd>{{ task.started_by|person }} · {{ task.started_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</dd></div>{% endif %}
+      {% if task.completed_at %}<div><dt>{% trans "Completed" %}</dt><dd>{{ task.completed_by|person }} · {{ task.completed_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}{% if task.completion_note %}<span class="ui-cell-sub">{{ task.completion_note }}</span>{% endif %}</dd></div>{% endif %}
+      {% if task.cancelled_at %}<div><dt>{% trans "Cancelled" %}</dt><dd>{{ task.cancelled_by|person }} · {{ task.cancelled_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}<span class="ui-cell-sub">{{ task.cancel_reason }}</span></dd></div>{% endif %}
+      <div><dt>{% trans "Created" %}</dt><dd>{% if task.created_by %}{{ task.created_by|person }}{% else %}{% trans "by its recurring task" %}{% endif %} · {{ task.created_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</dd></div>
+    </dl>
+    {% if task.description %}<p>{{ task.description|linebreaksbr }}</p>{% endif %}
+
+    {% if actions.start or actions.complete or actions.cancel or actions.reopen or actions.edit or actions.delete %}
+    <div class="ui-form-actions">
+      {% if actions.start %}<form method="post" action="{{ actions.start }}">{% csrf_token %}<button type="submit" class="ui-btn">{% trans "Start" %}</button></form>{% endif %}
+      {% if actions.complete %}<a class="ui-btn" data-variant="primary" href="{{ actions.complete }}">{% trans "Complete" %}</a>{% endif %}
+      {% if actions.reopen %}<form method="post" action="{{ actions.reopen }}">{% csrf_token %}<button type="submit" class="ui-btn">{% trans "Reopen" %}</button></form>{% endif %}
+      {% if actions.edit %}<a class="ui-btn" href="{{ actions.edit }}">{% trans "Edit" %}</a>{% endif %}
+      {% if actions.cancel %}<a class="ui-btn" href="{{ actions.cancel }}">{% trans "Cancel task" %}</a>{% endif %}
+      {% if actions.delete %}<a class="ui-btn" data-variant="danger" href="{{ actions.delete }}">{% trans "Delete" %}</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="ui-plate-head"><h3 class="ui-plate-title">{% trans "Checklist" %}</h3></div>
+  {% if drawer_lines %}
+  <ul class="ui-list" role="list">
+    {% for line in drawer_lines %}
+    <li class="ui-list-item">
+      {% if may_tick %}
+      <form method="post" action="{% url 'tasks:task_tick' task.pk line.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="done" value="{% if line.done_at %}0{% else %}1{% endif %}"><button type="submit" class="ui-btn" aria-pressed="{% if line.done_at %}true{% else %}false{% endif %}" title="{% if line.done_at %}{% trans "Mark as not done" %}{% else %}{% trans "Mark as done" %}{% endif %}"><span aria-hidden="true">{% if line.done_at %}☑{% else %}☐{% endif %}</span> {{ line.text }}</button></form>
+      {% else %}
+      <span class="ui-list-main"><span><span aria-hidden="true">{% if line.done_at %}☑{% else %}☐{% endif %}</span> {{ line.text }}</span></span>
+      {% endif %}
+      {% if line.done_at %}<span class="ui-list-meta">{{ line.done_by|person }} · {{ line.done_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="ui-plate-body"><p class="ui-empty-text">{% trans "No checklist." %}</p></div>
+  {% endif %}
+
+  <div class="ui-plate-head"><h3 class="ui-plate-title">{% trans "Notes" %}</h3></div>
+  {% if drawer_notes %}
+  <ul class="ui-list" role="list">
+    {% for note in drawer_notes %}
+    <li class="ui-list-item"><span class="ui-list-main"><span><strong>{{ note.author|person }}</strong> {{ note.created_at|site_clock:task.place_site|date:"DATETIME_FORMAT" }}{% if note.kind == "completion_note" %} · {% trans "Completion note, kept when the task was reopened" %}{% elif note.kind == "cancel_reason" %} · {% trans "Reason for cancelling, kept when the task was reopened" %}{% endif %}</span><span class="ui-cell-sub">{{ note.body|linebreaksbr }}</span></span></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="ui-plate-body"><p class="ui-empty-text">{% trans "No notes yet." %}</p></div>
+  {% endif %}
+  <div class="ui-plate-body">
+    <form method="post" action="{{ note_url }}" class="ui-form-grid">
+      {% csrf_token %}
+      <div class="field" data-wide><label for="note-body">{% trans "Add a note" %}</label>
+      <textarea id="note-body" name="body" rows="2" maxlength="4000" required></textarea></div>
+      <div class="ui-form-actions"><button type="submit" class="ui-btn">{% trans "Add note" %}</button></div>
+    </form>
+  </div>
+</aside>
+{% endwith %}

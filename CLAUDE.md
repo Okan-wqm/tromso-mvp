@@ -59,16 +59,16 @@ The database, broker and ingest are the compose project `balik-ciftligi` (`docke
 5433, role and database `balik`). The app runs in a container from the test runner's image:
 
 ```
-docker build -f docker/testrunner.Dockerfile -t balik-testrunner-chemcore .
+IMG=$(sh scripts/testrunner/image.sh build)   # this checkout's image, tag req-<hash>; built only when missing
 MSYS_NO_PATHCONV=1 docker run --rm --name balik-dev-web --network balik-ciftligi_default -p 18047:8047 \
   -e DB_HOST=db -e DB_PORT=5432 -e COMPANY_NAME="Nordhav Akva" -v F:/dev/balik-ciftligi:/app -w /app \
-  balik-testrunner-chemcore python manage.py runserver 0.0.0.0:8047 --noreload
+  "$IMG" python manage.py runserver 0.0.0.0:8047 --noreload
 ```
 
 Docker Desktop's 127.0.0.1 port relay hangs on this machine, so `F:\dev\balik-notes\tools\forward.py` forwards
 127.0.0.1:8047 to the docker-desktop VM address on 18047 (`wsl -d docker-desktop ip -4 addr show eth0`; it changes
-when WSL restarts). The server runs with `--noreload`: restart the container after landing code. Rebuild the image
-when `chemcore/` or `requirements.txt` changed.
+when WSL restarts). The server runs with `--noreload`: restart the container after landing code. Never run the
+untagged `balik-testrunner-chemcore` (:latest): it is an old build without the current chemistry core.
 
 ## How the code is built
 

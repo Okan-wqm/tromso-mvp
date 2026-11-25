@@ -16,7 +16,8 @@
     "check:licences": "node scripts/licence-gate.mjs",
     "watch": "tsc -p tsconfig.json --watch",
     "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.islands.json",
-    "test": "node scripts/islands.mjs --gallery && tsc -p tsconfig.test.json && node scripts/mark-esm.mjs && node --test \".build/test/**/*.test.js\""
+    "test": "node scripts/islands.mjs --gallery && tsc -p tsconfig.test.json && node scripts/mark-esm.mjs && node --test \".build/test/**/*.test.js\"",
+    "test:pages": "tsc -p tsconfig.test.json && node scripts/mark-esm.mjs && node --test \".build/test/**/*.pages.js\""
   },
   "devDependencies": {
     "@tailwindcss/cli": "4.3.5",

@@ -1,9 +1,7 @@
 """The seven defects the alarm plan (scratchpad plan/alarms/PLAN.md §2.3) found in this app, each pinned by its tests."""
 from datetime import timedelta
-from io import StringIO
 from unittest import mock
 
-from django.core.management import call_command
 from django.db import IntegrityError, connection, transaction
 from django.test.utils import CaptureQueriesContext
 
@@ -15,7 +13,7 @@ from sensors import alarms as sensor_alarms, bindings
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
-from .. import engine, read, services, sources
+from .. import read, services, sources
 from ..models import (Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification, ParameterDeadband,
                       SeverityPolicy)
 from . import AlarmsCase
@@ -164,7 +162,7 @@ class OlderEvidenceTests(AlarmsCase):
 
 class FailureIsolationTests(AlarmsCase):
     """Defect 5: one failing step never takes the others with it (each step is its own transaction, its failure logged and
-    counted), and the loop goes on after a failed pass."""
+    counted); the worker goes on after a pass that failed whole (alarms/tests/test_worker.py)."""
 
     def setUp(self):
         super().setUp()
@@ -184,15 +182,6 @@ class FailureIsolationTests(AlarmsCase):
         self.assertIn('the water read failed', '\n'.join(logged.output))
         self.assertIn('1 step failed: water', str(summary))
 
-    def test_the_loop_goes_on_after_a_failed_pass(self):
-        out, err = StringIO(), StringIO()
-        with mock.patch.object(engine, 'run_once', side_effect=[RuntimeError('the pass failed'), engine.Summary()]) \
-                as passes, mock.patch('time.sleep', side_effect=[None, KeyboardInterrupt]), \
-                self.assertLogs('alarms', level='ERROR'):
-            with self.assertRaises(KeyboardInterrupt):
-                call_command('run_alarms', loop=1, stdout=out, stderr=err)
-        self.assertEqual(passes.call_count, 2)
-        self.assertIn('the pass failed', err.getvalue())
 
 
 class OneOpenAlarmTests(AlarmsCase):

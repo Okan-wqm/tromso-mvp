@@ -1,14 +1,15 @@
 """`{% day_input "from" value %}`: a list's date filter as the forms' date (core.widgets.DayInput), typed and shown in the
 person's language, read back by core.dates.read_day; never a browser date box. The clocks a page shows a time on
 (`|date` and `|time` would show an aware moment on the server's UTC; core/clock_guard.py refuses that in the tests):
-`|site_clock:site`, the site's (a Site, a zone or a zone's name; none: the company's), and `|company_clock`."""
+`|site_clock:site`, the site's (a Site, a zone or a zone's name; none: the company's), and `|company_clock`. A week's day
+header: `|weekday_day` (core.dates.weekday_day)."""
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from django import template
 from django.utils import timezone
 
-from ..dates import company_zone
+from ..dates import company_zone, weekday_day as _weekday_day
 from ..widgets import DayInput
 
 register = template.Library()
@@ -47,3 +48,9 @@ def site_clock(value, where=None):
 def company_clock(value):
     """The moment on the company's clock, for a page with no site's clock (the activity log, a record's history)."""
     return on(value, company_zone())
+
+
+@register.filter
+def weekday_day(day):
+    """A week's day header: core.dates.weekday_day ("Mon 23.11.2026")."""
+    return _weekday_day(day)

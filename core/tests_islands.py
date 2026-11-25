@@ -25,7 +25,7 @@ def render(text, context=None):
 class IslandTagTests(SimpleTestCase):
     def test_the_manifest_names_each_island_with_its_chunks_once_each(self):
         found = islands_manifest()
-        self.assertEqual(set(found), {'units', 'water', 'gallery'})     # gallery: core/layout_pages.py's shell-next
+        self.assertEqual(set(found), {'units', 'water', 'sensor-charts', 'gallery'})     # gallery: core/layout_pages.py's shell-next
         self.assertEqual(found['units'], {'file': 'units-Ab12Cd34.js', 'imports': ['chunks/ui-Ef56Gh78.js', 'chunks/react-Qr78St90.js'],
                                           'css': ['assets/units-Zz99Yy88.css', 'assets/deep-Ee88Ff99.css']})
         self.assertEqual(found['water']['imports'], ['chunks/ui-Ef56Gh78.js', 'chunks/react-Qr78St90.js', 'chunks/uplot-Mn34Op56.js'])
@@ -86,6 +86,27 @@ class IslandBuildCheckTests(SimpleTestCase):
         missing = os.path.join(folder, 'none.json')
         with override_settings(ISLANDS_MANIFEST=missing):
             self.assertEqual([problem.id for problem in compiled_scripts_deployed(None)], ['core.E007'])
+
+    def test_a_server_that_serves_static_root_only_is_not_stopped_for_scripts_it_has(self):
+        """The entry scripts and the manifest are looked for where the server serves them (assets.built): STATIC_ROOT
+        first. With no build in the source tree (the finders find nothing), a complete STATIC_ROOT passes `check
+        --deploy`, and one entry script missing from it is named."""
+        from unittest import mock
+
+        from core.checks import ENTRY_SCRIPTS
+        root = tempfile.mkdtemp()
+        for path in ENTRY_SCRIPTS:
+            os.makedirs(os.path.join(root, os.path.dirname(path)), exist_ok=True)
+            Path(root, path).write_text('export {};', encoding='utf-8')
+        os.makedirs(os.path.join(root, 'islands'))
+        Path(root, 'islands', 'manifest.json').write_text('{}', encoding='utf-8')
+        with override_settings(STATIC_ROOT=root, ISLANDS_MANIFEST=None),                 mock.patch('django.contrib.staticfiles.finders.find', return_value=None):
+            self.assertEqual(compiled_scripts_deployed(None), [])
+            os.remove(os.path.join(root, 'js', 'strip.js'))
+            stopped = compiled_scripts_deployed(None)
+            self.assertEqual([problem.id for problem in stopped], ['core.E007'])
+            self.assertIn('js/strip.js is missing', stopped[0].msg)
+            self.assertNotIn('manifest.json', stopped[0].msg)
 
     def test_the_manifest_is_no_dot_file_so_collectstatic_takes_it(self):
         from django.conf import settings

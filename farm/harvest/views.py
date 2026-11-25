@@ -16,6 +16,7 @@ from django.utils.translation import gettext as _, ngettext
 from core import navigation
 from core.crud import render_page
 from core.dates import read_day
+from core.ui import is_next
 
 from ..handling import check, fasting
 from ..models import (
@@ -93,7 +94,7 @@ def harvests(request):
     can_void = request.user.has_perm(VOID)
     here = request.get_full_path()
     kept = {key: value for key, value in params.items() if value}
-    return render_page(request, 'farm/harvests.html', _context(
+    context = _context(
         rows=[{'harvest': row,
                'void_url': f'{reverse("farm:stock_void", args=[row.operation.pk])}?{urlencode({"next": here})}'
                if can_void and not row.operation.is_deleted and row.operation.date >= earliest(row.unit) else ''}
@@ -106,7 +107,14 @@ def harvests(request):
                             label=lambda row: row.site.name if row.site else _('No site')),
         filtered=bool({key for key in kept if key != 'voided'}),
         clear_url=reverse('farm:harvests'), tabs=tabs(request, 'harvested'),
-    ))
+    )
+    if is_next(request):
+        # the new look: the shared list page (farm/harvest/pages.py) under the strip of the Harvest group's pages
+        from .pages import harvests_props
+        return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow'],
+                                                            'props': harvests_props(request, context),
+                                                            'list_above': 'farm/_harvest_tabs.html'})
+    return render_page(request, 'farm/harvests.html', context)
 
 
 # ---- what Production units shows ---------------------------------------------------------------------

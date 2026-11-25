@@ -11,14 +11,16 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.urls import path, reverse
-from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
+from django.utils import formats
+from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy, pgettext_lazy
 
+from core import formpanels, listprops as L
 from core.crud import DRAFT, Resource, ResourceView, RowList, UpdateView, done, filter_by, render_page
 from core.people import person_name
 from farm.models import Site, Species, System, Tank
 from farm.stock.dates import site_today
 
-from . import design as design_module, read, services
+from . import design as design_module, read, services, words
 from .forms import (
     CopyForm, ExperimentForm, MemberFormSet, ReleaseForm, ReplaceForm, StartForm, design_forms, design_rows,
     place_rows, places_forms,
@@ -55,6 +57,13 @@ class TeamList(RowList):
 
     key, tab, label = 'team', 'team', _('Team')
     formset = MemberFormSet
+    # Its panel's words (experiments/experiment_form.html).
+    title = _('Team')
+    help_text = _('The people of the experiment and their part; exactly one is the lead. Only people who can read '
+                  'Experiments are offered. The team is saved separately from the details.')
+    empty_text = _('No one in the team yet. Use “Add person” to add a row.')
+    add_label, save_label = _('Add person'), _('Save team')
+    pending_text = _('The team can be set once the experiment is created: its creator is the lead.')
     saved = ngettext_lazy('%(count)d person saved.', '%(count)d people saved.', 'count')
 
     @classmethod
@@ -113,6 +122,61 @@ class ExperimentResource(Resource):
                          'sites': sites, 'chosen_site': chosen_site, 'species_list': species,
                          'chosen_species': chosen_species, 'statuses': Status.choices, 'chosen_status': chosen_status}
 
+    # The new look (core/L.py): the classic list's words (experiments/experiment_list.html), its rows as the
+    # island's. The rows are the ones the list view read (its queryset and scope): the page shows nothing the classic one
+    # does not, and no field of an experiment the classic list leaves out.
+    search_placeholder = _('Search by number, name or hypothesis')
+    empty_text = _('Plan a trial: its hypothesis, its groups and the tanks they get.')
+    STATUS_CHIPS = {Status.RUNNING: 'ok', Status.CLOSED: 'neutral', Status.DRAFT: 'note'}
+
+    @classmethod
+    def list_filters(cls, view, context):
+        return [
+            L.choice('status', _('Status'), context['chosen_status'], [('', _('All statuses')), *context['statuses']]),
+            L.choice('site', _('Site'), context['chosen_site'],
+                     [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])]),
+            L.choice('species', pgettext_lazy('singular', 'Species'), context['chosen_species'],
+                     [('', _('All species')), *((species.pk, species.common_name) for species in context['species_list'])]),
+        ]
+
+    @classmethod
+    def list_rows(cls, view, objects, context):
+        rows = []
+        for experiment in objects:
+            actions = []
+            if context.get('can_change'):
+                actions.append(L.link(view.url('edit', experiment.pk), gettext('Edit %(name)s') % {'name': experiment.name},
+                                      'pencil'))
+            if context.get('can_delete') and experiment.status == Status.DRAFT:
+                actions.append(L.link(view.url('delete', experiment.pk),
+                                      gettext('Delete %(name)s') % {'name': experiment.name}, 'trash', danger=True))
+            chips = [L.chip('note', gettext('Template'))] if experiment.is_template else []
+            rows.append(L.row(experiment.pk, {
+                'experiment': L.cell(experiment.name, href=view.url('detail', experiment.pk), strong=True,
+                                     sub=[f'{experiment.code} · {experiment.get_primary_endpoint_display()}'
+                                          if experiment.primary_endpoint else experiment.code]),
+                'status': L.cell(chip=L.chip(cls.STATUS_CHIPS.get(experiment.status, 'neutral'),
+                                             experiment.get_status_display()), chips=chips),
+                'site': L.cell(experiment.site.name),
+                'species': L.cell(experiment.species.common_name),
+                'day0': L.cell(formats.date_format(experiment.starts_on, 'DATE_FORMAT') if experiment.starts_on else '—'),
+                'days': L.cell(experiment.duration_days),
+                'groups': L.cell(experiment.group_count),
+                'replicates': L.cell(experiment.replicate_count),
+            }, actions))
+        return {
+            'tabs': L.tabs(_('Experiments'), [(f'?view={value}' if value else '?', label, None, context['view'] == value)
+                                              for value, label in context['views']]),
+            'notices': [L.notice('trial', 'neutral', _(
+                'A trial of one species on one site: its groups, their replicates and the tanks and days each is booked '
+                'to. A draft reserves its tanks; starting it fixes its design, and the figures are read from the farm’s '
+                'own records.'))],
+            'columns': [L.column('experiment', _('Experiment')), L.column('status', _('Status')), L.column('site', _('Site')),
+                        L.column('species', pgettext_lazy('singular', 'Species')), L.column('day0', _('Day 0')),
+                        L.column('days', _('Days'), numeric=True), L.column('groups', _('Groups'), numeric=True),
+                        L.column('replicates', _('Replicates'), numeric=True)],
+            'rows': rows}
+
     @classmethod
     def detail_extras(cls, request, experiment):
         """The read page: the details, and one of its three parts (`?tab=`): the Overview (where the experiment is in its
@@ -170,6 +234,25 @@ class ExperimentResource(Resource):
                 'start_url': reverse('experiments:experiment_start', args=[experiment.pk]),
                 'copy_url': reverse('experiments:experiment_copy', args=[experiment.pk])}
 
+    next_extras = frozenset({'design_form', 'factors', 'groups', 'frozen', 'findings', 'table', 'add_factor', 'design_url',
+                             'places_form', 'places', 'span', 'cells', 'allocation', 'error_df', 'places_url', 'start_url',
+                             'copy_url'})
+
+    @classmethod
+    def next_panels(cls, view, form, experiment, extra):
+        """experiments/experiment_form.html in the new look: an existing experiment's Design (the factors' grid and the
+        groups' grid saved as a whole; a factor named or of another kind, or Add factor, renders the grid again: a draft)
+        and Places (the seeded deal and the rows by hand), each shown as it is once the experiment has started, and its
+        Team, a list saved apart."""
+        team = formpanels.row_list_panels(cls, view, experiment, extra)
+        if experiment is None:
+            return team
+        can_add = view.request.user.has_perm(cls.perm('add'))
+        copies = [formpanels.link(extra['copy_url'], words.COPY_AS_A_NEW_EXPERIMENT),
+                  formpanels.link(f"{extra['copy_url']}?as=template", words.SAVE_AS_A_TEMPLATE)] if can_add else []
+        return [design_panel(experiment, extra, copies),
+                *([] if experiment.is_template else [places_panel(experiment, extra)]), *team]
+
     @classmethod
     def urls(cls):
         p = cls.url_prefix
@@ -182,6 +265,108 @@ class ExperimentResource(Resource):
                      name='experiment_release'),
                 path(f'{p}/<uuid:pk>/replace/<uuid:placement>/', ExperimentReplaceView.as_view(resource=cls),
                      name='experiment_replace')]
+
+
+def design_panel(experiment, extra, copies):
+    """The Design tab of the new look (experiments/_design.html and the partials it includes): a started experiment's
+    design as it is; a draft's findings, Start, the copy links, and the factors' and groups' grids as one form."""
+    from django.template.defaultfilters import floatformat
+
+    form, factors, groups = extra['design_form'], extra['factors'], extra['groups']
+    title = words.DESIGN
+    refused = bool(form.errors or factors.non_form_errors() or any(factors.errors)
+                   or groups.non_form_errors() or any(groups.errors)) if factors.is_bound or form.is_bound else False
+    if extra.get('frozen'):
+        table = extra['table']
+        return formpanels.panel('design', title, [
+            formpanels.notice(words.THE_EXPERIMENT_HAS_STARTED_SO_ITS),
+            formpanels.table(title, [
+                L.column('group', words.GROUP), L.column('role', words.ROLE),
+                *(L.column(f'f{index}', f'{factor.name} ({factor.unit})' if factor.unit else factor.name)
+                  for index, factor in enumerate(table['factors'])),
+                L.column('replicates', words.REPLICATES, numeric=True)], [
+                L.row(row['group'].pk, {
+                    'group': L.cell(row['group'].name, chips=[L.chip('note', words.CONTROL)]
+                                            if row['group'].is_control else ()),
+                    'role': L.cell(row['group'].get_role_display()),
+                    **{f'f{index}': L.cell(
+                        (f'{level} ({floatformat(level.value, "-4")})' if level.value is not None else str(level))
+                        if level else '—') for index, level in enumerate(row['levels'])},
+                    'replicates': L.cell(len(row['replicates']))})
+                for row in table['rows']]),
+            None if table['rows'] else formpanels.help_text(words.NO_GROUP),
+            *copies])
+    findings = extra.get('findings')
+    columns = list(groups.columns)
+    return formpanels.panel('design', title, [
+        formpanels.notices(words.TO_FIX_BEFORE_IT_CAN_START, [each.text for each in findings.errors], 'critical')
+        if findings else None,
+        formpanels.notices(words.TO_READ_BEFORE_IT_STARTS, [each.text for each in findings.warnings]) if findings else None,
+        None if experiment.is_template else formpanels.link(extra['start_url'], words.START_THE_EXPERIMENT),
+        *copies,
+        formpanels.help_text(words.A_FACTOR_IS_WHAT_THE_GROUPS),
+        formpanels.form(extra['design_url'], title, [
+            formpanels.heading(words.FACTORS),
+            formpanels.grid(factors, [words.FACTOR, words.KIND, words.UNIT_OF_ITS_LEVELS],
+                            lambda row: [[row['name']], [row['kind']], [row['unit']], [row['DELETE']]],
+                            legend=words.FACTOR, empty_text=''),
+            formpanels.button(words.ADD_FACTOR, DRAFT, extra['add_factor']),
+            formpanels.heading(words.GROUPS),
+            formpanels.grid(groups, [words.GROUP, words.ROLE,
+                                     *(f"{column['name']} ({column['unit']})" if column.get('unit') else column['name']
+                                       for column in columns), words.REPLICATES],
+                            lambda row: [[row['name']], [row['role']], *(cell for _column, cell in row.cells()),
+                                         [row['replicates']], [row['DELETE']]],
+                            legend=words.GROUP, add=words.ADD_GROUP, can_add=bool(columns),
+                            empty_text=words.NO_GROUP_YET_USE_ADD_GROUP if columns
+                            else words.NAME_A_FACTOR_FIRST_THE_GROUPS)],
+            hidden=[form['version']],
+            errors=[*form.non_field_errors(), *factors.non_form_errors(), *groups.non_form_errors()],
+            actions=[formpanels.button(words.SAVE_DESIGN, primary=True)])], has_errors=refused)
+
+
+def places_panel(experiment, extra):
+    """The Places tab of the new look (experiments/_places.html): how the tanks were given, then a started experiment's
+    tanks as they stand, or the seeded deal and the rows by hand as one form (or what must come first)."""
+    from django.utils import formats
+
+    form, places, span = extra['places_form'], extra['places'], extra.get('span')
+    title = words.PLACES
+    refused = bool(form.errors or places.non_form_errors() or any(places.errors)) if form.is_bound else False
+    blocks = [formpanels.notice(extra['allocation']) if extra.get('allocation') else None]
+    if extra.get('frozen'):
+        blocks += [formpanels.help_text(words.THE_EXPERIMENT_HAS_STARTED_ITS_TANKS),
+                   formpanels.table(title, [
+                       L.column('group', words.GROUP), L.column('replicate', words.REPLICATE),
+                       L.column('tank', words.TANK), L.column('from', words.FROM),
+                       L.column('until', words.UNTIL)], [
+                       L.row(cell.id, {
+                           'group': L.cell(cell.group.name), 'replicate': L.cell(f'R{cell.replicate.number}'),
+                           'tank': L.cell(f'{cell.unit.code} · {cell.unit.name}'),
+                           'from': L.cell(formats.date_format(cell.first, 'DATE_FORMAT')),
+                           'until': L.cell(formats.date_format(cell.last, 'DATE_FORMAT'))})
+                       for cell in extra.get('cells', ())]),
+                   None if extra.get('cells') else formpanels.help_text(words.NO_TANK_IS_PLACED)]
+    elif span is None:
+        blocks.append(formpanels.notice(words.SET_DAY_0_ON_THE_DETAILS, 'warning'))
+    elif not places.forms:
+        blocks.append(formpanels.help_text(words.NO_REPLICATE_YET_DESIGN_THE_GROUPS))
+    else:
+        blocks += [
+            formpanels.help_text(words.booked_for(span, extra.get('error_df'))),
+            formpanels.form(extra['places_url'], title, [
+                formpanels.heading(words.RANDOMISE),
+                formpanels.help_text(words.CHOOSE_AS_MANY_TANKS_OR_SYSTEMS),
+                formpanels.fields(form['pool'], form['seed']),
+                formpanels.button(words.RANDOMISE, 'action', 'randomise'),
+                formpanels.heading(words.BY_HAND),
+                formpanels.grid(places, [words.REPLICATE, words.TANKS, words.ADD_THE_TANKS_OF_A_SYSTEM, words.FROM, words.UNTIL],
+                                lambda row: [[row['tanks']], [row['system']], [row['first']], [row['last']]],
+                                legend=words.REPLICATE, empty_text='', head=lambda row: row.label),
+                formpanels.fields(form['note'])],
+                hidden=[form['version']], errors=[*form.non_field_errors(), *places.non_form_errors()],
+                actions=[formpanels.button(words.SAVE_PLACES, 'action', 'save', primary=True)])]
+    return formpanels.panel('places', title, blocks, has_errors=refused)
 
 
 def allocation_banner(experiment):

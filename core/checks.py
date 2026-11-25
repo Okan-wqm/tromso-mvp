@@ -2,7 +2,6 @@ import os
 from urllib.parse import urlsplit
 
 from django.conf import settings
-from django.contrib.staticfiles import finders
 from django.core.checks import Error, Tags, Warning, register
 from django.core.checks.mail import NON_PRODUCTION_EMAIL_BACKENDS
 from django.core.exceptions import ValidationError
@@ -19,9 +18,10 @@ ENTRY_SCRIPTS = ['js/nav-boot.js', 'js/shell.js', 'js/components.js', 'js/auth.j
 
 def build_problems():
     """What is missing or broken of the compiled browser code: the entry scripts of static/js, and the islands' manifest
-    (vite.config.mjs: missing, or there but not readable)."""
-    from .templatetags.assets import ManifestUnreadable, islands_manifest, manifest_path
-    problems = [f'{path} is missing' for path in ENTRY_SCRIPTS if not finders.find(path)]
+    (vite.config.mjs: missing, or there but not readable), each looked for where the server serves it (assets.built:
+    STATIC_ROOT first, then the build's), so a server that serves STATIC_ROOT only is not stopped for scripts it has."""
+    from .templatetags.assets import ManifestUnreadable, built, islands_manifest, manifest_path
+    problems = [f'{path} is missing' for path in ENTRY_SCRIPTS if not built(path)]
     where = os.path.relpath(manifest_path(), settings.BASE_DIR).replace(os.sep, '/')
     try:
         if islands_manifest() is None:

@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { FLOOR, dock, fillUnit, pageOf, slots, worst, worstPage } from './slots.js';
+import { FLOOR, dock, fillUnit, legibleUnit, pageOf, slots, worst, worstPage } from './slots.js';
 import { mulberry32 } from '../test/random.js';
 
 interface Case {
@@ -58,7 +58,8 @@ test('whatever the screen: every card has a cell, the unit is never under the fl
     assert.ok(found.cols >= 1 && found.rows >= 1 && found.pages >= 1, where);
     assert.ok(found.cols * found.rows * found.pages >= count, where);                   // no card without a cell
     assert.ok((found.pages - 1) * found.cols * found.rows < count, where);              // no page without a card
-    if (found.pages > 1) assert.ok(found.u >= FLOOR - 1e-6, where);                     // paged, never shrunk
+    // paged, never shrunk: under the floor only one card a page, at the largest unit a cell gives (a window too small)
+    if (found.pages > 1 && found.u < FLOOR - 1e-6) assert.deepEqual([found.cols, found.rows, found.pages], [1, 1, count], where);
     // one page when one page can be read: no grid that holds every card gives a readable unit otherwise
     if (found.pages > 1) {
       for (let cols = 1; cols <= 16; cols += 1) {
@@ -68,6 +69,34 @@ test('whatever the screen: every card has a cell, the unit is never under the fl
           assert.ok(u < FLOOR, `${where}: ${cols}x${rows} would hold every card at ${u}`);
         }
       }
+    }
+  }
+});
+
+test('a legible unit no grid reaches: one card a page at the largest unit a cell gives, never the densest grid', () => {
+  // the review's pairs on a Full HD screen (B3): 24" from 3 m and 5 m, 55" from 5 m ask for more than any cell gives
+  const room = named('small x 20 on 1920x1080');
+  const largest = Math.min((room.width - room.pad_x) / room.mw, (room.height - room.pad_y) / room.mh);
+  for (const [inches, distance] of [[24, 3], [24, 5], [55, 5]] as const) {
+    const least = legibleUnit(inches, distance, 1920, 1080);
+    assert.ok(least > largest, `${inches}" at ${distance} m asks ${least}, a cell gives ${largest} at most`);
+    const found = slots(20, room.width, room.height, room.gap, room.mw, room.mh, least, room.pad_x, room.pad_y);
+    assert.deepEqual([found.cols, found.rows, found.pages], [1, 1, 20], `${inches}" at ${distance} m`);
+    assert.ok(Math.abs(found.u - largest) < 1e-9, `${inches}" at ${distance} m: ${found.u}`);
+  }
+  // whatever the screen and the unit asked: a page that cannot be read is never more than one card at the largest unit
+  const random = mulberry32(20261124);
+  for (let round = 0; round < 300; round += 1) {
+    const count = 1 + Math.floor(random() * 60);
+    const [width, height, gap] = [600 + random() * 4000, 300 + random() * 2000, random() * 14];
+    const [mw, mh, padX, padY] = [12 + Math.floor(random() * 52), 6 + Math.floor(random() * 58), random() * 40, random() * 20];
+    const least = FLOOR + random() * 200;
+    const found = slots(count, width, height, gap, mw, mh, least, padX, padY);
+    const where = JSON.stringify({ count, width, height, gap, mw, mh, padX, padY, least, found });
+    if (found.u < least - 1e-6) {
+      const cell = Math.max(height, mh * FLOOR + padY);
+      assert.deepEqual([found.cols, found.rows, found.pages], [1, 1, count], where);
+      assert.ok(Math.abs(found.u - Math.min((width - padX) / mw, (cell - padY) / mh)) < 1e-9, where);
     }
   }
 });
@@ -107,4 +136,24 @@ test('the worst card, its page and its state', () => {
   assert.deepEqual(worst(['ok', 'ok', 'warning', 'ok', 'ok', 'critical', 'ok'], 2, order), { index: 5, page: 3, state: 'critical' });
   assert.deepEqual(worst(['ok', 'blind', 'warning'], 2, order), { index: 2, page: 2, state: 'warning' });
   assert.equal(worst(['ok', 'note'], 2, order), null);
+});
+
+test('the legible unit: the vectors shared with the Python rule', () => {
+  const cases = (JSON.parse(readFileSync('monitoring/tests/slot_vectors.json', 'utf8')) as {
+    legible: { inches: number; distance_m: number; screen_w: number; screen_h: number; u: number }[] }).legible;
+  assert.ok(cases.length >= 10);
+  for (const each of cases) {
+    const found = legibleUnit(each.inches, each.distance_m, each.screen_w, each.screen_h);
+    assert.ok(Math.abs(found - each.u) < 1e-5, `${JSON.stringify(each)}: ${found}`);
+  }
+  // the same TV at a pixel ratio of 2 gets half the CSS px: the same millimetres
+  assert.ok(Math.abs(legibleUnit(55, 3, 3840, 2160) - 2 * legibleUnit(55, 3, 1920, 1080)) < 1e-9);
+  assert.equal(legibleUnit(0, 3, 1920, 1080), FLOOR);
+});
+
+test('the pane stands beside the cards only where its card can be read at the wall\'s distance', () => {
+  // 55" Full HD TV at 3 m: a Big card's unit there is far over 14 px but under the legible one: over the cards
+  const floor = legibleUnit(55, 3, 1920, 1080);
+  assert.equal(dock(1920, 1000, 8, 48, 61, 0, 0).beside, true);
+  assert.equal(dock(1920, 1000, 8, 48, 61, 0, 0, floor).beside, false);
 });

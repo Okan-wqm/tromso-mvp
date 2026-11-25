@@ -29,7 +29,7 @@
 
     <section class="drawer-section">
       <h3>{% trans "Batches" %}</h3>
-      <div class="table-wrap">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="{% trans "Batches" %}">
         <table class="data-table drawer-table">
           <thead><tr><th scope="col">{% trans "Batch" %}</th><th scope="col" class="num">{% trans "Fish" %}</th><th scope="col" class="num">{% trans "Avg. weight" %}</th><th scope="col" class="num">{% trans "Biomass" %}</th><th scope="col" class="num">{% trans "Survival" %}</th><th scope="col" class="num">{% trans "Losses" %}</th>{% if show_feeding %}<th scope="col" class="num">{% trans "Fed" %}</th><th scope="col" class="num">{% trans "bFCR" %}</th>{% endif %}</tr></thead>
           <tbody>

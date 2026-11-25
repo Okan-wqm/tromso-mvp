@@ -3,14 +3,14 @@
 {% block extra_head %}<link rel="stylesheet" href="{% asset 'css/tasks.css' %}">{% endblock %}
 {% comment %} A recurring task's form adds its checklist on a tab of its own, saved as a list (core.crud.RowList) and
    copied to every task it plans; saving it plans the untouched tasks from today on again.{% endcomment %}
-{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="checklist">{% trans "Checklist" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="checklist">{{ row_words.checklist.title }}</button>{% endblock %}
 {% block extra_panels %}
-{% trans "Checklist" as panel_title %}
-{% trans "The steps of the job, one per line, at most 30, copied to every task it plans. Saving them gives the tasks from today on that nobody has touched the new list. It is saved separately from the recurring task." as help %}
-{% trans "No lines yet. Use “Add line” to add one." as empty %}
-{% trans "Add line" as add %}
-{% trans "Save checklist" as save %}
-{% trans "A checklist can be added once the recurring task is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
+{# #}
+{# #}
+{# #}
+{# #}
 {% if object %}{% url 'tasks:taskseries_checklist' object.pk as action %}{% endif %}
-{% include "crud/_row_list.html" with rows=checklist tab="checklist" legend=panel_title kind="checklist-row" %}
+{% include "crud/_row_list.html" with rows=checklist tab="checklist" words=row_words.checklist kind="checklist-row" %}
 {% endblock %}

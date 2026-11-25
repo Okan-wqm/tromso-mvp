@@ -1,0 +1,662 @@
+<!doctype html>
+
+
+<html lang="en" data-theme="industry" data-ui="next">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Storage · Suderra</title>
+  <script src="/static/js/nav-boot.js?v=1795576706"></script>
+  <link rel="icon" href="/static/favicon.svg?v=1795521495" type="image/svg+xml">
+  <script type="importmap" nonce="DTauxVBR9e-ivDQCP20zYA">{"imports": {"/static/js/announce.js": "/static/js/announce.js?v=1795576706", "/static/js/auth.js": "/static/js/auth.js?v=1795576706", "/static/js/collapse.js": "/static/js/collapse.js?v=1795576706", "/static/js/components.js": "/static/js/components.js?v=1795576706", "/static/js/date-input.js": "/static/js/date-input.js?v=1795576706", "/static/js/designer.js": "/static/js/designer.js?v=1795576706", "/static/js/dom.js": "/static/js/dom.js?v=1795576706", "/static/js/field-note.js": "/static/js/field-note.js?v=1795576706", "/static/js/grid/history.js": "/static/js/grid/history.js?v=1795576706", "/static/js/grid/keyboard.js": "/static/js/grid/keyboard.js?v=1795576706", "/static/js/grid/layout.js": "/static/js/grid/layout.js?v=1795576706", "/static/js/grid/types.js": "/static/js/grid/types.js?v=1795576706", "/static/js/nav-boot.js": "/static/js/nav-boot.js?v=1795576706", "/static/js/poll.js": "/static/js/poll.js?v=1795576706", "/static/js/roster.js": "/static/js/roster.js?v=1795576706", "/static/js/shell.js": "/static/js/shell.js?v=1795576706", "/static/js/strip.js": "/static/js/strip.js?v=1795576706", "/static/js/wall.js": "/static/js/wall.js?v=1795576706", "/static/js/wall/slots.js": "/static/js/wall/slots.js?v=1795576706", "/static/js/windows.js": "/static/js/windows.js?v=1795576706"}}</script>
+  <link rel="stylesheet" href="/static/css/fonts.css?v=1795521494">
+  <link rel="stylesheet" href="/static/css/tokens.css?v=1795576705">
+  <link rel="stylesheet" href="/static/css/base.css?v=1795521494">
+  <link rel="stylesheet" href="/static/css/ui.css?v=1795521495">
+  
+  <link rel="stylesheet" href="/static/css/ds.css?v=1795576465">
+  <link rel="stylesheet" href="/static/css/app.css?v=1795576465">
+  <link rel="stylesheet" href="/static/css/components.css?v=1795576465">
+  
+  <link rel="stylesheet" href="/static/css/tw.css?v=1795576465">
+  
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <div class="shell">
+    <aside class="rail" id="rail" aria-label="Main navigation">
+      <div class="rail-head ui-rail-head">
+        <a class="rail-brand" href="/">
+          <img class="ui-logo" src="/static/img/suderra-mark-disc.png?v=1795521496" alt=""><span class="ui-wordmark">SU<span>DERRA</span></span>
+          <span class="sr-only">Suderra, home</span>
+        </a>
+        <button type="button" class="icon-button rail-toggle" data-nav-toggle aria-controls="rail" aria-expanded="true" title="Collapse menu"
+                data-label-collapse="Collapse menu" data-label-expand="Expand menu">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/>
+</svg>
+
+          <span class="sr-only">Collapse menu</span>
+        </button>
+      </div>
+
+      
+      <div class="menu workspace-menu" data-menu>
+        <button type="button" class="ui-panel-switch" data-menu-toggle aria-haspopup="true" aria-expanded="false" aria-controls="workspace-panel" title="Switch panel">
+          <span class="workspace-name">Production</span>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/>
+</svg>
+
+        </button>
+        <div class="menu-panel" id="workspace-panel" data-menu-panel hidden>
+          <p class="menu-head">Panels</p>
+          
+          <a class="menu-item" href="/">Company</a>
+          
+          <a class="menu-item" href="/production/" aria-current="true">Production<span class="menu-badge">34</span></a>
+          
+          <a class="menu-item" href="/sensors/">Sensors</a>
+          
+        </div>
+      </div>
+      
+
+      <nav class="rail-nav ui-rail-nav">
+        
+        
+        
+        
+        
+        <a class="rail-link" href="/production/" title="Overview" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+</svg>
+<span class="rail-label">Overview</span>
+          
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Operations</p>
+        
+        
+        
+        <a class="rail-link" href="/operations/units/" title="Production units" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
+</svg>
+<span class="rail-label">Production units</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/monitoring/" title="Monitoring" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+<span class="rail-label">Monitoring</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/water/" title="Water chemistry" data-area="water">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+</svg>
+<span class="rail-label">Water chemistry</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/storage/" title="Storage" aria-current="page" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>
+</svg>
+<span class="rail-label">Storage</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/tasks/" title="Tasks" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>
+</svg>
+<span class="rail-label">Tasks</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/tasks/recurring/" title="Recurring tasks" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>
+</svg>
+<span class="rail-label">Recurring tasks</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Feeding</p>
+        
+        <a class="rail-link" href="/operations/feeding/board/" title="Meal board" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+</svg>
+<span class="rail-label">Meal board</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/feeding/" title="Records" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>
+</svg>
+<span class="rail-label">Records</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/feeding/protocols/" title="Protocols" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>
+</svg>
+<span class="rail-label">Protocols</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/feeding/assignments/" title="Assignments" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+</svg>
+<span class="rail-label">Assignments</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Harvest</p>
+        
+        <a class="rail-link" href="/operations/harvests/" title="Harvested" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 16 2 2 4-4"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/>
+</svg>
+<span class="rail-label">Harvested</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/harvest-plan/" title="Harvest plan" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+</svg>
+<span class="rail-label">Harvest plan</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/production-plans/" title="Production plans" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+</svg>
+<span class="rail-label">Production plans</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Health</p>
+        
+        <a class="rail-link" href="/operations/health/treatments/" title="Treatments" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/>
+</svg>
+<span class="rail-label">Treatments</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/health/events/" title="Health events" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/>
+</svg>
+<span class="rail-label">Health events</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/operations/health/lice/" title="Sea-lice counts" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>
+</svg>
+<span class="rail-label">Sea-lice counts</span>
+          
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Research</p>
+        
+        
+        
+        <a class="rail-link" href="/research/experiments/" title="Experiments" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>
+</svg>
+<span class="rail-label">Experiments</span>
+          
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Reports</p>
+        
+        
+        
+        <a class="rail-link" href="/reports/" title="Regulatory reports" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+</svg>
+<span class="rail-label">Regulatory reports</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/authority-questions/" title="Questions for the authority" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>
+</svg>
+<span class="rail-label">Questions for the authority</span>
+          
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Communication</p>
+        
+        
+        
+        <a class="rail-link" href="/messages/" title="Messages" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+</svg>
+<span class="rail-label">Messages</span>
+          <span class="rail-badge" data-poll="/messages/unread/" data-poll-every="30">33</span>
+        </a>
+        
+        
+        
+        
+        <p class="rail-section">Team</p>
+        
+        <p class="rail-group">Time &amp; attendance</p>
+        
+        <a class="rail-link" href="/production/team/" title="Today &amp; attendance" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+</svg>
+<span class="rail-label">Today &amp; attendance</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/production/team/schedule/" title="Shift schedule" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+</svg>
+<span class="rail-label">Shift schedule</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/production/team/leave/" title="Leave requests" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.18 4.18A2 2 0 0 0 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 1.82-1.18"/><path d="M21 15.5V6a2 2 0 0 0-2-2H9.5"/><path d="M16 2v4"/><path d="M3 10h7"/><path d="M21 10h-5.5"/><path d="m2 2 20 20"/><path d="M8 2v4"/>
+</svg>
+<span class="rail-label">Leave requests</span>
+          <span class="rail-badge">1</span>
+        </a>
+        
+        <a class="rail-link" href="/production/team/attendance/" title="Attendance" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+</svg>
+<span class="rail-label">Attendance</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/production/team/overview/" title="Team overview" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+</svg>
+<span class="rail-label">Team overview</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">People</p>
+        
+        <a class="rail-link" href="/production/team/people/" title="Team list" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+</svg>
+<span class="rail-label">Team list</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/production/team/organization/" title="Organization chart" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>
+</svg>
+<span class="rail-label">Organization chart</span>
+          
+        </a>
+        
+        
+        
+        
+        <details class="rail-collapse" data-collapse="production-setup">
+        <summary class="rail-section">Setup</summary>
+        
+        
+        <p class="rail-group">Facility structure</p>
+        
+        <a class="rail-link" href="/production-departments/" title="Production departments" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>
+</svg>
+<span class="rail-label">Production departments</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/systems/" title="Systems" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>
+</svg>
+<span class="rail-label">Systems</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/equipment/" title="Equipment" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+</svg>
+<span class="rail-label">Equipment</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/tanks/" title="Tanks, ponds &amp; cages" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/>
+</svg>
+<span class="rail-label">Tanks, ponds &amp; cages</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/monitoring-boards/" title="Monitoring boards" data-area="farm">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+<span class="rail-label">Monitoring boards</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/sampling-points/" title="Sampling points" data-area="water">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+</svg>
+<span class="rail-label">Sampling points</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Reference data</p>
+        
+        <a class="rail-link" href="/species/" title="Species" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"/><path d="M18 12v.5"/><path d="M16 17.93a9.77 9.77 0 0 1 0-11.86"/><path d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33"/><path d="M10.46 7.26C10.2 5.88 9.17 4.24 8 3h5.8a2 2 0 0 1 1.98 1.67l.23 1.4"/><path d="m16.01 17.93-.23 1.4A2 2 0 0 1 13.8 21H9.5a5.96 5.96 0 0 0 1.49-3.98"/>
+</svg>
+<span class="rail-label">Species</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/feeds/" title="Feeds" data-area="feed">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/>
+</svg>
+<span class="rail-label">Feeds</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/water-limits/" title="Water limits" data-area="water">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>
+</svg>
+<span class="rail-label">Water limits</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/water-freshness/" title="Water freshness" data-area="water">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>
+</svg>
+<span class="rail-label">Water freshness</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/medicines/" title="Medicines" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>
+</svg>
+<span class="rail-label">Medicines</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/handling-rules/" title="Handling rules" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>
+</svg>
+<span class="rail-label">Handling rules</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/card-templates/" title="Card templates" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>
+</svg>
+<span class="rail-label">Card templates</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/card-template-rules/" title="Card template rules" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>
+</svg>
+<span class="rail-label">Card template rules</span>
+          
+        </a>
+        
+        <a class="rail-link" href="/ph-window-scales/" title="pH window scales" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>
+</svg>
+<span class="rail-label">pH window scales</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Harvest and logistics</p>
+        
+        <a class="rail-link" href="/slaughter-facilities/" title="Slaughter facilities" data-area="stock">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>
+</svg>
+<span class="rail-label">Slaughter facilities</span>
+          
+        </a>
+        
+        
+        <p class="rail-group">Purchasing</p>
+        
+        <a class="rail-link" href="/suppliers/" title="Suppliers" data-area="neutral">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>
+</svg>
+<span class="rail-label">Suppliers</span>
+          
+        </a>
+        
+        
+        </details>
+        
+      </nav>
+
+      <div class="rail-foot">Fish farm</div>
+    </aside>
+    <div class="scrim" data-nav-close hidden></div>
+
+    <div class="console">
+      <header class="topbar ui-topbar">
+        <nav class="ui-crumbs" aria-label="You are here">
+          <p class="eyebrow">Production<span aria-hidden="true"> › </span>Operations<span aria-hidden="true"> › </span><span class="ui-crumb-here">Storage</span></p>
+        </nav>
+        <div class="ui-strip" role="group" aria-label="Status" data-poll="/ui/strip/" data-poll-every="30" data-poll-state="loading" data-poll-stale-after="1" data-poll-if-shown data-unread-text="Not updated: the alarms cannot be read" data-strip-said="ui-strip-said" data-strip-alert="ui-strip-alert"><a class="ui-strip-item" href="/alarms/" data-strip="alarms">Reading the alarms…</a><a class="ui-strip-item" href="/hr/" data-strip="on_site">3 on site</a><span class="ui-strip-item" data-strip="clock">23.11.2026, 13:42 · Europe/Oslo</span></div>
+        <p class="sr-only" id="ui-strip-said" role="status"></p><p class="sr-only" id="ui-strip-alert" role="alert"></p>
+        <div class="topbar-language">
+<form class="language-switch" method="post" action="/language/">
+  <input type="hidden" name="csrfmiddlewaretoken" value="test-token">
+  <input type="hidden" name="next" value="/operations/storage/?tab=movements&amp;voided=1">
+  <div role="group" aria-label="Language">
+    
+    <button type="submit" name="language" value="en" lang="en" aria-label="EN, English" title="English" aria-current="true">EN</button>
+    
+    <button type="submit" name="language" value="tr" lang="tr" aria-label="TR, Türkçe" title="Türkçe">TR</button>
+    
+    <button type="submit" name="language" value="nb" lang="nb" aria-label="NB, Norsk bokmål" title="Norsk bokmål">NB</button>
+    
+  </div>
+</form>
+</div>
+
+        <div class="menu user-menu" data-menu>
+          <button type="button" class="user-trigger" data-menu-toggle aria-haspopup="true" aria-expanded="false" aria-controls="user-panel">
+            <span class="initials ui-avatar" aria-hidden="true">TE</span>
+            <span class="user-name">test.admin</span>
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/>
+</svg>
+
+          </button>
+          <div class="menu-panel menu-panel-right" id="user-panel" data-menu-panel hidden>
+            <p class="menu-head">
+              <strong>test.admin</strong>
+              <span>test.admin@example.com</span>
+            </p>
+            <div class="menu-language menu-theme"><span>Theme</span>
+              <form class="theme-switch" method="post" action="/theme/">
+                <input type="hidden" name="csrfmiddlewaretoken" value="test-token">
+                <input type="hidden" name="next" value="/operations/storage/?tab=movements&amp;voided=1">
+                <div role="group" aria-label="Theme">
+                  <button type="submit" name="theme" value="industry" aria-pressed="true">Industry</button><button type="submit" name="theme" value="fjord" aria-pressed="false">Fjord</button><button type="submit" name="theme" value="polarnatt" aria-pressed="false">Polarnatt</button><button type="submit" name="theme" value="nordlys" aria-pressed="false">Nordlys</button><button type="submit" name="theme" value="tang" aria-pressed="false">Tang</button><button type="submit" name="theme" value="laks" aria-pressed="false">Laks</button>
+                </div>
+              </form>
+            </div>
+            <a class="menu-item" href="/operations/storage/?ui=classic" data-look="classic">Back to the classic look</a>
+            <a class="menu-item" href="/accounts/password_change/">Change password</a>
+            <form method="post" action="/accounts/logout/">
+              <input type="hidden" name="csrfmiddlewaretoken" value="test-token">
+              <button type="submit" class="menu-item">Sign out</button>
+            </form>
+          </div>
+        </div>
+      </header>
+
+      
+      <main class="content" id="content" tabindex="-1" data-measure="fluid">
+        
+        <div class="page-head ui-head" data-area="feed">
+          <div class="page-title">
+            <span class="ui-head-group">Operations</span>
+            <span class="ui-area" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>
+</svg>
+</span>
+            <h1>Storage</h1>
+            
+          </div>
+          
+        </div>
+        
+<nav class="ui-tabs" aria-label="Storage">
+  <a class="ui-tab" href="/operations/storage/?tab=overview">Overview</a><a class="ui-tab" href="/operations/storage/?tab=stock">Stock</a><a class="ui-tab" href="/operations/storage/?tab=movements" aria-current="page">Movements</a><a class="ui-tab" href="/operations/storage/?tab=counts">Counts</a>
+</nav>
+
+<div class="ui-toolbar">
+  
+  <a class="ui-btn" href="/operations/storage/transfer/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1">Transfer</a><a class="ui-btn" href="/operations/storage/issue/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1">Issue</a><a class="ui-btn" href="/operations/storage/write-off/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1">Write off</a><a class="ui-btn" href="/operations/storage/return/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1">Return to supplier</a><a class="ui-btn" href="/operations/storage/count/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1">Count a location</a>
+  <a class="ui-btn" data-variant="primary" href="/operations/storage/receive/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M12 5v14"/>
+</svg>
+Receive delivery</a>
+</div>
+
+
+
+<div class="ui-toolbar">
+  <form method="get" role="search" aria-label="Filter" class="ui-list-filters" data-omit-empty>
+    <input type="hidden" name="tab" value="movements">
+    <label><span class="sr-only">Site</span><select name="site">
+      <option value="">All sites</option>
+      <option value="69e9c2d3-e70f-4828-b665-938b19ef8da3">Test Site North</option>
+    </select></label>
+    <label><span class="sr-only">Location</span><select name="location">
+      <option value="">All locations</option>
+      <option value="e0cdaab8-9f5f-4cd5-9b46-a66dd3bd9086">TS-01 · Test Store</option>
+    </select></label>
+    <label><span class="sr-only">Operation</span><select name="kind">
+      <option value="">All operations</option>
+      <option value="receipt">Delivery</option><option value="issue">Issue</option><option value="write_off">Write-off</option><option value="return">Return to supplier</option><option value="transfer">Transfer</option><option value="count">Count</option><option value="feeding">Feeding (from the records)</option>
+    </select></label>
+    <label><span class="sr-only">Item</span><select name="item">
+      <option value="">All items</option>
+      <option value="9917adc9-40cb-4392-b70e-e41cff3060b3">Test Feed (TFE)</option><option value="b5007070-d82f-40a4-a4bc-b5a165903c9f">Test Grower 4 (TG-4)</option>
+    </select></label>
+    <label><span class="sr-only">Supplier</span><select name="supplier">
+      <option value="">All suppliers</option>
+      <option value="5103ac94-bb86-4d63-a221-7972928ad20d">Test Feed Mill (TFM)</option>
+    </select></label>
+    <label>From <input type="text" name="from" placeholder="26.10.2026" autocomplete="off" data-date-input="day"></label>
+    <label>To <input type="text" name="to" placeholder="26.10.2026" autocomplete="off" data-date-input="day"></label>
+    <label class="ui-check"><input type="checkbox" name="voided" value="1" checked> Show voided</label>
+    <button type="submit" class="ui-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+</svg>
+Filter</button>
+  </form>
+</div>
+
+<div class="ui-plates">
+<section class="ui-plate" data-span="12">
+  <div class="ui-table-wrap" tabindex="0" role="region" aria-label="Storage">
+    <table class="ui-table">
+      <thead><tr><th scope="col">Date</th><th scope="col">Operation</th><th scope="col">Lines</th><th scope="col">Supplier</th><th scope="col">Recorded by</th><th scope="col">Notes</th><th scope="col" class="ui-actions"><span class="sr-only">Actions</span></th></tr></thead>
+      <tbody>
+        
+        <tr>
+          <th scope="row" class="nowrap">21.11.2026</th>
+          <td>Count<span class="ui-cell-sub">TS-01</span></td>
+          <td><span class="ui-cell-sub">TS-01 · Test Grower 4 (TG-4) · lot TL-1: counted 475 kg
+</span><span class="ui-cell-sub">TS-01 · Test Grower 4 (TG-4) · lot TL-2: counted 1,000 kg
+</span></td>
+          <td>—</td>
+          <td>test.admin<span class="ui-cell-sub">23.11.2026 13:42</span></td>
+          <td>Test count</td>
+          <td class="ui-actions"><a class="ui-btn" data-variant="link" href="/operations/storage/void/02976463-1488-4786-8bad-bb9c43f65de3/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1">Void</a></td>
+        </tr>
+        
+        <tr data-voided="">
+          <th scope="row" class="nowrap">19.11.2026</th>
+          <td>Write-off<span class="ui-cell-sub">Damaged</span></td>
+          <td><span class="ui-cell-sub">TS-01 · Test Grower 4 (TG-4) · lot TL-2: −10 kg
+</span></td>
+          <td>—</td>
+          <td>test.admin<span class="ui-cell-sub">23.11.2026 13:42</span></td>
+          <td>Test bags<span class="ui-cell-sub">voided by test.admin: Test: entered twice</span></td>
+          <td class="ui-actions"><span class="ui-chip" data-status="neutral"><span>Voided</span></span>
+</td>
+        </tr>
+        
+        <tr>
+          <th scope="row" class="nowrap">18.11.2026</th>
+          <td>Issue<span class="ui-cell-sub">Samples and analyses</span></td>
+          <td><span class="ui-cell-sub">TS-01 · Test Grower 4 (TG-4) · lot TL-1: −20 kg
+</span></td>
+          <td>—</td>
+          <td>test.admin<span class="ui-cell-sub">23.11.2026 13:42</span></td>
+          <td>Test samples</td>
+          <td class="ui-actions"><a class="ui-btn" data-variant="link" href="/operations/storage/void/c1721778-40bf-4e48-ae2c-6d740459a602/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1">Void</a></td>
+        </tr>
+        
+        <tr>
+          <th scope="row" class="nowrap">13.11.2026</th>
+          <td>Delivery</td>
+          <td><span class="ui-cell-sub">TS-01 · Test Grower 4 (TG-4) · lot TL-1: +500 kg · 12.50 NOK each
+</span><span class="ui-cell-sub">TS-01 · Test Grower 4 (TG-4) · lot TL-2: +1,000 kg · 13.00 NOK each
+</span></td>
+          <td>Test Feed Mill (TFM)<span class="ui-cell-sub">TEST-DN-1</span></td>
+          <td>test.admin<span class="ui-cell-sub">23.11.2026 13:42</span></td>
+          <td></td>
+          <td class="ui-actions"><a class="ui-btn" data-variant="link" href="/operations/storage/void/f1de9ea3-6426-4d56-b346-7d0658b5f2cd/?next=%2Foperations%2Fstorage%2F%3Ftab%3Dmovements%26voided%3D1">Void</a></td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+  
+</section>
+</div>
+
+
+
+
+      </main>
+    </div>
+  </div>
+  <nav class="ui-bottombar" aria-label="Main pages">
+    <a class="ui-bottombar-link" href="/operations/feeding/board/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+</svg>
+<span class="ui-bottombar-label">Meals</span></a>
+    <a class="ui-bottombar-link" href="/operations/water/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+</svg>
+<span class="ui-bottombar-label">Water</span></a>
+    <a class="ui-bottombar-link" href="/operations/units/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
+</svg>
+<span class="ui-bottombar-label">Units</span></a>
+    <a class="ui-bottombar-link" href="/operations/storage/" aria-current="page"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>
+</svg>
+<span class="ui-bottombar-label">Storage</span></a>
+    <button type="button" class="ui-bottombar-link" data-nav-open aria-controls="rail" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+</svg>
+<span class="ui-bottombar-label">More</span></button>
+  </nav>
+  <dialog class="modal" id="modal" closedby="any" aria-labelledby="modal-title" data-forbidden="You do not have permission to do this."><div data-modal-content></div></dialog>
+  <script type="module" src="/static/js/shell.js?v=1795576706"></script>
+  <script type="module" src="/static/js/components.js?v=1795576706"></script>
+  <script type="module" src="/static/js/poll.js?v=1795576706"></script>
+  <script type="module" src="/static/js/strip.js?v=1795576706"></script>
+</body>
+</html>

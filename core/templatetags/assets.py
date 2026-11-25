@@ -79,13 +79,22 @@ def manifest_path():
     one; else the build's, static/islands/manifest.json (npm run build, found by the static finders). It is a plain file
     name, no dot-folder: collectstatic copies it with the islands."""
     from django.conf import settings
-    from django.contrib.staticfiles import finders
     if getattr(settings, 'ISLANDS_MANIFEST', None):
         return settings.ISLANDS_MANIFEST
+    return built(MANIFEST) or os.path.join(settings.BASE_DIR, 'static', *MANIFEST.split('/'))
+
+
+def built(path):
+    """Where the server serves the built static file `path` (under static/): the collected one (STATIC_ROOT/<path>, a
+    production server that serves STATIC_ROOT only) when there is one, else the build's, found by the static finders;
+    None when it is in neither. The one answer for the islands' manifest and the entry scripts (core.W001, core.E007),
+    so a STATIC_ROOT-only server is never told its scripts are missing."""
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
     root = getattr(settings, 'STATIC_ROOT', None)
-    if root and os.path.exists(os.path.join(root, *MANIFEST.split('/'))):
-        return os.path.join(root, *MANIFEST.split('/'))
-    return finders.find(MANIFEST) or os.path.join(settings.BASE_DIR, 'static', *MANIFEST.split('/'))
+    if root and os.path.exists(os.path.join(root, *path.split('/'))):
+        return os.path.join(root, *path.split('/'))
+    return finders.find(path)
 
 
 class ManifestUnreadable(Exception):
@@ -97,7 +106,8 @@ _manifest_cache = {}
 
 def islands_manifest():
     """{island name: {'file': path under static/islands, 'imports': [...], 'css': [...]}} of the build's manifest ({} for
-    a build without islands); None when there is no build (core.W001, and core.E006 for a deployment, say so). A
+    a build without islands); None when there is no build (core.W001 says so, and core.E007 under
+    `check --deploy`). A
     manifest that cannot be read raises ManifestUnreadable (the checks report it; a page with an island fails loudly)."""
     path = manifest_path()
     try:

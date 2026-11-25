@@ -1,7 +1,9 @@
 // Stat tiles (static/css/ds.css, Tile; templates/_metric_card.html draws the same tile on the server): one figure people
 // read at a glance, its label, a sub-line and its source and time; the whole tile is the link to where the figure comes
 // from. Grey by default; only an abnormal figure (status critical or warning) gets its 4 px edge, its glyph before the
-// label and the status's text colour, and `statusLabel` says it in words for a screen reader.
+// label and the status's text colour, and `statusLabel` says it in words for a screen reader. The label sits in a slot of
+// two lines (ds.css, new look) so the figures of one row stay level; a longer label ends in an ellipsis and keeps its
+// whole text in its title and for a screen reader.
 import type { ReactNode } from 'react';
 
 import { Icon } from './Icon.js';
@@ -28,7 +30,7 @@ export function Tile({ label, figure, sub, sub2, source, status, statusLabel, hr
       <span className="ui-tile-label">
         {status ? <Icon name={status === 'critical' ? 'octagon' : 'alert'} /> : null}
         {status && statusLabel ? <span className="sr-only">{statusLabel}: </span> : null}
-        {label}
+        <span className="ui-tile-label-text" title={typeof label === 'string' ? label : undefined}>{label}</span>
       </span>
       <span className="ui-tile-figure" data-figure="" title={typeof figure === 'string' ? figure : undefined}>{figure}</span>
       {sub ? <span className="ui-tile-sub">{sub}</span> : null}

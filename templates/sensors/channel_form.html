@@ -1,20 +1,20 @@
 {% extends "crud/form.html" %}
-{% load i18n %}
+{% load i18n sensors_words %}
 {% comment %} A channel's form adds its calibrations on a tab of their own, saved as a list (core.crud.RowList; needs the right to
    edit channels), and says on its Storing tab how long a value stays fresh. {% endcomment %}
-{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="calibration">{% trans "Calibration" %}</button>{% endblock %}
+{% block extra_tabs %}<button type="button" role="tab" class="ui-tab" data-tab="calibration">{{ row_words.calibrations.title }}</button>{% endblock %}
 {% block extra_panels %}
 {% if object %}
 <section class="tab-panel" role="tabpanel" data-panel="reduction">
-  <p class="panel-help">{% blocktrans trimmed with seconds=object.fresh_s number=object.channel_no heartbeats=object.fresh_heartbeats %}Channel number {{ number }}. A value is fresh for {{ heartbeats }} heartbeats: {{ seconds }} seconds.{% endblocktrans %}</p>
+  <p class="panel-help">{% fresh_for object %}</p>
 </section>
 {% endif %}
-{% trans "Calibration" as panel_title %}
-{% trans "Value = gain × raw value + offset, from the moment given on the site’s clock, applied by the ingest at the device’s time before the unit conversion. Stored values are calibrated; a later calibration never changes them. The earliest calibration also covers the time before it. The calibrations are saved separately from the channel’s details." as help %}
-{% trans "No calibrations: values are stored as the device sends them (after the unit conversion)." as empty %}
-{% trans "Add calibration" as add %}
-{% trans "Save calibrations" as save %}
-{% trans "Calibrations can be added once the channel is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
+{# #}
+{# #}
+{# #}
+{# #}
 {% if object %}{% url 'sensors:channel_calibrations' object.pk as action %}{% endif %}
-{% include "crud/_row_list.html" with rows=calibrations tab="calibration" legend=panel_title kind="calibration-row" %}
+{% include "crud/_row_list.html" with rows=calibrations tab="calibration" words=row_words.calibrations kind="calibration-row" %}
 {% endblock %}

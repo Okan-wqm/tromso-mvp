@@ -17,10 +17,19 @@ export interface TabsProps {
   selected?: string;
   defaultSelected?: string;
   onChange?: (id: string) => void;
+  /** keep every panel in the page, the unselected hidden (a form whose fields stand on several tabs posts them all) */
+  keepMounted?: boolean | undefined;
+  /** where the panels stand under the strip, each drawn by `panel(id)`: by default one after the other. A page whose tabs
+   * are not all one form's lays them out itself (a record's form holding its own tabs, a list saved apart after it). */
+  layout?: ((panel: (id: string) => ReactNode) => ReactNode) | undefined;
 }
 
-export function Tabs({ label, items, selected, defaultSelected, onChange }: TabsProps) {
+export function Tabs({ label, items, selected, defaultSelected, onChange, keepMounted, layout }: TabsProps) {
   const change = onChange ? (key: Key) => onChange(String(key)) : undefined;
+  const panel = (id: string) => {
+    const item = items.find((each) => each.id === id);
+    return item ? <TabPanel key={item.id} id={item.id} className="ui-tab-panel" shouldForceMount={Boolean(keepMounted)}>{item.content}</TabPanel> : null;
+  };
   return (
     <AriaTabs
       {...(selected !== undefined ? { selectedKey: selected } : { defaultSelectedKey: defaultSelected ?? items[0]?.id ?? '' })}
@@ -34,7 +43,7 @@ export function Tabs({ label, items, selected, defaultSelected, onChange }: Tabs
           </Tab>
         ))}
       </TabList>
-      {items.map((item) => <TabPanel key={item.id} id={item.id} className="ui-tab-panel">{item.content}</TabPanel>)}
+      {layout ? layout(panel) : items.map((item) => panel(item.id))}
     </AriaTabs>
   );
 }

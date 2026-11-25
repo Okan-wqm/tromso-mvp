@@ -49,6 +49,41 @@ services:
     # SIGTERM: what is queued is committed and acknowledged, then DISCONNECT (the broker keeps the session).
     stop_grace_period: 60s
 
+  # The alarm worker (manage.py run_alarm_worker, alarms/worker.py): keeps the alarms checked, in its own process, from the
+  # test runner's image (the app's code mounted, as the development server runs). Profile `alarms`:
+  #   docker compose --profile alarms up -d
+  # It exits when it must be started again (the database unreachable for a minute, passes failing, a pass that hangs);
+  # `restart` starts it again. The healthcheck says whether the alarms are being checked (manage.py alarm_worker_health:
+  # the pages say the same); Docker does not restart an unhealthy container, which is why the worker ends itself.
+  # A second replica waits as a hot standby (one advisory lock per database).
+  alarms:
+    profiles: [alarms]
+    build:
+      context: .
+      dockerfile: docker/testrunner.Dockerfile
+      target: runner
+    image: balik-alarms:local
+    restart: unless-stopped
+    depends_on: [db]
+    command: ["python", "manage.py", "run_alarm_worker"]
+    working_dir: /app
+    volumes: [".:/app:ro"]
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-balik}
+      DB_USER: ${DB_USER:-balik}
+      DB_PASSWORD: ${DB_PASSWORD:-balik}
+      PYTHONDONTWRITEBYTECODE: "1"
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "alarm_worker_health"]
+      interval: 30s
+      timeout: 20s
+      retries: 2
+      start_period: 60s
+    # SIGTERM: the pass under way finishes, the worker's row says stopped, exit 0.
+    stop_grace_period: 30s
+
   node-red:
     profiles: [sensors]
     image: nodered/node-red:4.0.9@sha256:0b295b3a14c512548567ca99db631bc37b23bfc79fd009ee8248a610fafdb4b5

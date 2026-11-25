@@ -15,22 +15,22 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.gzip import gzip_page
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _, gettext_lazy
 from django.views.decorators.http import require_POST
 
 from alarms import read as alarms_read, services as alarm_services, sources as alarm_sources
-from core import audit, navigation
+from core import audit, navigation, ui
 from core.crud import DRAFT, done, refusal_text, render_page
 from core.dates import read_moment
 from core.models import AuditLog
-from farm.models import System, Tank
+from farm.models import Equipment, System, Tank
 from farm.models.site import zone_of
 from farm.water import deffeyes
-from core.widgets import MomentInput
+from core.widgets import EXAMPLE, MomentInput
 
-from . import bindings, chart, credentials, quantities, read, trail
+from . import bindings, chart, credentials, pages, quantities, read, trail
 from .forms import DeviceMoveForm, on_site_clock, place_choices, place_of
 from .models import (AlarmEvent, Binding, Channel, ChannelStatus, Connection, Credential, DeadLetter, DeadReason,
                      Device, IngestStatus)
@@ -47,14 +47,28 @@ def _context(url_name, **extra):
     return {'title': place.entry.label, 'eyebrow': f'{place.workspace.label} · {place.entry.label}', **extra}
 
 
+def _next_list(request, url_name, props, above=''):
+    """A Sensors page drawn by the shared list page in the new look (sensors/pages.py, templates/crud/list_next.html),
+    with `above` a template the server draws above it (a safety notice of the classic page)."""
+    context = _context(url_name, props=props)
+    return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow'], 'list_above': above})
+
+
 def home(request):
     """The Sensors overview: the configuration counted, for the parts the person may read (every signed-in person may
     open it; the panel is offered to those who can use something in it)."""
     tiles = [{'label': resource.title(), 'count': resource.model.objects.count(), 'url': reverse(resource.url_name('list'))}
              for resource in (ConnectionResource, DeviceResource, ChannelResource, PayloadFormatResource)
              if request.user.has_perm(resource.perm('view'))]
-    return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles,
-                                                               state_tiles=state_tiles(request.user, timezone.now())))
+    now = timezone.now()
+    state = state_tiles(request.user, now)
+    if ui.is_next(request):
+        # the design's setup row: the bindings and the credentials counted too
+        tiles += [{'label': resource.title(), 'count': resource.queryset().count(),     # what the list shows (visible)
+                   'url': reverse(resource.url_name('list'))}
+                  for resource in (BindingResource, CredentialResource) if request.user.has_perm(resource.perm('view'))]
+        return render_page(request, 'sensors/home_next.html', {'props': pages.home_props(tiles, state, now)})
+    return render_page(request, 'sensors/home.html', _context('sensors:home', setup_tiles=tiles, state_tiles=state))
 
 
 @require_POST
@@ -129,10 +143,56 @@ def _chart_of(form):
     return read.series(data['place'], data['quantity'], data['from'], data['to'])
 
 
+def _options(choices):
+    """[{label, options: [{value, label}]}] of a ChoiceField's choices, its groups kept (a "" choice is left out)."""
+    found = []
+    for value, label in choices:
+        if isinstance(label, (list, tuple)):
+            found.append({'label': str(value), 'options': [{'value': str(v), 'label': str(l)} for v, l in label]})
+        elif value:
+            found.append({'label': '', 'options': [{'value': str(value), 'label': str(label)}]})
+    return found
+
+
+def _charts_props(request, form):
+    """Sensors › Charts in the new look: the same form (place, quantity, a preset or from and to), the chart of the query
+    and of the place it is compared with, as data (`chart_payload`), the newest values and the CSV, every word."""
+    query = request.GET
+    payload = chart_payload(request, form) if form.is_bound else {}
+    return {
+        'action': reverse('sensors:charts'), 'locale': request.LANGUAGE_CODE,
+        'places': _options(form.fields['target'].choices), 'quantities': _options(quantities.CHOICES),
+        'ranges': [key for key, _span in RANGES],
+        'values': {name: query.get(name, '') for name in ('target', 'quantity', 'range', 'start', 'end', 'compare',
+                                                          'compare_quantity')},
+        'errors': payload.get('errors', {}), 'chart': payload.get('chart'), 'now': payload.get('now'),
+        'compare': payload.get('compare'), 'csv': payload.get('csv', ''),
+        'words': {
+            'place': str(_('Place')), 'quantity': str(_('Quantity')), 'time': str(_('Time')), 'from': str(_('From')),
+            'to': str(_('To')), 'draw': str(_('Draw')), 'choose': '---------',
+            'compare': str(_('Compare with')), 'compareQuantity': str(_('Quantity to compare')),
+            'noCompare': str(_('Nothing to compare')), 'sameQuantity': str(_('The same quantity')),
+            'csv': str(_('Download the drawn values (CSV)')), 'now': str(_('now')), 'stale': str(_('no recent data')),
+            'sensor': str(_('Sensor')), 'manual': str(_('Meter or test kit')), 'lab': str(_('Laboratory')),
+            'warning': str(_('Warning')), 'critical': str(_('Critical')), 'noValue': str(_('No value')),
+            'start': str(_('Choose a place, a quantity and a time, then Draw.')),
+            'gaps': str(_('Times without a value are shaded, never filled.')),
+            'noBinding': str(_('Nothing is bound here now.')),
+            'example': formats.localize_input(EXAMPLE),
+        },
+    }
+
+
 @permission_required(READ, raise_exception=True)
 def charts(request):
-    """Sensors › Operations › Charts: one place's quantity over a time, the CSV of what is drawn beside it."""
-    form = ChartForm(request.GET or None)
+    """Sensors › Operations › Charts: one place's quantity over a time, the CSV of what is drawn beside it. The look's
+    own `ui` (core/ui.py) is no part of the query."""
+    query = request.GET.copy()
+    query.pop(ui.PARAM, None)
+    form = ChartForm(query or None)
+    if ui.is_next(request):
+        return render_page(request, 'sensors/charts_next.html', {**_context('sensors:charts'),
+                                                                 'props': _charts_props(request, form)})
     found = _chart_of(form) if form.is_bound and form.is_valid() else None
     svg = mark_safe(chart.draw(found, str(form.cleaned_data['place']))) if found is not None else ''
     context = _context('sensors:charts', form=form, chart=found, svg=svg, notes=chart.notes(found) if found else [],
@@ -155,6 +215,77 @@ def chart_csv(request):
         writer.writerow([bucket.start.isoformat(), bucket.end.isoformat(), repr(bucket.avg), repr(bucket.vmin),
                          repr(bucket.vmax), bucket.n, bucket.channel_no, bucket.role, bucket.origin])
     return response
+
+
+WATER_READ = 'farm.view_watermeasurement'
+
+
+def chart_bands(user, place):
+    """The fish's limit bands at a place (sensors.read.bands_of of the water read's limits), for a person who may read
+    the water; {} otherwise or for a place with no fish (the chart then has no band: "no limit", never an assumed one)."""
+    if not user.has_perm(WATER_READ) or isinstance(place, Equipment):
+        return {}
+    from farm.water import read as water_read
+    return read.bands_of(water_read.limits_now(place.unit if getattr(place, 'unit_id', None) else place))
+
+
+def chart_now(found, now):
+    """The newest value of the channel drawn last in the window, with its time and whether it is fresh (sensors.read
+    `latest`, the channel's own freshness): what a chart's "now" dot says; None when nothing is bound there. The channel
+    drawn last is the last bucket's (a place's own probe, or the backup or the system's channel where it has none);
+    with nothing drawn, the place's first channel (`segments` are in the order they count: own first, the system's
+    last), never the last of them (review of batch 1, F3)."""
+    if not found.segments:
+        return None
+    channel = found.buckets[-1].channel_no if found.buckets else found.segments[0].channel_no
+    state = read.latest([channel], now)[channel]
+    if state.value is None:
+        return {'value': None, 'at': None, 'fresh': False, 'channel': state.channel_no}
+    return {'value': state.value, 'at': int(state.at.timestamp()), 'fresh': state.fresh, 'channel': state.channel_no}
+
+
+@permission_required(READ, raise_exception=True)
+def chart_data(request):
+    """The Charts page's chart as data (the query of the page and of its CSV: a place, a quantity, a preset or from and
+    to), for the page behind `?ui=next`: what `charts` draws as SVG (sensors/chart.py `data`), the fish's limit bands for
+    a person who may read the water, the newest value of the channel, and the CSV's address. A query the form refuses
+    is answered 400 with the form's reasons, never an empty chart.
+
+    Compare: `compare` names a second place ("kind:pk", as `target`) and `compare_quantity` its quantity (the first's when
+    not given); its chart is read by the same `series` on EXACTLY the first one's window (one now, the same instants),
+    so the two share one time axis, with its own bands and newest value. A second place or quantity that is not one is
+    a 400, never a chart left out silently."""
+    form = ChartForm(request.GET or None)
+    found = chart_payload(request, form)
+    if 'errors' in found:
+        return JsonResponse(found, status=400)
+    return JsonResponse(found)
+
+
+def _errors(form):
+    return {'errors': {name: [str(error) for error in errors] for name, errors in form.errors.items()}}
+
+
+def chart_payload(request, form):
+    """{'chart', 'now', 'compare', 'csv'} of a Charts query (`chart_data`, and the page in the new look), or {'errors'}
+    when the form or the compare refuses it."""
+    if not form.is_bound or not form.is_valid():
+        return _errors(form)
+    data = form.cleaned_data
+    now = timezone.now()
+    found = _chart_of(form)
+    drawn = urlencode([(key, value) for key, value in request.GET.items() if key not in ('compare', 'compare_quantity', 'ui')])
+    answer = {'chart': chart.data(found, str(data['place']), chart_bands(request.user, data['place'])),
+              'now': chart_now(found, now), 'compare': None, 'csv': f'{reverse("sensors:chart_csv")}?{drawn}'}
+    if request.GET.get('compare'):
+        other = place_of(request.GET['compare'])
+        code = request.GET.get('compare_quantity') or data['quantity']
+        if other is None or code not in quantities.CODES:
+            return {'errors': {'compare': [str(_('Choose a place and a quantity from the lists to compare with.'))]}}
+        second = read.series(other, code, data['from'], data['to'])
+        answer['compare'] = {'chart': chart.data(second, str(other), chart_bands(request.user, other)),
+                             'now': chart_now(second, now)}
+    return answer
 
 
 @permission_required(READ, raise_exception=True)
@@ -182,13 +313,15 @@ def live(request):
     """Sensors › Operations › Live values: every channel listened to, its last value, how old it is and whether it is
     fresh, and where it is bound now."""
     now = timezone.now()
-    channels = list(Channel.objects.exclude(state=ChannelStatus.RETIRED).select_related('device')
+    channels = list(Channel.objects.exclude(state=ChannelStatus.RETIRED).select_related('device__site')
                     .order_by('device__code', 'code'))
     states = read.latest([channel.channel_no for channel in channels], now)
     places = {binding.channel_id: binding for binding in Binding.objects.visible().at(now)
               .select_related('point__unit', 'point__system', 'point__equipment', 'system', 'equipment')}
     rows = [{'channel': channel, 'state': states[channel.channel_no], 'binding': places.get(channel.pk)}
             for channel in channels]
+    if ui.is_next(request):
+        return _next_list(request, 'sensors:live', pages.live_props(request, rows))
     return render_page(request, 'sensors/live.html', _context('sensors:live', rows=rows, now=now))
 
 
@@ -283,6 +416,10 @@ def dead_letters(request):
             for letter in page.object_list]
     kept = request.GET.copy()
     kept.pop('page', None)
+    if ui.is_next(request):
+        return _next_list(request, 'sensors:dead_letters', pages.dead_letters_props(
+            request, rows, page=page, reasons=DeadReason.choices, reason=reason, show=request.GET.get('show', ''),
+            pager_query=kept.urlencode(), can_resolve=request.user.has_perm('sensors.change_deadletter')))
     return render_page(request, 'sensors/dead_letters.html', _context(
         'sensors:dead_letters', rows=rows, page=page, reasons=DeadReason.choices, reason=reason,
         show=request.GET.get('show', ''), pager_query=kept.urlencode(),
@@ -305,7 +442,6 @@ def dead_letter_resolve(request, pk):
 
 
 # ---- the overview's state ---------------------------------------------------------------------------------------
-INGEST_DEAD_AFTER = timedelta(seconds=90)
 
 
 def state_tiles(user, now):
@@ -318,37 +454,44 @@ def state_tiles(user, now):
                                                     .values('pk')))
         if not statuses:
             text = _('No heartbeat yet')
-        elif all(now - status.heartbeat_at <= INGEST_DEAD_AFTER for status in statuses):
+        elif read.ingest_alive(now):
             text = _('Alive')
         else:
             text = _('Down')
-        tiles.append({'label': _('Ingest'), 'text': text, 'count': text,
+        tiles.append({'key': 'ingest', 'label': _('Ingest'), 'text': text, 'count': text,
+                      # the oldest heartbeat: the one that decides Down, so the line never says fresh over a Down
+                      'heartbeat': min((status.heartbeat_at for status in statuses), default=None),
                       'url': reverse('sensors:connection_list')})
         # What the ingest could not keep: QoS 0 messages it dropped on a full queue, messages the database refused (they
         # are dead letters too). Counted since the service started.
-        tiles.append({'label': _('QoS 0 messages dropped on a full queue'), 'url': reverse('sensors:connection_list'),
+        tiles.append({'key': 'qos0', 'label': _('QoS 0 messages dropped on a full queue'),
+                      'url': reverse('sensors:connection_list'),
                       'count': sum(status.qos0_dropped for status in statuses)})
-        tiles.append({'label': _('Messages the database refused'), 'url': reverse('sensors:connection_list'),
+        tiles.append({'key': 'refused', 'label': _('Messages the database refused'),
+                      'url': reverse('sensors:connection_list'),
                       'count': sum(status.poison_total for status in statuses)})
     if user.has_perm('sensors.view_device'):
         devices = list(Device.objects.filter(is_active=True))
         online = sum(1 for status in read.device_status(devices, now).values() if status.online)
-        tiles.append({'label': _('Devices online'), 'count': f'{online} / {len(devices)}',
+        tiles.append({'key': 'online', 'label': _('Devices online'), 'count': f'{online} / {len(devices)}',
+                      'offline': len(devices) - online,
                       'url': reverse('sensors:device_list')})
         # Out of the water (storage, calibration): its readings are stored and belong to no place.
-        tiles.append({'label': _('Devices not placed'), 'url': f'{reverse("sensors:device_list")}?placed=no',
+        tiles.append({'key': 'unplaced', 'label': _('Devices not placed'),
+                      'url': f'{reverse("sensors:device_list")}?placed=no',
                       'count': Device.objects.filter(is_active=True).exclude(bindings.placed()).count()})
     if user.has_perm('sensors.view_channel'):
         listened = Channel.objects.filter(state=ChannelStatus.ACTIVE, device__is_active=True, device__is_deleted=False)
         stale = sum(1 for state in read.latest(listened.values_list('channel_no', flat=True), now).values()
                     if not state.fresh)
-        tiles.append({'label': _('Channels without a fresh value'), 'count': stale,
+        tiles.append({'key': 'stale', 'label': _('Channels without a fresh value'), 'count': stale,
                       'url': reverse('sensors:channel_list')})
     if user.has_perm('sensors.view_alarmevent'):
-        tiles.append({'label': _('Open alarms'), 'url': reverse('sensors:alarm_events'),
-                      'count': AlarmEvent.objects.filter(closed_at__isnull=True).count()})
+        open_events = AlarmEvent.objects.filter(closed_at__isnull=True)
+        tiles.append({'key': 'alarms', 'label': _('Open alarms'), 'url': reverse('sensors:alarm_events'),
+                      'count': open_events.count(), 'critical': open_events.filter(rule__severity='critical').count()})
     if user.has_perm('sensors.view_deadletter'):
-        tiles.append({'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
+        tiles.append({'key': 'dead', 'label': _('Dead letters, last 24 hours'), 'url': reverse('sensors:dead_letters'),
                       'count': DeadLetter.objects.filter(last_at__gte=now - timedelta(days=1)).count()})
     return tiles
 
@@ -363,6 +506,11 @@ def alarm_events(request):
         'binding__system', 'binding__equipment').prefetch_related(
         'alarm__acknowledgements__user').order_by(F('closed_at').desc(nulls_first=True), '-opened_at')
     page = Paginator(events, DEAD_PAGE).get_page(request.GET.get('page'))
+    if ui.is_next(request):
+        props = pages.alarm_events_props(request, page.object_list, page=page, connected=alarms_read.connected(),
+                                         can_acknowledge=request.user.has_perm('sensors.change_alarmevent'))
+        # the classic page's {% alarm_watch %} above it, drawn by the server
+        return _next_list(request, 'sensors:alarm_events', props, above='sensors/_alarm_watch.html')
     return render_page(request, 'sensors/alarm_events.html', _context(
         'sensors:alarm_events', page=page, events=page.object_list, connected=alarms_read.connected(),
         can_acknowledge=request.user.has_perm('sensors.change_alarmevent')))

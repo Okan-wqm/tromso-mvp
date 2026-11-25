@@ -1,0 +1,1 @@
+{% comment %} The glyph of a strip item's status (core/_strip_item.html): an octagon for critical, a triangle for a warning. {% endcomment %}{% if item.status == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% elif item.status == "warning" %}{% include "icons/_icon.html" with name="alert" %}{% endif %}

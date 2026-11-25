@@ -6,7 +6,9 @@
 // text is cut but the three that carry their whole text in a title (the unit's name, a long reason, why a picture
 // cannot be drawn), a figure, a label, a code and a state word never, and the smallest text is at least 11 px; in
 // Turkish too. On a 1280x720 window the wall turns pages rather than shrink: PageDown and PageUp turn them and the
-// band says which. Test code only.
+// band says which. The same parts again in the NEW LOOK (?ui=next: data-ui="next", the theme Industry, and
+// static/css/glyphs.css and monitor-next.css after the page's sheets, as monitor.html links them then): every test of
+// the wall run again. Test code only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -17,20 +19,23 @@ import { chromium, type Page } from 'playwright-core';
 
 import { BROWSERS, skipWithout } from './browsers.js';
 import { linksOf } from './sheets.js';
+import { legibleUnit } from '../wall/slots.js';
 
 const SERVED: [string, string, string][] = [['/css/', resolve('static/css'), 'text/css'], ['/fonts/', resolve('static/fonts'), 'font/woff2'],
                                             ['/js/', resolve('.build/test'), 'text/javascript']];
 const PAGES = resolve('frontend/test/pages');
 // (the sheets in the order the monitoring page links them: app_base.html with the page's own two before tw.css)
 const SHEETS = linksOf('app_base.html', ['monitor', 'card-grid']);
+const SHEETS_NEXT = linksOf('app_base.html', ['monitor', 'card-grid', 'glyphs', 'monitor-next']);
 
 /** The wall's page; `pane`: with the pane of a unit gone into in its dock (frontend/test/pages/dock-big-tr.html, the
  *  dock's own markup around the unit's Big card). */
-function page(language: string, pane = false): string {
+function page(language: string, pane = false, next = false): string {
   const part = readFileSync(join(PAGES, `wall-small-${language}.html`), 'utf8');
   const docked = pane ? readFileSync(join(PAGES, 'dock-big-tr.html'), 'utf8') : '';
-  return `<!doctype html><html lang="${language}" data-theme="fjord" data-wall><head><meta charset="utf-8"><title>wall</title>
-${SHEETS}<script type="module" src="/js/wall.js"></script></head>
+  const look = next ? 'data-theme="industry" data-ui="next"' : 'data-theme="fjord"';
+  return `<!doctype html><html lang="${language}" ${look} data-wall><head><meta charset="utf-8"><title>wall</title>
+${next ? SHEETS_NEXT : SHEETS}<script type="module" src="/js/wall.js"></script></head>
 <body><div class="shell"><aside class="rail" id="rail"></aside><div class="console"><header class="topbar"></header><main class="content" data-measure="wall">
 <aside class="monitor-dock" id="monitor-dock" data-mw="48" data-mh="61">${docked}</aside>
 <div class="monitor-grid" data-card-width="2">${part}</div>
@@ -40,10 +45,10 @@ ${SHEETS}<script type="module" src="/js/wall.js"></script></head>
 function serve(): Promise<Server> {
   const server = createServer((request, response) => {
     const url = (request.url ?? '').split('?')[0] ?? '';
-    const language = /^\/(en|tr)(-pane)?$/.exec(url);
+    const language = /^\/(next-)?(en|tr)(-pane)?$/.exec(url);
     if (language) {
       return void response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-        .end(page(language[1] ?? 'en', language[2] !== undefined));
+        .end(page(language[2] ?? 'en', language[3] !== undefined, language[1] !== undefined));
     }
     for (const [prefix, root, type] of SERVED) {
       const file = join(root, url.slice(prefix.length));
@@ -263,7 +268,7 @@ async function open(tab: Page, origin: string, language: string, width: number, 
   await tab.waitForTimeout(100);
 }
 
-test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, async (t) => {
+for (const [name, prefix] of [['', ''], [' in the new look', 'next-']] as const) test(`the monitoring wall of small cards${name}`, { skip: skipWithout(BROWSERS) }, async (t) => {
   const server = await serve();
   const address = server.address();
   const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
@@ -274,7 +279,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
                                                    ['tr', 1920, 1080, '4x5'], ['en', 5120, 1440, '5x4'], ['en', 2560, 1440, '4x5'],
                                                    ['en', 3840, 2160, '4x5']] as const) {
       await t.test(`twenty cards are one screen at ${width}x${height} (${language}): nothing cut, nothing outside its card`, async () => {
-        await open(tab, origin, language, width, height);
+        await open(tab, origin, prefix + language, width, height);
         const seen = await look(tab);
         assert.equal(`${seen.cols}x${seen.rows}`, grid);
         assert.deepEqual([seen.cards, seen.onScreen, seen.pages], [20, 20, '1']);
@@ -292,7 +297,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
 
     for (const [width, height] of [[3440, 1440], [5120, 1440], [1920, 1080]] as const) {
       await t.test(`going into a tank at ${width}x${height}: the Big card beside the overview, both whole`, async () => {
-        await open(tab, origin, 'tr-pane', width, height);
+        await open(tab, origin, prefix + 'tr-pane', width, height);
         const pane = await docked(tab);
         assert.equal(pane.mode, 'beside');
         // beside the cards and under the band: nothing of the overview lies under the pane
@@ -331,7 +336,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     }
 
     await t.test('a band of three lines keeps its first line on the screen and the cards whole under it', async () => {
-      await open(tab, origin, 'tr', 1920, 1080);
+      await open(tab, origin, prefix + 'tr', 1920, 1080);
       const lines = async (): Promise<{ cut: string[]; height: number; rows: number }> => tab.evaluate(() => {
         const band = document.querySelector('.monitor-band') as HTMLElement;
         const box = band.getBoundingClientRect();
@@ -363,7 +368,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     });
 
     await t.test('a window too low for a readable card beside the cards: the pane lies over them, never hidden', async () => {
-      await open(tab, origin, 'tr-pane', 1280, 720);
+      await open(tab, origin, prefix + 'tr-pane', 1280, 720);
       const pane = await docked(tab);
       assert.equal(pane.mode, 'full');
       assert.ok(pane.right - pane.left > 0.9 * 1280, `the pane is ${pane.right - pane.left} px wide`);
@@ -372,7 +377,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
 
     for (const [width, height] of [[3440, 1440], [5120, 1440], [2560, 1440], [3840, 2160]] as const) {
       await t.test(`twenty-four cards are one screen at ${width}x${height}, the age under every figure`, async () => {
-        await open(tab, origin, 'tr', width, height);
+        await open(tab, origin, prefix + 'tr', width, height);
         await twentyFour(tab);
         const seen = await look(tab);
         assert.deepEqual([seen.cards, seen.onScreen, seen.pages], [24, 24, '1']);
@@ -383,7 +388,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     }
 
     await t.test('twenty-four cards on 1920x1080 turn pages rather than lose the age or shrink the type', async () => {
-      await open(tab, origin, 'tr', 1920, 1080);
+      await open(tab, origin, prefix + 'tr', 1920, 1080);
       await twentyFour(tab);
       const seen = await look(tab);
       assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
@@ -391,8 +396,131 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
       assert.deepEqual(await ages(tab), []);
     });
 
+    await t.test('a board read from across the room: its type at the legible unit, the wall turning pages', async () => {
+      await open(tab, origin, prefix + 'en', 1920, 1080);
+      const before = await look(tab);
+      // a 55" Full HD TV read from 3 m (the board's Wall screen tab: data-screen-inches, data-distance-m on the grid)
+      await tab.evaluate(() => {
+        const grid = document.querySelector('.monitor-grid') as HTMLElement;
+        grid.dataset.screenInches = '55.0';
+        grid.dataset.distanceM = '3.0';
+        window.dispatchEvent(new Event('resize'));
+      });
+      await tab.waitForTimeout(150);
+      const far = await look(tab);
+      const units = await tab.evaluate(() => {
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'))
+          .filter((card) => { const box = card.getBoundingClientRect(); return box.bottom > 1 && box.top < innerHeight - 1; });
+        const band = document.querySelector('.monitor-band') as HTMLElement;
+        return { cards: cards.map((card) => Number.parseFloat(getComputedStyle(card.firstElementChild as Element).fontSize)),
+                 band: Number.parseFloat(getComputedStyle(band).fontSize), high: band.getBoundingClientRect().height };
+      });
+      const legible = legibleUnit(55, 3, 1920, 1080);
+      assert.ok(Number(far.pages) > Number(before.pages), `${far.pages} pages from 3 m, ${before.pages} at the desk`);
+      assert.ok(units.cards.length > 0 && units.cards.every((unit) => unit >= legible - 0.5), `units ${units.cards} under ${legible}`);
+      // the band's type is raised as far as a band of a sixth of the screen allows (its tally and chips wrap into rows;
+      // at its full legible unit it would take some 40 % of the screen: review round 2, B3)
+      assert.ok(units.band > 1.6 * 10.8 + 1 && units.band <= legibleUnit(55, 3, 1920, 1080, 1) + 0.5, `band ${units.band}`);
+      assert.ok(units.high <= 1080 / 6 + 1, `the band is ${units.high} px high`);
+      assert.deepEqual([far.spills, far.cut, far.never], [[], [], []]);
+      assert.equal(far.pageScrolls, false, 'the screen itself never scrolls');
+      assert.deepEqual(await ages(tab), []);
+      // the board says no distance any more: the wall is as it was
+      await tab.evaluate(() => {
+        const grid = document.querySelector('.monitor-grid') as HTMLElement;
+        delete grid.dataset.distanceM;
+        window.dispatchEvent(new Event('resize'));
+      });
+      await tab.waitForTimeout(150);
+      assert.equal((await look(tab)).pages, before.pages);
+    });
+
+    // (a notice of the page above the wall, as the shell prints when no alarm worker runs: the cells are as high as the
+    // room the grid really has, so a page shows its own cards whole and no card of the next page peeks in under them)
+    for (const [width, height] of [[1920, 1080], [3840, 2160], [1280, 720]] as const) {
+      await t.test(`a notice above the wall at ${width}x${height}: the page shows its own cards whole, no other`, async () => {
+        await open(tab, origin, prefix + 'en', width, height);
+        await tab.evaluate(() => {
+          const notice = document.createElement('p');
+          notice.textContent = 'The alarms are NOT being checked: no alarm worker has run here.';
+          notice.style.cssText = 'margin: 0; padding: 40px 0; font-size: 40px';
+          document.querySelector('.monitor-grid')?.before(notice);
+          window.dispatchEvent(new Event('resize'));
+        });
+        await tab.waitForTimeout(150);
+        const seen = await look(tab);
+        const shown = await tab.evaluate(() => {
+          const grid = document.querySelector('.monitor-grid') as HTMLElement;
+          const frame = grid.getBoundingClientRect();
+          const cards = Array.from(grid.querySelectorAll<HTMLElement>(':scope > .monitor-card'));
+          const partly = cards.filter((card) => {
+            const at = card.getBoundingClientRect();
+            const visible = at.bottom > frame.top + 1 && at.top < Math.min(frame.bottom, innerHeight) - 1;
+            return visible && (at.top < frame.top - 1 || at.bottom > Math.min(frame.bottom, innerHeight) + 1);
+          });
+          return { partly: partly.map((card) => card.querySelector('h3')?.textContent?.trim() ?? '?'),
+                   whole: cards.filter((card) => !partly.includes(card) && (() => { const at = card.getBoundingClientRect();
+                     return at.top >= frame.top - 1 && at.bottom <= Math.min(frame.bottom, innerHeight) + 1; })()).length };
+        });
+        assert.deepEqual(shown.partly, [], 'no card lies half on the screen');
+        assert.equal(shown.whole, Math.min(Number(seen.cols) * Number(seen.rows), 20 - (Number(seen.page) - 1) * Number(seen.cols) * Number(seen.rows)));
+        assert.equal(seen.pageScrolls, false);
+        assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
+      });
+    }
+
+    // (review round 2, B3: the reviewer's pairs; on a Full HD screen 24" from 3 m or 5 m and 55" from 5 m ask more than
+    // one card a page can give, 55" from 3 m does not)
+    for (const [inches, distance] of [[24, 3], [55, 5], [24, 5], [55, 3]] as const) {
+      await t.test(`a board read from ${distance} m on a ${inches}" screen: every tally on the screen, one card a page at most`, async () => {
+        await open(tab, origin, prefix + 'en', 1920, 1080);
+        await tab.evaluate(([diagonal, metres]) => {
+          const grid = document.querySelector('.monitor-grid') as HTMLElement;
+          grid.dataset.screenInches = String(diagonal);
+          grid.dataset.distanceM = String(metres);
+          window.dispatchEvent(new Event('resize'));
+        }, [inches, distance]);
+        await tab.waitForTimeout(150);
+        const seen = await look(tab);
+        const band = await tab.evaluate(() => {
+          const box = (document.querySelector('.monitor-band') as HTMLElement).getBoundingClientRect();
+          const hidden: string[] = [];
+          for (const item of Array.from(document.querySelectorAll<HTMLElement>('.monitor-tally li, .monitor-head'))) {
+            const at = item.getBoundingClientRect();
+            const middle = document.elementFromPoint(at.left + at.width / 2, at.top + at.height / 2);
+            if (at.left < -0.5 || at.right > innerWidth + 0.5 || at.top < -0.5 || at.bottom > innerHeight + 0.5
+                || !middle || !item.contains(middle)) hidden.push((item.textContent ?? '').trim());
+          }
+          const card = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'))
+            .find((each) => { const at = each.getBoundingClientRect(); return at.bottom > 1 && at.top < innerHeight - 1; });
+          // (the card the page indicator says is shown: the first of its page)
+          const grid = document.querySelector('.monitor-grid') as HTMLElement;
+          const first = grid.querySelectorAll<HTMLElement>(':scope > .monitor-card')[(Number(grid.dataset.page) - 1) * Number(grid.dataset.per)];
+          const at = first?.getBoundingClientRect();
+          return { height: box.height, hidden, unit: card ? Number.parseFloat(getComputedStyle(card.firstElementChild as Element).fontSize) : 0,
+                   shown: at !== undefined && at.top >= box.bottom - 1 && at.bottom <= innerHeight + 1 };
+        });
+        const least = legibleUnit(inches, distance, 1920, 1080);
+        assert.deepEqual(band.hidden, [], 'every tally and the time are on the screen, nothing over them');
+        assert.equal(band.shown, true, 'the page the band says is the page on the screen');
+        assert.ok(band.height <= 1080 / 6 + 1, `the band is ${band.height} px high`);
+        assert.ok(seen.smallest >= 11, `the smallest text is ${seen.smallest} px`);
+        assert.deepEqual([seen.spills, seen.cut, seen.never, seen.tallyCut], [[], [], [], []]);
+        assert.equal(seen.pageScrolls, false, 'the screen itself never scrolls');
+        assert.deepEqual(await ages(tab), []);
+        if (band.unit < least - 0.5) {
+          // the distance cannot be met: the most legible wall there is, one card a page, never the densest grid
+          assert.equal(`${seen.cols}x${seen.rows}`, '1x1');
+          assert.equal(seen.pages, '20');
+        } else {
+          assert.ok(Number(seen.pages) > 1);
+        }
+        assert.equal(inches === 55 && distance === 3, band.unit >= least - 0.5, `unit ${band.unit}, legible ${least}`);
+      });
+    }
+
     await t.test('a low window turns pages rather than shrink the type, and the keys turn them', async () => {
-      await open(tab, origin, 'en', 1280, 720);
+      await open(tab, origin, prefix + 'en', 1280, 720);
       const first = await look(tab);
       assert.ok(Number(first.pages) > 1, `${first.pages} pages`);
       assert.ok(first.smallest >= 11, `the smallest text is ${first.smallest} px`);
@@ -421,7 +549,7 @@ test('the monitoring wall of small cards', { skip: skipWithout(BROWSERS) }, asyn
     });
 
     await t.test('on a paged wall: Home goes to the worst card, a chip turns to its card, a poll keeps the focus', async () => {
-      await open(tab, origin, 'en', 1280, 720);
+      await open(tab, origin, prefix + 'en', 1280, 720);
       const first = await look(tab);
       const worstPage = Number(first.page);                       // the wall opened on the page of HA-R02 (critical)
       const jump = tab.locator('#pages-worst');

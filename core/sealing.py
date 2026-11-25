@@ -518,6 +518,7 @@ def declare(model, **options):
     if seal.mode == EXEMPT and not seal.reason:
         raise ValueError(f'{model._meta.label}: an exempt model says why.')
     _registry[model._meta.label] = seal
+    _depths.clear()
     return seal
 
 
@@ -710,16 +711,43 @@ def _child(spec):
 
 
 # ---- the works a record lies in (the change token's stamp) ------------------------------------------------------
-# A record whose works could not be read (its row or a parent's is gone, or the chain is deeper than the stamp
-# follows): hidden from whoever has any work hidden (core.audit.revision).
+# A record whose works could not be read (its row or a parent's is gone): hidden from whoever has any work hidden
+# (core.audit.revision).
 UNKNOWN = '*'
-# How many parents and children deep the stamp follows (a task's note, its task, the task's batch, the batch's
-# movements: three).
-WORKS_DEPTH = 4
 
 
-def _seals_reached(model, depth=WORKS_DEPTH):
-    """The seals of `model` and of every parent and child its seal follows (via, any_of, hidden_with)."""
+def _links_of(seal):
+    """The models a seal follows: its parents (`via`) and its children (`any_of`, `hidden_with`)."""
+    found = [seal.model._meta.get_field(link).related_model for link in seal.via]
+    return found + [_child(spec)[0] for spec in (seal.any_of, seal.hidden_with) if spec]
+
+
+def seal_depth(model, _path=()):
+    """How many parents and children deep `model`'s seal reaches before every link ends on a record sealed by its own
+    cells or work (0 for such a record): read from the seals themselves, so the stamp and the activity log's read-time
+    rule follow every path to its end, however long a later seal makes it (an acknowledgement: its alarm, the alarm's
+    sensor event, the event's rule, the rule's channel, the channel's bindings: five; landing review L4, W2). A seal
+    that leads back to itself is refused."""
+    label = model._meta.label
+    if not _path and label in _depths:
+        return _depths[label]
+    seal = seal_of(model)
+    if seal is None or not seal.filters:
+        return 0
+    if label in _path:
+        raise ValueError(f'The seals lead in a circle: {" -> ".join((*_path, label))}.')
+    found = max((1 + seal_depth(linked, (*_path, label)) for linked in _links_of(seal)), default=0)
+    if not _path:
+        _depths[label] = found
+    return found
+
+
+_depths = {}        # seal_depth's answers, read again whenever a seal is declared
+
+
+def _seals_reached(model, depth=None):
+    """The seals of `model` and of every parent and child its seal follows (via, any_of, hidden_with), to its end."""
+    depth = seal_depth(model) if depth is None else depth
     seal = seal_of(model)
     if seal is None or not seal.filters or depth < 0:
         return []
@@ -744,20 +772,21 @@ def stamp_shows_overseer(model):
     return all(seal.cls == FACT and seal.work is None for seal in _seals_reached(model))
 
 
-def works_of(model, pks, depth=WORKS_DEPTH, cells=None):
+def works_of(model, pks, depth=None, cells=None):
     """{pk as text: set of work ids as text} for the rows `pks` of `model`, read as the system (base managers, no
     viewer): every piece of confidential work whose seal reaches the row now, whatever its audience: its own work, each
     cell it lies in (on its day; a master record today), and those of the parents (`via`) and children (`any_of`,
     `hidden_with`) its seal follows. It is the seal read the other way round, from the row to the works, along the same
     paths (`_correlated`, `_day_filter`): a superset of the works for which a viewer's seal hides the row, never less
-    (core/tests_sealing.py holds the two together). A row that is not there, or a chain deeper than WORKS_DEPTH, gives
-    UNKNOWN.
+    (core/tests_sealing.py holds the two together). It follows the seal to its end (`seal_depth`); a row that is not
+    there gives UNKNOWN.
 
     The activity log stamps each entry with it when the entry is written (core.audit.stamp), so the change token leaves
     out a change to a record of work hidden from the person looking without reading the seal on every poll.
 
     `cells`: whether any cell exists (read once per call tree): with none, no row lies in a cell, and the cells are
     not looked up row by row (a farm without experiments, the alarm pass's thousands of entries)."""
+    depth = seal_depth(model) if depth is None else depth
     found = {str(pk): set() for pk in pks}
     seal = seal_of(model)
     if not found or seal is None or not seal.filters:

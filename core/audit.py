@@ -60,9 +60,10 @@ def sealed_out(entries):
     for seal in sealing.registry():
         if not seal.filters:
             continue
-        # Two levels of parents and children: what an entry is about and the records it hangs on (a bounded statement,
-        # read when a person opens the log; the change token reads the entries' stamps instead, `revision`).
-        condition = sealing.hidden(seal, depth=2)
+        # Every level of parents and children the seal follows (sealing.seal_depth): what an entry is about and the
+        # records it hangs on, to the record sealed by its own cell (read when a person opens the log; the change token
+        # reads the entries' stamps instead, `revision`).
+        condition = sealing.hidden(seal, depth=sealing.seal_depth(seal.model))
         if condition is None:
             continue
         ids = sealing.unsealed(seal.model).filter(condition).annotate(log_id=Cast('pk', models.CharField())).values(

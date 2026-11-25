@@ -6,7 +6,8 @@
 // nonce it was printed with, with every sheet and script it names; its polls (frontend/poll.ts: the start-up gate, the
 // merge by key) are answered with the fragments the same views printed, and the strip with its own. Run by
 // `npm run test:pages` after the Django tests (CI's Django job); missing pages fail it, never skip it. It holds:
-//   - every screen (Small, Simple, Detailed, Big) at 1440 and 390 px, in English, Norwegian and Turkish: the cards come
+//   - every screen (Small, Simple, Detailed, Big, a board of Operator view cards) at 1440, 1920 and 390 px, the Small and
+//     the Simple cards (every unit's default) in English, Norwegian and Turkish, the others in English: the cards come
 //     with the first poll; every card has its link to Tank › Water; every state's glyph is drawn (a mask of the icon
 //     set) and its word is there; no CSP violation, no critical or serious axe finding, every card text at 4.5:1 on
 //     what it stands on, nothing scrolls sideways;
@@ -272,8 +273,8 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
   };
   try {
     for (const language of LANGUAGES) {
-      for (const screen of ['small', 'simple', 'detailed', 'big']) {
-        if (language !== 'en' && screen !== 'small') continue;            // every language on the Small cards
+      for (const screen of ['small', 'simple', 'detailed', 'big', 'operator']) {
+        if (language !== 'en' && screen !== 'small' && screen !== 'simple') continue;   // every language: Small, Simple
         for (const width of [1440, 1920, 390]) {
           await t.test(`${screen} ${language} at ${width} px: the cards, their links and glyphs, CSP, axe, 4.5:1`, async () => {
             mode = 'cards';
@@ -284,6 +285,14 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
             assert.ok(seen.cards >= 7, `${seen.cards} cards`);
             assert.equal(seen.links, seen.cards, 'every card links its tank\'s water');
             assert.ok(seen.states.every(Boolean), 'every card says its state');
+            if (screen !== 'small' && screen !== 'big') {
+              // the design's card (monitoring/_card_next.html): every card, its Deffeyes chart's button among the actions
+              // at its foot (it opens the unit's chart in the movable window), shown
+              const flowing = await tab.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'))
+                .map((card) => [card.classList.contains('is-next'),
+                  Boolean(card.querySelector<HTMLElement>('.monitor-card-actions > button[data-window]')?.offsetParent)]));
+              assert.ok(flowing.every(([next, chart]) => next && chart), JSON.stringify(flowing));
+            }
             if (width >= 1100) {
               // the rail keeps its width beside the top bar, whatever the strip says (its alarms sentence is long here)
               const rail = await tab.evaluate(() => [document.querySelector('.rail')?.getBoundingClientRect().width ?? 0,

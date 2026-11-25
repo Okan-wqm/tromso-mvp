@@ -136,8 +136,8 @@ AREAS = [
     Area(_('Alarm rules'), 'sensors.AlarmRule',
          note=_('Delete also switches off the default “No fresh value” rule of a water quantity (with a reason, logged '
                 'as critical): a probe of that quantity that stops sending then raises no alarm of its own (for the '
-                'dissolved oxygen of a unit with fish, the alarm system’s critical alarm still says it). A default rule '
-                'is never deleted.')),
+                'dissolved oxygen of a unit with fish, the alarm system’s critical alarm still says it, as it does when '
+                'only a warning or delayed rule covers the probe). A default rule is never deleted.')),
     Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view', 'change')),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),

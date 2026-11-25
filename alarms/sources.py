@@ -562,7 +562,8 @@ def _silent_subjects(units, found_water, unevaluated, failed, now, oxygen_levels
     the unit's site: "<unit>: Dissolved oxygen (mg/L O₂): no recent data, 3 hours old". Its on-delay runs from when the
     oxygen stopped being fresh (read.Silence.since). It stands aside, so one problem is one alarm:
     - where an oxygen probe is bound to the unit's water (its own points or its system's) and a "No fresh value" rule
-      covers it (sensors.alarms.watched): that rule's alarm says it;
+      that raises a critical at the freshness covers it (sensors.alarms.watched; never a warning or delayed rule, nor
+      a default standing aside for one: review 6 of the branch, M1): that rule's alarm says it;
     - while the CRITICAL level of the water limits holds or is open on the unit's oxygen (`oxygen_levels`: an old
       oxygen value past its critical limit keeps that level, an alarm of its own; review 2 of the branch, R4 p5). An old
       value only past its warning limit is a warning level, so the critical stays here (review 3, N1).

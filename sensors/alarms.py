@@ -33,7 +33,7 @@ from farm.water import parameters as water_parameters, read as water_read, sourc
 from farm.water.parameters import PH
 
 from . import quantities, read
-from .models import AlarmEvent, AlarmKind, AlarmRule, Binding, Channel, ChannelStatus
+from .models import AlarmEvent, AlarmKind, AlarmRule, Binding, Channel, ChannelStatus, Severity
 from .models.binding import place_site
 from .quality import BAD_MASK
 
@@ -259,18 +259,30 @@ def place_of(binding):
 
 
 def watched(codes, now=None):
-    """The places (`place_of`) where an active channel of a quantity of `codes` on an active device is bound now and an
-    active "No fresh value" rule covers it (the channel's own or its quantity's): a probe there that stops sending is
-    the sensor rules' to say, so the alarm system raises no second alarm for the unit's water beside it
-    (alarms/sources.py, the oxygen of a unit with fish that has no fresh value). Three queries."""
+    """The places (`place_of`) where an active channel of a quantity of `codes` on an active device is bound now and a
+    rule that will itself raise a CRITICAL at the channel's freshness covers it: an active "No fresh value" rule, the
+    channel's own or its quantity's, critical, with no time past the freshness (`for_s` 0), and not a default standing
+    aside for a farm's own rule (`_aside`). A probe there that stops sending is that rule's to say, so the alarm system
+    raises no second alarm for the unit's water beside it (alarms/sources.py, the oxygen of a unit with fish that has no
+    fresh value: critical, owner decision of 2026-11-23). A farm's own warning or delayed rule, or the default lowered to
+    a warning, never makes the critical wait or weaken (review 6 of fresh-rule, M1). Four queries."""
     now = now or timezone.now()
-    rules = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True)
-    by_quantity = set(rules.filter(channel__isnull=True).values_list('quantity', flat=True))
+    rules = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True, severity=Severity.CRITICAL, for_s=0)
+    aside_quantities, aside_channels = _aside()
+    by_quantity = {(quantity, is_default) for quantity, is_default in
+                   rules.filter(channel__isnull=True).values_list('quantity', 'is_default')}
     by_channel = set(rules.filter(channel__isnull=False).values_list('channel_id', flat=True))
+
+    def speaks(channel):
+        if channel.pk in by_channel or (channel.quantity, False) in by_quantity:
+            return True
+        return ((channel.quantity, True) in by_quantity and channel.quantity not in aside_quantities
+                and channel.pk not in aside_channels)
+
     return {place_of(binding) for binding in Binding.objects.visible().at(now).filter(
                 channel__quantity__in=list(codes), channel__state=ChannelStatus.ACTIVE, channel__device__is_active=True)
             .select_related('channel')
-            if binding.channel.quantity in by_quantity or binding.channel_id in by_channel}
+            if speaks(binding.channel)}
 
 
 def close(event, at):
@@ -289,8 +301,9 @@ def uncovered():
     """The active channels on an active device of a quantity the water limits judge (quantities.JUDGED_CODES) that no
     active "No fresh value" rule covers, its own or its quantity's (a default rule switched off, with its reason): a probe
     of theirs that stops sending raises no alarm of its own. The dissolved oxygen's are not listed: where such a probe
-    stops, a unit with fish whose oxygen then has no fresh value is a critical alarm of the alarm system all the same
-    (alarms/sources.py; review 2 of the branch, R5). The system check sensors.W001 and the Alarm rules page list them.
+    stops, a unit with fish whose oxygen then has no fresh value is a critical alarm of the alarm system all the same,
+    unless a critical rule at the freshness says it (`watched`: a warning or delayed rule, or none, leaves it to the
+    alarm system; alarms/sources.py; review 2 of the branch, R5; review 6, M1). The system check sensors.W001 and the Alarm rules page list them.
     Two queries."""
     rules = AlarmRule.objects.filter(kind=AlarmKind.NO_DATA, is_active=True)
     quantities_covered = set(rules.filter(channel__isnull=True).values_list('quantity', flat=True))

@@ -9,7 +9,8 @@ NAMED = 10
 def uncovered_channels(app_configs, **kwargs):
     """The channels of a quantity the water limits judge that no active "No fresh value" rule covers (sensors/alarms.py
     `uncovered`: its default rule switched off, with its reason, and no rule of the channel's own; never the dissolved
-    oxygen's, which the alarm system says for a unit with fish all the same): a probe of theirs that stops sending
+    oxygen's, which the alarm system says for a unit with fish all the same wherever no critical rule at the freshness
+    covers its probe: sensors.alarms.watched): a probe of theirs that stops sending
     raises no alarm of its own. Listed for the alarm admin to review; nothing is changed."""
     from django.db import DatabaseError
 
@@ -25,6 +26,7 @@ def uncovered_channels(app_configs, **kwargs):
     return [Warning(
         f'{len(found)} channel(s) of a water quantity the limits judge have no active "No fresh value" rule: {named}'
         f'{more}. A probe of theirs that stops sending raises no alarm of its own (the dissolved oxygen is not listed: '
-        f'a unit with fish whose oxygen has no fresh value is a critical alarm all the same).',
+        f'a unit with fish whose oxygen has no fresh value is a critical alarm all the same, whatever weaker rule covers '
+        f'its probe).',
         hint='Switch the quantity\'s default rule on again in Sensors › Alarm rules, or give the channel a "No fresh '
              'value" rule of its own.', id='sensors.W001')]

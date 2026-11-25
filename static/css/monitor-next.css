@@ -279,9 +279,13 @@ html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .
 }
 html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) { align-items: start; }
 
-/* ---- the cards that flow (Simple, Detailed) on the desk page: one size for all of them, the tallest card's (rows of
-   one fraction each, sized to the longest card: nothing of a longer card is cut, a shorter one is as tall as it). */
-html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .monitor-card:not(.is-fit)) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
+/* ---- the cards that flow (Simple, Detailed, Operator view) on the desk page: one size for all of them, the tallest
+   card's (rows of one fraction each, sized to the longest card: nothing of a longer card is cut, a shorter one is as
+   tall as it), wherever they stand side by side. On a phone (one column) each card is as tall as what it says: an empty
+   unit's card the height of the longest one would be a screen of nothing to scroll past. */
+@media (min-width: 640px) {
+  html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .monitor-card:not(.is-fit)) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
+}
 
 /* ---- the toolbar (the design's): the search first, the filters with their names for a screen reader only (each
    select says its choice: "No board", "All sites"), the wall's two buttons at the end of the row. The DESK page's

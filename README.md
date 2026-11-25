@@ -921,7 +921,8 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
   on the Big screen. An empty unit's card says the unit in four cells (status, volume, max density, max biomass:
   `monitoring/_empty_cells.html`). Big cards on a desk (from 1100 px) are each at the Big template's proportion, as in the
   pane; the cards that flow (Simple, Detailed, Operator view) are as tall as the longest of them (rows of one fraction:
-  nothing of a longer card is cut), their foot at the bottom. On a wall the cards are the fitted ones, sized by the slot rule.
+  nothing of a longer card is cut), their foot at the bottom, wherever they stand side by side (from 640 px; on a
+  phone each card is as tall as what it says). On a wall the cards are the fitted ones, sized by the slot rule.
 - **The toolbar and the band**: on the desk page the search first, the filters named for a screen reader only (each
   select says its choice: "No board", "All sites"), the wall's buttons at the end (a wall keeps its own toolbar, the two
   buttons fixed at the band's end: the page test checks that nothing lies over the band, a state word or the buttons); the band a plate on the desk page with the switch of

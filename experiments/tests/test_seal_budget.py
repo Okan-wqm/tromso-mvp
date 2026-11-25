@@ -37,6 +37,19 @@ class SealBudgetTests(TestCase):
                     list(Tank.objects.values_list('pk', flat=True))
         self.assertEqual(len(captured), 1 + 3)
 
+    def test_the_seal_is_built_only_for_a_read_that_needs_it(self):
+        """The seal's condition (its parents' and children's managers, each with theirs) is built when a statement is
+        compiled for a person from whom something is hidden, never when a manager is touched (core.sealing.HiddenRows):
+        not for the system, not for the lead of the only sealed experiment."""
+        with mock.patch.object(sealing, 'hidden', wraps=sealing.hidden) as built:
+            list(Tank.objects.values_list('pk', flat=True))
+            with sealing.as_viewer(self.lead):
+                list(Tank.objects.values_list('pk', flat=True))
+            self.assertEqual(built.call_count, 0)
+            with sealing.as_viewer(self.researcher):
+                list(Tank.objects.values_list('pk', flat=True))
+            self.assertGreater(built.call_count, 0)
+
     def test_a_person_from_whom_nothing_is_hidden_reads_without_the_seal(self):
         """The lead reads X (its team): no work is hidden from them, so the seal adds nothing to their statement; an
         outsider's carries X's id written in, never the grant subqueries."""

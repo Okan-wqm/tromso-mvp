@@ -845,6 +845,19 @@ class PointWater:
                 found.append((reading, reading.judged, True))
         return found
 
+    @property
+    def worst_alert(self):
+        """The one alert of `alerts` the point says first when it says one (a site's line on the company overview): a
+        critical before a warning, a fresh value before an old one, else in reading order; only a value of its own (a
+        reading without one is judged through another and said there). None when it has none."""
+        found = [alert for alert in self.alerts if alert[0].value is not None]
+        return min(found, key=lambda alert: (alert[1] != Status.CRITICAL, alert[2]), default=None)
+
+    @property
+    def newest_at(self):
+        """When the newest of its values was taken, or None (what "no recent data" is counted from)."""
+        return max((reading.at for reading in self.readings.values() if reading.at is not None), default=None)
+
     def get(self, code):
         return self.readings.get(code)
 
@@ -2057,3 +2070,68 @@ def missing_limits():
         if missing:
             found.append(Missing(species[species_id], water_type, missing))
     return sorted(found, key=lambda entry: (entry.species.common_name, entry.water_type))
+
+
+def history_events(user, owner, start, end):
+    """[{at, until, all_day, when, kind, label, url, severity?}] of what happened to a unit's fish in the window, each
+    read by its own area's reader and only for a person who may read that area: the feedings (farm.feeding.read
+    `fed_in`: a record's moment), the treatments (farm.health.read `treatments_on`: first to last day), the harvests
+    (farm.stock.read `harvests_on`: the operation's day) and the alarms opened at its points (alarms.read `opened_at`; a
+    system's own channels too). A day-dated record (a treatment, a harvest) is a day, never a time of day: `all_day`, and
+    `when` says the day or the days ("18.11.2026", "18.11.2026 – 20.11.2026"); a timed one says its moment on the site's
+    clock. `at` and `until` are clipped to the window (where the marks stand), `when` is the record's own. A water
+    exchange has no record in this product yet: none is shown. A system's are its alarms only."""
+    from django.urls import reverse
+    from django.utils import formats
+
+    from alarms import read as alarm_read
+    from farm.feeding.read import fed_in
+    from farm.health.read import treatments_on
+    from farm.models.site import zone_of
+    from farm.stock.dates import end_of, start_of
+    from farm.stock.read import harvests_on
+
+    from .calculation import points_for
+
+    zone = zone_of(site_of(owner))
+    first, last = start.astimezone(zone).date(), end.astimezone(zone).date()
+
+    def day(value):
+        return formats.date_format(value, 'DATE_FORMAT')
+
+    def moment(value):
+        return formats.date_format(timezone.localtime(value, zone), 'DATETIME_FORMAT')
+
+    found = []
+    if isinstance(owner, Tank):
+        if user.has_perm('farm.view_feedingrecord'):
+            for at, record in fed_in(owner, start, end):
+                found.append({'at': at, 'until': None, 'all_day': False, 'when': moment(at), 'kind': 'feeding',
+                              'label': _('Fed %(kg)s kg of %(feed)s') % {'kg': formats.localize(record.amount_kg),
+                                                                        'feed': record.feed},
+                              'url': reverse('farm:feeding_records')})
+        if user.has_perm('farm.view_treatment'):
+            for treatment in treatments_on(owner, first, last):
+                ends = treatment.end_date
+                when = (day(treatment.start_date) if ends == treatment.start_date
+                        else f'{day(treatment.start_date)} – {day(ends) if ends else "…"}')
+                found.append({'at': max(start_of(treatment.start_date, owner), start),
+                              'until': min(end_of(ends, owner), end) if ends else None, 'all_day': True, 'when': when,
+                              'kind': 'treatment', 'label': _('Treatment: %(method)s') % {
+                                  'method': treatment.get_method_display()},
+                              'url': reverse('farm:treatments')})
+        if user.has_perm('farm.view_stockoperation'):
+            for operation in harvests_on(owner, first, last):
+                found.append({'at': max(start_of(operation.date, owner), start), 'until': None, 'all_day': True,
+                              'when': day(operation.date), 'kind': 'harvest', 'label': _('Harvest'),
+                              'url': reverse('farm:harvests')})
+    if user.has_perm('alarms.view_alarm'):
+        for alarm in alarm_read.opened_at(points_for(owner), start, end, system=owner if isinstance(owner, System) else None):
+            found.append({'at': alarm.opened_at, 'until': None, 'all_day': False, 'when': moment(alarm.opened_at),
+                          'kind': 'alarm', 'severity': alarm.severity, 'label': alarm.summary,
+                          'url': reverse('alarms:alarm_detail', args=[alarm.pk])})
+    found.sort(key=lambda event: event['at'])
+    return [{**event, 'at': int(event['at'].timestamp()),
+             'until': int(event['until'].timestamp()) if event['until'] else None, 'label': str(event['label']),
+             'when': str(event['when'])}
+            for event in found]

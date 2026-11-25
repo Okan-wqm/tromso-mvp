@@ -5,7 +5,8 @@ charts.py: they hold no formula since the retirement audit S10, farm/tests/test_
 
   name <identifier>   a function or constant name with an underscore, at least 6 characters (single words such as
                       `draw` or `split` would match ordinary text)
-  number <repr>       a numeric literal with at least 5 significant digits (a coefficient: 6320.813, 1.575701e5)
+  number <repr>       a numeric literal with at least 5 significant digits (a coefficient: 6320.813, 1.575701e5), not
+                      a power of ten (1000.0: a unit's factor)
 
 core/test_no_chemistry_in_browser.py fails when a shipped file holds an entry, and when this file is stale:
     python chemcore/scripts/gen_guard_list.py > chemcore/guard-list.txt
@@ -26,6 +27,13 @@ def significant_digits(text):
     """The significant digits of a literal as written: 6320.813 has 7, 1.575701e5 has 7, 0.000232 has 3."""
     mantissa = re.split('[eE]', text.replace('_', '').lstrip('+-'))[0]
     return len(mantissa.replace('.', '').lstrip('0'))
+
+
+def power_of_ten(value):
+    """1000.0, 0.001, 1e6: a unit's factor, no coefficient (frontend redesign, decision 7). On the list, 1000.0 failed every
+    bundle a minifier had written a 1e3 into; the coefficients themselves (87.74, 1776.0, 6320.813) stay, trailing zeros
+    and all, so the list loses nothing but the powers of ten."""
+    return value != 0 and float(f'{abs(value):e}'.split('e')[0]) == 1.0
 
 
 def distinctive_name(name):
@@ -49,7 +57,7 @@ def from_python(path):
     for node in ast.walk(tree):
         if isinstance(node, ast.Constant) and isinstance(node.value, float):
             source = ast.get_source_segment(path.read_text(encoding='utf-8'), node) or repr(node.value)
-            if significant_digits(source) >= 5:
+            if significant_digits(source) >= 5 and not power_of_ten(node.value):
                 numbers.add(node.value)
     return names, numbers
 
@@ -63,8 +71,9 @@ def from_rust(folder):
             if keep:
                 names.add(name)
         for literal in RUST_NUMBER.findall(text):
-            if significant_digits(literal) >= 5:
-                numbers.add(float(literal.replace('_', '')))
+            value = float(literal.replace('_', ''))
+            if significant_digits(literal) >= 5 and not power_of_ten(value):
+                numbers.add(value)
     return names, numbers
 
 

@@ -248,7 +248,7 @@ class Chart:
     zone: object
     buckets: list = field(default_factory=list)
     gaps: list = field(default_factory=list)
-    samples: list = field(default_factory=list)     # [(at, value)] of the manual and lab samples
+    samples: list = field(default_factory=list)     # [(at, value, source)] of the manual and lab samples
     markers: list = field(default_factory=list)
     reduced: bool = False
     segments: list = field(default_factory=list)
@@ -292,10 +292,12 @@ def hours_of(segment):
 
 def chart_rows(segment, width, tier, zone):
     """The segment's buckets: (start, n, sum, min, max, first, last), clean values only. On the hour tiers the whole
-    hours come from the rollup and the parts of hours from the readings (`hours_of`)."""
+    hours come from the rollup and the parts of hours from the readings (`hours_of`). Each sum adds its rows in time
+    order: a float sum in whatever order the database meets the rows (parallel workers) differed in its last digit
+    from one read to the next, so the same chart and its CSV were not the same twice."""
     clean = f'(quality & {BAD_MASK}) = 0'
     if tier == RAW:
-        sql = (f'SELECT time_bucket(%s, ts) AS b, sum(n)::bigint, sum(coalesce(run_sum, value)), '
+        sql = (f'SELECT time_bucket(%s, ts) AS b, sum(n)::bigint, sum(coalesce(run_sum, value) ORDER BY ts), '
                f'min(coalesce(run_min, value)), max(coalesce(run_max, value)), min(ts), max(ts) FROM sensors_reading '
                f'WHERE channel_no = %s AND ts >= %s AND ts < %s AND {clean} GROUP BY b ORDER BY b')
         params = [width, segment.channel_no, segment.start, segment.end]
@@ -304,7 +306,7 @@ def chart_rows(segment, width, tier, zone):
         on = ', %s' if tier == LOCAL_DAY else ''
         (first, last), parts = hours_of(segment)
         parts = (parts + [(segment.start, segment.start)] * 2)[:2]
-        sql = (f'SELECT b, sum(n)::bigint, sum(s), min(lo), max(hi), min(f), max(l) FROM ('
+        sql = (f'SELECT b, sum(n)::bigint, sum(s ORDER BY f, s), min(lo), max(hi), min(f), max(l) FROM ('
                f'SELECT time_bucket(%s, bucket{on}) AS b, n, sum_v AS s, vmin AS lo, vmax AS hi, first_ts AS f, '
                f'last_ts AS l FROM sensors_rollup_1h WHERE channel_no = %s AND bucket >= %s AND bucket < %s '
                f'UNION ALL SELECT time_bucket(%s, ts{on}), n, coalesce(run_sum, value), coalesce(run_min, value), '
@@ -381,7 +383,8 @@ def gaps(buckets, start, end, now):
 
 
 def _samples(target, quantity, start, end):
-    """[(at, value)] of the manual and lab samples of a water quantity at the target's points."""
+    """[(at, value, source)] of the manual and lab samples of a water quantity at the target's points (source: 'manual'
+    or 'lab', farm.WaterMeasurement.Source)."""
     if quantity not in parameters.COLUMNS:
         return []
     points = [point for point in places(target)[1] if point is not None]
@@ -389,7 +392,7 @@ def _samples(target, quantity, start, end):
         return []
     return list(WaterMeasurement.objects.filter(point__in=points, measured_at__gte=start, measured_at__lt=end,
                                                 **{f'{quantity}__isnull': False})
-                .order_by('measured_at').values_list('measured_at', quantity))
+                .order_by('measured_at').values_list('measured_at', quantity, 'source'))
 
 
 def bound_quantities(target, start, end):
@@ -399,6 +402,96 @@ def bound_quantities(target, start, end):
         found |= set(Binding.objects.visible().filter(condition, valid_from__lt=end)
                      .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=start)).values_list('channel__quantity', flat=True))
     return [code for code in quantities.CODES if code in found]
+
+
+# ---- a place's water history (Tank › Water, System › Water) ------------------------------------------------------
+BANDS = (('critical_low', max), ('warning_low', max), ('warning_high', min), ('critical_high', min))
+WORKED = (parameters.NH3_N.code,)       # worked out from each sample by the water read, never measured
+
+
+@dataclass(frozen=True)
+class Worked:
+    """A value worked out from one sample (its NH₃-N from its TAN, pH and temperature): the value with its status, or
+    None with the reason it could not be worked out (the water read's own words)."""
+    at: datetime
+    value: float | None
+    status: str
+    note: str
+
+
+@dataclass
+class History:
+    """The water of a place over a window: one Chart per parameter on ONE time axis (`series`: the sensors' buckets and
+    gaps, the manual samples, the moves and calibrations), the values worked out from the samples (`worked`, by code),
+    and the fish's limits today as bands (`bands`: {code: {bound: float}}, the strictest bound of the species' rows, as
+    a value is judged against every row; a code with no row has no band: "no limit", never an assumed one)."""
+    target: object
+    start: datetime
+    end: datetime
+    zone: object
+    charts: list
+    worked: dict
+    bands: dict
+    judged: dict = field(default_factory=dict)   # {code: {measured_at: status}}: each live sample's value judged
+
+
+def sampled_codes(target, start, end):
+    """The measured parameters with a live manual or lab sample at the target's points (`places`) in the window."""
+    points = [point for point in places(target)[1] if point is not None]
+    if not points:
+        return []
+    found = WaterMeasurement.objects.filter(point__in=points, measured_at__gte=start, measured_at__lt=end)
+    return [code for code in parameters.COLUMNS if found.filter(**{f'{code}__isnull': False}).exists()]
+
+
+def bands_of(limits):
+    """{code: {bound: float}} of the fish's limit rows ({code: [WaterLimit]}, farm.water.read.limits_now): per bound the
+    strictest of the rows that set it (the highest low, the lowest high); a bound no row sets is left out."""
+    found = {}
+    for code, rows in limits.items():
+        bounds = {}
+        for bound, pick in BANDS:
+            values = [getattr(row, bound) for row in rows if getattr(row, bound) is not None]
+            if values:
+                bounds[bound] = float(pick(values))
+        if bounds:
+            found[code] = bounds
+    return found
+
+
+def water_history(target, start, end, *, now=None, max_points=MAX_POINTS):
+    """The History of a unit's, a system's or a point's water between start and end: every quantity bound there in the
+    window and every parameter sampled there, in the catalogue's order, each the `series` of the same window (the
+    charts share one time axis); the NH₃-N worked out from each live sample with a TAN (farm.water.read.history: the
+    sample's own pH and temperature, judged as the history page judges it); every live sample's value judged as the
+    history page judges it (`judged`: {code: {measured_at: status}}, for the fish of its day); the fish's limits as
+    bands."""
+    from farm.water import read as water_read
+
+    if end <= start:
+        raise ValueError('The end comes after the start.')
+    now = now or timezone.now()
+    codes = set(bound_quantities(target, start, end)) | set(sampled_codes(target, start, end))
+    charts = [series(target, code, start, end, max_points=max_points, now=now)
+              for code in quantities.CODES if code in codes]
+    worked, judged = {}, {}
+    points = [point for point in places(target)[1] if point is not None]
+    if points:
+        samples = [sample for sample in water_read.samples_of(points=points, since=start, before=end) if not sample.is_deleted]
+        for row in reversed(water_read.history(samples)):            # samples_of is newest first: oldest first here
+            for code, reading in row.readings.items():
+                if code not in WORKED and reading.value is not None:
+                    judged.setdefault(code, {})[row.sample.measured_at] = str(reading.status)
+            if row.sample.tan_mg_l is None:
+                continue
+            for code in WORKED:
+                reading = row.readings.get(code)
+                if reading is not None:
+                    worked.setdefault(code, []).append(Worked(
+                        row.sample.measured_at, None if reading.value is None else float(reading.value),
+                        str(reading.status), str(reading.note or '')))
+    place = target.unit if isinstance(target, SamplingPoint) and target.unit_id else target
+    return History(target, start, end, zone_for(target), charts, worked, bands_of(water_read.limits_now(place)), judged)
 
 
 # ---- devices ---------------------------------------------------------------------------------------------------
@@ -739,3 +832,20 @@ def page_figures(analyses):
                 figures.append({**deffeyes.figure(analysis, deffeyes.geometry(analysis, extent=extent)), 'point': None})
         indexes.append(index)
     return figures, indexes
+
+
+# The ingest is alive while each active connection's heartbeat is this recent (it beats every 10 s): the overview's
+# tile and the alarm worker's dead man read it here.
+INGEST_DEAD_AFTER = timedelta(seconds=90)
+
+
+def ingest_alive(now):
+    """Whether the ingest is alive: None when no connection is active (nothing to ingest), else whether every active
+    connection's heartbeat is within INGEST_DEAD_AFTER of `now` (a connection without one is not)."""
+    from .models import Connection, IngestStatus
+    active = list(Connection.objects.filter(is_active=True).values_list('pk', flat=True))
+    if not active:
+        return None
+    beats = dict(IngestStatus.objects.filter(connection_id__in=active).values_list('connection_id', 'heartbeat_at'))
+    return all(beats.get(pk) is not None and now - beats[pk] <= INGEST_DEAD_AFTER for pk in active)
+

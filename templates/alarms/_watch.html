@@ -1,0 +1,4 @@
+{% load i18n %}{% comment %} Whether the alarms are being checked and sent ({% alarm_watch %}, alarms/watch.py). With `live`
+   the notice is a polled part (frontend/poll.ts) that asks alarms:alarm_watch_notice again; its content is
+   alarms/_watch_notice.html either way. {% endcomment %}
+{% if live %}<div class="alarm-watch" data-poll="{% url 'alarms:alarm_watch_notice' %}{% if sent_note %}?sent_note=1{% endif %}" data-poll-every="{{ poll_seconds }}" data-poll-skip-same>{% include "alarms/_watch_notice.html" %}</div>{% else %}{% include "alarms/_watch_notice.html" %}{% endif %}

@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('alarms', '0014_subject_own_held'),
+        ('alarms', '0021_follow_up'),
     ]
 
     operations = [

@@ -1,7 +1,7 @@
+import os
 from urllib.parse import urlsplit
 
 from django.conf import settings
-from django.contrib.staticfiles import finders
 from django.core.checks import Error, Tags, Warning, register
 from django.core.checks.mail import NON_PRODUCTION_EMAIL_BACKENDS
 from django.core.exceptions import ValidationError
@@ -13,20 +13,46 @@ from . import catalogs
 
 # The browser code is TypeScript compiled into static/js, which is not committed.
 ENTRY_SCRIPTS = ['js/nav-boot.js', 'js/shell.js', 'js/components.js', 'js/auth.js', 'js/poll.js', 'js/windows.js',
-                  'js/designer.js', 'js/announce.js', 'js/wall.js']
+                  'js/designer.js', 'js/announce.js', 'js/wall.js', 'js/strip.js']
+
+
+def build_problems():
+    """What is missing or broken of the compiled browser code: the entry scripts of static/js, and the islands' manifest
+    (vite.config.mjs: missing, or there but not readable), each looked for where the server serves it (assets.built:
+    STATIC_ROOT first, then the build's), so a server that serves STATIC_ROOT only is not stopped for scripts it has."""
+    from .templatetags.assets import ManifestUnreadable, built, islands_manifest, manifest_path
+    problems = [f'{path} is missing' for path in ENTRY_SCRIPTS if not built(path)]
+    where = os.path.relpath(manifest_path(), settings.BASE_DIR).replace(os.sep, '/')
+    try:
+        if islands_manifest() is None:
+            problems.append(f'{where} is missing')
+    except ManifestUnreadable as error:
+        problems.append(f'{where} cannot be read ({error.__cause__})')
+    return problems
+
+
+HINT = ('Run `npm ci && npm run build` (static/js, static/islands/manifest.json), then collectstatic where the server '
+        'serves STATIC_ROOT.')
 
 
 @register()
 def compiled_scripts(app_configs, **kwargs):
-    """Warns when the compiled browser code is missing: the pages would load without their scripts."""
-    missing = [path for path in ENTRY_SCRIPTS if not finders.find(path)]
-    if not missing:
+    """Warns when the compiled browser code is missing or broken: the pages would load without their scripts, and a page
+    with an island would fail."""
+    problems = build_problems()
+    if not problems:
         return []
-    return [Warning(
-        f'The compiled browser code is missing ({", ".join(missing)}).',
-        hint='Run `npm install && npm run build` to compile frontend/*.ts into static/js.',
-        id='core.W001',
-    )]
+    return [Warning(f'The compiled browser code: {"; ".join(problems)}.', hint=HINT, id='core.W001')]
+
+
+@register(deploy=True)
+def compiled_scripts_deployed(app_configs, **kwargs):
+    """The same for a deployment (`check --deploy`): there it stops the release, as a page with an island would answer
+    500."""
+    problems = build_problems()
+    if not problems:
+        return []
+    return [Error(f'The compiled browser code: {"; ".join(problems)}.', hint=HINT, id='core.E007')]
 
 
 @register()

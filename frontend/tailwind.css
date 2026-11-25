@@ -15,6 +15,8 @@
 
 /* What the build reads for class names: every template, and the Python that may build a class name. */
 @source "../templates/**/*.html";
+/* The islands draw with the same classes (frontend/islands; README, Frontend: islands). */
+@source "./islands/**/*.{ts,tsx}";
 @source "../{alarms,config,core,experiments,farm,hr,inventory,knowledge,messaging,monitoring,reports,sensors,tasks}/**/*.py";
 
 /* A finger, a glove or a stylus: the tank side's 48 px targets (README, Principles). */

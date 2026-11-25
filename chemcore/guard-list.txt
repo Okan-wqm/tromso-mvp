@@ -24,6 +24,7 @@ name H2S_PER_S
 name IONIC_PER_MICROSIEMENS
 name IONIC_PER_MICROSIEMENS_NACL
 name LABEL_AT
+name LABEL_STEPS
 name LEFT_OUT_G
 name LINE_LENGTH
 name LOCATOR_MARK
@@ -54,6 +55,7 @@ name activity_coefficient_h
 name activity_coefficient_h_with
 name alkalinity_floor
 name alkalinity_where_co2
+name as_props
 name at_target
 name bends_back
 name border_at
@@ -113,6 +115,8 @@ name ksp_per_litre
 name kw_free
 name kw_sws
 name kw_total
+name label_box
+name label_place
 name limits_basis
 name limits_equilibria
 name nbs_minus_total_25
@@ -342,7 +346,6 @@ number 771.54
 number 772.483
 number 999.83952
 number 999.842594
-number 1000.0
 number 1023.343
 number 1023.34306
 number 1027.67547

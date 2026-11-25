@@ -31,8 +31,12 @@ SMALL = {'mode': 'small'}
 # 5.0 to 5.6 KB on the cards of these tests, 2026-11-13; 6,257 bytes on T-02 once the line under each figure said
 # where the value came from (review R1), and the reviewer measured 6,479 bytes on the largest card of a copy of the
 # development data in Turkish (review R9), so the bound is what real cards weigh with a little room. Raise it only
-# with a reason; a card that grows is a wall that slows.
-SMALL_CARD_BYTES = 6800
+# with a reason; a card that grows is a wall that slows. Raised by 400 on 2026-11-24 for the card's link to its tank's
+# water history (Tank › Water, monitoring/_water_link.html: the address, the chart icon and its name, about 320 bytes;
+# T-02 here weighed 7,033 with it). Raised by 100 on 2026-11-24 (review round 2, B2): the saturation beside a label and
+# the reason's figure and bound in slots of their own, named so the page test can hold them whole (T-02: 7,248 before
+# the dot went back into the saturation's own span).
+SMALL_CARD_BYTES = 7300
 
 
 def card_of(html, unit):

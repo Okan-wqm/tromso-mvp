@@ -1,5 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 
+from core import formpanels
 from core.crud import Resource, filter_by
 
 from ..forms import SupplierContactFormSet, SupplierForm
@@ -11,6 +12,9 @@ class SupplierContacts(ContactList):
     """A supplier's contact persons, saved as a whole list on the Contact tab, like a site's contacts."""
 
     formset = SupplierContactFormSet
+    help_text = _('The people to contact at the supplier: sales, orders, technical support, the vet on call. At most one can '
+                  'be the primary contact. Contacts are saved separately from the supplier details.')
+    pending_text = _('Contacts can be added once the supplier is created.')
 
 
 class SupplierResource(Resource):
@@ -27,6 +31,11 @@ class SupplierResource(Resource):
     private_fields = ('email', 'phone')
     row_lists = (SupplierContacts,)
     page_size = 50
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """farm/supplier_form.html in the new look: its row lists."""
+        return formpanels.row_list_panels(cls, view, obj, extra)
 
     @classmethod
     def queryset(cls):

@@ -1,17 +1,17 @@
-"""The alarm loop (manage.py run_alarms): one pass at a moment, in order:
+"""One alarm pass at a moment (the alarm worker's, alarms/worker.py; manage.py run_alarms once), in order:
 
 1. the sensor rules are checked (sensors/alarms.py `evaluate`) and their events mirrored (alarms/sources.py);
 2. the water limits open and clear their alarms (alarms/sources.py);
 3. each device's clock is judged against the platform's (alarms/clock.py);
-4. every open alarm nobody has acknowledged gets the notifications of its level (rules added since reach it too), and
-   goes on to the next level with a rule that reaches it when its level was notified at least the platform owner's
-   escalation time ago, or at once when nobody could be notified at its level;
-5. every queued notification whose channel has a transport is handed to it (alarms/transports.py). None is connected
-   today: nothing is sent, and the outbox waits;
-6. the alarm system supervises itself (alarms/sources.py supervise): a step that failed and its own configuration (a
+4. every open alarm nobody has acknowledged or snoozed gets the notifications of its level (rules added since reach it
+   too), and goes on to the next level with a rule that reaches it when its level was notified at least the platform
+   owner's escalation time ago (or since its snooze ended), or at once when nobody could be notified at its level;
+5. the alarm system supervises itself (alarms/sources.py supervise): a step that failed and its own configuration (a
    missing rule row) are critical alarms of their own.
-Each step runs in its own transaction under a transaction-level advisory lock, so two loops never queue, escalate or send
-twice, and a step that fails rolls back alone, is logged and counted, and the others still run (alarm plan, defect 5)."""
+Each step runs in its own transaction under a transaction-level advisory lock, so two passes never queue or escalate
+twice, and a step that fails rolls back alone, is logged and counted, and the others still run (alarm plan, defect 5).
+A pass only queues: handing the notifications to a transport is the outbox's (alarms/outbox.py), outside any pass,
+transaction or lock, so a transport never delays an alarm."""
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -24,8 +24,8 @@ from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import Acknowledgement, Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification, Severity, Source
-from .transports import transport_for
+from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification,
+                     NotificationKind, Severity, Source)
 
 logger = logging.getLogger(__name__)
 LOCK = 4_261_607_201          # the alarm loop's advisory lock key (any constant no other code takes)
@@ -37,16 +37,10 @@ class Summary:
     cleared: int = 0
     queued: int = 0
     escalated: int = 0
-    sent: int = 0
-    failed: int = 0
-    waiting: int = 0          # queued notifications whose channel has no transport
     failed_steps: list = field(default_factory=list)
 
     def __str__(self):
-        text = (f'{self.opened} opened, {self.cleared} cleared, {self.queued} queued, {self.escalated} escalated, '
-                f'{self.sent} sent, {self.failed} failed')
-        if self.waiting:
-            text += f'; {self.waiting} waiting, nothing sent: no transport is connected for their channel'
+        text = f'{self.opened} opened, {self.cleared} cleared, {self.queued} queued, {self.escalated} escalated'
         if self.failed_steps:
             text += f'; {len(self.failed_steps)} step failed: {", ".join(self.failed_steps)}'
         return text
@@ -57,21 +51,23 @@ def _lock():
         cursor.execute('SELECT pg_advisory_xact_lock(%s)', [LOCK])
 
 
-def _route(alarms, now, summary, rules):
+def _route(alarms, now, summary, rules, resumed=None):
     """Step 3 for every open, unacknowledged, unsuppressed alarm, set-based (alarm plan, defect 7): its level and what its
     levels were sent are read in two queries, the rules once (routing.Router), and the new notifications and escalations
     are written in one statement each. An alarm gets the notifications of its level (rules added since reach it too),
     and goes on to the next level with a rule that reaches it once its level was first notified the severity's escalation
-    time ago, or at once when nobody could be notified at its level."""
+    time ago, or at once when nobody could be notified at its level. `resumed` ({alarm id: when its snooze ended}): the
+    escalation time is counted from then when that is later."""
     if not alarms:
         return
+    resumed = resumed or {}
     router = routing.Router(now)
     ids = [alarm.pk for alarm in alarms]
     levels = dict(Escalation.objects.filter(alarm__in=ids).values('alarm').annotate(top=Max('level'))
                   .values_list('alarm', 'top'))
     sent, first = defaultdict(set), {}
-    for alarm_id, level, recipient_id, channel, queued_at in Notification.objects.filter(alarm__in=ids).values_list(
-            'alarm', 'level', 'recipient', 'channel', 'queued_at'):
+    for alarm_id, level, recipient_id, channel, queued_at in Notification.objects.filter(
+            alarm__in=ids, kind=NotificationKind.ALARM).values_list('alarm', 'level', 'recipient', 'channel', 'queued_at'):
         sent[(alarm_id, level)].add((recipient_id, channel))
         first[(alarm_id, level)] = min(queued_at, first.get((alarm_id, level), queued_at))
     queued, escalated = [], []
@@ -85,7 +81,8 @@ def _route(alarms, now, summary, rules):
                     first.setdefault(key, now)
                     queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
                                                queued_at=now))
-            if key in first and now - first[key] < rules.escalation_after(alarm.severity):
+            if key in first and now - max(first[key], resumed.get(alarm.pk, first[key])) < rules.escalation_after(
+                    alarm.severity):
                 break
             following = router.next_level(alarm, level)
             if following is None:
@@ -94,6 +91,29 @@ def _route(alarms, now, summary, rules):
             level = following
     summary.queued += len(services.queue_many(queued))
     summary.escalated += len(services.escalate_many(escalated))
+
+
+def _remind(alarms, now, summary, ended):
+    """A snooze ended with its alarm still open and unacknowledged (`alarms`, not snoozed now; `ended`: {alarm id: its
+    last ended snooze}): the people of the alarm's level now are told again, once per snooze (the coordinator's call of
+    2026-11-23 on the review, F9)."""
+    alarms = [alarm for alarm in alarms if alarm.pk in ended]
+    if not alarms:
+        return
+    told = set(Notification.objects.filter(shelve__in=[ended[alarm.pk] for alarm in alarms],
+                                           kind=NotificationKind.RESUMED).values_list('shelve', 'recipient', 'channel'))
+    router = routing.Router(now)
+    levels = dict(Escalation.objects.filter(alarm__in=[alarm.pk for alarm in alarms]).values('alarm')
+                  .annotate(top=Max('level')).values_list('alarm', 'top'))
+    queued = []
+    for alarm in alarms:
+        shelve, level = ended[alarm.pk], levels.get(alarm.pk, 0)
+        for user, rule in router.recipients(alarm, level):
+            if (shelve.pk, user.pk, rule.channel) not in told:
+                told.add((shelve.pk, user.pk, rule.channel))
+                queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
+                                           queued_at=now, kind=NotificationKind.RESUMED, shelve=shelve))
+    summary.queued += len(services.queue_many(queued))
 
 
 def _unsuppressed(alarms):
@@ -132,8 +152,11 @@ def _step(name, summary, work):
         summary.failed_steps.append(name)
 
 
-def run_once(now=None):
-    """One pass of the loop at `now`; returns its Summary."""
+def run_once(now=None, outside=None, unchecked=None):
+    """One pass at `now`; returns its Summary. `outside`: {name: whether it failed} of the alarm system's steps that run
+    outside the pass (the worker's sender, 'send'): supervised with the pass's own, and a failed one is in the
+    Summary's failed steps. `unchecked` (from, to): the worker's first pass after a stretch with none (sources.supervise
+    raises it)."""
     now = now or timezone.now()
     summary = Summary()
     freshness.forget()          # the water's staleness rules as they are now (farm/water/freshness.py)
@@ -147,19 +170,12 @@ def run_once(now=None):
         waiting = list(Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
                        .exclude(pk__in=Acknowledgement.objects.values('alarm')).select_related('point')
                        .order_by('opened_at', 'id'))
-        _route(_unsuppressed(waiting), now, summary, rules)
-
-    def send():
-        for notification in read.pending(rules):
-            transport = transport_for(notification.channel)
-            if transport is None:
-                summary.waiting += 1
-                continue
-            row = services.attempt(notification, transport.send(notification), now)
-            if row.outcome == 'sent':
-                summary.sent += 1
-            else:
-                summary.failed += 1
+        ids = [alarm.pk for alarm in waiting]
+        snoozed = read.snoozes(ids, now)               # raised and kept, never notified nor escalated while snoozed
+        ended = read.ended(ids, now)
+        told = [alarm for alarm in _unsuppressed(waiting) if alarm.pk not in snoozed]
+        _route(told, now, summary, rules, {alarm_id: row.ends_at() for alarm_id, row in ended.items()})
+        _remind(told, now, summary, ended)
 
     # The silent oxygen probes and where the oxygen is known all the same: read once, for the sensor rules and the
     # alarm system's warnings of this pass (sensors.alarms.OxygenPass).
@@ -168,12 +184,14 @@ def run_once(now=None):
              ('sensor events', lambda: count(sources.sensor_events())),
              ('water', lambda: count(sources.water(now, rules, oxygen))),
              ('device clocks', lambda: count(sources.device_clocks(now, rules))),
-             ('notify', notify),
-             ('send', send)]
+             ('notify', notify)]
     for name, work in steps:
         _step(name, summary, work)
     # Last, after the steps whose failure it alarms: a failed step's alarm is on the page at once, and notified on the
     # next pass (this pass's notify step has run).
-    _step('supervision', summary, lambda: count(sources.supervise(now, rules, [name for name, _work in steps],
-                                                                  list(summary.failed_steps))))
+    outside = outside or {}
+    summary.failed_steps += [name for name, failed in outside.items() if failed]
+    _step('supervision', summary, lambda: count(sources.supervise(now, rules, [name for name, _work in steps]
+                                                                  + list(outside), list(summary.failed_steps),
+                                                                  unchecked)))
     return summary

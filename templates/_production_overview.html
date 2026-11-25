@@ -1,4 +1,4 @@
-{% load i18n dates water %}{% comment %} The body of Production › Overview (production_home.html; config.views.production_home), a dashboard drawn with the
+{% load i18n dates water health %}{% comment %} The body of Production › Overview (production_home.html; config.views.production_home), a dashboard drawn with the
    Tailwind build (tw: utilities over the role tokens, docs/design/system/tailwind.md) and the ui-* parts. First the day's
    figures as metric cards (_metric_card.html) on one board, several to a row (two on a phone, five from 768 px); then what
    needs attention in compact rows, and beside it (from 1024 px) the farm's structure as cards and the reports due. Every
@@ -23,7 +23,7 @@
       {% if stock %}
       {% blocktrans trimmed asvar source %}Stock records at {{ clock }}{% endblocktrans %}
       {% blocktrans trimmed count total=stock.stocked.of asvar of_units %}of {{ total }} unit{% plural %}of {{ total }} units{% endblocktrans %}
-      {% include "_metric_card.html" with key="stock-fish" url=stock.fish.url label=stock.fish.label figure=stock.fish.count source=source only %}
+      {% if new_look %}{% blocktrans trimmed count count=stock.fish.batches asvar in_batches %}in {{ count }} batch{% plural %}in {{ count }} batches{% endblocktrans %}{% endif %}{% include "_metric_card.html" with key="stock-fish" url=stock.fish.url label=stock.fish.label figure=stock.fish.count sub=in_batches source=source only %}
       {% include "_metric_card.html" with key="stock-biomass" url=stock.biomass.url label=stock.biomass.label figure=stock.biomass.count source=source only %}
       {% include "_metric_card.html" with key="stock-stocked" url=stock.stocked.url label=stock.stocked.label figure=stock.stocked.count sub=of_units source=source only %}
       {% endif %}
@@ -62,7 +62,7 @@
       <h2 id="attention-title" class="tw:m-0 tw:text-h2">{% trans "Needs attention" %}</h2>
       {% if water %}<p class="ui-safety tw:m-0 tw:sm:justify-self-end">{% include "icons/_icon.html" with name="alert" %}{% trans "Nobody is alerted: critical values are shown here, not sent." %}</p>{% else %}<span></span>{% endif %}
       {% if water.sensors_failed %}<p class="notice notice-warning tw:m-0 tw:sm:col-span-2" role="status">{% trans "The live sensor values could not be read: the values below come from the water samples only." %}</p>{% endif %}
-      {% if water.alerts or water.unevaluated or late_tasks or upcoming.late or upcoming.late_duties or at_once or not_set_up or unmeasured %}
+      {% if water.alerts or water.unevaluated or late_tasks or upcoming.late or upcoming.late_duties or at_once or not_set_up or unmeasured or holds %}
       <ul class="ui-sheet tw:m-0 tw:p-0 tw:list-none tw:divide-y tw:divide-hair tw:overflow-hidden tw:sm:col-span-2" role="list">
         {% for row in water.alerts %}{% with point=row.point owner=row.owner status=row.water.point_status %}
         <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto] {% if status == "critical" %}tw:[box-shadow:var(--edge-crit)]{% else %}tw:[box-shadow:var(--edge-warn)]{% endif %}" data-attention="water">
@@ -87,7 +87,13 @@
         {% endfor %}
         {% if water.more %}
         <li class="tw:px-4"><a class="tw:inline-flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:text-small tw:font-semibold" href="{{ water.url }}">{% blocktrans trimmed count count=water.more %}{{ count }} more sampling point on Water chemistry{% plural %}{{ count }} more sampling points on Water chemistry{% endblocktrans %}</a></li>
-        {% endif %}
+        {% endif %}{% for hold in holds %}
+        <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center" data-attention="withdrawal">
+          <span class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-2 tw:gap-y-1 tw:col-start-1"><span class="ui-chip" data-status="hold">{% include "icons/_icon.html" with name="hourglass" %}<span>{% trans "Withdrawal" %}</span></span><b>{{ hold.unit.code }}</b></span>
+          <span class="tw:min-w-0 tw:col-start-1 tw:text-small tw:text-ink-2">{% for block in hold.blocks %}{% if not forloop.first %} · {% endif %}{{ block.batch.code }}: {{ block|harvest_from }}{% endfor %}</span>
+          <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:coarse:min-h-12" href="{{ hold.url }}">{% trans "Production units" %}</a>
+        </li>
+        {% endfor %}
         {% if late_tasks %}
         <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:[box-shadow:var(--edge-warn)] tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto]" data-attention="tasks">
           <span class="tw:flex tw:col-start-1"><span class="ui-chip" data-status="warning">{% include "icons/_icon.html" with name="clock" %}{% trans "Overdue" %}</span></span>
@@ -140,7 +146,7 @@
     </section>
     {% endif %}
 
-    {% if tiles or upcoming %}
+    {% if tiles or upcoming or team %}
     <div class="tw:grid tw:gap-6 tw:min-w-0 {% if not water and not tasks and not upcoming %}tw:lg:col-span-2{% endif %}">
       {% if tiles %}
       <section class="tw:grid tw:gap-2 tw:min-w-0 tw:content-start" aria-labelledby="farm-title">
@@ -187,6 +193,15 @@
           <p class="tw:m-0 tw:px-4 tw:py-3">{% blocktrans trimmed count count=upcoming.not_set_up|length %}{{ count }} site with fish is not set up for reports: what it owes is not known, so nothing is listed as due for it.{% plural %}{{ count }} sites with fish are not set up for reports: what they owe is not known, so nothing is listed as due for them.{% endblocktrans %}</p>
           {% endif %}
           <a class="tw:flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:px-4 tw:border-t tw:border-hair tw:text-small tw:font-semibold" href="{{ upcoming.url }}">{% if upcoming.more %}{% blocktrans trimmed with count=upcoming.more %}and {{ count }} more: all reports{% endblocktrans %}{% else %}{% trans "All reports" %}{% endif %}</a>
+        </div>
+      </section>
+      {% endif %}{% if team %}
+      <section class="tw:grid tw:gap-2 tw:min-w-0 tw:content-start" aria-labelledby="team-title">
+        <h2 id="team-title" class="tw:m-0 tw:text-h2">{% trans "Production team today" %}</h2>
+        <div class="ui-sheet tw:overflow-hidden tw:px-4 tw:py-3 tw:grid tw:gap-2">
+          {% include "ui/_stack.html" with stack=team_stack %}
+          <p class="tw:m-0 tw:text-small tw:text-ink-2">{% trans "On site now" %}: <strong>{{ team.on_site }}</strong>{% if team.late %} · {% blocktrans trimmed count late=team.late %}{{ late }} late{% plural %}{{ late }} late{% endblocktrans %}{% endif %}{% if team.unplanned %} · {% trans "Here, not planned" %}: {{ team.unplanned }}{% endif %}</p>
+          <a class="tw:flex tw:items-center tw:min-h-10 tw:coarse:min-h-12 tw:text-small tw:font-semibold" href="{{ team.url }}">{% trans "Today & attendance" %}</a>
         </div>
       </section>
       {% endif %}

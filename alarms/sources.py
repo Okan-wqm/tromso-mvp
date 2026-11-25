@@ -357,6 +357,8 @@ SENSORS_FAILED = 'sensors_failed'
 ALARM_RULES = 'alarm_rules'
 UNIT_UNEVALUATED = 'unit_unevaluated'
 STEP_FAILED = 'step_failed'
+ALARMS_UNCHECKED = 'alarms_unchecked'
+UNDELIVERABLE = 'notifications_undeliverable'
 NO_WATER_POINT = 'no_water_point'
 VALUE_UNEVALUATED = 'value_unevaluated'
 NO_FRESH_OXYGEN = 'no_fresh_oxygen'
@@ -425,7 +427,7 @@ def _removed(units, now):
 def _water_subjects(unit, found, failed, rules, now):
     """The water subjects of one unit's PointWater: per quantity, a warning and a critical level. A unit with no point of
     its own is read at its system (read.latest `units`): its levels are at the loop point, or, where the system has none,
-    without a point (alarms 0015), always on the unit's own site and department and said for the unit: a card at a
+    without a point (alarms 0022), always on the unit's own site and department and said for the unit: a card at a
     level has its alarm at that level (review 5 of the branch, M1)."""
     subjects, unit_id = [], unit.pk
     point = found.point or found.system_point
@@ -717,17 +719,37 @@ def _clock_text(skew):
         return str(clock.describe(skew))
 
 
-def supervise(now, rules, steps, failed_steps):
+def _clock(moment):
+    """A moment on the company's clock, as a summary at rest says it."""
+    from core.templatetags.dates import on, zone_for
+    return on(moment, zone_for(None)).strftime('%d.%m.%Y %H:%M')
+
+
+def supervise(now, rules, steps, failed_steps, unchecked=None):
     """The alarm system's own subjects at the end of a pass (EEMUA 191: the alarm system supervises itself):
     - a step of the pass that failed (`steps`, their names; `failed_steps`, those that failed) is a critical system alarm
       from the pass it fails in until it passes again (cross review F3);
     - a severity whose rule row is missing (alarms.rules: the safest values stand in, cross review F6) is a critical
-      configuration alarm until the row is back.
+      configuration alarm until the row is back;
+    - `unchecked` (from, to): the alarm worker's first pass after a stretch with no pass (it was stopped, killed or could
+      not reach the database: alarms/worker.py) is a critical alarm of the alarm system, so the people are told what
+      nobody checked; it clears after its off-delay on the passes that follow.
     (opened, cleared)"""
     missing = ', '.join(sorted(rules.missing))
     subjects = [system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
         'The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used until the rows '
         'are restored.'), severities=missing or '-'), now)]
+    from . import outbox
+    stuck = outbox.stuck(rules, now)
+    subjects.append(system_subject(UNDELIVERABLE, bool(stuck), Severity.CRITICAL, _text(_(
+        '%(count)d critical notification(s) cannot be delivered, the oldest queued %(since)s: the people of those '
+        'alarms are not reached, nor would the next level be. Look at the alarms and tell them another way.'),
+        count=len(stuck), since=_clock(min((row.queued_at for row in stuck), default=now))), now))
+    start, end = unchecked or (now, now)
+    subjects.append(system_subject(ALARMS_UNCHECKED, unchecked is not None, Severity.CRITICAL, _text(_(
+        'The alarms were not checked from %(start)s to %(end)s (the alarm worker was not running): no alarm was raised '
+        'and nobody was told in that time. Look at the farm\'s values of that time.'), start=_clock(start),
+        end=_clock(end)), now))
     subjects += [system_subject(f'step:{name.replace(" ", "_")}', name in failed_steps, Severity.CRITICAL, _text(_(
         'The alarm step "%(step)s" failed: what it does (raising, clearing, notifying or sending alarms) is not done '
         'until it passes again.'), step=name), now, parameter=STEP_FAILED) for name in steps]

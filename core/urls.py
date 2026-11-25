@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import dbview, theme, views
+from . import dbview, theme, ui, views
 from .resources import PlatformSettingsResource, RoleResource, UserResource
 
 app_name = 'core'
@@ -8,6 +8,7 @@ app_name = 'core'
 urlpatterns = [
     path('language/', views.set_language, name='set_language'),
     path('theme/', theme.set_theme, name='set_theme'),
+    path('ui/strip/', ui.strip_view, name='ui_strip'),
     path('activity/', views.activity_log, name='activity_log'),
     path('database/', dbview.overview, name='database'),
     path('database/<slug:name>/', dbview.browse, name='database_table'),

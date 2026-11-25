@@ -434,16 +434,22 @@ def draw(analysis, layers=ALL_LAYERS, dosing=None, simulator=(), extent=()):
     return render(figure(analysis, geometry(analysis, layers, dosing, simulator, extent)))
 
 
+def pixel(box, dic, alkalinity):
+    """(x, y) in the SVG's pixels of a water (DIC mmol/L, alkalinity meq/L) in a chart's `box`: the one placing of a
+    value on the chart (`render`, and the range's path on Tank › Water)."""
+    return LEFT + dic / box.dic * PLOT, TOP + PLOT - alkalinity / box.alkalinity * PLOT
+
+
 def render(figure):
     """The SVG's parts (Chart) of a figure, from the figure alone: the server draws every chart through here, and the
     replay's player draws the same figures."""
     box = Box(*figure['box'])
 
     def x(dic):
-        return LEFT + dic / box.dic * PLOT
+        return pixel(box, dic, 0)[0]
 
     def y(alkalinity):
-        return TOP + PLOT - alkalinity / box.alkalinity * PLOT
+        return pixel(box, 0, alkalinity)[1]
 
     def points(flat):
         return ' '.join(f'{_fixed(x(dic))},{_fixed(y(alkalinity))}' for dic, alkalinity in _pairs(flat))
@@ -452,15 +458,17 @@ def render(figure):
         return [{'at': _fixed(place(step * index)), 'label': _tick(step * index)}
                 for index in range(round(end / step) + 1)]
 
-    isolines = []
+    isolines, placed = [], []
+    plot_box = (LEFT, TOP, LEFT + PLOT, TOP + PLOT)
     for ph, labelled, *segment in figure['isolines']:
         (x1, y1), (x2, y2) = [(x(dic), y(alkalinity)) for dic, alkalinity in _pairs(segment)]
         label = None
         if labelled:
             angle = max(-65.0, min(65.0, math.degrees(math.atan2(y2 - y1, x2 - x1))))
-            label = {'x': _fixed(x1 + LABEL_AT * (x2 - x1)), 'y': _fixed(y1 + LABEL_AT * (y2 - y1)),
-                     'angle': _fixed(angle),
-                     'text': f'pH {formats.number_format(Decimal(f"{ph:.1f}"), 1, use_l10n=True)}'}
+            text = f'pH {formats.number_format(Decimal(f"{ph:.1f}"), 1, use_l10n=True)}'
+            lx, ly, corners = _label_place((x1, y1), (x2, y2), angle, len(text), placed, plot_box)
+            placed.append(corners)
+            label = {'x': _fixed(lx), 'y': _fixed(ly), 'angle': _fixed(angle), 'text': text}
         isolines.append({'ph': f'{ph:.2f}', 'labelled': bool(labelled),
                          'colour': isoline_colour(ph), 'points': points(segment), 'label': label})
     regions = [{'key': key, 'name': name, 'points': points(polygon)} for key, name, polygon in figure['regions']]
@@ -505,6 +513,67 @@ def render(figure):
         notes=list(figure['notes']), box=box, reagent_lines=reagent_lines,
         wedge=points(figure['wedge']) if figure['wedge'] else None,
         dosing_path=[points(line) for line in figure['dosing_path']], waypoint=waypoint, simulator=simulator_drawing)
+
+
+# The pH labels' placing (owner's answer, 2026-11-23: the server places them so they do not run over each other; only
+# their positions change). A label is a box of about LABEL_CHAR px a character by LABEL_HEIGHT px (the chart's label
+# size in its own pixels, bold, with its halo), turned with its line, centred on it. Along its line it takes the first
+# of LABEL_STEPS that runs over no label placed before it and stays inside the plot; where none does, the one that runs
+# over the fewest (the first of them), so every labelled line keeps its label.
+LABEL_CHAR, LABEL_HEIGHT = 6.6, 13.0
+LABEL_STEPS = (LABEL_AT, 0.62, 0.42, 0.72, 0.32, 0.82, 0.22, 0.9, 0.12)
+
+
+def _label_box(cx, cy, angle, characters):
+    """The four corners of a label centred at (cx, cy), turned by `angle` degrees."""
+    half_w, half_h = characters * LABEL_CHAR / 2, LABEL_HEIGHT / 2
+    cos, sin = math.cos(math.radians(angle)), math.sin(math.radians(angle))
+    return [(cx + dx * cos - dy * sin, cy + dx * sin + dy * cos)
+            for dx, dy in ((-half_w, -half_h), (half_w, -half_h), (half_w, half_h), (-half_w, half_h))]
+
+
+def _overlap(first, second):
+    """Whether two convex quadrilaterals overlap (separating axes: the edges' normals of both)."""
+    for shape in (first, second):
+        for index in range(4):
+            (ax, ay), (bx, by) = shape[index], shape[(index + 1) % 4]
+            normal = (ay - by, bx - ax)
+            one = [normal[0] * px + normal[1] * py for px, py in first]
+            two = [normal[0] * px + normal[1] * py for px, py in second]
+            if max(one) <= min(two) or max(two) <= min(one):
+                return False
+    return True
+
+
+def _label_place(start, end, angle, characters, placed, plot_box):
+    """(x, y, corners) of a label on the line from `start` to `end` (pixels): the first step along it that runs over
+    none of `placed` and stays inside `plot_box`; else the one that runs over the fewest."""
+    left, top, right, bottom = plot_box
+    best = None
+    for step in LABEL_STEPS:
+        cx, cy = start[0] + step * (end[0] - start[0]), start[1] + step * (end[1] - start[1])
+        corners = _label_box(cx, cy, angle, characters)
+        if not all(left <= px <= right and top <= py <= bottom for px, py in corners):
+            continue
+        hits = sum(_overlap(corners, other) for other in placed)
+        if hits == 0:
+            return cx, cy, corners
+        if best is None or hits < best[0]:
+            best = (hits, cx, cy, corners)
+    if best is None:                       # no step keeps it inside the plot: the line's own place, as before
+        cx, cy = start[0] + LABEL_AT * (end[0] - start[0]), start[1] + LABEL_AT * (end[1] - start[1])
+        return cx, cy, _label_box(cx, cy, angle, characters)
+    return best[1], best[2], best[3]
+
+
+def as_props(chart):
+    """A Chart as an island's props (JSON): its parts in pixels and its words, the box left out (the pixels hold it).
+    Every position is the server's, the pH labels' too (owner's answer, 2026-11-23): the island only draws."""
+    parts = {name: value for name, value in asdict(chart).items() if name != 'box'}
+    for group in ('regions', 'boundaries', 'omega', 'legend'):
+        parts[group] = [{**item, 'name': str(item['name'])} for item in parts[group]]
+    parts['notes'] = [str(note) for note in parts['notes']]
+    return parts
 
 
 def _arrow(x1, y1, x2, y2, size=9):

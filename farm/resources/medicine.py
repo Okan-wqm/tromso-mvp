@@ -1,5 +1,6 @@
 from django.utils.translation import gettext as _now, gettext_lazy as _, ngettext_lazy
 
+from core import formpanels
 from core.crud import Resource, RowList, filter_by
 from core.models import AuditLog
 
@@ -18,6 +19,18 @@ class MedicineWithdrawalList(RowList):
     key, tab, label = 'withdrawals', 'withdrawal', _('Withdrawal')
     question_field = withdrawal.FIELD
     formset = MedicineWithdrawalFormSet
+    # Its panel's words (farm/medicine_form.html; its per cent sign doubled, as the template's msgid has it:
+    # core.formpanels.said); a refused save asks the guard's question above the rows.
+    title = _('Withdrawal')
+    help_text = _('The withdrawal after the last treatment day, as the SPC states it: degree-days (døgngrader) and days, one '
+                  'or both, per species; leave the species empty for every species without a row of its own. Give both '
+                  'when the SPC gives both: the later end wins. 0 means none. The safety margin is your own, on top of the '
+                  'SPC’s value: the value used is rounded up, e.g. 150 degree-days and 20 %% is 180. Fish of a species with '
+                  'no row (and no row for every species) are held with an unknown end. One row per species, at most 50. '
+                  'They are saved separately from the medicine details.')
+    empty_text = _('No withdrawal yet. Use “Add species” to add a row.')
+    add_label, save_label = _('Add species'), _('Save withdrawal')
+    pending_text = _('The withdrawal can be added once the medicine is created.')
     saved = ngettext_lazy('%(count)d withdrawal row saved.', '%(count)d withdrawal rows saved.', 'count')
 
     @classmethod
@@ -62,6 +75,11 @@ class MedicineResource(Resource):
     icon = 'pill'
     row_lists = (MedicineWithdrawalList,)
     page_size = 50
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """farm/medicine_form.html in the new look: its row lists."""
+        return formpanels.row_list_panels(cls, view, obj, extra)
 
     @classmethod
     def queryset(cls):

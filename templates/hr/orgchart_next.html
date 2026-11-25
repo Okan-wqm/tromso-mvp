@@ -1,0 +1,10 @@
+{% extends base_template %}
+{% load i18n assets %}
+{% comment %} Organisation chart in the new look (hr.views.organisation_chart behind ?ui=next): the island draws the tree the
+   server words (hr.views._org_props) with the library's OrgTree. The classic page is hr/orgchart.html. {% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}
+{% trans "Loading the organization chart…" as loading %}{% island "org-chart" props label=loading %}
+{% endblock %}

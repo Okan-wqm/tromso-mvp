@@ -288,7 +288,8 @@ class TypeScriptTests(SimpleTestCase):
 
     def test_the_browser_build_leaves_the_tests_out_and_the_test_build_has_them(self):
         shipped = json.loads((self.ROOT / 'tsconfig.json').read_text(encoding='utf-8'))
-        self.assertEqual(shipped['exclude'], ['frontend/**/*.test.ts', 'frontend/test/**'])
+        # the islands are built by Vite (tsconfig.islands.json, vite.config.mjs), never by tsc into static/js
+        self.assertEqual(shipped['exclude'], ['frontend/**/*.test.ts', 'frontend/test/**', 'frontend/islands/**'])
         tests = json.loads((self.ROOT / 'tsconfig.test.json').read_text(encoding='utf-8'))
         self.assertEqual(tests['extends'], './tsconfig.json')
         self.assertEqual((tests['exclude'], tests['compilerOptions']['outDir']), ([], '.build/test'))

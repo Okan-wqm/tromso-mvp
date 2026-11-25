@@ -1,0 +1,8 @@
+{% load i18n %}{% comment %} The way from a card to its tank's water history: Tank › Water (farm:tank_water, the one home of a tank's
+   water history), in both looks: in the classic look that address takes the person to the unit's history on Water
+   chemistry. On the Small card (`icon_only`) it is its icon, its words read by a screen reader only; on a full-height
+   card and a card that flows, icon and words; its words name the unit (every card has one: a screen reader's list of
+   links tells them apart). The page needs the right to read the water (farm.view_watermeasurement), which the cards
+   do not: only a card whose water section the person may read has it (`card.sections`, monitoring/read.py
+   sections_for); the designer's preview has none. `row.ns`: the pane's card is a second
+   card of its unit on the page. {% endcomment %}<a class="monitor-water-link" id="{{ row.ns }}water-{{ unit.pk }}" href="{% url 'farm:tank_water' unit.pk %}" title="{% blocktrans trimmed with unit=unit.code %}Water history of {{ unit }}{% endblocktrans %}">{% include "icons/_icon.html" with name="chart-line" %}{% if icon_only %}<span class="monitor-water-word sr-only">{% blocktrans trimmed with unit=unit.code %}Water history of {{ unit }}{% endblocktrans %}</span>{% else %}<span class="monitor-water-word">{% trans "Water history" %}</span>{% endif %}</a>

@@ -2,8 +2,8 @@
 {% load i18n %}
 {# The site form adds the contact list to its Contact tab. #}
 {% block extra_panels %}
-{% trans "The site’s operational contacts. At most one can be the primary contact. Contacts are saved separately from the site details." as help %}
-{% trans "Contacts can be added once the site is created." as pending %}
+{# the list's words are its RowList's (row_words, core.crud.FormView.page) #}
+{# #}
 {% if object %}{% url 'farm:site_contacts' object.pk as action %}{% endif %}
-{% include "farm/_contacts.html" %}
+{% include "farm/_contacts.html" with words=row_words.contacts %}
 {% endblock %}

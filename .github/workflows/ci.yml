@@ -5,8 +5,9 @@
 #             the catalogs must be unchanged. On a pull request that is all (SUITE=0, minutes); the whole suite (an
 #             hour or more on a hosted runner) runs on a push to main, nightly and by hand
 #   frontend  npm ci, the Tailwind build checked against the committed static/css/tw.css, the tokens against tokens.json,
-#             the design-system gate (npm run check:ds), the browser build (tokens, tsc, Tailwind) and the TypeScript
-#             tests (npm test)
+#             the design-system gate (npm run check:ds), the npm licence gate (npm run check:licences), the browser
+#             build (tokens, icons, tsc, the islands with Vite, Tailwind) and the TypeScript tests (npm test: unit and
+#             browser tests, the islands' component gallery included)
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
 #   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
 #   security  pip-audit, the Python licence gate, npm audit
@@ -121,6 +122,10 @@ jobs:
             echo "::error::labels may hold letters, digits, _ . and spaces"
             exit 1
           fi
+          # The islands' props and the monitoring pages for the page tests below are made by these tests
+          # (core/island_props.py, monitoring/tests/test_next_pages.py): a run with labels makes them too.
+          if [[ -n "$LABELS" ]]; then LABELS="$LABELS farm.tests.test_island_pages sensors.tests.test_pages_next farm.tests.test_production_overview_next farm.tests.test_production_units_next farm.tests.test_system_water_next monitoring.tests.test_next_pages farm.tests.test_feeding_pages_next farm.tests.test_harvest_pages_next farm.tests.test_health_pages_next"; fi
+          mkdir -p .build/island-props .build/monitor-pages   # the runner's own: the container (root) writes into them, npm reads after
           # shellcheck disable=SC2086 # the labels are words, split on purpose
           bash scripts/test.sh $LABELS
 
@@ -130,6 +135,26 @@ jobs:
             echo "::error::locale/*/django.po are stale: run manage.py update_catalogs and commit the result"
             exit 1
           fi
+
+      # The Production and Sensors islands in a browser (frontend/test/production.pages.ts), on the props the suite just
+      # made in its throwaway test database (.build/island-props, never committed: the repository is public), with the
+      # islands the browser build above made. Only after the suite (SUITE=1); the screenshots are kept 7 days.
+      - name: Allow Chrome's sandbox
+        if: env.SUITE == '1'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Island pages in a browser (npm run test:pages)
+        if: env.SUITE == '1'
+        env:
+          SHOTS: .build/shots
+        run: npm run test:pages
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && env.SUITE == '1'
+        continue-on-error: true
+        with:
+          name: island-pages-shots
+          path: .build/shots
+          retention-days: 7
+          if-no-files-found: ignore
 
   frontend:
     name: Browser code (tsc build and TypeScript tests)
@@ -155,7 +180,10 @@ jobs:
       # class names held to docs/design/system/ds-ratchet.json, which only goes down (scripts/check-ds.mjs).
       - name: Design-system gate (npm run check:ds)
         run: npm run check:ds
-      - name: Build (tsc -p tsconfig.json, then the Tailwind build)
+      # Every npm package installed for the browser or the build has an allowed or reviewed licence (decision 8).
+      - name: npm licence gate (npm run check:licences)
+        run: npm run check:licences
+      - name: Build (tokens, icons, tsc, the islands with Vite, then the Tailwind build)
         run: npm run build
       # The designer's browser test drives the runner's own Chrome (/usr/bin/google-chrome). Ubuntu 24.04 limits
       # unprivileged user namespaces, which Chrome's sandbox needs.

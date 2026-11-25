@@ -306,10 +306,19 @@ class Card:
         return self.stock.losses
 
 
-def _weigh(lines):
-    """The worst drift of a unit's batches ('now' over 'soon')."""
+def weigh(lines):
+    """The worst drift of a unit's batches ('now' over 'soon'), from its meal lines (`lines_of`)."""
     found = {line['drift'] for line in lines}
     return 'now' if 'now' in found else 'soon' if 'soon' in found else ''
+
+
+def lines_of(own, figures, today):
+    """The meal lines of a stocked unit's day (feeding.read.meal_lines: why it has no ration, each batch's drift) from its
+    stock (stock_of) and its feeding figures (feeding.read.figures with `ration`); () with no fish or no day. What a
+    card shows and the strip's weigh-now (alarms.read) are read from."""
+    day = figures.ration if figures else None
+    return tuple(feeding_read.meal_lines(day, {share.batch.pk: share.batch for share in own.shares}, today)
+                 if own and day else ())
 
 
 def _log_failure(name, message):
@@ -433,11 +442,10 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
         own = stock.get(unit.pk)
         figures = feeding.get(unit.pk)
         day = figures.ration if figures else None
-        lines = tuple(feeding_read.meal_lines(day, {share.batch.pk: share.batch for share in own.shares}, today)
-                      if own and day else ())
+        lines = lines_of(own, figures, today)
         found.append(Card(
             unit=unit, template=resolved[unit.pk], today=today, stock=own, day=day, feeding=figures,
-            lines=lines, drift=_weigh(lines), water=tuple(water.get(unit.pk, ())),
+            lines=lines, drift=weigh(lines), water=tuple(water.get(unit.pk, ())),
             withdrawal=tuple(withdrawals.get(unit.pk, ())), treatments=tuple(treatments.get(unit.pk, ())),
             events=tuple(events.get(unit.pk, ())), lice=counts.get(unit.pk), tasks=tasks.get(unit.pk),
             chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed), chart=charts.get(unit.pk),
@@ -527,18 +535,24 @@ def clock_notes(water, now):
 
 
 # ---- the state ---------------------------------------------------------------------------------------------------------
-def _middle(card):
-    """The PointWater of the card's middle point (always the first, when there is one), or, for a unit with no point of
-    its own, its water read at its system (farm.water.read.latest `units`: for_unit, no point), else None."""
-    first = card.water[0] if card.water else None
+def middle_of(water):
+    """The PointWater of a unit's middle point out of its points' water (water_read.points_water: the middle one first,
+    when there is one), or, for a unit with no point of its own, its water read at its system (farm.water.read.latest
+    `units`: for_unit, no point), else None."""
+    first = water[0] if water else None
     return first if first is not None and (first.for_unit or (
         first.point is not None and first.point.kind == water_read.MIDDLE)) else None
 
 
-def _key_readings(card):
-    """[(label, reading or None)] of the temperature and the oxygen at the card's middle point (oxygen: the mg/L or
-    the saturation, whichever is there): None when the point has none, or no middle point."""
-    middle = _middle(card)
+def _middle(card):
+    """The PointWater of the card's middle point (always the first, when there is one), or its water read at its system
+    (`middle_of`), else None."""
+    return middle_of(card.water)
+
+
+def key_readings(middle):
+    """[(label, reading or None)] of the temperature and the oxygen at a unit's middle point (oxygen: the mg/L or the
+    saturation, whichever is there): None when the point has none, or there is no middle point."""
     found = []
     for code, label in ((parameters.TEMPERATURE, parameters.get(parameters.TEMPERATURE).label),
                         ('oxygen', parameters.get(parameters.OXYGEN_MG_L).label)):
@@ -652,6 +666,59 @@ def _brief(reading, middle, stale):
                  limit, reading.judged == Status.CRITICAL, stale, label, source.judged_value)
 
 
+@dataclass(frozen=True)
+class WaterRungs:
+    """The water's part of the ladder for one stocked unit (`water_rungs`): each rung's reasons, the owning read's words."""
+    critical: tuple = ()
+    warning: tuple = ()
+    old: tuple = ()          # the critical or warning reasons that are old values
+    blind: tuple = ()
+    unjudged: tuple = ()
+
+    @property
+    def key(self):
+        """The rung the water alone puts a stocked unit on: CRITICAL, WARNING, BLIND, UNJUDGED or OK (`upper_state` adds
+        the stock's and the feeding's warnings, _ladder the notes)."""
+        return (CRITICAL if self.critical else WARNING if self.warning else BLIND if self.blind
+                else UNJUDGED if self.unjudged else OK)
+
+
+def water_rungs(middle, now):
+    """The water's part of rungs 1 to 4 of the ladder (_ladder) from a stocked unit's middle point's water; `upper_state`
+    adds the stock's and the feeding's warnings, and is the ONE rule the cards and the new look's status strip
+    (alarms.read.attention) both apply. Critical and warning values (fresh or old, the old ones
+    marked), and the oxygen of a unit with fish that has no fresh value (`_silent`); a value the chemistry core refuses
+    to work out (beside a critical, else a warning); the unit's own stale value its system stands in for. Blind: the
+    temperature missing or older than its freshness, the oxygen where its water finds no fish that day, no middle point
+    at all (`middle` None), a timestamp in the future, the live sensors not read. Unjudged: a value no limit row judges
+    for these fish."""
+    critical, warning, old = _alerts(middle, now)
+    unevaluated = [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
+    unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
+    # The oxygen of a unit with fish that has no fresh value (owner decision of 2026-11-23): critical, said as missing or
+    # old data, from the water's one judgement (farm.water.read.PointWater.silent_oxygen).
+    silent = _silent(middle)
+    if critical or silent:
+        return WaterRungs(critical=(*critical, *silent, *unevaluated),
+                          old=(*(text for text in old if text in critical), *silent))
+    warning += unevaluated
+    stale = []
+    for label, reading in key_readings(middle):
+        if reading is None:
+            stale.append(_('%(label)s: no recent data') % {'label': label})
+        elif not reading.fresh(now):
+            stale.append(_('%(label)s: no recent data, %(age)s old') % {'label': label, 'age': _age(reading, now)})
+    if middle is not None:
+        stale += [_('%(label)s: timestamp in the future') % {'label': reading.parameter.label}
+                  for reading in middle.future]       # a data error, never silently OK
+    if middle is not None and middle.sensors_failed:
+        stale.append(_('Live sensor values could not be read: samples only.'))
+    unjudged = [_('%(label)s: no limit for these fish') % {'label': reading.parameter.label}
+                for reading in (middle.unjudged if middle is not None else ())]
+    return WaterRungs(warning=tuple(warning), old=tuple(text for text in old if text in warning), blind=tuple(stale),
+                      unjudged=tuple(unjudged))
+
+
 def state_of(card):
     """The card's roll-up (`_ladder`), with its data-quality notes (a device of its water whose clock is off, owner
     2026-11-09) said whatever its rung: beside a critical, a warning or a blind card's reasons, and as a note where it
@@ -660,6 +727,29 @@ def state_of(card):
     if not card.clock or state.key == EMPTY_STATE:
         return state
     return State(NOTE if state.key == OK else state.key, state.reasons + card.clock, state.basis, state.stale)
+
+
+def upper_state(rungs, over_capacity, drift, water=True, basis=()):
+    """Rungs 1 to 4 of the ladder (_ladder) for a stocked unit, or None below them: critical from its water (`rungs`,
+    water_rungs); warning from its water, its stock over capacity, or an estimate that says weigh now (`drift` 'now');
+    then, when the water is shown (`water`), blind and unjudged. The ONE rule the cards and the new look's status strip
+    (alarms.read.attention, which shows every section) both apply, so the strip never says "No open alarms" beside a
+    card that says Over capacity or Weigh now."""
+    if rungs.critical:
+        return State(CRITICAL, rungs.critical, basis, rungs.old)
+    warning = list(rungs.warning)
+    if over_capacity:
+        warning.append(_('Over capacity'))
+    if drift == 'now':
+        warning.append(_('Weigh now: the estimate is not reliable'))
+    if warning:
+        return State(WARNING, tuple(warning), basis, rungs.old)
+    if water:
+        if rungs.blind:
+            return State(BLIND, rungs.blind, basis, rungs.blind)
+        if rungs.unjudged:
+            return State(UNJUDGED, rungs.unjudged, basis)
+    return None
 
 
 def _ladder(card):
@@ -685,46 +775,14 @@ def _ladder(card):
     if card.stock is None:
         return State(EMPTY_STATE, (), basis)
     note = []
-    middle = _middle(card)                  # the unit's own water: a detailed card's other points do not change its state
-    critical, warning, old = _alerts(middle, card.now)
-    # A value the limits would judge that the chemistry core refuses to work out (PointWater.unevaluated): said with the
-    # core's reason, as its alarm is (alarms/sources.py; the verification of 2026-11-18, V-A), never OK: beside a
-    # critical (its limits' basis past the critical limit, the re-check's RC-3), else a warning.
-    unevaluated = [str(text) for text in (middle.why_unevaluated if middle is not None else ())]
-    # A status the unit's own stale value keeps while its system's value stands in (read.last_own, F3-9): said beside it.
-    unevaluated += [str(text) for text in (middle.why_last_own if middle is not None else ())]
-    # The oxygen of a unit with fish that has no fresh value (owner decision of 2026-11-23): critical, said as missing or
-    # old data, from the water's one judgement (farm.water.read.PointWater.silent_oxygen).
-    silent = _silent(middle)
-    if critical or silent:
-        return State(CRITICAL, (*critical, *silent, *unevaluated), basis,
-                     (*(text for text in old if text in critical), *silent))
-    warning += unevaluated
-    if card.stock.over_capacity:
-        warning.append(_('Over capacity'))
-    if card.drift == 'now':
-        warning.append(_('Weigh now: the estimate is not reliable'))
-    if warning:
-        return State(WARNING, tuple(warning), basis, tuple(text for text in old if text in warning))
-    if WATER in card.sections:
-        stale = []
-        for label, reading in _key_readings(card):
-            if reading is None:
-                stale.append(_('%(label)s: no recent data') % {'label': label})
-            elif not reading.fresh(card.now):
-                stale.append(_('%(label)s: no recent data, %(age)s old') % {'label': label,
-                                                                               'age': _age(reading, card.now)})
-        if middle is not None:
-            stale += [_('%(label)s: timestamp in the future') % {'label': reading.parameter.label}
-                      for reading in middle.future]       # a data error, never silently OK
-        if middle is not None and middle.sensors_failed:
-            stale.append(_('Live sensor values could not be read: samples only.'))
-        if stale:
-            return State(BLIND, tuple(stale), basis, tuple(stale))
-        unjudged = [_('%(label)s: no limit for these fish') % {'label': reading.parameter.label}
-                    for reading in (middle.unjudged if middle is not None else ())]
-        if unjudged:
-            return State(UNJUDGED, tuple(unjudged), basis)
+    # The unit's own water (a detailed card's other points do not change its state), rungs 1 to 4 by the one rule the
+    # strip shares (upper_state over water_rungs): a value the chemistry core refuses to work out is said with the core's
+    # reason, as its alarm is (alarms/sources.py; V-A), beside a critical (RC-3), else a warning; a status the unit's own
+    # stale value keeps while its system's value stands in (read.last_own, F3-9) is said beside it.
+    upper = upper_state(water_rungs(_middle(card), card.now), card.stock.over_capacity, card.drift,
+                        water=WATER in card.sections, basis=basis)
+    if upper is not None:
+        return upper
     if card.withdrawal:
         text, first = _('Medicine withdrawal in force'), card.withdrawal[0]
         # (in short, with its end in the product's one wording, farm.handling.withdrawal.harvest_from: the first day

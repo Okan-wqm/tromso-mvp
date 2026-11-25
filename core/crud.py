@@ -27,6 +27,7 @@ import copy
 import uuid
 from dataclasses import dataclass, field as dataclass_field
 from functools import wraps
+from urllib.parse import quote
 
 from django import forms
 from django.contrib import messages
@@ -41,9 +42,10 @@ from django.urls import path, reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
-from . import audit, navigation, softdelete
+from . import audit, formpanels, formprops, listprops, navigation, softdelete
 from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
+from .ui import is_next
 from .widgets import NONE
 
 
@@ -355,6 +357,26 @@ class RowList:
     formset = None    # an inline formset over the row model (RowFormSet); the rows have `created_by`
     saved = ''        # the flash message: ngettext_lazy('%(count)d ... saved.', '...', 'count')
     question_field = None   # the box that answers what its save may ask first (`save`'s `seen`), when it may
+    # Its panel on the record's page in the new look (core/formpanels.py), in the words its classic template says
+    # (crud/_row_list.html's): the heading and tab, the help, the sentence of no rows, the two buttons, the sentence said
+    # instead of the list while the record cannot have one ('' says nothing), one row's name for a screen reader (the
+    # heading when ''), whether the panel stands on the record's own tab `tab` (a site's contacts on Contact), and a
+    # field's words in a row besides its label.
+    title = help_text = empty_text = add_label = save_label = pending_text = legend = ''
+    on_record_tab = False
+    field_labels = {}
+
+    @classmethod
+    def words(cls, obj):
+        """The panel's words for `obj` (None: a new record): a list may say another `pending` for a record it does not
+        apply to yet (a piece of equipment whose type takes no calibrations)."""
+        return {'title': cls.title, 'help': cls.help_text, 'empty': cls.empty_text, 'add': cls.add_label,
+                'save': cls.save_label, 'pending': cls.pending_text, 'legend': cls.legend or cls.title}
+
+    @classmethod
+    def field_words(cls):
+        """The words of a row's fields that the template says in place of their labels: Remove for the DELETE box."""
+        return {'DELETE': _('Remove'), **cls.field_labels}
 
     @classmethod
     def applies_to(cls, obj):
@@ -432,6 +454,17 @@ class Resource:
     private_fields = ()   # form fields holding a person's own text (a leave reason): the activity log says
                           # "Private text" for a filled one and never stores the words
     mounts = ()           # Mount: the other places the tab is served, its rows there narrowed by `scoped`
+    # The list in the new look (core/listprops.py): `list_rows(view, objects, context)` gives its table (a classmethod;
+    # None keeps the classic list in the new look too). The search box's placeholder and the empty list's sentence when
+    # the tab's list template has its own (its blocks `search_placeholder` and `empty_text`): the same msgid.
+    list_rows = None
+    list_above_next = ''      # a template the server draws above the new look's list (a safety notice the classic list
+                              # draws in its `above` block: Alarm rules' {% alarm_watch %}); '' for none
+    list_template_next = ''   # the new look's page of a tab whose list is not a table (Scheduling settings), drawn by
+                              # the server from the same context; '' for none
+    list_next_props = None    # its island's props, when the page is an island: (view, objects, context) -> dict
+    search_placeholder = ''
+    empty_text = ''
 
     # --- names derived from the model -------------------------------------------------------
     @classmethod
@@ -515,6 +548,16 @@ class Resource:
         """Extra context for the edit page: the formsets of its row lists, and whatever a tab adds."""
         return {rows.key: rows.formset(instance=obj, prefix=rows.key) for rows in cls.row_lists if rows.applies_to(obj)}
 
+    # The context of the edit page (edit_extras) that `next_panels` draws, besides the formsets of its row lists.
+    next_extras = frozenset()
+
+    @classmethod
+    def next_panels(cls, view, form, obj, extra):
+        """The new look of what the tab's own form template (form_template) adds to crud/form.html: its panels as
+        core/formpanels.py words them, from the page's context `extra` (edit_extras, a refused list's formset). None keeps
+        the classic page in the new look (a template not ported); the shared template adds nothing."""
+        return [] if cls.form_template == 'crud/form.html' else None
+
     @classmethod
     def snapshot(cls, obj):
         """What the audit log compares before and after a save: the form's fields under its labels."""
@@ -575,6 +618,11 @@ class Resource:
     def filter_list(cls, request, objects):
         """Narrows the list by the tab's own filters; returns the objects and context for the filter bar."""
         return objects, {}
+
+    @classmethod
+    def list_filters(cls, view, context):
+        """The list's filters in the new look (core.listprops.choice), from the values `filter_list` put in `context`."""
+        return []
 
     @classmethod
     def detail_extras(cls, request, obj):
@@ -710,8 +758,16 @@ class ListView(ResourceView):
             objects = page.object_list
         kept = request.GET.copy()
         kept.pop('page', None)
-        return render_page(request, self.resource.list_template, self.context(
-            objects=objects, query=query, page=page, pager_query=kept.urlencode(), **filters))
+        context = self.context(objects=objects, query=query, page=page, pager_query=kept.urlencode(), **filters)
+        if self.resource.list_rows is not None and is_next(request):
+            # The new look's list page (core/listprops.py): the same rows, read by the same view, drawn by the island.
+            return render_page(request, 'crud/list_next.html',
+                               {**context, 'props': listprops.list_props(self, objects, context),
+                                'list_above': self.resource.list_above_next})
+        if self.resource.list_template_next and is_next(request):
+            props = self.resource.list_next_props(self, objects, context) if self.resource.list_next_props else None
+            return render_page(request, self.resource.list_template_next, {**context, 'props': props})
+        return render_page(request, self.resource.list_template, context)
 
 
 class FormView(ResourceView):
@@ -730,8 +786,24 @@ class FormView(ResourceView):
             action = self.url('edit', obj.pk)
         else:
             action = self.url('create') if obj is None and r.allows('add') else self.request.path
+        panels = r.next_panels(self, form, obj, extra) if not is_modal(self.request) and is_next(self.request) else None
+        if formprops.drawable(r, form, extra, panels):
+            # The new look's record form (core/formprops.py): the same form, view and address, drawn by the island, with
+            # the panels the tab's own template adds (core/formpanels.py) and the question a refused save asks.
+            return render_page(self.request, 'crud/form_next.html', self.context(
+                form=form, object=obj, props=formprops.record_form_props(
+                    self.request, form, action=action, name=r.name, obj=obj, list_url=self.url('list'),
+                    delete_url=self.url('delete', obj.pk) if obj is not None and obj.pk is not None and r.allows('delete')
+                    and self.request.user.has_perm(r.perm('delete')) and r.allowed(self.request, obj, 'delete') else '',
+                    history=history,
+                    history_url=f"{reverse('core:activity_log')}?type={quote(r.entity_type(), safe='/')}&q={quote(str(obj), safe='/')}"
+                    if obj is not None else '', open_tab=extra.get('open_tab', ''), panels=panels,
+                    question=formpanels.question(extra.get('withdrawal_change')) if extra.get('question_template') else None)))
+        # The words of the tab's row lists (RowList.words): one source for both looks, read by crud/_row_list.html and
+        # farm/_contacts.html as `row_words.<key>`.
+        row_words = {rows.key: formpanels.template_words(formpanels.list_words(rows, obj)) for rows in r.row_lists}
         return render_page(self.request, r.form_template, self.context(
-            form=form, object=obj, history=history, form_action=action, **extra))
+            form=form, object=obj, history=history, form_action=action, row_words=row_words, **extra))
 
     def draft_page(self, form, obj=None):
         """The form rendered again from a draft (TabbedForm.refresh_on), open on the tab of the field
@@ -915,6 +987,10 @@ class DeleteView(ResourceView):
     def get(self, request, pk):
         obj = self.get_object(pk)
         plan = plan_delete(obj) if isinstance(obj, AuditedModel) else None
+        if not is_modal(request) and is_next(request):
+            return render_page(request, 'crud/confirm_delete_next.html', self.context(
+                object=obj, props=formprops.confirm_delete_props(request, obj, plan, name=self.resource.name,
+                                                                 action=request.path, cancel=self.url('list'))))
         return render_page(request, 'crud/confirm_delete.html', self.context(object=obj, plan=plan))
 
     def post(self, request, pk):

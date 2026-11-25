@@ -85,6 +85,8 @@ MIDDLEWARE = [
     # A signed-in person's saved language wins over the cookie.
     'core.language.AccountLanguageMiddleware',
     'core.middleware.WorkspaceMiddleware',
+    # ?ui=next and ?ui=classic choose the console's look, kept in a cookie (core/ui.py).
+    'core.ui.LookMiddleware',
     # A page whose menu line is left out for the person is refused at its address too.
     'core.middleware.MenuAccessMiddleware',
     # The platform owner's settings are read once per request (core.platform).
@@ -114,6 +116,7 @@ TEMPLATES = [
                 'core.navigation.rail',
                 'core.navigation.page_base',
                 'core.theme.context',
+                'core.ui.context',
             ],
         },
     },
@@ -161,6 +164,12 @@ DATABASES = {
         # leave its own connection open until the database refuses clients. A kept connection is checked before reuse.
         'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '0')),
         'CONN_HEALTH_CHECKS': True,
+        # A database that does not answer is given up after connect_timeout seconds, and a connection whose peer is gone
+        # is found by TCP keepalives within about a minute, rather than the kernel's two hours (the alarm worker's
+        # review, F8; the worker sets its own session's shorter ones, alarms/worker.py).
+        'OPTIONS': {'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10')), 'keepalives': 1,
+                    'keepalives_idle': int(os.environ.get('DB_KEEPALIVES_IDLE', '30')), 'keepalives_interval': 10,
+                    'keepalives_count': 3},
         # Lets two checkouts run tests at the same time on separate test databases.
         'TEST': {'NAME': os.environ.get('DB_TEST_NAME') or None},
     }
@@ -202,6 +211,9 @@ TIME_ZONE = 'UTC'
 # The company's time zone: a new site's (the form offers it first) and the one migration farm/0028 gives a site that had
 # none. Not the server's clock above. From the environment until the platform owner's settings hold it.
 COMPANY_TIME_ZONE = os.environ.get('COMPANY_TIME_ZONE', 'Europe/Oslo')
+# How long the new look's status strip keeps one reading of what needs a look (alarms.read.attention), the same for every
+# viewer: a farm's open pages ask the database once in that time. 0: every request reads it.
+ATTENTION_CACHE_SECONDS = int(os.environ.get('ATTENTION_CACHE_SECONDS', '15'))
 # In the tests a page may not show an aware time without a clock filter (core/clock_guard.py): |date and |time refuse it.
 # Never on in production: the filters stay Django's own there.
 CLOCK_GUARD = os.environ.get('CLOCK_GUARD', '1' if sys.argv[1:2] == ['test'] else '0') == '1'
@@ -301,7 +313,10 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {'dated': {'format': '%(asctime)s %(levelname)s %(name)s: %(message)s'}},
     'handlers': {'stderr': {'class': 'logging.StreamHandler', 'formatter': 'dated'}},
-    'loggers': {'core.accountmail': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False}},
+    'loggers': {'core.accountmail': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False},
+                # the alarm worker's start, standby, lost database, stop and the passes that changed something: its
+                # service's log (docker compose logs alarms)
+                'alarms.worker': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False}},
 }
 
 # Under one, no link would ever work, no reset mail ever be sent and no mail have the time to leave: said here, not
@@ -370,3 +385,37 @@ SENSORS_BROKER_AUTH_DIR = os.environ.get('SENSORS_BROKER_AUTH_DIR', str(BASE_DIR
 # The alarms' transports, {channel: dotted path of an alarms.transports.Transport}. None is connected: the mobile app that
 # receives the push comes later, so every notification waits in the outbox and the pages say that nothing is sent.
 ALARM_TRANSPORTS = {}
+
+# The alarm worker (manage.py run_alarm_worker, alarms/worker.py; the compose service `alarms`), in seconds unless said,
+# each from the environment. The deployment's, like the ingest's batching: how the process runs, not a rule of the farm
+# (those are the alarm rules' rows, Company › Alarms). alarms.worker.Timing refuses nonsense at start.
+ALARM_WORKER = {
+    # between two looks at what changed (the sensors' values, any record written): the step of the reaction
+    'tick': float(os.environ.get('ALARM_WORKER_TICK', '1')),
+    # a pass at least this often, changed or not: what time alone moves (a value going stale, the delays, escalation)
+    'sweep': float(os.environ.get('ALARM_WORKER_SWEEP', '15')),
+    # no pass finished for this long: the pages and the health check say the alarms are not being checked (3 sweeps)
+    'stale_after': int(os.environ.get('ALARM_WORKER_STALE_AFTER', '45')),
+    # the database unreachable this long: the process exits, and Docker starts it again
+    'db_down_exit': float(os.environ.get('ALARM_WORKER_DB_DOWN_EXIT', '60')),
+    # the longest wait between two tries while the database is unreachable (the tick, doubled each time, up to this)
+    'backoff_max': float(os.environ.get('ALARM_WORKER_BACKOFF_MAX', '10')),
+    # passes that failed whole, in a row, before the process exits
+    'max_failures': int(os.environ.get('ALARM_WORKER_MAX_FAILURES', '5')),
+    # a pass still running after this long: the process exits (a hang), and Docker starts it again
+    'hang_exit': float(os.environ.get('ALARM_WORKER_HANG_EXIT', '120')),
+    # the worker's own statements: one that runs longer is cancelled, a lock not had in lock_timeout is given up
+    'statement_timeout': float(os.environ.get('ALARM_WORKER_STATEMENT_TIMEOUT', '20')),
+    'lock_timeout': float(os.environ.get('ALARM_WORKER_LOCK_TIMEOUT', '5')),
+    # how long a transport may take with one notification before the attempt is failed (alarms/outbox.py)
+    'send_timeout': float(os.environ.get('ALARM_WORKER_SEND_TIMEOUT', '10')),
+    # a round through the outbox ends after this long (what is left goes in the next round, a tick later, criticals
+    # first): a critical never waits behind a long round of warnings
+    'send_round': float(os.environ.get('ALARM_WORKER_SEND_ROUND', '5')),
+    # the off-server dead man (go-live): an https address the worker asks after each good pass, at most every
+    # deadman_every seconds, each ask given deadman_timeout; a service elsewhere calls on-call when the asks stop.
+    # Empty: off (no such service is chosen yet).
+    'deadman_url': os.environ.get('ALARM_DEADMAN_URL', ''),
+    'deadman_every': float(os.environ.get('ALARM_DEADMAN_EVERY', '30')),
+    'deadman_timeout': float(os.environ.get('ALARM_DEADMAN_TIMEOUT', '5')),
+}

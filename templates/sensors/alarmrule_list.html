@@ -1,10 +1,11 @@
 {% extends "crud/list.html" %}
-{% load i18n sensors %}
-{% comment %} Sensors › Operations › Alarm rules (sensors.resources.AlarmRuleResource). A default rule (the "No fresh value" of a quantity the water limits judge) is switched off with a reason, never deleted; the channels no active "No fresh value" rule covers are said above the list (sensors.alarms.uncovered, the check sensors.W001). {% endcomment %}
+{% load alarm_watch i18n sensors %}
+{% comment %} Sensors › Operations › Alarm rules (sensors.resources.AlarmRuleResource). Shown, never sent. A default rule (the "No fresh value" of a quantity the water limits judge) is switched off with a reason, never deleted; the channels no active "No fresh value" rule covers are said above the list (sensors.alarms.uncovered, the check sensors.W001). {% endcomment %}
 {% block search_placeholder %}{% trans "Search by channel or quantity" %}{% endblock %}
 {% block notice %}<p class="notice" role="status">{% trans "Each time a rule holds it is an alarm of Company › Alarms: its recipient rules say who is notified." %}</p>
 {% if uncovered %}<p class="notice notice-warning" role="alert">{% blocktrans count counter=uncovered|length %}One channel of a water quantity the limits judge has no active “No fresh value” rule: if its probe stops sending, nothing raises an alarm.{% plural %}{{ counter }} channels of a water quantity the limits judge have no active “No fresh value” rule: if their probes stop sending, nothing raises an alarm.{% endblocktrans %} {% for channel in uncovered %}{{ channel }} ({{ channel.get_quantity_display }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}{% endblock %}
 {% block empty_text %}{% trans "A rule says when a channel needs a look: no fresh value, its device offline, a value above or below a threshold, or a change too fast." %}{% endblock %}
+{% block above %}{% alarm_watch %}{% endblock %}
 {% block items %}
 <div class="table-wrap">
   <table class="data-table">

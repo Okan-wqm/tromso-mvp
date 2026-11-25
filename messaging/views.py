@@ -21,6 +21,7 @@ from django.views.decorators.http import require_POST
 
 from core import navigation, query
 from core.crud import done, render_page
+from core.ui import is_next
 
 from . import read, services
 from .forms import AddMembersForm, ChannelForm, DirectForm, MessageForm, RoleForm
@@ -50,6 +51,12 @@ def _no_store(response):
     return response
 
 
+def _inbox_template(request):
+    """The page of the conversations: the new look (core.ui.is_next) draws the same context as two plates around the same
+    polled fragments."""
+    return 'messaging/inbox_next.html' if is_next(request) else 'messaging/inbox.html'
+
+
 def _list_context(user, open_id=None):
     return {'rows': read.inbox(user), 'open_id': open_id,
             'list_url': reverse('messaging:inbox_list') + (f'?{urlencode({"open": open_id})}' if open_id else ''),
@@ -60,7 +67,7 @@ def _list_context(user, open_id=None):
 @permission_required(USE, raise_exception=True)
 def inbox(request):
     """The person's conversations; none open."""
-    return render_page(request, 'messaging/inbox.html', _context(**_list_context(request.user)))
+    return render_page(request, _inbox_template(request), _context(**_list_context(request.user)))
 
 
 @permission_required(USE, raise_exception=True)
@@ -84,8 +91,8 @@ def conversation(request, pk, form=None):
         members=read.members(participant.conversation) if participant.conversation.is_channel else [],
         **_list_context(request.user, open_id=pk))
     if form is not None:
-        return _refused(request, 'messaging/inbox.html', context)
-    return render_page(request, 'messaging/inbox.html', context)
+        return _refused(request, _inbox_template(request), context)
+    return render_page(request, _inbox_template(request), context)
 
 
 @require_POST

@@ -37512,6 +37512,7 @@
       "tests": [
         "core/test_world.py",
         "core/tests_workspaces.py",
+        "monitoring/tests/test_silent_oxygen.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",

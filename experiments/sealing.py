@@ -76,14 +76,25 @@ def hidden_work(part):
     return rows.exclude(_seen(sealing.Viewing('user'), part)).values('pk')
 
 
-def oversees():
-    """A subquery with a row when whoever is looking holds Oversee (the role matrix), as Django's own permission check
-    reads it: an active person, the right given to them or to one of their roles."""
+def holders():
+    """THE people who hold Oversee (the role matrix), as Django's own permission check reads it: active, the right given
+    to them or to one of their roles. Every SQL reading of Oversee is this one (review 3, S10)."""
     app, codename = OVERSEE
     right = {'content_type__app_label': app, 'codename': codename}
-    people = get_user_model()._base_manager.filter(pk=sealing.Viewing('user'), is_active=True)
-    return people.filter(Q(**{f'user_permissions__{key}': value for key, value in right.items()})
-                         | Q(**{f'groups__permissions__{key}': value for key, value in right.items()})).values('pk')
+    return get_user_model()._base_manager.filter(
+        Q(**{f'user_permissions__{key}': value for key, value in right.items()})
+        | Q(**{f'groups__permissions__{key}': value for key, value in right.items()}), is_active=True)
+
+
+def holds_oversee(user):
+    """Whether `user` holds Oversee, in Python (their rights as Django has read them for the request): the platform
+    admin is not an overseer (what the seal shows them is the audience's rule). Every Python reading is this one."""
+    return user.is_active and not user.is_superuser and user.has_perm('.'.join(OVERSEE))
+
+
+def oversees():
+    """A subquery with a row when whoever is looking holds Oversee (`holders`)."""
+    return holders().filter(pk=sealing.Viewing('user')).values('pk')
 
 
 REACH_PARTS = (*sealing.PARTS, SHELL)
@@ -100,7 +111,7 @@ def reach(user):
     rows = Experiment._base_manager.annotate(**flags).values_list('pk', 'audience', *flags).order_by('pk')
     # Oversee as `load` reads it (the platform admin is not an overseer: what the seal shows them is the audience's
     # rule), from the rights Django has already read for the request.
-    oversee = user.is_active and not user.is_superuser and user.has_perm('.'.join(OVERSEE))
+    oversee = holds_oversee(user)
     hidden, seen = {part: set() for part in REACH_PARTS}, ['oversee'] if oversee else []
     for pk, audience, *reads in rows:
         parts = []
@@ -135,7 +146,7 @@ def load(user):
         barred = frozenset(Experiment._base_manager.filter(audience=Experiment.Audience.PRIVATE)
                            .exclude(pk__in=list(reached)).values_list('pk', flat=True))
     return sealing.Viewer(user_id=user.pk, username=user.get_username(), is_super=user.is_superuser,
-                          oversee=user.has_perm('.'.join(OVERSEE)) and not user.is_superuser,
+                          oversee=holds_oversee(user),
                           team=team, granted=granted, barred=barred)
 
 
@@ -166,21 +177,42 @@ def note_reads(ids, route, part=''):
 
 def keepers(unit_id, system_id, day=None):
     """The people who keep the fish of a unit or system an experiment holds on `day` (today by default; an alarm's
-    opening day, the day its seal reads): its live lead and every active person holding Oversee (the alarms' fallback
-    when no recipient rule names anyone who may see the alarm)."""
+    opening day, the day its seal reads): its live lead and every active person holding Oversee (`keepers_of`)."""
+    place = (unit_id, system_id, day or company_today())
+    return keepers_of([place])[place]
+
+
+def keepers_of(places):
+    """{(unit id, system id, day): [the people who keep those fish]} for many places at once (the alarms' fallback
+    when no recipient rule names anyone who may see an alarm): the live leads of the experiments whose cells hold the
+    unit or system that day, and every holder of Oversee. Three statements whatever the number of places (review 3,
+    S5): the cells, the leads, the people."""
+    places = list(dict.fromkeys(places))
+    if not places:
+        return {}
     with sealing.system('the alarms’ fallback'):
-        today = day or company_today()
-        where = (Q(unit=unit_id) if unit_id else Q(pk__in=[])) | (Q(system=system_id) if system_id else Q(pk__in=[]))
-        cells = SealedCell.objects.filter(where, from_on__lte=today, until_on__gte=today)
-        work = {cell.work for cell in cells}
-        leads = Member._base_manager.filter(live(), experiment__in=work, role=Member.Role.LEAD).values('user')
-        app, codename = OVERSEE
-        right = {'content_type__app_label': app, 'codename': codename}
-        overseers = get_user_model()._base_manager.filter(
-            Q(**{f'user_permissions__{key}': value for key, value in right.items()})
-            | Q(**{f'groups__permissions__{key}': value for key, value in right.items()})).values('pk')
-        return list(get_user_model()._base_manager.filter(Q(pk__in=leads) | Q(pk__in=overseers), is_active=True)
-                    .order_by('username'))
+        units = {str(unit) for unit, _system, _day in places if unit}
+        systems = {str(system) for _unit, system, _day in places if system}
+        cells = list(SealedCell.objects.filter(Q(unit__in=units) | Q(system__in=systems))
+                     .values_list('unit', 'system', 'from_on', 'until_on', 'work'))
+        works = {}
+        for unit, system, day in places:
+            works[(unit, system, day)] = {work for cell_unit, cell_system, first, last, work in cells
+                                          if first <= day <= last and ((unit and str(cell_unit) == str(unit))
+                                                                       or (system and str(cell_system) == str(system)))}
+        every_work = set().union(*works.values())
+        leads = {}
+        for experiment, user in Member._base_manager.filter(live(), experiment__in=every_work,
+                                                             role=Member.Role.LEAD).values_list('experiment', 'user'):
+            leads.setdefault(experiment, set()).add(user)
+        overseers = set(holders().values_list('pk', flat=True))
+        wanted = overseers.union(*leads.values()) if leads else overseers
+        people = {person.pk: person for person in get_user_model()._base_manager.filter(pk__in=wanted, is_active=True)}
+    found = {}
+    for place, its_works in works.items():
+        ids = overseers.union(*(leads.get(work, set()) for work in its_works))
+        found[place] = sorted((people[pk] for pk in ids if pk in people), key=lambda person: person.get_username())
+    return found
 
 
 ALL = frozenset(sealing.PARTS)
@@ -226,6 +258,7 @@ class Provider:
     reach = staticmethod(reach)
     note_reads = staticmethod(note_reads)
     keepers = staticmethod(keepers)
+    keepers_of = staticmethod(keepers_of)
 
 
 def register():

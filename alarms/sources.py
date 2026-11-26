@@ -54,7 +54,7 @@ from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
 from .place import UNIT_PREFIXES, bound
-from .routing import UNREACHED
+from .routing import NO_RULES, TO_OVERSEERS, UNREACHED
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
 logger = logging.getLogger(__name__)
@@ -336,19 +336,25 @@ def settle(subjects, now, rules):
 
 
 def _unreached():
-    """How many open critical alarms, not acknowledged, were told to nobody (no notification at any level): an alarm
-    on confidential work whose rules name nobody who may see it and whose cell has no keeper (landing review 2, N3), or
-    any alarm no rule reaches. The alarm saying so names none of them (they may be sealed). A farm with no recipient
-    rule at all tells nobody by its own setup: that is not counted here."""
-    from .models import Acknowledgement, AlarmClearance, Notification, RecipientRule
-    from django.db.models import Exists, OuterRef
+    """How many open critical alarms, not acknowledged, nobody was told of at their CURRENT level (the highest it has
+    escalated to, 0 before any; review 3, S1) on a channel that can leave (a transport is connected for it; S3): an
+    alarm on confidential work whose rules and keepers name nobody who may see it, an alarm no rule reaches, one whose
+    notifications wait on an unconnected channel. The alarm saying so names none of them (they may be sealed). Counted
+    on a farm with no recipient rule too (S2): its Oversee holders are told."""
+    from django.db.models import Exists, Max, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+
+    from .models import Acknowledgement, AlarmClearance, Channel as Way, Escalation, Notification
+    from .read import transport_connected
+    connected = [channel for channel in Way.values if transport_connected(channel)]
     with sealing.system('the alarm system supervises itself: the critical alarms told to nobody'):
-        if not RecipientRule.objects.filter(is_active=True).exists():
-            return 0
-        return (Alarm.objects.filter(severity=Severity.CRITICAL).exclude(parameter=UNREACHED)
+        level = Coalesce(Subquery(Escalation.objects.filter(alarm=OuterRef('pk')).order_by().values('alarm')
+                                  .annotate(top=Max('level')).values('top')[:1]), 0)
+        told = Notification.objects.filter(alarm=OuterRef('pk'), level=OuterRef('current'), channel__in=connected)
+        return (Alarm.objects.filter(severity=Severity.CRITICAL).exclude(parameter__in=TO_OVERSEERS)
                 .exclude(Exists(AlarmClearance.objects.filter(alarm=OuterRef('pk'))))
                 .exclude(Exists(Acknowledgement.objects.filter(alarm=OuterRef('pk'))))
-                .exclude(Exists(Notification.objects.filter(alarm=OuterRef('pk')))).count())
+                .annotate(current=level).exclude(Exists(told)).count())
 
 
 def system_subject(name, holds, severity, summary, now, *, parameter=None, where=None, bad_at=None, clear_ok=None,
@@ -765,9 +771,13 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
         'are restored.'), severities=missing or '-'), now, farm_wide=True)]
     unreached = _unreached()
     subjects.append(system_subject(UNREACHED, bool(unreached), Severity.CRITICAL, _text(_(
-        '%(count)d critical alarm(s) reached nobody: no recipient rule names a person who may see them. A person who '
-        'holds Oversee sees them on Alarms: tell the people who keep those fish.'), count=unreached), now,
-        farm_wide=True))
+        '%(count)d critical alarm(s) reached nobody at their level: no recipient rule names a person who may see them, '
+        'or their notifications cannot leave. A person who holds Oversee sees them on Alarms: tell the people who keep '
+        'those fish.'), count=unreached), now, farm_wide=True))
+    from .models import RecipientRule
+    subjects.append(system_subject(NO_RULES, not RecipientRule.objects.filter(is_active=True).exists(), Severity.CRITICAL,
+                                   _text(_('No alarm recipient rule is active: nobody is told of any alarm. Make the '
+                                           'recipient rules (Company › Alarms).')), now, farm_wide=True))
     from . import outbox
     stuck = outbox.stuck(rules, now)
     subjects.append(system_subject(UNDELIVERABLE, bool(stuck), Severity.CRITICAL, _text(_(

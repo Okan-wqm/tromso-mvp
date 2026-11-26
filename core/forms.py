@@ -150,7 +150,6 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
 PLATFORM_TABS = [
     ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal', 'unknown_withdrawal_days']),
     ('clocks', _('Clocks'), ['clock_tolerance_seconds']),
-    ('water', _('Water freshness'), ['temperature_band_c']),
 ]
 
 
@@ -185,8 +184,4 @@ class PlatformSettingsForm(TabbedForm):
                                          'count as fresh (a device or tablet clock a little fast). A value further ahead, '
                                          'up to an hour, still decides its unit’s status and its alarm, but is not shown '
                                          'as the newest. 0 to 3600; 300 until you set another.'),
-            'temperature_band_c': _('Where a probe measures the temperature of a place, how far it may be from the '
-                                    'temperature a sample’s NH₃ was worked out with and still keep that temperature '
-                                    'fresh. Further off, or the probe silent, the NH₃ is stale from then on, even '
-                                    'inside the temperature’s own hours. 0.1 to 5.0; 1.0 until you set another.'),
         }

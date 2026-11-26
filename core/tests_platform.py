@@ -106,7 +106,6 @@ class PageTests(TestCase):
 
     def edit(self, **values):
         data = {'correction_window_days': 31, 'clock_tolerance_seconds': 300, 'unknown_withdrawal_days': 180,
-                'temperature_band_c': '1.0',
                 'version': self.row.version, **values}
         if data.pop('second_approval_withdrawal', False):
             data['second_approval_withdrawal'] = 'on'

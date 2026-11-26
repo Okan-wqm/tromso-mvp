@@ -1,5 +1,4 @@
 import uuid
-from decimal import Decimal
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -322,8 +321,6 @@ class AccountMail(models.Model):
 WINDOW_DAYS = (1, 3650)           # a day back at least; ten years at most, which keeps every date's arithmetic sane
 CLOCK_TOLERANCE = (0, 3600)          # seconds: at most the sensors' ingest contract's hour
 UNKNOWN_WITHDRAWAL_DAYS = (1, 3650)  # a day at least; ten years at most, as the correction window
-# °C: how far the place's live temperature may be from a sample's and still keep it fresh (farm/water/freshness.py)
-TEMPERATURE_BAND = (Decimal('0.1'), Decimal('5.0'))
 
 
 class PlatformSettings(AuditedModel):
@@ -341,10 +338,6 @@ class PlatformSettings(AuditedModel):
       after the course's last day (or the medicated feeding's day), 180 until the owner sets another. After them the
       fish are not held and the course is listed as unresolved (farm/health/withdrawal.py, rule 8). A change of it
       goes through the withdrawal guard, which asks when it would free fish held today.
-    - Water freshness: how far, in °C, the place's live temperature may be from the temperature a worked-out water value
-      (the NH₃ of a sample) was worked out with and still keep that temperature fresh; further off, or the probe stale,
-      ends it (the coordinator's decisions of 2026-11-26; farm/water/freshness.py temperature_until). 1.0 °C until the
-      owner sets another.
     The alarms' rules (delays, escalation, deadbands) are the alarms app's own reference data, per severity and per
     parameter (alarms.SeverityPolicy, alarms.ParameterDeadband)."""
 
@@ -362,9 +355,6 @@ class PlatformSettings(AuditedModel):
     clock_tolerance_seconds = models.PositiveIntegerField(
         _('Clock tolerance (seconds)'), default=300,
         validators=[MinValueValidator(CLOCK_TOLERANCE[0]), MaxValueValidator(CLOCK_TOLERANCE[1])])
-    temperature_band_c = models.DecimalField(
-        _('Temperature band (°C)'), max_digits=2, decimal_places=1, default=Decimal('1.0'),
-        validators=[MinValueValidator(TEMPERATURE_BAND[0]), MaxValueValidator(TEMPERATURE_BAND[1])])
 
     class Meta:
         db_table = 'platform_settings'
@@ -384,9 +374,6 @@ class PlatformSettings(AuditedModel):
                 condition=models.Q(unknown_withdrawal_days__gte=UNKNOWN_WITHDRAWAL_DAYS[0],
                                    unknown_withdrawal_days__lte=UNKNOWN_WITHDRAWAL_DAYS[1]),
                 name='chk_platform_settings_unknown_withdrawal'),
-            models.CheckConstraint(
-                condition=models.Q(temperature_band_c__gte=TEMPERATURE_BAND[0], temperature_band_c__lte=TEMPERATURE_BAND[1]),
-                name='chk_platform_settings_temperature_band'),
             # Changed, never deleted: a DELETE is refused by the database too (core 0015, KeepRows).
             models.CheckConstraint(condition=models.Q(is_deleted=False), name='chk_platform_settings_kept'),
         ]

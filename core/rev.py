@@ -33,6 +33,9 @@ A key with no row is unknown, never valid: `ensure(pairs)` gives keys a row (abo
 and the migrations that add the triggers do it for every key that exists then. A reader ensures its keys, then stamps
 them, then reads the data. `missing()` names a trigger that is gone or off; `repair()` (manage.py core_rev_repair) makes
 the missing ones again and rebuilds.
+`drop_hypertable_triggers()` (manage.py core_rev_drop_hypertable_triggers) takes them off the tracked hypertables before a
+TimescaleDB update, which cannot rename a chunk's constraint trigger (deploy/scripts/timescaledb-move.sh); `repair()` then
+makes them again.
 
 The audit revision (core.audit.revision) is NOT a proof: admin edits, restores and raw SQL need not log."""
 from datetime import date
@@ -218,3 +221,54 @@ def repair():
                 operation.database_forwards('core', editor, None, None)
         rebuild()
     return [(operation.table, operation.scope) for operation in broken]
+
+
+class ForeignConstraintTriggers(Exception):
+    """A constraint trigger that is not a revision trigger sits on a hypertable or a chunk (drop_hypertable_triggers)."""
+
+
+# Every constraint trigger on a TimescaleDB hypertable or one of its chunks, as (relation, constraint).
+CONSTRAINT_TRIGGERS_ON_HYPERTABLES = (
+    "WITH h AS (SELECT format('%I.%I', hypertable_schema, hypertable_name)::regclass AS rel "
+    "           FROM timescaledb_information.hypertables) "
+    "SELECT c.conrelid::regclass::text, c.conname FROM pg_constraint c WHERE c.contype = 't' "
+    "AND (c.conrelid IN (SELECT rel FROM h) "
+    "     OR c.conrelid IN (SELECT i.inhrelid FROM pg_inherits i JOIN h ON i.inhparent = h.rel)) ORDER BY 1, 2")
+
+
+def drop_hypertable_triggers():
+    """Before `ALTER EXTENSION timescaledb UPDATE` (deploy/scripts/timescaledb-move.sh, docs/ops/upgrade.md): an update
+    step of TimescaleDB renames the constraints of every hypertable chunk, and a revision trigger's `_apply` is a
+    CONSTRAINT trigger, which it cannot rename ("constraint ... does not exist"): the update stops half-way. So the
+    triggers of every tracked (table, scope) whose table is a hypertable (found from TRACKED through `operations()`,
+    the chunks follow their hypertable) are dropped here as their migration's backwards drops them, and `repair()`
+    (manage.py core_rev_repair) makes them again after the update and rebuilds every revision: changes made between
+    the two would pass unseen otherwise. Nothing may write meanwhile.
+
+    All or nothing, in one transaction: when a constraint trigger is still left on a hypertable or a chunk afterwards
+    (one this registry does not know), nothing is dropped and ForeignConstraintTriggers names it. Returns the (table,
+    scope) pairs that had a trigger to drop (none on a second call)."""
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT hypertable_name FROM timescaledb_information.hypertables '
+                       'WHERE hypertable_schema = current_schema()')
+        hypertables = {name for (name,) in cursor.fetchall()}
+    chosen = [operation for operation in operations() if operation.table in hypertables]
+    with transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT DISTINCT c.relname FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid '
+                           'WHERE t.tgname = ANY(%s) AND c.relname = ANY(%s)',
+                           [[name for operation in chosen for name in operation.names()],
+                            [operation.table for operation in chosen]])
+            present = {name for (name,) in cursor.fetchall()}
+        with connection.schema_editor(atomic=False) as editor:
+            for operation in chosen:
+                operation.database_backwards('core', editor, None, None)
+        with connection.cursor() as cursor:
+            cursor.execute(CONSTRAINT_TRIGGERS_ON_HYPERTABLES)
+            left = cursor.fetchall()
+        if left:
+            raise ForeignConstraintTriggers(
+                'Constraint triggers that are not revision triggers sit on hypertables: '
+                + ', '.join(f'{constraint} on {relation}' for relation, constraint in left)
+                + '. A TimescaleDB update cannot rename them; nothing was dropped.')
+    return [(operation.table, operation.scope) for operation in chosen if operation.table in present]

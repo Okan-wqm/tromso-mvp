@@ -18,8 +18,8 @@ SECS=${1:-1800}; N=${2:-500}
 OUTAGE_AT=$(( SECS * 2 / 3 )); OUTAGE_S=${OUTAGE_S:-120}
 ST=sensors-ingest/bench/.state/ms
 DB=sensors_ms
-PG_IMAGE=timescale/timescaledb:2.17.2-pg17
-MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+PG_IMAGE=timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
+MOSQ=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
 FAILS=0
 pass() { echo "PASS: $*"; echo "PASS: $*" >> "$ST/results.txt"; }
 fail() { echo "FAIL: $*"; echo "FAIL: $*" >> "$ST/results.txt"; FAILS=$((FAILS + 1)); }

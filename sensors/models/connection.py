@@ -6,6 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 from core.models import AuditedModel
 
+from .credential import USERNAME
+
 PORT_MIN, PORT_MAX = 1, 65535
 KEEPALIVE_MIN, KEEPALIVE_MAX = 5, 600
 # A file name under /run/secrets: no directory part, never a secret itself.
@@ -23,7 +25,9 @@ class Connection(AuditedModel):
     port = models.PositiveIntegerField(_('Port'), default=8883,
                                        validators=[MinValueValidator(PORT_MIN), MaxValueValidator(PORT_MAX)])
     use_tls = models.BooleanField(_('Use TLS'), default=True)
-    username = models.CharField(_('User name'), max_length=100, blank=True)
+    # A line of the broker's acl names it (manage.py sensor_broker_sync): no space, colon or line break (review S1).
+    username = models.CharField(_('User name'), max_length=100, blank=True,
+                                validators=[RegexValidator(USERNAME, _('Letters, digits and . _ @ - only.'))])
     secret_file = models.CharField(
         _('Secret file'), max_length=100, blank=True,
         validators=[RegexValidator(SECRET_FILE, _('A file name only: letters, digits, dot, hyphen and underscore.'))])
@@ -61,6 +65,9 @@ class Connection(AuditedModel):
             models.CheckConstraint(condition=~Q(secret_file__in=['.', '..']), name='chk_sensors_connection_secret_dots',
                                    violation_error_message=_('A file name only: letters, digits, dot, hyphen and '
                                                              'underscore.')),
+            models.CheckConstraint(condition=Q(username='') | Q(username__regex=USERNAME),
+                                   name='chk_sensors_connection_username',
+                                   violation_error_message=_('Letters, digits and . _ @ - only.')),
         ]
 
     def __str__(self):

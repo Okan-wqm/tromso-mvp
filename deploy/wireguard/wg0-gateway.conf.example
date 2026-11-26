@@ -1,0 +1,14 @@
+# A site gateway's side of the sensor VPN (docs/ops/access.md, MQTT). Placeholders only. The gateway reaches the
+# broker at 10.8.0.1:8883 over this tunnel, with TLS on top, its own MQTT user and (MQTT_DEVICE_AUTH=clientcert) its
+# client certificate (scripts/certs.sh mqtt-device).
+[Interface]
+Address = 10.8.0.10/32
+PrivateKey = <gateway-private-key: wg genkey>
+
+[Peer]
+PublicKey = <server-public-key>
+PresharedKey = <preshared-key>
+Endpoint = vpn.farm.example.invalid:51820
+# Only the server's VPN address goes through the tunnel: the gateway's other traffic stays local.
+AllowedIPs = 10.8.0.1/32
+PersistentKeepalive = 25

@@ -1,0 +1,14 @@
+# The farm server's side of the sensor VPN (docs/ops/access.md, MQTT). Placeholders only; the real file is
+# /etc/wireguard/wg0.conf on the server (mode 0600, never in git). The broker's TLS listener is published on the
+# server's VPN address only (MQTT_BIND_ADDRESS=10.8.0.1 in farm.env), so no MQTT port is open to the internet.
+[Interface]
+Address = 10.8.0.1/24
+ListenPort = 51820
+PrivateKey = <server-private-key: wg genkey>
+
+# One peer per site gateway (the edge PC or Node-RED box that collects the site's sensors).
+[Peer]
+# site gateway: example site
+PublicKey = <gateway-public-key>
+PresharedKey = <preshared-key: wg genpsk>
+AllowedIPs = 10.8.0.10/32

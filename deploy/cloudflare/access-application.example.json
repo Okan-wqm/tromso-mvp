@@ -1,0 +1,23 @@
+{
+  "_comment": "Placeholders only (docs/ops/access.md). The Cloudflare Access application in front of one farm's console, as a person sets it up in Zero Trust > Access > Applications (self-hosted). Nothing in this repository calls the Cloudflare API.",
+  "name": "Farm console (farm.example.invalid)",
+  "domain": "farm.example.invalid",
+  "type": "self_hosted",
+  "session_duration": "12h",
+  "app_launcher_visible": false,
+  "auto_redirect_to_identity": false,
+  "policies": [
+    {
+      "name": "Farm staff",
+      "decision": "allow",
+      "include": [{"email_domain": {"domain": "farm.example.invalid"}}],
+      "require": [{"login_method": {"id": "<one-time-pin-or-sso-provider-id>"}}]
+    },
+    {
+      "name": "Named guests (students, inspectors), time-limited",
+      "decision": "allow",
+      "include": [{"email": {"email": "guest@example.invalid"}}],
+      "session_duration": "8h"
+    }
+  ]
+}

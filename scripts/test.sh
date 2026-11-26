@@ -10,7 +10,7 @@
 #   TEST_CLOCK=2026-11-10T23:30:00+00:00 scripts/test.sh hr   the run's clock starts at that moment (core/testing.py)
 #
 # Deprecation warnings and naive datetimes are errors (scripts/testrunner/in-container.sh, config/test_runner.py).
-# Each run starts its own database server (the development database's image, timescale/timescaledb:2.17.2-pg17) in a
+# Each run starts its own database server (the development database's image, TimescaleDB 2.32.1, pinned below) in a
 # container named balik-test-db-<run>, on a network of its own, with its data in memory, and removes both at the end:
 # on every way out of this script (a pass, a failure, a step that could not start, Ctrl-C, a TERM or HUP signal), the
 # containers with any anonymous volume of theirs (`docker rm -f -v`; the server's data is a tmpfs in the place of the
@@ -41,7 +41,8 @@ WORKERS=${WORKERS:-6}
 CHECKS=${CHECKS:-0}
 SUITE=${SUITE:-1}
 DB_PASSWORD=${TEST_DB_PASSWORD:-balik}
-PG_IMAGE=timescale/timescaledb:2.17.2-pg17
+# TEST_PG_IMAGE runs the suite on another server image (the production one, deploy/db/Dockerfile: CI input pg_image).
+PG_IMAGE=${TEST_PG_IMAGE:-timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c}
 RUN=${RUN_ID:-$(date +%Y%m%d%H%M%S)-$$}
 DB=balik-test-db-$RUN
 NET=balik-test-$RUN

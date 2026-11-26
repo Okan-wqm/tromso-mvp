@@ -9,6 +9,8 @@ import hashlib
 import hmac
 
 from django.contrib.auth import get_user_model
+from django.core.management.base import CommandError
+from django.db import IntegrityError, connection, transaction
 from django.urls import reverse
 
 from core import access, navigation
@@ -18,6 +20,7 @@ from farm.models import Equipment, EquipmentType
 from farm.tests.helpers import role, rows_data
 
 from sensors import credentials, quantities
+from sensors.management.commands.sensor_broker_sync import acl_text, plain
 from sensors.models import Calibration, Channel, Connection, Credential, Device, PayloadFormat
 
 from . import SensorsCase, make_channel, make_device
@@ -110,6 +113,7 @@ class ConnectionPageTests(PagesCase):
                               ({'client_id': 'ingest-hall-broker'}, 'Another connection already uses this client id.'),
                               ({'port': '70000'}, 'less than or equal to 65535'),
                               ({'secret_file': '../x'}, 'A file name only'),
+                              ({'username': 'ingest\ntopic read #'}, 'Letters, digits and . _ @ - only.'),
                               ({'keepalive_s': '1'}, 'greater than or equal to 5')):
             with self.subTest(changes=changes):
                 response = self.client.post(url('connection', 'create'), {**base, **changes})
@@ -177,6 +181,37 @@ class DevicePageTests(PagesCase):
         response = self.client.post(url('device', 'edit', self.device.pk),
                                     self.posted('device', self.device, topic='farm/#'))
         self.assertContains(response, 'A device’s topic has no “#”.')
+
+    def test_a_topic_or_user_name_never_writes_a_line_of_its_own_into_the_brokers_files(self):
+        # (security review S1) the acl is lines of text: a line break in a topic or a user name would add a rule
+        for topic in ('farm/o2\ntopic write #', 'farm/o 2', 'farm/o\t2'):
+            with self.subTest(topic=topic):
+                response = self.client.post(url('device', 'edit', self.device.pk),
+                                            self.posted('device', self.device, topic=topic))
+                self.assertContains(response, 'A topic has no spaces, tabs or line breaks.')
+                with self.assertRaises(IntegrityError), transaction.atomic():
+                    Device.objects.filter(pk=self.device.pk).update(topic=topic)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Connection.objects.filter(pk=self.connection.pk).update(username='ingest\nuser evil')
+        for value in ('a b', 'a\nb', 'a\x00b', ''):
+            with self.subTest(value=value), self.assertRaises(CommandError):
+                plain(value, 'device 1')
+        self.assertNotIn('#', acl_text().replace('# Written by', ''))
+
+    def test_a_release_names_the_rows_a_pending_check_constraint_would_refuse_before_it_migrates(self):
+        # (review R5) core's check_pending_constraints, as the release step runs it before `migrate`: here with the
+        # migration that adds the topic rule, as if it were not applied yet, on a row written before it
+        from django.db.migrations.loader import MigrationLoader
+
+        from core.management.commands.check_pending_constraints import pending_checks
+        migration = MigrationLoader(connection).graph.nodes[('sensors', '0016_broker_lines_plain')]
+        with connection.cursor() as cursor:
+            # the deferred triggers of the rows the test made fire first: a table with pending trigger events is not altered
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+            cursor.execute('ALTER TABLE sensors_device DROP CONSTRAINT chk_sensors_device_topic_plain')
+            cursor.execute("UPDATE sensors_device SET topic = 'farm/o 2' WHERE id = %s", [self.device.pk])
+        found = {name: count for _migration, name, count in pending_checks(connection, [(migration, False)])}
+        self.assertEqual(found, {'chk_sensors_connection_username': 0, 'chk_sensors_device_topic_plain': 1})
 
 
 class ChannelPageTests(PagesCase):

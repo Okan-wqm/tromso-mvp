@@ -1,0 +1,124 @@
+# The go-live package's proof (docs/ops/, deploy/): the production stack of deploy/compose.yml built and started on a
+# throwaway runner as a farm's server runs it, then checked from outside (deploy/ci/stack.sh, one step each):
+#   roles    the app role refused DDL and TRUNCATE, the ingest and backup roles held to theirs
+#   data     the first admin, synthetic data (the HR demonstration company, 60 days of readings, compressed chunks)
+#   smoke    HTTPS, redirects, headers, hashed static files and their cache, sign-in, every reachable page, rate limit
+#   mqtt     the broker's TLS listener with client certificates and per-device passwords
+#   backup   dump, base backup, archived WAL, encrypted and shipped to the "off-server" repository (a runner folder)
+#   restore  a second installation restored from the repository, every table's row count equal, migrations applied
+#   pitr     a third server replayed from the base backup and the WAL: the row written after the base backup is there
+# By hand only, never on a pull request: dispatched on its own once this file is on the default branch
+# (gh workflow run go-live-stack.yml --ref <branch>), and before that through ci.yml's `stack` input
+# (gh workflow run ci.yml --ref <branch> -f stack=true), which calls it. No secret of the repository is used: every
+# password, key and certificate is made in the job and dies with the runner.
+name: Go-live stack
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  # as in ci.yml: no build record artifacts (the account's artifact storage)
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+
+jobs:
+  stack:
+    name: Production stack (build, start, roles, HTTPS, MQTT TLS, backup, restore, PITR)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    concurrency:
+      group: go-live-stack-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # The farm's own images, built from the pinned Dockerfiles with their layers cached between runs (the web image
+      # shares the test runner's layers: Python, the requirements, the chemistry core).
+      - name: Web image (docker/testrunner.Dockerfile, target web)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/testrunner.Dockerfile
+          target: web
+          tags: balik-web:ci
+          load: true
+          push: false
+          cache-from: |
+            type=gha,scope=go-live-web
+            type=gha,scope=testrunner
+          cache-to: type=gha,mode=max,scope=go-live-web
+      - name: Database image (deploy/db/Dockerfile, target db)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: deploy
+          file: deploy/db/Dockerfile
+          target: db
+          tags: balik-db:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=go-live-db
+          cache-to: type=gha,mode=max,scope=go-live-db
+      - name: Backup image (deploy/db/Dockerfile, target backup)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: deploy
+          file: deploy/db/Dockerfile
+          target: backup
+          tags: balik-backup:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=go-live-db
+      - name: Ingest image (sensors-ingest/Dockerfile)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: sensors-ingest
+          tags: balik-ingest:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=go-live-ingest
+          cache-to: type=gha,mode=max,scope=go-live-ingest
+
+      - name: Prepare (throwaway secrets, certificates, settings)
+        run: bash deploy/ci/stack.sh prepare
+      - name: Start the stack (every service healthy)
+        run: bash deploy/ci/stack.sh up
+      - name: Database roles
+        run: bash deploy/ci/stack.sh roles
+      - name: Network reach between the services
+        run: bash deploy/ci/stack.sh network
+      - name: Synthetic data
+        run: bash deploy/ci/stack.sh data
+      - name: HTTPS smoke test and crawl
+        run: bash deploy/ci/stack.sh smoke
+      - name: Heartbeat, and a failing WAL archiver seen
+        run: bash deploy/ci/stack.sh heartbeat
+      - name: MQTT over TLS
+        run: bash deploy/ci/stack.sh mqtt
+      - name: Backup (dump, base backup, WAL, ship)
+        run: bash deploy/ci/stack.sh backup
+      - name: Restore into a second installation, row counts
+        run: bash deploy/ci/stack.sh restore
+      - name: Point-in-time restore into a third server
+        run: bash deploy/ci/stack.sh pitr
+      - name: A database password rotated
+        run: bash deploy/ci/stack.sh rotate
+      - name: TimescaleDB 2.17.2 to 2.32.1 on the real schema, as docs/ops/upgrade.md moves the development database
+        run: bash deploy/ci/stack.sh tsmove
+      - name: TimescaleDB, the way back (roles, restore, the development stack signs in)
+        run: bash deploy/ci/stack.sh tsback
+      - name: TimescaleDB, a move stopped half-way is seen and resumed
+        run: bash deploy/ci/stack.sh tshalf
+      - name: TimescaleDB, the server recreated on the new image before the move
+        run: bash deploy/ci/stack.sh tsearly
+      - name: Logs of the services
+        if: failure()
+        run: bash deploy/ci/stack.sh logs
+      - name: Remove the stacks
+        if: always()
+        run: bash deploy/ci/stack.sh down

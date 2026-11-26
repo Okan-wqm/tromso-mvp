@@ -17,7 +17,7 @@ DJANGO_IMAGE=${DJANGO_IMAGE:-$(sh scripts/testrunner/image.sh build)}
 SECS=${1:-60}
 export E2E_STATE=./sensors-ingest/simulator/.farmcheck E2E_DB=sensors_farm
 ST=sensors-ingest/simulator/.farmcheck
-PG_IMAGE=timescale/timescaledb:2.17.2-pg17
+PG_IMAGE=timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
 NODERED=nodered/node-red:4.0.9@sha256:0b295b3a14c512548567ca99db631bc37b23bfc79fd009ee8248a610fafdb4b5
 COMPOSE=(docker compose -p sensors-farm -f docker-compose.yml -f sensors-ingest/e2e/compose.e2e.yml --profile sensors)
 FAILS=0

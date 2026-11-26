@@ -40517,6 +40517,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_sensors_connection_username",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -41733,6 +41739,12 @@
         },
         {
           "name": "chk_sensors_device_topic_level",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sensors_device_topic_plain",
           "kind": "check",
           "fields": [],
           "conditional": false

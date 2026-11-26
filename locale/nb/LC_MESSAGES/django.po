@@ -1048,6 +1048,14 @@ msgid "%(kind)s form sections"
 msgstr "Seksjoner i skjemaet: %(kind)s"
 
 #, python-format
+msgid ""
+"%(kind)s “%(record)s” is written on its own page only, by the rules of that page: it is not "
+"restored here; enter it again there."
+msgstr ""
+"%(kind)s «%(record)s» skrives bare på sin egen side, etter reglene for den siden: den "
+"gjenopprettes ikke her; registrer den på nytt der."
+
+#, python-format
 msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
 msgstr "%(label)s %(value)s, %(status)s; grenser: %(limits)s"
 

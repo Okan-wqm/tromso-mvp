@@ -1052,6 +1052,14 @@ msgid "%(kind)s form sections"
 msgstr "%(kind)s formu bölümleri"
 
 #, python-format
+msgid ""
+"%(kind)s “%(record)s” is written on its own page only, by the rules of that page: it is not "
+"restored here; enter it again there."
+msgstr ""
+"%(kind)s “%(record)s” yalnızca kendi sayfasında, o sayfanın kurallarıyla yazılır: burada geri "
+"yüklenmez; orada yeniden girin."
+
+#, python-format
 msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
 msgstr "%(label)s %(value)s, %(status)s; sınırlar: %(limits)s"
 

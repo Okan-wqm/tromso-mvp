@@ -72,8 +72,8 @@ delete is a soft delete. Differences from the source:
   zones, the activity log, a record's history, the messages) reads it (`zone_of(None)`, `core.dates.company_zone`), and a
   test reads the code so nothing falls back to the server's clock or day (`core/tests_company_clock.py`: also `date.today()`,
   `now().date()`, `Trunc*` without `tzinfo`, a `__date` lookup on a moment; a person's moment is governed by
-  `hr.read.governing`: the placement of the company's day gives the site, and the day is the moment's on that site's
-  clock, the rule the HR services, the attendance list and the board read). The server refuses to
+  `hr.read.governing`: the placement of the company's day gives the site and says whose the moment is, and the day
+  shown is the moment's on that site's clock, the rule the HR services, the attendance list and the board read). The server refuses to
   start on a zone that is not one a site may have (system check `farm.E001`). Migration `farm/0028_site_timezone_required`
   gives every site without a zone the company's, and refuses such a zone rather than write it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
@@ -4289,12 +4289,25 @@ built by reading the source platform's HR service and listing what was wrong wit
 - **One writer, one rule** (the architecture audit of 26.11.2026, H-5 and M-6). `hr.services` is the only writer of the
   people, their placements, plans, leave requests and attendance: the tabs of those records hand every save to it
   (`Resource.service_writes`, One format for every tab), so a rule is written once and a page, a command and a later caller
-  run the same one; the forms only read what was typed. `hr/tests/test_one_writer.py` reads the code and fails when a
-  record hr.services writes is also written by its tab. Each question has one answer: which day and which site govern a
-  person's moment (`hr.read.governing`, with `governed` its SQL form), who reaches a stretch (`hr.scope.reaches_stretch`,
-  `stretches`), who decides a leave request (`hr.scope.deciding`), who reads its reason (`hr.scope.sees_reason`), when a
-  week starts and what it totals (`hr.rules.monday`, `week_minutes`), and how long a correction is allowed (the platform's
-  correction window, `core.platform.correction_window_days`); `hr/tests/test_governing.py` holds each SQL form to its rule.
+  run the same one; the forms only read what was typed. The five models say so (`service_written = True`), and rule S of
+  `core/tests_data_access.py` reads every production module, of every app, and fails when anything but `hr/services.py`
+  builds or writes one of them by name, or when a tab's hook calls no service (One format for every tab › One writer).
+  The demonstration's seed calls the services as its own people, and the admin's restore refuses these records (a stretch
+  or a plan brought back there would skip the lead's reach, the employment and the plan's rules): it is entered again
+  on its page. Each question has one answer:
+  - which placement governs a person's moment (`hr.read.governing`, with `governed` its SQL form): the placement of the
+    moment's day on the company's clock. It gives the site and its clock (the day and the time shown, the employment
+    rule) AND says whose the moment is (reach and realm are read on that same company's day, `company_day`), so the
+    lead and the clock never come from two placements, also on a move day between sites on different clocks;
+  - on which clock a planned day is read (`hr.read.planned_shifts`, `holidays_on`): the site the person is placed on
+    that day, for the rules of a save and for the week's grid alike;
+  - who reaches a stretch (`hr.scope.reaches_stretch`, `stretches`), who decides a leave request
+    (`hr.scope.deciding`), who reads its reason (`hr.scope.sees_reason`), when a week starts and what it totals
+    (`hr.rules.monday`, `week_minutes`), and how long a correction is allowed (the platform's correction window,
+    `core.platform.correction_window_days`).
+
+  `hr/tests/test_governing.py` holds each SQL form to its rule and says which lead owns a stretch around midnight on a
+  move day between an Auckland and a Los Angeles site.
 
 The team lead is the **Manager** of a production department (chosen on the production department's form, shown in its
 list and logged) or of an office department, plus a role with the HR areas. The Manager field has no other effect.
@@ -4401,9 +4414,13 @@ row than the maximum and work on a holiday warn. They run on every save: a block
 warning is told after the save and written into the audit row. `hr.services.plan_shifts` sets a shift, planned off or nothing on
 a batch of cells, all or none (the verb each cell needs, the person in the user's team on that day, never one's own days, the
 rules for each person); the page's batch route is `/hr/schedule/plan/` (POST): a cell whose person the viewer does not reach
-on its day is a 404 and writes nothing (the rule the grid is drawn by, `hr.scope.visible_days`, so next week's newcomer is
-planned from the grid), and one's own cell is refused with the reason. A cell's dialog saves through
-`hr.services.plan_day` (the same rules, with the lead's note) and its delete is `plan_shifts` clearing that cell.
+on its day is a 404 and writes nothing (`hr.scope.can_reach` asked cell by cell, the rule the service plans by, so next
+week's newcomer is planned from the grid and no span of days is built from what was sent), and one's own cell is refused
+with the reason. A cell's dialog saves through `hr.services.plan_day` (the same rules, with the lead's note), which is
+told the cell as the dialog knows it (empty for a new plan, the plan being edited): a plan saved there meanwhile by
+another lead or a batch is not overwritten ("This person already has a plan for this day."); the batch sets whatever is
+in a cell, as it always did. A cell's delete is `plan_shifts` clearing it. A planned day is read on the clock, and with
+the holidays, of the site the person is placed on that day (`hr.read.planned_shifts`), in the save and in the grid.
 
 ### Time & shifts › Leave requests (`/hr/leave/`) and Leave types
 
@@ -4423,7 +4440,8 @@ What a request costs is read, never stored (`hr.leave`): the days whose weekday 
 by default) minus the holidays of every site and of the person's site, split by year for a request that crosses New Year (the
 source charged calendar days, HR-07); the balance of a type with a yearly allowance is the allowance less the days of the year
 that pending and approved requests are charged for, and a request over it is refused (`hr.services.file_leave` and
-`change_leave`, the leave form's save, say it on the type's field). `away_on(day, user_ids)` is the
+`change_leave`, the leave form's save, say it on the type's field). A request is filed, and a pending one moved, only to a first day on which the
+person is the user's (the day a request is listed and decided by; one's own always), said on the first day's field. `away_on(day, user_ids)` is the
 interface for the places that may only learn that someone is away, never why.
 
 **One approval step.** Staff hold Read and Create (they file for themselves and cancel their own); a lead holds Edit as well,
@@ -4447,9 +4465,10 @@ attendance form and the leave form; clearing a planned day is always allowed). A
 placements, which end on the last day; a holder of Everyone and the person themselves are held by this rule. Every path
 reads it with the person's row locked (`lock_employed`), in the service the tab hands its save to, so a last day committed
 meanwhile is never passed and a refusal is put back on the form. HR's lock order: the person first
-(`hr.services.lock_person`, FOR NO KEY UPDATE, so a record being added for them does not wait on it), then their records:
-every service takes it, and an edit through a tab locks the person before crud locks the record (`PersonFirst`, through
-`Resource.edited`). It holds the other way too: a first or last day that would leave plans, held leave or punches outside
+(`hr.services.lock_person`, and `lock_people` for a batch in primary-key order: FOR NO KEY UPDATE, so a record being
+added for them does not wait on it), then their records. Every service locks a person through these two and no other
+way (one strength; a test reads the code for it), and an edit through a tab locks the person before crud locks the
+record (`PersonFirst`, through `Resource.edited`). It holds the other way too: a first or last day that would leave plans, held leave or punches outside
 is refused (`change_employee`, `leave_company`), naming what to correct first on its field (`employment_conflicts`; later
 plans and later pending leave go with the last day as before). The database backs it (`hr/0011_employment_bounds`: constraint triggers deferred to the commit on
 plans, leave, punches and the person's dates; a punch is checked on the UTC day with a day of slack, its exact day is
@@ -4529,8 +4548,8 @@ left, so nothing is assumed in either direction and no hours are invented:
   forgotten stretch has no end and counts for nothing until it is closed.
 
 **The Attendance page** lists the stretches of the viewer's team over the last fortnight or the days asked for, times on the clock
-that governs each (`hr.read.governed`: a stretch belongs to the lead of the day that governs its clock-in, the day the services
-check), with **Mark present** (Create: a person of the team, the times, the reason: `hr.services.enter_presence`), a correction
+that governs each (`hr.read.governed`: a stretch belongs to the lead of the placement that governs its clock-in, the
+placement of the company's day, which the services check and whose site gives the clock), with **Mark present** (Create: a person of the team, the times, the reason: `hr.services.enter_presence`), a correction
 (Edit, logged with what it was before: `correct_presence`) and a void (Delete: `void_presence`); each service locks the person
 before the stretch and checks the lead's reach, never their own attendance, the employment and the reason itself. A time is
 typed on the clock that governs it (`hr.read.typed_moment`), so it is shown again as it was typed. A stretch still open is listed whenever it began (it runs on through the days asked for), so a forgotten
@@ -4632,8 +4651,11 @@ production people in Production, with the same permission.
   department with people. It changes nothing; a person decides.
 - **`manage.py seed_hr_demo`** (only with `DEBUG` on, idempotent) makes a small company for a walk-through in a browser: a site on
   Oslo time, two production departments with managers, an office department, nine people placed in them, three shifts, a week of
-  plans, a holiday, leave types, a pending leave request, a punch, and four roles made like any role (Demo lead, Demo staff, Demo
+  plans, a holiday, leave types, a pending leave request, a stretch a lead entered, and four roles made like any role (Demo lead, Demo staff, Demo
   HR admin, Demo auditor) with a sign-in each (`demo_lead_hatchery`, `demo_lead_nursery`, `demo_staff`, `demo_hr`, `demo_auditor`).
+  The people, their placements, plans, leave and attendance are written through `hr.services` as the demonstration's own
+  people (the HR administrator takes people on and plans, the staff member files their leave, a lead marks someone
+  present), so every rule runs and every record is in the activity log.
 - **Browser code** (`frontend/roster.ts`, TypeScript only): on the Shift schedule the arrow keys move between cells, and the paint
   form (hidden without the script) picks a shift, selects cells and posts them to the batch route, which plans all or none; the page's
   Print button is the shared `data-print`. The script has no text of its own.
@@ -4645,8 +4667,8 @@ production people in Production, with the same permission.
   route needs a row in the matrix or the suite fails); the boundary (no pay, bank, tax or identity column, form field, template word
   or import, and every free-text column named and masked); derived state at a fixed `now` for sites ahead of and behind UTC and the
   7 and 9 hour nights; the rules as pure functions; the services' refusals leaving rows and log unchanged; one writer per record
-  and one rule per question, read from the code and held to their SQL forms (`test_one_writer`, `test_one_path`,
-  `test_governing`, the architecture audit of 26.11.2026); query budgets (the same
+  and one rule per question, read from the code and held to their SQL forms (`core/tests_data_access.py` rule S,
+  `test_one_path`, `test_governing`, the architecture audit of 26.11.2026 and the review of its branch); query budgets (the same
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
@@ -6222,10 +6244,21 @@ refuses editing, voiding and planning one's own attendance and plan).
 **One writer.** A tab whose records its area's service writes says so (`Resource.service_writes`) and hands every write to it:
 `create_record(request, form)`, `change_record(request, form, current)` and `delete_record(request, record)` call the service,
 which checks its own rules, locks in its own order and writes its own audit row; crud keeps the form (fields, parsing, the
-model's own checks), the verb, the scope, the record's lock, the version and the pages, and runs no `after_save` for it. A
-refusal by the service is put on the form, each message on its field when the form has it (an edit answers 422, as every refusal
-at the save), and a PermissionDenied is a 403. HR's people, attendance, leave requests and plans are written so
-(`hr/tests/test_one_writer.py`).
+model's own checks), the verb, the scope, the record's lock, the version and the pages. crud saves nothing beside the record
+for such a tab: a tab that sets the flag and has a many-to-many field on its form, a row list, a `change_severity` or an
+`after_save` is refused when it is declared (`Resource.left_to_crud`, `core/tests_service_tab.py`). A refusal at the save
+(by the service, by the database, by a rule under a lock) is put on the form, each message on its field when the form has
+it, and answers 422 on Create and on Edit alike, on every tab; a form that is not valid is the page again (200), and a
+PermissionDenied is a 403.
+
+A model says who writes it: `service_written = True` (`core.models.AuditedModel`; HR's people, placements, plans, leave
+requests and attendance) means its app's `services.py` and nothing else. **Rule S** of `core/tests_data_access.py` holds
+it, project-wide: the models every `services.py` writes are found from the code; a declared model's tabs hand every write
+to the service (each hook is read and must call into `services`); no other production module (a view, a command, the
+admin, another app) builds or writes it by name; and the delete plan's restore refuses it. What is not yet one writer is
+a ratchet that may only shrink: the four tabs crud still saves beside a service that writes their model too (Regulatory
+reports, Tasks, Experiments, Card templates: `SECOND_WRITER_TABS`, each with what the two writers are) and the rows other
+modules build for their service to write (`BUILT_ELSEWHERE`); they are closed on `wip/one-writer-guard`.
 
 ### The delete plan
 

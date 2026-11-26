@@ -485,7 +485,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Administration › platform_settings
 - **forms**: `PlatformSettingsForm`
 - **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check); chk_platform_settings_kept (check)
-- **tests that mention it**: `core/tests_kept_rows.py`, `core/tests_platform.py`, `core/tests_rev.py` and 11 more
+- **tests that mention it**: `core/tests_kept_rows.py`, `core/tests_platform.py`, `core/tests_rev.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1465,7 +1465,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 67 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 68 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1588,7 +1588,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 90 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 91 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1889,7 +1889,7 @@ A production system of a site: a RAS, a pond, a cage line, a hatchery.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › systems
 - **forms**: `SystemForm`
 - **constraints**: uq_systems_site_code_live (unique: site, code); chk_systems_total_volume (check); chk_systems_max_biomass (check); chk_systems_not_its_own_parent (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 41 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_deletepayload.py` and 42 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1925,7 +1925,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 70 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 71 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2112,7 +2112,7 @@ A water sample: what a person measured at one sampling point (a place on a unit,
 - **delete kind**: soft delete through the delete plan; not restored: listed read-only in the admin: a voided record is entered again on its page, where the checks run; **database viewer**: Facility › water_measurements
 - **forms**: `WaterSampleForm`, `RoundForm`, `RoundRowForm`, `SampleVoidForm`
 - **constraints**: chk_water_measurements_any_value (check); chk_water_measurements_source (check); chk_water_measurements_void_reason (check); chk_water_measurements_temperature_c (check); chk_water_measurements_oxygen_mg_l (check); chk_water_measurements_oxygen_saturation_pct (check); chk_water_measurements_ph (check); chk_water_measurements_alkalinity_mg_l (check); chk_water_measurements_hardness_mg_l (check); chk_water_measurements_co2_mg_l (check); chk_water_measurements_tan_mg_l (check); chk_water_measurements_nitrite_n_mg_l (check); chk_water_measurements_nitrate_n_mg_l (check); chk_water_measurements_tgp_pct (check); chk_water_measurements_salinity_ppt (check); chk_water_measurements_conductivity_25_us_cm (check); chk_water_measurements_turbidity_ntu (check); chk_water_measurements_phosphate_p_mg_l (check); chk_water_measurements_ph_scale (check); chk_water_measurements_phosphate_unit (check); chk_water_measurements_oxygen_basis_temperature (check); chk_water_measurements_oxygen_basis_salinity (check)
-- **tests that mention it**: `core/test_languages.py`, `core/tests_data_access.py`, `core/tests_entry_key.py` and 26 more
+- **tests that mention it**: `core/test_languages.py`, `core/tests_data_access.py`, `core/tests_entry_key.py` and 27 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3498,7 +3498,7 @@ Where a channel's values belong over a time range: a sampling point or a system 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_binding
 - **forms**: `BindForm`, `BindingForm`, `DeviceMoveForm`
 - **constraints**: chk_sensors_binding_one_target (check); chk_sensors_binding_period (check); chk_sensors_binding_role (check); ex_sensors_binding_channel_period (exclusion: channel, valid_from, valid_to)
-- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 6 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_workspaces.py` and 7 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

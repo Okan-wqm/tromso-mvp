@@ -55,3 +55,46 @@ class DerivedStaleAlarmTests(WaterTestCase):
         self.passes(0, 1, 60, 120, 600)
         self.assertEqual(self.outcome(TEMPERATURE), {'critical': 'returned', 'warning': 'returned'})
         self.assertEqual(self.outcome(NH3), {'critical': 'returned', 'warning': 'returned'})
+
+
+class OwnPointEvidenceTests(WaterTestCase):
+    """The review of 2026-11-26, F1 (the coordinator's rule): a worked-out alarm raised at one of the unit's own points
+    ends only on new evidence from THAT point, a fresh value there back inside the limits; a newer OK value at another
+    own point is not that evidence, and a late lab critical at a point still raises beside one. T-01 stocked, its middle
+    point and an outlet (both its own water, A9.1), NH₃-N limits 0.0125 and 0.025."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.models import SamplingPoint
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        self.outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+
+    passes = DerivedStaleAlarmTests.passes
+    outcome = DerivedStaleAlarmTests.outcome
+
+    def test_a_newer_ok_middle_does_not_end_the_outlets_critical(self):
+        """The outlet critical 40 h ago (its temperature, so its NH₃, stale since 16 h ago; its TAN still fresh), the
+        middle OK 2 h ago: both levels stay open, and the page says which point to measure. The outlet measured again,
+        fresh and OK, ends them."""
+        self.sample(self.outlet, hours=40, **BAD)
+        self.passes(-2380, -2379, -2320)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        self.sample(self.t1, hours=2, **GOOD)
+        self.passes(0, 1, 60, 120, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.point, reading.judged, reading.worse.point), (self.mid1, 'critical', self.outlet))
+        self.assertIn('last value at Outlet 0.8924 critical on ', reading.note)
+        self.assertIn('no recent data: measure there', reading.note)
+        self.sample(self.outlet, hours=1, **GOOD)
+        self.passes(601, 602, 660, 720, 1200)
+        self.assertEqual(self.outcome(NH3), {'critical': 'returned', 'warning': 'returned'})
+
+    def test_a_late_lab_critical_at_the_outlet_raises_beside_a_newer_ok_middle(self):
+        """The middle OK 2 h ago; the lab's outlet result, taken 30 h ago, keyed in now: critical, already stale. It
+        raises both levels at once."""
+        self.sample(self.t1, hours=2, **GOOD)
+        self.sample(self.outlet, hours=30, source='lab', **BAD)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})

@@ -6,11 +6,15 @@ reader asks `read.Reading.fresh` / `fresh_until`, so the pages, the cards and th
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db import connection
 from django.test import TestCase
 from django.utils import timezone
 
 from monitoring.cards import render
+from sensors import bindings
+from sensors.tests import make_channel, make_connection, make_device, make_format
 
+from ..models import SamplingPoint, Tank
 from ..water import evaluate, freshness, parameters, read
 from ..water.evaluate import Status
 from .test_water import WaterTestCase
@@ -163,3 +167,164 @@ class DerivedFreshnessTests(WaterTestCase):
         self.assertTrue(face.stale)
         self.assertEqual(face.status, Status.STALE)
         self.assertEqual(water.get(NH4).fresh(self.now), False)
+
+
+# Every measured parameter, at a plausible value of a sea tank (the drop-each-input guard).
+EVERY = {'temperature_c': '12.0', 'oxygen_mg_l': '9.00', 'oxygen_saturation_pct': '95.0', 'ph': '7.80',
+         'alkalinity_mg_l': '150', 'hardness_mg_l': '5000', 'co2_mg_l': '5.0', 'tan_mg_l': '1.000',
+         'nitrite_n_mg_l': '0.100', 'nitrate_n_mg_l': '10.0', 'tgp_pct': '100.0', 'salinity_ppt': '30.0',
+         'conductivity_25_us_cm': '45000', 'turbidity_ntu': '1.0', 'phosphate_p_mg_l': '0.10'}
+
+
+class RecordedInputsTests(WaterTestCase):
+    """The review of 2026-11-26, F2: the inputs a worked-out value records as used are the inputs its parameter
+    declares, and the inputs it declares are the ones its derivation reads. A declaration that leaves one out (a CO₂
+    declared from the pH and the alkalinity whose formula also reads the temperature) is caught here."""
+
+    def setUp(self):
+        super().setUp()
+        Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater', water_origin='seawater')
+        self.t1.refresh_from_db()
+
+    def worked(self, values, hours=1):
+        context = read.Context([self.mid1], self.now - read.WINDOW)
+        observation = read.Observation(self.mid1, self.ago(hours=hours), read.Origin.MANUAL,
+                                       {code: D(value) for code, value in values.items()})
+        return context.readings(observation)
+
+    def test_every_measured_parameter_is_covered_and_only_worked_out_ones_declare(self):
+        self.assertEqual(set(EVERY), set(parameters.COLUMNS))
+        for parameter in parameters.BY_CODE.values():
+            if parameter.measured:
+                self.assertEqual(parameter.uncounted, (), parameter.code)
+        with self.assertRaises(ValueError):
+            parameters._parameter('x_mg_l', 'X', 'X', 1, 0, 1, uncounted=('ph',))
+
+    def test_dropping_each_measured_value_in_turn(self):
+        """Dropping a declared input changes the worked-out value or empties it; dropping any other measured value
+        leaves it as it was, except the ones the parameter declares it reads without counting (`uncounted`)."""
+        for parameter in (parameters.get(code) for code in parameters.DERIVED):
+            full = self.worked(EVERY)[parameter.code]
+            self.assertIsNotNone(full.value, parameter.code)
+            self.assertEqual(set(full.inputs_until), set(parameter.inputs))
+            for code in parameters.COLUMNS:
+                with self.subTest(parameter=parameter.code, dropped=code):
+                    found = self.worked({key: value for key, value in EVERY.items() if key != code}).get(parameter.code)
+                    value = None if found is None else found.exact
+                    if code in parameter.inputs:
+                        self.assertNotEqual(value, full.exact, f'{code} is declared and not read')
+                    elif code not in parameter.uncounted:
+                        self.assertEqual(value, full.exact, f'{code} is read and not declared')
+
+    def test_an_input_looked_up_from_the_point_is_recorded(self):
+        """The salinity dropped from the sample, the point's earlier salinity stands in: the value is the same, and the
+        input recorded is that salinity, with its own end (a missing stamp would read None)."""
+        earlier = self.sample(hours=20, salinity_ppt='30.0')
+        full = self.worked(EVERY)[NH3]
+        found = self.worked({key: value for key, value in EVERY.items() if key != SALINITY})[NH3]
+        self.assertEqual(found.exact, full.exact)
+        self.assertEqual(found.inputs_until[SALINITY], earlier.measured_at + timedelta(hours=168))
+        self.assertEqual(full.inputs_until[SALINITY], self.ago(hours=1) + timedelta(hours=168))
+
+    def test_a_record_unlike_the_declaration_is_refused(self):
+        nh3 = self.worked(EVERY)[NH3]
+        for inputs in ({key: value for key, value in nh3.inputs_until.items() if key != PH},
+                       {**nh3.inputs_until, 'alkalinity_mg_l': self.now}):
+            with self.subTest(inputs=sorted(inputs)):
+                nh3.inputs_until = inputs
+                with self.assertRaises(ValueError):
+                    nh3.fresh(self.now)
+
+
+class SensorTemperatureTests(WaterTestCase):
+    """The coordinator's decision of 2026-11-26 on the temperature of a sample's NH₃, where the place has a temperature
+    probe: (a) a TAN sample without a temperature takes the place's sensor temperature at its time, and records it as
+    the input used; (b) the temperature input stays fresh while the place's live temperature stays within
+    freshness.TEMPERATURE_BAND (1.0 °C) of it, and ends the moment it moves further or goes stale. A probe on T-01's
+    middle point, a value every 10 min, fresh for 30 min."""
+
+    def setUp(self):
+        super().setUp()
+        device = make_device(make_connection(), make_format(), self.bergen, code='PROBE-T')
+        self.channel = make_channel(device, 'temperature_c', code='TEMP', heartbeat_s=600)
+        bindings.move(self.user, self.channel, point=self.mid1, at=self.ago(hours=60))
+
+    def send(self, value, start, end):
+        """The probe's value every 10 min from `start` to `end` hours ago."""
+        with connection.cursor() as cursor:
+            cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) SELECT %s, g, %s FROM '
+                           "generate_series(%s::timestamptz, %s::timestamptz, interval '10 minutes') g",
+                           [self.channel.channel_no, value, self.ago(hours=start), self.ago(hours=end)])
+
+    def test_the_channel_is_fresh_for_30_minutes(self):
+        self.channel.refresh_from_db()
+        self.assertEqual(self.channel.fresh_s, 1800)
+        self.assertEqual(freshness.TEMPERATURE_BAND, 1.0)
+
+    def test_a_sample_without_a_temperature_takes_the_probes(self):
+        """(a) TAN and pH 30 h ago, no temperature: worked out with the probe's 12.0 °C of that time, said beside the
+        value, the same NH₃ as a sample that typed 12.0 °C; fresh while the probe goes on at 12.0 °C."""
+        self.send(12.0, 50, 0)
+        self.sample(hours=30, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0')
+        nh3 = self.unit_water().get(NH3)
+        self.assertIsNotNone(nh3.value)
+        self.assertIn('Worked out with the temperature 12.0 °C of', nh3.provenance)
+        self.assertTrue(nh3.fresh(self.now))
+        self.assertGreaterEqual(nh3.inputs_until[TEMPERATURE], self.now)
+        typed = read.Context([self.mid1], self.now - read.WINDOW).readings(read.Observation(
+            self.mid1, self.ago(hours=30), read.Origin.MANUAL, {code: D(value) for code, value in FULL.items()}))
+        self.assertEqual(nh3.exact, typed[NH3].exact)
+
+    def test_without_a_probe_value_at_its_time_nothing_is_worked_out(self):
+        self.send(12.0, 20, 0)                  # the probe began 10 h after the sample
+        self.sample(hours=30, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0')
+        nh3 = self.unit_water().get(NH3)
+        self.assertIsNone(nh3.value)
+        self.assertEqual(nh3.note, 'Needs the pH and the temperature of the same sample.')
+
+    def test_a_typed_temperature_the_probe_confirms_stays_fresh(self):
+        """(b) The sample's own 12.0 °C, 30 h old (its own 24 h are over): the probe within 1.0 °C all along keeps it."""
+        self.send(12.4, 50, 0)
+        self.sample(hours=30, **FULL)
+        nh3 = self.unit_water().get(NH3)
+        self.assertTrue(nh3.fresh(self.now))
+        self.assertEqual(nh3.status, Status.NO_LIMIT)
+
+    def test_the_probe_moving_ends_it_then(self):
+        """(b) The probe goes from 12.4 to 13.5 °C 10 h ago: the temperature input ends at that value, the NH₃ is stale
+        since then."""
+        self.send(12.4, 50, 10.5)
+        self.send(13.5, 10, 0)
+        self.sample(hours=30, **FULL)
+        nh3 = self.unit_water().get(NH3)
+        self.assertEqual(nh3.inputs_until[TEMPERATURE], self.ago(hours=10))
+        self.assertEqual(nh3.fresh_until, self.ago(hours=10))
+        self.assertEqual(nh3.status, Status.STALE)
+
+    def test_the_probe_going_silent_ends_it_at_its_freshness(self):
+        """(b) The probe's last value 5 h ago: the input ends 30 min after it."""
+        self.send(12.0, 50, 5)
+        self.sample(hours=30, **FULL)
+        nh3 = self.unit_water().get(NH3)
+        self.assertEqual(nh3.fresh_until, self.ago(hours=5) + timedelta(minutes=30))
+        self.assertFalse(nh3.fresh(self.now))
+
+    def test_a_probe_further_off_at_the_samples_time_confirms_nothing(self):
+        """(b) The probe reads 14.0 °C when the sample says 12.0 °C: the temperature does not describe the water, the
+        input ends at once."""
+        self.send(14.0, 50, 0)
+        self.sample(hours=3, **FULL)
+        nh3 = self.unit_water().get(NH3)
+        self.assertLessEqual(nh3.fresh_until, self.ago(hours=3))
+        self.assertEqual(nh3.status, Status.STALE)
+
+    def test_the_outlet_reads_the_places_probe(self):
+        """The probe on the middle point stands for the unit's water: a sample at another own point (the outlet) takes it
+        too (A9's own tier)."""
+        outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+        self.send(12.0, 50, 0)
+        self.sample(outlet, hours=30, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0')
+        nh3 = self.unit_water().get(NH3)
+        self.assertIsNotNone(nh3.value)
+        self.assertEqual(nh3.point, outlet)
+        self.assertTrue(nh3.fresh(self.now))

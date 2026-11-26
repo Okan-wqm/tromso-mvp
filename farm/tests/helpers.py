@@ -146,3 +146,10 @@ def going_on(call, *args, **kwargs):
         return call(*args, **kwargs)
     except WithdrawalChanged as asked:
         return call(*args, withdrawal_ack=asked.change.fingerprint, **kwargs)
+
+
+def inputs_at(code, at):
+    """What a hand-made Reading of `code` records as used (read.Reading.inputs_until): for a worked-out parameter each
+    of its inputs as if measured at `at`, each ending by its own hours (freshness.fresh_until); {} for a measured one."""
+    from farm.water import freshness, parameters
+    return {each: freshness.fresh_until(each, at) for each in parameters.get(code).inputs}

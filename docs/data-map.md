@@ -1925,7 +1925,7 @@ A unit fish are held in: a tank, a pond or a cage.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › tanks
 - **forms**: `TankForm`
 - **constraints**: uq_tanks_code_live (unique: code); uq_tanks_regulatory_unit_id_live (unique: production_department, regulatory_unit_id); chk_tanks_kind (check); chk_tanks_status (check); chk_tanks_water_type (check); chk_tanks_water_origin (check); chk_tanks_shape_by_kind (check); chk_tanks_material_by_kind (check); chk_tanks_pond_type_by_kind (check); chk_tanks_liner_type_by_kind (check); chk_tanks_water_source_by_kind (check); chk_tanks_cage_type_by_kind (check); chk_tanks_frame_type_by_kind (check); chk_tanks_net_material_by_kind (check); chk_tanks_tank_required (check); chk_tanks_pond_required (check); chk_tanks_cage_required (check); chk_tanks_diameter_by_shape (check); chk_tanks_length_by_shape (check); chk_tanks_stated_volume_m3_by_shape (check); chk_tanks_width_by_shape (check); chk_tanks_square_sides (check); chk_tanks_long_side_first (check); chk_tanks_water_depth (check); chk_tanks_max_depth (check); chk_tanks_liner_by_pond_type (check); chk_tanks_liner_thickness (check); chk_tanks_submersion (check); chk_tanks_diameter_range (check); chk_tanks_length_range (check); chk_tanks_width_range (check); chk_tanks_stated_volume_m3_range (check); chk_tanks_depth_range (check); chk_tanks_surface_area_m2_range (check); chk_tanks_max_depth_range (check); chk_tanks_mesh_size_mm_range (check); chk_tanks_max_submersion_depth_range (check); chk_tanks_max_density_kg_m3_range (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 69 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_lean_endpoints.py` and 70 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2171,7 +2171,7 @@ Where a water sample is taken: a named place on one unit, one system’s loop or
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › water_sampling_points
 - **forms**: `SamplingPointForm`
 - **constraints**: chk_water_sampling_points_one_owner (check); chk_water_sampling_points_kind (check); chk_water_sampling_points_name (check); chk_water_sampling_points_depth (check); chk_water_sampling_points_flow (check); chk_water_sampling_points_share (check); uq_water_sampling_points_unit_name (unique: unit, name); uq_water_sampling_points_unit_middle (unique: unit); uq_water_sampling_points_system_name (unique: system, name); uq_water_sampling_points_system_middle (unique: system); uq_water_sampling_points_equipment_name (unique: equipment, name); uq_water_sampling_points_equipment_middle (unique: equipment)
-- **tests that mention it**: `core/tests_rev.py`, `core/tests_workspaces.py`, `farm/tests/helpers.py` and 18 more
+- **tests that mention it**: `core/tests_rev.py`, `core/tests_workspaces.py`, `farm/tests/helpers.py` and 20 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3897,7 +3897,7 @@ One stored value of a channel at the device's time: the hypertable `sensors_read
 - **how it works**: A TimescaleDB hypertable; left out of the database viewer (billions of rows).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: left out on purpose (config/database.py)
 - **constraints**: chk_sensors_reading_value (check); chk_sensors_reading_quality (check); chk_sensors_reading_run (check)
-- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_ui_look.py` and 12 more
+- **tests that mention it**: `core/test_datamap.py`, `core/test_text.py`, `core/tests_ui_look.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

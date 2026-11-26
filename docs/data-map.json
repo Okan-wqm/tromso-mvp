@@ -21089,6 +21089,7 @@
         "farm/tests/test_charts_of.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_core_refusal.py",
+        "farm/tests/test_derived_fresh.py",
         "farm/tests/test_drawer_water_history.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_farm_dialogs_next.py",
@@ -23807,6 +23808,7 @@
         "farm/tests/helpers.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_charts_of.py",
+        "farm/tests/test_derived_fresh.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_production_overview.py",
@@ -23822,6 +23824,7 @@
         "monitoring/tests/test_silent_oxygen.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
+        "alarms/tests/test_derived_fresh.py",
         "alarms/tests/test_migration_subjects.py"
       ]
     },
@@ -41714,6 +41717,7 @@
         "core/test_text.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
+        "farm/tests/helpers.py",
         "farm/tests/test_bound_text.py",
         "farm/tests/test_derived_fresh.py",
         "farm/tests/test_nh3_unrounded.py",

@@ -13,6 +13,7 @@ from django.test import SimpleTestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from farm.tests.helpers import inputs_at
 from farm.tests.test_water_sources import FakeProvider
 from farm.water import parameters, sources
 from farm.water.evaluate import Status
@@ -34,7 +35,8 @@ OPERATOR = builtin.OPERATOR_LAYOUT
 def reading(code, value, hours=1, status=Status.OK, source='manual'):
     sample = SimpleNamespace(get_source_display=lambda: {'manual': 'Meter or test kit'}[source])
     observation = Observation(POINT, NOW - timedelta(hours=hours), Origin.MANUAL, {code: value}, sample=sample)
-    return Reading(parameters.get(code), None if value is None else D(str(value)), observation, status=status)
+    return Reading(parameters.get(code), None if value is None else D(str(value)), observation, status=status,
+                   inputs_until=inputs_at(code, observation.at))
 
 
 def live(code, value, seconds, channel_no, origin=Origin.SENSOR, fresh_for=900):

@@ -15,7 +15,7 @@ from django.utils import timezone
 from farm.feeding import read as feeding_read
 from farm.harvest import views as harvest_views
 from farm.models import HandlingPlanItem, HealthEvent
-from farm.tests.helpers import make_facility, stock_fish
+from farm.tests.helpers import inputs_at, make_facility, stock_fish
 from farm.tests.test_stock import make_unit
 from farm.water import parameters, read as water_read
 from farm.water.evaluate import Status
@@ -55,7 +55,7 @@ def reading(code, value, hours=1, status=Status.OK, point=None, judged=None):
     limit says whatever its age (by default the status, and OK for a stale one)."""
     point = point or SimpleNamespace(name='Middle', kind='middle')
     sample = Observation(point, NOW - timedelta(hours=hours), Origin.MANUAL, {code: D(str(value))})
-    found = Reading(parameters.get(code), D(str(value)), sample, status=status)
+    found = Reading(parameters.get(code), D(str(value)), sample, status=status, inputs_until=inputs_at(code, sample.at))
     found.judged = judged or (Status.OK if status == Status.STALE else status)
     found.uncovered = (1,) if found.judged == Status.NO_LIMIT else ()      # the species no row judges it for
     return found

@@ -340,6 +340,7 @@ class SensorTemperatureTests(WaterTestCase):
         self.sample(hours=30, **FULL)
         self.assertTrue(self.unit_water().get(NH3).fresh(self.now))
         row = PlatformSettings.get()
+        self.addCleanup(freshness.forget)           # the band read in this test's transaction goes with it
         row.temperature_band_c = D('0.3')
         row.save()
         nh3 = self.unit_water().get(NH3)

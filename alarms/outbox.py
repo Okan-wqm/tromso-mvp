@@ -118,11 +118,6 @@ class Delivery:
         return text
 
 
-def _connected():
-    """The channels a transport is connected for (alarms.transports.connected_channels)."""
-    return connected_channels()
-
-
 def _queued(channels=None):
     """The outbox's queue (entries that already have a sent or covered attempt left out: R2), only `channels` if given."""
     rows = Notification.objects.filter(pk__in=OutboxEntry.objects.values('notification')).exclude(
@@ -410,7 +405,7 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
     moment = (lambda: now) if now is not None else timezone.now
     began, started = moment(), clock()
     services.drop_delivered()
-    channels = _connected()
+    channels = connected_channels()
     unsent = _queued()
     elsewhere = unsent.exclude(channel__in=channels).exclude(pk__in=_late().values('pk')).aggregate(
         count=Count('pk'), oldest=Min('queued_at'))

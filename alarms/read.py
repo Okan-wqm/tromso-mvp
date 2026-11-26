@@ -51,36 +51,32 @@ def status(notification):
     return FAILED if failed >= current_rules().delivery_attempts(alarm.severity) and not persists else QUEUED
 
 
-def transport_connected(channel):
-    return channel in connected_channels()
-
-
 def connected():
     """{channel: whether a transport is connected for it}, for the pages' notice that nothing is sent."""
-    return {channel.value: transport_connected(channel.value) for channel in Channel}
+    channels = connected_channels()
+    return {channel.value: channel.value in channels for channel in Channel}
 
 
 def rules_naming_outsiders():
-    """The active recipient rules that name a person who does not hold Oversee, while some confidential cell exists
-    (landing review 4, R6): an alarm on such a cell reaches that person only if they work on its experiment; otherwise it
-    goes to the experiment's lead and the Oversee holders instead. Said on the rules' page, so the admin can fix the rule.
-    Read as the system: a configuration fact, no record of an experiment is named."""
+    """The active recipient rules that name a person who does not hold Oversee (landing review 4, R6): an alarm on a
+    confidential experiment's tanks reaches of a rule's people only those who work on that experiment or hold Oversee,
+    and goes to the experiment's lead and the Oversee holders when none does. Said on the rules' page, so the admin can
+    fix the rule. A fact of the configuration alone (the rules, the roles, who holds Oversee), said whether or not a
+    confidential experiment runs now (landing review 5, N4: a warning that came and went with one would tell everyone
+    who reads the rules that one runs, and since which day); nothing sealed is read."""
     from django.contrib.auth import get_user_model
 
     from core import sealing
     provider = sealing.provider()
     if provider is None or not hasattr(provider, 'holders'):
         return []
-    with sealing.system('the recipient rules\u2019 configuration warning'):
-        if not provider.cells().exists():
-            return []
-        holders = set(provider.holders().values_list('pk', flat=True))
-        rules = list(RecipientRule.objects.filter(is_active=True).select_related('user', 'role'))
-        members = {}
-        for group, user in get_user_model().groups.through.objects.filter(
-                group__in={rule.role_id for rule in rules if rule.role_id}, user__is_active=True).values_list(
-                'group', 'user'):
-            members.setdefault(group, set()).add(user)
+    holders = set(provider.holders().values_list('pk', flat=True))
+    rules = list(RecipientRule.objects.filter(is_active=True).select_related('user', 'role'))
+    members = {}
+    for group, user in get_user_model().groups.through.objects.filter(
+            group__in={rule.role_id for rule in rules if rule.role_id}, user__is_active=True).values_list(
+            'group', 'user'):
+        members.setdefault(group, set()).add(user)
     return [rule for rule in rules
             if ({rule.user_id} if rule.user_id else members.get(rule.role_id, set())) - holders]
 

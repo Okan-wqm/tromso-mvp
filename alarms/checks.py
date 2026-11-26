@@ -1,6 +1,8 @@
-"""The alarms' deployment check (`manage.py check --deploy`, and so CI and a release): every transport named in
-settings.ALARM_TRANSPORTS imports, is a Transport, and declares `max_bytes`, a whole number of at least 1 (REVIEW4: a
-transport without a limit sends nothing, and that would only show at the first real alarm, perhaps at night).
+"""The alarms' deployment check (`manage.py check --deploy`, and so CI and a release): settings.ALARM_TRANSPORTS is a
+{channel: dotted path} dictionary whose keys are notification channels (alarms.models.Channel; landing review 5, N8),
+and every transport named in it imports, is a Transport, and declares `max_bytes`, a whole number of at least 1
+(REVIEW4: a transport without a limit sends nothing, and that would only show at the first real alarm, perhaps at
+night).
 
 A deployment check only, never an ordinary one: Django runs the ordinary checks before every management command, so one
 wrong transport setting at Error level would stop `manage.py run_alarm_worker`, and no alarm would be checked at all."""
@@ -8,13 +10,24 @@ from django.conf import settings
 from django.core.checks import Error, register
 from django.utils.module_loading import import_string
 
+from .models import Channel
 from .transports import Transport
 
 
 @register(deploy=True)
 def transports_declare_limits(app_configs, **kwargs):
     errors = []
-    for channel, path in sorted(getattr(settings, 'ALARM_TRANSPORTS', {}).items()):
+    setting = getattr(settings, 'ALARM_TRANSPORTS', None) or {}
+    if not isinstance(setting, dict):
+        return [Error(f'ALARM_TRANSPORTS is a {type(setting).__name__}, not a dictionary: no alarm would be sent.',
+                      hint='Give {channel: dotted path of a Transport class}, or {} while none is connected.',
+                      id='alarms.E004')]
+    for channel, path in sorted(setting.items(), key=lambda pair: repr(pair[0])):
+        if channel not in Channel.values:
+            errors.append(Error(f'ALARM_TRANSPORTS names {channel!r}, which is not a notification channel: its '
+                                f'transport would never be used.',
+                                hint=f'The channels are: {", ".join(Channel.values)}.', id='alarms.E005'))
+            continue
         try:
             made = import_string(path)
         except Exception as error:

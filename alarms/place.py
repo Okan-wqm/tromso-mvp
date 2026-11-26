@@ -13,11 +13,38 @@ An alarm names its place in up to three ways, and `places` reads all of them:
 An alarm of the alarm system about no unit (a device's clock, a failed step) has no place."""
 from farm.models import SamplingPoint
 
-UNIT_PREFIXES = ('water:unit:', 'system:unit:')
+# THE shape of a subject key that names a unit (landing review 5, N3): made and read here alone.
+UNIT = 'unit:'
+WATER_UNIT = f'water:{UNIT}'
+UNIT_PREFIXES = (WATER_UNIT, f'system:{UNIT}')
+
+
+def water_key(unit_id, slot, severity):
+    """The subject of a unit's quantity at a level: the unit's, never its point's (cross review F7)."""
+    return f'{WATER_UNIT}{unit_id}:{slot}:{severity}'
+
+
+def water_key_parts(key):
+    """(unit id, slot, severity) of a key `water_key` made, or None for any other key."""
+    if not (key and key.startswith(WATER_UNIT)):
+        return None
+    parts = key[len(WATER_UNIT):].split(':')
+    return tuple(parts) if len(parts) == 3 else None
+
+
+def unit_subject(unit_id, what):
+    """The name of a subject of the alarm system about one unit (alarms.sources.system_subject makes its key,
+    `system:<name>`): `what` it says of the unit."""
+    return f'{UNIT}{unit_id}:{what}'
+
+
+def names_unit(name):
+    """Whether a system subject's name is a unit's (`unit_subject`)."""
+    return name.startswith(UNIT)
 
 
 def unit_of_key(key):
-    """The unit id a subject key names (`water:unit:<unit>:...`, `system:unit:<unit>:...`), or None."""
+    """The unit id a subject key names (`water_key`, or the key of a `unit_subject`), or None."""
     for prefix in UNIT_PREFIXES:
         if key and key.startswith(prefix):
             return key[len(prefix):].split(':', 1)[0] or None

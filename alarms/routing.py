@@ -136,16 +136,20 @@ class Router:
         return sorted(found.values(), key=lambda pair: pair[0].get_username())
 
     def deliveries(self, alarm, level):
-        """[(user, channel, rule)] of `recipients`: the rule's channel. A person told without a rule (review 4, R2, R6):
-        an overseer of the alarm system's own TO_OVERSEERS alarms on every connected channel; a keeper of the fish on
-        one channel that can leave: the level's first connected rule channel, else the first connected channel; push
-        only when nothing is connected."""
+        """[(user, channel, rule)] of `recipients`: the rule's channel. The alarm system's own TO_OVERSEERS alarms go
+        to every one of their recipients, named by a rule or not, on the rule's channel and on every connected channel
+        besides (landing review 5, N1: the alarm that says notifications cannot leave must itself leave; the Oversee
+        holders are mostly the very people the rules name). A keeper of the fish told without a rule (review 4, R2,
+        R6) on one channel that can leave: the level's first connected rule channel, else the first connected channel;
+        push only when nothing is connected."""
         found = []
+        own = alarm.source == Source.SYSTEM and alarm.parameter in TO_OVERSEERS
         for user, rule in self.recipients(alarm, level):
-            if rule is not None:
+            if own:
+                ruled = [rule.channel] if rule is not None else []
+                channels = list(dict.fromkeys([*ruled, *self.connected])) or [Channel.PUSH]
+            elif rule is not None:
                 channels = [rule.channel]
-            elif alarm.source == Source.SYSTEM and alarm.parameter in TO_OVERSEERS:
-                channels = list(self.connected) or [Channel.PUSH]
             else:
                 channels = [self.keeper_channel(alarm, level)]
             found += [(user, channel, rule) for channel in channels]

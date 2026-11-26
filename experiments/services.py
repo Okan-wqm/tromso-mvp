@@ -1032,6 +1032,9 @@ def _may_seal_past(user, experiment, audience):
     (who keeps every tank's fish) does that."""
     if (audience in sealing.barred_audiences(False) and experiment.starts_on is not None
             and experiment.starts_on < site_today(experiment.site) and not sealing.holds_oversee(user)):
+        if user.is_superuser:
+            raise _refused(_('Day 0 has passed: this seals the records of its tanks since then. The platform admin’s '
+                             'account is not an overseer, whatever its roles: a person who holds Oversee does it.'))
         raise _refused(_('Day 0 has passed: this seals the records of its tanks since then, so a person who holds '
                          'Oversee does it.'))
 

@@ -661,7 +661,8 @@ def _cell_day(moment):
 
 def day_on(moment, zone):
     """THE seal's day rule in Python: `moment`'s day on the clock of `zone` (a cell's site's): the day an alarm opened
-    (alarms/place.py), the day a raw-data row is dated (experiments/rawdata.py). `_cell_day` is the same rule in SQL."""
+    (experiments.sealing.keepers_of), the day a raw-data row is dated (experiments/rawdata.py). `_cell_day` is the same
+    rule in SQL."""
     from django.utils import timezone
     return timezone.localtime(moment, zone).date()
 

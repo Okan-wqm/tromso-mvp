@@ -53,7 +53,7 @@ from sensors import alarms as sensor_alarms, clock as sensor_clock
 from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
-from .place import UNIT_PREFIXES, bound, unit_of_key
+from .place import UNIT_PREFIXES, bound, names_unit, unit_of_key, unit_subject, water_key, water_key_parts
 from .routing import NO_CHANNEL, NO_RULES, TO_OVERSEERS, UNREACHED
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
@@ -375,7 +375,7 @@ def system_subject(name, holds, severity, summary, now, *, parameter=None, where
     neither is refused here, when the pass builds it, so a new producer that names a unit cannot open an alarm the seal
     has no path to."""
     parameter = parameter or name
-    if not (place and any(place)) and not farm_wide and not name.startswith('unit:'):
+    if not (place and any(place)) and not farm_wide and not names_unit(name):
         raise ValueError(f'The system subject {name!r} names no place: give its place, or say it is farm-wide.')
     return Subject(f'system:{name}', holds, not holds if clear_ok is None else clear_ok, bad_at or now, severity, lambda: {
         'at': now, 'severity': severity, 'summary': summary, 'source': Source.SYSTEM, 'parameter': parameter,
@@ -434,11 +434,6 @@ def _read(units, now):
             logger.exception('The water of unit %s could not be read.', unit)
             failed.append(unit)
     return found, failed
-
-
-def water_key(unit_id, slot, severity):
-    """The subject of a unit's quantity at a level: the unit's, never its point's (cross review F7)."""
-    return f'water:unit:{unit_id}:{slot}:{severity}'
 
 
 def _removed(units, now):
@@ -577,7 +572,7 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
                     summary = f'{unit.code}: {water_messages.unevaluated(reading)}'[:SUMMARY_LENGTH]
             worked_out = reading is not None and reading.value is not None and not reading.refused
             subject = system_subject(
-                f'unit:{unit.pk}:{VALUE_UNEVALUATED}:{code}', holds, Severity.WARNING, summary, now, parameter=code,
+                unit_subject(unit.pk, f'{VALUE_UNEVALUATED}:{code}'), holds, Severity.WARNING, summary, now, parameter=code,
                 where=_unit_where(unit), bad_at=since,
                 clear_ok=looked and not failed and worked_out)
             if reading is not None and reading.refused and not holds:      # refused, and nothing judges it any more
@@ -614,7 +609,7 @@ def _silent_subjects(units, found_water, unevaluated, failed, now, oxygen_levels
             with audit.source_language():
                 summary = f'{unit.code}: {found.why_silent[0]}'[:SUMMARY_LENGTH]
         subject = system_subject(
-            f'unit:{unit.pk}:{NO_FRESH_OXYGEN}', holds, Severity.CRITICAL, summary, now,
+            unit_subject(unit.pk, NO_FRESH_OXYGEN), holds, Severity.CRITICAL, summary, now,
             parameter=parameters.OXYGEN_MG_L, where=_unit_where(unit), bad_at=silence.since if holds else None,
             clear_ok=looked and not failed and not holds)
         if looked and not found.holds_fish:
@@ -666,10 +661,12 @@ def _oxygen_levels(subjects):
     (`water_key`): the alarm system's oxygen critical stands aside for it (`_silent_subjects`), never for a warning level
     (review 3 of the branch, N1)."""
     def unit_of(key):
-        _water, _unit, unit_id, slot, severity = key.split(':')
+        parts = water_key_parts(key)
+        if parts is None:
+            return None
+        unit_id, slot, severity = parts
         return unit_id if slot == OXYGEN and severity == Severity.CRITICAL else None
-    levels = {subject.key: subject for subject in subjects if subject.key.startswith('water:unit:')
-              and unit_of(subject.key) is not None}
+    levels = {subject.key: subject for subject in subjects if unit_of(subject.key) is not None}
     held = {unit_of(key) for key, subject in levels.items() if subject.holds}
     return held | {unit_of(key) for key in AlarmSubjectState.objects.filter(key__in=list(levels), open_alarm__isnull=False)
                    .values_list('key', flat=True)}
@@ -704,7 +701,7 @@ def water(now, rules, oxygen_pass=None):
     subjects.append(system_subject(SENSORS_FAILED, failed, Severity.CRITICAL, _text(_(
         'The live water values (the sensors) cannot be read: alarms are not cleared until they can.')), now,
         farm_wide=True))
-    subjects += [system_subject(f'unit:{unit.pk}:{UNIT_UNEVALUATED}', unit.pk in unevaluated, Severity.CRITICAL, _text(_(
+    subjects += [system_subject(unit_subject(unit.pk, UNIT_UNEVALUATED), unit.pk in unevaluated, Severity.CRITICAL, _text(_(
         '%(unit)s: the water could not be evaluated; its alarms are neither raised nor cleared until it can.'),
         unit=unit.code), now, parameter=UNIT_UNEVALUATED, where=_unit_where(unit)) for unit in units]
     # A unit with fish read nowhere (no point of its own, no system) has no water alarm at all: a configuration warning
@@ -712,7 +709,7 @@ def water(now, rules, oxygen_pass=None):
     # of the branch, R2), so it holds only for a unit counted with fish that the water does not find holding any now. A
     # unit read at its system has its levels (review 5, M1): its note is the "From its system" its values say.
     stocked = {pk for pk in stocked if found_water.get(pk) is None or found_water[pk].silent_oxygen is None}
-    subjects += [system_subject(f'unit:{unit.pk}:{NO_WATER_POINT}', unit.pk in stocked, Severity.WARNING, _text(_(
+    subjects += [system_subject(unit_subject(unit.pk, NO_WATER_POINT), unit.pk in stocked, Severity.WARNING, _text(_(
         '%(unit)s holds fish and has no active sampling point for its own water: its water raises no alarm until it '
         'has one.'), unit=unit.code), now, parameter=NO_WATER_POINT, where=_unit_where(unit)) for unit in units]
     subjects += _refused_subjects(units, found_water, unevaluated, failed, now)
@@ -774,20 +771,18 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
     subjects = [system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
         'The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used until the rows '
         'are restored.'), severities=missing or '-'), now, farm_wide=True)]
-    from django.conf import settings
-    watched = settings.ALARM_SUPERVISE_REACH
-    unreached = _unreached() if watched else 0
+    unreached = _unreached()
     # No count in the text (review 4, R3; review 3, S8): everyone the rules reach sees this alarm.
     subjects.append(system_subject(UNREACHED, bool(unreached), Severity.CRITICAL, _text(_(
         'One or more critical alarms reached nobody at their level: no recipient rule names a person who may see them, '
         'or their notifications cannot leave. A person who holds Oversee sees them on Alarms: tell the people who keep '
         'those fish.')), now, farm_wide=True))
     from .transports import connected_channels
-    subjects.append(system_subject(NO_CHANNEL, watched and not connected_channels(), Severity.CRITICAL, _text(_(
+    subjects.append(system_subject(NO_CHANNEL, not connected_channels(), Severity.CRITICAL, _text(_(
         'No notification channel is connected: no alarm leaves this system. Every alarm is shown on the pages only, '
         'until a transport is connected.')), now, farm_wide=True))
     from .models import RecipientRule
-    subjects.append(system_subject(NO_RULES, watched and not RecipientRule.objects.filter(is_active=True).exists(),
+    subjects.append(system_subject(NO_RULES, not RecipientRule.objects.filter(is_active=True).exists(),
                                    Severity.CRITICAL,
                                    _text(_('No alarm recipient rule is active: nobody is told of any alarm. Make the '
                                            'recipient rules (Company › Alarms › Alarm recipients).')), now,

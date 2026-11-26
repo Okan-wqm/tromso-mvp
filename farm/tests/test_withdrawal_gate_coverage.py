@@ -216,6 +216,20 @@ NOT_INPUT_COLUMNS = {
     ('tanks', 'production_department_id'): 'gives the site\'s clock; a unit with stock records stays on its site '
                                            '(Tank.clean)',
 }
+# Inputs the guard does NOT cover, said here so that nothing else slips in beside them. Since the degree-days count a
+# probe's day (farm/water/degree_days.py, H-2 of the architecture audit, 2026-11-26), where a temperature channel is
+# bound and since when are withdrawal inputs; the readings themselves are written by the ingest service and cannot be
+# guarded by Django at all. A binding moved, a channel retired or a reading arriving late changes a degree-day end
+# without the guard's question: OPEN, the coordinator's and the owner's decision (register the bindings in the gate and
+# guard sensors/bindings.py, or keep the probe days outside it and say so on the page).
+UNGUARDED_SENSOR_INPUTS = {
+    ('sensors_binding', column): 'where and since when a probe counts for a degree-day day: not guarded (above)'
+    for column in ('channel_id', 'equipment_id', 'is_deleted', 'note', 'point_id', 'role', 'system_id', 'valid_from',
+                   'valid_to')
+} | {
+    ('sensors_channel', column): 'the probe\'s number, quantity and state: not guarded (above)'
+    for column in ('channel_no', 'is_deleted', 'note', 'ph_scale', 'ph_scale_from', 'quantity', 'unit')
+}
 # Whole tables that are not inputs: the batch and the site are identities and clocks (a site's time zone moves "today"
 # for every record alike, never one withdrawal against another); the stock's own rows are registered.
 NOT_INPUT_TABLES = {
@@ -285,7 +299,8 @@ class RegistryCoverageTests(LoopTestCase):
         said = {table for table, why in NOT_INPUT_TABLES.items() if why}
         missing = sorted((table, column) for table, column in read
                          if table not in whole | said and (table, column) not in registered | conditional
-                         and column not in NOT_INPUTS and (table, column) not in NOT_INPUT_COLUMNS)
+                         and column not in NOT_INPUTS and (table, column) not in NOT_INPUT_COLUMNS
+                         and (table, column) not in UNGUARDED_SENSOR_INPUTS)
         self.maxDiff = None
         self.assertEqual(missing, [])
 

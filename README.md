@@ -2999,7 +2999,10 @@ corrected temperature or a backdated transfer changes it at once:
   With the batch in several units that day, the lowest counts. **A daily mean of 0 °C or below adds nothing**: the sum
   never goes down. **Every end says how many days came from each source** ("Days counted: 12 days measured by the
   sensors, 3 days from water samples, 2 days without a measurement, 5 days projected."), and a sensor read that failed
-  is said ("The sensors could not be read: ..."). Not reached by today, the rest is projected at the mean of the last 7
+  is said ("The sensors could not be read: ..."). **Open: the probe days are outside the withdrawal guard**: a probe
+  bound or moved, a channel retired or readings arriving late change a degree-day end without the guard's question
+  (`farm/tests/test_withdrawal_gate_coverage.py` `UNGUARDED_SENSOR_INPUTS`; the readings are written by the ingest and
+  cannot be guarded by Django); the owner decides whether bindings join the guard. Not reached by today, the rest is projected at the mean of the last 7
   measured days within 30 ("about"); with none measured, at the species' assumed temperature when it has one
   ("Projected at the assumed 8.0 °C ... no water temperature was measured in the last 30 days"), else, or at a
   projection of 0 °C or below, the end is unknown ("record the water temperature");

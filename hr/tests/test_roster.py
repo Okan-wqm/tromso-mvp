@@ -144,7 +144,7 @@ class RulesThroughTheFormTests(RosterTestCase):
         self.post_cell(self.in_a, MONDAY, self.night, actor=self.planner)
         before = (ShiftAssignment.objects.count(), AuditLog.objects.count())
         response = self.post_cell(self.in_a, date(2026, 3, 3), self.late)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 422)
         self.assertTrue(response.context['form'].non_field_errors())
         self.assertEqual((ShiftAssignment.objects.count(), AuditLog.objects.count()), before)
 
@@ -153,7 +153,7 @@ class RulesThroughTheFormTests(RosterTestCase):
         self.post_cell(self.in_a, MONDAY, self.night, actor=self.planner)          # 22:00 Monday to 06:00 Tuesday
         before = (ShiftAssignment.objects.count(), AuditLog.objects.count())
         response = self.post_cell(self.in_a, date(2026, 3, 3), small_hours)        # 02:00 Tuesday: inside the night
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['form'].non_field_errors(), ['This shift overlaps another shift of the person.'])
         self.assertEqual((ShiftAssignment.objects.count(), AuditLog.objects.count()), before)
 
@@ -358,7 +358,7 @@ class RosterUrlTests(RosterTestCase):
         place(mover, self.dept_a, date(2026, 4, 1))                 # the planner's person from the first of April
         self.client.force_login(self.planner)
         refused = self.post_cell(mover, date(2026, 3, 31), self.early)
-        self.assertEqual((refused.status_code, ShiftAssignment.objects.count()), (200, 0))
+        self.assertEqual((refused.status_code, ShiftAssignment.objects.count()), (422, 0))
         self.assertEqual(refused.context['form'].non_field_errors(), ['You do not plan this person on this day.'])
         self.post_cell(mover, date(2026, 4, 1), self.early)
         self.assertEqual(ShiftAssignment.objects.count(), 1)

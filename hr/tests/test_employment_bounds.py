@@ -81,7 +81,7 @@ class EmploymentBoundsTests(EmploymentCase):
             response = self.client.post(reverse('hr:production_leaverequest_create'), {
                 'employee': str(self.in_a.pk), 'leave_type': str(self.annual.pk), 'first_day': '2026-03-30',
                 'last_day': '2026-04-03', 'reason': ''})
-            self.assertEqual(response.status_code, 200, actor)
+            self.assertEqual(response.status_code, 422, actor)
             self.assertTrue(response.context['form'].errors, actor)
         self.assertEqual(self.counts(), before)
 
@@ -98,7 +98,7 @@ class EmploymentBoundsTests(EmploymentCase):
         response = self.client.post(reverse('hr:production_attendancerecord_create'), {
             'employee': str(self.in_a.pk), 'clock_in': '2025-12-30T06:00', 'clock_out': '2025-12-30T14:00',
             'note': 'Forgot'})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 422)
         self.assertIn('joined on', ' '.join(response.context['form'].non_field_errors()))
         self.assertEqual(self.counts(), before)
 
@@ -110,7 +110,7 @@ class EmploymentBoundsTests(EmploymentCase):
             response = self.client.post(reverse('hr:production_leaverequest_create'), {
                 'employee': str(self.in_a.pk), 'leave_type': str(self.annual.pk), 'first_day': '2025-12-29',
                 'last_day': '2026-01-02', 'reason': ''})
-            self.assertEqual(response.status_code, 200, actor)
+            self.assertEqual(response.status_code, 422, actor)
             self.assertIn('joined on', ' '.join(response.context['form'].non_field_errors()), actor)
         self.assertEqual(self.counts(), before)
 
@@ -194,7 +194,7 @@ class CheckedUnderTheLockTests(EmploymentCase):
             response = self.client.post(reverse('hr:production_leaverequest_create'), {
                 'employee': str(self.in_a.pk), 'leave_type': str(self.annual.pk), 'first_day': '2026-03-02',
                 'last_day': '2026-03-03', 'reason': ''})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 422)
         self.assertIn('Ann left on 31 Mar 2026.', response.context['form'].non_field_errors())
         self.assertEqual(self.counts(), before)
 

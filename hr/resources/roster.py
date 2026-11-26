@@ -85,9 +85,10 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
         return Shift.objects.filter(status='active')
 
     @classmethod
-    def plan(cls, request, employee, day, values):
-        """The cell through hr.services.plan_day; the warnings it was saved with are told (and are in its log entry)."""
-        row, warnings = services.plan_day(request.user, employee, day, values['shift'], values['note'])
+    def plan(cls, request, employee, day, values, expected):
+        """The cell through hr.services.plan_day, as the dialog knows it (`expected`: no plan yet, or the one edited); the
+        warnings it was saved with are told (and are in its log entry)."""
+        row, warnings = services.plan_day(request.user, employee, day, values['shift'], values['note'], expected)
         for finding in warnings:
             messages.warning(request, rules.text(finding))
         return row
@@ -95,11 +96,11 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
     @classmethod
     def create_record(cls, request, form):
         values = form.cleaned_data
-        return cls.plan(request, values['employee'], values['day'], values)
+        return cls.plan(request, values['employee'], values['day'], values, None)
 
     @classmethod
     def change_record(cls, request, form, current):
-        return cls.plan(request, current.employee, current.day, form.cleaned_data)
+        return cls.plan(request, current.employee, current.day, form.cleaned_data, current)
 
     @classmethod
     def delete_record(cls, request, record):

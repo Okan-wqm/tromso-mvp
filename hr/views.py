@@ -59,8 +59,7 @@ def parse_cells(values):
 def plan(request):
     """Sets one shift, planned off or nothing on every cell sent (`cells`, repeated; `shift`: a shift's id, `off` or
     `clear`), all or none. A cell whose person the user does not reach on its day (a forged id, a day before a newcomer
-    is theirs: hr.scope.visible_days, the rule the grid is drawn by and the service plans by) is a 404 and writes
-    nothing; a blocking finding or one's own cell refuses the batch with the reason; warnings are told after the save.
+    is theirs: hr.scope.can_reach, asked cell by cell, the rule the service plans by) is a 404 and writes nothing; a blocking finding or one's own cell refuses the batch with the reason; warnings are told after the save.
     Someone with no right to plan is refused before the request is read."""
     if not services.can_plan(request.user):
         raise PermissionDenied
@@ -77,12 +76,8 @@ def plan(request):
             shift = Shift.objects.get(pk=choice, status='active')
         except (Shift.DoesNotExist, ValueError, ValidationError):
             return HttpResponseBadRequest()
-    days = [day for _pk, day in cells]
-    visible = scope.visible_days(request.user, min(days), max(days))
-    if visible is not None and any(day not in visible.get(pk, ()) for pk, day in cells):
-        raise Http404
     reachable = {employee.pk: employee for employee in Employee.objects.filter(pk__in=[pk for pk, _day in cells])}
-    if any(pk not in reachable for pk, _day in cells):
+    if any(pk not in reachable or not scope.can_reach(request.user, reachable[pk], day) for pk, day in set(cells)):
         raise Http404
     target = _return(request, _here(request, 'hr:shiftassignment_list'))
     try:

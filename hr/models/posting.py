@@ -29,6 +29,8 @@ class Posting(AuditedModel):
 
     Both links are PROTECT: a department with people placed in it is made inactive, not deleted."""
 
+    service_written = True       # hr.services is its one writer (core.models.AuditedModel)
+
     employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='postings',
                                  verbose_name=_('Employee'))
     production_department = models.ForeignKey(

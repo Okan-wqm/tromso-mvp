@@ -109,11 +109,54 @@ def site_on(employee, day):
 @dataclass(frozen=True)
 class Governing:
     """What governs a person at a moment (`governing`): the placement, its department's site, the day of the moment on
-    that site's clock and the clock's zone."""
+    that site's clock and the clock's zone; and `company_day`, the day the placement was chosen on, which is the day
+    that says whose the moment is (the reach and the realm of a record at that moment are read on it, so the lead and
+    the clock always come from the same placement)."""
     posting: object
     site: object
     day: date
     zone: object
+    company_day: date
+
+
+def placed_on(placed, day):
+    """The placement among `placed` (a person's, read beforehand) that covers `day`, or None."""
+    return next((p for p in placed if p.valid_from <= day and (p.valid_until is None or p.valid_until >= day)), None)
+
+
+def site_of_day(placed, day):
+    """The site whose clock and holidays govern a person's DAY (a planned day, a day of leave): the site of the
+    department they are placed in on that day; None (the company's clock) without one."""
+    posting = placed_on(placed, day)
+    return site_of_posting(posting) if posting is not None else None
+
+
+def placements(employee_ids, first, last):
+    """{employee id: their placements in force between `first` and `last`, with the departments' sites}: one query."""
+    found = defaultdict(list)
+    for posting in Posting.objects.filter(scope.overlapping(first, last), employee__in=employee_ids).select_related(
+            'production_department__site', 'office_department__site').order_by('valid_from'):
+        found[posting.employee_id].append(posting)
+    return found
+
+
+def planned_shifts(shifts, placed):
+    """[rules.Planned] of a person's plan `shifts` ({day: Shift}): each shift as real instants on the clock of the site
+    the person is placed on THAT day (`placed`), in day order. The one reading of a planned day, for the rules of a save
+    (hr.services.evaluate) and for the week's grid (`week`): a person who moves between sites on different clocks in a
+    week is read the same by both."""
+    found = []
+    for day, shift in sorted(shifts.items()):
+        start, end = clock.span(day, shift, zone_of(site_of_day(placed, day)))
+        found.append(rules.Planned(day, start, end, clock.net_minutes(start, end, shift.break_minutes)))
+    return found
+
+
+def holidays_on(table, placed):
+    """{day: Holiday} of the holidays in `table` (hr.leave.holiday_table) that hold for the person: those of every site
+    and those of the site they are placed on that day."""
+    return {holiday.day: holiday for holiday in table
+            if holiday.site_id in (None, getattr(site_of_day(placed, holiday.day), 'pk', None))}
 
 
 def governing_of(placed, moment):
@@ -124,11 +167,10 @@ def governing_of(placed, moment):
     company's clock. Every HR read and write of a moment asks this, or `governed`, its SQL form: the services' reach and
     employment rule, the Attendance page, the board, the people on shift for the alarms."""
     company_day = timezone.localdate(moment, zone_of(None))
-    posting = next((p for p in placed if p.valid_from <= company_day
-                    and (p.valid_until is None or p.valid_until >= company_day)), None)
+    posting = placed_on(placed, company_day)
     site = site_of_posting(posting) if posting is not None else None
     zone = zone_of(site)
-    return Governing(posting, site, timezone.localdate(moment, zone), zone)
+    return Governing(posting, site, timezone.localdate(moment, zone), zone, company_day)
 
 
 def governing(employee, moment):
@@ -144,9 +186,10 @@ class OnClock(Func):
 
 
 def governed(objects, moment='clock_in', employee='employee'):
-    """`objects` (a person's records at a moment) with `governing` in SQL, for a query of many: `zone_name`, the time zone
-    of the site of the placement of the company's day of `moment` (the company's when there is none), and
-    `governing_day`, the moment's day on that clock. Subqueries, not a query per row; held to `governing` by a test."""
+    """`objects` (a person's records at a moment) with `governing` in SQL, for a query of many: `company_day`, the day
+    the placement is chosen on (whose the record is: hr.scope.stretches reads the reach on it), `zone_name`, the time
+    zone of that placement's site (the company's when there is none), and `governing_day`, the moment's day on that
+    clock. Subqueries, not a query per row; held to `governing` by a test."""
     placement = Posting.objects.filter(scope.covering(OuterRef('company_day')), employee=OuterRef(employee))
     return objects.annotate(company_day=TruncDate(moment, tzinfo=company_zone())).annotate(zone_name=Coalesce(
         Subquery(placement.values('production_department__site__timezone')[:1]),
@@ -294,31 +337,21 @@ def week(user, week_start, department=None, page=1, per_page=50, query='', realm
     plan = {}
     for row in ShiftAssignment.objects.filter(employee__in=ids, day__range=window).select_related('shift'):
         plan.setdefault(row.employee_id, {})[row.day] = row
-    postings = {}
-    for posting in Posting.objects.filter(scope.overlapping(days[0], days[-1]), employee__in=ids).select_related(
-            'production_department__site', 'office_department__site').order_by('valid_from'):
-        postings.setdefault(posting.employee_id, []).append(posting)
+    postings = placements(ids, window[0], window[1])
     holidays = list(Holiday.objects.filter(day__range=(days[0], days[-1])))
     on_leave = leave.approved_days(ids, window[0], window[1])
     rows = []
     for employee in employees:
         placed = postings.get(employee.pk, [])
         reach = visible.get(employee.pk, set()) if visible is not None else set(days)
-        # the department, site and clock are those of the first day the viewer reaches the person on, never another team's
-        first_reached = min(reach) if reach else days[0]
-        head = next((p for p in placed if p.valid_from <= first_reached and (p.valid_until is None
-                                                                             or p.valid_until >= first_reached)), None)
-        site = site_of_posting(head) if head is not None else None
-        zone = zone_of(site)
+        # the department named is that of the first day the viewer reaches the person on, never another team's
+        head = placed_on(placed, min(reach) if reach else days[0])
         mine = plan.get(employee.pk, {})
-        holiday_of = {holiday.day: holiday for holiday in holidays if holiday.site_id in (None, getattr(site, 'pk', None))}
-        planned = []
-        for day, assignment in sorted(mine.items()):
-            # only what the viewer reaches goes into the rules, so a finding cannot show a shift of another team's days
-            if assignment.shift is not None and (visible is None or day in reach):
-                first, last = clock.span(day, assignment.shift, zone)
-                planned.append(rules.Planned(day, first, last, clock.net_minutes(first, last,
-                                                                                assignment.shift.break_minutes)))
+        holiday_of = holidays_on(holidays, placed)
+        # only what the viewer reaches goes into the rules, so a finding cannot show a shift of another team's days; each
+        # day on the clock of the site the person is placed on that day (planned_shifts)
+        planned = planned_shifts({day: assignment.shift for day, assignment in mine.items()
+                                  if assignment.shift is not None and (visible is None or day in reach)}, placed)
         away = on_leave.get(employee.pk, set())
         found = rules.findings(planned, away, set(holiday_of), settings, [start])
         cells = []

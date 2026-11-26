@@ -69,7 +69,7 @@ class LeaveRequestForm(TabbedForm):
         own = Employee.objects.filter(user=user).first() if user is not None else None
         if self.instance._state.adding and own is not None and not self.is_bound:
             self.initial.setdefault('employee', own.pk)
-        self.fields['leave_type'].queryset = LeaveType.objects.filter(status='active')
+        self.fields['leave_type'].queryset = LeaveType.objects.filter(status=LeaveType.Status.ACTIVE)
         if not self.fields['leave_type'].queryset.exists():
             # An empty list with no word of why was a dead end (flow fault B-03): say what is missing and where it is.
             # Where: by the menu's own names (core.navigation.trail, as the correction window's refusal says its page,

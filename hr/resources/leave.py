@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.db.models import Case, Exists, OuterRef, Q, Value, When
+from django.db.models import Case, Q, Value, When
 from django.utils.translation import gettext_lazy as _
 
 from django.template.defaultfilters import floatformat
@@ -117,10 +117,7 @@ class LeaveRequestResource(services.PersonFirst, Resource):
         if tab != 'all':
             objects = objects.filter(status=tab)
         total = objects.count()
-        # whether the viewer decides each request, by the one rule (scope.deciding), read with the rows
-        decides = scope.deciding(request.user, LeaveRequest.objects.filter(pk=OuterRef('pk')))
-        shown = list(objects.annotate(viewer_decides=Exists(decides)).order_by('first_day', 'employee__last_name')[
-            :cls.LIMIT])
+        shown = list(objects.order_by('first_day', 'employee__last_name')[:cls.LIMIT])
         counts = {name: everything.filter(status=name).count() for name in ('pending', 'approved', 'rejected')}
         return cls.shown(request, shown), {'tabs': TABS, 'tab': tab, 'counts': counts, 'total': total,
                                            'limit': cls.LIMIT, 'all_count': sum(counts.values()) +
@@ -130,8 +127,10 @@ class LeaveRequestResource(services.PersonFirst, Resource):
     def shown(cls, request, requests):
         """Each request with what the viewer may do and see, in a fixed number of queries: the charge in days (the holidays
         and the people's sites read once), the reason (the person's and Everyone's only) and the buttons. The requests are
-        the viewer's team's already (`scoped`), and whether the viewer decides each is read with them (`viewer_decides`)."""
+        the viewer's team's already (`scoped`), and which of them the viewer decides is asked once, by the one rule
+        (hr.services.deciders_of), and handed to the questions of each row."""
         sees_types = cls.sees_every_type(request.user)
+        decided_here = services.deciders_of(request.user, requests)
         sites = read.sites_of([(item.employee_id, item.first_day) for item in requests])
         holidays = leave.holiday_table([item.first_day for item in requests], [item.last_day for item in requests])
         weekdays = SchedulingSettings.get().working_weekdays
@@ -144,10 +143,11 @@ class LeaveRequestResource(services.PersonFirst, Resource):
                                          weekdays, holidays),
                 'show_reason': scope.sees_reason(request.user, item.employee),
                 'show_type': own or sees_types,
-                'can_decide': services.can_decide(request.user, item),
-                'can_cancel': services.can_cancel(request.user, item,
+                'can_decide': services.can_decide(request.user, item, decider=item.pk in decided_here),
+                'can_cancel': services.can_cancel(request.user, item, decider=item.pk in decided_here,
                                                   today=site_today(sites[(item.employee_id, item.first_day)])),
-                'can_shorten': item.first_day < item.last_day and services.can_correct(request.user, item),
+                'can_shorten': item.first_day < item.last_day and services.can_correct(
+                    request.user, item, decider=item.pk in decided_here),
                 'shorten_to': item.last_day - timedelta(days=1),          # the latest new last day the service takes
             })
         return rows

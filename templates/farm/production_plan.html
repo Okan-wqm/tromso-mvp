@@ -1,0 +1,29 @@
+{% extends base_template %}
+{% load i18n feeding farm_words %}
+{% comment %} Operations › Harvest › Production plans › Growth plan (farm.harvest.views.production_plan): a batch in a
+   unit, where its plan starts (today's estimate or a measured point), the plan a week at a time, the measured weights
+   beside it and every day as a file. The page draws the same props the new look's island draws
+   (farm/harvest/plan_page.py), so the two looks say the same.{% endcomment %}
+{% block title %}{{ title }}{% endblock %}
+{% block eyebrow %}{{ eyebrow }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block content %}{% farm_words as fw %}
+{% include "farm/_harvest_tabs.html" %}
+<nav class="ui-tabs" aria-label="{{ props.tabs.label }}">
+  {% for tab in props.tabs.tabs %}<a class="ui-tab" href="{{ tab.href }}"{% if tab.current %} aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
+</nav>
+{% for line in props.lines %}<p class="panel-help">{{ line }}</p>{% endfor %}
+{% for notice in props.notices %}<p class="notice">{{ notice.text }} <a href="{{ notice.link.href }}">{{ notice.link.label }}</a>{% for link in notice.more %} · <a href="{{ link.href }}">{{ link.label }}</a>{% endfor %}</p>{% endfor %}
+{% for section in props.sections %}
+<section class="panel" aria-labelledby="section-{{ section.key }}">
+  <h3 class="panel-title" id="section-{{ section.key }}">{{ section.title }}</h3>
+  {% for line in section.lines %}<p class="contact-empty">{{ line }}</p>{% endfor %}
+  {% if section.rows %}{% include "farm/_props_table.html" with columns=section.columns rows=section.rows label=section.title %}{% endif %}
+</section>
+{% endfor %}
+<section class="panel" aria-labelledby="plan-title">
+  <h3 class="panel-title" id="plan-title">{{ fw.growth_plan }}</h3>
+  {% if props.table.rows %}{% include "farm/_props_table.html" with columns=props.table.columns rows=props.table.rows label=props.table.label %}
+  {% else %}<p class="contact-empty">{{ props.empty.title }}</p>{% endif %}
+</section>
+{% endblock %}

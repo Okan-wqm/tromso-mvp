@@ -4,6 +4,7 @@ read, so a rule that depends on one cannot read it its own way.
 - `correction_window_days()`: how far back a daily record may be dated and how old a record may be voided (farm/stock/
   dates.py applies it; every message that names the days reads it here), and `window_way_out()`, the sentence every
   refusal by the window ends with: whose setting it is and where it is changed;
+- `plan_horizon_days()`: how many days ahead a production plan walks a batch's growth;
 - `second_approval_required(kind)`: whether an acknowledgement of that kind waits for a second person (the kinds are
   APPROVALS); the hook of the withdrawal acknowledgement calls it with 'withdrawal';
 
@@ -53,6 +54,11 @@ def correction_window_days():
 def unknown_withdrawal_days():
     """How many days after a course's last day a medicine withdrawal whose end is unknown holds fish."""
     return current().unknown_withdrawal_days
+
+
+def plan_horizon_days():
+    """How many days ahead a production plan looks (farm/harvest/forecast.py)."""
+    return current().plan_horizon_days
 
 
 def window_way_out():

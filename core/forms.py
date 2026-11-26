@@ -150,6 +150,7 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
 PLATFORM_TABS = [
     ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal', 'unknown_withdrawal_days']),
     ('clocks', _('Clocks'), ['clock_tolerance_seconds']),
+    ('plans', _('Plans'), ['plan_horizon_days']),
 ]
 
 
@@ -184,4 +185,7 @@ class PlatformSettingsForm(TabbedForm):
                                          'count as fresh (a device or tablet clock a little fast). A value further ahead, '
                                          'up to an hour, still decides its unit’s status and its alarm, but is not shown '
                                          'as the newest. 0 to 3600; 300 until you set another.'),
+            'plan_horizon_days': _('How many days ahead a production plan walks a batch’s growth. A target weight not '
+                                   'reached within them is said as not reached. 7 to 3650; 730 until you set '
+                                   'another.'),
         }

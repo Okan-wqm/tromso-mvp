@@ -15,8 +15,17 @@ EXPECTED_FCR = _('Expected FCR')
 ONE_ROW_PER_WEIGHT_BAND_FROM = _('One row per weight band, from its lower weight up to, not including, its upper one; the bands '
       'meet without gaps and only the last may have no upper weight. Fish outside the bands, or in '
       'water outside the first and last temperature column, get no ration. In each cell the SFR, the %% '
-      'of the body weight fed a day; 0 means no feeding at that temperature. An empty FCR is the '
-      'protocol’s. The table is saved as a whole.')
+      'of the body weight fed a day; 0 means no feeding at that temperature. An empty FCR, uneaten share or '
+      'mortality is the protocol’s. The FCR and the uneaten share of fish between two bands are read in '
+      'between them; the SFR is its band’s. The table is saved as a whole.')
+UNEATEN_FEED = _('Uneaten feed')
+ECONOMIC_FCR = _('Economic FCR')
+MORTALITY_A_MONTH = _('Mortality a month')
+BETWEEN_TWO_BANDS_THE_FCR = _('Each band’s FCR and uneaten share sit at the middle of the band (a band without an upper '
+                              'weight: at its lower weight). For fish between two middles both are read in between, so '
+                              'neither jumps at a band’s edge; the SFR is read from the fish’s own band at the water '
+                              'temperature. The economic FCR is the FCR on the feed given: the FCR divided by the '
+                              'share eaten.')
 FROM_G = _('From (g)')
 UP_TO_G = _('Up to (g)')
 REMOVE = _('Remove')
@@ -170,10 +179,44 @@ ESTIMATED_NOW_TARGET_REACHED = _('Estimated now · target reached')
 EXPECTED_HARVEST = _('Expected harvest')
 LAST_FED = _('Last fed')
 THE_TARGET_WEIGHT_EACH_BATCH_IS_GROWN = _('The target weight each batch is grown to for harvest. The estimated '
-                                          'weight now is the feeding protocols’ estimate; the day it reaches the '
-                                          'target walks it forward on the ration of each day, at the unit’s '
-                                          'latest temperature held, with no growth on a fasting day. The '
+                                          'weight now is the feeding protocols’ estimate from the feedings recorded; '
+                                          'the plan walks it forward a day at a time, every day’s ration counted as '
+                                          'given: the feed less the protocol’s uneaten share, divided by its FCR, at '
+                                          'the site’s monthly water temperatures or, without them, the unit’s latest '
+                                          'temperature held, with no growth on a fasting day. Growth plan opens the '
+                                          'curve, the feed to the target and the measured weights beside it. The '
                                           'expected harvest is the date given when the batch was stocked.')
+GROWTH_PLAN = _('Growth plan')
+PLAN_FROM = _('Plan from')
+TODAYS_ESTIMATE = _('Today’s estimate')
+MEASURED_AGAINST_THE_PLAN = _('Measured against the plan')
+MEASURED = _('Measured')
+ESTIMATED_BEFORE_IT = _('Estimated before it')
+PLANNED_THAT_DAY = _('Planned that day')
+FCR_REALISED_EXPECTED = _('FCR realised · expected')
+BIOMASS = _('Biomass')
+FEED_THAT_DAY = _('Feed that day')
+FEED_TO_DATE = _('Feed to date')
+EATEN = _('Eaten')
+UNEATEN = _('Uneaten')
+FCR_IN_FORCE = _('FCR in force')
+TEMPERATURE = _('Temperature')
+FASTING_DAY = _('fasting day')
+STOCKED = _('Stocked')
+WEIGHED = _('Weighed')
+HARVESTED_OUT = _('Harvested out')
+DOWNLOAD_EVERY_DAY_CSV = _('Download every day (CSV)')
+BACK_TO_PRODUCTION_PLANS = _('Back to Production plans')
+NO_DAY_IS_PLANNED = _('No day is planned.')
+THE_PLAN_AHEAD_COUNTS = _('Every day of the plan counts the day’s ration as given. A past day is never planned: the '
+                          'estimate between weighings grows on the feedings recorded only, and a day without one '
+                          'adds nothing. A weighing sets the estimate to the measured weight, and the plan ahead '
+                          'starts again from it.')
+THE_TABLE_SHOWS_ONE_DAY_A_WEEK = _('The table shows one day a week and the last day; the file has every day.')
+THE_SFR_IS_ITS_BANDS = _('The SFR is read from the fish’s own weight band at the temperature; the FCR and the uneaten '
+                         'share are read between the bands, without a jump. A month of mortality is 30 days; the '
+                         'fish that die are taken to weigh the average.')
+NO_MEASURED_POINT_YET = _('No measured weight in this unit yet.')
 HARVESTS_AND_TRANSPORTS = _('Harvests and transports')
 EDIT_OR_CANCEL = _('Edit or cancel')
 SET_TARGET = _('Set target')

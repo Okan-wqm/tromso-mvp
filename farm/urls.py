@@ -44,6 +44,8 @@ urlpatterns += [
     path('operations/water/round/', water.record_round, name='water_round'),
     path('operations/water/void/<uuid:pk>/', water.void_sample, name='water_void'),
     path('operations/harvests/', harvest.harvests, name='harvests'),
+    path('operations/production-plans/growth/<uuid:unit_pk>/<uuid:batch_pk>/', harvest.production_plan,
+         name='production_plan'),
     path('operations/health/treatments/', health.treatments, name='treatments'),
     path('operations/health/treatments/new/', health.record_treatment, name='treatment_record'),
     path('operations/health/treatments/<uuid:pk>/last-day/', health.change_last_day, name='treatment_last_day'),

@@ -6,7 +6,7 @@ from core.crud import CodedFormMixin, TabbedForm, tab_fields
 from core.widgets import DayInput
 
 from ..models import Site, SiteContact
-from ..models.site import company_zone
+from ..models.site import PLAN_TEMPERATURES, PLAN_TEMPERATURES_MESSAGE, company_zone
 from .contact import contact_formset
 
 # The source form's inner tabs (Basic info / Location info / Contact info) and their fields.
@@ -22,6 +22,8 @@ SITE_FORM_TABS = [
     ('contact', _('Contact'), ['site_manager', 'contact_email', 'contact_phone']),
     # What the regulatory reports need of the site (Production › Reports).
     ('reports', _('Reports'), ['organisation_number', 'production_form', 'reports_from']),
+    # The water temperature a production plan reads for each month ahead (Operations › Harvest › Production plans).
+    ('plan', _('Plan temperatures'), list(PLAN_TEMPERATURES)),
 ]
 
 
@@ -45,7 +47,7 @@ class SiteForm(CodedFormMixin, TabbedForm):
         fields = tab_fields(SITE_FORM_TABS)
         # Quantities are typed and shown the way the language writes them (50000,5 or 50000.5), so
         # they are text inputs: a number input would use the browser's own language instead.
-        localized_fields = ['area_m2', 'latitude', 'longitude', 'altitude']
+        localized_fields = ['area_m2', 'latitude', 'longitude', 'altitude', *PLAN_TEMPERATURES]
         field_classes = {'organisation_number': OrganisationNumberField}
         help_texts = {
             'lokalitetsnummer': _('Akvakulturregisteret locality number (5 digits). '
@@ -80,6 +82,7 @@ class SiteForm(CodedFormMixin, TabbedForm):
             'site_manager': forms.TextInput(attrs={'placeholder': _('Full name of the site manager')}),
             'contact_email': forms.EmailInput(attrs={'placeholder': 'email@example.com'}),
             'contact_phone': forms.TextInput(attrs={'placeholder': '+47 XXX XX XXX', 'type': 'tel'}),
+            **{name: forms.TextInput(attrs={'inputmode': 'decimal'}) for name in PLAN_TEMPERATURES},
         }
 
     def __init__(self, *args, **kwargs):
@@ -91,6 +94,9 @@ class SiteForm(CodedFormMixin, TabbedForm):
             zone.initial = company_zone()
         self.fields['lice_area'].choices = [('', _('Not set'))] + list(Site.LiceArea.choices)
         self.fields['production_form'].choices = [('', _('Not set'))] + list(Site.ProductionForm.choices)
+        self.fields[PLAN_TEMPERATURES[0]].help_text = _(
+            'The water temperature a production plan reads for each day ahead in that month. Give all twelve, or '
+            'none: without them a plan holds the unit’s latest temperature for every day ahead, and says so.')
 
     def clean(self):
         cleaned = super().clean()
@@ -103,6 +109,10 @@ class SiteForm(CodedFormMixin, TabbedForm):
         elif (latitude is None) != (longitude is None):
             field = 'longitude' if longitude is None else 'latitude'
             self.add_error(field, _('Latitude and longitude must be provided together.'))
+        given = [name for name in PLAN_TEMPERATURES if cleaned.get(name) is not None]
+        missing = [name for name in PLAN_TEMPERATURES if cleaned.get(name) is None and name not in self.errors]
+        if given and missing:
+            self.add_error(missing[0], PLAN_TEMPERATURES_MESSAGE)       # said on the first month still empty
         return cleaned
 
 

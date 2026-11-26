@@ -126,14 +126,30 @@ def _forecast(row):
     forecast = row.get('forecast')
     if not forecast:
         return L.cell(DASH)
-    if forecast.reached and forecast.temperature_c is not None:
-        sub, chips = [_('target on %(date)s, at %(temperature)s °C held') % {
-            'date': _day(forecast.day), 'temperature': floatformat(forecast.temperature_c, '1')}], ()
-    elif forecast.reached:
-        sub, chips = [], [L.chip('ok', str(words.TARGET_REACHED))]
+    said = row['forecast_said']
+    return L.cell(grams(forecast.now_g), sub=said['lines'],
+                  chips=[L.chip('ok', str(words.TARGET_REACHED))] if said['reached_already'] else ())
+
+
+def forecast_said(forecast):
+    """What a row says under its estimate now, once for both looks (the classic template draws the same lines): the day
+    the target is reached and at what temperature (held, or the site's months), then the feed to it and the economic
+    FCR of those days; why it is not reached (`warn`); or that the fish are there already (`reached_already`)."""
+    from ..templatetags.feeding import fcr, feed_kg
+    said = {'lines': [], 'reached_already': False, 'warn': False}
+    if forecast.reached and not forecast.planned:
+        said['reached_already'] = True
+    elif not forecast.reached:
+        said['lines'], said['warn'] = ([str(forecast.why)] if forecast.why else []), True
     else:
-        sub, chips = [str(forecast.why)] if forecast.why else [], ()
-    return L.cell(grams(forecast.now_g), sub=sub, chips=chips)
+        if forecast.monthly:
+            reached = _('target on %(date)s, at the site’s monthly temperatures') % {'date': _day(forecast.day)}
+        else:
+            reached = _('target on %(date)s, at %(temperature)s °C held') % {
+                'date': _day(forecast.day), 'temperature': floatformat(forecast.temperature_c, '1')}
+        said['lines'] = [reached, _('%(feed)s of feed to the target · economic FCR %(fcr)s') % {
+            'feed': feed_kg(forecast.curve.feed_kg), 'fcr': fcr(forecast.curve.economic_fcr)}]
+    return said
 
 
 def _withdrawal(row):
@@ -171,8 +187,9 @@ def production_plans(view, objects, context):
             target = L.cell(str(words.SET_TARGET), href=f"{reverse('farm:productionplan_create')}?batch={batch.pk}") \
                 if can_add else L.cell(DASH)
         weighed = _('weighed %(date)s') % {'date': _day(share.last_weighed)} if share.last_weighed else str(words.AS_STOCKED)
-        actions = [L.link(row['plan_harvest_url'], str(words.PLAN_HARVEST), 'calendar', labelled=True)] \
-            if row['plan_harvest_url'] else []
+        actions = [L.link(row['growth_url'], str(words.GROWTH_PLAN), 'chart-line', labelled=True)]
+        if row['plan_harvest_url']:
+            actions.append(L.link(row['plan_harvest_url'], str(words.PLAN_HARVEST), 'calendar', labelled=True))
         rows.append(L.row(f"{row['unit'].pk}-{batch.pk}", {
             'unit': _unit(row['unit']),
             'batch': L.cell(batch.code, sub=[batch.species.common_name]),

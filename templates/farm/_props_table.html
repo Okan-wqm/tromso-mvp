@@ -1,0 +1,10 @@
+{% load feeding %}{% comment %} A table of list props (core/listprops.py: `columns`, `rows` of cells with a text and sub-lines) drawn by the
+   server: the classic look of a page whose words are made once for both looks (farm/harvest/plan_page.py).{% endcomment %}<div class="table-wrap">
+  <table class="data-table" aria-label="{{ label }}">
+    <thead><tr>{% for column in columns %}<th scope="col"{% if column.numeric %} class="num"{% endif %}>{{ column.label }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for row in rows %}<tr>{% for column in columns %}{% with cell=row.cells|lookup:column.key %}<td{% if column.numeric %} class="num"{% endif %}>{% if cell.strong %}<span class="row-title">{{ cell.text }}</span>{% else %}{{ cell.text }}{% endif %}{% for line in cell.sub %}<span class="row-sub">{{ line }}</span>{% endfor %}</td>{% endwith %}{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

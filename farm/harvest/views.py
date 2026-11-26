@@ -10,6 +10,8 @@ from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import permission_required
 from django.core.paginator import Paginator
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext as _, ngettext
 
@@ -20,12 +22,14 @@ from core.ui import is_next
 
 from ..handling import check, fasting
 from ..models import (
-    Batch, HandlingPlanItem, ProductionDepartment, SlaughterFacility, Site, Species, StockMovement, Tank,
+    Batch, HandlingPlanItem, ProductionDepartment, ProductionPlan, SlaughterFacility, Site, Species, StockMovement,
+    Tank,
 )
 from ..models.handling import HandlingKind
 from ..models.stock import MovementKind
+from ..stock import read as stock_read
 from ..stock.dates import earliest, local_today
-from . import read
+from . import forecast, read
 
 VIEW = 'farm.view_harvestrecord'
 PLAN, TARGETS = 'farm.view_handlingplanitem', 'farm.view_productionplan'
@@ -136,3 +140,39 @@ def drawer(request, unit, stock):
         context['plan_list_url'] = f'{reverse("farm:handlingplanitem_list")}?{urlencode({"unit": unit.pk})}'
     return context
 
+
+
+# ---- a batch's growth plan ------------------------------------------------------------------------------
+@permission_required(TARGETS, raise_exception=True)
+def production_plan(request, unit_pk, batch_pk):
+    """Operations › Harvest › Production plans › Growth plan: a batch in a unit, its plan ahead from today's estimate or
+    (`?from=` a day) from a measured point, the measured weights beside it, and every day as a file (`?format=csv`).
+    Read with the production plans' right. The page's words and the file are farm/harvest/plan_page.py's."""
+    from . import plan_page
+    unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=unit_pk)
+    stock = stock_read.stock_of([unit]).get(unit.pk)
+    share = next((each for each in (stock.counted if stock is not None else ()) if each.batch.pk == batch_pk), None)
+    if share is None:
+        raise Http404
+    target = ProductionPlan.objects.filter(batch=share.batch).first()
+    target_g = target.target_weight_g if target is not None else None
+    found = forecast.plan(unit, share, target_g, read_day(request.GET.get('from', '')))
+    if found is None:
+        raise Http404
+    if request.GET.get('format') == 'csv':
+        return plan_page.csv_response(unit, share.batch, found)
+    place = navigation.place(TARGETS)
+    url = reverse('farm:production_plan', args=[unit.pk, share.batch.pk])
+    kept = {'from': found.chosen.day.isoformat()} if found.chosen is not None else {}
+    context = {
+        'title': _('Growth plan · %(unit)s · %(batch)s') % {'unit': unit.code, 'batch': share.batch.code},
+        'eyebrow': f'{place.section.label} · {place.group.label} · {place.entry.label}',
+        'unit': unit, 'batch': share.batch, 'target_g': target_g, 'plan': found, 'url': url,
+        'csv_url': f"{url}?{urlencode({**kept, 'format': 'csv'})}", 'back_url': reverse('farm:productionplan_list'),
+        'tabs': tabs(request, 'targets'),
+    }
+    context['props'] = plan_page.props(request, context)
+    if is_next(request):
+        return render_page(request, 'crud/list_next.html', {**context, 'group': context['eyebrow'],
+                                                            'list_above': 'farm/_harvest_tabs.html'})
+    return render_page(request, 'farm/production_plan.html', context)

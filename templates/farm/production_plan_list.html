@@ -1,8 +1,9 @@
 {% extends "crud/list.html" %}
 {% load i18n stock feeding health farm_words %}
 {% comment %} Operations › Harvest › Production plans (farm.resources.harvest_plan): every batch in stock in each unit
-   it is in, its book average, its target weight, the estimate now and the day the target is reached
-   (farm.harvest.forecast); "Plan harvest" starts a planned harvest of the share at the target weight, on that
+   it is in, its book average, its target weight, the estimate now, the day the target is reached with the
+   feed to it and its economic FCR (farm.harvest.forecast; worded in farm.harvest.lists.forecast_said), "Growth plan"
+   (the batch's curve and measured weights); "Plan harvest" starts a planned harvest of the share at the target weight, on that
    day. Plans of batches no longer in stock follow.{% endcomment %}
 {% block above %}{% include "farm/_harvest_tabs.html" %}{% endblock %}
 {% block search_placeholder %}{% trans "Search unit, batch or species" %}{% endblock %}
@@ -47,11 +48,12 @@
         <td class="num">{{ share.count|fish }}</td>
         <td class="num">{{ share.avg_weight_g|grams }}<span class="row-sub">{% if share.last_weighed %}{% blocktrans trimmed with date=share.last_weighed|date:"DATE_FORMAT" %}weighed {{ date }}{% endblocktrans %}{% else %}{{ fw.as_stocked }}{% endif %}</span></td>
         <td class="num">{% if plan %}{% if can_change %}<a href="{% url 'farm:productionplan_edit' plan.pk %}" data-modal>{{ plan.target_weight_g|grams }}</a>{% else %}{{ plan.target_weight_g|grams }}{% endif %}{% elif can_add %}<a href="{% url 'farm:productionplan_create' %}?batch={{ share.batch.pk }}" data-modal>{{ fw.set_target }}</a>{% else %}—{% endif %}</td>
-        <td>{% with forecast=row.forecast %}{% if forecast %}{{ forecast.now_g|grams }}{% if forecast.reached and forecast.temperature_c is not None %}<span class="row-sub">{% blocktrans trimmed with date=forecast.day|date:"DATE_FORMAT" temperature=forecast.temperature_c|floatformat:"1" %}target on {{ date }}, at {{ temperature }} °C held{% endblocktrans %}</span>{% elif forecast.reached %}<span class="row-sub">{{ fw.target_reached }}</span>{% elif forecast.why %}<span class="row-sub warn-text">{{ forecast.why }}</span>{% endif %}{% else %}—{% endif %}{% endwith %}</td>
+        <td>{% with forecast=row.forecast said=row.forecast_said %}{% if forecast %}{{ forecast.now_g|grams }}{% if said.reached_already %}<span class="row-sub">{{ fw.target_reached }}</span>{% endif %}{% for line in said.lines %}<span class="row-sub{% if said.warn %} warn-text{% endif %}">{{ line }}</span>{% endfor %}{% else %}—{% endif %}{% endwith %}</td>
         <td class="nowrap">{{ row.expected|date:"DATE_FORMAT"|default:"—" }}</td>
         <td class="nowrap">{{ row.last_fed|fed_on:row.today }}</td>
         <td>{% if row.withdrawal is None %}<span class="muted">{{ fw.not_checked }}</span>{% elif row.withdrawal %}{% for block in row.withdrawal %}<span class="row-line over-text">{{ block.batch.code }}: {{ block|harvest_from }}</span>{% endfor %}{% else %}{{ fw.none }}{% endif %}{% if row.earliest.decides %}<span class="row-sub">{{ row.earliest.text }}</span>{% endif %}</td>
         <td class="row-actions">
+          <a class="button button-ghost" href="{{ row.growth_url }}">{{ fw.growth_plan }}</a>
           {% if row.plan_harvest_url %}<a class="button button-ghost" href="{{ row.plan_harvest_url }}" data-modal>{{ fw.plan_harvest }}</a>{% endif %}
           {% if plan and can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:productionplan_delete' plan.pk %}" data-modal title="{{ fw.delete }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{{ fw.delete }}</span></a>{% endif %}
         </td>

@@ -5,7 +5,8 @@ page of computed rows.
   (the linked operation's lines), the fast it asks of its unit, a medicine withdrawal on its day, and
   "Record harvest" / "Record transfer", which opens the stock's dialog started from it.
 - Production plans: every batch in stock in each unit it is in, with its target weight, its estimated weight
-  now and the day it reaches the target (farm/harvest/forecast.py, from the feeding protocols' projection).
+  now, the day it reaches the target, the feed to get there and its economic FCR (farm/harvest/forecast.py, from the
+  feeding protocols' projection), and "Growth plan": the batch's curve and its measured weights (harvest.views).
   "Plan harvest" starts a planned harvest of the share at the target weight, on that day."""
 from urllib.parse import urlencode
 
@@ -192,6 +193,7 @@ class ProductionPlanResource(FromAddress, Resource):
             row = share_row(request, unit, share, plans.get(share.batch.pk), last_fed.get(unit.pk),
                             None if withdrawals is None else withdrawals[unit.pk], earliest[(unit.pk, share.batch.pk)])
             row['forecast'] = estimates.get((unit.pk, share.batch.pk))
+            row['forecast_said'] = lists.forecast_said(row['forecast']) if row['forecast'] is not None else None
             rows.append(_plan_date(row))
         if not chosen_site and not query:
             in_stock = stock_read.batches_in_stock()
@@ -207,7 +209,8 @@ def share_row(request, unit, share, plan, fed, withdrawal, earliest):
     today = local_today(unit)
     row = {'unit': unit, 'share': share, 'plan': plan, 'last_fed': fed.record.date if fed else None,
            'today': today, 'withdrawal': withdrawal, 'earliest': earliest,
-           'expected': share.batch.expected_harvest_date, 'plan_harvest_url': ''}
+           'expected': share.batch.expected_harvest_date, 'plan_harvest_url': '',
+           'growth_url': reverse('farm:production_plan', args=[unit.pk, share.batch.pk])}
     if request.user.has_perm('farm.add_handlingplanitem'):
         prefill = {'kind': PlanKind.HARVEST, 'unit': unit.pk, 'batch': share.batch.pk,
                    'planned_count': share.count}

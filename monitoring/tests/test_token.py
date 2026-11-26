@@ -17,7 +17,7 @@ from farm.feeding import services as feeding_services
 from farm.health import services as health_services
 from farm.models import Medicine, Tank
 from farm.stock import services as stock_services
-from farm.tests.helpers import role
+from farm.tests.helpers import may_record, role
 from farm.tests.test_health import event_data
 from farm.water import services as water_services
 from tasks import services as task_services
@@ -93,6 +93,7 @@ class TokenTests(MonitoringCase):
 
         def lice():
             nonlocal count
+            may_record(self.user, 'add_licecount')  # the lice count service asks (L-6)
             count = health_services.record_lice_count(self.user, unit=self.t1, day=self.day(1), fish_counted=10,
                                                       adult_females=1, mobile=0, attached=0)
 
@@ -102,6 +103,7 @@ class TokenTests(MonitoringCase):
             data['description'] = 'Edited for the wall'
             edited['response'] = self.client.post(reverse('farm:tank_edit', args=[spare.pk]), data)
 
+        may_record(self.user, 'add_treatment', 'delete_watermeasurement', 'view_task')
         return [
             ('a stock operation', lambda: self.mortality(self.batch, 1, days_ago=0)),
             ('a weighing', lambda: stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch,

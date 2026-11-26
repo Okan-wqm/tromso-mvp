@@ -31,7 +31,7 @@ from ..models import (
     WaterMeasurement, WithdrawalAcknowledgement,
 )
 from ..stock import read as stock_read, services as stock_services
-from .helpers import going_on, point_of
+from .helpers import going_on, may_record, point_of
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 
@@ -234,6 +234,7 @@ class ReferenceDataPageTests(HarvestInsideTestCase):
 
     def test_a_feed_made_not_medicated_while_it_holds_fish(self):
         feed = Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         going_on(feeding_services.record_feeding, self.user, unit=self.t1, day=self.day(1), feed=feed,
                  amount_kg=Decimal('2'))
         self.assertTrue(self.held())

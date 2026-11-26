@@ -7,7 +7,7 @@ from django.test import TestCase
 
 from farm.models import Equipment, EquipmentType, ProductionDepartment, Site, System
 from farm.stock.dates import site_today
-from farm.tests.helpers import leave_without_site, role
+from farm.tests.helpers import leave_without_site, may_record, role
 from farm.tests.test_stock import make_unit
 
 from ..models import Task
@@ -33,6 +33,7 @@ class TasksTestCase(TestCase):
         cls.kari = person('kari', *READ, first_name='Kari', last_name='Nord')
         cls.gone = person('gone', *READ, first_name='Gone', last_name='Away', is_active=False)
         cls.outsider = person('olav', 'view_site')
+        cls.stocker = may_record(person('stocker'))         # stocks the fish a task is about (the stock service asks)
         cls.bergen = Site.objects.create(name='Bergen', code='BG', timezone='Europe/Oslo')
         cls.tromso = Site.objects.create(name='Tromso', code='TR', timezone='Europe/Oslo')
         cls.hall = ProductionDepartment.objects.create(site=cls.bergen, name='Hall A', code='HA')

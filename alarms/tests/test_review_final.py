@@ -20,7 +20,7 @@ from django.contrib.auth import get_user_model
 from django.db import DatabaseError, transaction
 from django.test import override_settings
 
-from farm.tests.helpers import point_of
+from farm.tests.helpers import may_record, point_of
 from farm.tests.test_stock import make_unit
 
 from .. import floods, outbox, read, services
@@ -91,6 +91,7 @@ class ClearedWhileFailingTests(FinalCase):
     def test_an_acknowledgement_still_ends_its_retries(self):
         (notification,) = self.system(1, 'critical')
         services.clear(notification.alarm, self.at(1), 'restored')
+        may_record(self.manager, 'change_alarm')         # Alarms: Edit: the service asks who may (L-5)
         services.acknowledge(notification.alarm, self.manager, at=self.at(1))
         with override_settings(ALARM_TRANSPORTS=FAILING):
             self.rounds(60, 1200, step=30)

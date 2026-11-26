@@ -21,7 +21,7 @@ The sources, each read once for every card and only for a person who may read it
   has no ration and its drift;
 - the water: `water.read.points_water`, one `latest()` (the middle point, and every active point of a card whose
   widgets show another point);
-- the medicine withdrawal: the registry's one bulk answer (`harvest.views.withdrawals`), with the stock right, as on
+- the medicine withdrawal: the registry's one bulk answer (`farm.handling.check.in_force_now`), with the stock right, as on
   Production units;
 - the health (open events for the state; treatments and the latest sea-lice count of a card with a health widget), the
   tasks (a card with a tasks widget) and the placement chips (a card with an experiments widget);
@@ -51,20 +51,20 @@ from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import audit
 from core.text import lower as text_lower
-from farm.feeding import read as feeding_read, views as feeding_views
+from farm.feeding import read as feeding_read, services as feeding_services
 from farm.handling.withdrawal import harvest_from
-from farm.harvest import views as harvest_views
-from farm.health import read as health_read, views as health_views
+from farm.handling import check
+from farm.health import read as health_read, services as health_services
 from farm.models import Tank
-from farm.stock import read as stock_read, views as stock_views
+from farm.stock import read as stock_read, services as stock_services
 from farm.stock.dates import local_today
 from farm.templatetags.water import value_past, water_value
 from farm.water import (
     calculation as water_calculation, chemistry, deffeyes, messages as water_messages, parameters, read as water_read,
-    views as water_views,
+    services as water_services,
 )
 from farm.water.evaluate import Status
-from tasks import read as tasks_read, views as tasks_views
+from tasks import read as tasks_read, services as tasks_services
 
 from .cards import catalogue, render, resolve
 
@@ -84,13 +84,13 @@ class Source:
 
 
 SOURCES = (
-    Source(STOCK, stock_views.VIEW, True, gettext_lazy('Fish')),
-    Source(FEEDING, feeding_views.VIEW, True, gettext_lazy('Feeding')),
-    Source(WATER, water_views.VIEW, True, gettext_lazy('Water')),
-    Source(TREATMENTS, health_views.TREATMENTS['view'], False, gettext_lazy('Treatments')),
-    Source(EVENTS, health_views.EVENTS['view'], True, gettext_lazy('Health events')),
-    Source(LICE, health_views.COUNTS['view'], False, gettext_lazy('Sea-lice counts')),
-    Source(TASKS, tasks_views.VIEW, False, gettext_lazy('Tasks')),
+    Source(STOCK, stock_services.VIEW, True, gettext_lazy('Fish')),
+    Source(FEEDING, feeding_services.VIEW, True, gettext_lazy('Feeding')),
+    Source(WATER, water_services.VIEW, True, gettext_lazy('Water')),
+    Source(TREATMENTS, health_services.TREATMENTS['view'], False, gettext_lazy('Treatments')),
+    Source(EVENTS, health_services.EVENTS['view'], True, gettext_lazy('Health events')),
+    Source(LICE, health_services.COUNTS['view'], False, gettext_lazy('Sea-lice counts')),
+    Source(TASKS, tasks_services.VIEW, False, gettext_lazy('Tasks')),
     Source(CHIPS, '', False, gettext_lazy('Experiments')),
     Source(CHART, '', False, gettext_lazy('Deffeyes chart'), of=WATER),
 )
@@ -264,6 +264,7 @@ class Card:
     lice: object = None
     chips: tuple = ()                   # where the unit stands in work the farm does not own (farm.placements)
     tasks: object = None                # tasks.read.UnitTasks
+    tasks_unplanned: int = 0            # recurring tasks the task job has not planned up to today (tasks.read.unplanned)
     hidden: tuple = ()                  # what the person may not read: FEEDING, WATER, HEALTH, TASKS
     sections: frozenset = frozenset()
     failed: frozenset = frozenset()     # the optional sources that failed: their widgets say "no data"
@@ -411,7 +412,7 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
     water = (_required(WATER, lambda: water_read.points_water(
         kept, now, middle_only=[unit.pk for unit in kept if unit.pk not in need[POINTS]]))
         if WATER in sections and kept else {})
-    withdrawals = _required('withdrawal', harvest_views.withdrawals, stocked) if STOCK in sections and stocked else {}
+    withdrawals = _required('withdrawal', check.in_force_now, stocked) if STOCK in sections and stocked else {}
     clocks = _clocks({unit.pk: water.get(unit.pk, ()) for unit in stocked}, now) if water and stocked else {}
     events = _required(EVENTS, health_read.open_events, kept) if EVENTS in sections and kept else {}
     failed = set()
@@ -429,6 +430,9 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
     treatments = optional(TREATMENTS, health_read.recent_treatments)
     counts = optional(LICE, lambda wanted: health_read.latest_counts([unit.pk for unit in wanted]))
     tasks = optional(TASKS, lambda wanted: tasks_read.per_unit([unit.pk for unit in wanted], now))
+    # The task job behind: the task counts miss today's tasks of these recurring tasks, said beside them as the pages say
+    # it (the landing review, m-3). Read once for the wall, only when a card shows tasks.
+    behind = optional(TASKS, lambda wanted: {'count': len(tasks_read.unplanned())}).get('count', 0)
     chips = optional(CHIPS, lambda wanted: _placements(wanted, user))
     # From the water just read: no value is read again, and the fish's limits once for all the cards that show it.
     charts = optional(CHART, lambda wanted: water_calculation.charts_of(wanted, water, now))
@@ -449,6 +453,7 @@ def cards(units, user, choice, occupancy=STOCKED, now=None):
             lines=lines, drift=weigh(lines), water=tuple(water.get(unit.pk, ())),
             withdrawal=tuple(withdrawals.get(unit.pk, ())), treatments=tuple(treatments.get(unit.pk, ())),
             events=tuple(events.get(unit.pk, ())), lice=counts.get(unit.pk), tasks=tasks.get(unit.pk),
+            tasks_unplanned=behind,
             chips=tuple(chips.get(unit.pk, ())), failed=frozenset(failed), chart=charts.get(unit.pk),
             chart_view=(deffeyes.FULL if (choice.chart == CHART_FULL) != (str(unit.pk) in choice.zoom)
                         else deffeyes.CLOSE),

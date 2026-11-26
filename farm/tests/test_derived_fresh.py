@@ -14,7 +14,7 @@ from monitoring.cards import render
 from sensors import bindings
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
-from ..models import SamplingPoint, Tank
+from ..models import SamplingPoint, Tank, WaterFreshness
 from ..water import evaluate, freshness, parameters, read
 from ..water.evaluate import Status
 from .test_water import WaterTestCase
@@ -40,8 +40,8 @@ class DeclaredInputsGuardTests(TestCase):
                 for code in parameter.inputs:
                     self.assertIn(code, parameters.BY_CODE)
                     self.assertTrue(parameters.get(code).measured, f'{code} is not a measured input')
-                    self.assertIn(code, freshness.SEEDS)
-                self.assertIn(parameter.code, freshness.SEEDS)
+                    self.assertTrue(WaterFreshness.objects.filter(parameter=code).exists(), code)
+                self.assertTrue(WaterFreshness.objects.filter(parameter=parameter.code).exists())
         for parameter in parameters.BY_CODE.values():
             if parameter.measured:
                 self.assertEqual(parameter.inputs, (), parameter.code)
@@ -144,7 +144,6 @@ class DerivedFreshnessTests(WaterTestCase):
 
     def test_a_changed_input_row_moves_it(self):
         """The inputs' freshness is the user's rows, read as every value's is."""
-        from ..models import WaterFreshness
         self.sample(hours=30, **FULL)
         self.assertFalse(self.unit_water().get(NH3).fresh(self.now))
         WaterFreshness.objects.filter(parameter=TEMPERATURE).update(fresh_hours=48)

@@ -328,8 +328,7 @@ def settle(subjects, now, rules):
     for key, alarm in services.raise_many(raises).items():
         states[key].open_alarm, states[key].pending_since = alarm, None
     changed = [state for key, state in states.items() if key in before and _snapshot(state) != before[key]]
-    AlarmSubjectState.objects.bulk_create(changed, update_conflicts=True, unique_fields=['key'],
-                                          update_fields=STATE_FIELDS)
+    services.save_states(changed, STATE_FIELDS)
     return len(raises), len(clears)
 
 

@@ -15,8 +15,8 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Sum
 
+from farm.feeding import read as feeding_read
 from farm.models import Feed, FeedingRecord, Site
 from farm.stock.dates import site_earliest, site_today
 
@@ -56,13 +56,27 @@ def _lines(items=None, exclude_op=None):
     return found
 
 
+SITE = 'unit__production_department__site_id'
+
+
+def feeding_days(*, feed_ids=None, site=None, item=None, first=None, last=None):
+    """The feed given per site, feed and day (farm.feeding.read.given), by the site of the unit's department: rows
+    {'feed_id', SITE, 'date', 'kg'}, the newest day first. What the store draws on a feed; the Stock tab's book and the
+    overview read it here, one query each (the data-layering audit, L-8)."""
+    rows = FeedingRecord.objects.filter(unit__production_department__site__isnull=False)
+    for wanted, lookup in ((feed_ids, 'feed_id__in'), (site, SITE), (item, 'feed__inventory_items'),
+                           (first, 'date__gte'), (last, 'date__lte')):
+        if wanted is not None and wanted != '':
+            rows = rows.filter(**{lookup: wanted})
+    return (rows.order_by().values('feed_id', SITE, 'date').annotate(kg=feeding_read.given())
+            .order_by('-date', SITE, 'feed_id'))
+
+
 def _feeding(feed_ids):
     """{feed id: {(site id, day): kg}} of the live feeding records, by the site of the unit's department."""
     found = defaultdict(dict)
-    rows = (FeedingRecord.objects.filter(feed_id__in=feed_ids, unit__production_department__site__isnull=False)
-            .order_by().values('feed_id', 'unit__production_department__site_id', 'date').annotate(kg=Sum('amount_kg')))
-    for row in rows:
-        found[row['feed_id']][(row['unit__production_department__site_id'], row['date'])] = row['kg']
+    for row in feeding_days(feed_ids=feed_ids):
+        found[row['feed_id']][(row[SITE], row['date'])] = row['kg']
     return found
 
 
@@ -272,12 +286,19 @@ def overview():
                 held.since = min(held.since, day)
         found.undelivered += short.values()
     found.undelivered.sort(key=lambda row: (row.site.name, str(row.feed)))
-    for (site_id, _item_id), record in per.items():
-        if record.item.feed_id:
-            today = site_today(record.site)
-            record.fed_week = FeedingRecord.objects.filter(
-                feed_id=record.item.feed_id, unit__production_department__site_id=site_id,
-                date__range=(today - timedelta(days=WEEK - 1), today)).aggregate(kg=Sum('amount_kg'))['kg'] or ZERO
+    # The week's feeding of each (site, feed), each site on its own clock: one query over the widest of the weeks (the
+    # data-layering audit, L-12: it was one query per site and item).
+    fed = [record for record in per.values() if record.item.feed_id]
+    if fed:
+        week_of = {record.site.pk: site_today(record.site) for record in fed}
+        given = defaultdict(lambda: ZERO)
+        for row in feeding_days(feed_ids={record.item.feed_id for record in fed},
+                                first=min(week_of.values()) - timedelta(days=WEEK - 1), last=max(week_of.values())):
+            today = week_of.get(row[SITE])
+            if today is not None and today - timedelta(days=WEEK - 1) <= row['date'] <= today:
+                given[(row[SITE], row['feed_id'])] += row['kg']
+        for record in fed:
+            record.fed_week = given[(record.site.pk, record.item.feed_id)]
     found.site_items = sorted(per.values(), key=lambda record: (record.site.name, str(record.item)))
     held = defaultdict(lambda: ZERO)
     for row in rows:

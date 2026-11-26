@@ -122,8 +122,8 @@ class ParameterTests(WaterTestCase):
         self.assertIn('3.07 times', str(phosphate.help))             # the slip is named (review R3)
         self.assertIn(phosphate, parameters.LIMITED)                      # a farm sets its own limits on it
         # How long it stays fresh is the farm's reference data, seeded at 7 days.
-        self.assertEqual(freshness.SEEDS['phosphate_p_mg_l'], 168)
         self.assertEqual(WaterFreshness.objects.get(parameter='phosphate_p_mg_l').fresh_hours, 168)
+        self.assertEqual(freshness.hours('phosphate_p_mg_l'), 168)
         from sensors import quantities
         self.assertEqual((quantities.get('phosphate_p_mg_l').unit, quantities.get('phosphate_p_mg_l').water), ('mg/L', True))
 

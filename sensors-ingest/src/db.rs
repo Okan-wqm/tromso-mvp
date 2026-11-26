@@ -66,6 +66,28 @@ pub async fn connect(
     Ok(client)
 }
 
+/// Why the session must not write as the ingest, or None: the ingest writes only as its own least-privilege role
+/// (`sensors_ingest`, its grants in Django's sensors migrations), never as a superuser or as the owner of the schema's
+/// tables, who could bypass every grant and trigger (the data-layering audit, L-14). Asked once a connection is made,
+/// before the writer lock.
+pub async fn refused_role(client: &Client) -> Result<Option<String>, Error> {
+    let row = client
+        .query_one(
+            "SELECT current_user::text, r.rolsuper, EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' \
+             AND tableowner = current_user) FROM pg_roles r WHERE r.rolname = current_user",
+            &[],
+        )
+        .await?;
+    let (role, superuser, owner): (String, bool, bool) = (row.try_get(0)?, row.try_get(1)?, row.try_get(2)?);
+    Ok(if superuser {
+        Some(format!("role {role} is a superuser: sign in as the ingest's own role (sensors_ingest)"))
+    } else if owner {
+        Some(format!("role {role} owns tables of the schema: sign in as the ingest's own role (sensors_ingest)"))
+    } else {
+        None
+    })
+}
+
 /// Takes the single-writer lock without waiting; false when another session holds it.
 pub async fn try_lock(client: &Client) -> Result<bool, Error> {
     client.query_one("SELECT pg_try_advisory_lock($1)", &[&LOCK_KEY]).await?.try_get(0)
@@ -146,7 +168,11 @@ const UPSERT_DEAD: &str = "INSERT INTO sensors_dead_letter (connection_id, devic
      $8::int4[], $9::timestamptz[], $10::timestamptz[]) \
      ON CONFLICT (connection_id, topic, reason, payload_sha256) DO UPDATE SET \
      count = sensors_dead_letter.count + EXCLUDED.count, \
-     last_at = GREATEST(sensors_dead_letter.last_at, EXCLUDED.last_at)";
+     last_at = GREATEST(sensors_dead_letter.last_at, EXCLUDED.last_at), \
+     resolved_by_id = CASE WHEN EXCLUDED.last_at > sensors_dead_letter.resolved_at THEN NULL \
+     ELSE sensors_dead_letter.resolved_by_id END, \
+     resolved_at = CASE WHEN EXCLUDED.last_at > sensors_dead_letter.resolved_at THEN NULL \
+     ELSE sensors_dead_letter.resolved_at END";
 
 const UPSERT_STATUS: &str = "INSERT INTO sensors_ingest_status (connection_id, heartbeat_at, version, connected, \
      queue_depth, last_commit_at, qos0_dropped, poison_total) \

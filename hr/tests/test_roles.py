@@ -168,3 +168,18 @@ class WalkTests(PeopleTestCase):
                                           {'note': 'x'}).status_code, 403)
         item.refresh_from_db()
         self.assertEqual(item.status, 'pending')
+
+
+class PresetLogTests(PeopleTestCase):
+    """The data-layering audit, L-3: a permission granted by `manage.py hr_roles` is in the activity log, as one granted on
+    the roles tab is (by the system, with the permissions as the matrix reads them); a role kept as it is logs nothing."""
+
+    def test_each_role_made_is_logged_once(self):
+        from core.models import AuditLog
+        run()
+        logged = AuditLog.objects.filter(action=AuditLog.Action.CREATE, entity_type='role')
+        made = {str(group.pk) for group in Group.objects.filter(name__in=[preset.name for preset in roles.PRESETS])}
+        self.assertEqual({entry.entity_id for entry in logged}, made)
+        self.assertTrue(all(entry.user_id is None for entry in logged))
+        run()
+        self.assertEqual(AuditLog.objects.filter(action=AuditLog.Action.CREATE, entity_type='role').count(), len(made))

@@ -36,14 +36,16 @@ class Book:
         return HUNDRED * self.difference_kg / self.kg if self.weighed_kg is not None and self.kg else None
 
 
-def add_book(lines):
+def add_book(lines, moved=None):
     """Sets `book` (Book) on the harvest and count-adjustment lines of live operations among `lines`
-    (StockMovement, with their operation): one fold for their batches."""
+    (StockMovement, with their operation): one fold for their batches, or `moved` ({line id: grams}) when the caller
+    folded them already."""
     lines = [line for line in lines if line.kind in (MovementKind.HARVEST, MovementKind.ADJUSTMENT)
              and not line.operation.is_deleted]
     if not lines:
         return
-    moved = moved_grams({line.batch_id for line in lines})
+    if moved is None:
+        moved = moved_grams({line.batch_id for line in lines})
     for line in lines:
         grams = moved.get(line.id)
         line.book = None if grams is None else Book(grams / 1000, line.measured_weight_kg)
@@ -95,11 +97,17 @@ class Harvest:
         return getattr(self.loss, 'book', None) if self.loss is not None else None
 
 
-def harvests(lines):
-    """The Harvest of every harvest line in `lines` (a StockMovement queryset of harvest lines), with its
-    record, unaccounted loss, plan and acknowledgements, and the book kilos of the live ones."""
-    lines = list(lines.select_related(
-        'operation__created_by', 'operation__deleted_by', 'unit__production_department__site', 'batch__species'))
+def with_related(lines):
+    """The harvest lines (a StockMovement queryset) with what a row shows of each, joined."""
+    return lines.select_related('operation__created_by', 'operation__deleted_by', 'unit__production_department__site',
+                                'batch__species')
+
+
+def harvests(lines, moved=None):
+    """The Harvest of every harvest line in `lines` (`with_related` lines: a page of them), with its record, unaccounted
+    loss, plan and acknowledgements, and the book kilos of the live ones (`moved`: the fold's grams when the caller has
+    them, see `summary`)."""
+    lines = list(lines)
     operations = [line.operation_id for line in lines]
     records = HarvestRecord.all_objects.select_related('facility', 'transport').in_bulk(operations)
     losses = {line.operation_id: line for line in StockMovement.objects.filter(
@@ -109,7 +117,7 @@ def harvests(lines):
     acknowledged = {}
     for row in HandlingAcknowledgement.objects.filter(operation_id__in=operations):
         acknowledged.setdefault(row.operation_id, []).append(row)
-    add_book([*lines, *losses.values()])
+    add_book([*lines, *losses.values()], moved)
     return [Harvest(line, records.get(line.operation_id), losses.get(line.operation_id),
                     plans.get(line.operation_id), acknowledged.get(line.operation_id, [])) for line in lines]
 
@@ -140,6 +148,18 @@ class Total:
         self.weighed_kg += harvest.weighed_kg
         self.book_kg += harvest.book.kg
         self.harvests += 1
+
+
+def summary(lines):
+    """(the live harvests the filters choose, each a Harvest with its book kilos only, for the counts and the totals;
+    the fold's grams, {line id: grams}, to give the page's rows too) in one fold of their batches: what the totals need
+    of every harvest, never their records, plans and acknowledgements, which only the page's rows read (the
+    data-layering audit, L-12)."""
+    live = list(lines.filter(operation__is_deleted=False).select_related(
+        'operation', 'unit__production_department__site', 'batch'))
+    moved = moved_grams({line.batch_id for line in live}) if live else {}
+    add_book(live, moved)
+    return [Harvest(line) for line in live], moved
 
 
 def totals(rows, key, label):

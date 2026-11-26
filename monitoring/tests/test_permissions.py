@@ -41,7 +41,7 @@ class HiddenSectionsTests(MonitoringCase):
 
     def run_cards(self, user, mode):
         units = read.units_for(read.Params())
-        with mock.patch.object(read.harvest_views, 'withdrawals', return_value={}), \
+        with mock.patch.object(read.check, 'in_force_now', return_value={}), \
                 CaptureQueriesContext(connection) as log:         # (the withdrawal registry reads its own tables)
             found = read.cards(units, user, chosen({unit.pk: mode for unit in units}))
         return found, ' '.join(query['sql'] for query in log)

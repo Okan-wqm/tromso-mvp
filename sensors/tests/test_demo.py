@@ -87,7 +87,15 @@ class SetupTests(DemoCase):
 
     def test_remove_takes_away_only_what_it_made(self):
         self.setup_demo()
+        made = {str(pk) for model in (Device, Connection) for pk in model.all_objects.filter(
+            **({'connection__client_id': demo.CLIENT_ID} if model is Device else {'client_id': demo.CLIENT_ID}))
+            .values_list('pk', flat=True)}
         call_command('sensors_demo_setup', '--force', '--remove', stdout=StringIO())
+        # each row it takes away is in the activity log, by the system (the data-layering audit, L-15)
+        from core.models import AuditLog
+        self.assertTrue(made)
+        logged = set(AuditLog.objects.filter(action=AuditLog.Action.DELETE).values_list('entity_id', flat=True))
+        self.assertEqual(made - logged, set())
         self.assertFalse(Device.all_objects.filter(connection__client_id=demo.CLIENT_ID).exists())
         self.assertFalse(Connection.all_objects.filter(client_id=demo.CLIENT_ID).exists())
         self.assertFalse(Credential.all_objects.filter(username=demo.USERNAME).exists())

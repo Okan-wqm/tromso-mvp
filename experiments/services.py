@@ -22,7 +22,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import audit, softdelete
+from core import access, atomic, audit, softdelete
 from core.codes import next_code
 from core.models import AuditLog, EntryKey
 from farm.feeding import assignments
@@ -40,6 +40,8 @@ from .models import (
     Replicate, ReplicateUnit, Status,
 )
 
+# Who may (asked by each act itself, whoever calls: the data-layering audit, L-6): the experiment pages' rights.
+CHANGE, ADD = 'experiments.change_experiment', 'experiments.add_experiment'
 DESIGN = gettext_lazy('Design')
 
 
@@ -208,6 +210,7 @@ def save_design(user, experiment, factors, groups, version):
     replicates of a group are made equal to its count (1 to its count): the highest are removed, and never one that
     holds a tank. Logged on the experiment as "Design", before and after; the deletes the plan makes are logged per
     record. Refused for a started experiment or a stale `version`."""
+    access.require(user, CHANGE)
     with transaction.atomic():
         locked = locked_draft(experiment, version)
         stored_factors = {factor.pk: factor for factor in Factor.objects.filter(experiment=locked)}
@@ -469,6 +472,7 @@ def save_places(user, experiment, places, version, note=''):
     the span, the days and the bookings are checked and named, and the allocation becomes "placed by hand" with its
     reason `note`, which is needed (unless nothing changed, or nothing is placed). Logged on the experiment as "Places"
     and "Allocation", before and after."""
+    access.require(user, CHANGE)
     with transaction.atomic():
         _lock_tanks(places)
         locked = locked_draft(experiment, version)
@@ -520,6 +524,7 @@ def randomise(user, experiment, pool, seed, version):
     `sha256_v1` (experiments/allocation.py): as many items as replicates, each item the tanks of a tank or a system,
     booked for the whole span; the method and the seed are stored with the placements, so the deal can be repeated and
     checked. The same checks and locks as `save_places`."""
+    access.require(user, CHANGE)
     if not isinstance(seed, int) or not 0 <= seed < SEED_LIMIT:
         raise _refused(_('The seed is a whole number from 0 to %(top)d.') % {'top': SEED_LIMIT - 1})
     items = {}
@@ -572,6 +577,8 @@ def move_span(user, experiment, old_span):
     """After a draft's day 0 or duration changed (inside the saving transaction): the windows that equalled the old span
     move to the new one, the others stay (a window of its own days is the person's; the design says when it is outside the
     span). Logged on the experiment as "Places". `old_span` is (first, last) before the change, or None."""
+    access.require(user, CHANGE)
+    atomic.required('experiments.services.move_span')
     new = span(experiment)
     if old_span is None or new is None or old_span == new or experiment.status != Status.DRAFT:
         return
@@ -642,6 +649,7 @@ def start(user, experiment, seen, version):
     through `farm.feeding.assignments`, each logged as the dialog logs them), so the meal board follows the diet; they
     are found later by (unit, protocol, first day), with no link column. The batches the tanks held, the tanks and then
     the experiment are locked, in that order. Logged on the experiment as "Status", with the warnings acknowledged."""
+    access.require(user, CHANGE)
     with transaction.atomic():
         unit_ids = set(ReplicateUnit.objects.filter(replicate__group__experiment=experiment)
                        .values_list('unit_id', flat=True))
@@ -662,7 +670,7 @@ def start(user, experiment, seen, version):
                 warned = [finding.text for finding in design_module.assess(locked).warnings]
         rows = _diet_rows(locked)
         try:
-            assignments.save(user, rows)
+            assignments.write(user, rows)
         except IntegrityError:
             raise _refused(_('Another protocol was assigned to these tanks meanwhile: look at the assignments and try '
                              'again.'))
@@ -687,6 +695,7 @@ def copy(user, source, name, starts_on=None, as_template=False, token=None):
     the new day 0, which may be left for later. `copied_from` says where it came from. The number comes from
     core.codes.next_code inside the transaction; a form sent twice (`token`) makes one copy. Logged as created, with
     its design, and the copier's team row as any other."""
+    access.require(user, ADD)
     with transaction.atomic():
         # The source first, as every write path takes its locks before it looks the form's key up: the same form sent
         # twice at once waits here for the first sending and then finds its copy.
@@ -799,6 +808,7 @@ def release_unit(user, placement, last_day, reason, version):
     `assignments.end`, logged as an edit of the assignment). The replicate keeps its number, and what the tank gave up to
     its last day stays in its figures. Logged on the experiment as "Places" and "Reason it left"; the tank is locked before
     the experiment."""
+    access.require(user, CHANGE)
     experiment = placement.replicate.group.experiment
     with transaction.atomic():
         stock_locked(Tank, {placement.unit_id})
@@ -833,6 +843,7 @@ def replace_unit(user, placement, new_unit, from_day, reason, version):
     the new one through the farm's own assignments. A replacement with no weighing at the move leaves a gap in the
     replicate's feed conversion window: the overview says so. Logged on the experiment as "Places" and "Reason it left";
     the batches the new tank held, the tanks and then the experiment are locked, in that order."""
+    access.require(user, CHANGE)
     experiment = placement.replicate.group.experiment
     with transaction.atomic():
         stock_locked(Batch, batches_ever_in({new_unit.pk}))
@@ -883,7 +894,7 @@ def replace_unit(user, placement, new_unit, from_day, reason, version):
                 with transaction.atomic():
                     ReplicateUnit.objects.create(replicate=row.replicate, unit=new_unit, from_on=from_day,
                                                  until_on=row.until_on, created_by=user, updated_by=user)
-                    assignments.save(user, rows)
+                    assignments.write(user, rows)
             except IntegrityError:
                 raise _refused(_('A tank was booked to another experiment meanwhile: look at the places and try again.'))
             _log_amendment(user, locked, before, reason, row.unit)

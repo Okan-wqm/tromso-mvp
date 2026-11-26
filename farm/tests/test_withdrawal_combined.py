@@ -25,7 +25,7 @@ from ..health import withdrawal
 from ..models import Batch, Feed, HandlingAcknowledgement, StockOperation, WithdrawalAcknowledgement
 from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.dates import shown_date
-from .helpers import correction_window
+from .helpers import correction_window, may_record
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 
@@ -242,6 +242,7 @@ class WholeSentenceTests(CombinedTestCase):
                       'that withdrawal is not known. No row, bath from ', change.messages()[0])
         feed = Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
         c = self.stock(self.t3, count=1000, days_ago=8)
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         self.going_on(feeding_services.record_feeding, self.user, unit=self.t3, day=self.day(2), feed=feed,
                       amount_kg=Decimal('2'))
         d = self.stock(self.t4, count=1000, days_ago=8)

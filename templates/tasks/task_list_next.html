@@ -9,6 +9,7 @@
 {% block eyebrow %}{{ group }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
 {% block content %}
+{% include "tasks/_unplanned.html" %}
 {# the overdue count under the heading, as the design's summary chip #}
 {% if overdue_count %}<p class="ui-head-status" role="status">{% blocktrans trimmed count count=overdue_count asvar overdue %}{{ count }} overdue task{% plural %}{{ count }} overdue tasks{% endblocktrans %}{% include "ui/_chip.html" with kind="warning" text=overdue %}</p>{% endif %}
 <nav class="ui-tabs" aria-label="{% trans "Tasks" %}">

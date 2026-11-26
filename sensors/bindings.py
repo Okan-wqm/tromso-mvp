@@ -26,7 +26,7 @@ from django.db.models import Exists, OuterRef, Q
 from django.utils import formats, timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import audit
+from core import access, audit
 from core.models import AuditLog
 from farm.models import Equipment, SamplingPoint, System, Tank
 from farm.models.site import zone_of
@@ -37,6 +37,9 @@ from . import alarms
 from .models import Binding, Channel, ChannelStatus, Device
 from .models.binding import place_site
 
+# Who may bind, move or unbind (Bindings: Create, as the bind and the device-move dialogs ask), asked by each act itself,
+# whoever calls (the data-layering audit, L-6).
+BIND = 'sensors.add_binding'
 LABEL = 'Bound to'
 SITE_LABEL = 'Site'
 KINDS = {SamplingPoint: 'point', System: 'system', Equipment: 'equipment'}
@@ -142,6 +145,7 @@ def _lock_channel(channel):
 def move(user, channel, at, role=Binding.Role.PRIMARY, note='', **target):
     """Binds `channel` from `at` to one target (point=, system= or equipment=), closing its open binding there. Returns the
     new binding."""
+    access.require(user, BIND)
     (place,) = target.values()
     with transaction.atomic():
         channel = _lock_channel(channel)
@@ -159,6 +163,7 @@ def move(user, channel, at, role=Binding.Role.PRIMARY, note='', **target):
 
 def unbind(user, channel, at):
     """Ends the channel's open binding at `at`; nothing to end is said."""
+    access.require(user, BIND)
     with transaction.atomic():
         channel = _lock_channel(channel)
         current = _open(channel)
@@ -249,6 +254,7 @@ def plan_device(device, target, at, role=Binding.Role.PRIMARY):
 def move_device(user, device, at, target, role=Binding.Role.PRIMARY, note=''):
     """Moves every channel of the device from `at` to `target` (None: out of the water, `unbind_device`), all or nothing.
     Returns the steps."""
+    access.require(user, BIND)
     with transaction.atomic():
         device = _lock_device(device)
         steps = [step for step in _plan(device, _channels(device, lock=True), target, at, role, lock=True)
@@ -283,6 +289,7 @@ def move_device(user, device, at, target, role=Binding.Role.PRIMARY, note=''):
 
 def unbind_device(user, device, at):
     """Takes the device out of the water from `at`: every open binding of its channels ends then."""
+    access.require(user, BIND)
     return move_device(user, device, at, None)
 
 

@@ -16,7 +16,7 @@
   <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
 </form>
 {% endblock %}
-{% block notice %}<p class="panel-help">{% blocktrans trimmed with url=tasks_url %}A recurring task plans its tasks up to two weeks ahead; they are on the <a href="{{ url }}">Tasks</a> page. Changing or pausing it plans the tasks from today on that nobody has touched again; the others stay as they are.{% endblocktrans %}</p>{% endblock %}
+{% block notice %}{% include "tasks/_unplanned.html" %}<p class="panel-help">{% blocktrans trimmed with url=tasks_url %}A recurring task plans its tasks up to two weeks ahead; they are on the <a href="{{ url }}">Tasks</a> page. Changing or pausing it plans the tasks from today on that nobody has touched again; the others stay as they are.{% endblocktrans %}</p>{% endblock %}
 {% block empty_text %}{% trans "A job that comes back: every day, on chosen weekdays, or on a day of the month." %}{% endblock %}
 {% block items %}
 <div class="table-wrap">

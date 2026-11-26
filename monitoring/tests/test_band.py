@@ -5,7 +5,7 @@ cards and the page indicator. It replaces the head and the strip of one-line rea
 import re
 from types import SimpleNamespace
 
-from django.test import SimpleTestCase, override_settings
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from farm.water.evaluate import Status
@@ -35,8 +35,11 @@ def critical(code, parameter='oxygen_mg_l'):
     return named(code, water=(water(reading(parameter, 2, status=Status.CRITICAL)),))
 
 
-class BandReadTests(SimpleTestCase):
+class BandReadTests(TestCase):
     """On hand-made cards: the tally and the chips are worked out from the cards' states alone."""
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
+
 
     def cards(self):
         return [named('A'), critical('B'), named('C', water=()), named('D', stock=SimpleNamespace(over_capacity=True)),

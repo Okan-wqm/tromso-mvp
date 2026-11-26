@@ -116,9 +116,10 @@ def dead_letters_props(request, rows, *, page, reasons, reason, show, pager_quer
                       empty=_('No dead letters.'), page=page, pager_query=pager_query)
 
 
-def alarm_events_props(request, events, *, page, connected, can_acknowledge):
+def alarm_events_props(request, events, *, page, connected, acknowledgeable):
     """Alarm events: the times a rule held, open ones first, each with who acknowledged it; Acknowledge is the row's
-    action (a POST with the page's token) for a person who may, on an event nobody acknowledged yet. "Nothing is sent
+    action (a POST with the page's token) on the events in `acknowledgeable` (the alarms' one rule, asked by the view:
+    alarms.read.may_acknowledge) that nobody acknowledged yet. "Nothing is sent
     yet" (alarms/_not_sent.html) while no push transport is connected."""
     def clock(event):
         return event.binding.clock if event.binding else None
@@ -132,7 +133,7 @@ def alarm_events_props(request, events, *, page, connected, can_acknowledge):
 
     def actions(event):
         alarm = getattr(event, 'alarm', None)
-        if not can_acknowledge or (alarm is not None and alarm.acknowledgements.all()):
+        if event.pk not in acknowledgeable or (alarm is not None and alarm.acknowledgements.all()):
             return []
         return [L.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]), _('Acknowledge'), 'check-circle',
                        labelled=True)]

@@ -191,10 +191,12 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_purging.py",
         "farm/tests/test_withdrawal_combined.py",
         "sensors/tests/test_alarms.py",
+        "alarms/tests/test_acknowledge_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_migration.py",
         "alarms/tests/test_pages.py"
@@ -318,6 +320,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
@@ -1130,6 +1133,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
@@ -3105,6 +3109,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_matrix_notes.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
@@ -3116,6 +3121,7 @@
         "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_pages_next.py",
         "alarms/tests/__init__.py",
+        "alarms/tests/test_acknowledge_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
@@ -3664,6 +3670,7 @@
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_bench.py",
         "sensors/tests/test_bindings.py",
+        "sensors/tests/test_demo.py",
         "sensors/tests/test_fresh_rule.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
@@ -3871,6 +3878,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "core/tests_entry_key.py",
         "farm/tests/test_water_points.py",
         "tasks/tests/test_pages.py"
@@ -4089,6 +4097,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_kept",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -4116,7 +4130,7 @@
         "delete": {
           "status": "none",
           "paths": [],
-          "why": "there is always exactly one row"
+          "why": "there is always exactly one row (the database refuses a delete)"
         },
         "read": {
           "status": "paths",
@@ -4161,8 +4175,10 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_kept_rows.py",
         "core/tests_platform.py",
         "core/tests_rev.py",
+        "core/tests_simple_db.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
@@ -7397,6 +7413,7 @@
       "tests": [
         "core/test_datamap.py",
         "core/test_world.py",
+        "core/tests_data_access.py",
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
@@ -10330,6 +10347,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_cleaner_fish.py",
@@ -10993,6 +11011,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_erasure.py",
         "core/tests_formpanels.py",
         "core/tests_pagesays.py",
@@ -11029,6 +11048,7 @@
         "reports/tests/test_cleaner.py",
         "reports/tests/test_compute.py",
         "reports/tests/test_due.py",
+        "tasks/tests/test_pages_only_read.py",
         "tasks/tests/test_series.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_constraints.py",
@@ -11036,7 +11056,8 @@
         "experiments/tests/test_deviations.py",
         "experiments/tests/test_start.py",
         "experiments/tests/test_triggers.py",
-        "monitoring/tests/test_pages.py"
+        "monitoring/tests/test_pages.py",
+        "monitoring/tests/test_render.py"
       ]
     },
     {
@@ -11393,6 +11414,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "farm/tests/test_fast_of_the_unit.py",
         "farm/tests/test_fasting_sentence.py",
         "farm/tests/test_fix_seed_size_mix.py",
@@ -12394,6 +12416,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py"
       ]
@@ -13039,6 +13062,7 @@
       "tests": [
         "core/test_languages.py",
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_farm_dialogs_next.py",
@@ -13401,6 +13425,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_data_access.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_farm_dialogs_next.py",
@@ -17605,6 +17630,7 @@
         "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py",
+        "farm/tests/test_withdrawal_whatif.py",
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "reports/tests/test_cleaner.py",
@@ -18153,6 +18179,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "core/tests_rev.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_emptied_unit.py",
@@ -18693,6 +18720,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "core/tests_entry_key.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
@@ -21081,6 +21109,7 @@
         "core/test_languages.py",
         "core/test_lean_endpoints.py",
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_rev.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
@@ -21831,6 +21860,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_data_access.py",
         "core/tests_entry_key.py",
         "core/tests_workspaces.py",
         "farm/tests/test_emptied_unit.py",
@@ -22054,7 +22084,7 @@
         "delete": {
           "status": "none",
           "paths": [],
-          "why": "there is always one row per water parameter (a lost one is made again)"
+          "why": "there is always one row per water parameter (the database refuses a delete)"
         },
         "read": {
           "status": "paths",
@@ -22096,6 +22126,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_kept_rows.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_derived_fresh.py",
@@ -22510,6 +22541,7 @@
       "tests": [
         "core/test_languages.py",
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_rev.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
@@ -23319,6 +23351,7 @@
       },
       "tests": [
         "core/test_languages.py",
+        "core/tests_data_access.py",
         "core/tests_entry_key.py",
         "core/tests_rev.py",
         "core/tests_workspaces.py",
@@ -24166,6 +24199,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "core/tests_formpanels.py",
         "farm/tests/test_emptied_unit.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
@@ -26918,6 +26952,12 @@
           "kind": "check",
           "fields": [],
           "conditional": false
+        },
+        {
+          "name": "chk_scheduling_settings_kept",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
         }
       ],
       "screens": {
@@ -26945,7 +26985,7 @@
         "delete": {
           "status": "none",
           "paths": [],
-          "why": "there is always exactly one row"
+          "why": "there is always exactly one row (the database refuses a delete)"
         },
         "read": {
           "status": "paths",
@@ -26994,6 +27034,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_kept_rows.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_forgotten.py",
@@ -31181,7 +31222,8 @@
         "knowledge/tests/test_documents.py",
         "knowledge/tests/test_entries.py",
         "knowledge/tests/test_languages.py",
-        "knowledge/tests/test_search.py"
+        "knowledge/tests/test_search.py",
+        "knowledge/tests/test_services.py"
       ]
     },
     {
@@ -33818,6 +33860,7 @@
       },
       "tests": [
         "core/tests_workspaces.py",
+        "monitoring/tests/test_copy_service.py",
         "monitoring/tests/test_designer.py",
         "monitoring/tests/test_fitted_designer.py",
         "monitoring/tests/test_frame.py",
@@ -37074,10 +37117,12 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
         "monitoring/tests/test_silent_oxygen.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_fresh_rule.py",
+        "alarms/tests/test_acknowledge_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
@@ -37520,6 +37565,7 @@
         "monitoring/tests/test_silent_oxygen.py",
         "sensors/tests/test_alarms.py",
         "sensors/tests/test_fresh_rule.py",
+        "alarms/tests/test_acknowledge_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
@@ -39535,6 +39581,7 @@
         "core/tests_workspaces.py",
         "sensors/tests/__init__.py",
         "sensors/tests/test_demo.py",
+        "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
         "sensors/tests/test_schema.py",
         "alarms/tests/test_review_fixes.py"
@@ -39965,7 +40012,8 @@
         "sensors/tests/test_demo.py",
         "sensors/tests/test_operations.py",
         "sensors/tests/test_pages.py",
-        "sensors/tests/test_schema.py"
+        "sensors/tests/test_schema.py",
+        "sensors/tests/test_services.py"
       ]
     },
     {
@@ -40260,7 +40308,8 @@
         "core/test_world.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_contract.py",
-        "sensors/tests/test_operations.py"
+        "sensors/tests/test_operations.py",
+        "sensors/tests/test_services.py"
       ]
     },
     {
@@ -41715,6 +41764,7 @@
       "tests": [
         "core/test_datamap.py",
         "core/test_text.py",
+        "core/tests_data_access.py",
         "core/tests_ui_look.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
@@ -42824,8 +42874,10 @@
         "core/tests_workspaces.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_pages_only_read.py",
         "tasks/tests/test_private_text.py",
-        "tasks/tests/test_series.py"
+        "tasks/tests/test_series.py",
+        "monitoring/tests/test_render.py"
       ]
     },
     {
@@ -43810,6 +43862,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_formpanels.py",
         "core/tests_panel_next.py",
         "core/tests_private_log.py",
@@ -43817,6 +43870,7 @@
         "tasks/tests/__init__.py",
         "tasks/tests/test_models.py",
         "tasks/tests/test_pages.py",
+        "tasks/tests/test_pages_only_read.py",
         "tasks/tests/test_private_text.py",
         "tasks/tests/test_read.py",
         "tasks/tests/test_series.py",

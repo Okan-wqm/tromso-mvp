@@ -263,6 +263,9 @@ def _wall(language, pane='', cards_only=False):
                         kind='cage' if code.startswith('TG') else 'tank',
                         status='maintenance' if extra == 'maintenance' else 'active',
                         water_type='saltwater' if extra == 'sea' else 'freshwater')
+            # the columns the database works out (GeneratedField): said, so an unsaved unit never asks the database
+            # for them (it would read whatever a database has, or nothing without one), never rendered from a guess
+            unit.volume_m3 = unit.water_volume_m3 = unit.max_biomass_kg = None
             point = SamplingPoint(unit=unit, name='Middle', kind='middle')
             at = NOW - timedelta(hours=hours)
 

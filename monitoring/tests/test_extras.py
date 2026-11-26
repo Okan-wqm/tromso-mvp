@@ -10,6 +10,7 @@ from farm.tests.test_cleaner_fish import CleanerFishTestCase
 
 from .. import read
 from . import ALL_RIGHTS, MonitoringCase, chosen
+from farm.tests.helpers import may_record
 
 
 class CleanerFishTests(CleanerFishTestCase):
@@ -52,6 +53,7 @@ class CleanerFishTests(CleanerFishTestCase):
         for parameter, bounds in (('oxygen_mg_l', {'critical_low': Decimal(6)}),
                                   ('temperature_c', {'critical_high': Decimal(18)})):
             WaterLimit.objects.create(species=self.salmon, parameter=parameter, water_type='any', **bounds)
+        may_record(self.user, 'add_watermeasurement')  # the water service asks (L-6)
         water_services.record(self.user, point=point_of(self.cage), measured_at=timezone.now() - timedelta(hours=1),
                               source='manual', values={'temperature_c': Decimal('9'), 'oxygen_mg_l': Decimal('9')})
         state = self.cards('simple')[0].state

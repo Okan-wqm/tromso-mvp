@@ -29,7 +29,7 @@ from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
-from core import audit
+from core import access, audit
 from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
 from farm.handling import check
@@ -206,6 +206,14 @@ def _today(units):
     return earliest_today(units)
 
 
+# The rights of the health records (farm/health/views.py asks the same); each writer below asks its own here too (the
+# data-layering audit, L-6).
+TREATMENTS = {'view': 'farm.view_treatment', 'add': 'farm.add_treatment', 'change': 'farm.change_treatment',
+              'delete': 'farm.delete_treatment'}
+COUNTS = {'view': 'farm.view_licecount', 'add': 'farm.add_licecount', 'delete': 'farm.delete_licecount'}
+EVENTS = {'view': 'farm.view_healthevent', 'add': 'farm.add_healthevent', 'delete': 'farm.delete_healthevent'}
+
+
 def record_treatment(user, *, units, method, reason, start_date, end_date, medicine=None, dose_value=None,
                      dose_unit='', amount_value=None, amount_unit='', bath_minutes=None, prescribed_by='',
                      prescription_ref='', vet=None, health_event=None, notes='', handling_ack=None, token=None,
@@ -213,6 +221,7 @@ def record_treatment(user, *, units, method, reason, start_date, end_date, medic
     """A course given to the fish of `units` from `start_date` to `end_date` (see the module's rules);
     `handling_ack` is the fingerprint of the handling warnings the person went on past. The withdrawal it creates goes
     through the withdrawal guard (harvests already recorded inside it are asked about)."""
+    access.require(user, TREATMENTS['add'])
     if not units:
         raise ValidationError({'units': _('Choose the units that were treated.')})
     if len({unit.pk for unit in units}) != len(units):
@@ -288,6 +297,7 @@ def change_last_day(user, treatment, end_date, withdrawal_ack=None):
     window (neither the old nor the new last day may be older than it). Through the withdrawal guard: a longer
     withdrawal that reaches over a harvest already recorded, or a shorter one that frees fish held today, is asked
     about. The units and their batches are locked first, as a harvest locks them."""
+    access.require(user, TREATMENTS['change'])
     with transaction.atomic():
         start = Treatment.all_objects.filter(pk=treatment.pk).values_list('start_date', flat=True).first()
         _units, batch_ids = _treatment_fish(treatment.pk, start or end_date)
@@ -320,6 +330,7 @@ def change_last_day(user, treatment, end_date, withdrawal_ack=None):
 def void_treatment(user, treatment, reason, withdrawal_ack=None):
     """The undo: the treatment stops counting, with its reason, and its withdrawal with it: through the withdrawal guard
     (fish held today that it frees, and the medicated feedings it covered, now of unknown end, are asked about)."""
+    access.require(user, TREATMENTS['delete'])
     with transaction.atomic():
         start = Treatment.all_objects.filter(pk=treatment.pk).values_list('start_date', flat=True).first()
         _units, batch_ids = _treatment_fish(treatment.pk, start)
@@ -338,6 +349,7 @@ def void_treatment(user, treatment, reason, withdrawal_ack=None):
 def record_lice_count(user, *, unit, day, fish_counted, adult_females, mobile, attached, notes='', token=None):
     """The lice found on the fish examined in `unit` on `day`, in total per stage. The unit holds fish that
     day; one live count per unit and day (a correction is a void and a new count)."""
+    access.require(user, COUNTS['add'])
     with transaction.atomic():
         unit = locked(Tank, {unit.pk})[unit.pk]
         _already(LiceCount, token)
@@ -361,6 +373,7 @@ def record_lice_count(user, *, unit, day, fish_counted, adult_females, mobile, a
 
 
 def void_lice_count(user, count, reason):
+    access.require(user, COUNTS['delete'])
     with transaction.atomic():
         count = (LiceCount.all_objects.select_for_update(of=('self',))
                  .select_related('unit__production_department__site').get(pk=count.pk))
@@ -372,6 +385,7 @@ def void_lice_count(user, count, reason):
 def void_event(user, event, reason):
     """A health event recorded by mistake stops counting, with its reason. Refused while a live treatment or
     stock operation names it (void or re-record those first), and outside the site's backdating window."""
+    access.require(user, EVENTS['delete'])
     with transaction.atomic():
         event = HealthEvent.all_objects.select_for_update(of=('self',)).select_related('site').get(pk=event.pk)
         operations = StockOperation.objects.filter(health_event=event).count()

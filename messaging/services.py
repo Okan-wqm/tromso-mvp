@@ -27,7 +27,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import audit
+from core import access, audit
 
 from . import events
 from .models import CHANNEL_NAME_TAKEN, MAX_BODY, Conversation, Message, Participant, person_name
@@ -37,11 +37,6 @@ USE, CREATE_CHANNEL = 'messaging.view_conversation', 'messaging.add_conversation
 CHANNEL = gettext_lazy('channel')
 MEMBERS, OWNERS = gettext_lazy('Members'), gettext_lazy('Owners')
 NAME = gettext_lazy('Channel name')
-
-
-def _require(user, perm):
-    if not (user.is_active and user.has_perm(perm)):
-        raise PermissionDenied
 
 
 def contacts(user=None):
@@ -69,7 +64,7 @@ def direct_key(*parties):
 def member(user, conversation_id):
     """The person's live membership of a live conversation. Http404 when there is none: a page never says
     whether a conversation the person is not in exists."""
-    _require(user, USE)
+    access.require(user, USE)
     return get_object_or_404(Participant.objects.select_related('conversation'), user=user,
                              conversation_id=conversation_id, conversation__is_deleted=False)
 
@@ -82,6 +77,7 @@ def _locked(conversation_id):
 def owner(user, conversation_id, lock=False):
     """The person's membership of a channel they own (the channel locked when asked); PermissionDenied when they
     are a member who does not own it."""
+    access.require(user, USE)                  # who may not use messaging is refused before any conversation is read
     if lock:
         _locked(conversation_id)
     actor = member(user, conversation_id)
@@ -94,7 +90,7 @@ def owner(user, conversation_id, lock=False):
 @transaction.atomic
 def start_direct(user, other):
     """The direct conversation between `user` and `other`, created the first time."""
-    _require(user, USE)
+    access.require(user, USE)
     if other.pk == user.pk:
         raise ValidationError({'person': _('Choose someone else: a conversation is with another person.')})
     _reachable([other], 'person')
@@ -129,7 +125,7 @@ def _log_roster(user, conversation, before):
 @transaction.atomic
 def create_channel(user, name, members=()):
     """A channel called `name`, owned by `user`, with `members`."""
-    _require(user, CREATE_CHANNEL)
+    access.require(user, CREATE_CHANNEL)
     name = ' '.join(name.split())
     if not name:
         raise ValidationError({'name': _('Give the channel a name.')})
@@ -213,6 +209,7 @@ def remove_member(user, conversation_id, participant_id):
 @transaction.atomic
 def leave(user, conversation_id):
     """The person leaves a channel. A direct conversation is not left: it is between two people."""
+    access.require(user, USE)
     _locked(conversation_id)
     actor = member(user, conversation_id)
     if not actor.conversation.is_channel:

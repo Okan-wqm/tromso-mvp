@@ -106,7 +106,7 @@ class SensorsPageTests(AlarmsCase):
         bound = bindings.move(self.keeper, flow, self.now - timedelta(days=1), system=self.ras)
         event = AlarmEvent.objects.create(rule=rule, channel_no=flow.channel_no, opened_at=self.now, peak=4, binding=bound)
         keeper = get_user_model().objects.create_user('tech', 'tech@example.com', 'x')
-        keeper.groups.add(role('Sensor keeper', 'view_alarmevent', 'change_alarmevent'))
+        keeper.groups.add(role('Sensor keeper', 'view_alarmevent', 'change_alarm'))      # Alarms: Edit (L-5)
         self.client.force_login(keeper)
         page = self.client.get(reverse('sensors:alarm_events'))
         self.assertContains(page, 'Nothing is sent yet')

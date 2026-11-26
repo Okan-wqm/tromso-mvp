@@ -282,8 +282,8 @@ def _bound_checks():
 class WaterFreshness(AuditedModel):
     """How long a value of a water parameter says something about the water now (hours), one row per parameter: an older
     value is shown stale, never OK, and never clears an alarm. The user's reference data (alarm plan §7c, cross review
-    F10), seeded by migration 0037 with the values the code held; changed, never added or deleted (a row lost is made
-    again from the seed: farm/water/freshness.py). Read once per page and per alarm pass."""
+    F10), seeded by migration 0037 with the values the code held; changed, never added or deleted (the database refuses
+    both, farm 0051; a reader never makes one again: farm/water/freshness.py). Read once per page and per alarm pass."""
 
     parameter = models.CharField(_('Parameter'), max_length=30, choices=[(each.code, each.label)
                                                                          for each in parameters.BY_CODE.values()], editable=False)

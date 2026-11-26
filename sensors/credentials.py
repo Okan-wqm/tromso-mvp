@@ -47,3 +47,34 @@ def give_secret(credential):
     credential.rotated_at = timezone.now()
     credential.save(update_fields=['password_hash', 'rotated_at', 'updated_at'])
     return secret
+
+# How the activity log says a secret changed: never its value or its hash.
+SECRET_LABEL, REPLACED = 'Secret', '(replaced)'
+
+
+def rotate(user, pk, version):
+    """Replaces a credential's secret for `user` (the data-layering audit, L-1: the rule here, not in the view): who may
+    (Edit on credentials), the row locked, refused (core.crud.Crossed) when it changed since the page was opened (its
+    `version`), the version moved, logged without any value. Returns (credential, the new secret, shown once). The broker
+    takes it when its files are written again (`manage.py sensor_broker_sync`)."""
+    from django.db import transaction
+
+    from core import access, audit
+    from core.crud import Crossed
+    from core.models import AuditLog
+
+    from .models import Credential
+    from .resources import CredentialResource
+    access.require(user, CredentialResource.perm('change'))
+    with transaction.atomic():
+        credential = Credential.objects.select_for_update().get(pk=pk)
+        if str(version) != str(credential.version):
+            raise Crossed
+        secret = give_secret(credential)
+        credential.version += 1
+        credential.updated_by = user
+        credential.save(update_fields=['version', 'updated_by', 'updated_at'])
+        with audit.source_language():
+            audit.record(user, AuditLog.Action.UPDATE, credential, {SECRET_LABEL: [REPLACED, REPLACED]},
+                         entity_type=CredentialResource.entity_type())
+    return credential, secret

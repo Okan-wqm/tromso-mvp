@@ -69,8 +69,9 @@ def _filtered(params, request):
     lookups = {'site': 'unit__production_department__site', 'department': 'unit__production_department',
                'unit': 'unit', 'batch': 'batch', 'species': 'batch__species',
                'facility': 'operation__harvest_record__facility'}
+    choices = {key: list(found) for key, found in choices.items()}   # each list read once: offered and checked
     for key, lookup in lookups.items():
-        if params[key] in {str(pk) for pk in choices[key].values_list('pk', flat=True)}:
+        if params[key] in {str(choice.pk) for choice in choices[key]}:
             lines = lines.filter(**{lookup: params[key]})
         else:
             params[key] = ''
@@ -88,9 +89,10 @@ def harvests(request):
     and per site of the rows the filters choose."""
     params = {key: request.GET.get(key, '').strip() for key in FILTERS}
     lines, choices = _filtered(params, request)
-    rows = read.harvests(lines)
-    live = [row for row in rows if not row.operation.is_deleted]
-    page = Paginator(rows, PAGE_SIZE).get_page(request.GET.get('page'))
+    # The totals count every live harvest chosen (one fold); the page is cut in the database and only its rows are built.
+    live, moved = read.summary(lines)
+    page = Paginator(read.with_related(lines), PAGE_SIZE).get_page(request.GET.get('page'))
+    page.object_list = read.harvests(page.object_list, moved)
     can_void = request.user.has_perm(VOID)
     here = request.get_full_path()
     kept = {key: value for key, value in params.items() if value}
@@ -134,9 +136,3 @@ def drawer(request, unit, stock):
         context['plan_list_url'] = f'{reverse("farm:handlingplanitem_list")}?{urlencode({"unit": unit.pk})}'
     return context
 
-
-def withdrawals(units):
-    """{unit id: [WithdrawalBlock]} of the units with a medicine withdrawal in force today, for the row badge;
-    empty when no provider is registered."""
-    found = check.in_force_of(units)
-    return {unit_id: blocks for unit_id, blocks in (found or {}).items() if blocks}

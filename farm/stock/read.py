@@ -90,30 +90,45 @@ def sea_units(unit_ids):
                .values_list('pk', flat=True))
 
 
+def live_lines():
+    """The stock ledger's live lines (their operation not voided): what every count of fish is summed from."""
+    return StockMovement.objects.filter(operation__is_deleted=False)
+
+
+def present(*by, **where):
+    """THE definition of "fish present now" (the data-layering audit, M-4): the live lines (`where`: filters of a line,
+    such as unit_id__in=...) grouped by `by` (fields of a line: 'unit_id', 'batch_id'), each group with the sum of its
+    lines as `fish`, only the groups that hold fish (more than 0). A queryset of dicts, usable as a subquery
+    (`.values('batch_id')`). The stock service keeps every batch's share of a unit at 0 or more on every day, so a
+    positive sum is fish there. Every reader of "has fish", "the batches in stock", "the units a batch is in" asks this;
+    a change of its meaning (a quarantine state, a date cut) is made here once."""
+    return live_lines().filter(**where).order_by().values(*by).annotate(fish=Sum('count_delta')).filter(fish__gt=0)
+
+
+def holds_fish(unit_id):
+    """Whether fish are in the unit now (`present`)."""
+    return present('unit_id', unit_id=unit_id).exists()
+
+
 def unit_counts(unit_ids):
-    """{unit id: fish in it now} from the live lines (units without lines are left out)."""
-    rows = (StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False)
-            .values('unit_id').annotate(fish=Sum('count_delta')))
+    """{unit id: fish in it now} from the live lines (units without lines are left out; a unit emptied counts 0)."""
+    rows = live_lines().filter(unit_id__in=unit_ids).values('unit_id').annotate(fish=Sum('count_delta'))
     return {row['unit_id']: row['fish'] for row in rows}
 
 
 def fish_of_batch(batch_id):
-    """{unit id: fish of the batch in it now} from the live lines (units it has left are left out)."""
-    rows = (StockMovement.objects.filter(batch_id=batch_id, operation__is_deleted=False)
-            .values('unit_id').annotate(fish=Sum('count_delta')).filter(fish__gt=0))
-    return {row['unit_id']: row['fish'] for row in rows}
+    """{unit id: fish of the batch in it now} (units it has left are left out)."""
+    return {row['unit_id']: row['fish'] for row in present('unit_id', batch_id=batch_id)}
 
 
 def batches_in_stock():
     """The ids of the batches with fish in a unit now."""
-    rows = (StockMovement.objects.filter(operation__is_deleted=False).values('batch_id')
-            .annotate(fish=Sum('count_delta')).filter(fish__gt=0))
-    return {row['batch_id'] for row in rows}
+    return {row['batch_id'] for row in present('batch_id')}
 
 
 def batches_ever_in(unit_ids):
     """The ids of every batch that ever had a live line in these units."""
-    return set(StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False)
+    return set(live_lines().filter(unit_id__in=unit_ids)
                .values_list('batch_id', flat=True).distinct())
 
 
@@ -123,7 +138,7 @@ def spans():
     ledger in ONE grouped query. What `in_units`, `between` and `reach` are asked of, so that a reader of the medicine
     withdrawal finds the fish a hold can have reached without a query per unit or per batch, and without loading the
     ledger of a batch no hold can have reached."""
-    rows = (StockMovement.objects.filter(operation__is_deleted=False).order_by().values('unit_id', 'batch_id')
+    rows = (live_lines().order_by().values('unit_id', 'batch_id')
             .annotate(first=Min('operation__date'), last=Max('operation__date'), fish=Sum('count_delta')))
     return {(row['unit_id'], row['batch_id']): (row['first'], None if row['fish'] > 0 else row['last'])
             for row in rows}
@@ -233,13 +248,13 @@ class Presence:
 
     @classmethod
     def of_units(cls, unit_ids):
-        return cls._of(StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False))
+        return cls._of(live_lines().filter(unit_id__in=unit_ids))
 
     @classmethod
     def of_batches(cls, batch_ids, moves=False):
         """`moves`: also which unit the fish of every transfer left and which they entered (`moves`, `transfers`, `days`),
         read in the same query: what the medicine withdrawal follows held fish by."""
-        lines = StockMovement.objects.filter(batch_id__in=batch_ids, operation__is_deleted=False)
+        lines = live_lines().filter(batch_id__in=batch_ids)
         if not moves:
             return cls._of(lines)
         rows = list(lines.values_list('unit_id', 'batch_id', 'operation__date', 'count_delta', 'kind',
@@ -538,10 +553,7 @@ class UnitStock:
 
 def stock_of(units):
     """{unit id: UnitStock} of the units that hold fish now; a unit without fish is left out."""
-    unit_ids = [unit.pk for unit in units]
-    present = (StockMovement.objects.filter(unit_id__in=unit_ids, operation__is_deleted=False)
-               .values('batch_id').annotate(fish=Sum('count_delta')).filter(fish__gt=0))
-    batch_ids = {row['batch_id'] for row in present}
+    batch_ids = {row['batch_id'] for row in present('batch_id', unit_id__in=[unit.pk for unit in units])}
     if not batch_ids:
         return {}
     lots = Lots()

@@ -15,7 +15,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -42,7 +42,7 @@ from ..templatetags.feeding import amount
 from ..templatetags.stock import grams, tonnes
 from . import pages, read, services
 
-VIEW, RECORD, VOID = 'farm.view_feedingrecord', 'farm.add_feedingrecord', 'farm.delete_feedingrecord'
+VIEW, RECORD, VOID = services.VIEW, services.RECORD, services.VOID
 RECORDS, BOARD = 'farm:feeding_records', 'farm:meal_board'
 FILTERS = ('site', 'unit', 'batch', 'feed', 'from', 'to', 'voided')
 DAY_FILTERS = ('site', 'unit', 'batch', 'from', 'to')
@@ -118,7 +118,7 @@ def feeding_records(request):
         return _by_day(request)
     params = {key: request.GET.get(key, '').strip() for key in FILTERS}
     records, choices = _filtered(params, request)
-    totals = records.aggregate(count=Count('pk'), kilos=Sum('amount_kg', filter=Q(is_deleted=False)))
+    totals = records.aggregate(count=Count('pk'), kilos=read.given())
     page = Paginator(records, PAGE_SIZE).get_page(request.GET.get('page'))
     rows = list(page.object_list)
     split = read.split_of(rows)
@@ -189,7 +189,7 @@ def _by_day(request):
     # feed has a line of its own beside it, never in the sum.
     given, cleaner = {}, {}
     for row in (FeedingRecord.objects.filter(unit__in=units, date__range=(first, last))
-                .values('unit_id', 'date', 'target').annotate(kilos=Sum('amount_kg'))):
+                .values('unit_id', 'date', 'target').annotate(kilos=read.given())):
         (cleaner if row['target'] == FeedTarget.CLEANER_FISH else given)[(row['unit_id'], row['date'])] = row['kilos']
     by_id = {unit.pk: unit for unit in units}
     unit_days = projection.days if projection else {}
@@ -451,8 +451,7 @@ def overview_tiles(user):
     todays = [clock.today for clock in now]
     kilos = FeedingRecord.objects.filter(
         date__range=(min(todays) - timedelta(days=read.WEEK - 1), max(todays)),
-    ).aggregate(today=Sum('amount_kg', filter=own_days(now, site)),
-                week=Sum('amount_kg', filter=own_days(now, site, read.WEEK)))
+    ).aggregate(today=read.given(own_days(now, site)), week=read.given(own_days(now, site, read.WEEK)))
     days = [clock.today for clock in now if clock.sites is not None] or todays       # the cards open the sites' days
     earliest_day, latest_day = min(days), max(days)
     first = earliest_day - timedelta(days=read.WEEK - 1)

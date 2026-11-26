@@ -354,12 +354,13 @@ class ConcurrencyTests(TransactionTestCase):
     def setUp(self):
         from django.contrib.auth import get_user_model
         from farm.models import FeedingProtocol, ProductionDepartment, ProtocolBand, ProtocolRate, Site, Feed
-        from farm.tests.helpers import make_species, role
+        from farm.tests.helpers import make_species, may_record, role
         from farm.tests.test_stock import make_unit
         from .test_pages import RESEARCHER
         from decimal import Decimal
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'x')
         self.user.groups.add(role('Researcher', *RESEARCHER))
+        may_record(self.user)                     # the fixture's stocking: the stock service asks (L-6)
         site = Site.objects.create(name='Bergen', code='BG')
         hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
         self.tank = make_unit('T-01', hall)

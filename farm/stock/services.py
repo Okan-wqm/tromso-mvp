@@ -60,11 +60,11 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
 from django.utils.translation import gettext as _
 
-from core import audit
+from core import access, atomic, audit
 from core.codes import next_code
 from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
@@ -729,6 +729,7 @@ def voided(user, entry, reason, sites, label, check=None, noted=None):
     (soft-deleted, with its reason), `check()` runs without it, and the activity log says "Voided" with the
     reason (and what `noted()` gives then: {label: value}, the questions a void of the stock answered). Inside the
     caller's transaction, with the record locked."""
+    atomic.required('farm.stock.services.voided')
     reason = reason.strip()
     if not reason:
         raise ValidationError({'reason': _('Say why it is voided.')})
@@ -753,7 +754,13 @@ def _quantize(grams):
     return Decimal(grams).quantize(GRAMS, rounding=ROUND_HALF_UP)
 
 
-def record_input(user, *, species, input_stage, origin, day, lines, supplier=None, supplier_batch_ref='',
+def record_input(user, **fields):
+    """A new batch stocked (`_input`), for who may record stock operations."""
+    access.require(user, RECORD)
+    return _input(user, **fields)
+
+
+def _input(user, *, species, input_stage, origin, day, lines, supplier=None, supplier_batch_ref='',
                  strain='', name='', expected_harvest_date=None, notes='', provenance='', year_class=None, ack=False,
                  size_mix_ack=False, token=None, withdrawal_ack=None, stocked_on=None, opening=None):
     """A new batch stocked into one or several units: `lines` = [(unit, fish, average weight in g)].
@@ -775,6 +782,9 @@ def record_input(user, *, species, input_stage, origin, day, lines, supplier=Non
                    size_mix_ack=size_mix_ack, token=token, new_batch=batch, opening=opening)
 
 
+# Who may read stock operations, record them and void them (the pages and the readers ask the same). Every public writer below
+# asks itself (core.access.require), so a caller that is not a page cannot skip it (the data-layering audit, L-6).
+VIEW, RECORD, VOID = 'farm.view_stockoperation', 'farm.add_stockoperation', 'farm.delete_stockoperation'
 # The platform owner's right: the opening balance is theirs (it is the one record dated beyond the correction window).
 OPENING_PERM = 'core.change_platformsettings'
 
@@ -786,8 +796,7 @@ def record_opening_balance(user, *, species, input_stage, origin, stocked_on, da
     `day`, the takeover day, inside the correction window like every record; the batch's stocking date `stocked_on` is the
     real one, any day up to the takeover day, beyond the window by design. The year class and the source document are
     required. Everything else is a stocking's (`record_input`), and voiding it voids its batch."""
-    if not user.has_perm(OPENING_PERM):
-        raise PermissionDenied
+    access.require(user, OPENING_PERM)
     errors = {}
     if year_class is None:
         errors['year_class'] = _('Give the year class of fish taken over.')
@@ -797,8 +806,8 @@ def record_opening_balance(user, *, species, input_stage, origin, stocked_on, da
         errors['stocked_on'] = _('The fish were stocked on or before the takeover day.')
     if errors:
         raise ValidationError(errors)
-    return record_input(user, species=species, input_stage=input_stage, origin=origin, day=day, lines=lines,
-                        year_class=year_class, stocked_on=stocked_on, opening={'document': document.strip()}, **fields)
+    return _input(user, species=species, input_stage=input_stage, origin=origin, day=day, lines=lines,
+                  year_class=year_class, stocked_on=stocked_on, opening={'document': document.strip()}, **fields)
 
 
 def correct_batch(user, *, batch, year_class=None, provenance=''):
@@ -806,6 +815,7 @@ def correct_batch(user, *, batch, year_class=None, provenance=''):
     ask for, which fish stocked before they were asked for do not have (stock is never edited, so there is no other way
     to set them). Logged as an update of the batch, whose version moves on, so a report filed from it is told to need a
     correction. The provenance follows the origin where the origin says it, and is required for a bought cleaner fish."""
+    access.require(user, RECORD)
     with transaction.atomic():
         found = locked(Batch, {batch.pk}).get(batch.pk)
         if found is None or found.is_deleted:
@@ -841,6 +851,7 @@ def record_mortality(user, *, unit, batch, day, count, cause, measured_weight_kg
                      token=None, withdrawal_ack=None):
     """Fish found dead. They leave the book at the share's average; their weighed weight, when given,
     is kept as a separate fact. `health_event`: the event they died under, if any."""
+    access.require(user, RECORD)
     needs_notes(cause, notes)
     entry = Entry(unit, batch, MovementKind.MORTALITY, -count, reason=cause, measured_weight_kg=measured_weight_kg)
     return _commit(user, OperationKind.MORTALITY, day, [entry], withdrawal_ack=withdrawal_ack, notes=notes, token=token, health_event=health_event)
@@ -855,6 +866,7 @@ def cull_reasons(batch):
 def record_cull(user, *, unit, batch, day, count, reason, notes='', health_event=None, token=None, withdrawal_ack=None):
     """Fish taken out and killed (too small, deformed, sick), at the share's average. `health_event`: the
     event they were culled under, if any."""
+    access.require(user, RECORD)
     if reason not in cull_reasons(batch):
         raise ValidationError({'reason': _('%(reason)s is not a reason to cull %(batch)s.') % {
             'reason': CullReason(reason).label, 'batch': batch.code}})
@@ -868,6 +880,7 @@ def record_weighing(user, *, unit, batch, day, avg_weight_g=None, sample_count=N
     """A sample weighed: the average of the fish of the batch in the unit, given directly or as a number
     of fish and their weight together (the usual bulk weighing, STK-42). From that day the share's
     biomass is its count times this average."""
+    access.require(user, RECORD)
     if sample_count is not None and sample_weight_kg is not None:
         if avg_weight_g is not None:
             raise ValidationError({'avg_weight_g': _('Give the average or the sample, not both.')})
@@ -896,6 +909,7 @@ def record_transfer(user, *, source, batch, day, legs, reason, notes='', ack=Fal
     split is a transfer into several. Each leg is a pair of lines, out of the source and into its unit,
     whose fish add up to 0; the fish leave at the batch's average in the source and arrive with exactly
     the grams that left, so biomass is conserved too. The batch stays the same (owner decision Q7)."""
+    access.require(user, RECORD)
     _destinations(source, [unit for unit, _count in legs])
     needs_notes(reason, notes)
     entries = []
@@ -913,6 +927,7 @@ def record_grading(user, *, source, batch, day, outputs, remainder_avg_weight_g=
     in the source get their own measured average (required when any stay), so the outputs never take
     more than the book holds and the remainder never falls toward 0 g (the source's STK-24). The batch
     stays the same, the size class is on the line (owner decision Q6). One transaction for all outputs."""
+    access.require(user, RECORD)
     _destinations(source, [unit for unit, _count, _weight, _size in outputs])
     with transaction.atomic():
         # The locks `_commit` takes, taken here first (the count that stays is read under them), in the order of every
@@ -945,6 +960,7 @@ def record_harvest(user, *, unit, batch, day, count, measured_weight_kg, facilit
     taken before the harvest so the harvest takes the rest of the book). Where the fish went is its
     HarvestRecord: the slaughter facility (required), the transport supplier and the wellboat or vehicle. Cleaner
     fish are not harvested: they are culled at the end of their use, which their report asks the cause of."""
+    access.require(user, RECORD)
     if batch.species.is_cleaner_fish:
         raise ValidationError({'batch': _('Cleaner fish are not harvested: record their cull, with the reason “%(reason)s” '
                                           'at the end of their use.') % {'reason': CullReason.NOT_USED.label}})
@@ -976,6 +992,7 @@ def record_escape(user, *, unit, batch, day, count, cause, suspected=False, foun
     the book at the share's average, as a count adjustment of the reason escape, with its record: the cause (required),
     the time found, the health status of the fish and the fish recaptured as known now. Fiskeridirektoratet's notice is a
     report that reads the record (akvakulturdriftsforskriften § 38)."""
+    access.require(user, RECORD)
     if not cause.strip():
         raise ValidationError({'cause': _('Say what caused it, or what is thought to have.')})
     _positive(count)
@@ -992,6 +1009,7 @@ def record_delivery(user, *, unit, batch, day, count, destination, destination_s
     are. Moving fish alive is a transport, so the handling check runs its fast (too short a fast); fish sold alive may be
     eaten, so a medicine withdrawal in force in the unit is asked as for a harvest (the owner's decision 12 of
     19.11.2026: warned, ticked, stored and logged as critical, never blocked; check.WITHDRAWAL_OPERATIONS)."""
+    access.require(user, RECORD)
     if not destination.strip():
         raise ValidationError({'destination': _('Say who received the fish.')})
     _positive(count)
@@ -1006,6 +1024,7 @@ def void(user, operation, reason, withdrawal_ack=None, ack=False, size_mix_ack=F
     stocking voids its batch too: the batch exists only through it. Fish it brings back that leave a unit over its
     capacity or holding a mix are asked about as an arrival is (step 5): `ack` and `size_mix_ack` answer, and the
     void's log entry keeps the answer (a voided operation has no live row of its own to keep it on)."""
+    access.require(user, VOID)
     with transaction.atomic():
         operation = StockOperation.all_objects.select_for_update().get(pk=operation.pk)
         lines = list(operation.movements.select_related('unit', 'batch'))

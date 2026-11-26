@@ -27,7 +27,6 @@ class ParameterTests(WaterTestCase):
         self.assertEqual((hardness.decimals, hardness.low, hardness.high), (0, D(0), D(10000)))
         # How long each is fresh is the user's reference data (farm.WaterFreshness; farm 0042 seeds them): 7 days for the
         # conductivity, 14 for the hardness, as the chemistry has read them since formula 3.
-        self.assertEqual((freshness.SEEDS[CONDUCTIVITY], freshness.SEEDS[HARDNESS]), (168, 336))
         self.assertEqual(dict(WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS])
                               .values_list('parameter', 'fresh_hours')), {CONDUCTIVITY: 168, HARDNESS: 336})
         self.assertEqual((freshness.hours(CONDUCTIVITY), freshness.hours(HARDNESS)), (168, 336))
@@ -76,7 +75,11 @@ class FreshnessMigrationTests(WaterTestCase):
         it removes only them."""
         import importlib
         from django.apps import apps as global_apps
+        from django.db import connection
         migration = importlib.import_module('farm.migrations.0042_water_freshness_ionic_inputs')
+        with connection.cursor() as cursor:        # the database as it was before farm 0051 kept the rows
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')     # no pending trigger event, or the table cannot be altered
+            cursor.execute('ALTER TABLE water_freshness DISABLE TRIGGER trg_water_freshness_kept')
         WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS]).delete()
         migration.seed(global_apps, None)
         self.assertEqual(dict(WaterFreshness.objects.filter(parameter__in=[CONDUCTIVITY, HARDNESS])

@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from django.conf import settings
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -64,7 +64,10 @@ class AgeTests(SimpleTestCase):
                 self.assertEqual(render.age_text(seconds), text)
 
 
-class FaceTests(SimpleTestCase):
+class FaceTests(TestCase):
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
+
     def test_a_value_says_its_figure_unit_status_origin_and_age_in_words(self):
         face = render.face(reading('oxygen_mg_l', '8.1'), NOW)
         self.assertEqual((face.value, face.label, face.status, face.origin, face.age, face.stale, face.missing),
@@ -141,8 +144,11 @@ class FaceTests(SimpleTestCase):
         self.assertEqual(render.face(found, NOW).note, 'From the sample. Formula 4: ionic strength 0.0021.')
 
 
-class BarTests(SimpleTestCase):
+class BarTests(TestCase):
     """The bands of a bar are what evaluate.judge says of the values in them (F-088): an open bound is no band."""
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
+
 
     def bands(self, value, **bounds):
         limit = SimpleNamespace(**{name: None if bounds.get(name) is None else D(str(bounds[name]))
@@ -314,6 +320,25 @@ class PageTests(MonitoringCase):
         card = articles(html)[f'card:{self.t2.pk}']
         tasks = next(node for node in widgets_of(card) if 'w-tasks' in node.classes)
         self.assertIn('no data', ' '.join(tasks.text().split()))
+
+    def test_the_task_counts_say_when_the_task_job_is_behind(self):
+        """The cards' task counts miss today's tasks of a recurring task the job has not planned: they say so, as the
+        Tasks pages and the overview do (the landing review, m-3); and nothing once the job has run."""
+        from io import StringIO
+
+        from django.core.management import call_command
+        from tasks.models import Frequency, TaskSeries
+
+        def widget():
+            card = articles(self.page(builtin.DETAILED_LAYOUT))[f'card:{self.t2.pk}']
+            return ' '.join(next(node for node in widgets_of(card) if 'w-tasks' in node.classes).text().split())
+        self.assertNotIn('not planned', widget())
+        series = TaskSeries(title='Feed check', frequency=Frequency.DAILY, starts_on=self.day(3))
+        series.set_place(self.t2)
+        series.save()                                   # a row only: nothing planned yet (the job's work)
+        self.assertIn('1 recurring task not planned up to today', widget())
+        call_command('generate_tasks', stdout=StringIO())
+        self.assertNotIn('not planned', widget())
 
     def test_a_failed_source_is_said_on_the_frame_whatever_the_template_shows(self):
         """F-134: a source that could not be read is said where no template can hide it, not as a quiet "no data"."""

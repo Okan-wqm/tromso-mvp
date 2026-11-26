@@ -18,6 +18,7 @@ from .. import floods, outbox, read, rules as alarm_rules, services
 from ..models import Alarm, DeliveryAttempt, Notification, SeverityPolicy
 from . import AlarmsCase
 from .doubles import RecordingTransport
+from farm.tests.helpers import may_record
 
 RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
 FAILING = {'push': 'alarms.tests.doubles.FailingTransport'}
@@ -141,7 +142,8 @@ class BurstTests(FloodCase):
 
     def test_a_snoozed_alarm_waits_outside_its_flood(self):
         made = self.alarms(3, severity='warning', kind='unit_unevaluated')   # (sensors_failed is never snoozed)
-        snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
+        snoozer = may_record(get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x'),
+                             'add_alarmshelve')
         services.shelve(made[0].alarm, snoozer, 30, 'probe cleaned', at=self.now)
         found = self.send(1)
         self.assertEqual((found.snoozed, found.sent, found.floods), (1, 3, 0))        # two: not a flood of three

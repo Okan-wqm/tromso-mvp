@@ -171,7 +171,3 @@ class PlatformSettingsResource(Resource):
         from farm.health import withdrawal
         return withdrawal.guarded_ceiling(request.user, write, seen)
 
-    @classmethod
-    def list_queryset(cls, request):
-        PlatformSettings.get()            # the row exists even if a restore left none
-        return super().list_queryset(request)

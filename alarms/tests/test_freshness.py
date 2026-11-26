@@ -20,7 +20,7 @@ TODAY = {'temperature_c': 24, 'oxygen_mg_l': 24, 'oxygen_saturation_pct': 24, 'p
          'co2_mg_l': 72, 'tan_mg_l': 168, 'nitrite_n_mg_l': 168, 'nitrate_n_mg_l': 336, 'tgp_pct': 168,
          'salinity_ppt': 168, 'turbidity_ntu': 168, 'nh3_n_mg_l': 168, 'nh4_n_mg_l': 168,
          # formula 3's ionic-strength inputs, water parameters since farm 0040, their rows seeded by farm 0042: the
-         # conductivity at 25 °C 7 days, the hardness 14, as formula 3 had read them (farm/water/freshness.py SEEDS)
+         # conductivity at 25 °C 7 days, the hardness 14, as formula 3 had read them
          'conductivity_25_us_cm': 168, 'hardness_mg_l': 336,
          # the optional phosphate, a water parameter with its row since the phosphate migration of farm
          'phosphate_p_mg_l': 168}
@@ -61,13 +61,6 @@ class FreshnessRuleTests(AlarmsCase):
         settings_row.clock_tolerance_seconds = 60
         settings_row.save()
         self.assertFalse(evaluate.is_fresh(ph, self.now + timedelta(minutes=4), self.now))
-
-    def test_a_missing_row_is_made_again_from_the_seed(self):
-        rows().all_objects.filter(parameter='ph').delete()
-        forget()
-        from farm.water import freshness
-        self.assertEqual(freshness.hours('ph'), 72)
-        self.assertTrue(rows().objects.filter(parameter='ph').exists())
 
     def test_the_database_refuses_nonsense(self):
         for values in ({'fresh_hours': 0}, {'fresh_hours': 8761}):
@@ -129,8 +122,6 @@ NAMED = {
     ('farm/water/evaluate.py', 'MAX_AHEAD'): "the ingest contract's hour (sensors_contract.future_skew_s is at most "
                                              '3600 s): a protocol limit both sides of the contract hold, not a policy',
     ('farm/water/freshness.py', 'FRESH_HOURS_BOUNDS'): 'the refusal of nonsense of a freshness (1 h to a year)',
-    ('farm/water/freshness.py', 'SEEDS'): "the defaults a missing row is made again with (as the platform settings' "
-                                          'row is): the values in force are the rows',
 }
 
 

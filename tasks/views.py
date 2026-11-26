@@ -17,7 +17,7 @@ from . import read, services
 from .forms import CancelForm, CompleteForm, NoteForm
 from .models import TaskChecklistItem, Task
 
-VIEW = 'tasks.view_task'
+VIEW = services.VIEW
 
 
 def _task(pk):
@@ -136,12 +136,18 @@ def cancel(request, pk):
 
 # ---- the production overview -------------------------------------------------------------------------------
 def overview_tiles(user):
-    """The overview's task tiles: open tasks due today, and overdue ones, each a link to the Tasks page."""
+    """The overview's task tiles: open tasks due today, and overdue ones, each a link to the Tasks page. A read: the
+    planned tasks of the recurring ones are made by the task job, never here (`unplanned` says when it is behind)."""
     if not user.has_perm(VIEW):
         return []
-    services.materialise_due()
     counts = read.counts(Task.objects.all())
     url = reverse('tasks:task_list')
     return [{'key': 'due_today', 'label': _('Tasks due today'), 'count': counts[read.TODAY] - counts['overdue'],
              'url': url},
             {'key': 'overdue', 'label': _('Overdue tasks'), 'count': counts['overdue'], 'url': url}]
+
+
+def unplanned_count(user):
+    """How many recurring tasks have their tasks not made up to today (read.unplanned), for a person who may read tasks;
+    0 for anyone else. The pages say it beside the counts it makes incomplete."""
+    return len(read.unplanned()) if user.has_perm(VIEW) else 0

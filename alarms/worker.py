@@ -49,7 +49,7 @@ from django.db import InterfaceError, OperationalError, connection
 from django.db.models import F
 from django.db.models.functions import Now
 
-from . import changes as changes_, engine, outbox, watch
+from . import changes as changes_, engine, outbox, services, watch
 from .models import AlarmWorkerStatus, WorkerState
 
 logger = logging.getLogger(__name__)
@@ -287,10 +287,9 @@ class Worker:
             self._unchecked = (before.row.last_pass_at, before.row.db_now)
             logger.warning('The alarm worker %r takes over after %.0f s with no alarm pass.', self.name,
                            before.age.total_seconds())
-        AlarmWorkerStatus.objects.update_or_create(name=self.name, defaults={
-            'state': WorkerState.RUNNING, 'host': _fit('host', socket.gethostname()), 'pid': os.getpid(),
-            'started_at': Now(), 'heartbeat_at': Now(), 'consecutive_failures': 0, 'last_error': '',
-            'stale_after_seconds': self.timing.stale_after})
+        services.worker_running(
+            self.name, host=_fit('host', socket.gethostname()), pid=os.getpid(), started_at=Now(), heartbeat_at=Now(),
+            consecutive_failures=0, last_error='', stale_after_seconds=self.timing.stale_after)
         self.leading, self._standby_said, self._pid = True, False, pid
         logger.info('The alarm worker %r checks the alarms (pid %d).', self.name, os.getpid())
         return True
@@ -318,7 +317,7 @@ class Worker:
                             str(max(1, round(timing.stale_after / KEEPALIVE['interval']))), str(KEEPALIVE['count'])])
 
     def _status(self, **fields):
-        AlarmWorkerStatus.objects.filter(name=self.name).update(**fields)
+        services.worker_status(self.name, **fields)
 
     def _failed(self, error):
         try:

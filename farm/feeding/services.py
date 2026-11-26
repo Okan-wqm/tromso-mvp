@@ -9,10 +9,9 @@ A failure raises ValidationError (a dict of field to message: 'unit', 'date', 'f
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Sum
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import audit
+from core import access, audit
 from core.models import EntryKey
 from farm.health import withdrawal
 from farm.models import Feed, FeedingRecord
@@ -35,12 +34,17 @@ def label(record):
             f'{record.amount_kg.normalize():f} kg · {record.feed.code}')
 
 
+# Who may read the feedings, record one and void one (the pages and the readers ask the same); asked here too (the data-layering audit, L-6).
+VIEW, RECORD, VOID = 'farm.view_feedingrecord', 'farm.add_feedingrecord', 'farm.delete_feedingrecord'
+
+
 def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, feeder=None, notes='', ack=False,
                    target=FeedTarget.PRODUCTION, token=None, withdrawal_ack=None):
     """Feed given to `unit` on `day`, for its production fish or for the cleaner fish beside them (`target`, D-1).
     It needs fish of its target in the unit at the start or the end of that day (the stock ledger), a feed that is
     active, and, above FEEDING_ACK_PERCENT of their book biomass, the person's acknowledgement (stored on the record;
     owner decision Q-F5): a kilo typed for a gram is caught here, a hatchery's fry may well be fed more."""
+    access.require(user, RECORD)
     with transaction.atomic():
         unit, batch_ids = _lock_fish(unit, day)
         if token is not None:
@@ -66,7 +70,7 @@ def record_feeding(user, *, unit, day, feed, amount_kg, time=None, meals=None, f
         # Q-F5 asks about more than the limit a day: the day's feedings of the target in the unit, this one included (the
         # unit is locked, so two feedings of one day take turns; audit F-081).
         day_kg = amount_kg + (FeedingRecord.objects.filter(unit=unit, date=day, target=target)
-                              .aggregate(total=Sum('amount_kg'))['total'] or 0)
+                              .aggregate(total=read.given())['total'] or 0)
         rate = 100 * day_kg / book.biomass_kg
         if rate > settings.FEEDING_ACK_PERCENT:
             if not ack:
@@ -99,6 +103,7 @@ def void_feeding(user, record, reason, withdrawal_ack=None):
     """The undo, as for a stock operation: the record stops counting, with its reason, within the
     backdating window. It moves no fish; a medicated feeding's void can free fish its withdrawal holds, so it goes
     through the withdrawal guard."""
+    access.require(user, VOID)
     with transaction.atomic():
         found = FeedingRecord.all_objects.select_related('unit').get(pk=record.pk)
         _unit, batch_ids = _lock_fish(found.unit, found.date)

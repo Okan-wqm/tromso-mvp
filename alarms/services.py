@@ -4,18 +4,19 @@ their log entries, each in one statement however many there are (alarm plan, def
 condition holds (alarms/sources.py), who is notified (alarms/routing.py) or when (alarms/engine.py)."""
 from datetime import timedelta
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import connection, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from core import audit
+from core import access, audit
 from core.models import AuditLog
 from sensors.models.alarm import Severity
 
 from .health import OWN_HEALTH
-from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, DeliveryAttempt, Escalation,
-                     Notification, NotificationKind, Outcome, OutboxEntry, Source)
+from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, AlarmSubjectState,
+                     AlarmWorkerStatus, DeliveryAttempt, Escalation, Notification, NotificationKind, Outcome,
+                     OutboxEntry, Source, WorkerState)
 
 
 def _fit(model, field, text):
@@ -48,6 +49,13 @@ def open_alarms(specs):
 def open_alarm(**spec):
     """One new alarm, logged (`open_alarms`)."""
     return open_alarms([spec])[0]
+
+
+def save_states(states, fields):
+    """The subjects' timers as one pass left them (unsaved or changed AlarmSubjectState rows, `fields` written), one
+    upsert: with `_set_open`, the one writer of the subjects' rows (the data-layering audit, L-4). Inside the pass's step
+    transaction, under its lock (alarms/engine.py); `_set_open` is the compare-and-set of the open alarm, this the rest."""
+    AlarmSubjectState.objects.bulk_create(states, update_conflicts=True, unique_fields=['key'], update_fields=fields)
 
 
 class AlreadyOpen(Exception):
@@ -177,6 +185,24 @@ def escalate(alarm, level, now):
 
 
 # ---- delivery and acknowledgement --------------------------------------------------------------------------------------
+def drop_delivered():
+    """The queue's entries of notifications that were sent or covered by a flood message leave it: `attempt` removes its
+    own in the same transaction, so this finds only one an earlier round left (a round drops it before it reads)."""
+    OutboxEntry.objects.filter(notification__attempts__outcome__in=[Outcome.SENT, Outcome.GROUPED]).delete()
+
+
+def worker_running(name, **fields):
+    """The alarm worker `name` took the lock and runs: its row (alarms.AlarmWorkerStatus, made the first time) says so
+    with `fields`. The worker's row is written by the worker it describes only, through here and `worker_status`; it is
+    the worker's heartbeat, not history, so no activity-log entry (alarms/watch.py reads it)."""
+    AlarmWorkerStatus.objects.update_or_create(name=name, defaults={'state': WorkerState.RUNNING, **fields})
+
+
+def worker_status(name, **fields):
+    """The alarm worker `name`'s row takes `fields` (a heartbeat, a pass, a failure, a stop, the outbox's round)."""
+    AlarmWorkerStatus.objects.filter(name=name).update(**fields)
+
+
 def attempt(notification, result, now, *, flood_key='', flood_size=None, grouped=False):
     """What a transport did with a notification (alarms.transports Sent or Failed), or that a flood message covered it
     (`grouped`), logged on the notification; `flood_key` its kind of alarm, `flood_size` the alarms of the flood message
@@ -198,12 +224,19 @@ def attempt(notification, result, now, *, flood_key='', flood_size=None, grouped
 
 
 def acknowledge(alarm, user, *, at=None, device='', app='console', notification=None):
-    """`user` saw the alarm: once per person; `notification`, the one they answered, must be theirs. The first one stops
-    the escalation (alarms/engine.py). Who may is asked by the caller (read.may_acknowledge)."""
+    """`user` saw the alarm: once per person; `notification`, the one they answered, must be theirs (without one, the
+    person's own latest, as the console's button means). The first one stops the escalation (alarms/engine.py). Who may
+    is asked here, by the one rule (read.may_acknowledge: Alarms: Edit, or a person it was sent to), whoever calls: the
+    alarm pages, the sensor events page, the mobile app (the data-layering audit, L-5). PermissionDenied otherwise."""
+    from . import read
+    if not read.may_acknowledge(user, alarm):
+        raise PermissionDenied
     at = at or timezone.now()
     with transaction.atomic():
         alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)
-        if notification is not None and (notification.alarm_id != alarm.pk or notification.recipient_id != user.pk):
+        if notification is None:
+            notification = alarm.notifications.filter(recipient=user).order_by('-level', '-queued_at').first()
+        elif notification and (notification.alarm_id != alarm.pk or notification.recipient_id != user.pk):
             raise ValidationError(_('This notification is not yours.'))
         if Acknowledgement.objects.filter(alarm=alarm, user=user).exists():
             raise ValidationError(_('You have already acknowledged this alarm.'))
@@ -223,9 +256,10 @@ def shelve(alarm, user, minutes, reason, *, at=None):
     one alarm together at most its severity's longest snooze (Alarm severity rules), so a snooze is never renewed past
     it; never a critical alarm of the alarm system itself (it says the alarms are not working). The people notified of
     the alarm (but the snoozer) are told who snoozed it, until when and why. Logged, critical for a critical alarm. Who
-    may is asked by the caller (read.SHELVE)."""
-    from .read import snoozes
+    may is asked here (read.SHELVE: Alarm snoozes: Create), whoever calls (the data-layering audit, L-6)."""
+    from .read import SHELVE, snoozes
     from .rules import current
+    access.require(user, SHELVE)
     at = at or timezone.now()
     reason = ' '.join(str(reason or '').split())
     with transaction.atomic():
@@ -266,8 +300,10 @@ def shelve(alarm, user, minutes, reason, *, at=None):
 
 
 def unshelve(alarm, user, *, at=None):
-    """`user` ends the alarm's snooze before its time: notification and escalation go on from now. Logged."""
-    from .read import snoozes
+    """`user` ends the alarm's snooze before its time: notification and escalation go on from now. Logged. Who may is
+    asked here (read.SHELVE), as for a snooze."""
+    from .read import SHELVE, snoozes
+    access.require(user, SHELVE)
     at = at or timezone.now()
     with transaction.atomic():
         alarm = Alarm.objects.select_for_update().get(pk=alarm.pk)

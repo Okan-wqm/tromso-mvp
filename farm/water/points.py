@@ -12,11 +12,13 @@ row can hold (farm/models/water_point.py has the model and the rules one row can
 from dataclasses import dataclass
 from decimal import Decimal
 
-from core import audit
+from core import access, audit
 from farm.models import SamplingPoint, Tank
 from farm.models.water_point import EQUIPMENT, OUTLET_KINDS, SYSTEM, UNIT, PointKind, owner_type_of
 
 # [(kind, name)] by what the owner is: a unit's kind, or SYSTEM.
+# Who may create an owner's points: who may create the owner (asked here, whoever calls: the data-layering audit, L-6).
+ADD = {UNIT: 'farm.add_tank', SYSTEM: 'farm.add_system', EQUIPMENT: 'farm.add_equipment'}
 DEFAULTS = {
     Tank.Kind.TANK: [(PointKind.INLET, 'Inlet'), (PointKind.MIDDLE, 'Middle'), (PointKind.SIDE_OUTLET, 'Side outlet'),
                      (PointKind.BOTTOM_DRAIN, 'Bottom drain')],
@@ -52,8 +54,11 @@ def snapshot(point):
 def create_defaults(user, owner):
     """Creates the points a new owner starts with (`default_points`), each logged as created by `user`. A point
     whose name the owner already has is left as it is, so it can be run again. Returns the points it created.
-    Call it inside the transaction that saves the owner."""
+    Call it inside the transaction that saves the owner. Who may create no owner at all is refused before the owner is
+    read; then the right to create this one is asked."""
+    access.require_any(user, *ADD.values())
     owner_type = owner_type_of(owner)
+    access.require(user, ADD[owner_type])
     existing = list(SamplingPoint.all_objects.filter(**{owner_type: owner}, is_deleted=False))
     named = {point.name.lower() for point in existing}
     has_middle = any(point.kind == PointKind.MIDDLE and point.is_active for point in existing)

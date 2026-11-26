@@ -14,7 +14,7 @@ from core.models import AuditLog
 from farm.feeding import services as feeding_services
 from farm.models import Feed, Tank
 from farm.models.supplier import SupplyCategory
-from farm.tests.helpers import correction_window, make_species, stock_fish
+from farm.tests.helpers import correction_window, make_species, may_record, stock_fish
 
 from .. import integrity, read, services
 from ..models import InventoryItem, InventoryLine, InventoryLot, InventoryOperation, StorageLocation
@@ -112,6 +112,7 @@ class FeedingTests(StoreTestCase):
         stock_fish(self.user, self.unit, count=8000, weight='500', days_ago=20, species=make_species())   # 4 t
 
     def feed_fish(self, kilos, days_ago):
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         return feeding_services.record_feeding(self.user, unit=self.unit, day=self.day(days_ago), feed=self.feed,
                                                amount_kg=D(kilos), ack=True)
 

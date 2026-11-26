@@ -30,9 +30,10 @@ class RowTests(TestCase):
         PlatformSettings.objects.update(correction_window_days=3650)
         PlatformSettings.objects.update(correction_window_days=1)
 
-    def test_get_makes_the_row_again_when_a_restore_left_none(self):
-        PlatformSettings.objects.all().delete()
-        self.assertEqual(PlatformSettings.get().correction_window_days, 31)
+    def test_the_database_keeps_the_row(self):
+        # Never deleted, so never made again on a read (core 0015; core/tests_kept_rows.py).
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            PlatformSettings.objects.all().delete()
         self.assertEqual(PlatformSettings.objects.count(), 1)
 
 

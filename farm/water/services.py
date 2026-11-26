@@ -26,7 +26,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import audit
+from core import access, audit
 from core.models import AuditLog, EntryKey
 from farm.health import withdrawal
 from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
@@ -216,11 +216,17 @@ def _values(values):
     return {code: value for code, value in values.items() if value is not None}
 
 
+# Who may read the water samples, record one and void one (the pages and the readers ask the same); asked here too (the data-layering audit,
+# L-6).
+VIEW, RECORD, VOID = 'farm.view_watermeasurement', 'farm.add_watermeasurement', 'farm.delete_watermeasurement'
+
+
 def record(user, *, point, measured_at, source, values, notes='', token=None, require_basis=False,
            withdrawal_ack=None, ph_scale=NBS, phosphate_unit=AS_P):
     """One sample at one sampling point (a place on a unit, a system's loop or a piece of equipment). Returns the
     sample. `ph_scale`: the scale its pH was measured on (`on_nbs`); NBS unless said. `phosphate_unit`: the unit its
     phosphate was entered in (`as_p`); as P unless said."""
+    access.require(user, RECORD)
     values = _values(values)
     with transaction.atomic():
         fish = _fish_of([point], measured_at)
@@ -259,6 +265,7 @@ def record_round(user, *, measured_at, source, rows, token=None, require_basis=F
     with no value is skipped; the rest are written together or not at all. Returns the samples. `ph_scale`: the scale
     the round's pHs were measured on (`on_nbs`, each row with its own temperature and salinity); NBS unless said.
     `phosphate_unit`: the unit the round's phosphates were entered in (`as_p`); as P unless said."""
+    access.require(user, RECORD)
     rows = [(point, _values(values), notes) for point, values, notes in rows]
     rows = [(point, values, notes) for point, values, notes in rows if values]
     if not rows:
@@ -314,6 +321,7 @@ def record_round(user, *, measured_at, source, rows, token=None, require_basis=F
 def void(user, sample, reason, withdrawal_ack=None):
     """The undo: the sample stops counting, with its reason, and stays in the history. Refused for samples
     older than the backdating window."""
+    access.require(user, VOID)
     reason = reason.strip()
     if not reason:
         raise ValidationError({'reason': _('Say why it is voided.')})

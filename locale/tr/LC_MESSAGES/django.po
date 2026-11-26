@@ -624,6 +624,26 @@ msgstr[0] "%(count)s üretim departmanı hiçbir sahada değil."
 msgstr[1] "%(count)s üretim departmanı hiçbir sahada değil."
 
 #, python-format
+msgid ""
+"%(count)s recurring task is not planned up to today: its tasks for today are missing here until "
+"the task job (manage.py generate_tasks) runs."
+msgid_plural ""
+"%(count)s recurring tasks are not planned up to today: their tasks for today are missing here "
+"until the task job (manage.py generate_tasks) runs."
+msgstr[0] ""
+"%(count)s yinelenen görev bugüne kadar planlanmadı: görev işi (manage.py generate_tasks) çalışana"
+" kadar bugünkü görevleri burada eksik."
+msgstr[1] ""
+"%(count)s yinelenen görev bugüne kadar planlanmadı: görev işi (manage.py generate_tasks) çalışana"
+" kadar bugünkü görevleri burada eksik."
+
+#, python-format
+msgid "%(count)s recurring task not planned up to today"
+msgid_plural "%(count)s recurring tasks not planned up to today"
+msgstr[0] "%(count)s yinelenen görev bugüne kadar planlanmadı"
+msgstr[1] "%(count)s yinelenen görev bugüne kadar planlanmadı"
+
+#, python-format
 msgid "%(count)s sampling point"
 msgid_plural "%(count)s sampling points"
 msgstr[0] "%(count)s numune noktası"
@@ -9008,6 +9028,9 @@ msgstr "Hangi sistemlerin seçilebileceğini bunun sahası belirler."
 
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Görevleri bu günden itibaren, iki hafta öncesine kadar oluşturulur."
+
+msgid "Its tasks for today are missing from the counts until the task job runs."
+msgstr "Bugünün görevleri, görev işi çalışana kadar sayımlarda yok."
 
 #, python-format
 msgid "Its units have stock records on %(site)s: restore that site and choose it."

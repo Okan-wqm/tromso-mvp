@@ -752,8 +752,11 @@ def blockers_while_live(record):
     with transaction.atomic(), gate.opened('weighing a restore, rolled back'):
         type(record)._base_manager.filter(pk=record.pk).update(is_deleted=False)
         record.is_deleted = False
-        reasons = record.withdrawal_blockers()
-        transaction.set_rollback(True)
+        try:
+            reasons = record.withdrawal_blockers()
+        finally:
+            record.is_deleted = True        # the caller's object as it was, as the row is again after the rollback
+            transaction.set_rollback(True)
     return reasons
 
 

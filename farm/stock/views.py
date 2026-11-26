@@ -18,7 +18,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -31,21 +31,22 @@ from core.crud import DRAFT, done, render_page
 from core.platform import correction_window_days
 
 from ..feeding import read as feeding_read, views as feeding_views
-from ..health import views as health_views
+from ..health import read as health_read, views as health_views
 from ..forms.stock import (
     BatchDetailsForm, BatchInputForm, CullForm, DeliveryForm, EscapeForm, GradingForm, HarvestForm, InputLineFormSet, MortalityForm,
     PlannedForm, StockVoidForm, TransferForm, WeighingForm, kept_rows, stockable_units,
 )
 from ..harvest import read as harvest_read, views as harvest_views
 from .. import dialogs, placements
-from ..models import Batch, HandlingPlanItem, HealthEvent, StockMovement, StockOperation, Tank
+from ..handling import check
+from ..models import Batch, HandlingPlanItem, StockMovement, StockOperation, Tank
 from ..models.stock import takes_fish
 from ..templatetags.stock import fish, number, tonnes
 from ..water import views as water_views
 from . import read, services
 from .services import AlreadyRecorded
 
-VIEW, RECORD, VOID = 'farm.view_stockoperation', 'farm.add_stockoperation', 'farm.delete_stockoperation'
+VIEW, RECORD, VOID = services.VIEW, services.RECORD, services.VOID
 FILTERS = ('q', 'site', 'kind', 'occupancy', 'status')
 NO_SITE = 'none'
 STOCKED, EMPTY = 'stocked', 'empty'
@@ -143,7 +144,7 @@ def production_units(request):
     drawer_unit = next((unit for unit in units if str(unit.pk) == params['unit']), None)
     feeding = feeding_views.unit_figures(request.user, stock, details=[drawer_unit] if drawer_unit else ())
     water = water_views.unit_water(request.user, shown)
-    withdrawals = harvest_views.withdrawals([unit for unit in shown if unit.pk in stock])
+    withdrawals = check.in_force_now([unit for unit in shown if unit.pk in stock])
     chips = placements.of(shown, request.user)
 
     context = _context(
@@ -414,10 +415,7 @@ def _events(request, unit):
     (None otherwise): the live ones of its site that concern it, open or closed within the backdating window."""
     if not request.user.has_perm('farm.view_healthevent') or unit.production_department.site is None:
         return None
-    events = (HealthEvent.objects.filter(site=unit.production_department.site)
-              .filter(Q(closed_on__isnull=True) | Q(closed_on__gte=services.earliest(unit)))
-              .filter(Q(units=unit) | Q(units__isnull=True)).distinct())
-    return events.order_by('-date', '-created_at')
+    return health_read.concerning([unit.pk], closed_since=services.earliest(unit)).order_by('-date', '-created_at')
 
 
 def _plan(request, unit, form_class):
@@ -590,14 +588,14 @@ def overview_tiles(user, units=None, stock=None):
 def overview(user):
     """The redesigned overview's stock part, from ONE read of the stock: the tiles (`overview_tiles`) and the units whose
     fish are under a medicine withdrawal today (`holds`: [(unit, [WithdrawalBlock])] in the units' order, each a link to
-    its drawer), what Production units marks on the row (harvest.views.withdrawals). None for a person who may not read
-    the stock."""
+    its drawer), what Production units marks on the row (farm.handling.check.in_force_now). None for a person who may
+    not read the stock."""
     if not user.has_perm(VIEW):
         return None
     units = list(Tank.objects.select_related('production_department__site').order_by('code'))
     stock = read.stock_of(units)
     stocked = [unit for unit in units if unit.pk in stock]
-    blocks = harvest_views.withdrawals(stocked)
+    blocks = check.in_force_now(stocked)
     return {'tiles': overview_tiles(user, units, stock),
             'holds': [{'unit': unit, 'blocks': blocks[unit.pk], 'url': page_url({}, unit=str(unit.pk))}
                       for unit in stocked if unit.pk in blocks]}

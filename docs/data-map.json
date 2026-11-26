@@ -4181,6 +4181,7 @@
         "core/tests_simple_db.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
+        "farm/tests/test_derived_fresh.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_second_approval_said_first.py",
         "farm/tests/test_withdrawal_ceiling.py",

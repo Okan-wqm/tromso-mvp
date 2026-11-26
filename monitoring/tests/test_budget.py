@@ -2,6 +2,7 @@
 twenty-four units are EQUAL for every mode, ledger fold and the feeding walk run once per snapshot, and a card
 read runs nothing but SELECTs (a poll writes nothing). A hundred units is a live measurement (README, Monitoring)."""
 import itertools
+from datetime import timedelta
 from unittest import mock
 
 from django.db import connection
@@ -203,3 +204,34 @@ class EndpointBudgetTests(MonitoringCase):
         few = self.counts(first[0])
         self.grow(18, 'B')
         self.assertEqual(self.counts(first[0]), few)
+
+
+class ProbeTemperatureBudgetTests(Counting, MonitoringCase):
+    """The NH₃ of a typed sample asks the place's temperature probe (farm/water/read.py `temperature_found`: its value at
+    the sample's time, and how long it stays within the band since): asked once for the whole wall, never per unit.
+    Each unit with a full typed sample (TAN, pH, temperature) and a probe of its own that goes on sending."""
+
+    def probed_farm(self, count, prefix):
+        from django.utils import timezone
+
+        from farm.tests.helpers import point_of
+        from sensors import bindings
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        units = self.farm_of(count, prefix=prefix)
+        connection_, payload = make_connection(name=f'Broker {prefix}'), make_format(name=f'Format {prefix}')
+        now = timezone.now()
+        for unit in units:
+            self.sample(unit, hours=2, tan_mg_l='0.500', ph='7.20', temperature_c='9.5', salinity_ppt='0.0')
+            device = make_device(connection_, payload, self.hall.site, code=f'P-{unit.code}')
+            channel = make_channel(device, 'temperature_c', code='TEMP', heartbeat_s=600)
+            bindings.move(self.user, channel, point=point_of(unit), at=now - timedelta(hours=10))
+            with connection.cursor() as cursor:
+                cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) SELECT %s, g, 9.6 FROM '
+                               "generate_series(%s::timestamptz, %s::timestamptz, interval '10 minutes') g",
+                               [channel.channel_no, now - timedelta(hours=9), now])
+        return units
+
+    def test_the_count_does_not_grow_with_the_units_that_have_a_sample_and_a_probe(self):
+        three, nine = self.probed_farm(3, 'A'), self.probed_farm(9, 'B')
+        self.count(three, 'simple')                                   # warm what the first call loads once
+        self.assertEqual(self.count(three, 'simple'), self.count(nine, 'simple'))

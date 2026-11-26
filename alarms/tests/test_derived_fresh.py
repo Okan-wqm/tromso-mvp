@@ -98,3 +98,19 @@ class OwnPointEvidenceTests(WaterTestCase):
         self.sample(self.outlet, hours=30, source='lab', **BAD)
         self.passes(0, 1, 60)
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+
+    def test_a_newer_sample_at_the_outlet_that_cannot_be_worked_out_ends_nothing(self):
+        """The outlet critical 40 h ago; then a TAN at the outlet without a pH or a temperature (3 h ago): its NH₃ cannot
+        be worked out, which says nothing of the water being better. The middle OK 2 h ago. Both levels stay open, and
+        the place says the outlet's newer sample lacks the inputs."""
+        self.sample(self.outlet, hours=40, **BAD)
+        self.passes(-2380, -2379, -2320)
+        self.sample(self.outlet, hours=3, tan_mg_l='0.500')
+        self.sample(self.t1, hours=2, **GOOD)
+        self.passes(0, 1, 60, 120, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.judged, reading.worse.point, str(reading.worse.value)), ('critical', self.outlet,
+                                                                                           '0.8924'))
+        self.assertIn('last worked-out value at Outlet 0.8924 critical on ', reading.note)
+        self.assertIn('lacks what it is worked out from: measure there again', reading.note)

@@ -327,3 +327,39 @@ class SensorTemperatureTests(WaterTestCase):
         self.assertIsNotNone(nh3.value)
         self.assertEqual(nh3.point, outlet)
         self.assertTrue(nh3.fresh(self.now))
+
+    def test_the_band_is_the_platform_owners_and_a_changed_band_changes_the_verdict(self):
+        """The band is reference data (Platform settings › Water freshness, 1.0 °C until set): the probe 0.4 °C off the
+        sample's 12.0 °C confirms it at 1.0 °C and ends it at once at 0.3 °C."""
+        from core.models import PlatformSettings
+        self.assertEqual(PlatformSettings.get().temperature_band_c, D('1.0'))
+        self.assertEqual(freshness.temperature_band(), 1.0)
+        self.send(12.4, 50, 0)
+        self.sample(hours=30, **FULL)
+        self.assertTrue(self.unit_water().get(NH3).fresh(self.now))
+        row = PlatformSettings.get()
+        row.temperature_band_c = D('0.3')
+        row.save()
+        nh3 = self.unit_water().get(NH3)
+        self.assertFalse(nh3.fresh(self.now))
+        self.assertLessEqual(nh3.fresh_until, self.ago(hours=30))
+
+    def test_the_database_refuses_a_band_out_of_range(self):
+        from django.db import IntegrityError, transaction
+
+        from core.models import PlatformSettings
+        for band in ('0.0', '5.1'):
+            with self.subTest(band=band), self.assertRaises(IntegrityError), transaction.atomic():
+                PlatformSettings.objects.update(temperature_band_c=D(band))
+
+    def test_the_platform_settings_form_has_the_band(self):
+        from core.forms import PlatformSettingsForm
+        from core.models import PlatformSettings
+        form = PlatformSettingsForm(instance=PlatformSettings.get())
+        self.assertIn('temperature_band_c', form.fields)
+        data = {name: form.initial.get(name) for name in form.fields}
+        for band, ok in (('0.1', True), ('5.0', True), ('0.05', False), ('5.5', False)):
+            with self.subTest(band=band):
+                self.assertEqual(PlatformSettingsForm({**{key: value for key, value in data.items() if value is not None},
+                                                       'temperature_band_c': band},
+                                                      instance=PlatformSettings.get()).is_valid(), ok)

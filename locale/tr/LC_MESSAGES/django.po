@@ -1413,13 +1413,13 @@ msgstr "%(rule)s, saat %(time)s"
 
 #, python-format
 msgid ""
-"%(rule)s names people who do not hold Oversee: an alarm on a confidential experiment’s tanks "
-"reaches them only if they work on that experiment, and otherwise goes to its lead and the Oversee"
-" holders instead."
+"%(rule)s names people who do not hold Oversee. An alarm on the tanks of a confidential experiment"
+" reaches only those of them who work on that experiment or hold Oversee; when none of them does, "
+"it goes to the experiment’s lead and the Oversee holders instead."
 msgstr ""
-"%(rule)s Gözetim yetkisi olmayan kişileri adlandırıyor: gizli bir deneyin tanklarındaki bir alarm"
-" onlara yalnızca o deneyde çalışıyorlarsa ulaşır; yoksa deneyin sorumlusuna ve Gözetim yetkisi "
-"olanlara gider."
+"%(rule)s Gözetim yetkisi olmayan kişileri adlandırıyor. Gizli bir deneyin tanklarındaki bir "
+"alarm, bunlardan yalnızca o deneyde çalışanlara veya Gözetim yetkisi olanlara ulaşır; hiçbiri "
+"öyle değilse deneyin sorumlusuna ve Gözetim yetkisi olanlara gider."
 
 #, python-format
 msgid ""
@@ -6022,6 +6022,14 @@ msgid ""
 msgstr ""
 "0. gün geçti: bu, tanklarının o zamandan beri kayıtlarını mühürler; bu yüzden bunu Gözetim "
 "yetkisi olan bir kişi yapar."
+
+msgid ""
+"Day 0 has passed: this seals the records of its tanks since then. The platform admin’s account is"
+" not an overseer, whatever its roles: a person who holds Oversee does it."
+msgstr ""
+"0. gün geçti: bu, tanklarının o zamandan beri kayıtlarını mühürler. Platform yöneticisinin "
+"hesabı, rolleri ne olursa olsun Gözetim yetkisi taşımaz: bunu Gözetim yetkisi olan bir kişi "
+"yapar."
 
 #, python-format
 msgid ""

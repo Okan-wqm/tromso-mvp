@@ -3538,7 +3538,7 @@ deleted ones too, and restores an experiment with the parts its delete took alon
 however its tanks are placed; the sealed cells are a started experiment's (`experiment_cells`, migration 0007). A
 record of a tank before its experiment starts stays the farm's own. Starting a sealed or private experiment whose day 0
 has already passed, or making a started open experiment sealed or private, seals the records of the days already
-passed, so a person who holds Oversee does it (`experiments.services._may_seal_past`); anyone else is refused.
+passed, so a person who holds Oversee does it (`experiments.services._may_seal_past`); anyone else is refused. The platform admin's account is not an overseer, whatever its roles (it is a support account), and is told so.
 
 A **share** gives a person or a role one or more of five parts until a day (at most two years), with a reason; the
 results bring the data, the design and the systems with them, the data the design and the systems, the water the
@@ -3591,7 +3591,7 @@ at the cost it had before: each activity-log entry is stamped when it is written
 included; `*` when the row is gone), and the token leaves out the entries stamped with a work hidden from the person,
 read from one statement a request (`core.sealing.reach`: per part the experiments hidden from them, Oversee, and a
 digest of what they read, added to the token so a grant, a share's end or an audience change moves it). The seal
-itself is never read on a poll. Each of the seal's rules has one owner: the audience rule (who reads an experiment only as team or grantee: for the platform admin the private ones, for anyone else all but open) is `experiments.sealing.barred_audiences`, read by the seal's statement, the token, the viewer and the read log; Oversee is `holders` (SQL) and `holds_oversee` (Python); the channels that can leave are `alarms.transports.connected_channels`; a subject key's unit is `alarms.place.unit_of_key`; a moment's day on a cell's clock is `core.sealing.day_on` / `_cell_day`. `core/tests_sealing.py` (`RULE_OWNERS`) fails when another place states one of them. The activity log's pages and the database viewer's audit_log decide from the seals
+itself is never read on a poll. Each of the seal's rules has one owner: the audience rule (who reads an experiment only as team or grantee: for the platform admin the private ones, for anyone else all but open) is `experiments.sealing.barred_audiences`, read by the seal's statement, the token, the viewer and the read log; Oversee is `holders` (SQL) and `holds_oversee` (Python); the channels that can leave are `alarms.transports.connected_channels`; a subject key's unit is made and read in `alarms/place.py` (`water_key`, `unit_subject`; `unit_of_key`, `water_key_parts`); a moment's day on a cell's clock is `core.sealing.day_on` / `_cell_day`. `core/tests_sealing.py` (`RULE_OWNERS`) fails when another place states one of them (a comparison with an audience, in words or as a literal; a key or name that begins `unit:`; a `localtime(...).date()` in the experiments or the alarms; a read of `ALARM_TRANSPORTS`); the view `experiment_cells` states the audience rule in SQL, and a test holds it to the owner. The activity log's pages and the database viewer's audit_log decide from the seals
 at read time and also leave out an entry stamped with a work hidden from the person: an entry's text is written once
 and may name what its record reached then (a transfer from an open tank into a sealed one names both units). A person who reads no confidential work gets the token as before. The delete plan says that records the person may not see are
 reached, never how many. The seal's own reads (its parents and children, the stamp, the log's read-time rule) take a
@@ -3627,16 +3627,22 @@ where no rule names a person who may see a sealed alarm, its keepers are told (t
 holders of the cells of its opening day, read on each cell's site's clock; on a level whose rule names those on shift,
 the keepers on shift first), each on one channel that can leave: the level's first connected rule channel, else the
 first connected channel. A critical alarm nobody was told of at its current level raises the alarm system's own
-critical alarm ("one or more critical alarms reached nobody", no count), which names none of them and goes to the rules
-and, on every connected channel, every Oversee holder. Once a transport is connected only a notification on a connected
+critical alarm ("one or more critical alarms reached nobody", no count), which names none of them and goes to the rules' people
+and every Oversee holder, each on the rule's channel and on every connected channel besides (the alarm that says
+notifications cannot leave is never sent only on the channel that cannot). Once a transport is connected only a notification on a connected
 channel counts as telling; while none is, the alarm system raises its own standing "no notification channel is
 connected" instead, and the net counts only who was queued. While no recipient rule is active at all, it raises "no
 alarm recipient rule is active" (the coordinator's decisions of 2026-11-26, reviews 3 and 4). Which channels are
-connected is read from the configuration, the transport imported once and never built to answer; a path that does
-not import is a channel not connected, logged. The recipient rules' page warns of a rule that names people without
-Oversee while confidential cells exist. The test run turns this watch off for the tests of other things
-(`ALARM_SUPERVISE_REACH`, config/test_runner.py: their worlds have no rule and no transport); the alarm tests
-(`alarms.tests.AlarmsCase`) run it on with a recording transport and assert it stays quiet where a rule exists. A cell's days are its site's: the seal reads a moment's day on the
+connected is read from the configuration (`alarms.transports.configured`), the transport imported and never built to
+answer; a setting that is no dictionary, a key that is no channel and a path that does not import are channels not
+connected, logged once (a failed import is tried again on the next pass), and `check --deploy` refuses the first two
+by name (alarms.E004, E005). The recipient rules' page warns, in every look, of each active rule that names people
+without Oversee: a fact of the configuration, said whether or not a confidential experiment runs. This watch has no
+switch: it runs on every pass, in the tests as on a farm. On the pilot (rules made, no transport connected yet) the
+standing "no notification channel is connected" is open by design and nothing else of the watch is. A test that
+counts the alarms of a world with no rule or no transport counts them without the watch's own
+(`alarms.tests.farm_alarms`); the alarm tests (`alarms.tests.AlarmsCase`) run with a recording transport and assert
+the watch opens nothing where a rule exists. A cell's days are its site's: the seal reads a moment's day on the
 cell's site's clock (`core.sealing._cell_day` and `day_on`). The attention counts are kept per what a person reads.
 
 **Known limitations** (recorded, not fixed):

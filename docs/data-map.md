@@ -360,7 +360,7 @@ One time a condition held: a sensor rule's event (mirrored from sensors.AlarmEve
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarms
 - **constraints**: chk_alarms_source (check); chk_alarms_severity (check); chk_alarms_shape (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_matrix_notes.py` and 33 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_matrix_notes.py` and 32 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3658,7 +3658,7 @@ One value a device sends: what it measures (a quantity of sensors/quantities.py)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Sensors › sensors_channel
 - **forms**: `ChannelForm`
 - **constraints**: uq_sensors_channel_code_live (unique: device, code); chk_sensors_channel_code (check); chk_sensors_channel_name (check); chk_sensors_channel_quantity (check); chk_sensors_channel_unit_factor (check); chk_sensors_channel_unit_offset (check); chk_sensors_channel_fresh_heartbeats (check); chk_sensors_channel_source (check); chk_sensors_channel_value_path (check); chk_sensors_channel_protocol (check); chk_sensors_channel_address (check); chk_sensors_channel_reduction (check); chk_sensors_channel_deadband (check); chk_sensors_channel_heartbeat (check); chk_sensors_channel_range (check); chk_sensors_channel_state (check); chk_sensors_channel_ph_scale (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_sealing.py` and 16 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_rev.py`, `core/tests_sealing.py` and 17 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

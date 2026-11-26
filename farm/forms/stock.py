@@ -21,6 +21,7 @@ from ..models.handling import HandlingKind
 from ..models.harvest import offered_facilities
 from ..models.stock import (
     PROVENANCE_OF_ORIGIN, TAKES_FISH, CullReason, InputStage, MortalityCause, OperationKind, Origin, TransferReason,
+    WeightSource,
 )
 from ..models.supplier import SupplyCategory
 from ..stock import services
@@ -334,8 +335,24 @@ class WeighingForm(OperationForm):
         localize=True, widget=forms.TextInput(attrs=DECIMAL),
         help_text=_('Or, instead of a sample, the average weight as measured.'))
 
-    field_order = ['batch', 'date', 'sample_count', 'sample_weight_kg', 'avg_weight_g', 'notes']
+    field_order = ['batch', 'date', 'sample_count', 'sample_weight_kg', 'avg_weight_g', 'weight_source', 'notes']
     refresh_on = ('batch', 'date', 'sample_count', 'sample_weight_kg', 'avg_weight_g')
+
+    # How it was measured (Setup › Reference data › Weight sources): asked only when the farm has more than the sample
+    # weighed by hand, which a weighing without a source is.
+    weight_source = forms.ModelChoiceField(label=_('Weight source'), queryset=WeightSource.objects.none(),
+                                           required=False, empty_label=None,
+                                           help_text=_('How the weight was measured.'))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        sources = list(WeightSource.objects.order_by('name'))
+        if len(sources) > 1:
+            self.fields['weight_source'].queryset = WeightSource.objects.order_by('name')
+            self.fields['weight_source'].initial = next(source.pk for source in sources
+                                                        if source.code == WeightSource.MANUAL)
+        else:
+            del self.fields['weight_source']
 
     def clean(self):
         cleaned = super().clean()
@@ -357,7 +374,7 @@ class WeighingForm(OperationForm):
             user, unit=self.unit, batch=data['batch'], day=data['date'], avg_weight_g=data['avg_weight_g'],
             sample_count=data['sample_count'], sample_weight_kg=data['sample_weight_kg'], notes=data['notes'],
             token=data['token'],
-            withdrawal_ack=data['withdrawal_ack'])
+            withdrawal_ack=data['withdrawal_ack'], source=data.get('weight_source'))
 
 
 class SpeciesChoice(forms.ModelChoiceField):

@@ -24,6 +24,8 @@ AREAS = [
     Area(_('Medicines'), 'farm.Medicine'),
     Area(_('Slaughter facilities'), 'farm.SlaughterFacility'),
     Area(_('Handling rules'), 'farm.HandlingRule'),
+    # How an average weight was measured (a sample by hand, a camera later): what every weighing names.
+    Area(_('Weight sources'), 'farm.WeightSource'),
     # What a monitoring card holds and which unit's card gets which. Reading Monitoring needs neither: a card never asks
     # for a template right.
     Area(_('Card templates'), 'monitoring.CardTemplate'),

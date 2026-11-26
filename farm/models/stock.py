@@ -15,7 +15,8 @@ from decimal import Decimal
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
-from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
+from django.db.models.functions import Lower
+from django.utils.translation import gettext, gettext_lazy as _, ngettext, ngettext_lazy
 
 from core.models import AuditedModel
 
@@ -363,6 +364,51 @@ def _sample_rule():
                 avg_weight_g__gte=exact - half, avg_weight_g__lte=exact + half))
 
 
+class WeightSource(AuditedModel):
+    """How an average weight was measured: reference data (Setup › Reference data › Weight sources). Every weighing
+    line names its source, so "the measured points of a batch in a unit" are read one way whatever measured them
+    (farm/feeding/read.py, `measured_points`): a sample weighed by hand today (the seeded source, code `manual`, which
+    a weighing takes when it names none), a camera's biomass estimate later, as one more row here and no second path.
+
+    The seeded source is kept (it is what a weighing without a source means), and a source weighings name is not
+    deleted: the ledger's lines are history."""
+
+    MANUAL = 'manual'
+
+    name = models.CharField(_('Name'), max_length=100)
+    code = models.SlugField(_('Code'), max_length=30)
+    notes = models.CharField(_('Notes'), max_length=500, blank=True)
+
+    class Meta:
+        db_table = 'weight_sources'
+        ordering = ['name']
+        verbose_name = _('weight source')
+        verbose_name_plural = _('weight sources')
+        constraints = [
+            models.UniqueConstraint(Lower('name'), condition=Q(is_deleted=False), name='uq_weight_sources_name_live',
+                                    violation_error_message=_('Another weight source already has this name.')),
+            models.UniqueConstraint(fields=['code'], name='uq_weight_sources_code',
+                                    violation_error_message=_('Another weight source already has this code.')),
+            # The source a weighing takes when it names none is never deleted (migration 0052 makes it).
+            models.CheckConstraint(condition=~Q(code='manual') | Q(is_deleted=False), name='chk_weight_sources_manual_kept'),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def manual(cls):
+        """The source of a weighing that names none: a sample weighed by hand."""
+        return cls.objects.get(code=cls.MANUAL)
+
+    def delete_blockers(self):
+        if self.code == self.MANUAL:
+            return [gettext('It is the source of a weighing that names none: it is kept.')]
+        count = self.weighings.count()
+        return [ngettext('%(count)d weighing names it: it is kept with them.',
+                         '%(count)d weighings name it: it is kept with them.', count) % {'count': count}] if count else []
+
+
 def _check(name, condition):
     return models.CheckConstraint(condition=condition, name=f'chk_stock_movements_{name}')
 
@@ -394,6 +440,9 @@ class StockMovement(models.Model):
     sample_count = models.PositiveIntegerField(_('Fish weighed'), null=True, blank=True)
     sample_weight_kg = models.DecimalField(_('Their weight (kg)'), max_digits=12, decimal_places=4, null=True,
                                            blank=True)
+    # How a weighing's average was measured (reference data): every weighing line has one, no other line does.
+    weight_source = models.ForeignKey(WeightSource, null=True, blank=True, on_delete=models.PROTECT,
+                                      related_name='weighings', verbose_name=_('Weight source'))
 
     class Meta:
         db_table = 'stock_movements'
@@ -418,6 +467,9 @@ class StockMovement(models.Model):
             _check('size_class', Q(size_class='') | Q(kind__in=PAIRED)),
             # A harvest is weighed: its kilos are the farm's own fact beside the book (STK-29, STK-30).
             _check('harvest_weighed', ~Q(kind=MovementKind.HARVEST) | Q(measured_weight_kg__isnull=False)),
+            # A weighing says how it was measured, and only a weighing does (farm.WeightSource).
+            _check('weight_source', Q(kind=MovementKind.WEIGHING, weight_source__isnull=False)
+                   | (~Q(kind=MovementKind.WEIGHING) & Q(weight_source__isnull=True))),
             _check('sample', _sample_rule()),
             models.UniqueConstraint(fields=['operation', 'unit', 'batch', 'kind', 'pair'], nulls_distinct=False,
                                     name='uq_stock_movements_line'),

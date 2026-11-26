@@ -16,10 +16,11 @@ from .tank import TankResource
 from .water_freshness import WaterFreshnessResource
 from .water_limit import WaterLimitResource
 from .water_point import SamplingPointResource
+from .weight_source import WeightSourceResource
 
 __all__ = ['EquipmentResource', 'FeedResource', 'FeedingProtocolResource', 'HandlingPlanItemResource',
            'HandlingRuleResource', 'HealthEventResource', 'MedicineResource', 'ProductionDepartmentResource',
            'ProductionPlanResource', 'ProtocolAssignmentResource', 'SamplingPointResource', 'SiteResource', 'SlaughterFacilityResource',
            'SpeciesResource',
            'SupplierResource', 'SystemResource', 'TankResource', 'WaterFreshnessResource',
-           'WaterLimitResource']
+           'WaterLimitResource', 'WeightSourceResource']

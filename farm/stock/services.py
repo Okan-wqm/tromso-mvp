@@ -79,7 +79,7 @@ from farm.models.handling import KIND_OF_OPERATION
 from farm.models.harvest import FULFILLED_BY
 from farm.models.stock import (
     ARRIVAL_STATUSES, ARRIVING_OPERATIONS, CLEANER_CULL_REASONS, PRODUCTION_CULL_REASONS, PROVENANCE_OF_ORIGIN, REASONS, AdjustmentReason,
-    CullReason, MovementKind, OperationKind, TransferReason,
+    CullReason, MovementKind, OperationKind, TransferReason, WeightSource,
 )
 from farm.models.tank import NEEDS_NO_FISH, on_a_site
 from farm.templatetags.stock import number, times
@@ -125,6 +125,7 @@ class Entry:
     size_class: str = ''
     sample_count: int = None
     sample_weight_kg: Decimal = None
+    weight_source: object = None      # a weighing's (farm.WeightSource); None: a sample weighed by hand
 
 
 @dataclass
@@ -244,12 +245,17 @@ def _commit(user, kind, day, entries, *, notes='', ack=False, size_mix_ack=False
                                                       created_by=user, updated_by=user)
             if token is not None:
                 EntryKey.note(token, operation)
+            # every weighing line says how it was measured: by hand unless the entry names another source
+            manual = WeightSource.manual() if any(entry.kind == MovementKind.WEIGHING and entry.weight_source is None
+                                                  for entry in entries) else None
             StockMovement.objects.bulk_create([
                 StockMovement(operation=operation, batch=batches[entry.batch.pk], unit=units[entry.unit.pk],
                               kind=entry.kind, count_delta=entry.count_delta, avg_weight_g=entry.avg_weight_g,
                               measured_weight_kg=entry.measured_weight_kg, pair=entry.pair, reason=entry.reason,
                               size_class=entry.size_class, sample_count=entry.sample_count,
-                              sample_weight_kg=entry.sample_weight_kg)
+                              sample_weight_kg=entry.sample_weight_kg,
+                              weight_source=(entry.weight_source or manual) if entry.kind == MovementKind.WEIGHING
+                              else None)
                 for entry in entries])
             over, mixed = _check_timeline(operation, batches, units, kind)
             asked = {name: messages for name, messages, ticked in (('over_capacity_ack', over, ack),
@@ -660,6 +666,8 @@ def _describe(line):
         text += f'weighed, average {line.avg_weight_g.normalize():f} g'
         if line.sample_count:
             text += f' ({line.sample_count} fish, {line.sample_weight_kg.normalize():f} kg)'
+        if line.weight_source_id and line.weight_source.code != WeightSource.MANUAL:
+            text += f', by {line.weight_source.name}'
         return text
     text += f'{line.count_delta:+d} fish'
     if line.avg_weight_g is not None:
@@ -876,10 +884,11 @@ def record_cull(user, *, unit, batch, day, count, reason, notes='', health_event
 
 
 def record_weighing(user, *, unit, batch, day, avg_weight_g=None, sample_count=None, sample_weight_kg=None,
-                    notes='', token=None, withdrawal_ack=None):
+                    notes='', token=None, withdrawal_ack=None, source=None):
     """A sample weighed: the average of the fish of the batch in the unit, given directly or as a number
     of fish and their weight together (the usual bulk weighing, STK-42). From that day the share's
-    biomass is its count times this average."""
+    biomass is its count times this average. `source`: how it was measured (farm.WeightSource; None: a sample
+    weighed by hand)."""
     access.require(user, RECORD)
     if sample_count is not None and sample_weight_kg is not None:
         if avg_weight_g is not None:
@@ -889,7 +898,7 @@ def record_weighing(user, *, unit, batch, day, avg_weight_g=None, sample_count=N
         raise ValidationError({'avg_weight_g': _('Give the average weight, or the number of fish weighed and their '
                                                  'weight together.')})
     entry = Entry(unit, batch, MovementKind.WEIGHING, 0, avg_weight_g=_quantize(avg_weight_g),
-                  sample_count=sample_count, sample_weight_kg=sample_weight_kg)
+                  sample_count=sample_count, sample_weight_kg=sample_weight_kg, weight_source=source)
     return _commit(user, OperationKind.WEIGHING, day, [entry], withdrawal_ack=withdrawal_ack, notes=notes, token=token)
 
 

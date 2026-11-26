@@ -192,6 +192,8 @@ WORKSPACES = [
                 Entry(_('Water freshness'), 'farm:waterfreshness_list', 'timer', 'farm.view_waterfreshness', area='water'),
                 Entry(_('Medicines'), 'farm:medicine_list', 'pill', 'farm.view_medicine', area='stock'),
                 Entry(_('Handling rules'), 'farm:handlingrule_list', 'timer', 'farm.view_handlingrule', area='stock'),
+                # How an average weight was measured: a sample weighed by hand, a biomass camera (farm.WeightSource).
+                Entry(_('Weight sources'), 'farm:weightsource_list', 'gauge', 'farm.view_weightsource', area='stock'),
                 # What a monitoring card holds and which unit's card gets which (monitoring/cards/).
                 Entry(_('Card templates'), 'monitoring:cardtemplate_list', 'layout-dashboard',
                       'monitoring.view_cardtemplate'),

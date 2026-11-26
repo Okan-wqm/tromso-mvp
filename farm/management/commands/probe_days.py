@@ -1,10 +1,19 @@
-from datetime import date
+import argparse
 
 from django.core.management.base import BaseCommand, CommandError
 
+from core.dates import read_day
 from farm.management import guard
 from farm.models import Tank
 from farm.water import degree_days, services
+
+
+def day(text):
+    """A day given on the command line (the one day parser, core.dates.read_day)."""
+    found = read_day(text)
+    if found is None:
+        raise argparse.ArgumentTypeError(f'{text!r} is not a day: give it as YYYY-MM-DD.')
+    return found
 
 
 class Command(BaseCommand):
@@ -18,8 +27,8 @@ class Command(BaseCommand):
         actions = parser.add_subparsers(dest='action', required=True)
         backfill = actions.add_parser('backfill')
         backfill.add_argument('--units', nargs='+', required=True, help='The codes of the units.')
-        backfill.add_argument('--first', type=date.fromisoformat, required=True, help='The first day, YYYY-MM-DD.')
-        backfill.add_argument('--last', type=date.fromisoformat, required=True, help='The last day, YYYY-MM-DD.')
+        backfill.add_argument('--first', type=day, required=True, help='The first day, YYYY-MM-DD.')
+        backfill.add_argument('--last', type=day, required=True, help='The last day, YYYY-MM-DD.')
         guard.add_arguments(backfill)
         correct = actions.add_parser('correct')
         correct.add_argument('--id', type=int, required=True, help='The id of the probe day (see "list").')

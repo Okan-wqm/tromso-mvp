@@ -4,10 +4,12 @@
 checkout): it reads only what both have (`withdrawal.of_units`, `stock.read.stock_of`, `fasting.fasts`)."""
 import json
 import uuid
-from datetime import date, timedelta
+from datetime import timedelta
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import translation
+
+from core.dates import read_day
 
 from farm.handling import fasting
 from farm.health import withdrawal
@@ -87,7 +89,7 @@ class Command(BaseCommand):
         was = {}
         for key, row in before['withdrawals'].items():
             treatment_id, batch_id = key.split('|')
-            was[(treatment_id, batch_id)] = date.fromisoformat(row['until']) if row['until'] else None
+            was[(treatment_id, batch_id)] = read_day(row['until']) if row['until'] else None
         now = withdrawal.ends_now()
         # the keys as the file holds them (text): the readers' are ids
         ends = {(str(treatment_id), str(batch_id)): held for (treatment_id, batch_id), held in now.items()}

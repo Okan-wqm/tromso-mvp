@@ -87,10 +87,11 @@ from decimal import ROUND_CEILING, Decimal
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
-from django.utils import formats, timezone
+from django.utils import formats
 from django.utils.translation import gettext as _, ngettext
 
 from core import audit
+from core.dates import company_zone
 from core.platform import correction_window_days, unknown_withdrawal_days
 from core.models import AuditLog
 from farm import withdrawal_gate as gate
@@ -1602,7 +1603,7 @@ def floor_sentence(withdrawal):
     set (its origin, in the reader's language: the stored reason is the log's) and how it goes."""
     floor = withdrawal.floor
     params = {'worked': shown_date(withdrawal.worked_out), 'why': floor.get_origin_display(),
-              'when': shown_date(timezone.localtime(floor.created_at).date())}
+              'when': shown_date(floor.created_at.astimezone(company_zone()).date())}
     if floor.not_before is None:
         return _('Held without an end by a floor (%(why)s, %(when)s), although the days counted give %(worked)s: '
                  'the end it had was unknown and is kept. The floor is lifted by the platform’s administrator, who '

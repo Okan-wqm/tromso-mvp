@@ -59,8 +59,9 @@ class DatabaseViewerTests(ReviewCase):
                 with self.subTest(table=table.name):
                     response = self.client.get(reverse('core:database_table', args=[table.name]))
                     self.assertEqual(response.status_code, 200)
-                    self.assertNotContains(response, 'XQZ')
-                    self.assertNotContains(response, str(self.experiment.pk))
+                    page = world.page_text(response)
+                    self.assertNotIn('XQZ', page)
+                    self.assertNotIn(str(self.experiment.pk), page)
 
 
 class TeamTests(ReviewCase):

@@ -12,6 +12,7 @@ log.
 `build_open(cls)` makes world B and `build_sealed(cls)` adds X; a test that compares the two worlds renders between the
 two calls. The rows are made straight in the database (the pages and services have their own tests), except the stock,
 which the stock service books."""
+import re
 from datetime import timedelta
 from decimal import Decimal
 
@@ -240,3 +241,9 @@ def sealed_ids(cls):
             row = StockOperation.all_objects.get(pk=row)
         found.setdefault(row._meta.label, []).append(row.pk)
     return found
+
+
+def page_text(response):
+    """A page's HTML without its random tokens (the CSP nonce, the CSRF token): a sealed name searched in it is never
+    "found" in a token that happens to spell it (run 45787013960: the nonce held "XQZ")."""
+    return re.sub(r'name="csrfmiddlewaretoken" value="[^"]+"|nonce="[^"]+"', '', response.content.decode())

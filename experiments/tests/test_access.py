@@ -188,7 +188,7 @@ class PrivateTests(AccessCase):
             with self.subTest(table=table):
                 response = self.client.get(reverse('core:database_table', args=[table]))
                 self.assertEqual(response.status_code, 200)
-                self.assertNotContains(response, 'XQZ')
+                self.assertNotIn('XQZ', world.page_text(response))
 
     def test_the_platform_admin_still_sees_that_its_tanks_are_booked_and_when(self):
         from .. import read

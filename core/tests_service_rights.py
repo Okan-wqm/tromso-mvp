@@ -42,7 +42,8 @@ NOT_A_WRITER = {
     'farm.handling.check.require_acknowledged': "a check of the warnings the caller's form acknowledged, inside its "
                                                 'checked write',
     'farm.handling.check.needs_second_person': 'a question (does this acknowledgement need a second person), no write',
-    'core.softdelete.execute': "the delete plan's step, inside crud's checked delete (the tab's Delete right)",
+    'core.softdelete.execute': "the delete plan's step, inside crud's checked delete (the tab's Delete right) or a "
+                               "service's checked void (hr.services.void_presence)",
     'core.softdelete.restore': "the delete plan's restore, inside the admin's checked restore",
     'farm.health.withdrawal.guarded': "the withdrawal guard around a checked write (the caller's right asked first)",
     'farm.health.withdrawal.guarded_ceiling': "the withdrawal guard around a checked write (the caller's right asked "

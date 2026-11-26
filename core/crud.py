@@ -21,7 +21,10 @@ needs the same way:
   record the first one created;
 - a second place: a tab's `mounts` serve the same Resource, views and records again under another address and
   panel (HR's people pages under Production › Team); the request carries the mount it came by (`mount_of`), the
-  tab's `scoped` narrows the rows to it, and every link and redirect stays in it.
+  tab's `scoped` narrows the rows to it, and every link and redirect stays in it;
+- one writer: a tab whose records its area's service writes (`service_writes`) hands every write to that service, which
+  checks its own rules, locks in its own order and logs; crud keeps the form, the verb, the scope, the version and the
+  pages (hr/tests/test_one_writer.py holds an HR record to one writer).
 """
 import copy
 import uuid
@@ -290,6 +293,16 @@ def tab_fields(tabs):
     """Every field name of the tabs, the ones inside a Fieldset too."""
     return [name for _, _, names in tabs for item in names
             for name in (item.names if isinstance(item, Fieldset) else [item])]
+
+
+def refusal_on_form(form, error):
+    """Puts a ValidationError raised at the save (a service's refusal, a rule under a lock) on the form: each message on
+    its field when the error names fields the form has, else above the form."""
+    if hasattr(error, 'error_dict') and set(error.error_dict) <= {*form.fields, NON_FIELD_ERRORS}:
+        form.add_error(None, error)
+        return
+    form.add_error(None, error.message_dict.get(NON_FIELD_ERRORS, error.messages) if hasattr(error, 'error_dict')
+                   else error.messages)
 
 
 def constraint_error(form, error):
@@ -580,8 +593,31 @@ class Resource:
     @classmethod
     def after_save(cls, request, obj, created):
         """Runs inside the save transaction, after the audit row; e.g. invite a new user. A ValidationError raised here
-        rolls the save back and is shown on the form (a rule checked under a lock the form could not hold: HR's
-        employment bound)."""
+        rolls the save back and is shown on the form (a rule checked under a lock the form could not hold). Never run
+        for a tab whose service writes its records (`service_writes`): the service does what follows its write."""
+
+    # One writer (the architecture audit of 26.11.2026, H-5): the records of a tab with `service_writes` are written by
+    # their area's service only, never by crud beside it. crud reads the form (the fields, their parsing and the model's
+    # own checks), the verb, the scope, the record's lock and its version, and then hands the write to these, which call
+    # the service: it checks its rules itself, locks in its own order and writes its own audit row. A ValidationError
+    # it raises is shown on the form, each message on its field when the field is there; a PermissionDenied is a 403.
+    service_writes = False
+
+    @classmethod
+    def create_record(cls, request, form):
+        """The new record from the valid `form`, written by the service; returns it."""
+        raise NotImplementedError(f'{cls.__name__} has service_writes and offers Create: say which service writes it')
+
+    @classmethod
+    def change_record(cls, request, form, current):
+        """The edit `form` asks of `current` (the record as locked now, its version checked), written by the service;
+        returns the saved record."""
+        raise NotImplementedError(f'{cls.__name__} has service_writes and offers Edit: say which service writes it')
+
+    @classmethod
+    def delete_record(cls, request, record):
+        """Deletes (voids) `record`, as the person reached it, through the service."""
+        raise NotImplementedError(f'{cls.__name__} has service_writes and offers Delete: say which service deletes it')
 
     @classmethod
     def after_commit(cls, request, obj, created):
@@ -841,15 +877,19 @@ class CreateView(FormView):
         if sent is None:
             try:
                 with transaction.atomic():
-                    obj = form.save(commit=False)
-                    for field in ('created_by', 'updated_by'):
-                        if hasattr(obj, field):
-                            setattr(obj, field, request.user)
-                    obj.save()
-                    form.note_sent(obj)
-                    form.save_m2m()
-                    audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
-                    r.after_save(request, obj, created=True)
+                    if r.service_writes:
+                        obj = r.create_record(request, form)
+                        form.note_sent(obj)
+                    else:
+                        obj = form.save(commit=False)
+                        for field in ('created_by', 'updated_by'):
+                            if hasattr(obj, field):
+                                setattr(obj, field, request.user)
+                        obj.save()
+                        form.note_sent(obj)
+                        form.save_m2m()
+                        audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
+                        r.after_save(request, obj, created=True)
             except IntegrityError as error:
                 # The same form sent twice at once: the other request's insert held the key's unique index until it
                 # committed, so its record is there now.
@@ -864,10 +904,9 @@ class CreateView(FormView):
                     form.instance._state.adding = True     # the page is the new-record form again
                     return self.page(form)
             except ValidationError as error:
-                # Its key stands for a record of another kind (EntryKey.note), or a rule `after_save` checks under its lock
-                # refused it (HR's employment bound): nothing was written.
-                form.add_error(None, error.message_dict.get(NON_FIELD_ERRORS, error.messages)
-                               if hasattr(error, 'error_dict') else error.messages)
+                # Its key stands for a record of another kind (EntryKey.note), the service refused it, or a rule
+                # `after_save` checks under its lock refused it: nothing was written.
+                refusal_on_form(form, error)
                 form.instance._state.adding = True
                 return self.page(form)
             else:
@@ -919,6 +958,8 @@ class UpdateView(FormView):
                     if versioned and form.cleaned_data.get('version') != current.version \
                             or getattr(read, 'version', None) != getattr(current, 'version', None):
                         raise Crossed
+                    if r.service_writes:
+                        return r.change_record(request, form, current)
                     before = r.recorded(current)
                     obj = form.save(commit=False)
                     if versioned:
@@ -952,8 +993,9 @@ class UpdateView(FormView):
                            % {'name': r.name})
             return done(request, self.url('edit', pk))
         except ValidationError as error:
-            # The save asked something first (Resource.edited): the form again with the question, nothing saved.
-            form.add_error(None, error.messages)
+            # The save asked something first (Resource.edited), or the service refused it: the form again with the
+            # question or the reason, nothing saved.
+            refusal_on_form(form, error)
             response = self.page(form, self.get_object(pk), withdrawal_change=getattr(error, 'change', None),
                                  question_template=r.question_template)
             response.status_code = 422
@@ -995,6 +1037,18 @@ class DeleteView(ResourceView):
 
     def post(self, request, pk):
         r = self.resource
+        if r.service_writes:
+            # The service locks in its own order (HR: the person before the record) and logs; a refusal is said.
+            try:
+                with transaction.atomic():
+                    obj = self.get_object(pk)
+                    r.delete_record(request, obj)
+            except ValidationError as error:
+                messages.error(request, ' '.join(error.messages))
+                return done(request, self.url('list'))
+            # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+            flash(request, _('%(name)s “%(object)s” deleted.'), r, obj)
+            return done(request, self.url('list'))
         with transaction.atomic():
             # What the delete takes along is locked before the record itself, the deepest first (core.softdelete,
             # LOCK ORDER), as a unit's save locks the unit before its department.

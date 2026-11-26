@@ -10,11 +10,15 @@ decided by farm/water/read.py, never here.
   it taken while the binding held (a sensor moved away keeps its earlier values with the place it was in, and gives none
   to the place it moved to before it came). One indexed row per binding; `values_at` asks for several moments in the
   same two queries.
-- `covered`: for each span asked at a target, each channel's time-weighted mean of its clean readings taken while it
-  was bound there, and the seconds they cover: a reading holds from its time until the channel's next clean reading,
-  at most its `fresh_s` (between two stored rows the water stayed within the channel's deadband: the ingest stores a
-  value when it moves past it, and at least once per heartbeat), and never past the binding's end or the span's. The
-  reading before the span counts from the span's start while still fresh. Two queries whatever the spans.
+- `covered`: for each span asked at a target (a farm-local day), each channel's time-weighted mean of its clean
+  readings taken while it was bound there, the seconds they cover, the hours of the span that hold a clean reading and
+  the number of clean readings. A clean reading holds from its time until the channel's NEXT STORED ROW, clean or not
+  (a bad or maintenance row ends the hold: the value is not usable from then), at most the hold bound the asker gives
+  and never longer than the channel's own `fresh_s`, and never past the binding's end or the span's. The reading before
+  the span counts from the span's start for what is left of its hold. It also says whether the channel has a range
+  set (a channel without one flags nothing out of range: the asker does not take it as a food-safety source). Two
+  queries whatever the spans; the only read of the hypertable for the degree-days, made when a day is closed
+  (farm/water/services.py), never by a page.
 - A pH value says its channel's pH scale and since when it holds (`_scale`): the farm puts it on the NBS scale."""
 from django.db import connection
 from django.db.models import Q
@@ -124,10 +128,10 @@ class SensorSource:
             answers.append(found)
         return answers
 
-    def covered(self, asks, code):
+    def covered(self, asks, code, hold):
         """{index of the ask: [sources.Covered]}: each (target, start, end) of `asks`, every channel of `code` bound at
-        the target during the span, its time-weighted mean and the seconds covered (module docstring). The bindings in
-        one query, the spans in one statement (a LATERAL window over the hypertable's (channel_no, ts) key per span)."""
+        the target during the span (module docstring); `hold`: the seconds a reading stands for at most. The bindings
+        in one query, the spans in one statement (a LATERAL window over the hypertable's (channel_no, ts) key)."""
         asks = list(asks)
         if not asks:
             return {}
@@ -137,33 +141,49 @@ class SensorSource:
                                                                                      valid_from__lt=until)
                         .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=since))):
             bound.setdefault(_target(binding), []).append(binding)
-        spans, roles = [], {}
+        spans, channels = [], {}
         for index, (target, start, end) in enumerate(asks):
             for binding in bound.get(target, ()):
                 low = max(start, binding.valid_from)
                 high = end if binding.valid_to is None else min(end, binding.valid_to)
                 if low < high:
                     channel = binding.channel
-                    spans.append((index, channel.channel_no, low, high, binding.valid_from, channel.fresh_s))
-                    roles[(index, channel.channel_no)] = binding.role
+                    spans.append((index, channel.channel_no, low, high, binding.valid_from, start,
+                                  min(int(hold), channel.fresh_s)))
+                    channels[(index, channel.channel_no)] = (binding.role, channel)
         if not spans:
             return {}
         with connection.cursor() as cursor:
             cursor.execute(
-                'SELECT w.i, w.channel_no, sum(r.value * r.held), sum(r.held) '
+                'SELECT w.i, w.channel_no, sum(r.value * r.held) FILTER (WHERE r.good AND r.held > 0), '
+                'sum(r.held) FILTER (WHERE r.good AND r.held > 0), '
+                'count(DISTINCT r.hour) FILTER (WHERE r.good AND r.inside), count(*) FILTER (WHERE r.good AND r.inside) '
                 'FROM unnest(%s::integer[], %s::integer[], %s::timestamptz[], %s::timestamptz[], %s::timestamptz[], '
-                '%s::integer[]) AS w(i, channel_no, low, high, bound_from, fresh_s) '
-                'CROSS JOIN LATERAL (SELECT value, extract(epoch FROM least(lead(ts) OVER (ORDER BY ts), '
-                "ts + w.fresh_s * interval '1 second', w.high) - greatest(ts, w.low))::float8 AS held "
+                '%s::timestamptz[], %s::integer[]) AS w(i, channel_no, low, high, bound_from, day_start, hold_s) '
+                f'CROSS JOIN LATERAL (SELECT value, (quality & {BAD_MASK}) = 0 AS good, ts >= w.low AS inside, '
+                'floor(extract(epoch FROM ts - w.day_start) / 3600) AS hour, '
+                'extract(epoch FROM least(lead(ts) OVER (ORDER BY ts), '
+                "ts + w.hold_s * interval '1 second', w.high) - greatest(ts, w.low))::float8 AS held "
                 'FROM sensors_reading WHERE channel_no = w.channel_no '
-                "AND ts >= greatest(w.low - w.fresh_s * interval '1 second', w.bound_from) AND ts < w.high "
-                f'AND (quality & {BAD_MASK}) = 0) r WHERE r.held > 0 GROUP BY w.i, w.channel_no',
+                "AND ts >= greatest(w.low - w.hold_s * interval '1 second', w.bound_from) AND ts < w.high) r "
+                'GROUP BY w.i, w.channel_no',
                 [list(column) for column in zip(*spans)])
             rows = cursor.fetchall()
-        found = {}
-        for index, channel_no, weighted, seconds in rows:
-            found.setdefault(index, []).append(sources.Covered(channel_no, roles[(index, channel_no)],
-                                                               float(weighted) / float(seconds), float(seconds)))
+        found, merged = {}, {}
+        for index, channel_no, weighted, seconds, hours, readings in rows:
+            if not seconds:
+                continue
+            # two bindings of one channel to one place in a span: one answer (their hours may overlap: the larger)
+            slot = merged.setdefault((index, channel_no), [0.0, 0.0, 0, 0])
+            slot[0] += float(weighted)
+            slot[1] += float(seconds)
+            slot[2] = max(slot[2], int(hours))
+            slot[3] += int(readings)
+        for (index, channel_no), (weighted, seconds, hours, readings) in merged.items():
+            role, channel = channels[(index, channel_no)]
+            found.setdefault(index, []).append(sources.Covered(
+                channel_no, role, weighted / seconds, seconds, hours, readings,
+                channel.range_min is not None and channel.range_max is not None))
         return found
 
 

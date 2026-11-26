@@ -163,15 +163,15 @@ class RecordedCountsTests(Counting, MonitoringCase):
         # with ONE read of the fish and their limits for all the cards; the same at 6, 24 and 200 units.
         self.count(units[:6], 'small')
         small = [self.count(units[:size], 'small') - self.savepoints for size in (6, 24, 200)]
-        self.assertEqual(small, [SMALL_READS] * 3)
+        self.assertEqual(small, [SMALL_READS + NEWEST_WORKED_QUERIES] * 3)
         # The Big card (2026-11-16): the same chart read, and every active point's water for its other points; the
         # core draws each card's figure, which is no query. The same at 6, 24 and 200 units.
         self.count(units[:6], 'big')
         big = [self.count(units[:size], 'big') - self.savepoints for size in (6, 24, 200)]
-        self.assertEqual(big, [BIG_READS] * 3)
+        self.assertEqual(big, [BIG_READS + NEWEST_WORKED_QUERIES] * 3)
         # The pane of a unit gone into (Phase 1D) is ONE unit's Big card: the same reads, whatever the wall beside it.
         self.count(units[:1], 'big')
-        self.assertEqual(self.count(units[:1], 'big') - self.savepoints, BIG_READS)
+        self.assertEqual(self.count(units[:1], 'big') - self.savepoints, BIG_READS + NEWEST_WORKED_QUERIES)
         self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS for mode, count in
                                       {'simple': 4, 'detailed': 12, 'mixed': 12}.items()})
         # chips; + treatments, lice, tasks, and the task job's read (an optional source: its savepoint and release)

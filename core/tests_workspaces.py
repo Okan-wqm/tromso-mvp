@@ -68,7 +68,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
                                         'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
                                         'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
                                         'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                        'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Card templates',
+                                        'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Weight sources',
+                                        'Card templates',
                                         'Card template rules', 'pH window scales', 'Slaughter facilities', 'Suppliers'])
 
     def test_the_switcher_lists_the_panels_and_marks_the_current_one(self):
@@ -130,7 +131,8 @@ class PanelMemoryTests(WorkspaceTestCase):
                                         'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
                                         'Team list', 'Organization chart', 'Production departments', 'Systems', 'Equipment',
                                         'Tanks, ponds & cages', 'Monitoring boards', 'Sampling points', 'Species', 'Feeds',
-                                        'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Card templates',
+                                        'Water limits', 'Water freshness', 'Medicines', 'Handling rules', 'Weight sources',
+                                        'Card templates',
                                         'Card template rules', 'pH window scales', 'Slaughter facilities', 'Suppliers'])
         self.page(reverse('farm:site_list'))
         self.assertEqual(self.page(reverse('password_change')).context['workspace']['key'], 'company')

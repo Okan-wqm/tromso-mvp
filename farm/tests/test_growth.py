@@ -256,3 +256,94 @@ class CurveTests(SimpleTestCase):
         for before, after in zip(fcrs, fcrs[1:]):
             self.assertLess(after - before, D('0.01'))                  # a step table jumps 0.50 at 100 g
         self.assertEqual(found.points[0].fcr, D('1.225'))               # at 95 g: 1.00 + 0.50 × 45 ÷ 100
+
+
+class BetweenBandRuleTests(SimpleTestCase):
+    """The table's three quantities over the weight under a protocol's two rules (ration.Table; owner decisions 13 and
+    14): a step at the band's edge is the band's own value to the last digit, as every table was read before; smooth has
+    no jump at any band's edge for the FCR, the uneaten share and the SFR at every temperature; and the values the
+    protocol's page shows (Table.used) are those very readings."""
+    COLUMNS = (D('8'), D('12'), D('16'))
+    # bands 0–50, 50–100, 100–400 and from 400 g: FCR, uneaten share (%), SFR at 8, 12 and 16 °C
+    ROWS = (((0, 50), '0.90', '5', ('2.0', '3.0', '3.6')), ((50, 100), '1.00', '8', ('1.5', '2.2', '2.6')),
+            ((100, 400), '1.15', '12', ('1.0', '1.4', '1.8')), ((400, None), '1.30', '20', ('0.6', '0.9', '1.1')))
+    TEMPERATURES = (D('8'), D('9.3'), D('12'), D('14.75'), D('16'))
+
+    def table(self, between):
+        from types import SimpleNamespace
+
+        from ..feeding.ration import Band, Cell, Table
+        protocol = SimpleNamespace(expected_fcr=D('1.00'), uneaten_pct=None, mortality_pct_month=None,
+                                   fcr_between=between, uneaten_between=between, sfr_between=between)
+        return Table(protocol, tuple(
+            Band(index, D(low), None if high is None else D(high), 'GR-4', 4, D(fcr),
+                 tuple(Cell(column, D(value)) for column, value in zip(self.COLUMNS, cells)), D(uneaten))
+            for index, ((low, high), fcr, uneaten, cells) in enumerate(self.ROWS)))
+
+    def readings(self, table, weight):
+        return [table.fcr_at(weight), table.uneaten_at(weight),
+                *(table.sfr_at(weight, temperature).value for temperature in self.TEMPERATURES)]
+
+    def test_a_step_is_the_fishs_own_bands_value_to_the_last_digit(self):
+        from ..feeding.ration import sfr_at
+        table = self.table('step')
+        for weight in (D(0), D('49.99'), D(50), D(75), D('99.9999'), D(100), D(250), D(400), D(5000)):
+            band = table.band_for(weight)
+            self.assertEqual(table.fcr_at(weight), band.fcr)
+            self.assertEqual(table.uneaten_at(weight), band.uneaten_pct)
+            for temperature in self.TEMPERATURES:               # main's reading: the band's row over the temperature
+                self.assertEqual(table.sfr_at(weight, temperature).value, sfr_at(band.cells, temperature).value)
+
+    def test_smooth_has_no_jump_at_any_bands_edge_for_the_three_quantities(self):
+        table, step = self.table('smooth'), self.table('step')
+        for edge in (D(50), D(100), D(400)):
+            below, at = self.readings(table, edge - D('0.000001')), self.readings(table, edge)
+            for one, other in zip(below, at):
+                self.assertLess(abs(one - other), D('0.00001'), edge)
+            # where the step table does jump: every quantity differs across the edge
+            for one, other in zip(self.readings(step, edge - D('0.000001')), self.readings(step, edge)):
+                self.assertGreater(abs(one - other), D('0.05'), edge)
+        # walked in steps of 0.25 g from 0 to 600 g: no two neighbouring weights differ by more than the steepest
+        # segment between two anchors allows (FCR 0.10 over 50 g, uneaten 3 over 50 g, SFR 1.0 over 50 g)
+        weights = [D(n) / 4 for n in range(0, 2401)]
+        read = [self.readings(table, weight) for weight in weights]
+        for before, after in zip(read, read[1:]):
+            self.assertLessEqual(abs(after[0] - before[0]), D('0.10') / 50 / 4 + D('1e-20'))
+            self.assertLessEqual(abs(after[1] - before[1]), D(3) / D(50) / 4 + D('1e-20'))
+            for one, other in zip(before[2:], after[2:]):
+                self.assertLessEqual(abs(other - one), D('1.0') / 50 / 4 + D('1e-20'))
+
+    def test_smooth_is_the_entered_value_at_each_bands_anchor_and_in_between_by_hand(self):
+        table = self.table('smooth')
+        for (low, high), fcr, uneaten, cells in self.ROWS:
+            at = anchor(D(low), None if high is None else D(high))
+            self.assertEqual(self.readings(table, at)[:2], [D(fcr), D(uneaten)])
+            self.assertEqual([table.sfr_at(at, column).value for column in self.COLUMNS], [D(cell) for cell in cells])
+        # 50 g, the edge of the first two bands, half way between their middles (25 g and 75 g):
+        # FCR (0.90 + 1.00) ÷ 2 = 0.95; uneaten (5 + 8) ÷ 2 = 6.5 %; SFR at 12 °C (3.0 + 2.2) ÷ 2 = 2.6 %
+        self.assertEqual((table.fcr_at(D(50)), table.uneaten_at(D(50)), table.sfr_at(D(50), D(12)).value),
+                         (D('0.95'), D('6.5'), D('2.6')))
+        # both ways at once: 50 g at 10 °C. Each band at 10 °C: (2.0 + 3.0) ÷ 2 = 2.5 and (1.5 + 2.2) ÷ 2 = 1.85; half
+        # way between the bands: 2.175 %
+        self.assertEqual(table.sfr_at(D(50), D(10)).value, D('2.175'))
+        # never outside the temperature columns, whatever the weight; never outside the bands
+        self.assertIsNone(table.sfr_at(D(50), D('7.9')))
+        self.assertIsNone(table.sfr_at(D(50), D('16.1')))
+        self.assertIsNone(self.table('smooth').fcr_at(D(-1)))
+
+    def test_the_values_the_page_shows_are_the_readings_the_plan_uses(self):
+        for between in ('smooth', 'step'):
+            table = self.table(between)
+            shown = table.used()
+            self.assertEqual([used.weight_g for used in shown], [0, 25, 50, 75, 100, 250, 400])
+            self.assertEqual([used.anchor for used in shown], [False, True, False, True, False, True, True])
+            for used in shown:
+                self.assertEqual((used.fcr, used.uneaten_pct), (table.fcr_at(used.weight_g),
+                                                               table.uneaten_at(used.weight_g)))
+                self.assertEqual(list(used.sfr), [table.sfr_at(used.weight_g, column).value for column in self.COLUMNS])
+            # a curve fed from the table reads the same FCR at a weight the page shows
+            found = curve(START, D(250), D(100), None, 1, lambda day, weight: Terms(
+                table.sfr_at(weight, D(12)).value, table.fcr_at(weight), table.uneaten_at(weight)))
+            at_250 = next(used for used in shown if used.weight_g == 250)
+            self.assertEqual((found.points[0].fcr, found.points[0].uneaten_pct), (at_250.fcr, at_250.uneaten_pct))
+            self.assertEqual(found.points[0].feed_kg, D(250) * at_250.sfr[1] / 100 * 100 / 1000)

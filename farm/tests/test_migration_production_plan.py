@@ -1,5 +1,5 @@
 """Migrations farm/0052–0054 (the production plan's growth) on a database that already has feeding protocols and
-weighings: every protocol keeps its FCR per band for the days before the migration ran (the day is written on it), every
+weighings: every protocol keeps the step at its bands' edges it always had (the rule is written on it), every
 weighing line is given the manual source before the database asks for one, and the migrations go back."""
 from datetime import date
 from decimal import Decimal
@@ -7,7 +7,6 @@ from decimal import Decimal
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
-from django.utils import timezone
 
 BEFORE = [('farm', '0051_water_freshness_kept')]
 AFTER = [('farm', '0054_weighing_names_its_source')]
@@ -42,7 +41,8 @@ class ProductionPlanMigrationTests(TransactionTestCase):
                                           water_type='freshwater', shape='circular', material='fiberglass',
                                           diameter=D(2), depth=D('1.5'), max_density_kg_m3=D(60))
         batch = get('Batch').objects.create(code='B-2026-001', species=species, input_stage='smolt',
-                                            origin='own_hatchery', input_date=date(2026, 11, 1))
+                                            origin='own_hatchery', provenance='farmed',
+                                            input_date=date(2026, 11, 1))
         Operation, Line = get('StockOperation'), get('StockMovement')
         stocked = Line.objects.create(operation=Operation.objects.create(kind='input', date=date(2026, 11, 1)),
                                       batch=batch, unit=unit, kind='input', count_delta=100, avg_weight_g=D(50))
@@ -56,15 +56,18 @@ class ProductionPlanMigrationTests(TransactionTestCase):
         Protocol, Line = new.get_model('farm', 'FeedingProtocol'), new.get_model('farm', 'StockMovement')
         Source = new.get_model('farm', 'WeightSource')
         kept = Protocol.objects.get(pk=protocol.pk)
-        self.assertEqual((kept.interpolated_from, kept.expected_fcr, kept.uneaten_pct, kept.mortality_pct_month),
-                         (timezone.localdate(), D('1.10'), None, None))
+        # it keeps the rule it always followed, for every quantity: a step at the band's edge
+        self.assertEqual((kept.fcr_between, kept.uneaten_between, kept.sfr_between, kept.expected_fcr, kept.uneaten_pct,
+                          kept.mortality_pct_month), ('step', 'step', 'step', D('1.10'), None, None))
         manual = Source.objects.get()
         self.assertEqual((manual.code, manual.name), ('manual', 'Manual sample'))
         self.assertEqual(Line.objects.get(pk=weighed.pk).weight_source_id, manual.pk)
         self.assertIsNone(Line.objects.get(pk=stocked.pk).weight_source_id)
-        # a protocol made after the migration has no day: read between the bands throughout
+        # a protocol made after the migration is smooth between its bands
         made = Protocol.objects.create(name='New table', species_id=kept.species_id, expected_fcr=D('1.00'))
-        self.assertIsNone(made.interpolated_from)
+        self.assertEqual((made.fcr_between, made.uneaten_between, made.sfr_between), ('smooth',) * 3)
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Protocol.objects.filter(pk=made.pk).update(sfr_between='linear')
         # the database holds the rule from now on: a weighing names its source, nothing else does
         with self.assertRaises(IntegrityError), transaction.atomic():
             Line.objects.filter(pk=weighed.pk).update(weight_source=None)

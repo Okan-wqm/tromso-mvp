@@ -104,14 +104,16 @@ class HarvestPagesNextTests(FrozenClock, TestCase):
                     keep('harvest-growth-plan-en', {'island': 'list-page', 'props': props})
 
     def test_no_feeding_table_of_the_test_world_moves_with_the_interpolation(self):
-        # Owner decision 9 (production plan, 2026-11-26): before the FCR is read between the bands, how far do the
-        # estimates and the reach days of the test world move? Not at all: every table of the test world has one FCR
-        # in all its bands, and one value read between its anchors is that value at every weight.
+        # Owner decision 9 (production plan, 2026-11-26): the test world's protocols are made smooth between their bands
+        # (a new protocol's rule). How far do its estimates, rations and reach days move against the step they had?
+        # Not at all: every table of the test world has one FCR and one SFR row in all its bands, and one value read
+        # between its anchors is that value at every weight.
         from farm.feeding.growth import anchor
+        from farm.feeding.ration import sfr_at
         from farm.feeding.read import tables
         from farm.models import FeedingProtocol
         found = tables(list(FeedingProtocol.all_objects.values_list('pk', flat=True)))
-        self.assertGreaterEqual(len(found), 3)
+        self.assertGreaterEqual(len(found), 2)
         for table in found.values():
             self.assertEqual(len({table.fcr_of(band) for band in table.bands}), 1, table.protocol)
             for band in table.bands:
@@ -119,6 +121,9 @@ class HarvestPagesNextTests(FrozenClock, TestCase):
                                band.min_weight_g + 1):
                     self.assertEqual(table.fcr_at(weight), table.fcr_of(band))
                     self.assertEqual(table.uneaten_at(weight), 0)
+                    for temperature in table.columns():
+                        self.assertEqual(table.sfr_at(weight, temperature).value,
+                                         sfr_at(band.cells, temperature).value)
 
     def test_a_withdrawal_on_a_plans_day_is_said_and_marks_the_row_critical(self):
         _old, new = self.pages('farm:handlingplanitem_list')

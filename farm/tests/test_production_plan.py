@@ -11,7 +11,9 @@ import csv
 import io
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
 
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import formats
 
@@ -30,6 +32,8 @@ from .test_harvest import HarvestTestCase
 from .test_protocols import PROTOCOL_KEEPER, ProtocolTestCase, table_data
 
 D = Decimal
+# the new look's pages are drawn with the islands' manifest the other page tests use (no browser build in a test run)
+MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
 SETUP = ('view_site', 'change_site', 'view_platformsettings', 'change_platformsettings', 'view_weightsource',
          'add_weightsource', 'change_weightsource', 'delete_weightsource')
 
@@ -38,6 +42,7 @@ def shown(day):
     return formats.date_format(day, 'DATE_FORMAT')
 
 
+@override_settings(ISLANDS_MANIFEST=MANIFEST)
 class PlanTestCase(HarvestTestCase):
     """The protocol made and assigned through its pages, the fish weighed at 60 g ten days ago (a sample of 50 fish
     weighing 3 kg), 5 kg fed two days ago and 5 kg yesterday, the water at 10 °C."""
@@ -110,7 +115,7 @@ class GrowthPlanTests(PlanTestCase):
         # Proves decision 1 (the uneaten share is entered on the protocol, 0–50 %) and "forms in both looks" (classic).
         protocol = self.protocol
         self.assertEqual((protocol.expected_fcr, protocol.uneaten_pct, protocol.mortality_pct_month,
-                          protocol.interpolated_from), (D('1.00'), D('20.0'), None, None))
+                          protocol.fcr_between), (D('1.00'), D('20.0'), None, 'smooth'))
         band = ProtocolBand.objects.get(protocol=protocol)
         self.assertEqual((band.expected_fcr, band.uneaten_pct, band.mortality_pct_month), (None, None, None))
         created = AuditLog.objects.get(entity_type='feeding protocol', action='create')
@@ -259,13 +264,14 @@ class GrowthPlanTests(PlanTestCase):
     def test_an_assigned_protocol_is_fixed(self):
         # Proves decision 9: the new fields follow the rule of an assigned protocol.
         url = reverse('farm:feedingprotocol_edit', args=[self.protocol.pk])
-        for field, value in (('uneaten_pct', '10'), ('mortality_pct_month', '2')):
+        for field, value in (('uneaten_pct', '10'), ('mortality_pct_month', '2'), ('sfr_between', 'step')):
             form = self.client.get(url).context['form']
             self.assertTrue(form.fields[field].disabled, field)
             self.protocol.refresh_from_db()
             self.client.post(url, {**self.general(status='active'), field: value, 'version': self.protocol.version})
             self.protocol.refresh_from_db()
-            self.assertEqual((self.protocol.uneaten_pct, self.protocol.mortality_pct_month), (D('20.0'), None))
+            self.assertEqual((self.protocol.uneaten_pct, self.protocol.mortality_pct_month,
+                              self.protocol.sfr_between), (D('20.0'), None, 'smooth'))
         self.protocol.uneaten_pct = D(10)
         with self.assertRaises(Exception) as caught:
             self.protocol.full_clean()
@@ -281,7 +287,7 @@ class GrowthPlanTests(PlanTestCase):
         copy = self.client.post(reverse('farm:feedingprotocol_duplicate', args=[self.protocol.pk]))
         self.assertEqual(copy.status_code, 302)
         copied = FeedingProtocol.objects.get(name='Salmon plan (copy)')
-        self.assertEqual((copied.uneaten_pct, copied.status, copied.interpolated_from), (D('20.0'), 'draft', None))
+        self.assertEqual((copied.uneaten_pct, copied.status, copied.sfr_between), (D('20.0'), 'draft', 'smooth'))
 
 
 class NextLookFormTests(PlanTestCase):
@@ -293,57 +299,103 @@ class NextLookFormTests(PlanTestCase):
         self.assertEqual(self.row()['forecast'].now_g, D('60.8'))
         draft = FeedingProtocol.objects.create(name='Draft', species=self.salmon, expected_fcr=D('1.10'))
         page = self.client.get(reverse('farm:feedingprotocol_edit', args=[draft.pk]), {'ui': 'next'}).content.decode()
-        for text in ('uneaten_pct', 'mortality_pct_month', 'Uneaten feed (%)', 'Expected mortality (%/month)'):
+        for text in ('uneaten_pct', 'mortality_pct_month', 'Uneaten feed (%)', 'Expected mortality (%/month)',
+                     'sfr_between', 'Step at the band edge'):
             self.assertIn(text, page)
         fixed = self.client.get(reverse('farm:feedingprotocol_edit', args=[self.protocol.pk]), {'ui': 'next'})
-        for text in ('Economic FCR', 'Mortality a month', 'Each band’s FCR and uneaten share sit at the middle'):
+        for text in ('Economic FCR', 'Mortality a month', 'Each band’s FCR, uneaten share and SFR sit at the middle'):
             self.assertIn(text, fixed.content.decode().replace('\\u2019', '’'))
 
 
-class InterpolationTests(PlanTestCase):
-    """Two bands, 0–100 g at FCR 1.00 and 100–200 g at FCR 1.50, nothing uneaten: the values sit at 50 g and 150 g, so
-    fish of 100 g, on the edge, are read at 1.25, half way. 1,000 trout-sized salmon of 100 g in T-02, 1 % a day."""
+class BetweenBandsTests(PlanTestCase):
+    """Two bands, 0–100 g (FCR 1.00, SFR 1 %) and 100–200 g (FCR 1.50, SFR 2 %), nothing uneaten: the values sit at 50 g
+    and 150 g, so fish of 100 g, on the edge, are read half way under the smooth rule: FCR 1.25, SFR 1.5 %. 1,000 salmon
+    of 100 g in T-02."""
 
-    def setUp(self):
-        super().setUp()
-        self.two = self.protocol_through_its_pages(name='Two bands', uneaten_pct='', rows=[
+    def two_bands(self, name='Two bands', **rules):
+        made = self.protocol_through_its_pages(name=name, uneaten_pct='', rows=[
             self.band(max_weight_g='100', expected_fcr='1.00'),
-            self.band(min_weight_g='100', max_weight_g='200', expected_fcr='1.50')])
+            self.band(min_weight_g='100', max_weight_g='200', expected_fcr='1.50', sfr_100='2', sfr_120='2')], **rules)
         self.big = self.stock(self.t2, count=1000, weight='100', days_ago=5)
-        self.assign_through_the_dialog(self.two, unit=self.t2)
+        self.assign_through_the_dialog(made, unit=self.t2)
         ProtocolTestCase.water(self, '10', unit=self.t2)
-
-    def test_the_fcr_is_read_between_the_bands_by_the_estimate_and_by_the_plan(self):
-        # Proves decisions 2 and 3: one interpolation, used by the estimate between weighings and by the plan ahead.
-        # Yesterday 1 kg fed to 100 kg of fish (the day's ration is 1 kg): at 100 g the FCR is 1.25, so 1 kg ÷ 1.25 =
-        # 0.8 kg of growth → 100.8 g. A step table would read the 100–200 g band's 1.50: 100.667 g.
         self.record(kilos='1', days_ago=1, unit=self.t2)
         self.set_target('101.5', batch=self.big)
+        return made
+
+    def test_smooth_reads_the_fcr_and_the_sfr_between_the_bands_in_the_estimate_and_in_the_plan(self):
+        # Proves decisions 2, 3 and 13: one interpolation, used by the estimate between weighings and by the plan ahead,
+        # for the FCR and for the SFR. A protocol made through its form is smooth unless its maker says otherwise.
+        made = self.two_bands()
+        self.assertEqual((made.fcr_between, made.uneaten_between, made.sfr_between), ('smooth',) * 3)
+        # Yesterday 1 kg fed to 100 kg of fish (under the day's ration of 1.5 kg): at 100 g the FCR is 1.25, so
+        # 1 kg ÷ 1.25 = 0.8 kg of growth → 100.8 g.
         found = self.row(self.big)['forecast']
         self.assertEqual(found.now_g, D('100.8'))
-        # Ahead from 100.8 g: FCR = 1.00 + 0.50 × (100.8 − 50) ÷ 100 = 1.254; given 1.008 g a fish; growth 1.008 ÷ 1.254
-        # = 0.80382… g → 101.6038… g ≥ 101.5 g on the first day.
+        # Ahead from 100.8 g: FCR = 1.00 + 0.50 × (100.8 − 50) ÷ 100 = 1.254; SFR = 1 + 1 × 50.8 ÷ 100 = 1.508 %:
+        # given 100.8 × 1.508 ÷ 100 = 1.5200640 g a fish (1.520064 kg for the 1,000); growth 1.520064 ÷ 1.254 = 1.2122 g
+        # → 102.0122 g ≥ 101.5 g on the first day.
         self.assertEqual(found.day, self.day(-1))
         first = found.curve.points[0]
-        self.assertEqual(first.fcr, D('1.254'))
-        self.assertEqual(first.weight_g, D('100.8') + D('1.008') / D('1.254'))
-        self.assertEqual(first.feed_kg, D('1.008'))                              # 1,000 fish × 1.008 g
+        self.assertEqual((first.fcr, first.feed_kg), (D('1.254'), D('1.520064')))
+        self.assertEqual(first.weight_g, D('100.8') + D('1.520064') / D('1.254'))
 
-    def test_a_protocol_that_fed_before_the_interpolation_keeps_its_bands_fcr_for_those_days(self):
-        # Proves decision 9: a protocol that existed when the interpolation landed (the migration writes the day) keeps
-        # its step FCR for the days before it, and is read between the bands from that day on.
-        FeedingProtocol.objects.filter(pk=self.two.pk).update(interpolated_from=self.today)
-        self.record(kilos='1', days_ago=1, unit=self.t2)
-        self.set_target('101.5', batch=self.big)
+    def test_step_is_the_table_as_it_always_was(self):
+        # Proves decision 14 (the rule is the person's, per quantity) and that "step" gives the numbers the table gave
+        # before: the 100–200 g band's own FCR 1.50 and SFR 2 %. Yesterday: 1 kg ÷ 1.50 = 0.6667 kg → 100.6667 g.
+        made = self.two_bands(fcr_between='step', uneaten_between='step', sfr_between='step')
+        self.assertEqual((made.fcr_between, made.uneaten_between, made.sfr_between), ('step',) * 3)
         found = self.row(self.big)['forecast']
-        # yesterday, before the day: the 100–200 g band's own 1.50: 1 kg ÷ 1.50 = 0.6667 kg → 100.6667 g
         self.assertAlmostEqual(found.now_g, D(100) + D(1000) / D('1.50') / 1000, places=20)
-        # ahead, from the day on: between the bands, 1.00 + 0.50 × (100.6667 − 50) ÷ 100 = 1.25333…
-        self.assertAlmostEqual(found.curve.points[0].fcr, D(1) + D('0.5') * (found.now_g - 50) / 100, places=20)
-        self.assertNotEqual(found.curve.points[0].fcr, D('1.50'))
-        for look in ('classic', 'next'):
-            page = self.client.get(reverse('farm:feedingprotocol_edit', args=[self.two.pk]), {'ui': look})
-            self.assertIn(f'Until {shown(self.today)} this protocol', page.content.decode(), look)
+        first = found.curve.points[0]
+        self.assertEqual(first.fcr, D('1.50'))
+        self.assertAlmostEqual(first.feed_kg, found.now_g * 2 / 100, places=20)        # 2 % of 1,000 fish, in kg
+        refused = self.client.post(reverse('farm:feedingprotocol_create'), self.general(name='Other', fcr_between='x'))
+        self.assertIn('fcr_between', refused.context['form'].errors)
+
+    def test_the_protocol_page_shows_the_values_the_plan_uses_in_both_looks(self):
+        # Proves decision 14: the page shows, per weight, the FCR, the uneaten share and the SFR at each temperature
+        # column actually used, the entered band values marked; and they are the plan's own readings.
+        made = self.two_bands()
+        url = reverse('farm:feedingprotocol_edit', args=[made.pk])
+        classic = self.client.get(url, {'ui': 'classic'})
+        used = classic.context['used']
+        said = [[row['cells'][key]['text'] for key in ('point', 'fcr', 'uneaten', 't0', 't1')]
+                for row in used['rows']]
+        self.assertEqual([row['cells']['weight']['text'] for row in used['rows']][1:], ['50.0 g', '100 g', '150 g'])
+        # 0 g and 50 g: the first band's own; 100 g, the edge: half way; 150 g: the second band's own
+        self.assertEqual(said, [
+            ['the band’s lower weight', '1.00', '0.0 %', '1.000 %', '1.000 %'],
+            ['entered for the band', '1.00', '0.0 %', '1.000 %', '1.000 %'],
+            ['the band’s lower weight', '1.25', '0.0 %', '1.500 %', '1.500 %'],
+            ['entered for the band', '1.50', '0.0 %', '2.000 %', '2.000 %'],
+        ])
+        for text in ('Values used over the fish’s weight', 'entered for the band',
+                     'FCR: Smooth between bands · uneaten feed: Smooth between bands · SFR: Smooth between bands',
+                     'The protocol is assigned, so its table is fixed'):
+            self.assertContains(classic, text)
+        new = self.client.get(url, {'ui': 'next'}).content.decode().replace('\u2019', '’').replace('\u00b7', '·')
+        for text in ('Values used over the fish', 'entered for the band', '1.500 %', 'Smooth between bands'):
+            self.assertIn(text, new)
+        # the plan's first day reads the very function the page's rows were made by
+        from ..feeding.read import tables
+        table = tables([made.pk])[made.pk]
+        first = self.row(self.big)['forecast'].curve.points[0]
+        self.assertEqual(first.fcr, table.fcr_at(D('100.8')))
+        self.assertEqual(first.feed_kg, D('100.8') * table.sfr_at(D('100.8'), D('10.0')).value / 100)
+        # an assigned protocol's rules are fixed, and a copy's can be changed
+        form = classic.context['form']
+        self.assertTrue(all(form.fields[name].disabled for name in ('fcr_between', 'uneaten_between', 'sfr_between')))
+        self.client.post(reverse('farm:feedingprotocol_duplicate', args=[made.pk]))
+        copy = FeedingProtocol.objects.get(name='Two bands (copy)')
+        changed = self.client.post(reverse('farm:feedingprotocol_edit', args=[copy.pk]), {
+            **self.general(name='Two bands (copy)', uneaten_pct=''), 'sfr_between': 'step', 'fcr_between': 'smooth',
+            'uneaten_between': 'smooth', 'version': copy.version})
+        self.assertEqual(changed.status_code, 302)
+        copy.refresh_from_db()
+        self.assertEqual((copy.fcr_between, copy.sfr_between), ('smooth', 'step'))
+        shown = self.client.get(reverse('farm:feedingprotocol_edit', args=[copy.pk])).context['used']['rows'][2]['cells']
+        self.assertEqual((shown['fcr']['text'], shown['t0']['text']), ('1.25', '2.000 %'))     # at 100 g: its own band's SFR
 
 
 class MortalityAndTemperatureTests(PlanTestCase):
@@ -458,9 +510,12 @@ class PlannedAgainstActualTests(PlanTestCase):
             self.assertContains(page, text)
         self.assertEqual(self.file(**{'from': self.day(10).isoformat()})[1][:3],
                          [self.day(10).isoformat(), '60.0000', '10000'])
-        # from the stocking: 50 × 1.008^10 = 54.147… g on the first weighing's day, where 60 g was measured
+        # from the stocking, 20 days ago: the protocol was in force from 15 days ago only, so the plan as it stood then
+        # stops at once and says why (the protocol in force on each day is read, never today's)
         stocked = self.plan(self.day(20))
-        self.assertAlmostEqual(stocked.measured[1].planned_g, D(50) * D('1.008') ** 10, places=15)
+        self.assertEqual((stocked.chosen.day, stocked.forecast.now_g, stocked.forecast.curve.points,
+                          stocked.forecast.why), (self.day(20), D(50), (), 'No protocol is assigned to these fish.'))
+        self.assertIsNone(stocked.measured[1].planned_g)
         # a day that is no measured point, or outside the stay, is today's estimate
         for day in (self.day(8), self.day(300), self.today):
             self.assertIsNone(self.plan(day).chosen)

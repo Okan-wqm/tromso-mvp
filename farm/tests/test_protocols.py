@@ -82,11 +82,13 @@ class Row:
         return 'batch_in_unit' if self.unit_id and self.batch_id else 'unit' if self.unit_id else 'batch'
 
 
-def protocol(name='Trout grow-out', species='S', fcr='1.00', uneaten=None, mortality=None, interpolated_from=None):
+def protocol(name='Trout grow-out', species='S', fcr='1.00', uneaten=None, mortality=None, between='step'):
+    """A protocol as the ration reads it. `between`: its rule for fish between two bands, for the FCR, the uneaten share
+    and the SFR alike; the tests of the table as it always was pin `step`, a new protocol's rule is `smooth`."""
     return SimpleNamespace(name=name, species_id=species, expected_fcr=D(fcr), pk=name, species=species,
                            uneaten_pct=None if uneaten is None else D(uneaten),
                            mortality_pct_month=None if mortality is None else D(mortality),
-                           interpolated_from=interpolated_from,
+                           fcr_between=between, uneaten_between=between, sfr_between=between,
                            __str__=lambda self: name)
 
 
@@ -137,10 +139,13 @@ class LookupTests(SimpleTestCase):
         ok = policy().basis('T1', 'B1', nov(2), D(80))
         self.assertEqual((ok.missing, ok.sfr.value, ok.meals, ok.fcr), ('', D('1.22'), 4, D('1.00')))
         small = policy().basis('T1', 'B1', nov(2), D(20))
-        self.assertEqual(small.fcr, D('0.90'))                 # below the first band's middle (25 g): its own FCR
-        # between the middles of the 0–50 g band (25 g, FCR 0.90) and of the 50–100 g band (75 g, 1.00): read in between
-        self.assertEqual(policy().basis('T1', 'B1', nov(2), D(50)).fcr, D('0.95'))
-        self.assertEqual(policy().basis('T1', 'B1', nov(2), D(40)).fcr, D('0.93'))
+        self.assertEqual(small.fcr, D('0.90'))
+        # the same table read smooth: between the middles of the 0–50 g band (25 g, FCR 0.90) and of the 50–100 g band
+        # (75 g, 1.00) the FCR is read in between; below the first middle it is the first band's own
+        smooth = policy(tables={'P': Table(protocol(between='smooth'), (band(0, 50, fcr='0.90', pk=0), band(50, 100),
+                                                                        band(100, None, pk=2)))})
+        self.assertEqual([smooth.basis('T1', 'B1', nov(2), D(weight)).fcr for weight in (20, 40, 50, 80)],
+                         [D('0.90'), D('0.93'), D('0.95'), D('1.00')])
         self.assertEqual((ok.uneaten_pct, ok.economic_fcr, ok.mortality_pct_month), (0, D('1.00'), None))
         self.assertEqual(ok.ration_kg(D(1170)), D('14.274'))
 
@@ -299,9 +304,13 @@ class ProtocolTestCase(FeedingTestCase):
         self.user = type(self.user).objects.get(pk=self.user.pk)      # its rights read again (Django keeps them once read)
 
     def make_protocol(self, name='Salmon grow-out', bands=((0, 100, None), (100, None, '1.20')), columns=('12', '14'),
-                      sfr=(('1.10', '1.30'), ('0.90', '1.00')), status='active', fcr='1.00', species=None):
+                      sfr=(('1.10', '1.30'), ('0.90', '1.00')), status='active', fcr='1.00', species=None,
+                      between='step'):
+        """`between`: the rule for fish between two bands (FCR, uneaten share, SFR). These tests hold the table as it
+        always was, a step at the band's edge; farm/tests/test_production_plan.py holds the smooth rule."""
         protocol = FeedingProtocol.objects.create(name=name, species=species or self.salmon, expected_fcr=D(fcr),
-                                                  status=status)
+                                                  status=status, fcr_between=between, uneaten_between=between,
+                                                  sfr_between=between)
         for (low, high, band_fcr), cells_ in zip(bands, sfr):
             band = ProtocolBand.objects.create(protocol=protocol, min_weight_g=D(str(low)),
                                                max_weight_g=None if high is None else D(str(high)), feed=self.feed,

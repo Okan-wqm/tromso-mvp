@@ -3622,10 +3622,14 @@ ingest's channel states and the revision counters (`core_rev`) hold ids, no text
 **Alarms on confidential work** (landing reviews, 2026-11-25/26): an alarm, and a sensor rule's event, is sealed by its
 own place and day only: the unit or system it is about, kept on it when it opens (`alarms/place.py`: a unit subject's
 key, its point, its sensor channel's binding then, or a place its producer states), never by its sensor channel's
-history. An alarm that names no place must be declared farm-wide by its producer, or it is refused. When no rule names a
-person who may see a sealed alarm, its keepers are told (the experiment's lead and the Oversee holders of the cells of
-its opening day); a critical alarm told to nobody at all raises the alarm system's own critical alarm, which names none
-of them and goes to the rules and every Oversee holder. The attention counts are kept per what a person reads.
+history. An alarm that names no place must be declared farm-wide by its producer, or it is refused. At every level
+where no rule names a person who may see a sealed alarm, its keepers are told (the experiment's lead and the Oversee
+holders of the cells of its opening day), on every channel of that level's rules, or every connected channel. A
+critical alarm nobody was told of at its current level on a channel that can leave raises the alarm system's own
+critical alarm, which names none of them and goes to the rules and every Oversee holder; while no recipient rule is
+active at all, the alarm system raises "no alarm recipient rule is active" for the Oversee holders too (the
+coordinator's decision of 2026-11-26, review 3). A cell's days are its site's: the seal reads a moment's day on the
+cell's site's clock (`core.sealing._cell_day` and `day_on`). The attention counts are kept per what a person reads.
 
 **Known limitations** (recorded, not fixed):
 - A voided or deleted stock line of an open tank counts as a shown child of its batch and operation (review 2, N7): a
@@ -3635,6 +3639,18 @@ of them and goes to the rules and every Oversee holder. The attention counts are
   rollback of an outermost transaction followed by a new one in the same request (review 2, N8): Django has no hook on a
   transaction's start. No view does that today.
 - A write made by a database trigger or outside the platform is not seen by the request that is running (review S3).
+- alarms 0023 places an alarm whose summary names a unit code several units of its site have had nowhere, and counts it
+  in its log entry (review 3, S7): it fails open for those old, closed alarms.
+- The alarm "N critical alarm(s) reached nobody" is seen by everyone its rules reach: an outsider who sees it and no such
+  alarm on their own list learns that a hidden critical alarm is open (review 3, S8): safety over secrecy.
+- A sensor rule and its channel stay sealed by the channel's history (any binding ever on a cell), while their events
+  and alarms are sealed by their own place: after a probe moves from a sealed tank to an open one, the open tank's people
+  get its alarms but cannot open the rule that raises them (review 3, S9).
+- A sensor event with no binding (older rows) mirrors as a farm-wide alarm naming its channel; an alarm opened the day
+  before its tank's cell starts stays unsealed for its whole life, by its opening day; a subject's state row with no
+  open alarm is not sealed (only the platform admin's database viewer shows it); `from core.sealing import system as
+  s` would escape the call-site guard; the activity log's exclusion has not been measured on production-size data
+  (review 3, S10).
 
 ## Regulatory reports (Production › Reports, `/reports/`)
 

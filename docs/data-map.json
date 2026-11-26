@@ -3678,6 +3678,7 @@
         "sensors/tests/test_portable.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_derived_fresh.py",
         "alarms/tests/test_pages.py",
         "alarms/tests/test_reference.py",
         "alarms/tests/test_snooze.py"

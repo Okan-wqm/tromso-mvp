@@ -398,3 +398,46 @@ class PageTests(RefusedWaterCase):
                 page = self.client.get(reverse('farm:water'))
                 self.assertContains(page, said)
                 self.assertContains(page, basis)
+
+
+class EvidenceTests(RefusedWaterCase):
+    """Review 5 of derived-fresh (the coordinator's round 6): per point and tier, the EVIDENCE value is the newest
+    worked-out value that is not refused and was fresh at its own time; every value newer than it or of the same minute
+    is judged beside it, and the point is the worst of them."""
+
+    def test_a_refused_sample_with_a_basis_value_ahead_of_a_late_lab_critical_raises_the_critical(self):
+        """H1 (2): T-02's own refused sample (inside the limits on its basis) 5 h ago; the lab's critical measured 8 h
+        ago, keyed in now: the critical raises beside the refusal's warning."""
+        self.refuse(self.t2, hours=5)
+        self.sample(self.t2, hours=8, source='lab', **WATER)
+        for minutes in (0, 1, 60):
+            self.run_pass(minutes=minutes)
+        t2 = {(alarm.source, alarm.severity) for alarm in self.open_alarms(summary__startswith='T-02')}
+        self.assertIn(('water_limit', 'critical'), t2)
+        self.assertEqual(self.unit_water(self.t2).get(NH3).judged, 'critical')
+
+    def test_a_loop_only_unit_says_its_loops_refused_sample(self):
+        """H2, scenario A: T-01 read at its loop alone; the loop's worked-out OK 10 h ago, then a loop sample the core
+        refused with no basis 1 h ago: T-01 cannot be evaluated, its warning raised, never the older OK alone."""
+        self.sample(self.loop, hours=10, **LOW)
+        with no_basis():
+            self.refuse(self.loop, hours=1, water=LOW)
+            water = self.unit_water(self.t1)
+            self.assertEqual([each.code for each in water.unevaluated], [NH3])
+            for minutes in (0, 1, 60):
+                self.run_pass(minutes=minutes)
+        self.assertTrue(self.open_alarms(source='system', parameter=NH3, summary__startswith='T-01').exists())
+
+    def test_a_tan_alone_after_a_refused_sample_does_not_end_its_warning(self):
+        """H2, scenario B (RC-4 (a) again): T-02's middle OK 20 h ago, a refused no-basis sample 5 h ago (its warning
+        raised), then a TAN alone now: the warning stays open, never "restored" on the older value."""
+        self.sample(self.t2, hours=20, **LOW)
+        with no_basis():
+            self.refuse(self.t2, hours=5, water=LOW)
+            for minutes in (0, 1, 60):
+                self.run_pass(minutes=minutes)
+            warning = self.open_alarms(source='system', parameter=NH3).get()
+            self.sample(self.t2, hours=0, tan_mg_l='0.500')
+            for minutes in (61, 62, 120, 600):
+                self.run_pass(minutes=minutes)
+        self.assertTrue(read.is_open(warning))

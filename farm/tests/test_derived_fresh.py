@@ -515,7 +515,7 @@ class SensorTemperatureTests(WaterTestCase):
         nh3 = water.get(NH3)
         self.assertIsNotNone(nh3.value)
         self.assertFalse(nh3.fresh(self.now))
-        self.assertLessEqual(nh3.inputs_until[TEMPERATURE], self.ago(hours=3) + timedelta(minutes=30))
+        self.assertEqual(nh3.inputs_until[TEMPERATURE], self.ago(hours=3) + timedelta(minutes=30))   # its channel's 30 min
         self.assertIn('the live sensor values could not be read', nh3.note)
         self.assertTrue(water.sensors_failed)
 
@@ -529,19 +529,71 @@ class SensorTemperatureTests(WaterTestCase):
         self.assertIsNotNone(row.readings[NH3].value)
         self.assertEqual(row.readings[NH3].exact, read.latest([outlet])[outlet.pk].get(NH3).exact)
 
-    def test_the_band_check_reads_only_new_rows_on_the_next_read(self):
-        """Review 4, M4: the band check keeps what it has confirmed; the next read reads only the rows after it, not the
-        whole history again (rows read, not statements)."""
-        from sensors import provider
+    def test_a_late_out_of_band_row_ends_it_on_the_next_read(self):
+        """Review 5, M1: the band is read from the database each time over the sample's own window, never kept in a
+        process: a row the ingest writes late (device time earlier than rows already read) ends the input on the next
+        read, in every process alike."""
         self.send(12.0, 30, 0)
         self.sample(hours=20, **FULL)
-        before = provider.ROWS_READ[0]
+        self.assertTrue(self.unit_water().get(NH3).fresh(self.now))
+        with connection.cursor() as cursor:
+            cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, 14.0)',
+                           [self.channel.channel_no, self.ago(hours=10) + timedelta(minutes=5)])
+        nh3 = self.unit_water().get(NH3)
+        self.assertEqual(nh3.inputs_until[TEMPERATURE], self.ago(hours=10) + timedelta(minutes=5))
+        self.assertFalse(nh3.fresh(self.now))
+
+    def test_a_typed_temperature_keeps_its_own_end_when_the_probe_cannot_be_asked(self):
+        """Review 5, M2 (decided): a probe failure is no evidence against a typed temperature: it keeps its own 24 h, loses
+        only the probe's extension, and says it was not checked."""
+        from ..water import sources
+
+        class BandFails:
+            def latest(self, targets, now):
+                return {}
+
+            def bound(self, targets, code, since, until):
+                return set()
+
+            def value_at(self, targets, code, moment):
+                return {}
+
+            def steady_until(self, code, band, tolerance, asks):
+                raise RuntimeError('the band check timed out')
+
+        failing = BandFails()
+        sources.register(failing)
+        self.addCleanup(sources.unregister, failing)
+        self.send(12.0, 50, 0)
+        self.sample(hours=3, **FULL)
+        nh3 = self.unit_water().get(NH3)
+        self.assertEqual(nh3.inputs_until[TEMPERATURE], self.ago(hours=3) + timedelta(hours=24))
+        self.assertTrue(nh3.fresh(self.now))
+        self.assertIn('Not checked against the probe: the live sensor values could not be read.', nh3.provenance)
+
+    def test_a_value_stale_from_its_start_never_displaces_a_critical(self):
+        """Review 5, H1 (3): the critical 8 h ago (its typed 12.0 °C the probe's then); an OK 4 h ago whose typed
+        temperature the probe was already 2 °C off: stale from its start, no evidence; the point stays critical."""
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        bad = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'tan_mg_l': '5.000'}
+        self.send(12.0, 50, 6)
+        self.send(14.0, 5.5, 0)
+        self.sample(hours=8, **bad)
+        self.sample(hours=4, **{**bad, 'ph': '7.00', 'tan_mg_l': '0.500'})
+        self.assertEqual(self.unit_water().get(NH3).judged, 'critical')
+
+    def test_the_look_back_reads_a_bounded_number_of_samples(self):
+        """Review 5, M3: three points with twenty full samples each: the look-back reads the newest two of each (the
+        newest worked-out value and the next, to see the same minute's peers), never the window's sixty."""
+        outlets = [SamplingPoint.objects.create(unit=self.t1, name=f'Outlet {number}', kind='outlet')
+                   for number in range(2)]
+        for point in (self.mid1, *outlets):
+            for hour in range(20, 0, -1):
+                self.sample(point, hours=hour, **FULL)
+        before = read.SAMPLES_READ[0]
         self.unit_water()
-        first = provider.ROWS_READ[0] - before
-        self.assertGreater(first, 100)                                # 20 h of a value every 10 min
-        before = provider.ROWS_READ[0]
-        self.unit_water()
-        self.assertLessEqual(provider.ROWS_READ[0] - before, 2)
+        self.assertLessEqual(read.SAMPLES_READ[0] - before, 6)
 
     def test_why_an_nh3_ended_is_said(self):
         """Review 4, M5: an NH₃ of a sample 30 min old whose probe moved 1.5 °C away 15 min ago is stale, and says which

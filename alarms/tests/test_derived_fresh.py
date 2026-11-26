@@ -243,3 +243,79 @@ class SystemTierTests(WaterTestCase):
         reading = self.unit_water().get(NH3)
         self.assertEqual((str(reading.value), reading.judged), ('0.8924', 'critical'))
         self.assertIn(f'at {self.loop.name} gives no value', reading.note)
+
+
+class Round6Tests(WaterTestCase):
+    """Review 5 (the coordinator's round 6): T-01's middle alone, NH₃-N limits 0.0125 and 0.025."""
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+
+    passes = DerivedStaleAlarmTests.passes
+    outcome = DerivedStaleAlarmTests.outcome
+
+    def full_tie(self, lab_first, hours=3):
+        """One bottle 3 h ago: the lab's full result (critical) and the field kit's full result (OK), at the same minute,
+        keyed in either order."""
+        from decimal import Decimal
+
+        from farm.water import services as water_services
+        at = self.ago(hours=hours)
+        lab = {code: Decimal(value) for code, value in BAD.items()}
+        kit = {code: Decimal(value) for code, value in GOOD.items()}
+        for source, values in (('lab', lab), ('manual', kit)) if lab_first else (('manual', kit), ('lab', lab)):
+            water_services.record(self.user, point=self.mid1, measured_at=at, source=source, values=values)
+
+    def test_a_same_minute_critical_and_ok_raise_and_show_critical_lab_first(self):
+        """H1 (1): the kit's OK keyed after the lab's critical never displaces it: raised, and the page says critical."""
+        self.full_tie(lab_first=True)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        self.assertEqual(self.unit_water().get(NH3).judged, 'critical')
+
+    def test_a_same_minute_critical_and_ok_raise_and_show_critical_kit_first(self):
+        self.full_tie(lab_first=False)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        self.assertEqual(self.unit_water().get(NH3).judged, 'critical')
+
+    def test_a_tie_never_clears(self):
+        """A pass between the two entries raised it; the same-minute OK keyed after is no evidence: it stays open."""
+        from decimal import Decimal
+
+        from farm.water import services as water_services
+        at = self.ago(hours=3)
+        water_services.record(self.user, point=self.mid1, measured_at=at, source='lab',
+                              values={code: Decimal(value) for code, value in BAD.items()})
+        self.passes(-170, -169, -110)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        water_services.record(self.user, point=self.mid1, measured_at=at, source='manual',
+                              values={code: Decimal(value) for code, value in GOOD.items()})
+        self.passes(0, 1, 60, 120, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+
+    def test_a_late_result_before_newer_evidence_is_said_and_logged_not_alarmed(self):
+        """The owner's decision: the middle's OK 2 h ago is the evidence; the lab's critical measured 10 h ago is keyed in
+        now. No alarm; the point says it, and the activity log keeps it."""
+        from core.models import AuditLog
+        self.sample(self.t1, hours=2, **GOOD)
+        self.sample(self.t1, hours=10, source='lab', **BAD)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual(reading.judged, 'ok')
+        self.assertIn('Late result: critical 0.8924 at Middle on ', reading.note)
+        self.assertIn(', superseded by ', reading.note)
+        logged = ' '.join(str(entry.changes) for entry in AuditLog.objects.filter(entity_type='water measurement'))
+        self.assertIn('Late result', logged)
+
+    def test_an_own_tan_newer_than_the_loops_value_is_attention_never_ok(self):
+        """L5: T-01's own TAN alone 1 h ago, the loop's full OK 3 h ago: T-01's NH₃ is the loop's value, never plain OK:
+        it needs attention (its own sample lacks the pH or the temperature)."""
+        self.sample(self.loop, hours=3, **GOOD)
+        self.sample(self.t1, hours=1, tan_mg_l='0.500')
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.point, reading.judged), (self.loop, 'unevaluated'))
+        self.assertIn('at Middle gives no value', reading.note)

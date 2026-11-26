@@ -458,9 +458,23 @@ def ended_by(code, end, point, why=''):
 
 
 def probe_beyond_band(value, band):
-    """Why a temperature input ended: the place's probe read further from it than the band (`ended_by`)."""
+    """Why a temperature input ended: the place's probe read further from it than the band (`ended_by`). The probe's
+    value as compared, unrounded to the hundredth (review 5, L4), never at a decimal that hides the excess."""
     return _('the probe read %(value)s °C, beyond the %(band)s °C band') % {
-        'value': number_format(value, 1), 'band': number_format(band, 1)}
+        'value': number_format(Decimal(format(round(float(value), 2), 'g'))), 'band': number_format(band, 1)}
+
+
+def late_result(late, evidence):
+    """A late result (the owner's decision on review 5): a worked-out value measured before a point's evidence value
+    but entered after it, said on the point and in the activity log, never alarmed: "Late result: critical 0.8924 at
+    Outlet on 25.11.2026 10:00, superseded by 0.0110 on 25.11.2026 18:00." """
+    from ..models.water_point import local_time
+    from .evaluate import Status
+    from .read import said_value
+    return _('Late result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on %(newer_time)s.') % {
+        'status': str(Status(late.judged).label).lower(), 'value': said_value(late), 'point': late.point.name,
+        'time': local_time(late.at, late.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(evidence),
+        'newer_time': local_time(evidence.at, evidence.point).strftime('%d.%m.%Y %H:%M')}
 
 
 def probe_silent(end, point):
@@ -473,5 +487,6 @@ def probe_silent(end, point):
 # A sample's NH₃ without a temperature of its own where the live sources, asked for the place's probe at its time, failed
 # (read.Context.temperature_of; review 3 of the branch, L3): never said as a temperature that is not there.
 TEMPERATURE_UNREAD = _('Needs a temperature: the sample has none, and the live sensor values could not be read.')
-# Why a temperature input ended at once: the live sources failed while it was asked (review 4 of the branch, M1, M3).
-SENSORS_UNREAD = _('the live sensor values could not be read')
+# A typed temperature the place's probe could not be asked about (review 5 of the branch, M2): it keeps its own end, and
+# says it was not checked.
+NOT_CHECKED = _('Not checked against the probe: the live sensor values could not be read.')

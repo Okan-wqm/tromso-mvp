@@ -9262,6 +9262,15 @@ msgstr "%(minutes)s dk geç"
 msgid "Late limit (days)"
 msgstr "Gecikme sınırı (gün)"
 
+msgid "Late result"
+msgstr ""
+
+#, python-format
+msgid ""
+"Late result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
+"%(newer_time)s."
+msgstr ""
+
 msgid "Latest"
 msgstr "Son değerler"
 
@@ -10953,6 +10962,9 @@ msgstr ""
 
 msgid "Not checked"
 msgstr "Denetlenmedi"
+
+msgid "Not checked against the probe: the live sensor values could not be read."
+msgstr ""
 
 msgid "Not chosen"
 msgstr "Seçilmedi"
@@ -20778,9 +20790,6 @@ msgstr "balıklar yaklaşık %(date)s tarihinden itibaren çiftlikten çıkabili
 
 msgid "the layout being designed"
 msgstr "tasarlanan yerleşim"
-
-msgid "the live sensor values could not be read"
-msgstr "canlı sensör değerleri okunamadı"
 
 #, python-format
 msgid "the oldest since %(since)s"

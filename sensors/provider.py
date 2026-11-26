@@ -23,12 +23,6 @@ from .models import Binding, ChannelState, ChannelStatus
 from .quality import BAD_MASK
 
 TARGET_FIELDS = {sources.POINT: 'point_id', sources.SYSTEM: 'system_id'}
-# The band check's memory (review 4 of the branch, M4): {ask: {"final": (moment, kind, value) or None, "through": the last
-# reading confirmed}}, per process; emptied whole past STEADY_KEPT asks. ROWS_READ: the probe rows it has read, a test's
-# measure of its cost.
-_STEADY = {}
-STEADY_KEPT = 20000
-ROWS_READ = [0]
 
 
 def _bindings(targets):
@@ -131,40 +125,31 @@ class SensorSource:
 
     def steady_until(self, code, band, tolerance, asks):
         """For each ask (targets, start, value, until): when the targets' clean readings of `code` (the channels bound
-        there, while bound) stopped confirming `value`, as (moment, kind, the reading's value) or None.
+        there, while bound) stopped confirming `value`, as (moment, kind, the reading's value) or None. Read from the
+        database every time, over the ask's own window [start, until] (`until`: the moment its NH₃ is stale anyway, at most
+        now), so a row the ingest writes late is always seen and every process gives the same answer (review 5 of
+        derived-fresh, M1: no memory in a process).
 
         - The reading in force at `start` is the newest at or before it within its channel's freshness, else the first at
-          most `tolerance` after it (the clock tolerance the look-up of the value takes too, review 3, L2).
-        - From it, every later reading up to the ask's `until`, in time order across the ask's channels:
-          - the first one further than `band` from `value`, compared unrounded in numeric (review 4, L4), ends it at its
-            own time ('band', with that reading's value);
+          most `tolerance` after it (the clock tolerance the look-up of the value takes too).
+        - From it, every later reading up to `until`, in time order across the ask's channels:
+          - the first one further than `band` from `value`, its own value or the lowest or highest of the samples its run
+            suppressed (`run_min`, `run_max`: review 5, L3), compared unrounded in numeric, ends it at its time ('band',
+            with the farthest of them);
           - a gap longer than the channel's freshness ends it at the reading before the gap plus its freshness ('gap');
-          - otherwise it holds until the last reading's freshness runs out ('last': for now, the probe may send more).
+          - else it holds until the last reading's freshness runs out ('last').
         - None when no reading was in force at `start`.
 
-        The check keeps what it confirmed (review 4, M4): a final end ('band', 'gap') is never asked again, and an
-        unfinished one is asked again only from its last confirmed reading on (`_STEADY`), so a later read reads only
-        the rows after it (ROWS_READ counts them). Two statements for all the asks: the bindings, and one on the
-        hypertable's (channel_no, ts) key (farm/water/sources.py, freshness.temperature_until)."""
+        Two statements for all the asks: the bindings, and one on the hypertable's (channel_no, ts) key."""
         everything = {target for targets, _start, _value, _until in asks for target in targets}
         bindings = list(_bindings(everything).filter(channel__quantity=code)) if asks else []
-        found, rows, keys = [None] * len(asks), [], {}
+        rows = []
         for index, (targets, start, value, until) in enumerate(asks):
-            paired = [binding for binding in bindings if _target(binding) in targets and binding.valid_from <= until
-                      and (binding.valid_to is None or binding.valid_to > start)]
-            if not paired:
-                continue
-            key = (code, tuple(sorted((binding.channel.channel_no, binding.valid_from, binding.valid_to,
-                                       binding.channel.fresh_s) for binding in paired)),
-                   start, str(value), str(band), tolerance)
-            kept = _STEADY.get(key)
-            if kept is not None and kept['final'] is not None:
-                found[index] = kept['final']
-                continue
-            keys[index] = key
-            through = kept['through'] if kept is not None else None
             rows += [(index, binding.channel.channel_no, binding.valid_from, binding.valid_to, binding.channel.fresh_s,
-                      start, str(value), until, through) for binding in paired]
+                      start, str(value), until) for binding in bindings
+                     if _target(binding) in targets and binding.valid_from <= until
+                     and (binding.valid_to is None or binding.valid_to > start)]
+        found = [None] * len(asks)
         if not rows:
             return found
         columns = list(zip(*rows))
@@ -172,39 +157,32 @@ class SensorSource:
             cursor.execute(
                 'WITH q AS (SELECT * FROM unnest(%(asks)s::integer[], %(channels)s::integer[], %(froms)s::timestamptz[], '
                 '%(tos)s::timestamptz[], %(fresh)s::integer[], %(starts)s::timestamptz[], %(values)s::numeric[], '
-                '%(untils)s::timestamptz[], %(throughs)s::timestamptz[]) '
-                'AS q(ask, channel_no, valid_from, valid_to, fresh_s, start, wanted, until, through)), '
-                'r AS (SELECT q.ask, q.start, q.wanted, q.fresh_s, q.through, r.ts, r.value FROM q '
-                'JOIN sensors_reading r ON r.channel_no = q.channel_no '
-                'AND r.ts >= greatest(q.valid_from, coalesce(q.through, q.start - make_interval(secs => q.fresh_s))) '
+                '%(untils)s::timestamptz[]) AS q(ask, channel_no, valid_from, valid_to, fresh_s, start, wanted, until)), '
+                'r AS (SELECT q.ask, q.start, q.wanted, q.fresh_s, r.ts, r.value, '
+                'abs(r.value::numeric - q.wanted) AS off_value, '
+                'coalesce(abs(r.run_min::numeric - q.wanted), 0) AS off_min, '
+                'coalesce(abs(r.run_max::numeric - q.wanted), 0) AS off_max, r.run_min, r.run_max '
+                'FROM q JOIN sensors_reading r ON r.channel_no = q.channel_no '
+                'AND r.ts >= greatest(q.valid_from, q.start - make_interval(secs => q.fresh_s)) '
                 'AND r.ts <= q.until AND (q.valid_to IS NULL OR r.ts < q.valid_to) '
                 f'AND (r.quality & {BAD_MASK}) = 0), '
-                'f AS (SELECT ask, CASE WHEN bool_or(through IS NOT NULL) THEN min(ts) '
-                'ELSE coalesce(max(ts) FILTER (WHERE ts <= start), '
-                'min(ts) FILTER (WHERE ts > start AND ts <= start + %(tolerance)s)) END AS first FROM r GROUP BY ask), '
-                'o AS (SELECT r.*, lead(r.ts) OVER (PARTITION BY r.ask ORDER BY r.ts) AS next FROM r '
+                'f AS (SELECT ask, coalesce(max(ts) FILTER (WHERE ts <= start), '
+                'min(ts) FILTER (WHERE ts > start AND ts <= start + %(tolerance)s)) AS first FROM r GROUP BY ask), '
+                'o AS (SELECT r.*, greatest(off_value, off_min, off_max) AS off, '
+                'CASE WHEN off_value >= off_min AND off_value >= off_max THEN r.value '
+                'WHEN off_min >= off_max THEN r.run_min ELSE r.run_max END AS far, '
+                'lead(r.ts) OVER (PARTITION BY r.ask ORDER BY r.ts) AS next FROM r '
                 'JOIN f ON f.ask = r.ask WHERE f.first IS NOT NULL AND r.ts >= f.first), '
-                'e AS (SELECT ask, value, CASE WHEN abs(value::numeric - wanted) > %(band)s::numeric THEN ts '
+                'e AS (SELECT ask, far, CASE WHEN off > %(band)s::numeric THEN ts '
                 'ELSE ts + make_interval(secs => fresh_s) END AS ends, '
-                "CASE WHEN abs(value::numeric - wanted) > %(band)s::numeric THEN 'band' "
-                "WHEN next IS NULL THEN 'last' ELSE 'gap' END AS kind FROM o "
-                'WHERE abs(value::numeric - wanted) > %(band)s::numeric OR next IS NULL '
-                'OR next - ts > make_interval(secs => fresh_s)), '
-                'c AS (SELECT ask, count(*) AS n, max(ts) AS last FROM o GROUP BY ask) '
-                'SELECT DISTINCT ON (e.ask) e.ask, e.ends, e.kind, e.value, c.n, c.last FROM e JOIN c ON c.ask = e.ask '
-                'ORDER BY e.ask, e.ends',
+                "CASE WHEN off > %(band)s::numeric THEN 'band' WHEN next IS NULL THEN 'last' ELSE 'gap' END AS kind "
+                'FROM o WHERE off > %(band)s::numeric OR next IS NULL OR next - ts > make_interval(secs => fresh_s)) '
+                'SELECT DISTINCT ON (ask) ask, ends, kind, far FROM e ORDER BY ask, ends',
                 {'asks': list(columns[0]), 'channels': list(columns[1]), 'froms': list(columns[2]),
                  'tos': list(columns[3]), 'fresh': list(columns[4]), 'starts': list(columns[5]),
-                 'values': list(columns[6]), 'untils': list(columns[7]), 'throughs': list(columns[8]),
-                 'tolerance': tolerance, 'band': str(band)})
-            answered = cursor.fetchall()
-        if len(_STEADY) > STEADY_KEPT:
-            _STEADY.clear()
-        for index, ends, kind, value, count, last in answered:
-            ROWS_READ[0] += count
-            found[index] = (ends, kind, value)
-            _STEADY[keys[index]] = ({'final': found[index], 'through': None} if kind != 'last'
-                                    else {'final': None, 'through': last})
+                 'values': list(columns[6]), 'untils': list(columns[7]), 'tolerance': tolerance, 'band': str(band)})
+            for index, ends, kind, value in cursor.fetchall():
+                found[index] = (ends, kind, value)
         return found
 
 

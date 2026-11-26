@@ -67,7 +67,8 @@ from functools import partial
 
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db import models
-from django.db.models import Func, Q, UUIDField
+from django.db.models import F, Func, Q, UUIDField, Window
+from django.db.models.functions import RowNumber
 from django.utils import timezone
 from django.utils.formats import number_format
 from django.utils.translation import gettext as _, gettext_lazy
@@ -87,6 +88,11 @@ from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 IONIC_INPUTS = parameters.AMMONIA_UNCOUNTED
 # How far back the latest values, and a salinity for a sample without one, are looked for.
 WINDOW = timedelta(days=30)
+# The samples the look-back of a point's worked-out values has read in this process (Context.prefetch_newest_worked):
+# a test's measure of its rows (review 5 of derived-fresh, M3).
+SAMPLES_READ = [0]
+# The key of a point's manual readings under which every worked-out value it judges is kept (`_manual`, `_resolve`).
+WORKED_SET = 'worked set'
 OXYGEN = 'oxygen'
 # A reading per parameter, except oxygen: one reading of mg/L and % together.
 SLOTS = {code: Q(**{f'{code}__isnull': False}) for code in parameters.COLUMNS if code not in (OXYGEN_MG_L, OXYGEN_PCT)}
@@ -408,6 +414,27 @@ class Observation:
         (`ends`), else its time plus its channel's seconds or the parameter's hours (freshness.fresh_until)."""
         found = self.ends.get(code)
         return found if found is not None else freshness.fresh_until(code, self.at, self.fresh_for)
+
+
+@dataclass
+class Worked:
+    """A point's worked-out values by THE rule (Context.newest_worked; review 5 of derived-fresh, H1, H2):
+    - `evidence`: {code: Reading} of its newest worked-out value that is evidence (not refused, fresh at its own time),
+      {} when the read's window holds none;
+    - `judged`: [{code: Reading}] of every worked-out value with a value judged beside it, newest first: the evidence
+      value and every one newer than it or of its minute (a same-minute peer, a refused value on its basis, a value stale
+      from its start). The point is the worst of them;
+    - `lacking`: its newest sample newer than the evidence that gives no value for want of an input, else None;
+    - `refused`: its newest sample newer than the evidence the core refused (with or without a basis value), else None;
+    - `late`: worked-out values measured before the evidence but entered after it (a late result), newest first;
+    - `newest`: its newest sample's NH₃, worked out or not: what is shown where nothing is worked out."""
+    evidence: dict = field(default_factory=dict)
+    judged: list = field(default_factory=list)
+    lacking: object = None
+    refused: object = None
+    late: list = field(default_factory=list)
+    newest: object = None
+    at: datetime | None = None          # the evidence sample's measured_at
 
 
 @dataclass(frozen=True)
@@ -1246,7 +1273,6 @@ class Context:
         answers = dict(zip([key for key, _targets, _moment in asks],
                            sources.values_for(parameters.TEMPERATURE, [(targets, moment)
                                                                        for _key, targets, moment in asks])))
-        unread = str(messages.SENSORS_UNREAD)
         steady = []
         for key, observation in wanted.items():
             plan = plans[key]
@@ -1266,8 +1292,9 @@ class Context:
                             said=str(messages.temperature_from_sensor(value, Basis(
                                 value, live.origin, live.channel_no, live.at).said(observation.point))))
             elif answer is not None and answer.failed:
-                # Its own temperature, and the place's probe could not be asked whether it still holds: ended at once.
-                self._temperatures[key] = SampleTemperature(plan['value'], plan['start'], plan['said'], True, unread)
+                # Its own temperature, the place's probe not asked: a failure is no evidence against a typed value. It keeps
+                # its own end, loses only the probe's extension, and says so (review 5, M2, decided).
+                self._temperatures[key] = SampleTemperature(plan['value'], plan['end'], str(messages.NOT_CHECKED), True)
                 continue
             self._temperatures[key] = SampleTemperature(plan['value'], plan['end'], plan['said'])
             cap = self._stale_anyway(observation)
@@ -1279,15 +1306,19 @@ class Context:
                                                   for _key, targets, start, value, until in steady])
         if failed:
             self.sources_failed = True
-        for (key, _targets, start, _value, _until), result in zip(steady, confirmed):
+        for (key, _targets, _start, _value, _until), result in zip(steady, confirmed):
             found = self._temperatures[key]
             if failed:
-                self._temperatures[key] = replace(found, until=start, failed=True, why=unread)
+                # Not checked: its own end stands (a probe temperature's is its channel's freshness), said.
+                said = ' '.join(filter(None, (found.said, str(messages.NOT_CHECKED))))
+                self._temperatures[key] = replace(found, failed=True, said=said)
             elif result is not None:
                 end, kind, value = result
+                until = freshness.temperature_until(found.until, kind, end)
                 why = (str(messages.probe_beyond_band(value, band)) if kind == 'band'
-                       else str(messages.probe_silent(end, wanted[key].point)) if kind == 'gap' else '')
-                self._temperatures[key] = replace(found, until=freshness.temperature_until(found.until, end), why=why)
+                       else str(messages.probe_silent(end, wanted[key].point)) if until == end and end <= self.now
+                       else '')
+                self._temperatures[key] = replace(found, until=until, why=why)
 
     def _temperature_plan(self, observation):
         """What a sample's NH₃ temperature is before the probes are asked: its own, else none yet; and whether the place's
@@ -1329,56 +1360,108 @@ class Context:
                 return newest(found), [target for target, _origin, _point in tier]
         return None
 
-    # -- a point's newest worked-out value --
+    # -- a point's worked-out values --
     def newest_worked(self, point):
-        """({code: Reading} of the point's NEWEST WORKED-OUT value of each worked-out code, or {} when none in the read's
-        window; its newest sample newer than that whose value cannot be worked out, or None). The one rule of a worked-out
-        value's candidate at a point (review 4 of the branch, H1, H2, L5): a newer sample that cannot be worked out (a
-        TAN without a pH or a temperature, a value the core refused) never takes the place of a worked-out one, at any
-        point of any tier; it is only said (`latest`). Batched (`prefetch_newest_worked`)."""
+        """THE rule of a point's worked-out values (review 5 of derived-fresh, H1, H2; the coordinator's round 6), the
+        same for the latest read, the alarm pass and the pages: a Worked. Batched (`prefetch_newest_worked`)."""
         if point.pk not in self._newest:
             self.prefetch_newest_worked([point])
         return self._newest[point.pk]
 
+    @staticmethod
+    def evidence(reading):
+        """Whether a worked-out reading is evidence of the water: it has a value, the core did not refuse it, and it was
+        fresh at its own time (never one stale from its start: a typed temperature the probe was already off)."""
+        return (reading is not None and reading.value is not None and not reading.refused
+                and reading.fresh_until > reading.at)
+
+    def _newest_samples(self, point_ids, offset, size):
+        """The samples with a TAN of the points in the read's window (up to its moment for a read of the past), ranked
+        newest first per point by (measured_at, created_at, id), those ranked offset+1 to offset+size: bounded in the
+        database (a window function), never the whole window (review 5, M3)."""
+        rows = WaterMeasurement.objects.filter(point__in=point_ids, measured_at__gte=self._since + WINDOW,
+                                               tan_mg_l__isnull=False)
+        if self.until is not None:
+            rows = rows.filter(measured_at__lte=self.until)
+        rows = (rows.annotate(rank=Window(RowNumber(), partition_by=[F('point_id')],
+                                          order_by=[F('measured_at').desc(), F('created_at').desc(), F('id').desc()]))
+                .filter(rank__gt=offset, rank__lte=offset + size).select_related(*POINT_RELATED))
+        found = sorted(rows, key=lambda sample: (str(sample.point_id), sample.rank))
+        SAMPLES_READ[0] += len(found)
+        return found
+
     def prefetch_newest_worked(self, points):
-        """`newest_worked` for many points at once: ONE query for every sample with a TAN of all of them in the read's
-        window (up to the read's moment for a read of the past), in the order (measured_at, created_at, id), newest
-        first; then, newest first, rounds of one, two, four … samples a point, each round one batch of temperatures
-        (`prefetch_temperatures`), until each point has its newest worked-out value or no sample left. The statements
-        grow with how far back a point has to look, never with the points; each sample is worked out once (`readings`).
-        The whole window is looked through: a held critical ends only with the window (review 3, M3)."""
+        """`newest_worked` for many points at once. Newest first, in rounds of two, four, eight … samples a point
+        (`_newest_samples`), each round one query and one batch of temperatures (`prefetch_temperatures`): a point is done
+        once it has its evidence value and a sample older than its minute, or no sample left. Every sample on the way is
+        sorted: newer than the evidence with a value, judged beside it; refused, kept; value-less, said. The statements
+        grow with how far back a point has to look, never with the points; only the window ends a look-back. Then ONE
+        query for the late results of every point with evidence (measured before it, entered after it)."""
         points = [point for point in points if point.pk not in self._newest]
         if not points:
             return
-        rows = WaterMeasurement.objects.select_related(*POINT_RELATED).filter(
-            point__in=[point.pk for point in points], measured_at__gte=self._since + WINDOW, tan_mg_l__isnull=False)
-        if self.until is not None:
-            rows = rows.filter(measured_at__lte=self.until)
-        by_point = defaultdict(list)
-        for sample in rows.order_by('-measured_at', '-created_at', '-id'):
-            by_point[sample.point_id].append(sample)
         for point in points:
-            self._newest[point.pk] = ({}, None)
-        pending, size = {pk: 0 for pk in by_point}, 1
+            self._newest[point.pk] = Worked()
+        pending, offset, size = [point.pk for point in points], 0, 2
         while pending:
-            self.prefetch_temperatures([sample for pk, index in pending.items()
-                                        for sample in by_point[pk][index:index + size]])
-            for pk, index in list(pending.items()):
-                found, lacking = self._newest[pk]
-                for sample in by_point[pk][index:index + size]:
+            rows = self._newest_samples(pending, offset, size)
+            self.prefetch_temperatures(rows)
+            by_point = defaultdict(list)
+            for sample in rows:
+                by_point[sample.point_id].append(sample)
+            still = []
+            for pk in pending:
+                worked, got = self._newest[pk], by_point.get(pk, [])
+                done = len(got) < size
+                for sample in got:
                     readings = self.readings(sample)
-                    worked = readings.get(NH3_N.code)
-                    if worked is not None and worked.value is not None:
-                        found = {code: readings[code] for code in DERIVED if code in readings}
-                        break
-                    if lacking is None and worked is not None:
-                        lacking = worked
-                self._newest[pk] = (found, lacking)
-                if found or index + size >= len(by_point[pk]):
-                    del pending[pk]
-                else:
-                    pending[pk] = index + size
-            size *= 2
+                    nh3 = readings.get(NH3_N.code)
+                    if worked.newest is None:
+                        worked.newest = nh3
+                    derived = {code: readings[code] for code in DERIVED if code in readings}
+                    if worked.at is not None:                   # past the evidence: its minute's peers only
+                        if sample.measured_at != worked.at:
+                            done = True
+                            break
+                        if nh3 is not None and nh3.value is not None:
+                            worked.judged.append(derived)
+                        continue
+                    if nh3 is None:
+                        continue
+                    if self.evidence(nh3):
+                        worked.evidence, worked.at = derived, sample.measured_at
+                        worked.judged.append(derived)
+                        continue
+                    if nh3.value is not None:
+                        worked.judged.append(derived)
+                    if nh3.refused:
+                        worked.refused = worked.refused or nh3
+                    elif nh3.value is None:
+                        worked.lacking = worked.lacking or nh3
+                if not done:
+                    still.append(pk)
+            pending, offset, size = still, offset + size, size * 2
+        self._late_results(points)
+
+    def _late_results(self, points):
+        """The owner's decision on review 5: a worked-out value measured before a point's evidence value but entered after
+        it is a late result: no candidate, never an alarm, but said on the point (`latest`) and kept in the activity log
+        when it is entered (services). ONE query for every point with evidence."""
+        condition = Q()
+        for point in points:
+            worked = self._newest[point.pk]
+            if worked.evidence:
+                sample = worked.evidence[NH3_N.code].sample.sample
+                condition |= Q(point_id=point.pk, measured_at__lt=worked.at, created_at__gt=sample.created_at)
+        if not condition:
+            return
+        rows = list(WaterMeasurement.objects.select_related(*POINT_RELATED).filter(
+            condition, measured_at__gte=self._since + WINDOW, tan_mg_l__isnull=False).order_by('-measured_at'))
+        self.prefetch_temperatures(rows)
+        for sample in rows:
+            nh3 = self.readings(sample).get(NH3_N.code)
+            if nh3 is not None and nh3.value is not None and not nh3.refused:
+                self._newest[sample.point_id].late.append(nh3)
 
     def _ammonia_of(self, observation, used, sample_temperature):
         """The readings of `_ammonia`, from the values it recorded as used (`used`, {code: value}) and nothing else of
@@ -1627,7 +1710,7 @@ def _newest_ids(points, since, until=None):
         rows = rows.filter(measured_at__lte=until)
     rows = (rows.values('point_id')
             .annotate(**{f'newest_{slot}': First(ArrayAgg('id', filter=condition,
-                                                           order_by=('-measured_at', '-created_at')),
+                                                           order_by=('-measured_at', '-created_at', '-id')),
                                                   output_field=UUIDField())
                          for slot, condition in SLOTS.items()}))
     for row in rows:
@@ -1644,15 +1727,20 @@ def _manual(point, newest, samples, context):
         for code in codes:
             if code in readings:
                 found[code] = readings[code]
-    # The worked-out codes: the point's newest worked-out value, never a newer sample that cannot be worked out
-    # (Context.newest_worked; review 4 of the branch); with none, the newest sample's, which says why it has no value.
-    worked, lacking = context.newest_worked(point)
+    # The worked-out codes by the one rule (Context.newest_worked; review 5 of derived-fresh): the point's evidence value
+    # (else its newest judged one, else its newest sample's, which says why it has no value), and every worked-out value
+    # judged beside it (WORKED_SET): the candidates of the place.
+    worked = context.newest_worked(point)
     for code in DERIVED:
         found.pop(code, None)
-    if worked:
-        found.update(worked)
-    elif lacking is not None:
-        found[NH3_N.code] = lacking
+    if worked.evidence:
+        found.update(worked.evidence)
+    elif worked.judged:
+        found.update(worked.judged[0])
+    elif worked.newest is not None:
+        found[NH3_N.code] = worked.newest
+    found[WORKED_SET] = {code: [each[code] for each in worked.judged
+                                if each.get(code) is not None and each[code].value is not None] for code in DERIVED}
     return found
 
 
@@ -1776,7 +1864,7 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
                                                  context.temperature_of(together))
     for code in DERIVED:
         tiers = [[*(found[code] for found in [live_worked.get(tier, {})] if found.get(code) is not None),
-                  *(manual[code] for manual in manuals if manual.get(code) is not None)]
+                  *(each for manual in manuals for each in manual.get(WORKED_SET, {}).get(code, []))]
                  for tier, manuals in enumerate((own_manual, system_manual))]
         tiers = [[each for each in tier if each.value is not None] for tier in tiers]
         found = choose(tiers, now, lambda reading: reading.fresh(now))
@@ -1787,9 +1875,9 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
     if NH3_N.code not in chosen and tan is not None:
         # Nothing worked out in any tier: the TAN shown says why.
         if tan.sample.live and tan.fresh(now):
-            together = Observation.combined([tan.sample, *(fresh_live[code] for code in (
-                parameters.PH, parameters.TEMPERATURE, parameters.SALINITY) if fresh_live.get(code) is not None)])
-            chosen.update(context._ammonia(together, *context.salinity_found(together), context.temperature_of(together)))
+            # The live NH₃ already worked out from that TAN's tier (`live_worked`, once: review 5, L2).
+            chosen.update(next((live_worked[tier] for tier, fresh_tier in enumerate((fresh_own, fresh_system))
+                                if tier in live_worked and fresh_tier.get(TAN) is tan.sample), {}))
         elif tan.sample.live:
             # Its one input used, the TAN, ended (`inputs_until`, the others none).
             chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, _('Not worked out: the TAN is no longer fresh.'),
@@ -1991,17 +2079,8 @@ def latest(points, now=None, at=None, own=None, units=()):
                 if where.for_unit and reading.point is not None and reading.point.pk not in own_ids:
                     last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
                                        and each.point.pk in own_ids], moment)
-                if where.for_unit and code in DERIVED:      # F1: a stale worked-out alert at an own point holds
-                    held_at_points(reading, [judged(each) for each in (resolved[code], *found) if each.value is not None
-                                             and each.point is not None and each.point.pk in own_ids], moment)
-                if code in DERIVED:                         # a newer sample that cannot be worked out is said
-                    for each in (*where.own, *where.system):
-                        lacking = context.newest_worked(each)[1]
-                        if lacking is not None and lacking.sample is not resolved[code].sample:
-                            said = str(messages.lacking_newer(lacking))
-                            reading.note = f'{reading.note} {said}' if reading.note else said
-                            if lacking.refused and each.pk in own_ids and code not in point_water.refused_newer:
-                                point_water.refused_newer[code] = judged(lacking)
+                if code in DERIVED:
+                    _worked_said(reading, resolved[code], found, where, own_ids, point_water, context, judged, moment)
             if point is None:                       # a unit without a point: every value is its system's
                 said = point_water.standing_said
                 reading.note = f'{reading.note} {said}' if reading.note else said
@@ -2092,6 +2171,67 @@ def last_own(reading, own, now):
     return reading
 
 
+def _worked_said(reading, shown, found, where, own_ids, point_water, context, judged, moment):
+    """What a place's worked-out value takes from its points' worked-out values (review 5 of derived-fresh, the
+    coordinator's round 6), on the reading `judged` from `shown`:
+    - the hold (`held_at_points`) over every value judged at the unit's own points, and at the point of the value
+      shown: a point is the worst of its evidence value and every value newer than it or of its minute;
+    - a newer sample that gives no value (for want of an input, or refused with no basis) is said;
+    - the newest refused sample newer than the evidence at a point of the tier the value is read from (the unit's own
+      points, and its system's when the value comes from there) is "cannot be evaluated" (`PointWater.refused_newer`,
+      its warning: V-A), until a worked-out value newer than it;
+    - a late result (measured before a point's evidence, entered after it) is said, never alarmed (the owner's decision);
+    - an own sample newer than a system's value shown that gives no value makes it "cannot be evaluated", never plain OK
+      (L5): measure there."""
+    shown_point = shown.point.pk if shown.point is not None else None
+    if where.for_unit:
+        held_at_points(reading, [judged(each) for each in (shown, *found) if each.value is not None
+                                 and each.point is not None and (each.point.pk in own_ids or each.point.pk == shown_point)],
+                       moment)
+    from_system = shown_point is not None and shown_point not in own_ids
+    for each in (*where.own, *where.system):
+        worked = context.newest_worked(each)
+        for missing in (worked.lacking, worked.refused):
+            if missing is not None and missing.value is None and missing.sample is not shown.sample:
+                said = str(messages.lacking_newer(missing))
+                if said not in reading.note:
+                    reading.note = f'{reading.note} {said}' if reading.note else said
+        in_tier = each.pk in own_ids or from_system or shown.value is None
+        if worked.refused is not None and in_tier and reading.code not in point_water.refused_newer:
+            point_water.refused_newer[reading.code] = judged(worked.refused)
+        evidence = worked.evidence.get(reading.code)
+        for late in worked.late:
+            late = judged(late) if late.code == reading.code else None
+            if late is not None and evidence is not None and late.judged in ALERTS:
+                said = str(messages.late_result(late, evidence))
+                reading.note = f'{reading.note} {said}' if reading.note else said
+    if where.for_unit and from_system and RANK[reading.judged] > RANK[Status.UNEVALUATED] and any(
+            context.newest_worked(each).lacking is not None and context.newest_worked(each).lacking.at > shown.at
+            for each in where.own):
+        reading.judged = Status.UNEVALUATED
+        if reading.status != Status.STALE:
+            reading.status = Status.UNEVALUATED
+
+
+def late_result_of(sample):
+    """The words of a late result for the activity log when a sample is entered (the owner's decision on review 5): its NH₃
+    worked out and judged critical or a warning for the fish of its day, and its point's evidence value newer than it;
+    '' otherwise. One read of the point."""
+    if sample.tan_mg_l is None:
+        return ''
+    now = timezone.now()
+    context = Context([sample.point], now - WINDOW)
+    context.know(_places([sample.point]), now)
+    nh3 = context.readings(sample).get(NH3_N.code)
+    if nh3 is None or nh3.value is None or nh3.refused:
+        return ''
+    nh3 = context.judge(replace(nh3), _local_day(sample))
+    evidence = context.newest_worked(sample.point).evidence.get(NH3_N.code)
+    if nh3.judged not in ALERTS or evidence is None or evidence.at <= sample.measured_at:
+        return ''
+    return str(messages.late_result(nh3, evidence))
+
+
 def held_at_points(reading, own, now):
     """The review of 2026-11-26, F1 (the coordinator's rule), with review 4's candidates: a worked-out value judged
     critical or a warning at one of the unit's own points is over only when THAT point says so with a fresh worked-out
@@ -2104,11 +2244,7 @@ def held_at_points(reading, own, now):
     recent data: measure there"); so the page, the card and the alarm (a level the unit's own value holds,
     alarms/sources.py `own_held`) stay at it until that point gives a fresh worked-out value. A newer sample that cannot
     be worked out is never a point's worked-out value (Context.newest_worked), so it is no evidence."""
-    newest_at = {}
-    for each in own:
-        if each.point.pk not in newest_at or each.at > newest_at[each.point.pk].at:
-            newest_at[each.point.pk] = each
-    for each in newest_at.values():
+    for each in sorted(own, key=lambda value: RANK[value.judged]):
         if (each.sample is reading.sample or each.fresh(now) or each.judged not in ALERTS
                 or RANK[each.judged] >= RANK[reading.judged]):
             continue

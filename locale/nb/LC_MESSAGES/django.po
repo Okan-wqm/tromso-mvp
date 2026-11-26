@@ -9226,6 +9226,15 @@ msgstr "%(minutes)s min for sent"
 msgid "Late limit (days)"
 msgstr "Grense for sen ankomst (dager)"
 
+msgid "Late result"
+msgstr ""
+
+#, python-format
+msgid ""
+"Late result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
+"%(newer_time)s."
+msgstr ""
+
 msgid "Latest"
 msgstr "Siste"
 
@@ -10924,6 +10933,9 @@ msgstr ""
 
 msgid "Not checked"
 msgstr "Ikke kontrollert"
+
+msgid "Not checked against the probe: the live sensor values could not be read."
+msgstr ""
 
 msgid "Not chosen"
 msgstr "Ikke valgt"
@@ -20730,9 +20742,6 @@ msgstr "fisken kan forlate anlegget fra omtrent %(date)s"
 
 msgid "the layout being designed"
 msgstr "oppsettet som utformes"
-
-msgid "the live sensor values could not be read"
-msgstr "sensorverdiene kunne ikke leses"
 
 #, python-format
 msgid "the oldest since %(since)s"

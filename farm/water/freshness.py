@@ -109,13 +109,14 @@ def temperature_band():
     return _rules()['band']
 
 
-def temperature_until(own_end, confirmed_until):
-    """The end of a worked-out value's temperature input (a sample's, or the place's sensor's at the sample's time) where
-    the place has live temperature: it stays fresh while the place has a fresh live temperature within the band
-    (`temperature_band`) of the temperature used, and ends the moment that live temperature moves further or goes stale
-    (`confirmed_until`,
-    sources.steady_until from the input's own time: at that time already where the live temperature then was further
-    off). Where the place had no fresh live temperature at that time (`confirmed_until` None) its own end stands
-    (`own_end`, `fresh_until`). The live temperature says what the water is now, so it can end the input before its own
-    hours, as well as keep it fresh after them."""
-    return own_end if confirmed_until is None else confirmed_until
+def temperature_until(own_end, kind=None, end=None):
+    """The end of a worked-out value's temperature input where the place's probe was asked (sources.steady_until): only a
+    probe reading further than the band (`kind` 'band') ends it early, at that reading's time, even inside its own end;
+    the probe confirming it keeps it fresh past its own end until it moves or falls silent ('gap', 'last': the later of
+    its own end and that); a probe that was not in force, failed or fell silent early takes nothing away (review 5 of
+    derived-fresh, M2, decided). A probe temperature's own end is its channel's freshness."""
+    if kind == 'band':
+        return end
+    if kind in ('gap', 'last'):
+        return max(own_end, end)
+    return own_end

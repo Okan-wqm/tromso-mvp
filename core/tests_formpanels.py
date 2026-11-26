@@ -278,7 +278,7 @@ class PortedFormTests(TestCase):
         self.assertEqual(props['openTab'], 'table')
         [block] = own_forms(props)
         [grid] = [part for part in block['parts'] if part['kind'] == 'grid']
-        self.assertEqual(len(grid['columns']), 8)                       # five, and an SFR column a temperature
+        self.assertEqual(len(grid['columns']), 10)                      # seven, and an SFR column a temperature
         self.assertEqual(4,
                          sum(band.rates.count() for band in protocol.bands.all()))   # nothing saved
 

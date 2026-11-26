@@ -24,7 +24,8 @@ from core.models import PlatformSettings
 from farm import withdrawal_gate
 from farm.handling import check
 from farm.models import (Equipment, EquipmentSystem, EquipmentType, ProductionDepartment, SamplingPoint, Site, Species,
-                         StockMovement, StockOperation, System, Tank, WaterFreshness, WaterLimit, WaterMeasurement)
+                         StockMovement, StockOperation, System, Tank, WaterFreshness, WaterLimit, WaterMeasurement,
+                         WeightSource)
 from farm.models.stock import TransferReason
 from farm.stock import services
 from farm.tests.helpers import make_species, may_record, point_of, stock_fish
@@ -75,8 +76,10 @@ class Farm:
                                              updated_by=self.user)
 
     def weighing_sql(self, operation, batch, unit):
+        # a weighing names how it was measured (farm.WeightSource): the seeded source a weighing without one takes
         return ("INSERT INTO stock_movements (operation_id, batch_id, unit_id, kind, count_delta, avg_weight_g, reason, "
-                "size_class) VALUES (%s, %s, %s, 'weighing', 0, 60, '', '')", [operation.pk, batch.pk, unit.pk])
+                "size_class, weight_source_id) VALUES (%s, %s, %s, 'weighing', 0, 60, '', '', %s)",
+                [operation.pk, batch.pk, unit.pk, WeightSource.manual().pk])
 
 
 class BumpTests(TestCase):
@@ -202,7 +205,7 @@ class StockTrackingTests(Gate, Farm, TestCase):
     def test_bulk_create_and_raw_sql_move_the_batch_and_the_unit(self):
         StockMovement.objects.bulk_create([StockMovement(
             operation=self.operation(4), batch=self.batch, unit=self.t1, kind='weighing', count_delta=0,
-            avg_weight_g=55)])
+            avg_weight_g=55, weight_source=WeightSource.manual())])
         rev.settle()
         self.assertEqual(row('batch', self.batch.pk)[2], self.day(4))
         self.assertEqual(row('unit_stock', self.t1.pk)[2], self.day(4))
@@ -282,7 +285,8 @@ class StockTrackingTests(Gate, Farm, TestCase):
         rev.mark_built('batch', other.pk, 1)
         rev.mark_built('unit_stock', self.t2.pk, 1)
         line = StockMovement.objects.create(operation=self.operation(8), batch=self.batch, unit=self.t1,
-                                            kind='weighing', count_delta=0, avg_weight_g=52)
+                                            kind='weighing', count_delta=0, avg_weight_g=52,
+                                            weight_source=WeightSource.manual())
         rev.settle()
         rev.mark_built('batch', self.batch.pk, 2)
         sql('UPDATE stock_movements SET batch_id = %s, unit_id = %s WHERE id = %s', [other.pk, self.t2.pk, line.pk])

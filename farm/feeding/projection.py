@@ -9,9 +9,12 @@ rations sized on biomass that feed itself raised (FP-01) cannot happen.
 - Fish that leave (mortality, cull, harvest, transfer out, a count adjusted down) take the estimate's own average, so
   the estimated average does not move when fish leave; fish moved by a plain transfer carry their estimated grams and
   the day of their last measured point into the unit they go to; graded fish carry their measured weight.
-- After each feeding of the day (in their order: time, then entry), the batch gains its part of the feed × 1000 ÷ the
-  expected FCR of its band at its estimated weight then (Q7, Q9), but only up to the day's calculated ration (Q4):
-  feed above it is "over the ration" and not growth. The next meal is read at the new estimate.
+- After each feeding of the day (in their order: time, then entry), the batch gains what its part of the feed grows
+  by the one growth rule (farm/feeding/growth.py, `step`): the part eaten (the feed less the protocol's uneaten
+  share) ÷ the expected FCR, both read at its estimated weight then (Q7, Q9; ration.Basis), but only up to the day's
+  calculated ration (Q4): feed above it is "over the ration" and not growth. The next meal is read at the new
+  estimate. A day without a recorded feeding adds nothing: only the plan ahead (farm/harvest/forecast.py) counts a
+  ration as given.
 - A feeding of fish without an expected FCR (no protocol, a weight outside its bands) adds nothing and is counted:
   the estimate is incomplete for that many feeding days, and the pages say so. Never a default FCR. Cleaner fish
   without a feeding table of their own beside production fish (ration.CLEANER_FISH) are not modelled at all: their
@@ -24,7 +27,8 @@ is R ÷ M at the current estimate (the owner's rule: "as soon as it is fed, the 
 
 A weighing is a correction point: just before it resets the estimate, the walk keeps the estimated and the measured
 average, the days since the previous measured point, the realised bFCR between that point and this one (the window
-rule of farm/feeding/read.py) and the expected FCR of the feed given meanwhile (Σ feed ÷ Σ feed ÷ FCR)."""
+rule of farm/feeding/read.py) and the expected FCR of the feed given meanwhile, on feed given as the realised one is
+(Σ feed ÷ Σ expected growth: the economic FCR, equal to the entered one when nothing is left uneaten)."""
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -32,6 +36,7 @@ from decimal import Decimal
 from farm.models.feeding import FeedTarget
 from farm.models.stock import MovementKind, OperationKind
 
+from . import growth
 from .fold import PointKind, Window
 
 ZERO = Decimal(0)
@@ -256,9 +261,11 @@ def feed(track, fish, measured_g, last_weighed, day, parts, basis_of):
             result.portions_kg += taken * ration / meals
             result.meals += taken
         result.credited_kg += credit
-        track.grams += credit * 1000 / basis.fcr
+        track.grams += growth.step(credit * 1000, basis.fcr, basis.uneaten_pct).growth
         track.feed_kg += part
-        track.feed_per_fcr += part / basis.fcr
+        # what the feed given was expected to grow: Σ feed ÷ this is the interval's expected FCR on feed given (the
+        # economic one), which is what a weighing's realised FCR, also on feed given, is compared with
+        track.feed_per_fcr += growth.step(part, basis.fcr, basis.uneaten_pct).growth
     result.grams = track.grams
     result.fed_since_kg = track.feed_kg
     result.end_g = track.grams / fish

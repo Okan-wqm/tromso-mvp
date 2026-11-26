@@ -16,18 +16,29 @@ walk (farm/feeding/fold.py) asks it at every feeding, so the projected growth an
   SFR(c1) + (SFR(c2) − SFR(c1)) × (T − c1) / (c2 − c1); outside the first and last column there is none (no
   extrapolation, owner decision Q1): a cold or a hot unit is not fed at the edge's rate.
 - The day's ration R = projected biomass × SFR / 100 (kg a day), a meal R / meals a day, at full precision.
-- The expected FCR: the band's, else the protocol's (owner decision a), with its source.
-Weight is banded because a band carries the pellet and the meals, which change in steps; temperature is
-interpolated because a step makes the ration jump by 15–20 % when a reading crosses a column by 0.1 °C."""
+- The expected FCR and the uneaten share of the feed: each band's value (its own, else the protocol's: owner
+  decision a) sits at the band's anchor weight and is read between two anchors without a jump, constant before the
+  first and after the last (farm/feeding/growth.py, `interpolate`: the one place). A protocol that fed fish before
+  the interpolation existed keeps the band's own value for the days before `interpolated_from` (owner decision Q3:
+  what a protocol gave for past days never changes).
+- The expected mortality (% a month, for the plan ahead only): the band's, else the protocol's, else none.
+The SFR is read per band (weight is banded because a band carries the pellet and the meals, which change in steps)
+and interpolated over the temperature only, because a step makes the ration jump by 15–20 % when a reading crosses a
+column by 0.1 °C."""
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal
+from functools import cached_property
 
 from django.utils.translation import gettext as _
 
 from farm.templatetags.stock import grams, number
 
+from . import growth
+
 HUNDRED = Decimal(100)
+ZERO = Decimal(0)
 
 
 @dataclass(frozen=True)
@@ -46,6 +57,8 @@ class Band:
     meals: int
     fcr: Decimal
     cells: tuple
+    uneaten_pct: Decimal = None          # the band's own; None: the protocol's
+    mortality_pct_month: Decimal = None  # the band's own; None: the protocol's
 
     def contains(self, weight_g):
         return weight_g >= self.min_weight_g and (self.max_weight_g is None or weight_g < self.max_weight_g)
@@ -59,6 +72,53 @@ class Table:
 
     def band_for(self, weight_g):
         return next((band for band in self.bands if band.contains(weight_g)), None)
+
+    def fcr_of(self, band):
+        """A band's expected FCR: its own, else the protocol's."""
+        return band.fcr if band.fcr is not None else self.protocol.expected_fcr
+
+    def uneaten_of(self, band):
+        """A band's uneaten share in %: its own, else the protocol's, else none of the feed."""
+        if band.uneaten_pct is not None:
+            return band.uneaten_pct
+        return self.protocol.uneaten_pct if self.protocol.uneaten_pct is not None else ZERO
+
+    def mortality_of(self, band):
+        """A band's expected mortality in % a month: its own, else the protocol's; None: none expected."""
+        return band.mortality_pct_month if band.mortality_pct_month is not None else self.protocol.mortality_pct_month
+
+    def _anchors(self, value_of):
+        return tuple((growth.anchor(band.min_weight_g, band.max_weight_g), value_of(band)) for band in self.bands)
+
+    
+    @cached_property
+    def fcr_anchors(self):
+        return self._anchors(self.fcr_of)
+
+    
+    @cached_property
+    def uneaten_anchors(self):
+        return self._anchors(self.uneaten_of)
+
+    def interpolates(self, day):
+        """Whether the FCR and the uneaten share of `day` are read between the bands (None: a day is not said, so
+        yes). False only for the days a protocol fed before the interpolation existed."""
+        since = self.protocol.interpolated_from
+        return since is None or day is None or day >= since
+
+    def fcr_at(self, weight_g, day=None):
+        """The expected FCR of fish of `weight_g` on `day`; None outside the bands."""
+        band = self.band_for(weight_g)
+        if band is None:
+            return None
+        return growth.interpolate(self.fcr_anchors, weight_g) if self.interpolates(day) else self.fcr_of(band)
+
+    def uneaten_at(self, weight_g, day=None):
+        """The uneaten share (%) of the feed given to fish of `weight_g` on `day`; None outside the bands."""
+        band = self.band_for(weight_g)
+        if band is None:
+            return None
+        return growth.interpolate(self.uneaten_anchors, weight_g) if self.interpolates(day) else self.uneaten_of(band)
 
 
 @dataclass(frozen=True)
@@ -110,6 +170,7 @@ class Basis:
     missing: str = ''
     skipped: object = None        # a unit's row for another species, read past
     fast: object = None           # the fast a planned harvest or transport asks for (farm.handling.fasting.Fast)
+    day: date = None              # the day asked: a protocol's past days may read the FCR per band (Table.interpolates)
 
     @property
     def protocol(self):
@@ -121,14 +182,23 @@ class Basis:
 
     @property
     def fcr(self):
-        """The expected FCR: the band's, else the protocol's; None without a band."""
-        if self.band is None:
-            return None
-        return self.band.fcr if self.band.fcr is not None else self.table.protocol.expected_fcr
+        """The expected (biological) FCR at the fish's weight (Table.fcr_at); None without a band."""
+        return self.table.fcr_at(self.weight_g, self.day) if self.band is not None else None
 
     @property
-    def fcr_source(self):
-        return 'band' if self.band is not None and self.band.fcr is not None else 'protocol'
+    def uneaten_pct(self):
+        """The share (%) of the feed given that is not eaten, at the fish's weight; None without a band."""
+        return self.table.uneaten_at(self.weight_g, self.day) if self.band is not None else None
+
+    @property
+    def economic_fcr(self):
+        """Feed given per growth: the expected FCR ÷ the share eaten; None without a band."""
+        return growth.economic_fcr(self.fcr, self.uneaten_pct) if self.band is not None else None
+
+    @property
+    def mortality_pct_month(self):
+        """The expected mortality (% a month) of the fish's band; None: none expected, or no band."""
+        return self.table.mortality_of(self.band) if self.band is not None else None
 
     @property
     def meals(self):
@@ -185,6 +255,15 @@ def band_range(lower, upper):
                                      'high': number(upper, 2 if upper % 1 else 0)}
 
 
+READ = object()     # Policy.basis: read the unit's own temperature of the day
+
+
+@dataclass(frozen=True)
+class PlannedTemperature:
+    """A temperature a day ahead is planned at, not measured: the site's value for that month (Setup › Sites)."""
+    value_c: Decimal
+
+
 @dataclass
 class Policy:
     """The assignments, tables and temperatures a walk reads, loaded once (read.policy). `temperature(unit id,
@@ -222,10 +301,11 @@ class Policy:
         self._resolved[(unit_id, batch_id, day)] = result = (found, skipped)
         return result
 
-    def basis(self, unit_id, batch_id, day, weight_g, beside=False):
+    def basis(self, unit_id, batch_id, day, weight_g, beside=False, temperature=READ):
         """The Basis of the batch's ration in the unit on `day`, for fish of `weight_g` on average. `beside`: the unit
         holds production fish that day, so cleaner fish there are cleaning them (D-1); cleaner fish without production
-        fish (a hatchery tank of lumpfish) are that unit's production fish, and a missing table is a gap."""
+        fish (a hatchery tank of lumpfish) are that unit's production fish, and a missing table is a gap. `temperature`: the one to read the SFR at
+        instead of the unit's own (the plan ahead: a temperature held, or the site's planned one for that month)."""
         assignment, skipped = self.resolve(unit_id, batch_id, day)
         if assignment is None:
             if batch_id in self.cleaner and beside:
@@ -235,17 +315,18 @@ class Policy:
         table = self.tables[assignment.protocol_id]
         band = table.band_for(weight_g)
         if band is None:
-            return Basis(weight_g, table, assignment, missing=OUTSIDE_BANDS)
-        temperature = self.temperature(unit_id, day)
+            return Basis(weight_g, table, assignment, missing=OUTSIDE_BANDS, day=day)
+        if temperature is READ:
+            temperature = self.temperature(unit_id, day)
         # A fasting day before a planned harvest or transport has no ration; the band stays, so a feeding given
         # anyway is still credited at the band's expected FCR, and the water's temperature stays on the line
         # (the board's Water column reads it from here: a fasting unit still has water to watch).
         fast = self.fasting(unit_id, day) if self.fasting is not None else None
         if fast is not None:
-            return Basis(weight_g, table, assignment, band, temperature, missing=FASTING, fast=fast)
+            return Basis(weight_g, table, assignment, band, temperature, missing=FASTING, fast=fast, day=day)
         if temperature is None:
-            return Basis(weight_g, table, assignment, band, missing=NO_TEMPERATURE)
+            return Basis(weight_g, table, assignment, band, missing=NO_TEMPERATURE, day=day)
         sfr = sfr_at(band.cells, temperature.value_c)
         if sfr is None:
-            return Basis(weight_g, table, assignment, band, temperature, missing=OUTSIDE_TABLE)
-        return Basis(weight_g, table, assignment, band, temperature, sfr)
+            return Basis(weight_g, table, assignment, band, temperature, missing=OUTSIDE_TABLE, day=day)
+        return Basis(weight_g, table, assignment, band, temperature, sfr, day=day)

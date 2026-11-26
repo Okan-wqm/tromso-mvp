@@ -193,7 +193,8 @@ def check_protocols(design):
 
 def _shape_without_feed(table):
     """A protocol's table as the ration reads it, the feed of each band left out."""
-    return tuple((band.min_weight_g, band.max_weight_g, band.meals, band.fcr,
+    return tuple((band.min_weight_g, band.max_weight_g, band.meals, band.fcr, band.uneaten_pct,
+                  band.mortality_pct_month,
                   tuple((cell.temperature_c, cell.sfr_pct) for cell in band.cells)) for band in table.bands)
 
 

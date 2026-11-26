@@ -164,11 +164,12 @@ def note_reads(ids, route, part=''):
         sealing.log_access(kind, 'experiment', pk, part=part, route=route)
 
 
-def keepers(unit_id, system_id):
-    """The people who keep the fish of a unit or system an experiment holds today: its live lead and every active
-    person holding Oversee (the alarms' fallback when no recipient rule names anyone who may see the alarm)."""
+def keepers(unit_id, system_id, day=None):
+    """The people who keep the fish of a unit or system an experiment holds on `day` (today by default; an alarm's
+    opening day, the day its seal reads): its live lead and every active person holding Oversee (the alarms' fallback
+    when no recipient rule names anyone who may see the alarm)."""
     with sealing.system('the alarms’ fallback'):
-        today = company_today()
+        today = day or company_today()
         where = (Q(unit=unit_id) if unit_id else Q(pk__in=[])) | (Q(system=system_id) if system_id else Q(pk__in=[]))
         cells = SealedCell.objects.filter(where, from_on__lte=today, until_on__gte=today)
         work = {cell.work for cell in cells}

@@ -13,6 +13,10 @@ def declare_all():
     declare(m.Channel, part='water', hidden_with=('sensors.Binding', 'channel'))
     declare(m.Calibration, part='water', via=('channel',))
     declare(m.AlarmRule, part='water', via=('channel',))
-    declare(m.AlarmEvent, part='water', via=('rule',))
+    # By the place its channel was bound to when it opened, and its day (landing review 2, N1): a default rule of a
+    # quantity has no channel to be sealed through, and a channel's history never seals an event about an open place
+    # (the coordinator's decision, N3).
+    declare(m.AlarmEvent, part='water', unit='binding__point__unit', system=('binding__system', 'binding__point__system'),
+            day='opened_at')
     declare(m.Device, mode=EXEMPT, reason='A device is plant on a site (a probe, a controller); what it measures where '
                                           'is its channels\' bindings, which are sealed.')

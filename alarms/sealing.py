@@ -7,10 +7,12 @@ from core.sealing import declare
 
 def declare_all():
     from . import models as m
-    # Its place is kept on it when it opens (alarms/place.py: a unit subject's, a point's, a sensor channel's then), and
-    # a row written without one is still sealed by its point (fail closed).
-    declare(m.Alarm, part='water', unit=('unit', 'point__unit'), system=('system', 'point__system'), day='opened_at',
-            via=('sensor_event',))
+    # By its own place and day only (the coordinator's decision of 2026-11-26 on landing review 2, N3): the place is
+    # kept on it when it opens (alarms/place.py: a unit subject's, a point's, a sensor channel's binding then), and a
+    # row written without one is still sealed by its point. Never through its sensor channel's history: a probe that
+    # once served a sealed tank and now serves an open one raises alarms about the open one, which everyone keeping
+    # its fish must get.
+    declare(m.Alarm, part='water', unit=('unit', 'point__unit'), system=('system', 'point__system'), day='opened_at')
     for model in (m.AlarmClearance, m.Escalation, m.Acknowledgement, m.Notification, m.AlarmShelve):
         declare(model, part='water', via=('alarm',))
     for model in (m.DeliveryAttempt, m.OutboxEntry):

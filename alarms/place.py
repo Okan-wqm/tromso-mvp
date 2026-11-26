@@ -41,7 +41,9 @@ def places(specs, keys=None):
     for spec, key in zip(specs, keys):
         point, event = spec.get('point'), spec.get('sensor_event')
         unit = system = None
-        if point is not None:
+        if spec.get('place') is not None:             # stated by its producer (a probe's binding: review 2, N2)
+            unit, system = spec['place']
+        elif point is not None:
             unit, system = by_point.get(_id(point), (None, None))
         elif event is not None and getattr(event, 'binding_id', None):
             unit, system = bound(event.binding)
@@ -55,6 +57,22 @@ def bound(binding):
         point = binding.point
         return point.unit_id, point.system_id
     return None, binding.system_id
+
+
+def declared(spec, key=''):
+    """Whether an alarm about to open says where it is: a point, a sensor event, a unit subject's key, a stated
+    `place`, or `farm_wide` (an alarm of the alarm system about no unit: a failed step, a device's clock). One that says
+    none is refused (alarms.services.open_alarms): it could name a unit with no seal to hide it (landing review 2, N2)."""
+    return bool(spec.get('point') is not None or spec.get('sensor_event') is not None or unit_of_key(key)
+                or spec.get('place') is not None or spec.get('farm_wide'))
+
+
+def opening_day(alarm):
+    """The day an alarm opened, on the company's clock: the day its seal reads its cells on (alarms/sealing.py)."""
+    from django.utils import timezone
+
+    from core.dates import company_zone
+    return timezone.localtime(alarm.opened_at, company_zone()).date()
 
 
 def of_alarm(alarm):

@@ -23,6 +23,10 @@ from hr import read as hr_read
 from . import place
 from .models import RANK, Channel, RecipientRule, Source
 
+# The alarm system's own alarm that critical alarms reached nobody (alarms/sources.py, landing review 2, N3): it names
+# none of them, and it goes to the rules its severity reaches and to every holder of Oversee, who sees them all.
+UNREACHED = 'alarms_unreached'
+
 
 class Router:
     """The recipient rules as one pass reads them, for the alarms it routes: three queries at most (the rules, the roles'
@@ -102,8 +106,13 @@ class Router:
             for person in self.people(rule):
                 if person.pk not in found and (alarm.pk not in self.sealed or self.sees(person, alarm)):
                     found[person.pk] = (person, rule)
-        if alarm.pk in self.sealed and not found and level == min((rule.level for rule in reaching), default=0)                 and not any(self.sees(person, alarm) for rule in reaching for person in self.people(rule)):
+        first = level == min((rule.level for rule in reaching), default=0)
+        if alarm.pk in self.sealed and not found and first \
+                and not any(self.sees(person, alarm) for rule in reaching for person in self.people(rule)):
             for person in self.keepers(alarm):
+                found.setdefault(person.pk, (person, None))
+        if alarm.source == Source.SYSTEM and alarm.parameter == UNREACHED and first:
+            for person in self.overseers():
                 found.setdefault(person.pk, (person, None))
         return sorted(found.values(), key=lambda pair: pair[0].get_username())
 
@@ -120,7 +129,15 @@ class Router:
         unit, system = place.of_alarm(alarm)
         if provider is None or (unit is None and system is None):
             return []
-        return [person for person in provider.keepers(unit, system) if self.sees(person, alarm)]
+        # The cells of the day it opened, the day its seal reads (review 2, N4): one open past its cell's last day keeps
+        # the keepers it had.
+        return [person for person in provider.keepers(unit, system, place.opening_day(alarm))
+                if self.sees(person, alarm)]
+
+    def overseers(self):
+        """The active holders of Oversee (the keepers of no particular cell)."""
+        provider = sealing.provider()
+        return [] if provider is None else provider.keepers(None, None)
 
     def next_level(self, alarm, level):
         """The first level above `level` with a rule that reaches the alarm, or None."""

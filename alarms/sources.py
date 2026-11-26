@@ -41,7 +41,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils.translation import gettext as _
 
-from core import audit
+from core import audit, sealing
 from farm.models import Tank, WaterLimit
 from farm.stock import read as stock_read
 from farm.templatetags.water import figure_past
@@ -53,7 +53,8 @@ from sensors import alarms as sensor_alarms, clock as sensor_clock
 from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
-from .place import UNIT_PREFIXES
+from .place import UNIT_PREFIXES, bound
+from .routing import UNREACHED
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
 logger = logging.getLogger(__name__)
@@ -91,7 +92,7 @@ def mirror(event):
         at=event.opened_at, severity=event.rule.severity, summary=summary,
         site=channel.device.site if channel is not None else None,
         production_department=_department_of(channel, event.opened_at) if channel is not None else None,
-        source=Source.SENSOR_RULE, sensor_event=event)
+        source=Source.SENSOR_RULE, sensor_event=event, farm_wide=event.binding_id is None)
     if event.closed_at is not None:
         services.clear(alarm, event.closed_at, ClearCause.EVENT_CLOSED)
     return alarm
@@ -335,17 +336,41 @@ def settle(subjects, now, rules):
     return len(raises), len(clears)
 
 
-def system_subject(name, holds, severity, summary, now, *, parameter=None, where=None, bad_at=None, clear_ok=None):
+def _unreached():
+    """How many open critical alarms, not acknowledged, were told to nobody (no notification at any level): an alarm
+    on confidential work whose rules name nobody who may see it and whose cell has no keeper (landing review 2, N3), or
+    any alarm no rule reaches. The alarm saying so names none of them (they may be sealed). A farm with no recipient
+    rule at all tells nobody by its own setup: that is not counted here."""
+    from .models import Acknowledgement, AlarmClearance, Notification, RecipientRule
+    from django.db.models import Exists, OuterRef
+    with sealing.system('the alarm system supervises itself: the critical alarms told to nobody'):
+        if not RecipientRule.objects.filter(is_active=True).exists():
+            return 0
+        return (Alarm.objects.filter(severity=Severity.CRITICAL).exclude(parameter=UNREACHED)
+                .exclude(Exists(AlarmClearance.objects.filter(alarm=OuterRef('pk'))))
+                .exclude(Exists(Acknowledgement.objects.filter(alarm=OuterRef('pk'))))
+                .exclude(Exists(Notification.objects.filter(alarm=OuterRef('pk')))).count())
+
+
+def system_subject(name, holds, severity, summary, now, *, parameter=None, where=None, bad_at=None, clear_ok=None,
+                   place=None, farm_wide=False):
     """A subject of the alarm system itself (source 'system', subject `system:<name>`, the alarm's `parameter` what it is
     about, the name by default): raised while `holds`, restored once it no longer does, for the severity's off-delay.
     `where` ({site, production_department}) is set where one applies, so a site's recipient rules reach it
     (alarms/routing.py); without it the alarm is the whole farm's. `bad_at`: the time the on-delay runs from (the pass's
     by default); `clear_ok`: whether this pass may say it is over (by default whenever it does not hold; False where
-    the pass could not look, so nothing ends blind)."""
+    the pass could not look, so nothing ends blind).
+
+    Where it is (landing review 2, N2): a unit's subject (`unit:<unit>:...`) is its unit's; any other states its `place`
+    ((unit id, system id): the unit or system it names) or says it is `farm_wide` (about no unit). One that says
+    neither is refused here, when the pass builds it, so a new producer that names a unit cannot open an alarm the seal
+    has no path to."""
     parameter = parameter or name
+    if place is None and not farm_wide and not name.startswith('unit:'):
+        raise ValueError(f'The system subject {name!r} names no place: give its place, or say it is farm-wide.')
     return Subject(f'system:{name}', holds, not holds if clear_ok is None else clear_ok, bad_at or now, severity, lambda: {
         'at': now, 'severity': severity, 'summary': summary, 'source': Source.SYSTEM, 'parameter': parameter,
-        **(where or {})}, cause=ClearCause.RESTORED)
+        'place': place, 'farm_wide': farm_wide, **(where or {})}, cause=ClearCause.RESTORED)
 
 
 def _text(message, **values):
@@ -617,7 +642,7 @@ def _probe_subjects(oxygen_pass, failed, now):
             # department), and only for a warning that holds (review 4 of the branch, L2)
             subjects.append(system_subject(
                 f'{PROBE_PREFIX}{channel.channel_no}', holds, Severity.WARNING, summary, now,
-                parameter=OXYGEN_PROBE_SILENT, clear_ok=not failed and not holds,
+                parameter=OXYGEN_PROBE_SILENT, clear_ok=not failed and not holds, place=bound(binding),
                 where={'site': channel.device.site, 'production_department': _department_at(binding)} if holds else None))
     for key in AlarmSubjectState.objects.filter(key__startswith=f'system:{PROBE_PREFIX}',
                                                 open_alarm__isnull=False).values_list('key', flat=True):
@@ -667,7 +692,8 @@ def water(now, rules, oxygen_pass=None):
             logger.exception('The water of unit %s could not be evaluated.', unit)
             unevaluated.add(unit.pk)
     subjects.append(system_subject(SENSORS_FAILED, failed, Severity.CRITICAL, _text(_(
-        'The live water values (the sensors) cannot be read: alarms are not cleared until they can.')), now))
+        'The live water values (the sensors) cannot be read: alarms are not cleared until they can.')), now,
+        farm_wide=True))
     subjects += [system_subject(f'unit:{unit.pk}:{UNIT_UNEVALUATED}', unit.pk in unevaluated, Severity.CRITICAL, _text(_(
         '%(unit)s: the water could not be evaluated; its alarms are neither raised nor cleared until it can.'),
         unit=unit.code), now, parameter=UNIT_UNEVALUATED, where=_unit_where(unit)) for unit in units]
@@ -701,7 +727,7 @@ def device_clocks(now, rules):
                 skew is not None and clock.clear(skew, severity, rules), now, severity,
                 lambda device=device, skew=skew, severity=severity: {
                     'at': now, 'severity': severity, 'source': Source.SYSTEM, 'parameter': DEVICE_CLOCK,
-                    'device': device, 'site': device.site,
+                    'device': device, 'site': device.site, 'farm_wide': True,         # a device is plant, no unit
                     'summary': _text(_('%(device)s: %(skew)s of the platform’s (its values still count; their alarms '
                                        'are never delayed).'), device=device.code, skew=_clock_text(skew))},
                 on_delay=clock.on_delay(skew, severity, rules)))
@@ -737,19 +763,24 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
     missing = ', '.join(sorted(rules.missing))
     subjects = [system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
         'The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used until the rows '
-        'are restored.'), severities=missing or '-'), now)]
+        'are restored.'), severities=missing or '-'), now, farm_wide=True)]
+    unreached = _unreached()
+    subjects.append(system_subject(UNREACHED, bool(unreached), Severity.CRITICAL, _text(_(
+        '%(count)d critical alarm(s) reached nobody: no recipient rule names a person who may see them. A person who '
+        'holds Oversee sees them on Alarms: tell the people who keep those fish.'), count=unreached), now,
+        farm_wide=True))
     from . import outbox
     stuck = outbox.stuck(rules, now)
     subjects.append(system_subject(UNDELIVERABLE, bool(stuck), Severity.CRITICAL, _text(_(
         '%(count)d critical notification(s) cannot be delivered, the oldest queued %(since)s: the people of those '
         'alarms are not reached, nor would the next level be. Look at the alarms and tell them another way.'),
-        count=len(stuck), since=_clock(min((row.queued_at for row in stuck), default=now))), now))
+        count=len(stuck), since=_clock(min((row.queued_at for row in stuck), default=now))), now, farm_wide=True))
     start, end = unchecked or (now, now)
     subjects.append(system_subject(ALARMS_UNCHECKED, unchecked is not None, Severity.CRITICAL, _text(_(
         'The alarms were not checked from %(start)s to %(end)s (the alarm worker was not running): no alarm was raised '
         'and nobody was told in that time. Look at the farm\'s values of that time.'), start=_clock(start),
-        end=_clock(end)), now))
+        end=_clock(end)), now, farm_wide=True))
     subjects += [system_subject(f'step:{name.replace(" ", "_")}', name in failed_steps, Severity.CRITICAL, _text(_(
         'The alarm step "%(step)s" failed: what it does (raising, clearing, notifying or sending alarms) is not done '
-        'until it passes again.'), step=name), now, parameter=STEP_FAILED) for name in steps]
+        'until it passes again.'), step=name), now, parameter=STEP_FAILED, farm_wide=True) for name in steps]
     return settle(subjects, now, rules)

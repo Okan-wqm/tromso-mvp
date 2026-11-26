@@ -188,6 +188,8 @@ SYSTEM_CALLS = {
     'reports/due.py:due': 'the regulatory due list: a duty is owed whoever looks (a sealed tank’s notifiable '
                           'disease too)',
     'reports/due.py:no_longer_match': 'the due list’s duties that no longer match, over every unit',
+    'alarms/sources.py:_unreached': 'the alarm system supervises itself: how many critical alarms were told to nobody '
+                                    '(a count, no alarm named)',
     'experiments/sealing.py:keepers': 'the alarms’ fallback: who keeps the fish of a sealed cell (its lead, the '
                                       'Oversee holders), asked by the alarm loop',
     'farm/stock/read.py:ledger': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is '
@@ -213,6 +215,8 @@ RAW_SQL = {
     'core/database.py:Table.structure': 'the catalogue of a table (columns, constraints, indexes)',
     'core/database.py:hypertables': 'the names of the hypertables',
     'core/erasure.py:_attempt': 'the erasure of a person’s data by the platform admin’s command, as the system',
+    'core/rev.py:drop_hypertable_triggers': 'the revision counters’ triggers taken off the hypertables: schema '
+                                             'statements, no row',
     'core/rev.py:ensure': 'the revision counters of core_rev: a scope, a key and a number, no row of a record',
     'core/rev.py:mark_built': 'the revision counters of core_rev',
     'core/rev.py:missing': 'the revision counters of core_rev',

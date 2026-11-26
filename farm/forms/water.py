@@ -898,4 +898,6 @@ class WaterFreshnessForm(TabbedForm):
                                        'than the oldest value it is worked out from (TAN, pH, temperature, salinity), '
                                        'whatever its own hours. Where a probe measures the temperature of the place, the '
                                        'temperature of a sample (or the probe’s at its time, when it has none) stays '
-                                       'fresh while the probe stays within 1.0 °C of it.')}
+                                       'fresh while the probe stays within the temperature band of Platform settings '
+                                       '(1.0 °C until set) of it; the probe further off, or silent, ends it then, even '
+                                       'inside its own hours.')}

@@ -429,3 +429,19 @@ def temperature_from_sensor(value, source):
     it was worked out with (read.Context.temperature_found; the coordinator's decision of 2026-11-26, a)."""
     return _('Worked out with the temperature %(value)s °C of %(source)s: the sample has none.') % {
         'value': number_format(value, 1), 'source': source}
+
+
+def lacking_at_point(reading, newer):
+    """What the page, the card and the alarm say of a worked-out value at another of the unit's own points that keeps its
+    status because the point's newer sample (`newer`, a Reading without a value) lacks what it is worked out from
+    (read.held_at_points; the coordinator's decision of 2026-11-26, 4): "last worked-out value at Outlet 0.8924 critical
+    on 02.11.2026 10:00; the sample of 03.11.2026 08:00 there lacks what it is worked out from: measure there again"."""
+    from ..models.water_point import local_time
+    from .evaluate import Status
+    from .read import said_value
+    return _('last worked-out value at %(point)s %(value)s %(status)s on %(time)s; the sample of %(newer)s there lacks '
+             'what it is worked out from: measure there again') % {
+        'point': reading.point.name, 'value': said_value(reading),
+        'status': str(Status(reading.judged).label).lower(),
+        'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M'),
+        'newer': local_time(newer.at, newer.point).strftime('%d.%m.%Y %H:%M')}

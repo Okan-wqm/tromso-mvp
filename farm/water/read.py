@@ -97,6 +97,9 @@ LIMITED = {parameter.code for parameter in parameters.LIMITED}
 # Every limited quantity, a measured column or a derived one (NH3-N), goes through the worst fresh value (owner, A10.1;
 # third cross review): `latest` judges every fresh candidate of each of them.
 WORST_FRESH_CODES = frozenset(LIMITED)
+# How many earlier samples of a point are worked out to find its last worked-out value behind a newer one that lacks the
+# inputs (Context.worked_before): a point sampled more often without a pH or a temperature is shown by what was found.
+LOOK_BACK = 20
 DERIVED = parameters.DERIVED      # the worked-out codes, each never fresher than its oldest input
 # What a sample's label, clock and fish need loaded: its point, the owner of it and the owner's site.
 POINT_RELATED = ('point__unit__production_department__site', 'point__system__site',
@@ -924,7 +927,7 @@ class Context:
         # Set by `latest`: the moment of the read, and {point id: [the live targets of its place, tier by tier (A9)]}: what
         # a sample's ammonia takes the place's sensor temperature from (`temperature_found`). Elsewhere (the history)
         # neither is known and a sample's own temperature alone is used.
-        self.now, self.tiers = None, {}
+        self.now, self.tiers, self._temperatures = None, {}, {}
         self.book = SpeciesBook({unit.pk for units in self.served.values() for unit in units})
         species = set(self.book.species.values())
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
@@ -1127,32 +1130,72 @@ class Context:
         the place's sensor temperature at the sample's time (`_sensed_temperature`, said beside the value: the
         coordinator's decision of 2026-11-26, a); (None, None, '') without either. A sample's temperature input, its own
         or the sensor's, ends where the place's live temperature says (freshness.temperature_until: fresh while that
-        stays within freshness.TEMPERATURE_BAND of it, ended when it moves further or goes stale; b). Only where `latest`
+        stays within freshness.temperature_band() of it, ended when it moves further or goes stale; b). Only where `latest`
         said the place and the moment (`tiers`, `now`); elsewhere the sample's own temperature alone, by its own hours."""
         own = observation.get(parameters.TEMPERATURE)
         own_until = observation.until(parameters.TEMPERATURE) if own is not None else None
-        tiers = self.tiers.get(observation.point.pk) if self.now is not None and not observation.live else None
-        sensed = self._sensed_temperature(observation.at, tiers) if tiers else None
-        if sensed is None:
+        if self.now is None or observation.live or not self.tiers.get(observation.point.pk):
             return own, own_until, ''
-        live, targets = sensed
-        if own is not None:
-            value, start, end, said = own, observation.at, own_until, ''
-        else:
-            value, start, end = live.get(parameters.TEMPERATURE), live.at, live.until(parameters.TEMPERATURE)
-            said = str(messages.temperature_from_sensor(value, Basis(value, live.origin, live.channel_no, live.at)
-                                                        .said(observation.point)))
-        confirmed = sources.steady_until(targets, parameters.TEMPERATURE, start, self.now, value,
-                                         freshness.TEMPERATURE_BAND)
-        return value, freshness.temperature_until(end, confirmed), said
+        key = (observation.point.pk, observation.at, own)
+        if key not in self._temperatures:
+            self.prefetch_temperatures([(observation.point, observation.at, own)])
+        found = self._temperatures[key]
+        return found if found is not None else (own, own_until, '')
 
-    def _sensed_temperature(self, at, tiers):
-        """(the place's live temperature at `at` as an Observation, the targets of its tier) or None: the newest value of
-        the first tier (A9: the place's own sensors, then its system's) that is fresh at `at`, stamped at or before it or
-        at most the clock tolerance after it (one moment for two clocks, `fresh_at`), the primary first at one time."""
-        moment = at + freshness.tolerance()
-        answer = sources.value_at([target for tier in tiers for target, _origin, _point in tier], parameters.TEMPERATURE,
-                                  moment)
+    def worked_before(self, point, code, before):
+        """The newest worked-out value of `code` (a Reading with a value) at `point` from its live samples measured before
+        `before` and within the read's window, or None: what a point's newer value-less sample stands in front of
+        (`held_at_points`). One query, asked only for a point whose newest sample lacks the inputs."""
+        rows = (WaterMeasurement.objects.select_related(*POINT_RELATED)
+                .filter(point=point, measured_at__lt=before, measured_at__gte=self._since + WINDOW,
+                        tan_mg_l__isnull=False, ph__isnull=False).order_by('-measured_at', '-created_at')[:LOOK_BACK])
+        for sample in rows:
+            found = self.readings(sample).get(code)
+            if found is not None and found.value is not None:
+                return found
+        return None
+
+    def prefetch_temperatures(self, wanted):
+        """Works out `temperature_found` for many samples at once ([(point, its time, its own temperature or None)]):
+        one ask of the live sources for the place's probe temperature at every sample's time (sources.values_at) and
+        one for how long each stayed within the band (sources.steady_until), whatever the number of samples, so a wall
+        of cards costs the same queries for three units or thirty (monitoring/tests/test_budget.py). `latest` asks it for
+        every TAN sample it reads; a sample asked on its own is one ask of each."""
+        wanted = [(point, at, own) for point, at, own in wanted
+                  if self.tiers.get(point.pk) and (point.pk, at, own) not in self._temperatures]
+        if not wanted or self.now is None:
+            return
+        tolerance = freshness.tolerance()
+        targets = list(dict.fromkeys(target for point, _at, _own in wanted for tier in self.tiers[point.pk]
+                                     for target, _origin, _point in tier))
+        moments = list(dict.fromkeys(at + tolerance for _point, at, _own in wanted))
+        answers = dict(zip(moments, sources.values_at(targets, parameters.TEMPERATURE, moments)))
+        asks, plans = [], []
+        for point, at, own in wanted:
+            key = (point.pk, at, own)
+            sensed = self._sensed_temperature(at, self.tiers[point.pk], answers[at + tolerance])
+            if sensed is None:
+                self._temperatures[key] = None
+                continue
+            live, tier_targets = sensed
+            if own is not None:
+                value, start, end, said = own, at, freshness.fresh_until(parameters.TEMPERATURE, at), ''
+            else:
+                value, start, end = live.get(parameters.TEMPERATURE), live.at, live.until(parameters.TEMPERATURE)
+                said = str(messages.temperature_from_sensor(value, Basis(value, live.origin, live.channel_no, live.at)
+                                                            .said(point)))
+            asks.append((tier_targets, start, value))
+            plans.append((key, value, end, said))
+        confirmed = sources.steady_until(parameters.TEMPERATURE, self.now, freshness.temperature_band(), asks)
+        for (key, value, end, said), until in zip(plans, confirmed):
+            self._temperatures[key] = (value, freshness.temperature_until(end, until), said)
+
+    @staticmethod
+    def _sensed_temperature(at, tiers, answer):
+        """(the place's live temperature at `at` as an Observation, the targets of its tier) or None, from the sources'
+        `answer` at `at` plus the clock tolerance: the newest value of the first tier (A9: the place's own sensors, then
+        its system's) that is fresh at `at`, stamped at or before it or at most the clock tolerance after it (one moment
+        for two clocks, `fresh_at`), the primary first at one time."""
         for tier in tiers:
             found = [Observation.of_sensor(point, value, origin) for target, origin, point in tier
                      for value in sources.ordered(answer.values.get(target, []))]
@@ -1692,6 +1735,9 @@ def latest(points, now=None, at=None, own=None, units=()):
             context.tiers.setdefault(own_point.pk, [tier for tier in (each.own_targets, each.system_targets) if tier])
         for system_point in each.system:
             context.tiers.setdefault(system_point.pk, [each.system_targets] if each.system_targets else [])
+    # Every TAN sample's temperature from the probes, in one ask for the whole read (Context.prefetch_temperatures).
+    tan_samples = [samples[slots[TAN]] for slots in ids.values() if slots.get(TAN) in samples]
+    context.prefetch_temperatures([(sample.point, sample.measured_at, sample.temperature_c) for sample in tan_samples])
     wanted = [target for each in places.values()
               for target, _origin, _point in (*each.own_targets, *each.system_targets)]
     answer = sources.latest(wanted, moment) if at is None else _values_at(wanted, at)
@@ -1745,8 +1791,14 @@ def latest(points, now=None, at=None, own=None, units=()):
                     last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
                                        and each.point.pk in own_ids], moment)
                 if where.for_unit and code in DERIVED:      # F1: a stale worked-out alert at another own point holds
+                    lacking = {each.pk: manual(each)[code] for each in where.own
+                               if (reading.point is None or each.pk != reading.point.pk)
+                               and manual(each).get(code) is not None and manual(each)[code].value is None
+                               and not manual(each)[code].refused}
                     held_at_points(reading, [judged(each) for each in found if each.value is not None
-                                             and each.point is not None and each.point.pk in own_ids], moment)
+                                             and each.point is not None and each.point.pk in own_ids], moment, lacking,
+                                   lambda at_point, before, code=code: _judged_or_none(
+                                       judged, context.worked_before(at_point, code, before)))
             if point is None:                       # a unit without a point: every value is its system's
                 said = point_water.standing_said
                 reading.note = f'{reading.note} {said}' if reading.note else said
@@ -1836,7 +1888,11 @@ def last_own(reading, own, now):
     return reading
 
 
-def held_at_points(reading, own, now):
+def _judged_or_none(judged, reading):
+    return None if reading is None else judged(reading)
+
+
+def held_at_points(reading, own, now, lacking=None, earlier=None):
     """The review of 2026-11-26, F1 (the coordinator's rule): a worked-out value judged critical or a warning at one of the
     unit's own points is over only when THAT point says so with a fresh value. Its inputs make it stale sooner than its
     base (an NH₃ ends with its temperature, its TAN still fresh), and a stale value no longer decides the status
@@ -1845,13 +1901,33 @@ def held_at_points(reading, own, now):
     reading's (`own`: the place's own values of the code, judged for its fish), its newest value: stale and worse than the
     reading, the reading keeps that judgement and says it, as `last_own` does for the system tier (`worse`, the note
     "last value at Outlet …, no recent data: measure there"); so the page, the card and the alarm (a level the unit's
-    own value holds, alarms/sources.py `own_held`) stay at it until that point is measured again."""
+    own value holds, alarms/sources.py `own_held`) stay at it until that point is measured again.
+
+    A newer sample at the point whose value cannot be worked out (`lacking`, {point id: its newest Reading of the code,
+    without a value for want of an input: a TAN without a pH or a temperature) says nothing of the water being better:
+    it is no evidence. The point's last worked-out value before it (`earlier(point, before)`, judged) stands for the
+    point, fresh or not, and a worse one holds the same way, saying the newer sample lacks its inputs (the
+    coordinator's decision of 2026-11-26, 4)."""
+    lacking = lacking or {}
     newest_at = {}
     for each in own:
         if each.point is None or (reading.point is not None and each.point.pk == reading.point.pk):
             continue
         if each.point.pk not in newest_at or each.at > newest_at[each.point.pk].at:
             newest_at[each.point.pk] = each
+    for point_id, missing in lacking.items():
+        known = newest_at.get(point_id)
+        if known is not None and known.at >= missing.at:
+            continue                                # a worked-out value newer than the value-less sample stands
+        before = earlier(missing.point, missing.at) if earlier is not None else None
+        if before is None or before.judged not in ALERTS or RANK[before.judged] >= RANK[reading.judged]:
+            newest_at.pop(point_id, None)
+            continue
+        reading.judged = reading.status = before.judged
+        reading.worse = before
+        said = str(messages.lacking_at_point(before, missing))
+        reading.note = f'{reading.note} {said}' if reading.note else said
+        newest_at.pop(point_id, None)
     for each in newest_at.values():
         if each.fresh(now) or each.judged not in ALERTS or RANK[each.judged] >= RANK[reading.judged]:
             continue
@@ -1860,6 +1936,7 @@ def held_at_points(reading, own, now):
         said = str(messages.last_at_point(each))
         reading.note = f'{reading.note} {said}' if reading.note else said
     return reading
+
 
 def worst_fresh(reading, others, now=None):
     """Owner decision 2026-11-08 (the second cross review's P2): the value shown is A9's choice, but the status, and so

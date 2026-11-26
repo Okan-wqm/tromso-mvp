@@ -484,7 +484,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **how it works**: The platform owner's rules, read by core.platform only.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Administration › platform_settings
 - **forms**: `PlatformSettingsForm`
-- **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check); chk_platform_settings_kept (check)
+- **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check); chk_platform_settings_temperature_band (check); chk_platform_settings_kept (check)
 - **tests that mention it**: `core/tests_kept_rows.py`, `core/tests_platform.py`, `core/tests_rev.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
@@ -503,6 +503,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 | second_approval_withdrawal | boolean |  |  | PlatformSettingsForm › Records |
 | unknown_withdrawal_days | smallint |  |  | PlatformSettingsForm › Records |
 | clock_tolerance_seconds | integer |  |  | PlatformSettingsForm › Clocks |
+| temperature_band_c | numeric(2, 1) |  |  | PlatformSettingsForm › Water freshness |
 
 <a id="coreprofile"></a>
 ### core.Profile (`profiles`)

@@ -47,8 +47,10 @@ def forget(*args, **kwargs):
 def _load():
     from core.models import PlatformSettings
     from farm.models import WaterFreshness
+    platform = PlatformSettings.get()
     return {'hours': dict(WaterFreshness.objects.values_list('parameter', 'fresh_hours')),
-            'tolerance': timedelta(seconds=PlatformSettings.get().clock_tolerance_seconds)}
+            'tolerance': timedelta(seconds=platform.clock_tolerance_seconds),
+            'band': float(platform.temperature_band_c)}
 
 
 def _rules():
@@ -100,15 +102,18 @@ def derived_until(code, at, inputs):
     return min([fresh_until(code, at), *(end for end in inputs.values() if end is not None)])
 
 
-# The coordinator's decision of 2026-11-26: how far, in °C, the place's live temperature may be from the temperature a
-# worked-out value was worked out with and still confirm it. THE one constant of the rule below.
-TEMPERATURE_BAND = 1.0
+def temperature_band():
+    """How far, in °C, the place's live temperature may be from the temperature a worked-out value was worked out with
+    and still keep it fresh: the platform owner's setting (core.models.PlatformSettings.temperature_band_c, 1.0 until
+    set; the coordinator's decisions of 2026-11-26), read with the rows above and dropped with them."""
+    return _rules()['band']
 
 
 def temperature_until(own_end, confirmed_until):
     """The end of a worked-out value's temperature input (a sample's, or the place's sensor's at the sample's time) where
-    the place has live temperature: it stays fresh while the place has a fresh live temperature within TEMPERATURE_BAND
-    of the temperature used, and ends the moment that live temperature moves further or goes stale (`confirmed_until`,
+    the place has live temperature: it stays fresh while the place has a fresh live temperature within the band
+    (`temperature_band`) of the temperature used, and ends the moment that live temperature moves further or goes stale
+    (`confirmed_until`,
     sources.steady_until from the input's own time: at that time already where the live temperature then was further
     off). Where the place had no fresh live temperature at that time (`confirmed_until` None) its own end stands
     (`own_end`, `fresh_until`). The live temperature says what the water is now, so it can end the input before its own

@@ -370,6 +370,11 @@ class AlarmTests(ReviewCase):
         with self.assertRaises(ValueError):
             services.open_alarms([{'at': now, 'severity': 'warning', 'summary': 'T-05: something', 'source': 'system',
                                    'parameter': 'somewhere'}])
+        with self.assertRaises(ValueError):                 # review 3, S10: a stated place of nothing is no place
+            sources.system_subject('somewhere', True, 'warning', 'T-05: something', now, place=(None, None))
+        with self.assertRaises(ValueError):
+            services.open_alarms([{'at': now, 'severity': 'warning', 'summary': 'T-05: something', 'source': 'system',
+                                   'parameter': 'somewhere', 'place': (None, None)}])
         made = services.open_alarms([{'at': now, 'severity': 'warning', 'summary': 'A step failed', 'source': 'system',
                                       'parameter': 'step', 'farm_wide': True}])
         self.assertEqual((made[0].unit_id, made[0].system_id), (None, None))

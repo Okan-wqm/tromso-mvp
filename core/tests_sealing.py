@@ -330,3 +330,45 @@ class LogReadSiteTests(SimpleTestCase):
                          'def another():\n    with sealing.system("y"):\n        pass\n')
         calls = [node for node in ast.walk(tree) if reads_as_system(node, set())]
         self.assertEqual(len(calls), 2)
+
+
+def sealed_names():
+    """The class names of the models whose seal filters their rows."""
+    return {seal.model.__name__ for seal in sealing.registry() if seal.filters}
+
+
+def reads_a_sealed_model_past_its_seal(node, imported, names=None):
+    """`X._base_manager` or `QuerySet(X)` of a model whose seal filters (review 3, S10): its rows as stored."""
+    import ast
+    names = sealed_names() if names is None else names
+    if isinstance(node, ast.Attribute) and node.attr == '_base_manager' and isinstance(node.value, ast.Name):
+        return node.value.id in names
+    called = _called(node)
+    if called and called[1] == 'QuerySet' and node.args and isinstance(node.args[0], ast.Name):
+        return node.args[0].id in names
+    return False
+
+
+# Reading a sealed model's rows as stored (its base manager, a QuerySet of it), outside core/sealing.py: each named.
+SEALED_PAST_THE_SEAL = {
+    'alarms/place.py:places': 'the units and systems of the points of alarms about to open (ids), read as stored by the '
+                              'alarm loop',
+    'experiments/sealing.py:_members': 'the provider: a person’s team places, what the seal reads grants from',
+    'experiments/sealing.py:_shares': 'the provider: a person’s shares, what the seal reads grants from',
+    'experiments/sealing.py:hidden_work': 'the provider: the experiments hidden from the person (the seal itself)',
+    'experiments/sealing.py:keepers_of': 'the provider: the leads of the experiments whose cells hold an alarm’s '
+                                         'place (the alarms’ fallback)',
+    'experiments/sealing.py:load': 'the provider: a person’s viewer (their teams, shares, the private experiments)',
+    'experiments/sealing.py:note_reads': 'the provider: which experiments shown were sealed (the read log)',
+    'experiments/sealing.py:reach': 'the provider: the person’s Reach, one statement over the experiments',
+    'experiments/services.py:is_lead': 'whether a person is an experiment’s live lead: the lead’s own rule',
+    'experiments/services.py:take_lead': 'the platform admin takes the lead of an experiment with none: its team as '
+                                         'stored, written in one transaction',
+}
+
+
+class SealedModelReadSiteTests(SimpleTestCase):
+    def test_only_the_named_places_read_a_sealed_model_past_its_seal(self):
+        names = sealed_names()
+        found = call_sites(lambda node, imported: reads_a_sealed_model_past_its_seal(node, imported, names))
+        self.assertEqual(sorted(found), sorted(SEALED_PAST_THE_SEAL))

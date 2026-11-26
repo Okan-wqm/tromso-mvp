@@ -84,7 +84,7 @@ from .evaluate import ALERTS, MAX_AHEAD, RANK, Limits, Status, ahead, crossed as
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 
 # The water's ionic-strength inputs of a TAN sample's ammonia (formula 3): looked up as its salinity is.
-IONIC_INPUTS = ('alkalinity_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l')
+IONIC_INPUTS = parameters.AMMONIA_UNCOUNTED
 # How far back the latest values, and a salinity for a sample without one, are looked for.
 WINDOW = timedelta(days=30)
 OXYGEN = 'oxygen'
@@ -634,9 +634,10 @@ class Reading:
     # the limits judge (`judged_value`; the water-chemistry audit of 2026-11-19, F3: a true 0.01034 mg/L NH₃-N read
     # 0.0103 and was OK against a limit of 0.0103). None for a measured value, which is judged as entered.
     exact: Decimal | None = None
-    # A worked-out value: {input code: the moment it stops being fresh} of the inputs it was worked out with that its
-    # observation does not hold (the salinity found at its point or its owner's middle point; None for fresh water's 0
-    # or none found). What `fresh_until` takes for them; the others are its observation's (`Observation.until`).
+    # A worked-out value: {input code: the moment it stops being fresh} of EVERY input its derivation used, recorded where
+    # it read them (Context._ammonia): its observation's own (`Observation.until`), a salinity found at the point or its
+    # owner's middle point, the place's sensor temperature; None for an input with no measured value (fresh water's 0,
+    # one missing so nothing was worked out). What `fresh_until` takes, and nothing else.
     inputs_until: dict = field(default_factory=dict)
 
     @property
@@ -689,15 +690,13 @@ class Reading:
     def fresh_until(self):
         """The moment it stops saying something about the water now: a measured value its time plus its sensor's seconds
         or its parameter's hours (freshness.fresh_until); a worked-out one (a parameter with `inputs`) when the first
-        value it was worked out with stops (freshness.derived_until: never fresher than its oldest input), each input
-        from `inputs_until`, else its observation's own (None where the observation has no value of it). THE answer
-        every reader takes: the pages, the cards, the alarms (`fresh`)."""
+        value it was worked out with stops (freshness.derived_until: never fresher than its oldest input), from the inputs
+        its derivation recorded as used (`inputs_until`): an input it used and the parameter does not declare, or one
+        declared and not recorded, is refused (ValueError), never guessed. THE answer every reader takes: the pages, the
+        cards, the alarms (`fresh`)."""
         if not self.parameter.inputs:
             return freshness.fresh_until(self.code, self.at, self.sample.fresh_for)
-        sample = self.sample
-        return freshness.derived_until(self.code, self.at, {
-            code: self.inputs_until[code] if code in self.inputs_until
-            else (sample.until(code) if sample.get(code) is not None else None) for code in self.parameter.inputs})
+        return freshness.derived_until(self.code, self.at, self.inputs_until)
 
     def fresh(self, now):
         """Whether it still says something about the water now (evaluate.is_fresh, the one rule, to `fresh_until`)."""
@@ -922,6 +921,10 @@ class Context:
         points = list(points)
         self.served = self._served(points)                # point id -> the live units its water concerns
         self.served.update({unit.pk: [unit] for unit in units})     # a unit read without a point (`latest`, `units`)
+        # Set by `latest`: the moment of the read, and {point id: [the live targets of its place, tier by tier (A9)]}: what
+        # a sample's ammonia takes the place's sensor temperature from (`temperature_found`). Elsewhere (the history)
+        # neither is known and a sample's own temperature alone is used.
+        self.now, self.tiers = None, {}
         self.book = SpeciesBook({unit.pk for units in self.served.values() for unit in units})
         species = set(self.book.species.values())
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
@@ -1100,16 +1103,70 @@ class Context:
         return ''
 
     def _ammonia(self, observation, salinity, salinity_until):
-        """{code: Reading} of the NH₃-N and the NH₄-N worked out from an observation's TAN, pH and temperature and
-        `salinity` (`salinity_found`), each saying when that salinity stops being fresh (`salinity_until`,
-        Reading.inputs_until): never fresher than the oldest of them (Reading.fresh_until)."""
-        found = self._ammonia_of(observation, salinity)
+        """{code: Reading} of the NH₃-N and the NH₄-N worked out from an observation's TAN and pH, its temperature
+        (`temperature_found`: its own, else the place's sensor's at its time) and `salinity` (`salinity_found`). Every
+        input the derivation uses is read HERE, once, and recorded as used with the moment it stops being fresh
+        (`Reading.inputs_until`; the review of 2026-11-26, F2): the derivation gets the values from this record and
+        nothing else, so an input it reads is an input it records, and `Reading.fresh_until` refuses a record that
+        differs from the inputs the parameter declares. None for an input with no measured value."""
+        temperature, temperature_until, temperature_said = self.temperature_found(observation)
+        ph = observation.get(parameters.PH)
+        used = {TAN: (observation.get(TAN), observation.until(TAN)),
+                parameters.PH: (ph, observation.until(parameters.PH) if ph is not None else None),
+                parameters.TEMPERATURE: (temperature, temperature_until),
+                parameters.SALINITY: (salinity, salinity_until)}
+        found = self._ammonia_of(observation, {code: value for code, (value, _end) in used.items()}, temperature_said)
+        ends = {code: end if value is not None else None for code, (value, end) in used.items()}
         for reading in found.values():
-            reading.inputs_until = {parameters.SALINITY: salinity_until}
+            reading.inputs_until = dict(ends)
         return found
 
-    def _ammonia_of(self, observation, salinity):
-        ph, temperature, tan = (observation.get(code) for code in (parameters.PH, parameters.TEMPERATURE, TAN))
+    def temperature_found(self, observation):
+        """(temperature, the moment it stops being fresh, what is said of where it came from) of an observation's
+        ammonia: its own (a sensor TAN's: the fresh sensor temperature it was combined with); for a sample without one,
+        the place's sensor temperature at the sample's time (`_sensed_temperature`, said beside the value: the
+        coordinator's decision of 2026-11-26, a); (None, None, '') without either. A sample's temperature input, its own
+        or the sensor's, ends where the place's live temperature says (freshness.temperature_until: fresh while that
+        stays within freshness.TEMPERATURE_BAND of it, ended when it moves further or goes stale; b). Only where `latest`
+        said the place and the moment (`tiers`, `now`); elsewhere the sample's own temperature alone, by its own hours."""
+        own = observation.get(parameters.TEMPERATURE)
+        own_until = observation.until(parameters.TEMPERATURE) if own is not None else None
+        tiers = self.tiers.get(observation.point.pk) if self.now is not None and not observation.live else None
+        sensed = self._sensed_temperature(observation.at, tiers) if tiers else None
+        if sensed is None:
+            return own, own_until, ''
+        live, targets = sensed
+        if own is not None:
+            value, start, end, said = own, observation.at, own_until, ''
+        else:
+            value, start, end = live.get(parameters.TEMPERATURE), live.at, live.until(parameters.TEMPERATURE)
+            said = str(messages.temperature_from_sensor(value, Basis(value, live.origin, live.channel_no, live.at)
+                                                        .said(observation.point)))
+        confirmed = sources.steady_until(targets, parameters.TEMPERATURE, start, self.now, value,
+                                         freshness.TEMPERATURE_BAND)
+        return value, freshness.temperature_until(end, confirmed), said
+
+    def _sensed_temperature(self, at, tiers):
+        """(the place's live temperature at `at` as an Observation, the targets of its tier) or None: the newest value of
+        the first tier (A9: the place's own sensors, then its system's) that is fresh at `at`, stamped at or before it or
+        at most the clock tolerance after it (one moment for two clocks, `fresh_at`), the primary first at one time."""
+        moment = at + freshness.tolerance()
+        answer = sources.value_at([target for tier in tiers for target, _origin, _point in tier], parameters.TEMPERATURE,
+                                  moment)
+        for tier in tiers:
+            found = [Observation.of_sensor(point, value, origin) for target, origin, point in tier
+                     for value in sources.ordered(answer.values.get(target, []))]
+            found = [each for each in found if each.get(parameters.TEMPERATURE) is not None
+                     and is_fresh(parameters.get(parameters.TEMPERATURE), each.at, at, each.fresh_for)]
+            if found:
+                return newest(found), [target for target, _origin, _point in tier]
+        return None
+
+    def _ammonia_of(self, observation, used, temperature_said=''):
+        """The readings of `_ammonia`, from the values it recorded as used (`used`, {code: value}) and nothing else of
+        the water's (the ionic-strength inputs, `parameters.AMMONIA_UNCOUNTED`, only move the best estimate)."""
+        tan, ph, temperature, salinity = (used[code] for code in (TAN, parameters.PH, parameters.TEMPERATURE,
+                                                                  parameters.SALINITY))
         if ph is None and observation.ph is not None and observation.ph.refused:
             # The sensor's pH could not be put on the NBS scale: the NH₃ is not known, and where the fish have an NH₃
             # limit it cannot be evaluated (the reason said), never worked out from the unconverted number.
@@ -1135,7 +1192,7 @@ class Context:
         corrected = (tan * Decimal(equilibria.nh3_share_corrected(float(ph)))).quantize(NH3_N.step)
         said = ' '.join(filter(None, (str(messages.provenance(equilibria)),
                                       messages.judged('nh3', equilibria.nh3_basis, corrected, equilibria),
-                                      self._ph_scale_said(observation))))
+                                      self._ph_scale_said(observation), temperature_said)))
         return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said, exact=exact),
                 NH4_N.code: Reading(NH4_N, (tan - exact).quantize(NH4_N.step), observation, True, provenance=said,
                                     exact=tan - exact)}
@@ -1485,7 +1542,9 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
                 if reading.value is not None:
                     candidates.setdefault(code, []).insert(0, reading)
         else:
-            chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, _('Not worked out: the TAN is no longer fresh.'))
+            # Nothing worked out: its one input used, the TAN, ended (`inputs_until`, the others none).
+            chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, _('Not worked out: the TAN is no longer fresh.'),
+                                         inputs_until={**dict.fromkeys(NH3_N.inputs), TAN: tan.fresh_until})
     elif tan is not None:
         source = next((manual for manual in (*own_manual, *system_manual) if manual.get(TAN) is tan), {})
         chosen.update({code: source[code] for code in DERIVED if code in source})
@@ -1624,6 +1683,15 @@ def latest(points, now=None, at=None, own=None, units=()):
     samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(
         {sample_id for slots in ids.values() for sample_id in slots.values()})
     context = Context(everything, since, units)
+    # The moment of the read and each point's place, tier by tier: a sample's ammonia takes the place's sensor temperature
+    # (Context.temperature_found). A point is taken in the place that stands for its unit first (its own and its system's
+    # tiers), else in its own.
+    context.now = moment
+    for each in sorted(places.values(), key=lambda place: not place.for_unit):
+        for own_point in each.own:
+            context.tiers.setdefault(own_point.pk, [tier for tier in (each.own_targets, each.system_targets) if tier])
+        for system_point in each.system:
+            context.tiers.setdefault(system_point.pk, [each.system_targets] if each.system_targets else [])
     wanted = [target for each in places.values()
               for target, _origin, _point in (*each.own_targets, *each.system_targets)]
     answer = sources.latest(wanted, moment) if at is None else _values_at(wanted, at)
@@ -1676,6 +1744,9 @@ def latest(points, now=None, at=None, own=None, units=()):
                 if where.for_unit and reading.point is not None and reading.point.pk not in own_ids:
                     last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
                                        and each.point.pk in own_ids], moment)
+                if where.for_unit and code in DERIVED:      # F1: a stale worked-out alert at another own point holds
+                    held_at_points(reading, [judged(each) for each in found if each.value is not None
+                                             and each.point is not None and each.point.pk in own_ids], moment)
             if point is None:                       # a unit without a point: every value is its system's
                 said = point_water.standing_said
                 reading.note = f'{reading.note} {said}' if reading.note else said
@@ -1764,6 +1835,31 @@ def last_own(reading, own, now):
     reading.note = f'{reading.note} {said}' if reading.note else said
     return reading
 
+
+def held_at_points(reading, own, now):
+    """The review of 2026-11-26, F1 (the coordinator's rule): a worked-out value judged critical or a warning at one of the
+    unit's own points is over only when THAT point says so with a fresh value. Its inputs make it stale sooner than its
+    base (an NH₃ ends with its temperature, its TAN still fresh), and a stale value no longer decides the status
+    (`worst_fresh`), so a newer OK value at another own point (the middle beside an outlet) would end its alarm without
+    anyone measuring the outlet again, and a late lab critical would raise nothing. For each own point other than the
+    reading's (`own`: the place's own values of the code, judged for its fish), its newest value: stale and worse than the
+    reading, the reading keeps that judgement and says it, as `last_own` does for the system tier (`worse`, the note
+    "last value at Outlet …, no recent data: measure there"); so the page, the card and the alarm (a level the unit's
+    own value holds, alarms/sources.py `own_held`) stay at it until that point is measured again."""
+    newest_at = {}
+    for each in own:
+        if each.point is None or (reading.point is not None and each.point.pk == reading.point.pk):
+            continue
+        if each.point.pk not in newest_at or each.at > newest_at[each.point.pk].at:
+            newest_at[each.point.pk] = each
+    for each in newest_at.values():
+        if each.fresh(now) or each.judged not in ALERTS or RANK[each.judged] >= RANK[reading.judged]:
+            continue
+        reading.judged = reading.status = each.judged
+        reading.worse = each
+        said = str(messages.last_at_point(each))
+        reading.note = f'{reading.note} {said}' if reading.note else said
+    return reading
 
 def worst_fresh(reading, others, now=None):
     """Owner decision 2026-11-08 (the second cross review's P2): the value shown is A9's choice, but the status, and so

@@ -409,3 +409,23 @@ def no_fresh_oxygen(silence):
         return _('%(label)s: no recent data') % {'label': parameters.get(parameters.OXYGEN_MG_L).label}
     return _('%(label)s: no recent data, %(age)s old') % {'label': reading.parameter.label,
                                                           'age': timesince(reading.at, silence.now, depth=1)}
+
+
+def last_at_point(reading):
+    """What the page, the card and the alarm say of a worked-out value at another of the unit's own points that keeps its
+    status after it went stale (read.held_at_points; the review of 2026-11-26, F1): only a fresh value at THAT point ends
+    it, so the point is named: "last value at Outlet 0.8924 critical on 02.11.2026 10:00, no recent data: measure there"."""
+    from ..models.water_point import local_time
+    from .evaluate import Status
+    from .read import said_value
+    return _('last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there') % {
+        'point': reading.point.name, 'value': said_value(reading),
+        'status': str(Status(reading.judged).label).lower(),
+        'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}
+
+
+def temperature_from_sensor(value, source):
+    """What an NH₃ of a sample without a temperature says beside it: the place's sensor temperature at the sample's time
+    it was worked out with (read.Context.temperature_found; the coordinator's decision of 2026-11-26, a)."""
+    return _('Worked out with the temperature %(value)s °C of %(source)s: the sample has none.') % {
+        'value': number_format(value, 1), 'source': source}

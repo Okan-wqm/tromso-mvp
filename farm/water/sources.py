@@ -16,6 +16,10 @@ A provider is an object with three methods, and a fourth it may have:
     bound(targets, code, since, until) -> {target}
         the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
         never asks per moment for a place nothing was bound to).
+    steady_until(targets, code, start, until, value, band) -> datetime | None   (optional)
+        the moment the targets' live value of the parameter, fresh at `start` and within `band` of `value` then, first
+        went further than `band` from `value` or stale, looked at up to `until` (the last value's freshness end when it
+        has not yet); None when no value was fresh at `start` (freshness.temperature_until).
 
 A pH value carries its channel's scale and the moment that scale holds from (SensorValue): the provider says what the
 channel is set to, the farm decides what the value is on the NBS scale (farm/water/read.py, Context.sensor_ph).
@@ -155,3 +159,26 @@ def bound(targets, code, since, until):
             logger.exception('A water source (%r) failed; its places are asked one by one.', provider)
             return set(targets)
     return found
+
+
+def steady_until(targets, code, start, until, value, band):
+    """When the targets' live value of `code` stopped confirming `value` (within `band`, fresh), from `start` up to
+    `until`: the earliest moment any provider that can say it gives (a provider's `steady_until`), None when none had a
+    fresh value at `start`. A provider that fails, or has no such method, confirms nothing: the input keeps its own end
+    (fail safe: never longer than the measurement itself)."""
+    targets = list(dict.fromkeys(targets))
+    if not targets or not _providers:
+        return None
+    found = []
+    for provider in list(_providers):
+        if not hasattr(provider, 'steady_until'):
+            continue
+        try:
+            with transaction.atomic():
+                answer = provider.steady_until(targets, code, start, until, value, band)
+        except Exception:                                        # fail safe: nothing confirmed
+            logger.exception('A water source (%r) failed; nothing is confirmed by it.', provider)
+            continue
+        if answer is not None:
+            found.append(answer)
+    return min(found) if found else None

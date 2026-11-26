@@ -112,3 +112,19 @@ def derived_until(code, at, inputs):
     if set(inputs) != set(declared):
         raise ValueError(f'{code} is worked out from {sorted(declared)}, not {sorted(inputs)}')
     return min([fresh_until(code, at), *(end for end in inputs.values() if end is not None)])
+
+
+# The coordinator's decision of 2026-11-26: how far, in °C, the place's live temperature may be from the temperature a
+# worked-out value was worked out with and still confirm it. THE one constant of the rule below.
+TEMPERATURE_BAND = 1.0
+
+
+def temperature_until(own_end, confirmed_until):
+    """The end of a worked-out value's temperature input (a sample's, or the place's sensor's at the sample's time) where
+    the place has live temperature: it stays fresh while the place has a fresh live temperature within TEMPERATURE_BAND
+    of the temperature used, and ends the moment that live temperature moves further or goes stale (`confirmed_until`,
+    sources.steady_until from the input's own time: at that time already where the live temperature then was further
+    off). Where the place had no fresh live temperature at that time (`confirmed_until` None) its own end stands
+    (`own_end`, `fresh_until`). The live temperature says what the water is now, so it can end the input before its own
+    hours, as well as keep it fresh after them."""
+    return own_end if confirmed_until is None else confirmed_until

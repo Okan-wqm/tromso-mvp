@@ -119,5 +119,36 @@ class SensorSource:
             answers.append(found)
         return answers
 
+    def steady_until(self, targets, code, start, until, value, band):
+        """When the targets' clean readings of `code` (the channels bound there, while bound) stopped confirming `value`:
+        the reading in force at `start` (the newest at or before it, within its channel's freshness) and every later one
+        up to `until`, in time order across the channels; the first one further than `band` from `value` ends it at its
+        own time, a gap longer than the channel's freshness (or the last reading's freshness running out) at that
+        reading's time plus its freshness. None when no reading was in force at `start`. One statement, on the
+        hypertable's (channel_no, ts) key (farm/water/sources.py, freshness.temperature_until)."""
+        bindings = list(_bindings(targets).filter(channel__quantity=code, valid_from__lte=until)
+                        .filter(Q(valid_to__isnull=True) | Q(valid_to__gt=start)))
+        if not bindings:
+            return None
+        with connection.cursor() as cursor:
+            cursor.execute(
+                'WITH b AS (SELECT * FROM unnest(%(channels)s::integer[], %(froms)s::timestamptz[], '
+                '%(tos)s::timestamptz[], %(fresh)s::integer[]) AS b(channel_no, valid_from, valid_to, fresh_s)), '
+                'r AS (SELECT r.ts, r.value, b.fresh_s FROM b JOIN sensors_reading r ON r.channel_no = b.channel_no '
+                'AND r.ts >= greatest(b.valid_from, %(start)s::timestamptz - make_interval(secs => b.fresh_s)) '
+                'AND r.ts <= %(until)s AND (b.valid_to IS NULL OR r.ts < b.valid_to) '
+                f'AND (r.quality & {BAD_MASK}) = 0), '
+                'f AS (SELECT ts FROM r WHERE ts <= %(start)s ORDER BY ts DESC LIMIT 1), '
+                'o AS (SELECT ts, value, fresh_s, lead(ts) OVER (ORDER BY ts) AS next FROM r) '
+                'SELECT min(CASE WHEN abs(o.value - %(value)s) > %(band)s THEN o.ts '
+                'WHEN o.next IS NULL OR o.next - o.ts > make_interval(secs => o.fresh_s) '
+                'THEN o.ts + make_interval(secs => o.fresh_s) END) FROM o, f WHERE o.ts >= f.ts',
+                {'channels': [binding.channel.channel_no for binding in bindings],
+                 'froms': [binding.valid_from for binding in bindings], 'tos': [binding.valid_to for binding in bindings],
+                 'fresh': [binding.channel.fresh_s for binding in bindings], 'start': start, 'until': until,
+                 'value': float(value), 'band': float(band)})
+            found = cursor.fetchone()
+        return found[0] if found else None
+
 
 PROVIDER = SensorSource()

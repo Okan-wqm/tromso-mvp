@@ -396,10 +396,15 @@ class AlarmTests(ReviewCase):
 
     def test_the_keepers_are_those_of_the_alarms_opening_day(self):
         """Review 2, N4: the cells of the day an alarm opened, the day its seal reads."""
+        from datetime import datetime, time
+        from farm.models.site import zone_of
         from .. import sealing as provider
-        tank, began = self.sealed_tanks[0], self.experiment.starts_on
-        self.assertIn(self.lead.pk, {user.pk for user in provider.keepers(tank.pk, None, began)})
-        self.assertNotIn(self.lead.pk, {user.pk for user in provider.keepers(tank.pk, None, began - timedelta(days=1))})
+        tank, began, zone = self.sealed_tanks[0], self.experiment.starts_on, zone_of(self.experiment.site)
+        inside = datetime.combine(began, time(0, 30), zone)          # its first day's first half hour, its clock
+        before = datetime.combine(began, time(0, 30), zone) - timedelta(hours=1)
+        found = provider.keepers_of([(tank.pk, None, inside), (tank.pk, None, before)])
+        self.assertIn(self.lead.pk, {user.pk for user in found[(tank.pk, None, inside)]})
+        self.assertNotIn(self.lead.pk, {user.pk for user in found[(tank.pk, None, before)]})
 
     def test_routing_reads_each_persons_reach_once_however_many_sealed_alarms(self):
         """Review 2, N6: who may see which sealed alarm is read once per person a pass, not once per person and alarm."""
@@ -511,13 +516,70 @@ class SafetyNetTests(ReviewCase):
         engine.run_once(timezone.now())
         self.assertIsNotNone(self.own_alarm('alarms_unreached'))
 
-    def test_a_notification_that_cannot_leave_counts_as_unreached(self):
-        """S3: no transport is connected for push: the lead's notification waits, and the alarm counts as unreached."""
+    @override_settings(ALARM_TRANSPORTS={})
+    def test_with_nothing_connected_the_system_says_so_and_the_net_counts_who_was_queued(self):
+        """Review 4, R3: no transport connected at all is one standing alarm of its own; the net then counts only a
+        critical alarm nobody who may see it was queued for at its level, so it still shows the sealing's failure."""
         from alarms import engine
         self.rule(user=self.lead)
         engine.run_once(timezone.now())
         self.assertIn('lead', self.told(0))
-        self.assertIsNotNone(self.own_alarm('alarms_unreached'))
+        self.assertIsNotNone(self.own_alarm('alarm_channels_none'))
+        self.assertIsNone(self.own_alarm('alarms_unreached'))
+
+    def test_a_transport_that_does_not_import_is_not_connected_and_never_fails_a_pass(self):
+        """Review 4, R4: a mistyped transport path is a channel not connected (logged); the pass's notify and
+        supervision run as ever, and the alarm system says nothing is connected."""
+        from alarms import engine, transports
+        with override_settings(ALARM_TRANSPORTS={'push': 'alarms.tests.no_such_module.Transport'}):
+            with self.assertLogs('alarms.transports', 'ERROR'):                 # said once, the import kept
+                self.assertEqual(transports.connected_channels(), [])
+            self.rule(user=self.lead)
+            summary = engine.run_once(timezone.now())
+        self.assertEqual(summary.failed_steps, [])
+        self.assertIsNotNone(self.own_alarm('alarm_channels_none'))
+
+    def test_a_keeper_is_told_on_one_channel_that_can_leave(self):
+        """Review 4, R2, R6: a keeper gets one channel at a level: the level's first connected rule channel, else the
+        first connected one; the alarm system's own alarms for the overseers go on every connected channel."""
+        from alarms import routing, services
+        self.rule(user=self.researcher)                                   # push, and nobody on it may see the alarm
+        (own,) = services.raise_many([('system:alarms_unreached', {
+            'at': timezone.now(), 'severity': 'critical', 'summary': 'One or more critical alarms reached nobody',
+            'source': 'system', 'parameter': routing.UNREACHED, 'farm_wide': True})]).values()
+        router = routing.Router(timezone.now(), [self.alarm, own])
+        for connected, wanted in ((['sms'], {'sms'}), (['sms', 'push'], {'push'}), ([], {'push'})):
+            with self.subTest(connected=connected):
+                router.connected = connected
+                kept = [channel for user, channel, rule in router.deliveries(self.alarm, 0) if rule is None]
+                self.assertEqual(set(kept), wanted)
+                self.assertEqual(len(kept), len({(user.pk) for user, _c, rule in router.deliveries(self.alarm, 0)
+                                                 if rule is None}))
+        router.connected = ['push', 'sms']
+        overseers = {channel for user, channel, rule in router.deliveries(own, 0) if rule is None}
+        self.assertEqual(overseers, {'push', 'sms'})
+
+    def test_on_an_on_shift_level_the_keepers_on_shift_come_first(self):
+        """Review 4, R6: the level names those on shift: its keepers on shift are told, all of them when none is."""
+        from unittest import mock
+        from alarms import routing
+        self.rule(user=self.researcher, on_shift_only=True)
+        with mock.patch('hr.read.on_shift', return_value={self.researcher.pk, self.keeper.pk}):
+            found = {user.username for user, _rule in routing.Router(timezone.now(), [self.alarm]).recipients(
+                self.alarm, 0)}
+        self.assertEqual(found, {'keeper'})
+        with mock.patch('hr.read.on_shift', return_value={self.researcher.pk}):
+            found = {user.username for user, _rule in routing.Router(timezone.now(), [self.alarm]).recipients(
+                self.alarm, 0)}
+        self.assertEqual(found, {'keeper', 'lead'})
+
+    def test_the_rules_page_warns_of_a_rule_that_names_people_without_oversee(self):
+        """Review 4, R6: the admin is told which rule sends confidential alarms to the keepers instead."""
+        from alarms.resources import RecipientRuleResource
+        self.rule(user=self.researcher)
+        self.client.force_login(self.boss)
+        page = self.client.get(reverse(RecipientRuleResource.url_name('list')))
+        self.assertContains(page, 'names people who do not hold Oversee')
 
     @override_settings(ALARM_TRANSPORTS=RECORDING)
     def test_a_farm_with_no_rule_says_so_and_tells_the_overseers(self):
@@ -541,18 +603,23 @@ class SafetyNetTests(ReviewCase):
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
         from alarms import routing, services
+        from alarms.models import Alarm
         self.rule(user=self.researcher)
         more = services.open_alarms([{'at': timezone.now(), 'severity': 'critical', 'summary': f'XQZ-1 oxygen {number}',
-                                      'source': 'water_limit', 'point': self.sealed_point, 'parameter': 'oxygen_mg_l'}
+                                      'source': 'water_limit', 'point': self.sealed_point, 'parameter': 'oxygen_mg_l',
+                                      'site': self.site, 'production_department': self.hall}
                                      for number in range(4)])
 
-        def cost(alarms):
+        def cost(ids):
+            # Read back as the engine reads them (alarms.engine.run_once's notify), never instances with their site
+            # cached (review 4, R1).
             with CaptureQueriesContext(connection) as captured:
+                alarms = list(Alarm.objects.filter(pk__in=ids).select_related('point'))
                 router = routing.Router(timezone.now(), alarms)
                 for alarm in alarms:
                     self.assertIn('keeper', {user.username for user, _rule in router.recipients(alarm, 0)})
             return len(captured)
-        self.assertEqual(cost([self.alarm]), cost([self.alarm, *more]))
+        self.assertEqual(cost([self.alarm.pk]), cost([self.alarm.pk, *[alarm.pk for alarm in more]]))
 
 
 class DeletePlanTests(ReviewCase):

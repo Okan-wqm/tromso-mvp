@@ -120,7 +120,8 @@ class UniversityScenarioTests(TestCase):
         technicians = {technician.pk for technician in self.technicians}
         for index, tank in enumerate(self.tanks):
             with self.subTest(tank=tank.code):
-                keepers = {user.pk for user in experiments_sealing.keepers(tank.pk, tank.system_id)}
+                spot = (tank.pk, tank.system_id, timezone.now())
+                keepers = {user.pk for user in experiments_sealing.keepers_of([spot])[spot]}
                 self.assertTrue(technicians <= keepers)
                 self.assertIn(self.leads[index // 3].pk, keepers)
                 self.assertFalse({lead.pk for lead in self.leads} - {self.leads[index // 3].pk} & keepers)

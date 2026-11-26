@@ -4,7 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from farm.models import ProductionDepartment, Site, System, WaterLimit
@@ -13,13 +13,24 @@ from farm.tests.test_stock import make_unit
 from farm.water import services as water
 
 from .. import engine, outbox
-from ..models import Alarm, RecipientRule
+from ..models import Alarm, AlarmClearance, RecipientRule
+from ..routing import NO_RULES, UNREACHED
 
 D = Decimal
 OXYGEN = D('9.00')
 
 
+# The alarm tests run the pass as a farm does (landing review 4, R5): the alarm system's watch on who it reached on, and a
+# connected transport (a double that records what it would send).
+RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
+
+
+@override_settings(ALARM_SUPERVISE_REACH=True, ALARM_TRANSPORTS=RECORDING)
 class AlarmsCase(TestCase):
+    # A test whose world tells nobody of a critical alarm on purpose (a rule of another site, a level nobody is on, the
+    # sender failing) says so here, with its reason; every other test that has made a rule asserts the watch is quiet.
+    reaches_nobody = ''
+
     def setUp(self):
         User = get_user_model()
         self.keeper = User.objects.create_user('keeper', 'keeper@example.com', 'x')
@@ -59,6 +70,11 @@ class AlarmsCase(TestCase):
         at = self.now + timedelta(minutes=minutes, seconds=seconds)
         summary = engine.run_once(at)
         outbox.send_due(at)
+        if RecipientRule.objects.filter(is_active=True).exists() and not self.reaches_nobody:
+            # A farm set up with its rules and a connected channel: the watch on who it reached stays quiet.
+            self.assertFalse(Alarm.objects.filter(source='system', parameter__in=(UNREACHED, NO_RULES))
+                             .exclude(pk__in=AlarmClearance.objects.values('alarm')).exists(),
+                             'the alarm system said an alarm reached nobody on a farm with its rules')
         return summary
 
     def critical(self):

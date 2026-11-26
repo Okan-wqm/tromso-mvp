@@ -191,6 +191,8 @@ SYSTEM_CALLS = {
     'reports/due.py:no_longer_match': 'the due list’s duties that no longer match, over every unit',
     'alarms/sources.py:_unreached': 'the alarm system supervises itself: how many critical alarms were told to nobody '
                                     '(a count, no alarm named)',
+    'alarms/read.py:rules_naming_outsiders': 'the recipient rules’ configuration warning: whether confidential '
+                                             'cells exist and who holds Oversee, no record named',
     'experiments/sealing.py:keepers_of': 'the alarms’ fallback: who keeps the fish of a sealed cell (its lead, the '
                                       'Oversee holders), asked by the alarm loop',
     'farm/stock/read.py:ledger': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is '
@@ -338,11 +340,14 @@ def sealed_names():
 
 
 def reads_a_sealed_model_past_its_seal(node, imported, names=None):
-    """`X._base_manager` or `QuerySet(X)` of a model whose seal filters (review 3, S10): its rows as stored."""
+    """`X._base_manager` or `QuerySet(X)` of a model whose seal filters (review 3, S10), or `_base_manager` reached
+    through a variable (`model._base_manager`: any model, perhaps a sealed one; review 4, L7): rows as stored."""
     import ast
     names = sealed_names() if names is None else names
-    if isinstance(node, ast.Attribute) and node.attr == '_base_manager' and isinstance(node.value, ast.Name):
-        return node.value.id in names
+    if isinstance(node, ast.Attribute) and node.attr == '_base_manager':
+        if isinstance(node.value, ast.Name):
+            return node.value.id in names or node.value.id[:1].islower()
+        return True
     called = _called(node)
     if called and called[1] == 'QuerySet' and node.args and isinstance(node.args[0], ast.Name):
         return node.args[0].id in names
@@ -351,6 +356,21 @@ def reads_a_sealed_model_past_its_seal(node, imported, names=None):
 
 # Reading a sealed model's rows as stored (its base manager, a QuerySet of it), outside core/sealing.py: each named.
 SEALED_PAST_THE_SEAL = {
+    # `_base_manager` through a variable (review 4, L7):
+    'core/database.py:Table.counts': 'the database viewer’s counts: narrowed (sealing.narrow) before they are read',
+    'core/dbgrid.py:Grid.labels': 'the database viewer’s link labels: narrowed (sealing.narrow) before they are read',
+    'core/dbgrid.py:Grid.queryset': 'the database viewer’s rows: narrowed (sealing.narrow) before they are read',
+    'core/dbview.py:browse': 'the database viewer’s read log: narrowed (sealing.narrow) before it is read',
+    'core/dbview.py:export': 'the database viewer’s export’s read log: narrowed (sealing.narrow) first',
+    'core/models.py:EntryKey.record_of': 'the record a form key stands for, by the key’s own id: the form’s '
+                                         'own record, sent twice',
+    'experiments/sealing.py:holders': 'the people who hold Oversee (a user model, not a sealed one)',
+    'farm/health/withdrawal.py:blockers_while_live': 'the what-if of a record the caller holds, by its own id, rolled '
+                                                     'back',
+    'farm/health/withdrawal.py:weighed': 'the what-if of a record the caller holds, by its own id, rolled back',
+    'farm/withdrawal_gate.py:_changed_fields': 'the stored values of the row being saved, by its own id',
+    'farm/withdrawal_gate.py:_updated_rows': 'the stored rows of a queryset update the caller made, by their ids',
+    'farm/withdrawal_gate.py:_weigh': 'the stored row being saved, by its own id',
     'alarms/place.py:places': 'the units and systems of the points of alarms about to open (ids), read as stored by the '
                               'alarm loop',
     'experiments/sealing.py:_members': 'the provider: a person’s team places, what the seal reads grants from',

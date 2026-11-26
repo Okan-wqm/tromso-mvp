@@ -21179,7 +21179,8 @@
         "sensors/tests/test_portable.py",
         "sensors/tests/test_replay.py",
         "sensors/tests/test_water_history.py",
-        "alarms/tests/test_cross_review.py"
+        "alarms/tests/test_cross_review.py",
+        "alarms/tests/test_derived_fresh.py"
       ]
     },
     {
@@ -23359,6 +23360,7 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_charts_of.py",
         "farm/tests/test_deffeyes.py",
+        "farm/tests/test_derived_fresh.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
@@ -39175,6 +39177,7 @@
         "sensors/tests/test_portable.py",
         "sensors/tests/test_read.py",
         "alarms/tests/test_clock.py",
+        "alarms/tests/test_derived_fresh.py",
         "alarms/tests/test_refused_sensor_ph.py"
       ]
     },

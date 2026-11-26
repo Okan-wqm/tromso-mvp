@@ -124,8 +124,9 @@ OWN_POINT_QUERIES = 2       # owner rule A9.1: the other points of the units, on
                             # and once for the ration's temperature (read.water_sources every_point), whatever the number
 OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range (A11, Series carry) and the unit's other
                               # own-water points for the withdrawal's degree-days, whatever the number of units
-NEWEST_WORKED_QUERIES = 1   # every point's samples with a TAN in the read's window, once for the wall: each point's newest
-                            # worked-out NH₃ (farm/water/read.py Context.prefetch_newest_worked; review 4 of derived-fresh)
+NEWEST_WORKED_QUERIES = 2   # the look-back of every point's worked-out NH₃ for the judge, once for the wall: its samples
+                            # that may give a value (a round), and its newest that cannot (farm/water/read.py
+                            # Context.prefetch_newest_worked; a point with evidence adds the late query)
 TASK_JOB_QUERIES = 2        # the task job behind (tasks.read.unplanned: the sites' clocks and the recurring tasks), read
                             # once for the wall when a card shows tasks, as the Tasks pages say it (landing review, m-3)
 SHOW_TASKS = ('detailed', 'mixed')      # the modes with a card that shows the tasks widget

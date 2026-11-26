@@ -20,6 +20,7 @@ CRITICAL, WARNING, OK, UNEVALUATED = Status.CRITICAL, Status.WARNING, Status.OK,
 # What a value can be: (has a value, refused, fresh at its own time, its status)
 KINDS = {
     'critical': (True, False, True, CRITICAL),
+    'warning': (True, False, True, WARNING),
     'ok': (True, False, True, OK),
     'refused_basis_ok': (True, True, True, UNEVALUATED),       # refused, its basis inside the limits
     'refused_basis_critical': (True, True, True, CRITICAL),    # refused, its basis past the critical limit
@@ -30,11 +31,14 @@ KINDS = {
 }
 
 
-def record(name, kind, minute, created, point='P', tier=0, fresh_now=True):
+def record(name, kind, minute, created, point='P', tier=0, fresh_now=None):
+    """A value. Whether it is fresh NOW is its own axis (review 6, M5), apart from whether it was fresh at its own time:
+    by default every other entry is fresh now."""
     value, refused, fresh_at_own_time, status = KINDS[kind]
     return judge.Record(key=name, point=point, tier=tier, measured_at=T0 + timedelta(minutes=minute),
                         created_at=T0 + timedelta(hours=10, minutes=created), id=name, value=value, refused=refused,
-                        fresh_at_own_time=fresh_at_own_time, fresh_now=fresh_now and fresh_at_own_time, status=status)
+                        fresh_at_own_time=fresh_at_own_time,
+                        fresh_now=(created % 2 == 0) if fresh_now is None else fresh_now, status=status)
 
 
 def said(values):
@@ -67,7 +71,7 @@ class InvariantTests(SimpleTestCase):
             verdict = judge.point_verdict(values)
             evidence = verdict.evidence
             criticals = [each for each in values if each.value and each.status == CRITICAL
-                         and (evidence is None or each.measured_at >= evidence.measured_at)]
+                         and (evidence is None or each.minute >= evidence.minute)]
             if criticals:
                 self.assertEqual(verdict.worst.status, CRITICAL, said(values))
 
@@ -169,3 +173,158 @@ class ExamplesTests(SimpleTestCase):
     def test_a_tie_never_clears(self):
         self.assertFalse(judge.clears(record('kit', 'ok', 0, 1), T0))
         self.assertTrue(judge.clears(record('kit', 'ok', 5, 1), T0))
+
+
+class PointRuleTests(SimpleTestCase):
+    """The point rules the mutants of review 6 showed thin."""
+
+    def test_the_worst_prefers_an_evidence_value_of_the_worst_status(self):
+        for values in scenarios():
+            verdict = judge.point_verdict(values)
+            if verdict.worst is None:
+                continue
+            same = [each for each in verdict.judged if each.status == verdict.worst.status]
+            if any(each.evidence for each in same):
+                self.assertTrue(verdict.worst.evidence, said(values))
+
+    def test_the_refused_record_is_newer_than_the_evidence_or_of_its_minute(self):
+        for values in scenarios():
+            verdict = judge.point_verdict(values)
+            if verdict.refused is not None and verdict.evidence is not None:
+                self.assertTrue(verdict.refused.order > verdict.evidence.order
+                                or verdict.refused.minute == verdict.evidence.minute, said(values))
+
+    def test_a_late_result_is_never_refused_and_always_older_than_the_evidence(self):
+        for values in scenarios():
+            verdict = judge.point_verdict(values)
+            for late in verdict.late:
+                self.assertFalse(late.refused, said(values))
+                self.assertLess(late.minute, verdict.evidence.minute)
+                self.assertGreater(late.created_at, verdict.evidence.created_at)
+
+    def test_clears_needs_fresh_now_on_its_own_axis(self):
+        for kind in KINDS:
+            for fresh_now in (True, False):
+                value = record('v', kind, 5, 0, fresh_now=fresh_now)
+                expected = value.evidence and fresh_now
+                self.assertEqual(judge.clears(value, T0), expected, (kind, fresh_now))
+                self.assertFalse(judge.clears(value, T0 + timedelta(minutes=5)), (kind, fresh_now))
+
+    def test_shown_is_the_worst_else_the_newest(self):
+        for values in scenarios():
+            verdict = judge.point_verdict(values)
+            self.assertEqual(verdict.shown, verdict.worst or max(values, key=lambda each: each.order), said(values))
+
+
+def candidates_of(values):
+    """What the shell's evidence stream fetches: the values that may give one (a value, or refused by the core)."""
+    return [each for each in values if each.value or each.refused]
+
+
+class SettledTests(SimpleTestCase):
+    """The shell stops a point's look-back when `settled` says so (review 6, M5): on ANY prefix it says settled, the
+    verdict must be the full one's."""
+
+    def test_a_settled_prefix_gives_the_full_verdict(self):
+        checked = 0
+        for values in scenarios():
+            candidates = judge.newest_first(candidates_of(values))
+            valueless = [each for each in values if not each.value and not each.refused]
+            full = judge.point_verdict(values)
+            for size in range(1, len(candidates) + 1):
+                if not judge.settled(candidates[:size], exhausted=size == len(candidates)):
+                    continue
+                checked += 1
+                prefix = judge.point_verdict([*candidates[:size], *valueless])
+                self.assertEqual((prefix.evidence, set(prefix.judged), prefix.worst and prefix.worst.status,
+                                  prefix.refused),
+                                 (full.evidence, set(full.judged), full.worst and full.worst.status, full.refused),
+                                 (size, said(values)))
+                break
+        self.assertGreater(checked, 1000)
+
+
+PLACE_KINDS = ('critical', 'warning', 'ok', 'lacking', 'refused_bare', 'stale_critical')
+
+
+def place_scenarios():
+    """Two own points and the system's loop, each with no value or one of PLACE_KINDS, fresh now or not, at minute 0 or 5;
+    the value shown each of their values in turn (its status as the place judged it)."""
+    choices = [None, *((kind, minute, fresh) for kind in PLACE_KINDS for minute in (0, 5) for fresh in (True, False))]
+    for o1, o2, loop in itertools.product(choices, repeat=3):
+        values = {}
+        for index, (point, tier, choice) in enumerate((('o1', 0, o1), ('o2', 0, o2), ('loop', 1, loop))):
+            if choice is not None:
+                kind, minute, fresh = choice
+                values[point] = record(point, kind, minute, index, point=point, tier=tier, fresh_now=fresh)
+        verdicts = {point: judge.point_verdict([value]) for point, value in values.items()}
+        for shown in [each for each in values.values() if each.value] or [None]:
+            yield values, verdicts, shown
+
+
+class PlaceTests(SimpleTestCase):
+    """The place rules (review 6, M5, M7), on every place scenario."""
+
+    def test_the_place_scenarios_are_many(self):
+        self.assertGreater(sum(1 for _scenario in place_scenarios()), 10000)
+
+    def test_held_is_stale_an_alert_and_worse_than_shown(self):
+        for values, verdicts, shown in place_scenarios():
+            held = judge.place_verdict(shown, verdicts, {'o1', 'o2'}).held
+            if held is not None:
+                self.assertFalse(held.fresh_now)
+                self.assertIn(held.status, (CRITICAL, WARNING))
+                if shown is not None:
+                    self.assertLess(RANK[held.status], RANK[shown.status])
+                    self.assertIsNot(held.key, shown.key)
+
+    def test_every_stale_worse_alert_is_held_or_said(self):
+        """An own point's, the point shown's, or the system's newer than the value shown: held, or a worse one is. The
+        system's older than the value shown: said as a late result (M7)."""
+        for values, verdicts, shown in place_scenarios():
+            verdict = judge.place_verdict(shown, verdicts, {'o1', 'o2'})
+            for point, value in values.items():
+                alarming = (value.value and not value.fresh_now and value.status in (CRITICAL, WARNING)
+                            and (shown is None or (value.key is not shown.key and RANK[value.status] < RANK[shown.status])))
+                if not alarming:
+                    continue
+                if point != 'loop' or shown is None or shown.point == 'loop' or value.order > shown.order:
+                    self.assertIsNotNone(verdict.held, (point, shown and shown.point))
+                    self.assertLessEqual(RANK[verdict.held.status], RANK[value.status])
+                else:
+                    self.assertIn(value.key, [late.key for late, _newer in verdict.late], (point, shown.point))
+
+    def test_attention_only_turns_an_ok_value_of_the_system(self):
+        for values, verdicts, shown in place_scenarios():
+            verdict = judge.place_verdict(shown, verdicts, {'o1', 'o2'})
+            if verdict.attention:
+                self.assertEqual((shown.point, shown.status), ('loop', OK))
+                self.assertTrue(any(verdicts[point].lacking is not None and verdicts[point].lacking.order > shown.order
+                                    for point in ('o1', 'o2') if point in verdicts))
+
+    def test_the_refused_record_is_of_the_tier_read(self):
+        for values, verdicts, shown in place_scenarios():
+            refused = judge.place_verdict(shown, verdicts, {'o1', 'o2'}).refused
+            if refused is not None and shown is not None and shown.value and shown.point != 'loop':
+                self.assertNotEqual(refused.point, 'loop')
+
+
+    def test_an_older_stale_alert_at_the_system_point_shown_is_held(self):
+        """The point shown is the system's loop: a stale critical of its judged set entered before the value shown (the
+        same minute) is held, as at an own point (the point shown is judged as its own points are), never only said."""
+        old = record('old', 'stale_critical', 0, 0, point='loop', tier=1, fresh_now=False)
+        new = record('new', 'ok', 0, 1, point='loop', tier=1, fresh_now=True)
+        loop = judge.point_verdict([old, new])
+        place = judge.place_verdict(new, {'loop': loop}, {'o1'})
+        self.assertEqual(place.held and place.held.key, 'old')
+
+
+class MinuteTests(SimpleTestCase):
+    def test_one_minute_is_one_definition(self):
+        """Review 6, L5: values at 08:00:10 and 08:00:50 are of one minute (judge.minute), so judged together."""
+        early = judge.Record(key='early', point='P', tier=0, measured_at=T0 + timedelta(seconds=10), created_at=T0,
+                             id='a', value=True, status=CRITICAL)
+        late = judge.Record(key='late', point='P', tier=0, measured_at=T0 + timedelta(seconds=50), created_at=T0,
+                            id='b', value=True, status=OK)
+        self.assertEqual(judge.point_verdict([early, late]).worst.key, 'early')
+        self.assertEqual(judge.minute(T0 + timedelta(seconds=59, microseconds=5)), T0)

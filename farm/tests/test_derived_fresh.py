@@ -3,7 +3,9 @@ freshness is the earliest moment any of the values it was worked out with stops 
 `derived_until`, the inputs each parameter declares in farm/water/parameters.py), never later than its own row's hours.
 An NH₃ worked out from a 5-day-old pH was fresh for its own 168 h while the pH it came from was fresh for 72 h. Every
 reader asks `read.Reading.fresh` / `fresh_until`, so the pages, the cards and the alarms say it the same way."""
+import contextlib
 from datetime import timedelta
+from unittest import mock
 from decimal import Decimal
 
 from django.test import TestCase
@@ -12,9 +14,23 @@ from django.utils import timezone
 from monitoring.cards import render
 
 from ..models import SamplingPoint, Tank, WaterFreshness
-from ..water import evaluate, freshness, parameters, read
+from ..water import evaluate, freshness, judge, parameters, read
 from ..water.evaluate import Status
 from .test_water import WaterTestCase
+
+
+@contextlib.contextmanager
+def counting():
+    """[the rows of each look-back query] of the reads inside (read.Context._fetch, the one door of those rows; review 6,
+    L2: counted by the test, never by the code)."""
+    found, fetch = [], read.Context._fetch
+
+    def counted(self, rows):
+        rows = fetch(self, rows)
+        found.append(len(rows))
+        return rows
+    with mock.patch.object(read.Context, '_fetch', counted):
+        yield found
 
 D = Decimal
 NH3, NH4 = 'nh3_n_mg_l', 'nh4_n_mg_l'
@@ -282,6 +298,66 @@ class SampleTemperatureTests(WaterTestCase):
         for point in (self.mid1, *outlets):
             for hour in range(20, 0, -1):
                 self.sample(point, hours=hour, **FULL)
-        before = read.SAMPLES_READ[0]
-        self.unit_water()
-        self.assertLessEqual(read.SAMPLES_READ[0] - before, 6)
+        with counting() as rows:
+            self.unit_water()
+        self.assertLessEqual(sum(rows), 6)
+
+
+class LookBackBudgetTests(WaterTestCase):
+    """Review 6, M3: the look-back is bounded in statements AND rows at depth: sixty samples a point that cannot give a
+    value, sixty the core refuses, thirty late results."""
+    FULL = {'tan_mg_l': '1.000', 'ph': '7.50', 'temperature_c': '12.0', 'salinity_ppt': '0.0'}
+
+    def read(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with counting() as rows, CaptureQueriesContext(connection) as queries:
+            self.unit_water()
+        return sum(rows), len(queries)
+
+    def test_sixty_samples_that_cannot_give_a_value_cost_one_row_and_no_chemistry(self):
+        for hour in range(60, 0, -1):
+            self.sample(hours=hour / 2, tan_mg_l='0.500')
+        with mock.patch.object(read.chemistry, 'water_equilibria', side_effect=AssertionError('no core call')):
+            rows, _queries = self.read()
+        self.assertLessEqual(rows, 1)
+
+    def test_sixty_refused_samples_read_the_window_once_in_a_few_statements(self):
+        for hour in range(60, 0, -1):
+            self.sample(hours=hour / 2, **self.FULL, conductivity_25_us_cm='40000')
+        rows, queries = self.read()
+        self.assertLessEqual(rows, 61)
+        self.sample(hours=0.1, **self.FULL, conductivity_25_us_cm='40000')
+        _rows, more = self.read()
+        self.assertLessEqual(more - queries, 1)            # rounds of 2, 4, 8 …: log₂ of the depth
+
+    def test_thirty_late_results_are_read_at_most_late_said(self):
+        self.sample(hours=1, **self.FULL)
+        for hour in range(30, 0, -1):
+            self.sample(hours=2 + hour / 2, source='lab', **self.FULL)
+        with counting() as rows:
+            water = self.unit_water()
+        self.assertLessEqual(sum(rows), 2 + 1 + read.LATE_SAID)
+        self.assertIsNotNone(water.get(NH3).value)
+
+
+class ShellParityTests(WaterTestCase):
+    def test_the_database_ranks_as_the_judge_orders(self):
+        """Review 6, L4: same minute, same entry moment: the database's ORDER (the uuid) and the judge's (its text) agree."""
+        from ..models import WaterMeasurement
+        samples = [self.sample(hours=1, **FULL) for _each in range(4)]
+        WaterMeasurement.objects.filter(pk__in=[sample.pk for sample in samples]).update(
+            created_at=samples[0].created_at)
+        context = read.Context([self.mid1], self.now - read.WINDOW)
+        ranked = context._ranked(context._window([self.mid1.pk]), 0, 10)
+        records = [read.record_of(context.readings(sample)[NH3]) for sample in ranked]
+        self.assertEqual([record.id for record in records],
+                         [record.id for record in judge.newest_first(records)])
+
+    def test_nh4_follows_nh3s_evidence(self):
+        """Review 6, L6: the look-back settles on the NH₃; the NH₄ of the same samples has the same evidence sample."""
+        self.sample(hours=3, **FULL)
+        self.sample(hours=1, tan_mg_l='0.700')
+        context = read.Context([self.mid1], self.now - read.WINDOW)
+        nh3, nh4 = (context.verdict(self.mid1, code).evidence for code in (NH3, NH4))
+        self.assertEqual(nh3.id, nh4.id)

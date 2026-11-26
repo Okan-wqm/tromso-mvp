@@ -319,3 +319,104 @@ class Round6Tests(WaterTestCase):
         reading = self.unit_water().get(NH3)
         self.assertEqual((reading.point, reading.judged), (self.loop, 'unevaluated'))
         self.assertIn('at Middle gives no value', reading.note)
+
+
+class Round7Tests(WaterTestCase):
+    """Review 6 (the coordinator's round 7). T-01 stocked, its middle and an outlet, NH₃-N limits 0.0125 and 0.025."""
+    WARNING_WATER = {'ph': '8.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'tan_mg_l': '0.700'}
+
+    def setUp(self):
+        super().setUp()
+        from farm.models import SamplingPoint
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        self.outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+
+    passes = DerivedStaleAlarmTests.passes
+    outcome = DerivedStaleAlarmTests.outcome
+
+    def test_a_stale_held_warning_never_clears_a_critical(self):
+        """M2: the outlet critical 40 h ago, raised; the outlet's warning measured 30 h ago keyed in now (stale on entry:
+        its temperature's 24 h are over); the middle OK 1 h ago. The warning is held (stale, worse than the OK), so it
+        decides, and it is stale by its own freshness: the critical stays open."""
+        self.sample(self.outlet, hours=40, **BAD)
+        self.passes(-2380, -2379, -2320)
+        self.sample(self.outlet, hours=30, source='lab', **self.WARNING_WATER)
+        self.sample(self.t1, hours=1, **GOOD)
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.judged, reading.worse.point), ('warning', self.outlet))
+        self.passes(0, 1, 60, 120, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+
+    def test_a_late_loop_critical_older_than_the_value_shown_is_said(self):
+        """M7, the older way: T-01's own OK 2 h ago is shown; the loop's lab critical measured 30 h ago keyed in now is
+        older than it: no alarm, and the unit says it as a late result."""
+        self.sample(self.t1, hours=2, **GOOD)
+        self.sample(self.loop, hours=30, source='lab', **BAD)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual(reading.judged, 'ok')
+        self.assertIn(f'Late result: critical 0.8924 at {self.loop.name} on ', reading.note)
+
+
+class Round7SeaTests(WaterTestCase):
+    """M7, the newer way: a sea RAS; the loop's critical is newer than T-01's own OK shown but stale already (its salinity,
+    looked up from a loop sample 177 h old, ended 9 h ago): it is held, and raises."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.models import Tank
+        Tank.objects.filter(pk__in=[self.t1.pk, self.t2.pk]).update(water_type='saltwater', water_origin='seawater')
+        self.t1.refresh_from_db()
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+
+    passes = DerivedStaleAlarmTests.passes
+    outcome = DerivedStaleAlarmTests.outcome
+
+    def test_a_stale_loop_critical_newer_than_the_value_shown_is_held(self):
+        sea = {'salinity_ppt': '30.0'}
+        self.sample(self.t1, hours=20, **{**GOOD, **sea})
+        self.sample(self.loop, hours=177, **sea)
+        self.sample(self.loop, hours=10, source='lab', **{key: value for key, value in BAD.items()
+                                                           if key != 'salinity_ppt'})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.point, reading.judged, reading.worse.point), (self.mid1, 'critical', self.loop))
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+
+
+class LiveEvidenceTests(WaterTestCase):
+    """M6: a TAN analyser on T-01's middle (with its pH and temperature probes): its live NH₃ is evidence at the point, so
+    a lab critical there 2 days old is superseded, not held."""
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+
+    def test_a_fresh_live_ok_supersedes_an_old_lab_critical_at_its_point(self):
+        from django.db import connection
+        from django.utils import timezone
+
+        from farm.tests.helpers import may_record
+        from sensors import bindings
+        from sensors.models import ChannelState
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        self.sample(self.t1, hours=48, source='lab', **BAD)
+        may_record(self.user, 'add_binding')
+        device = make_device(make_connection(), make_format(), self.bergen, code='ANALYSER')
+        now = timezone.now()
+        for quantity, value in (('tan_mg_l', 0.5), ('ph', 7.0), ('temperature_c', 12.0)):
+            channel = make_channel(device, quantity, code=quantity.upper())
+            bindings.move(self.user, channel, point=self.mid1, at=now - timedelta(hours=2))
+            at = now - timedelta(seconds=30)
+            ChannelState.objects.update_or_create(channel_no=channel.channel_no, defaults=dict(
+                last_value=value, last_value_ts=at, last_good_at=at, last_seen_at=at))
+            with connection.cursor() as cursor:
+                cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, %s)',
+                               [channel.channel_no, at, value])
+        reading = self.unit_water().get(NH3)
+        self.assertTrue(reading.sample.live)
+        self.assertEqual((reading.judged, reading.worse), ('ok', None))

@@ -66,9 +66,15 @@ class AlarmPlaceMigrationTests(TransactionTestCase):
             'subject': self.alarm('Oxygen 3.1 (critical)', 'water_limit', 'oxygen_mg_l'),
             'sensor': self.alarm('O2: No fresh value · PROBE', 'sensor_rule', '', event=event),
             'clock': self.alarm('DEV-1: 5 s ahead of the platform', parameter='device_clock', device=device),
+            'probe': self.alarm('PROBE-T › O2: T-01 › Middle: the oxygen probe is silent', parameter='oxygen_probe_silent'),
+            'lost probe': self.alarm('PROBE-X › O2: the oxygen probe is silent', parameter='oxygen_probe_silent'),
         }
         rows("INSERT INTO alarm_subject_state (key, open_alarm_id, updated_at, own_held) VALUES (%s, %s, now(), false)",
              [f'water:unit:{units["T-06"].pk}:oxygen:critical', made['subject']])
+        for key, alarm in ((f'system:oxygen_probe_silent:{channel.channel_no}', made['probe']),
+                           ('system:oxygen_probe_silent:987654', made['lost probe'])):      # S6: open at deploy
+            rows("INSERT INTO alarm_subject_state (key, open_alarm_id, updated_at, own_held) VALUES (%s, %s, now(), false)",
+                 [key, alarm])
         self.migrate(MigrationExecutor(connection).loader.graph.leaf_nodes())
         found = {pk: (unit and str(unit), system and str(system))
                  for pk, unit, system in rows('SELECT id, unit_id, system_id FROM alarms')}
@@ -76,11 +82,13 @@ class AlarmPlaceMigrationTests(TransactionTestCase):
         self.assertEqual({name: found[pk] for name, pk in made.items()}, {
             'point': (unit['T-01'], None), 'loop': (unit['T-02'], str(loop.pk)), 'unevaluated': (unit['T-03'], None),
             'no point': (unit['T-04'], None), 'ambiguous': (None, None), 'subject': (unit['T-06'], None),
-            'sensor': (unit['T-01'], None), 'clock': (None, None)})
+            'sensor': (unit['T-01'], None), 'clock': (None, None), 'probe': (unit['T-01'], None),
+            'lost probe': (None, None)})
         (changes,) = rows('SELECT changes FROM audit_log WHERE entity_label = %s', [LABEL])[0]
         changes = json.loads(changes) if isinstance(changes, str) else changes
         self.assertEqual({label: pair[1] for label, pair in changes.items() if label != 'Note'}, {
-            'Placed on a unit': '6', 'Placed on a system only': '0',
-            'Not placed: a unit code several units of its site have had': '1', 'About no unit': '1'})
+            'Placed on a unit': '7', 'Placed on a system only': '0',
+            'Not placed: a unit code several units of its site have had': '1',
+            'Not placed: an open probe warning whose channel had no binding then': '1', 'About no unit': '1'})
         with self.assertRaises(DatabaseError), transaction.atomic():
             rows('UPDATE alarms SET summary = %s WHERE id = %s', ['rewritten', made['point']])

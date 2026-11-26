@@ -12,7 +12,7 @@ from io import StringIO
 
 from django.core.exceptions import ValidationError
 from django.core.management import CommandError, call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -446,6 +446,103 @@ class AlarmTests(ReviewCase):
         found = self.recipients()
         self.assertEqual(set(found), {'lead', 'keeper'})
         self.assertTrue(all(rule is None for rule in found.values()))
+
+
+RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
+
+
+class SafetyNetTests(ReviewCase):
+    """Review 3: sealing never weakens an alarm's escalation, and the alarm system says when a critical alarm reached
+    nobody at its level, through the real pass (alarms.engine.run_once, its supervision step)."""
+
+    def rule(self, **fields):
+        from alarms.models import RecipientRule
+        return RecipientRule.objects.create(level=fields.pop('level', 0), created_by=self.boss, **fields)
+
+    def told(self, level, alarm=None):
+        from alarms.models import Notification
+        return set(Notification.objects.filter(alarm=alarm or self.alarm, level=level)
+                   .values_list('recipient__username', flat=True))
+
+    def own_alarm(self, parameter):
+        from alarms.models import AlarmClearance
+        from alarms.models import Alarm
+        return Alarm.objects.filter(parameter=parameter).exclude(
+            pk__in=AlarmClearance.objects.values('alarm')).first()
+
+    @override_settings(ALARM_TRANSPORTS=RECORDING)
+    def test_an_escalation_to_a_level_nobody_may_see_wakes_the_keepers(self):
+        """S1: level 0 names the lead (told), level 1 a night watch without Oversee. At level 1 nobody named may see
+        the sealed alarm: the keepers of its fish are woken there, and the safety net stays quiet."""
+        from alarms import engine
+        watch = world.person('watch', 'alarms.view_alarm')
+        self.rule(user=self.lead)
+        self.rule(user=watch, level=1)
+        now = timezone.now()
+        engine.run_once(now)
+        engine.run_once(now + timedelta(hours=2))                       # past the critical's escalation time
+        self.assertIn('keeper', self.told(1))
+        self.assertNotIn('watch', self.told(1))
+        self.assertIsNone(self.own_alarm('alarms_unreached'))
+
+    @override_settings(ALARM_TRANSPORTS=RECORDING)
+    def test_the_net_counts_an_alarm_nobody_was_told_of_at_its_current_level(self):
+        """S1: told at level 0 is not enough once the alarm has escalated: with nobody at level 1 who may see it and
+        no keeper either (the lead's place ended, nobody holds Oversee), the pass raises the alarm system's own."""
+        from alarms import engine
+        from alarms.models import Escalation
+        from django.contrib.auth.models import Permission
+        Permission.objects.get(codename='oversee_experiment').group_set.clear()
+        Permission.objects.get(codename='oversee_experiment').user_set.clear()
+        Member.objects.filter(experiment=self.experiment).update(valid_until=timezone.now() - timedelta(days=1))
+        self.rule(user=self.researcher, level=1)
+        self.rule(user=self.staff)
+        Escalation.objects.create(alarm=self.alarm, level=1, escalated_at=timezone.now())
+        engine.run_once(timezone.now())
+        self.assertIsNotNone(self.own_alarm('alarms_unreached'))
+
+    def test_a_notification_that_cannot_leave_counts_as_unreached(self):
+        """S3: no transport is connected for push: the lead's notification waits, and the alarm counts as unreached."""
+        from alarms import engine
+        self.rule(user=self.lead)
+        engine.run_once(timezone.now())
+        self.assertIn('lead', self.told(0))
+        self.assertIsNotNone(self.own_alarm('alarms_unreached'))
+
+    @override_settings(ALARM_TRANSPORTS=RECORDING)
+    def test_a_farm_with_no_rule_says_so_and_tells_the_overseers(self):
+        """S2: with no active recipient rule the pass raises 'no recipient rule' and the safety net, both farm-wide,
+        both told to every holder of Oversee."""
+        from alarms import engine
+        engine.run_once(timezone.now())
+        engine.run_once(timezone.now() + timedelta(seconds=30))
+        for parameter in ('alarm_rules_none', 'alarms_unreached'):
+            with self.subTest(parameter=parameter):
+                alarm = self.own_alarm(parameter)
+                self.assertIsNotNone(alarm)
+                self.assertIn('keeper', self.told(0, alarm))
+        self.rule(user=self.lead)
+        engine.run_once(timezone.now() + timedelta(minutes=10))
+        engine.run_once(timezone.now() + timedelta(hours=3))           # past the off-delay
+        self.assertIsNone(self.own_alarm('alarm_rules_none'))
+
+    def test_keepers_are_read_once_a_pass_however_many_sealed_alarms(self):
+        """S5: with nobody on the rules who may see them, N sealed alarms' keepers cost what one alarm's does."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from alarms import routing, services
+        self.rule(user=self.researcher)
+        more = services.open_alarms([{'at': timezone.now(), 'severity': 'critical', 'summary': f'XQZ-1 oxygen {number}',
+                                      'source': 'water_limit', 'point': self.sealed_point, 'parameter': 'oxygen_mg_l'}
+                                     for number in range(4)])
+
+        def cost(alarms):
+            with CaptureQueriesContext(connection) as captured:
+                router = routing.Router(timezone.now(), alarms)
+                for alarm in alarms:
+                    self.assertIn('keeper', {user.username for user, _rule in router.recipients(alarm, 0)})
+            return len(captured)
+        self.assertEqual(cost([self.alarm]), cost([self.alarm, *more]))
 
 
 class DeletePlanTests(ReviewCase):

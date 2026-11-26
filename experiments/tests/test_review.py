@@ -500,9 +500,12 @@ class SafetyNetTests(ReviewCase):
         Permission.objects.get(codename='oversee_experiment').group_set.clear()
         Permission.objects.get(codename='oversee_experiment').user_set.clear()
         Member.objects.filter(experiment=self.experiment).update(valid_until=timezone.now() - timedelta(days=1))
+        from alarms import sources
         self.rule(user=self.researcher, level=1)
         self.rule(user=self.staff)
+        before = sources._unreached()
         Escalation.objects.create(alarm=self.alarm, level=1, escalated_at=timezone.now())
+        self.assertEqual(sources._unreached(), before + 1)      # told at level 0 only: unreached at level 1
         engine.run_once(timezone.now())
         self.assertIsNotNone(self.own_alarm('alarms_unreached'))
 
@@ -655,9 +658,10 @@ class SiteClockTests(ReviewCase):
         point, zone = point_of(tank), ZoneInfo('Asia/Tokyo')
 
         def sample(day, hour, minute):
-            return WaterMeasurement.objects.create(point=point, source='manual', ph=Decimal('7.2'),
-                                                   measured_at=datetime(day.year, day.month, day.day, hour, minute,
-                                                                        tzinfo=zone)).pk
+            with withdrawal_gate.opened('test: water written straight in the database'):
+                return WaterMeasurement.objects.create(point=point, source='manual', ph=Decimal('7.2'),
+                                                       measured_at=datetime(day.year, day.month, day.day, hour, minute,
+                                                                            tzinfo=zone)).pk
         before = sample(date(2026, 11, 9), 23, 30)
         opening = sample(first, 0, 30)
         closing = sample(last, 23, 30)

@@ -45,8 +45,16 @@ MAX_SFR = 15
 # The temperature columns span the temperature parameter's plausible range (farm/water/parameters.py).
 TEMPERATURE = parameters.get(parameters.TEMPERATURE)
 FCR = [MinValueValidator(MIN_FCR), MaxValueValidator(MAX_FCR)]
+# The share of the feed given that is not eaten, in %: above a half the table itself is wrong, not the appetite.
+MAX_UNEATEN = Decimal('50.0')
+UNEATEN = [MinValueValidator(0), MaxValueValidator(MAX_UNEATEN)]
+# An expected mortality in % a month for the plan ahead; above 30 % a month is a disease outbreak, not a plan.
+MAX_MORTALITY = Decimal('30.00')
+MORTALITY = [MinValueValidator(0), MaxValueValidator(MAX_MORTALITY)]
 
 FCR_MESSAGE = _('An expected FCR is between 0.50 and 3.00.')
+UNEATEN_MESSAGE = _('The uneaten share of the feed is between 0 and 50 %%.')
+MORTALITY_MESSAGE = _('An expected mortality is between 0 and 30 %% a month.')
 BAND_MESSAGE = _('The upper weight must be above the lower weight.')
 OVERLAP_MESSAGE = _('Two weight bands of this protocol overlap.')
 
@@ -63,15 +71,22 @@ class ProtocolStatus(models.TextChoices):
     RETIRED = 'retired', _('Retired')
 
 
+# What a protocol's rations and growth are read from, beside its table: fixed once it is assigned (owner decision Q3).
+FIXED_ONCE_ASSIGNED = ('species', 'expected_fcr', 'uneaten_pct', 'mortality_pct_month')
+
+
 class FeedingProtocol(AuditedModel):
     """A feeding table for one species: weight bands with their feed, meals and expected FCR, and an SFR per band
     and temperature. Source table: farm.feeding_protocols_v2.
 
     A draft is built and changed freely; an active one takes assignments; a retired one keeps its past
-    assignments and takes no new ones. Once a protocol is assigned its table, species and expected FCR are
-    fixed (owner decision Q3): the rations computed from it for past days never change under the Records page,
+    assignments and takes no new ones. Once a protocol is assigned its table, species, expected FCR, uneaten share
+    and expected mortality are fixed (owner decision Q3): the rations computed from it for past days never change under the Records page,
     and a change is made on a copy (Duplicate). The expected FCR here is the fallback of every band that has
-    none; it is what the projected growth divides the feed by.
+    none; it is the biological FCR, on the feed eaten: the growth is the feed given, less the uneaten share, divided
+    by it (farm/feeding/growth.py). The uneaten share (empty: none) and the expected mortality a month (empty: none;
+    read by the plan ahead only) are fallbacks of the bands in the same way. The FCR and the uneaten share are read
+    between the bands' anchor weights without a jump (ration.Table).
 
     Differences from the source: the temperature response is a column of the table, per band (the source had
     one multiplier for every fish size, FP-28), interpolated between columns and never extrapolated; a fish
@@ -87,6 +102,14 @@ class FeedingProtocol(AuditedModel):
                                 limit_choices_to={'is_deleted': False}, verbose_name=_('Species'))
     status = models.CharField(_('Status'), max_length=10, choices=ProtocolStatus.choices, default=ProtocolStatus.DRAFT)
     expected_fcr = models.DecimalField(_('Expected FCR'), max_digits=4, decimal_places=2, validators=FCR)
+    uneaten_pct = models.DecimalField(_('Uneaten feed (%)'), max_digits=3, decimal_places=1, null=True, blank=True,
+                                      validators=UNEATEN)
+    mortality_pct_month = models.DecimalField(_('Expected mortality (%/month)'), max_digits=4, decimal_places=2,
+                                              null=True, blank=True, validators=MORTALITY)
+    # Set once, by the migration that brought the interpolation (farm 0052), on the protocols that existed then: the
+    # days before it keep each band's own FCR (owner decision Q3: what a protocol gave for past days never changes).
+    # Empty on every protocol made since: read between the bands on every day.
+    interpolated_from = models.DateField(_('FCR read between the bands from'), null=True, blank=True, editable=False)
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
 
     class Meta:
@@ -101,6 +124,11 @@ class FeedingProtocol(AuditedModel):
             models.CheckConstraint(condition=Q(status__in=ProtocolStatus.values), name='chk_feeding_protocols_status'),
             models.CheckConstraint(condition=Q(expected_fcr__gte=MIN_FCR, expected_fcr__lte=MAX_FCR),
                                    name='chk_feeding_protocols_expected_fcr', violation_error_message=FCR_MESSAGE),
+            models.CheckConstraint(condition=Q(uneaten_pct__isnull=True) | Q(uneaten_pct__gte=0, uneaten_pct__lte=MAX_UNEATEN),
+                                   name='chk_feeding_protocols_uneaten', violation_error_message=UNEATEN_MESSAGE),
+            models.CheckConstraint(condition=Q(mortality_pct_month__isnull=True)
+                                   | Q(mortality_pct_month__gte=0, mortality_pct_month__lte=MAX_MORTALITY),
+                                   name='chk_feeding_protocols_mortality', violation_error_message=MORTALITY_MESSAGE),
         ]
 
     def __str__(self):
@@ -123,10 +151,9 @@ class FeedingProtocol(AuditedModel):
             errors['status'] = gettext('Fill in its feeding table first: a protocol without one cannot be active.')
         if stored is not None and self.is_assigned():
             fixed = gettext('Fixed: the protocol is assigned. Duplicate it to change it.')
-            if self.species_id != stored.species_id:
-                errors['species'] = fixed
-            if self.expected_fcr is not None and self.expected_fcr != stored.expected_fcr:
-                errors['expected_fcr'] = fixed
+            for name in FIXED_ONCE_ASSIGNED:
+                if getattr(self, name) != getattr(stored, name):
+                    errors[name] = fixed
             if self.status == ProtocolStatus.DRAFT:
                 errors['status'] = gettext('It is assigned: it cannot go back to draft.')
         if self.status == ProtocolStatus.RETIRED and stored is not None and stored.status != ProtocolStatus.RETIRED:
@@ -140,7 +167,8 @@ class FeedingProtocol(AuditedModel):
 class ProtocolBand(models.Model):
     """A weight band of a protocol's feeding table: fish from the lower weight up to, not including, the upper
     one (an empty upper weight: no upper end), the feed they get (its pellet is the feed's), their meals a day
-    and their expected FCR (empty: the protocol's). Source: the `bands` JSON of farm.feeding_protocols_v2.
+    their expected FCR, their uneaten share of the feed and their expected mortality a month (each empty: the
+    protocol's). Source: the `bands` JSON of farm.feeding_protocols_v2.
 
     The table is saved as a whole (the protocol's Feeding table tab), replacing the stored bands and their
     rates, so these rows have no update or soft-delete columns; the change is logged on the protocol. The bands
@@ -158,6 +186,10 @@ class ProtocolBand(models.Model):
                                                      validators=[MinValueValidator(1), MaxValueValidator(MAX_MEALS)])
     expected_fcr = models.DecimalField(_('Expected FCR'), max_digits=4, decimal_places=2, null=True, blank=True,
                                        validators=FCR)
+    uneaten_pct = models.DecimalField(_('Uneaten feed (%)'), max_digits=3, decimal_places=1, null=True, blank=True,
+                                      validators=UNEATEN)
+    mortality_pct_month = models.DecimalField(_('Expected mortality (%/month)'), max_digits=4, decimal_places=2,
+                                              null=True, blank=True, validators=MORTALITY)
 
     class Meta:
         db_table = 'feeding_protocol_bands'
@@ -175,6 +207,12 @@ class ProtocolBand(models.Model):
             models.CheckConstraint(condition=Q(expected_fcr__isnull=True)
                                    | Q(expected_fcr__gte=MIN_FCR, expected_fcr__lte=MAX_FCR),
                                    name='chk_feeding_protocol_bands_expected_fcr', violation_error_message=FCR_MESSAGE),
+            models.CheckConstraint(condition=Q(uneaten_pct__isnull=True) | Q(uneaten_pct__gte=0, uneaten_pct__lte=MAX_UNEATEN),
+                                   name='chk_feeding_protocol_bands_uneaten', violation_error_message=UNEATEN_MESSAGE),
+            models.CheckConstraint(condition=Q(mortality_pct_month__isnull=True)
+                                   | Q(mortality_pct_month__gte=0, mortality_pct_month__lte=MAX_MORTALITY),
+                                   name='chk_feeding_protocol_bands_mortality',
+                                   violation_error_message=MORTALITY_MESSAGE),
             models.UniqueConstraint(fields=['protocol', 'min_weight_g'], name='uq_feeding_protocol_bands_start'),
             ExclusionConstraint(
                 name='excl_feeding_protocol_bands_overlap',

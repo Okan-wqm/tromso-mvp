@@ -113,7 +113,8 @@ def tables(protocol_ids):
         found[protocol.pk] = Table(protocol, tuple(
             Band(band.pk, band.min_weight_g, band.max_weight_g, band.feed, band.meals_per_day, band.expected_fcr,
                  tuple(Cell(rate.temperature_c, rate.sfr_pct)
-                       for rate in sorted(band.rates.all(), key=lambda rate: rate.temperature_c)))
+                       for rate in sorted(band.rates.all(), key=lambda rate: rate.temperature_c)),
+                 band.uneaten_pct, band.mortality_pct_month)
             for band in protocol.bands.all()))
     return found
 
@@ -189,6 +190,47 @@ def project(unit_ids, days=(), now=None):
     read = {(record.unit_id, record.date) for record in records} | set(days)
     projector = Projector(policy(units, batch_ids, first, now, read), days)
     return Projection(walk(ledger(batch_ids), records, days, projector=projector), projector)
+
+
+@dataclass(frozen=True)
+class Measured:
+    """A measured point of a batch in a unit: the day, what it is (fold.PointKind: the start of the stay, a weighing,
+    the harvest that closed it), the fish and their measured average then; for a weighing, how it was measured
+    (farm.WeightSource: reference data) with the sample where it has one, and the correction it made to the estimate
+    (projection.Correction: the estimate it replaced, the realised bFCR since the previous point against the expected
+    FCR). A stocking has no source: its weight is the supplier's or the hatchery's own."""
+    kind: str
+    day: date
+    fish: int
+    avg_weight_g: Decimal
+    source: object = None
+    sample_count: int = None
+    sample_weight_kg: Decimal = None
+    correction: object = None
+
+
+def measured_points(projection, unit_id, batch_id):
+    """THE measured points of a batch in a unit, oldest first: those of its current stay there (fold.Stay.points, the
+    walk's own), whatever measured them. Every page that sets a plan or an estimate beside what was measured reads
+    them here, so a new source (a biomass camera) is one more row of farm.WeightSource on a weighing line and no
+    second path. One query for the lines' sources and samples."""
+    stays = projection.walked.stays.get((unit_id, batch_id))
+    if not stays:
+        return []
+    points = stays[-1].points
+    lines = StockMovement.objects.select_related('weight_source').in_bulk([point.line_id for point in points])
+    corrections = {}
+    for correction in projection.corrections(unit_id, batch_id):
+        corrections[correction.day] = correction      # two weighings of one day: the later one's stands
+    found = []
+    for point in points:
+        line = lines.get(point.line_id)
+        weighed = line is not None and line.kind == MovementKind.WEIGHING
+        found.append(Measured(
+            point.kind, point.day, point.fish, point.avg_weight_g, line.weight_source if weighed else None,
+            line.sample_count if weighed else None, line.sample_weight_kg if weighed else None,
+            corrections.get(point.day) if point.kind == PointKind.WEIGHING else None))
+    return found
 
 
 def book_on(unit, day):

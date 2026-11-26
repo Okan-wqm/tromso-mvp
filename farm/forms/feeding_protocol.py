@@ -14,34 +14,47 @@ from core.widgets import DayInput
 
 from ..feeding import assignments
 from ..models import Batch, Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species, StockMovement, Tank
-from ..models.feeding_protocol import MAX_SFR, TEMPERATURE, ProtocolStatus
+from ..models.feeding_protocol import FIXED_ONCE_ASSIGNED, MAX_SFR, TEMPERATURE, ProtocolStatus
 from ..stock.dates import earliest, local_today, too_old
 
 DECIMAL = {'inputmode': 'decimal'}
 MAX_COLUMNS = 12      # temperature columns a table can have: what a screen shows side by side
 MAX_BANDS = 30
 
-PROTOCOL_TABS = [('general', _('General'), ['name', 'species', 'status', 'expected_fcr', 'notes'])]
+PROTOCOL_TABS = [('general', _('General'), ['name', 'species', 'status', 'expected_fcr', 'uneaten_pct',
+                                             'mortality_pct_month', 'notes'])]
 
 
 class ProtocolForm(CodedFormMixin, TabbedForm):
     """A protocol's general fields. Its feeding table is a tab of its own, saved as a whole (ProtocolTableForm). Once
-    it is assigned, its species and expected FCR are fixed and it cannot go back to draft (the model says why)."""
+    it is assigned, its species, expected FCR, uneaten share and expected mortality are fixed and it cannot go back to draft (the model says why)."""
 
     tabs = PROTOCOL_TABS
 
     class Meta:
         model = FeedingProtocol
         fields = tab_fields(PROTOCOL_TABS)
-        localized_fields = ['expected_fcr']
-        widgets = {'expected_fcr': forms.TextInput(attrs=DECIMAL), 'notes': forms.Textarea(attrs={'rows': 3}),
+        localized_fields = ['expected_fcr', 'uneaten_pct', 'mortality_pct_month']
+        widgets = {'expected_fcr': forms.TextInput(attrs=DECIMAL),
+                   'uneaten_pct': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('none')}),
+                   'mortality_pct_month': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('none')}),
+                   'notes': forms.Textarea(attrs={'rows': 3}),
                    'name': forms.TextInput(attrs={'placeholder': _('e.g. Rainbow trout grow-out, RAS')})}
         help_texts = {
             'species': _('The species the table is for: it is assigned only to fish of this species.'),
             'status': _('Draft: being built. Active: can be assigned. Retired: kept for the days it fed, assigned no '
                         'more.'),
-            'expected_fcr': _('The kg of feed per kg of growth the table expects; a band may have its own. The '
-                              'estimated weight between weighings grows by the feed divided by it.'),
+            'expected_fcr': _('The kg of feed eaten per kg of growth the table expects (the biological FCR); a band '
+                              'may have its own. Between two bands it is read in between them, with no jump at a '
+                              'band’s edge. The estimated weight between weighings and the production plan grow '
+                              'by the feed eaten divided by it.'),
+            'uneaten_pct': _('The share of the feed given that the fish do not eat, 0 to 50 %%; a band may have its '
+                             'own. Empty: all of it is eaten. The feed given less this share is what grows the '
+                             'fish; the FCR on the feed given (the economic FCR) is worked out from the two and '
+                             'shown, never entered.'),
+            'mortality_pct_month': _('The share of the fish expected to die in a month (30 days), 0 to 30 %%; a band '
+                                     'may have its own. Empty: none. Read by the production plan only: it lowers '
+                                     'the fish, the biomass and the feed ahead, never the average weight.'),
         }
 
     def __init__(self, *args, **kwargs):
@@ -49,7 +62,7 @@ class ProtocolForm(CodedFormMixin, TabbedForm):
         self.fields['species'].queryset = Species.objects.order_by('common_name')
         self.fields['species'].empty_label = _('Select a species')
         if self.instance.is_assigned():
-            for name in ('species', 'expected_fcr'):
+            for name in FIXED_ONCE_ASSIGNED:
                 self.fields[name].disabled = True
                 self.fields[name].help_text = _('Fixed: the protocol is assigned. Duplicate it to change it.')
             self.fields['status'].choices = [choice for choice in ProtocolStatus.choices
@@ -113,14 +126,18 @@ class ProtocolTableForm(forms.Form):
 
 
 class BandRowForm(forms.ModelForm):
-    """A band of the table: its weights, feed, meals, expected FCR and one SFR per temperature column."""
+    """A band of the table: its weights, feed, meals, expected FCR, uneaten share, expected mortality and one SFR per
+    temperature column."""
 
     class Meta:
         model = ProtocolBand
-        fields = ['min_weight_g', 'max_weight_g', 'feed', 'meals_per_day', 'expected_fcr']
-        localized_fields = ['min_weight_g', 'max_weight_g', 'expected_fcr']
+        fields = ['min_weight_g', 'max_weight_g', 'feed', 'meals_per_day', 'expected_fcr', 'uneaten_pct',
+                  'mortality_pct_month']
+        localized_fields = ['min_weight_g', 'max_weight_g', 'expected_fcr', 'uneaten_pct', 'mortality_pct_month']
         widgets = {'min_weight_g': forms.TextInput(attrs=DECIMAL), 'max_weight_g': forms.TextInput(attrs=DECIMAL),
                    'expected_fcr': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('protocol’s')}),
+                   'uneaten_pct': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('protocol’s')}),
+                   'mortality_pct_month': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('protocol’s')}),
                    'meals_per_day': forms.TextInput(attrs={'inputmode': 'numeric'})}
 
     def __init__(self, *args, columns=(), **kwargs):
@@ -195,6 +212,7 @@ def table_forms(protocol, data=None, draft=None):
     columns = sorted({rate.temperature_c for band in bands for rate in band.rates.all()})
     initial = [{'min_weight_g': band.min_weight_g, 'max_weight_g': band.max_weight_g, 'feed': band.feed_id,
                 'meals_per_day': band.meals_per_day, 'expected_fcr': band.expected_fcr,
+                'uneaten_pct': band.uneaten_pct, 'mortality_pct_month': band.mortality_pct_month,
                 **{column_name(rate.temperature_c): rate.sfr_pct for rate in band.rates.all()}} for band in bands]
     form = ProtocolTableForm(initial={'version': protocol.version, 'temperatures': shown_temperatures(columns)})
     return form, BandFormSet(initial=initial, prefix='bands', columns=columns)

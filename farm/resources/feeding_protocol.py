@@ -13,6 +13,7 @@ from core.crud import DRAFT, CreateView, Resource, ResourceView, UpdateView, don
 
 from .. import words
 from ..feeding import assignments, lists, protocols
+from ..feeding.growth import economic_fcr
 from ..feeding.ration import Policy, band_range
 from ..feeding.read import tables
 from ..forms.feeding_protocol import (
@@ -64,13 +65,14 @@ class FeedingProtocolResource(Resource):
     def edit_extras(cls, request, obj, draft=None, data=None):
         """The feeding table tab: the grid (to edit while the protocol is not assigned) or the table as it is."""
         form, rows = table_forms(obj, data=data, draft=draft)
-        return {'table_form': form, 'bands': rows, 'frozen': obj.is_assigned(),
+        return {'table_form': form, 'bands': rows, 'frozen': obj.is_assigned(), 'band_terms': band_terms(obj),
+                'step_note': step_note(obj),
                 'table_url': reverse('farm:feedingprotocol_table', args=[obj.pk]),
                 'duplicate_url': reverse('farm:feedingprotocol_duplicate', args=[obj.pk])
                 if request.user.has_perm(cls.perm('add')) else '',
                 'table_notices': table_notices(obj)}
 
-    next_extras = frozenset({'table_form', 'bands', 'frozen', 'table_url', 'duplicate_url', 'table_notices'})
+    next_extras = frozenset({'table_form', 'bands', 'frozen', 'band_terms', 'step_note', 'table_url', 'duplicate_url', 'table_notices'})
 
     @classmethod
     def next_panels(cls, view, form, protocol, extra):
@@ -91,15 +93,22 @@ class FeedingProtocolResource(Resource):
                     listprops.column('band', words.WEIGHT_BAND), listprops.column('feed', words.FEED),
                     listprops.column('meals', words.MEALS_A_DAY, numeric=True),
                     listprops.column('fcr', words.EXPECTED_FCR, numeric=True),
+                    listprops.column('uneaten', words.UNEATEN_FEED, numeric=True),
+                    listprops.column('economic', words.ECONOMIC_FCR, numeric=True),
+                    listprops.column('mortality', words.MORTALITY_A_MONTH, numeric=True),
                     *(listprops.column(f't{index}', celsius(temperature), numeric=True)
                       for index, temperature in enumerate(columns))], [
-                    listprops.row(band.pk, {
+                    listprops.row(band.id, {
                         'band': listprops.cell(weights(band)), 'feed': listprops.cell(band.feed),
-                        'meals': listprops.cell(band.meals_per_day),
-                        'fcr': listprops.cell(fcr(band.expected_fcr or protocol.expected_fcr)),
-                        **{f't{index}': listprops.cell(percent(rate.sfr_pct, 2))
-                           for index, rate in enumerate(band.rates.all())}})
-                    for band in protocol.bands.all()])]
+                        'meals': listprops.cell(band.meals),
+                        'fcr': listprops.cell(fcr(terms['fcr'])),
+                        'uneaten': listprops.cell(percent(terms['uneaten_pct'], 1)),
+                        'economic': listprops.cell(fcr(terms['economic_fcr'])),
+                        'mortality': listprops.cell(percent(terms['mortality_pct_month'], 2)),
+                        **{f't{index}': listprops.cell(percent(cell.sfr_pct, 2))
+                           for index, cell in enumerate(band.cells)}})
+                    for terms in extra['band_terms'] for band in [terms['band']]]), formpanels.help_text(words.BETWEEN_TWO_BANDS_THE_FCR),
+                *([formpanels.help_text(extra['step_note'])] if extra.get('step_note') else [])]
         else:
             columns = list(bands.columns)
             cells = {column_name(temperature) for temperature in columns}
@@ -108,6 +117,7 @@ class FeedingProtocolResource(Resource):
                     formpanels.fields(table_form['temperatures']),
                     formpanels.grid(
                         bands, [words.FROM_G, words.UP_TO_G, words.FEED, words.MEALS_A_DAY, words.EXPECTED_FCR,
+                                words.UNEATEN_FEED, words.MORTALITY_A_MONTH,
                                 *(words.sfr_at(celsius(each)) for each in columns)],
                         lambda row: [[bound] for bound in row.base_fields_shown] + [[bound] for bound in row.cells]
                         + [[row['DELETE']]],
@@ -133,6 +143,29 @@ class FeedingProtocolResource(Resource):
                 path(f'{p}/<uuid:pk>/table/', ProtocolTableView.as_view(resource=cls), name='feedingprotocol_table'),
                 path(f'{p}/<uuid:pk>/duplicate/', DuplicateView.as_view(resource=cls),
                      name='feedingprotocol_duplicate')]
+
+
+def step_note(protocol):
+    """What a protocol older than the interpolation says of its past days ('' for one made since)."""
+    if protocol is None or protocol.interpolated_from is None:
+        return ''
+    from django.utils import formats
+    return _('Until %(date)s this protocol’s FCR was read per band, with a step at each band’s edge: the days before keep '
+             'that. From that day it is read between the bands.') % {
+        'date': formats.date_format(protocol.interpolated_from, 'DATE_FORMAT')}
+
+
+def band_terms(protocol):
+    """A stored protocol's bands as the ration reads them (ration.Table), each with the values in force in it: its
+    expected FCR, uneaten share and expected mortality (its own, else the protocol's) and the economic FCR they give.
+    What the fixed table of an assigned protocol shows, in both looks."""
+    if protocol is None or protocol.pk is None:
+        return []
+    table = tables([protocol.pk])[protocol.pk]
+    return [{'band': band, 'fcr': table.fcr_of(band), 'fcr_own': band.fcr is not None,
+             'uneaten_pct': table.uneaten_of(band),
+             'economic_fcr': economic_fcr(table.fcr_of(band), table.uneaten_of(band)),
+             'mortality_pct_month': table.mortality_of(band)} for band in table.bands]
 
 
 def table_notices(protocol):

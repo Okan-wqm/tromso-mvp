@@ -14,14 +14,16 @@
   {% with columns=object.columns %}
   <div class="table-wrap">
     <table class="data-table grid-table">
-      <thead><tr><th scope="col">{{ fw.weight_band }}</th><th scope="col">{{ fw.feed }}</th><th scope="col" class="num">{{ fw.meals_a_day }}</th><th scope="col" class="num">{{ fw.expected_fcr }}</th>{% for temperature in columns %}<th scope="col" class="num">{{ temperature|celsius }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th scope="col">{{ fw.weight_band }}</th><th scope="col">{{ fw.feed }}</th><th scope="col" class="num">{{ fw.meals_a_day }}</th><th scope="col" class="num">{{ fw.expected_fcr }}</th><th scope="col" class="num">{{ fw.uneaten_feed }}</th><th scope="col" class="num">{{ fw.economic_fcr }}</th><th scope="col" class="num">{{ fw.mortality_a_month }}</th>{% for temperature in columns %}<th scope="col" class="num">{{ temperature|celsius }}</th>{% endfor %}</tr></thead>|celsius }}</th>{% endfor %}</tr></thead>
       <tbody>
-        {% for band in object.bands.all %}
-        <tr><td class="nowrap">{{ band|weights }}</td><td>{{ band.feed }}</td><td class="num">{{ band.meals_per_day }}</td><td class="num">{% if band.expected_fcr %}{{ band.expected_fcr|fcr }}{% else %}<span class="muted">{{ object.expected_fcr|fcr }}</span>{% endif %}</td>{% for rate in band.rates.all %}<td class="num">{{ rate.sfr_pct|percent:2 }}</td>{% endfor %}</tr>
-        {% endfor %}
+        {% for terms in band_terms %}{% with band=terms.band %}
+        <tr><td class="nowrap">{{ band|weights }}</td><td>{{ band.feed }}</td><td class="num">{{ band.meals }}</td><td class="num">{% if terms.fcr_own %}{{ terms.fcr|fcr }}{% else %}<span class="muted">{{ terms.fcr|fcr }}</span>{% endif %}</td><td class="num">{{ terms.uneaten_pct|percent:1 }}</td><td class="num">{{ terms.economic_fcr|fcr }}</td><td class="num">{{ terms.mortality_pct_month|percent:2 }}</td>{% for cell in band.cells %}<td class="num">{{ cell.sfr_pct|percent:2 }}</td>{% endfor %}</tr>
+        {% endwith %}{% endfor %}
       </tbody>
     </table>
   </div>
+  <p class="panel-help">{{ fw.between_two_bands_the_fcr }}</p>
+  {% if step_note %}<p class="panel-help">{{ step_note }}</p>{% endif %}
   {% endwith %}
   {% else %}
   <p class="panel-help">{{ fw.one_row_per_weight_band_from }}</p>
@@ -36,7 +38,7 @@
     <div class="table-wrap">
       <table class="data-table grid-table">
         <thead>
-          <tr><th scope="col">{{ fw.from_g }}</th><th scope="col">{{ fw.up_to_g }}</th><th scope="col">{{ fw.feed }}</th><th scope="col">{{ fw.meals_a_day }}</th><th scope="col">{{ fw.expected_fcr }}</th>{% for temperature in bands.columns %}<th scope="col">{% sfr_at temperature|celsius %}</th>{% endfor %}<th scope="col"><span class="sr-only">{{ fw.remove }}</span></th></tr>
+          <tr><th scope="col">{{ fw.from_g }}</th><th scope="col">{{ fw.up_to_g }}</th><th scope="col">{{ fw.feed }}</th><th scope="col">{{ fw.meals_a_day }}</th><th scope="col">{{ fw.expected_fcr }}</th><th scope="col">{{ fw.uneaten_feed }}</th><th scope="col">{{ fw.mortality_a_month }}</th>{% for temperature in bands.columns %}<th scope="col">{% sfr_at temperature|celsius %}</th>{% endfor %}<th scope="col"><span class="sr-only">{{ fw.remove }}</span></th></tr>
         </thead>
         <tbody data-rows>
           {% for row in bands %}{% include "farm/_band_row.html" %}{% endfor %}

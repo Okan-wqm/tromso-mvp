@@ -55,13 +55,21 @@ class PointKind:
 
 @dataclass(frozen=True)
 class Point:
-    """A measured point of a share: the book biomass then, and the running sums of its stay (kg)."""
+    """A measured point of a share: the book biomass then, and the running sums of its stay (kg); the fish it had
+    then, and the ledger line that measured it (the one reader of measured points, farm/feeding/read.py
+    `measured_points`, reads the weight's source and sample from that line)."""
     kind: str
     day: date
     biomass_kg: Decimal
     removed_kg: Decimal
     lost_kg: Decimal
     added_kg: Decimal
+    fish: int = None
+    line_id: object = None
+
+    @property
+    def avg_weight_g(self):
+        return self.biomass_kg * 1000 / self.fish if self.fish else None
 
 
 @dataclass
@@ -178,7 +186,7 @@ class _Walker:
         self.order = sorted(wanted)
         self.started = self.ended = 0    # the days whose start, and whose end, are read
         self.start = {}
-        self.pending = {}                # points of the operation being folded: (unit, batch) -> kind
+        self.pending = {}                # points of the operation being folded: (unit, batch) -> (kind, line id)
 
     # ---- the days asked for: their start and their end ------------------------------------------
     def capture(self, shares, until=None):
@@ -235,12 +243,12 @@ class _Walker:
         key = (line.unit_id, line.batch_id)
         k = line.count_delta
         if line.kind == MovementKind.WEIGHING:
-            self.pending[key] = PointKind.WEIGHING
+            self.pending[key] = (PointKind.WEIGHING, line.id)
         elif k > 0 and share.count == k:          # the batch had no fish here: a new stay
             self.result.stays[key].append(Stay(line.op.date))
             if line.kind == MovementKind.INPUT or (line.kind == MovementKind.TRANSFER_IN
                                                    and line.op.kind == OperationKind.GRADING):
-                self.pending[key] = PointKind.START
+                self.pending[key] = (PointKind.START, line.id)
         elif k > 0:
             self.result.stays[key][-1].added += grams
         else:
@@ -250,18 +258,18 @@ class _Walker:
             if line.kind in LOST:
                 stay.lost += removed
             if line.kind == MovementKind.HARVEST:
-                self.pending[key] = PointKind.CLOSE
+                self.pending[key] = (PointKind.CLOSE, line.id)
         if self.projector is not None:
             self.projector.line(line, share, grams)
 
     def after(self, op, shares):
-        for key, kind in self.pending.items():
+        for key, (kind, line_id) in self.pending.items():
             share = shares[key]
             if kind == PointKind.CLOSE and share.count:
                 continue                           # a harvest that leaves fish: no measured point
             stay = self.result.stays[key][-1]
             stay.points.append(Point(kind, op.date, share.grams / 1000, stay.removed / 1000, stay.lost / 1000,
-                                     stay.added / 1000))
+                                     stay.added / 1000, share.count, line_id))
             if self.projector is not None:
                 self.projector.weighed(key, stay, stay.points[-1])
         self.pending.clear()

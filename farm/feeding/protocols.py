@@ -17,7 +17,7 @@ from farm.models.feeding_protocol import ProtocolStatus
 CHANGE, ADD = 'farm.change_feedingprotocol', 'farm.add_feedingprotocol'
 TABLE = gettext_lazy('Feeding table')
 # The general fields a copy takes over (FeedingProtocol), and how the log names a copy's table.
-COPIED = ('species', 'expected_fcr', 'notes')
+COPIED = ('species', 'expected_fcr', 'uneaten_pct', 'mortality_pct_month', 'notes')
 
 
 def _number(value):
@@ -31,6 +31,10 @@ def describe(protocol):
     for band in protocol.bands.select_related('feed').prefetch_related('rates').order_by('min_weight_g'):
         upper = _number(band.max_weight_g) if band.max_weight_g is not None else '…'
         fcr = f', FCR {_number(band.expected_fcr)}' if band.expected_fcr is not None else ''
+        if band.uneaten_pct is not None:
+            fcr += f', uneaten {_number(band.uneaten_pct)} %'
+        if band.mortality_pct_month is not None:
+            fcr += f', mortality {_number(band.mortality_pct_month)} % a month'
         cells = ', '.join(f'{_number(rate.temperature_c)} °C {_number(rate.sfr_pct)} %'
                           for rate in sorted(band.rates.all(), key=lambda rate: rate.temperature_c))
         lines.append(f'{_number(band.min_weight_g)}–{upper} g: {band.feed.code}, {band.meals_per_day} meals{fcr}; '
@@ -42,7 +46,8 @@ def _write(protocol, columns, rows, column_name):
     for row in rows:
         band = ProtocolBand.objects.create(
             protocol=protocol, min_weight_g=row['min_weight_g'], max_weight_g=row['max_weight_g'], feed=row['feed'],
-            meals_per_day=row['meals_per_day'], expected_fcr=row['expected_fcr'])
+            meals_per_day=row['meals_per_day'], expected_fcr=row['expected_fcr'],
+            uneaten_pct=row.get('uneaten_pct'), mortality_pct_month=row.get('mortality_pct_month'))
         ProtocolRate.objects.bulk_create([ProtocolRate(band=band, temperature_c=temperature,
                                                        sfr_pct=row[column_name(temperature)])
                                           for temperature in columns])
@@ -89,7 +94,8 @@ def copy_name(name):
 
 def duplicate(user, protocol, snapshot):
     """A draft copy of the protocol and its table, to change and assign from a date; logged as created, with its
-    fields (`snapshot`: the tab's) and its table."""
+    fields (`snapshot`: the tab's) and its table. The copy is a new protocol: its FCR is read between the bands on every
+    day (`interpolated_from` is the original's history, not copied)."""
     access.require(user, ADD)
     with transaction.atomic():
         source = FeedingProtocol.objects.get(pk=protocol.pk)

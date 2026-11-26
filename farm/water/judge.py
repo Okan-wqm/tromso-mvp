@@ -16,7 +16,7 @@ The rule (review 5, the coordinator's round 6), per point:
 Per place (a unit's point, its other own points, its system's loop):
 - a judged value of an own point, or of the point of the value shown, stale now and worse than the value shown, is HELD:
   the place keeps its judgement until that point gives evidence newer than it;
-- an own sample newer than a system's value shown that gives no value makes the place need ATTENTION, never plain OK;
+- an own sample newer than a system's value shown that gives no value turns an OK place into ATTENTION, never plain OK;
 and a level clears only on evidence strictly newer than its last bad value: a tie never clears (`clears`)."""
 from dataclasses import dataclass
 from datetime import datetime
@@ -136,7 +136,7 @@ def place_verdict(shown, points, own_points, for_unit=True):
                  if record is not None and not record.value and (shown is None or record.key is not shown.key))
     late = tuple((record, verdict.evidence) for verdict in points.values() for record in verdict.late
                  if record.status in ALERTS)
-    attention = (for_unit and from_system and held is None and shown_rank > RANK[Status.UNEVALUATED]
+    attention = (for_unit and from_system and held is None and shown is not None and shown.status == Status.OK
                  and any(points[point].lacking is not None and points[point].lacking.order > shown.order
                          for point in own_points if point in points))
     return PlaceVerdict(held, attention, refused, said, late)

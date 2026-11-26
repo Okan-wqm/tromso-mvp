@@ -200,14 +200,14 @@ class SinglePointEvidenceTests(WaterTestCase):
         self.assertIn('at Middle gives no value', reading.note)
 
     def test_a_same_minute_tie_kit_first_raises_and_is_shown(self):
-        """The kit keyed first: the lab's result is the newer entry of the minute (created later), so nothing newer lacks
-        its inputs and nothing is said of the kit."""
+        """The kit keyed first: the same verdict as the other order (the judge reads one minute's values alike), the kit's
+        TAN alone said beside the lab's critical."""
         self.tie(lab_first=False)
         self.passes(0, 1, 60)
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
         reading = self.unit_water().get(NH3)
         self.assertEqual((str(reading.value), reading.judged), ('0.8924', 'critical'))
-        self.assertNotIn('gives no value', reading.note)
+        self.assertIn('at Middle gives no value', reading.note)
 
 
 class SystemTierTests(WaterTestCase):
@@ -308,7 +308,7 @@ class Round6Tests(WaterTestCase):
         self.assertEqual(reading.judged, 'ok')
         self.assertIn('Late result: critical 0.8924 at Middle on ', reading.note)
         self.assertIn(', superseded by ', reading.note)
-        logged = ' '.join(str(entry.changes) for entry in AuditLog.objects.filter(entity_type='water measurement'))
+        logged = ' '.join(str(entry.changes) for entry in AuditLog.objects.filter(entity_type='water sample'))
         self.assertIn('Late result', logged)
 
     def test_an_own_tan_newer_than_the_loops_value_is_attention_never_ok(self):

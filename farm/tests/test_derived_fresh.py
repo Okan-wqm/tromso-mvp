@@ -17,6 +17,7 @@ from sensors.tests import make_channel, make_connection, make_device, make_forma
 from ..models import SamplingPoint, Tank, WaterFreshness
 from ..water import evaluate, freshness, parameters, read
 from ..water.evaluate import Status
+from .helpers import may_record
 from .test_water import WaterTestCase
 
 D = Decimal
@@ -239,13 +240,14 @@ class SensorTemperatureTests(WaterTestCase):
     """The coordinator's decision of 2026-11-26 on the temperature of a sample's NH₃, where the place has a temperature
     probe: (a) a TAN sample without a temperature takes the place's sensor temperature at its time, and records it as
     the input used; (b) the temperature input stays fresh while the place's live temperature stays within
-    freshness.TEMPERATURE_BAND (1.0 °C) of it, and ends the moment it moves further or goes stale. A probe on T-01's
+    the platform owner's band (freshness.temperature_band, 1.0 °C until set) of it, and ends the moment it moves further or goes stale. A probe on T-01's
     middle point, a value every 10 min, fresh for 30 min."""
 
     def setUp(self):
         super().setUp()
         device = make_device(make_connection(), make_format(), self.bergen, code='PROBE-T')
         self.channel = make_channel(device, 'temperature_c', code='TEMP', heartbeat_s=600)
+        may_record(self.user, 'add_binding')            # binds the probe: the binding service asks (L-6)
         bindings.move(self.user, self.channel, point=self.mid1, at=self.ago(hours=60))
 
     def send(self, value, start, end):
@@ -258,7 +260,7 @@ class SensorTemperatureTests(WaterTestCase):
     def test_the_channel_is_fresh_for_30_minutes(self):
         self.channel.refresh_from_db()
         self.assertEqual(self.channel.fresh_s, 1800)
-        self.assertEqual(freshness.TEMPERATURE_BAND, 1.0)
+        self.assertEqual(freshness.temperature_band(), 1.0)
 
     def test_a_sample_without_a_temperature_takes_the_probes(self):
         """(a) TAN and pH 30 h ago, no temperature: worked out with the probe's 12.0 °C of that time, said beside the

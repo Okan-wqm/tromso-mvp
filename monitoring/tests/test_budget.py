@@ -214,10 +214,11 @@ class ProbeTemperatureBudgetTests(Counting, MonitoringCase):
     def probed_farm(self, count, prefix):
         from django.utils import timezone
 
-        from farm.tests.helpers import point_of
+        from farm.tests.helpers import may_record, point_of
         from sensors import bindings
         from sensors.tests import make_channel, make_connection, make_device, make_format
         units = self.farm_of(count, prefix=prefix)
+        may_record(self.user, 'add_binding')            # binds the probes: the binding service asks (L-6)
         connection_, payload = make_connection(name=f'Broker {prefix}'), make_format(name=f'Format {prefix}')
         now = timezone.now()
         for unit in units:

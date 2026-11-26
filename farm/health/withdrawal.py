@@ -200,6 +200,7 @@ class Withdrawal:
     waits: bool = False
 
     
+    @property
     def settled(self):
         """The end without the wait for a closing: the days' own, or the floor's when one holds it. What a floor is
         set at, and what two readings of one withdrawal are compared by (a closing must not look like a move)."""
@@ -208,22 +209,26 @@ class Withdrawal:
         return self.floor.not_before if self.floor is not None else self.worked_out
 
     
+    @property
     def days_without_temperature(self):
         """Past days counted without a measured temperature (at the assumed one, capped or not, or as 0 °C)."""
         return self.accrual.missing if self.accrual is not None else 0
 
     
+    @property
     def assumed_temperature(self):
         """The batch species' assumed temperature those days were counted at; None: it has none (0 °C)."""
         return self.accrual.assumed if self.accrual is not None else None
 
     
+    @property
     def projected_at_assumed(self):
         """No temperature was measured lately: the degree-days' end is projected at the species' assumed one."""
         return bool(self.accrual is not None and self.degrees_decide and self.accrual.reached is not None
                     and self.accrual.projected and self.accrual.projected_at_assumed)
 
     
+    @property
     def unclosed(self):
         """The probe days its sum still waits for: while there are any, its end is "about" and after today."""
         return self.accrual.unclosed if self.accrual is not None else 0
@@ -1797,7 +1802,7 @@ def guarded_ceiling(user, write, seen=None):
         return guarded(user, batch_ids, today, write, seen=seen, back=back, holding=True)
 
 
-def guarded_units(user, unit_ids, first, write, seen=None):
+def guarded_units(user, unit_ids, first, write, seen=None, record_of=None):
     """A write about reference data the withdrawals of the fish in `unit_ids` (from the day `first` on; None: every fish they ever held) are worked out
     from (a feed's type, a species' assumed temperature, a sampling point): those fish are locked as a stock operation
     locks them, and the write goes through the guard. Such a record is not dated: the guard reads from the day it
@@ -1808,4 +1813,4 @@ def guarded_units(user, unit_ids, first, write, seen=None):
     today = earliest_today(units.values())
     if first is None and batch_ids:
         first = min(began for (_unit, batch_id), (began, _ended) in stock_read.spans().items() if batch_id in batch_ids)
-    return guarded(user, batch_ids, today, write, seen=seen, back=first)
+    return guarded(user, batch_ids, today, write, seen=seen, back=first, record_of=record_of)

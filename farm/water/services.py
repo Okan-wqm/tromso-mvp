@@ -530,7 +530,8 @@ def backfill_probe_days(user, *, units, first, last, reason, withdrawal_ack=None
                     str(_('Reason')): [None, reason]}, label=str(_('Probe days backfilled')))
         return rows
 
-    return withdrawal.guarded_units(user, [unit.pk for unit in units], first, write, seen=withdrawal_ack)
+    return withdrawal.guarded_units(user, [unit.pk for unit in units], first, write, seen=withdrawal_ack,
+                                    record_of=lambda rows: rows[0])
 
 
 def correct_probe_day(user, row, reason, withdrawal_ack=None):
@@ -569,4 +570,5 @@ def correct_probe_day(user, row, reason, withdrawal_ack=None):
                     str(_('Mean (°C)')): [str(row.mean_c), str(made[0].mean_c) if made else None]}, label=str(row))
             return made[0] if made else None
 
-        return withdrawal.guarded_units(user, unit_ids, row.day, write, seen=withdrawal_ack)
+        return withdrawal.guarded_units(user, unit_ids, row.day, write, seen=withdrawal_ack,
+                                        record_of=lambda _made: row)

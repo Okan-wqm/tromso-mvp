@@ -694,12 +694,15 @@ class ReadTests(PointTestCase):
         self.assertEqual(set(bare), {'altitude_m'})
 
     def test_there_is_one_implementation_of_the_units_water(self):
-        """The feeding temperature and the withdrawal ask farm/water/read.py's `water_sources`, and no module outside
-        the water module reads the samples: the places a unit's water is read from are defined once."""
+        """The feeding temperature and the withdrawal ask farm/water/read.py's `tiers` (the one resolver of a unit's
+        places, over `water_sources`), and no module outside the water module reads the samples: the places a unit's
+        water is read from are defined once."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[1]
         for module in ('feeding/temperature.py', 'water/degree_days.py'):
-            self.assertIn('water_sources(', (root / module).read_text(encoding='utf-8'), module)
+            source = (root / module).read_text(encoding='utf-8')
+            self.assertIn('tiers(', source, module)
+            self.assertNotIn('water_sources(', source, module)          # no second resolver beside it
         readers = sorted(path.relative_to(root).as_posix() for path in root.rglob('*.py')
                          if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)
                          and 'WaterMeasurement' in path.read_text(encoding='utf-8'))

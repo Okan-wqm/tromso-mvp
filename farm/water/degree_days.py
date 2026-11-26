@@ -94,9 +94,11 @@ class Temperatures:
     query, the closed probe days of their places in one, the newest closing of each clock in one. A day outside the
     range was not read: asking for it is an error, never "not measured"."""
 
-    def __init__(self, units, first, last, tolerance):
+    def __init__(self, units, first, last, tolerance=None):
         units = list(units)
-        self.first, self.last, self.tolerance = first, last, tolerance
+        self.first, self.last = first, last
+        # (the platform's setting when the caller has not read the rules already)
+        self.tolerance = platform.degree_day_rules()[3] if tolerance is None else tolerance
         self.tiers = tiers(units, nested=False)
         points = {point.pk: point for found in self.tiers.values() for tier in found for point in tier.points}
         values = defaultdict(list)

@@ -196,17 +196,19 @@ class OutboxTests(AlarmsCase):
         self.assertEqual(Notification.objects.count(), 1)
 
     def test_a_rule_added_later_still_reaches_an_open_alarm_never_a_cleared_one(self):
+        # The water alarm's notifications (the alarm system's own, that no rule reached it, reach the rule made later too).
+        water_told = Notification.objects.filter(alarm__source='water_limit')
         self.sample(5.5, hours=2)
         self.loop()
         self.rule()
         self.loop(minutes=1)
-        self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(water_told.count(), 1)
         self.sample(7.0)
         self.loop(minutes=2)
         self.loop(minutes=3)                                       # cleared after the off-delay
         self.rule(user=self.manager, level=0)
         self.loop(minutes=4)
-        self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(water_told.count(), 1)
 
     @NOTHING_CONNECTED
     def test_nothing_is_sent_without_a_transport(self):
@@ -349,6 +351,7 @@ class CommandTests(AlarmsCase):
         out = StringIO()
         with mock.patch.object(timezone, 'now', return_value=self.now):
             call_command('run_alarms', stdout=out)
-        self.assertIn('2 opened', out.getvalue())                    # the critical level and the warning level
+        # the critical level, the warning level and the alarm system's own: no channel is connected
+        self.assertIn('3 opened', out.getvalue())
         self.assertIn('1 queued', out.getvalue())
         self.assertIn('nothing sent: no transport', out.getvalue())

@@ -18344,9 +18344,41 @@ msgstr "Su numuneleri, yana kayar"
 msgid "Water source"
 msgstr "Su kaynağı"
 
-#, python-brace-format
-msgid "Water temperature ahead, {month} (°C)"
-msgstr "İlerideki su sıcaklığı, {month} (°C)"
+msgid "Water temperature ahead, April (°C)"
+msgstr "İlerideki su sıcaklığı, Nisan (°C)"
+
+msgid "Water temperature ahead, August (°C)"
+msgstr "İlerideki su sıcaklığı, Ağustos (°C)"
+
+msgid "Water temperature ahead, December (°C)"
+msgstr "İlerideki su sıcaklığı, Aralık (°C)"
+
+msgid "Water temperature ahead, February (°C)"
+msgstr "İlerideki su sıcaklığı, Şubat (°C)"
+
+msgid "Water temperature ahead, January (°C)"
+msgstr "İlerideki su sıcaklığı, Ocak (°C)"
+
+msgid "Water temperature ahead, July (°C)"
+msgstr "İlerideki su sıcaklığı, Temmuz (°C)"
+
+msgid "Water temperature ahead, June (°C)"
+msgstr "İlerideki su sıcaklığı, Haziran (°C)"
+
+msgid "Water temperature ahead, March (°C)"
+msgstr "İlerideki su sıcaklığı, Mart (°C)"
+
+msgid "Water temperature ahead, May (°C)"
+msgstr "İlerideki su sıcaklığı, Mayıs (°C)"
+
+msgid "Water temperature ahead, November (°C)"
+msgstr "İlerideki su sıcaklığı, Kasım (°C)"
+
+msgid "Water temperature ahead, October (°C)"
+msgstr "İlerideki su sıcaklığı, Ekim (°C)"
+
+msgid "Water temperature ahead, September (°C)"
+msgstr "İlerideki su sıcaklığı, Eylül (°C)"
 
 msgid "Water treatment"
 msgstr "Su arıtma"

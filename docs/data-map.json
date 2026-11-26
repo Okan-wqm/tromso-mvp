@@ -24588,6 +24588,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_rev.py",
         "core/tests_workspaces.py",
         "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_production_plan.py",

@@ -18296,9 +18296,41 @@ msgstr "Vannprøver, rulles sidelengs"
 msgid "Water source"
 msgstr "Vannkilde"
 
-#, python-brace-format
-msgid "Water temperature ahead, {month} (°C)"
-msgstr "Vanntemperatur framover, {month} (°C)"
+msgid "Water temperature ahead, April (°C)"
+msgstr "Vanntemperatur framover, april (°C)"
+
+msgid "Water temperature ahead, August (°C)"
+msgstr "Vanntemperatur framover, august (°C)"
+
+msgid "Water temperature ahead, December (°C)"
+msgstr "Vanntemperatur framover, desember (°C)"
+
+msgid "Water temperature ahead, February (°C)"
+msgstr "Vanntemperatur framover, februar (°C)"
+
+msgid "Water temperature ahead, January (°C)"
+msgstr "Vanntemperatur framover, januar (°C)"
+
+msgid "Water temperature ahead, July (°C)"
+msgstr "Vanntemperatur framover, juli (°C)"
+
+msgid "Water temperature ahead, June (°C)"
+msgstr "Vanntemperatur framover, juni (°C)"
+
+msgid "Water temperature ahead, March (°C)"
+msgstr "Vanntemperatur framover, mars (°C)"
+
+msgid "Water temperature ahead, May (°C)"
+msgstr "Vanntemperatur framover, mai (°C)"
+
+msgid "Water temperature ahead, November (°C)"
+msgstr "Vanntemperatur framover, november (°C)"
+
+msgid "Water temperature ahead, October (°C)"
+msgstr "Vanntemperatur framover, oktober (°C)"
+
+msgid "Water temperature ahead, September (°C)"
+msgstr "Vanntemperatur framover, september (°C)"
 
 msgid "Water treatment"
 msgstr "Vannbehandling"

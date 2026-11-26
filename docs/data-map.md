@@ -2228,7 +2228,7 @@ How an average weight was measured: reference data (Setup › Reference data ›
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › weight_sources
 - **forms**: `WeightSourceForm`
 - **constraints**: uq_weight_sources_name_live (unique: name); uq_weight_sources_code (unique: code); chk_weight_sources_manual_kept (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_migration_production_plan.py`, `farm/tests/test_production_plan.py` and 1 more
+- **tests that mention it**: `core/tests_rev.py`, `core/tests_workspaces.py`, `farm/tests/test_migration_production_plan.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -4,8 +4,6 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
-from django.utils.dates import MONTHS
-from django.utils.text import format_lazy
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.dates import company_zone as company_zone_info
@@ -33,8 +31,25 @@ PLAN_TEMPERATURES = tuple(f'plan_temperature_{month:02d}' for month in range(1, 
 PLAN_TEMPERATURES_MESSAGE = _('Give the water temperature of all twelve months, or of none.')
 
 
+# Each month's label is a msgid of its own: a form's label is looked up in the catalogs as it is written.
+MONTH_LABELS = (
+    _('Water temperature ahead, January (°C)'),
+    _('Water temperature ahead, February (°C)'),
+    _('Water temperature ahead, March (°C)'),
+    _('Water temperature ahead, April (°C)'),
+    _('Water temperature ahead, May (°C)'),
+    _('Water temperature ahead, June (°C)'),
+    _('Water temperature ahead, July (°C)'),
+    _('Water temperature ahead, August (°C)'),
+    _('Water temperature ahead, September (°C)'),
+    _('Water temperature ahead, October (°C)'),
+    _('Water temperature ahead, November (°C)'),
+    _('Water temperature ahead, December (°C)'),
+)
+
+
 def _month_temperature(month):
-    return models.DecimalField(format_lazy(_('Water temperature ahead, {month} (°C)'), month=MONTHS[month]),
+    return models.DecimalField(MONTH_LABELS[month - 1],
                                max_digits=3, decimal_places=1, null=True, blank=True,
                                validators=[MinValueValidator(TEMPERATURE.low), MaxValueValidator(TEMPERATURE.high)])
 

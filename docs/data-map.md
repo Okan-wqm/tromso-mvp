@@ -1469,7 +1469,7 @@ A day the daily job has closed for every place on one clock (a time zone): the p
 - **how it works**: A day the daily job has closed for every place on one clock.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › probe_day_closings
 - **constraints**: uq_probe_day_closings (unique: timezone, day)
-- **tests that mention it**: `farm/tests/test_degree_days_sources.py`
+- **tests that mention it**: `farm/tests/test_degree_days_sources.py`, `farm/tests/test_withdrawal_gate.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1493,7 +1493,7 @@ One CLOSED day of one temperature probe at one place: a stored fact, like a wate
 - **how it works**: One closed day of one temperature probe at one place: what the degree-days read of the sensors.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › probe_days
 - **constraints**: chk_probe_days_place (check); chk_probe_days_how (check); chk_probe_days_void (check); uq_probe_days_point_live (unique: point, day, channel_no); uq_probe_days_system_live (unique: system, day, channel_no)
-- **tests that mention it**: `farm/tests/test_degree_days_sources.py`, `farm/tests/test_withdrawal_gate_coverage.py`
+- **tests that mention it**: `farm/tests/test_degree_days_sources.py`, `farm/tests/test_withdrawal_gate.py`, `farm/tests/test_withdrawal_gate_coverage.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2302,7 +2302,7 @@ A day before which one batch's withdrawal from one treatment does NOT end, whate
 - **how it works**: A day before which one batch's withdrawal from one treatment does not end, whatever the days add up to: a recorded decision, not a stored end.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › withdrawal_floors
 - **constraints**: chk_withdrawal_floors_origin (check); chk_withdrawal_floors_reason (check); chk_withdrawal_floors_lift (check)
-- **tests that mention it**: `farm/tests/test_degree_days_sources.py`
+- **tests that mention it**: `farm/tests/test_degree_days_sources.py`, `farm/tests/test_withdrawal_gate.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

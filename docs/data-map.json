@@ -14558,7 +14558,8 @@
         "left_out": false
       },
       "tests": [
-        "farm/tests/test_degree_days_sources.py"
+        "farm/tests/test_degree_days_sources.py",
+        "farm/tests/test_withdrawal_gate.py"
       ]
     },
     {
@@ -14885,6 +14886,7 @@
       },
       "tests": [
         "farm/tests/test_degree_days_sources.py",
+        "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py"
       ]
     },
@@ -24961,7 +24963,8 @@
         "left_out": false
       },
       "tests": [
-        "farm/tests/test_degree_days_sources.py"
+        "farm/tests/test_degree_days_sources.py",
+        "farm/tests/test_withdrawal_gate.py"
       ]
     },
     {

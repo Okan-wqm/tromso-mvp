@@ -2,7 +2,7 @@
 early: a new last day, from the first day to the day before the old last day) or cancelled (it was never taken). The
 person cannot do either to their own started leave; a decider cannot touch their own. Each is logged; a refusal writes
 nothing. A correction is made only within the platform's correction window after the leave's last day
-(hr.services.correction_window_days): an older leave is refused with the reason."""
+(core.platform.correction_window_days, the platform owner's setting): an older leave is refused with the reason."""
 import re
 from datetime import date, timedelta
 from unittest import mock
@@ -10,6 +10,7 @@ from unittest import mock
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.urls import reverse
 
+from core import platform
 from core.models import AuditLog
 
 from .. import services
@@ -109,7 +110,7 @@ class CorrectionWindowTests(LeaveTestCase):
         self.leave = request_for(self.in_a, FIRST, LAST, self.annual, status='approved')
 
     def test_the_window_is_the_platform_setting_and_31_days_until_it_exists(self):
-        self.assertEqual(services.correction_window_days(), 31)
+        self.assertEqual(platform.correction_window_days(), 31)
 
     def test_inside_the_window_a_decider_corrects(self):
         other = request_for(self.in_a, date(2026, 1, 19), LAST + timedelta(days=3), self.annual, status='approved')

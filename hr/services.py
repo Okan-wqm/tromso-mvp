@@ -11,6 +11,7 @@ from django.utils.translation import gettext as _
 
 from core import audit
 from core.models import AuditLog
+from core.platform import correction_window_days
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
@@ -378,18 +379,13 @@ def can_decide(user, leave_request):
     return leave_request.status == LeaveStatus.PENDING and _decider(user, leave_request)
 
 
-def correction_window_days():
-    """How many days after a record's last day it may still be corrected: the platform owner's correction window, a
-    setting of the platform (31 days by default). Read here, in one place, so a leave correction follows the setting."""
-    return 31
-
-
 def _leave_today(leave_request):
     return site_today(read.site_on(leave_request.employee, leave_request.first_day))
 
 
 def past_correction(leave_request, today=None):
-    """The refusal of a correction to a leave whose last day lies more than the window behind today, or None."""
+    """The refusal of a correction to a leave whose last day lies more than the platform's correction window behind
+    today (core.platform, the platform owner's setting), or None."""
     today = today or _leave_today(leave_request)
     window = correction_window_days()
     if (today - leave_request.last_day).days > window:

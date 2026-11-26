@@ -24,10 +24,9 @@ from dataclasses import dataclass, field
 from django.core import checks
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Exists, ExpressionWrapper, OuterRef, Q, Value
-from django.db.models.functions import Coalesce, Now, TruncDate
+from django.db.models import Exists, ExpressionWrapper, F, Func, OuterRef, Q, Value
+from django.db.models.functions import Cast, Coalesce, Now
 
-from .dates import company_zone
 
 # The parts of a confidential piece of work a grant can open (experiments: the owner's five).
 PARTS = ('design', 'results', 'systems', 'data', 'water')
@@ -653,18 +652,33 @@ def _day_filter(model, day):
     return Q(from_on__lte=ref, until_on__gte=ref)
 
 
+def _cell_day(moment):
+    """THE seal's day rule in SQL (landing review 3, S4): a moment's day on the clock of the cell it is compared with,
+    the cell's site's (`zone`, a column of the provider's cells), never the company's: a cell's days are its site's.
+    `day_on` is the same rule in Python."""
+    return Cast(Func(F('zone'), moment, function='timezone', output_field=models.DateTimeField()), models.DateField())
+
+
+def day_on(moment, zone):
+    """THE seal's day rule in Python: `moment`'s day on the clock of `zone` (a cell's site's): the day an alarm opened
+    (alarms/place.py), the day a raw-data row is dated (experiments/rawdata.py). `_cell_day` is the same rule in SQL."""
+    from django.utils import timezone
+    return timezone.localtime(moment, zone).date()
+
+
 def _today():
-    """Today on the company's clock, read by the database when the query runs (never the day the queryset was built)."""
-    return TruncDate(Now(), tzinfo=company_zone())
+    """Today on the cell's site's clock, read by the database when the query runs (never the day the queryset was
+    built)."""
+    return _cell_day(Now())
 
 
 def _day_ref(model, path):
     target = _field_path(model, path)[-1]
     ref = OuterRef(path)
     if isinstance(target, models.DateTimeField):
-        # The moment's day on the site's clock; the outer reference is given its type, which a reference to the outer
-        # query does not carry (TruncDate asks for it).
-        return TruncDate(ExpressionWrapper(ref, output_field=models.DateTimeField()), tzinfo=company_zone())
+        # The moment's day on the cell's site's clock; the outer reference is given its type, which a reference to the
+        # outer query does not carry.
+        return _cell_day(ExpressionWrapper(ref, output_field=models.DateTimeField()))
     return ExpressionWrapper(ref, output_field=models.DateField())
 
 

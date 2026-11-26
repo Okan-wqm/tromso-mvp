@@ -609,6 +609,7 @@ class SealedCell(models.Model):
     from_on = models.DateField()
     until_on = models.DateField()
     work = models.UUIDField(db_column='experiment_id')
+    zone = models.CharField(max_length=50)        # its site's time zone: its days are that clock's (experiments 0008)
 
     class Meta:
         managed = False

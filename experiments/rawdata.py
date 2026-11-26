@@ -14,7 +14,9 @@ import csv
 import io
 from django.utils import timezone
 
+from core import sealing
 from core.dates import company_zone
+from farm.models.site import zone_of
 from farm.feeding import read as feeding_read
 from farm.health import read as health_read
 from farm.stock import read as stock_read
@@ -46,7 +48,7 @@ def rows(experiment):
     cells = read.cells(experiment)
     if not cells:
         return found
-    zone = company_zone()
+    zone = zone_of(experiment.site)       # the site's clock: its days, as the seal reads them (review 3, S4)
     target = read.feed_target(experiment)
     units = {cell.unit.pk for cell in cells}
     first, last = min(cell.first for cell in cells), max(cell.last for cell in cells)
@@ -74,7 +76,7 @@ def rows(experiment):
     systems = {cell.unit.system_id for cell in cells if cell.unit.system_id}
     for sample in water_read.live_samples_at(units, systems):
         moment = timezone.localtime(sample.measured_at, zone)
-        day = moment.date()
+        day = sealing.day_on(sample.measured_at, zone)
         if not first <= day <= last:
             continue
         reached = ([sample.point.unit_id] if sample.point.unit_id else

@@ -68,11 +68,11 @@ def declared(spec, key=''):
 
 
 def opening_day(alarm):
-    """The day an alarm opened, on the company's clock: the day its seal reads its cells on (alarms/sealing.py)."""
-    from django.utils import timezone
-
-    from core.dates import company_zone
-    return timezone.localtime(alarm.opened_at, company_zone()).date()
+    """The day an alarm opened, on its site's clock: the day its seal reads its cells on (alarms/sealing.py; the seal's
+    one day rule, core.sealing.day_on, review 3, S4)."""
+    from core import sealing
+    from farm.models.site import zone_of
+    return sealing.day_on(alarm.opened_at, zone_of(alarm.site))
 
 
 def of_alarm(alarm):

@@ -153,3 +153,18 @@ test('the withdrawal guard\'s question: the warnings, the box with their fingerp
   assert.ok(squash(second).includes('A second person must approve this.'));
   assert.ok(squash(second).includes(question.messages[0] ?? ''));
 });
+
+test('a dialog says its intro first inside the form, and a Void is the danger button', async () => {
+  const { RecordForm } = await import('./RecordForm.js');
+  const props = {
+    form: { action: '/void/1/', multipart: false, hidden: [], errors: [], tabs: [{ key: 'form', label: '', help: null, hasErrors: false,
+      fieldsets: [{ label: '', help: null, fields: [] }] }] },
+    csrfToken: 't', submit: 'Void', cancel: { href: '/back/', label: 'Cancel' }, optional: 'optional', tabsLabel: 'Void', hasErrors: '(has errors)',
+    delete: null, history: null, danger: true,
+    intro: [{ kind: 'help' as const, text: 'Void the feeding of 22.11.2026 in TT-01?' }, { kind: 'notice' as const, tone: 'warning' as const, text: 'Fasting.' }],
+  };
+  const page = renderToStaticMarkup(<RecordForm {...props} />);
+  assert.ok(page.indexOf('Void the feeding of 22.11.2026 in TT-01?') < page.indexOf('type="submit"'), 'the intro comes before the buttons');
+  assert.match(page, /<form[^>]*>[^]*Void the feeding of 22\.11\.2026 in TT-01\?[^]*Fasting\./);
+  assert.match(page, /data-variant="danger"[^>]*type="submit"|type="submit"[^>]*data-variant="danger"/);
+});

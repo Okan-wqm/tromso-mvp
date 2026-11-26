@@ -1,0 +1,32 @@
+# Database roles
+
+Made by `deploy/db/sql/roles.sql` at the database's first start (as the superuser), kept by
+`deploy/db/sql/grants.sql` after every migration (the release step), proved by `deploy/scripts/check-roles.sh` (on a
+farm's server after install and after every upgrade; on every run of the go-live stack workflow).
+
+| Role | Signs in from | May | May not |
+|---|---|---|---|
+| `postgres` | nothing that runs; the `restore` service, a person's maintenance | everything (superuser) | (not used by any service in normal running) |
+| `balik_owner` | the `release` step | own the database, the schema and every table: migrate | create roles or databases; it is no superuser |
+| `balik_app` | `web`, `jobs` (and the alarm worker) | `SELECT`, `INSERT`, `UPDATE`, `DELETE` on the tables (but `UPDATE`/`DELETE` on the append-only ones, below), use the sequences | `TRUNCATE`, `CREATE` (tables, indexes, schemas), `ALTER`, `DROP`, `REFERENCES`, `TRIGGER`, disable a trigger, grant |
+| `sensors_ingest` | `ingest` | what migrations `sensors/0001`, `0002`, `0006` grant: read its contract (`sensors_ingest_config`, `sensors_contract`, `sensors_quality_flag`), insert readings, read and write its runtime tables | read any other table, delete or update readings, any DDL |
+| `balik_backup` | `backup` | read every row (`pg_read_all_data`), stream the WAL (`REPLICATION`) | write anything, any DDL. It can read the roles' password verifiers (`pg_authid`): a physical backup copies the whole server, them included, so whoever holds this role or the backups holds them too; the repository is encrypted and append-only for the farm |
+
+What follows from it:
+
+- A flaw in a page cannot drop, empty or reshape a table: the role the web server signs in as has no such right.
+  The activity log's append-only trigger cannot be set aside by the app either (only the owner may).
+- **Commands that need the owner** run in the release service's container (it signs in as `balik_owner`):
+  ```
+  dc run --rm --no-deps release python manage.py private_log_values --dry-run
+  dc run --rm --no-deps release python manage.py erase_stranger_address <address> ...
+  ```
+  (`erase_stranger_address` sets the log's trigger aside inside its transaction, which needs the table's owner;
+  `docs/erasure.md`.) Every other product command (README, Management commands) runs as the app role:
+  `dc run --rm manage python manage.py <command>`.
+- `manage.py sensors_ingest_role` is a development tool on a farm's server: the ingest's role signs in with the
+  password `roles.sql` gave it.
+- **The append-only tables** (the activity log, the alarms' history, the withdrawal acknowledgements, the filed reports'
+  snapshots) are refused `UPDATE` and `DELETE` by the app role's rights as well as by their triggers (grants.sql). One
+  exception: `alarms` keeps `UPDATE`, because the alarm service locks an alarm's row (`SELECT ... FOR UPDATE`, which
+  needs it); its trigger still refuses every change. `check-roles.sh` tries them.

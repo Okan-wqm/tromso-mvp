@@ -20,6 +20,10 @@ TOPIC_RULES = (
     (~Q(topic__regex=r'\+.*\+'), 'chk_sensors_device_topic_plus', _('A topic has at most one “+”.')),
     (~Q(topic__contains='+') | Q(topic__regex=r'(^|/)\+(/|$)'), 'chk_sensors_device_topic_level',
      _('A “+” stands for a whole level of the topic, between slashes.')),
+    # The broker's acl is a text file of lines (manage.py sensor_broker_sync): a line break in a topic would write a
+    # rule of its own (security review S1), a space or a tab a topic nobody publishes on.
+    (~Q(topic__regex=r'[[:space:][:cntrl:]]'), 'chk_sensors_device_topic_plain',
+     _('A topic has no spaces, tabs or line breaks.')),
 )
 
 

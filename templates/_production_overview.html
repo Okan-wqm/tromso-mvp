@@ -68,12 +68,12 @@
         <li class="tw:grid tw:gap-x-4 tw:gap-y-2 tw:py-2 tw:pr-3 tw:pl-4 tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:xl:grid-cols-[minmax(0,19rem)_minmax(0,1fr)_auto] {% if status == "critical" %}tw:[box-shadow:var(--edge-crit)]{% else %}tw:[box-shadow:var(--edge-warn)]{% endif %}" data-attention="water">
           <div class="tw:grid tw:gap-1 tw:min-w-0 tw:col-start-1">
             <span class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-2 tw:gap-y-1">{% include "farm/_water_chip.html" with status=status old=row.water.old_alert %}<b>{{ owner.code }}</b></span>
-            <span class="tw:text-small tw:text-ink-2">{% if row.loop %}{{ point.name }}, {{ owner.site.name }}{% else %}{{ point.name }}, {{ owner.production_department.name }}{% if owner.production_department.site %}, {{ owner.production_department.site.name }}{% endif %}{% endif %}</span>
+            <span class="tw:text-small tw:text-ink-2">{% if row.loop %}{{ point.name }}, {{ owner.site.name }}{% else %}{% if point %}{{ point.name }}, {% endif %}{{ owner.production_department.name }}{% if owner.production_department.site %}, {{ owner.production_department.site.name }}{% endif %}{% endif %}</span>
           </div>
           <div class="tw:flex tw:flex-wrap tw:gap-x-6 tw:gap-y-1 tw:min-w-0 tw:col-start-1 tw:xl:col-start-2 tw:xl:row-start-1 tw:[&_.ui-value]:flex-wrap tw:[&_b]:whitespace-normal tw:[&_b_.wq-source]:inline tw:[&_b_.wq-source]:ml-2">
             {% for reading, judged, old in row.water.alerts %}
             <span class="ui-value tw:flex-row tw:items-baseline tw:gap-2" data-status="{{ judged }}"><span class="tw:text-small tw:text-ink-2 tw:whitespace-nowrap">{{ reading.parameter.short }}</span><span class="ui-value-figure tw:items-start">{% if judged == "critical" %}{% include "icons/_icon.html" with name="octagon" %}{% else %}{% include "icons/_icon.html" with name="alert" %}{% endif %}{% include "farm/_water_value.html" with tag="b" latest=True source=True %}</span></span>
-            {% endfor %}
+            {% endfor %}{% for why in row.water.why_silent %}<span class="tw:text-small tw:text-ink-2" data-silent>{{ why }}</span>{% endfor %}
           </div>
           <a class="ui-btn tw:min-h-8 tw:px-3 tw:text-small tw:col-start-2 tw:row-start-1 tw:row-span-2 tw:self-center tw:justify-self-end tw:xl:col-start-3 tw:xl:row-span-1 tw:coarse:min-h-12" href="{{ row.history_url }}">{% trans "History" %}</a>
         </li>

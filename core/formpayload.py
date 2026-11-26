@@ -14,6 +14,7 @@ A value the payload carries is a string, a number, a boolean, None, or a list or
 said in the request's language, a model choice by its key; anything else is refused (UnsafeValue) instead of being
 turned into a string nobody checked."""
 import re
+import uuid
 from html.parser import HTMLParser
 
 from django import forms
@@ -85,10 +86,11 @@ def kind_of(widget):
 
 
 def plain(value):
-    """`value` as JSON: lazy text said now, a model choice by its key; refused when it is anything else."""
+    """`value` as JSON: lazy text said now, a model choice by its key (a UUID key as the text the markup writes: a choice
+    list built by hand, the feeding form's feeds); refused when it is anything else."""
     if value is None or isinstance(value, (bool, int, float)):
         return value
-    if isinstance(value, (str, Promise)):
+    if isinstance(value, (str, Promise, uuid.UUID)):
         return str(value)
     if isinstance(value, ModelChoiceIteratorValue):
         return str(value)

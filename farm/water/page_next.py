@@ -49,7 +49,7 @@ def latest_props(request, context):
             'point': L.cell(owner.code, href=row['history_url'], strong=True,
                             sub=[f'{point.name} · {point.get_kind_display()}' if point else _('No middle point'), place]),
             'status': L.cell(chip=L.chip(POINT_CHIP.get(water.status, 'neutral'), said),
-                             sub=[water.why_no_limit, *water.why_unevaluated]),
+                             sub=[water.why_no_limit, *water.why_unevaluated, *water.why_silent]),
             **{parameter.code: value_cell(reading, whole=True)
                for parameter, reading in zip(context['columns'], row['cells'])},
         }

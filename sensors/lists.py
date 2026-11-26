@@ -8,7 +8,7 @@ from datetime import timedelta
 from django.template.defaultfilters import floatformat
 from django.urls import reverse
 from django.utils import formats, timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, ngettext
 
 from core import listprops as L
 from core.templatetags.dates import company_clock, site_clock, zone_for
@@ -214,16 +214,37 @@ def binding_timeline(rows, now):
 
 
 def alarm_rules(view, objects, context):
+    """A default rule (the "No fresh value" of a quantity the water limits judge) is marked Default, its time is the
+    channel's freshness, it has no Delete (AlarmRuleResource.allowed) and says why it is switched off; the channels no
+    active "No fresh value" rule covers (`uncovered`, AlarmRuleResource.filter_list) are a warning above the list."""
+    notices = [L.notice('sent', 'neutral', _('Each time a rule holds it is an alarm of Company › Alarms: its recipient '
+                                             'rules say who is notified.'))]
+    uncovered = context.get('uncovered') or []
+    if uncovered:
+        count = len(uncovered)
+        said = ngettext('One channel of a water quantity the limits judge has no active “No fresh value” rule: if its '
+                        'probe stops sending, nothing raises an alarm.',
+                        '%(counter)s channels of a water quantity the limits judge have no active “No fresh value” rule: '
+                        'if their probes stop sending, nothing raises an alarm.', count) % {'counter': count}
+        named = ', '.join(f'{channel} ({channel.get_quantity_display()})' for channel in uncovered)
+        notices.append(L.notice('uncovered', 'warning', f'{said} {named}'))
+
+    def rule(row):
+        cell = L.title(view, context, row, str(row))
+        if row.is_default:
+            cell['chips'] = [L.chip('neutral', _('Default'))]
+        return cell
+
     return {'columns': [L.column('rule', _('Rule')), L.column('threshold', _('Threshold'), numeric=True),
                         L.column('for', _('For (seconds)'), numeric=True), L.column('severity', _('Severity')),
                         L.column('state', _('State'))],
-            'notices': [L.notice('sent', 'neutral', _('Each time a rule holds it is an alarm of Company › Alarms: its '
-                                                      'recipient rules say who is notified.'))],
+            'notices': notices,
             'rows': [L.row(row.pk, {
-                'rule': L.title(view, context, row, str(row)),
+                'rule': rule(row),
                 'threshold': L.cell(measured(row.threshold, row.quantity_code)),
-                'for': L.cell(row.for_s),
+                'for': L.cell(_('at the channel’s freshness') if row.is_default else row.for_s),
                 'severity': L.cell(chip=L.chip('critical' if row.severity == 'critical' else 'warning',
                                                row.get_severity_display())),
-                'state': L.cell(chip=active(row.is_active)),
+                'state': L.cell(chip=active(row.is_active),
+                                sub=[row.off_reason] if not row.is_active and row.off_reason else ()),
             }, L.edit_delete(view, context, row, str(row))) for row in objects]}

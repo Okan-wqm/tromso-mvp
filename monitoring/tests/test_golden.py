@@ -23,6 +23,9 @@ from ..cards.builtin import DETAILED
 from farm import withdrawal_gate
 
 PAGE, CARDS = reverse('monitoring:monitor'), reverse('monitoring:cards')
+# The units with fish the recording says grey "no recent data" for a missing or old oxygen (T-01: no water; G-03: its
+# water 30 h old; G-04: never sampled): red since the owner's decision of 2026-11-23 (`GoldenFarm.setUp`).
+RECORDED_GREY = frozenset({'T-01', 'G-03', 'G-04'})
 
 
 class GoldenFarm(MonitoringCase):
@@ -38,6 +41,22 @@ class GoldenFarm(MonitoringCase):
         clock = mock.patch('django.utils.timezone.now', return_value=pinned)
         clock.start()
         self.addCleanup(clock.stop)
+        # The recording characterises the cards before card templates, when a missing or old oxygen was grey "no recent
+        # data"; the owner's decision of 2026-11-23 (a unit with fish whose oxygen has no fresh value is critical) is
+        # held by monitoring/tests/test_silent_oxygen.py. It stands aside here for the three units recorded grey alone
+        # (RECORDED_GREY: their water is read as if they held no fish, which only the silence asks), so every other card
+        # is read through the production path of the decision (review 6, m3).
+        from farm.models import Tank as Unit
+        from farm.water import read as water_read
+        real_holds = water_read.Context.holds_fish
+
+        def holds_unless_recorded_grey(context, place, day):
+            unit = place if isinstance(place, Unit) else (place.unit if place.unit_id else None)
+            return real_holds(context, place, day) and (unit is None or unit.code not in RECORDED_GREY)
+
+        silence = mock.patch.object(water_read.Context, 'holds_fish', holds_unless_recorded_grey)
+        silence.start()
+        self.addCleanup(silence.stop)
         super().setUp()
         self.limit('oxygen_mg_l', critical_low=6, warning_low=7)
         self.limit('ph', warning_low='6.5', warning_high='8.5')

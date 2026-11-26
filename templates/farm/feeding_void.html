@@ -2,10 +2,4 @@
 {% load i18n feeding %}
 {% comment %} Voiding a feeding (farm.feeding.views.void_feeding): the stock's void dialog; the feeding stops counting
    and stays in the history, struck through, with its reason.{% endcomment %}
-{% block entry %}
-<p class="confirm-question">{% blocktrans trimmed with date=record.date|date:"DATE_FORMAT" unit=record.unit.code %}Void the feeding of {{ date }} in {{ unit }}?{% endblocktrans %}</p>
-<ul class="op-lines">
-  <li>{{ record.amount_kg|feed_kg }} · {{ record.feed }}{% if record.meals %} · {% blocktrans trimmed count meals=record.meals %}{{ meals }} meal{% plural %}{{ meals }} meals{% endblocktrans %}{% endif %}</li>
-</ul>
-<p>{% trans "FCR and the feed figures are worked out again without it. To correct a feeding, void it and record it again." %}</p>
-{% endblock %}
+{% block entry %}{% include "farm/_feeding_void_entry.html" %}{% endblock %}

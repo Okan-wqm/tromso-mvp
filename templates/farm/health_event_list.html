@@ -1,46 +1,46 @@
 {% extends "crud/list.html" %}
-{% load i18n stock health dates %}
+{% load i18n stock health dates farm_words %}
 {% comment %} Operations › Health events (farm.resources.health_event): observations, vet visits, lab results and rises in
    mortality, newest first. A notifiable diagnosis not yet reported raises the Notify Mattilsynet banner; the
    deaths of an event are the mortality and cull operations recorded under it.{% endcomment %}
 {% block search_placeholder %}{% trans "Search findings, units, site or vet" %}{% endblock %}
-{% block filters %}
+{% block filters %}{% farm_words as fw %}
 <form method="get" class="toolbar-filter">
   {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
-  <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+  <label class="sr-only" for="site-filter">{{ fw.site }}</label>
   <select id="site-filter" name="site" data-autosubmit>
-    <option value="">{% trans "All sites" %}</option>
+    <option value="">{{ fw.all_sites }}</option>
     {% for site in sites %}<option value="{{ site.pk }}"{% if chosen_site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
   </select>
-  <label class="sr-only" for="kind-filter">{% trans "Kind" %}</label>
+  <label class="sr-only" for="kind-filter">{{ fw.kind }}</label>
   <select id="kind-filter" name="kind" data-autosubmit>
-    <option value="">{% trans "All kinds" %}</option>
+    <option value="">{{ fw.all_kinds }}</option>
     {% for value, label in kinds %}<option value="{{ value }}"{% if chosen_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
   </select>
-  <label class="sr-only" for="state-filter">{% trans "Status" %}</label>
+  <label class="sr-only" for="state-filter">{{ fw.status }}</label>
   <select id="state-filter" name="state" data-autosubmit>
-    <option value="">{% trans "Open and closed" %}</option>
+    <option value="">{{ fw.open_and_closed }}</option>
     {% for value, label in states %}<option value="{{ value }}"{% if chosen_state == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
   </select>
-  <label class="check"><input type="checkbox" name="voided" value="1"{% if show_voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
+  <label class="check"><input type="checkbox" name="voided" value="1"{% if show_voided %} checked{% endif %} data-autosubmit> {{ fw.show_voided }}</label>
   <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
 </form>
 {% endblock %}
-{% block notice %}
+{% block notice %}{% farm_words as fw %}
 {% if to_notify %}
 <div class="notice notice-error" role="alert">
-  <strong>{% trans "Notify Mattilsynet" %}</strong>
-  {% trans "A listed disease is suspected or confirmed and Mattilsynet has not been notified: notify at once (dyrehelseforskriften § 7), then record the filing of the notice." %}
+  <strong>{{ fw.notify_mattilsynet }}</strong>
+  {{ fw.a_listed_disease_is_suspected_or_confirmed }}
   <ul>{% for event, url in to_notify %}<li>{% if url %}<a href="{{ url }}">{{ event }}</a>{% elif can_change %}<a href="{% url 'farm:healthevent_edit' event.pk %}" data-modal>{{ event }}</a>{% else %}{{ event }}{% endif %} · {{ event.site.name }} · {{ event.get_confirmation_display }}</li>{% endfor %}</ul>
 </div>
 {% endif %}
 {% endblock %}
 {% block empty_text %}{% trans "What was seen, found or advised about the fish's health: observations, vet and fish-health visits, lab results and rises in mortality." %}{% endblock %}
-{% block items %}
+{% block items %}{% farm_words as fw %}
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">{% trans "Date" %}</th><th scope="col">{% trans "Event" %}</th><th scope="col">{% trans "Where" %}</th><th scope="col">{% trans "Signs" %}</th><th scope="col">{% trans "Mattilsynet" %}</th><th scope="col">{% trans "Examined by" %}</th><th scope="col" class="num">{% trans "Deaths" %}</th><th scope="col">{% trans "Closed" %}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+      <tr><th scope="col">{{ fw.date }}</th><th scope="col">{{ fw.event }}</th><th scope="col">{{ fw.where }}</th><th scope="col">{{ fw.signs }}</th><th scope="col">{{ fw.mattilsynet }}</th><th scope="col">{{ fw.examined_by }}</th><th scope="col" class="num">{{ fw.deaths }}</th><th scope="col">{{ fw.closed }}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
     <tbody>
       {% for event in objects %}
@@ -51,16 +51,16 @@
           {% if event.diagnosis %}<span class="row-sub">{{ event.get_diagnosis_display }} · {{ event.get_confirmation_display }}{% with disease=event.disease %}{% if disease.local_name %} ({{ disease.local_name }}){% endif %} · {{ disease.listing_label }}{% endwith %}</span>{% endif %}
           {% if event.findings %}<span class="row-sub">{{ event.findings|truncatechars:120 }}</span>{% endif %}
         </td>
-        <td>{{ event.site.name }}<span class="row-sub">{% for unit in event.units.all %}{% if not forloop.first %}, {% endif %}{{ unit.code }}{% empty %}{% trans "Whole site" %}{% endfor %}</span></td>
+        <td>{{ event.site.name }}<span class="row-sub">{% for unit in event.units.all %}{% if not forloop.first %}, {% endif %}{{ unit.code }}{% empty %}{{ fw.whole_site }}{% endfor %}</span></td>
         <td>{% for label in event.sign_labels %}{% if not forloop.first %}, {% endif %}{{ label }}{% empty %}—{% endfor %}</td>
-        <td>{% if event.notifiable %}{% with notified=told|told_of:event %}{% if notified %}{% blocktrans trimmed with moment=notified.at|site_clock:event.site|date:"DATETIME_FORMAT" %}Notified {{ moment }}{% endblocktrans %}{% elif told is not None and not event.is_deleted %}<strong class="over-text">{% trans "Notify at once" %}</strong>{% else %}—{% endif %}{% endwith %}{% else %}—{% endif %}</td>
+        <td>{% if event.notifiable %}{% with notified=told|told_of:event %}{% if notified %}{% blocktrans trimmed with moment=notified.at|site_clock:event.site|date:"DATETIME_FORMAT" %}Notified {{ moment }}{% endblocktrans %}{% elif told is not None and not event.is_deleted %}<strong class="over-text">{{ fw.notify_at_once }}</strong>{% else %}—{% endif %}{% endwith %}{% else %}—{% endif %}</td>
         <td>{{ event.examined_by|default:"—" }}{% if event.vet %}<span class="row-sub">{{ event.vet.name }}</span>{% endif %}{% if event.lab %}<span class="row-sub">{{ event.lab.name }}{% if event.lab_reference %} · {{ event.lab_reference }}{% endif %}</span>{% endif %}</td>
         <td class="num">{{ event.deaths|fish }}</td>
-        <td class="nowrap">{% if event.closed_on %}{{ event.closed_on|date:"DATE_FORMAT" }}{% if event.outcome %}<span class="row-sub">{{ event.outcome|truncatechars:80 }}</span>{% endif %}{% else %}{% trans "Open" %}{% endif %}{% if event.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=event.void_reason name=event.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
+        <td class="nowrap">{% if event.closed_on %}{{ event.closed_on|date:"DATE_FORMAT" }}{% if event.outcome %}<span class="row-sub">{{ event.outcome|truncatechars:80 }}</span>{% endif %}{% else %}{{ fw.open_2 }}{% endif %}{% if event.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=event.void_reason name=event.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
         <td class="row-actions">
-          {% if event.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% else %}
-          {% if can_change %}<a class="icon-button" href="{% url 'farm:healthevent_edit' event.pk %}" data-modal title="{% trans "Edit" %}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{% trans "Edit" %}</span></a>{% endif %}
-          {% if can_void and event|event_voidable %}<a class="op-void" href="{% url 'farm:healthevent_void' event.pk %}" data-modal>{% trans "Void" %}</a>{% endif %}
+          {% if event.is_deleted %}<span class="badge badge-voided">{{ fw.voided }}</span>{% else %}
+          {% if can_change %}<a class="icon-button" href="{% url 'farm:healthevent_edit' event.pk %}" data-modal title="{{ fw.edit }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{{ fw.edit }}</span></a>{% endif %}
+          {% if can_void and event|event_voidable %}<a class="op-void" href="{% url 'farm:healthevent_void' event.pk %}" data-modal>{{ fw.void }}</a>{% endif %}
           {% endif %}
         </td>
       </tr>

@@ -1,0 +1,10 @@
+# The production stack's proof on a throwaway runner (deploy/ci/stack.sh, .github/workflows/go-live-stack.yml), laid
+# over deploy/compose.yml: the "off-server" backup repository is a folder of the runner (OFFSITE_DIR), mounted where
+# RESTIC_REPOSITORY points (/offsite/repo). Nothing else differs from a farm's server.
+services:
+  backup:
+    volumes:
+      - ${OFFSITE_DIR:?}:/offsite
+  restore:
+    volumes:
+      - ${OFFSITE_DIR:?}:/offsite

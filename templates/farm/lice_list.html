@@ -1,55 +1,55 @@
 {% extends base_template %}
-{% load i18n health dates %}
+{% load i18n health dates farm_words %}
 {% comment %} Operations › Sea-lice counts (farm.health.views.lice_counts): each site's weekly averages against the statutory
    limit of lakselusforskriften § 8, worked out from the counts (Vedlegg 1 point 6), then every count. An
    average at or over the limit is a warning; nobody is alerted.{% endcomment %}
 {% block title %}{{ title }}{% endblock %}
 {% block eyebrow %}{{ eyebrow }}{% endblock %}
 {% block heading %}{{ title }}{% endblock %}
-{% block content %}
+{% block content %}{% farm_words as fw %}
 <div class="toolbar">
   <form method="get" class="toolbar-filter feeding-filters" data-omit-empty>
-    <label class="sr-only" for="site-filter">{% trans "Site" %}</label>
+    <label class="sr-only" for="site-filter">{{ fw.site }}</label>
     <select id="site-filter" name="site" data-autosubmit>
-      <option value="">{% trans "All sites" %}</option>
+      <option value="">{{ fw.all_sites }}</option>
       {% for site in choices.site %}<option value="{{ site.pk }}"{% if params.site == site.pk|stringformat:"s" %} selected{% endif %}>{{ site.name }}</option>{% endfor %}
     </select>
-    <label class="sr-only" for="unit-filter">{% trans "Unit" %}</label>
+    <label class="sr-only" for="unit-filter">{{ fw.unit }}</label>
     <select id="unit-filter" name="unit" data-autosubmit>
-      <option value="">{% trans "All units" %}</option>
+      <option value="">{{ fw.all_units }}</option>
       {% for unit in choices.unit %}<option value="{{ unit.pk }}"{% if params.unit == unit.pk|stringformat:"s" %} selected{% endif %}>{{ unit.code }} · {{ unit.name }}</option>{% endfor %}
     </select>
-    <label class="date-filter">{% trans "From" %} {% day_input "from" params.from %}</label>
-    <label class="date-filter">{% trans "To" %} {% day_input "to" params.to %}</label>
-    <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {% trans "Show voided" %}</label>
+    <label class="date-filter">{{ fw.from }} {% day_input "from" params.from %}</label>
+    <label class="date-filter">{{ fw.to }} {% day_input "to" params.to %}</label>
+    <label class="check"><input type="checkbox" name="voided" value="1"{% if params.voided %} checked{% endif %} data-autosubmit> {{ fw.show_voided }}</label>
     <button type="submit" class="button button-ghost">{% trans "Filter" %}</button>
   </form>
-  {% if record_url %}<a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{% trans "Record sea-lice count" %}</a>{% endif %}
+  {% if record_url %}<a class="button button-inline" href="{{ record_url }}" data-modal>{% include "icons/_icon.html" with name="plus" %}{{ fw.record_sea_lice_count }}</a>{% endif %}
 </div>
 
 {% if weeks %}
 <section class="drawer-section">
-  <h2>{% trans "Weekly averages" %}</h2>
-  <p class="panel-help">{% blocktrans trimmed count weeks=weeks_shown %}The latest week of counts, per site.{% plural %}The latest {{ weeks }} weeks of counts, per site.{% endblocktrans %} {% trans "A site averages the averages of its units counted that week, every unit weighing the same, and must stay below the limit: 0.5 adult female lice per fish, 0.2 in the spring weeks (lakselusforskriften § 8 and Vedlegg 1). The latest count of each unit in the week counts." %}</p>
+  <h2>{{ fw.weekly_averages }}</h2>
+  <p class="panel-help">{% blocktrans trimmed count weeks=weeks_shown %}The latest week of counts, per site.{% plural %}The latest {{ weeks }} weeks of counts, per site.{% endblocktrans %} {{ fw.a_site_averages_the_averages_of_its }}</p>
   <div class="table-wrap">
     <table class="data-table lice-weeks">
       <thead>
         <tr>
-          <th scope="col">{% trans "Week" %}</th>
-          <th scope="col">{% trans "Site" %}</th>
-          <th scope="col" class="num">{% trans "Adult females per fish" %}</th>
-          <th scope="col" class="num">{% trans "Limit" %}</th>
-          <th scope="col" class="num">{% trans "Mobile per fish" %}</th>
-          <th scope="col" class="num">{% trans "Attached per fish" %}</th>
-          <th scope="col">{% trans "Units counted" %}</th>
+          <th scope="col">{{ fw.week }}</th>
+          <th scope="col">{{ fw.site }}</th>
+          <th scope="col" class="num">{{ fw.adult_females_per_fish }}</th>
+          <th scope="col" class="num">{{ fw.limit }}</th>
+          <th scope="col" class="num">{{ fw.mobile_per_fish }}</th>
+          <th scope="col" class="num">{{ fw.attached_per_fish }}</th>
+          <th scope="col">{{ fw.units_counted }}</th>
         </tr>
       </thead>
       <tbody>
         {% for week in weeks %}
         <tr>
           <td class="nowrap">{% blocktrans trimmed with week=week.week year=week.year %}Week {{ week }}, {{ year }}{% endblocktrans %}</td>
-          <td>{{ week.site.name|default:"—" }}{% if week.area_unknown %}<span class="row-sub">{% trans "Area not set: the stricter limit applies (Facility › Sites)" %}</span>{% endif %}</td>
-          <td class="num">{% if week.over_limit %}<strong class="over-text">{{ week.adult_females|lice }}</strong> <span class="over-badge">{% trans "Over the limit" %}</span>{% else %}{{ week.adult_females|lice }}{% endif %}</td>
+          <td>{{ week.site.name|default:"—" }}{% if week.area_unknown %}<span class="row-sub">{{ fw.area_not_set_the_stricter_limit_applies }}</span>{% endif %}</td>
+          <td class="num">{% if week.over_limit %}<strong class="over-text">{{ week.adult_females|lice }}</strong> <span class="over-badge">{{ fw.over_the_limit }}</span>{% else %}{{ week.adult_females|lice }}{% endif %}</td>
           <td class="num">{{ week.limit|lice }}</td>
           <td class="num">{{ week.mobile|lice }}</td>
           <td class="num">{{ week.attached|lice }}</td>
@@ -68,11 +68,11 @@
 <div class="empty">
   {% include "icons/_icon.html" with name="bug" %}
   {% if filtered %}
-  <h2>{% trans "No count matches these filters." %}</h2>
-  <p><a href="{{ clear_url }}">{% trans "Clear filters" %}</a></p>
+  <h2>{{ fw.no_count_matches_these_filters }}</h2>
+  <p><a href="{{ clear_url }}">{{ fw.clear_filters }}</a></p>
   {% else %}
-  <h2>{% trans "No sea-lice count recorded yet" %}</h2>
-  <p>{% trans "Lice are counted at least every 7 days at 4 °C or above, every 14 days below (lakselusforskriften § 6)." %}</p>
+  <h2>{{ fw.no_sea_lice_count_recorded_yet }}</h2>
+  <p>{{ fw.lice_are_counted_at_least_every_7 }}</p>
   {% endif %}
 </div>
 {% else %}
@@ -80,13 +80,13 @@
   <table class="data-table lice-table">
     <thead>
       <tr>
-        <th scope="col">{% trans "Date" %}</th>
-        <th scope="col">{% trans "Unit" %}</th>
-        <th scope="col" class="num">{% trans "Fish examined" %}</th>
-        <th scope="col" class="num">{% trans "Adult females" %}</th>
-        <th scope="col" class="num">{% trans "Mobile" %}</th>
-        <th scope="col" class="num">{% trans "Attached" %}</th>
-        <th scope="col">{% trans "Recorded by" %}</th>
+        <th scope="col">{{ fw.date }}</th>
+        <th scope="col">{{ fw.unit }}</th>
+        <th scope="col" class="num">{{ fw.fish_examined }}</th>
+        <th scope="col" class="num">{{ fw.adult_females }}</th>
+        <th scope="col" class="num">{{ fw.mobile }}</th>
+        <th scope="col" class="num">{{ fw.attached }}</th>
+        <th scope="col">{{ fw.recorded_by }}</th>
         <th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th>
       </tr>
     </thead>
@@ -100,7 +100,7 @@
         <td class="num">{{ count.mobile }}<span class="row-sub">{% blocktrans trimmed with value=count|per_fish:"mobile" %}{{ value }} per fish{% endblocktrans %}</span></td>
         <td class="num">{{ count.attached }}<span class="row-sub">{% blocktrans trimmed with value=count|per_fish:"attached" %}{{ value }} per fish{% endblocktrans %}</span></td>
         <td>{{ count.created_by.get_username|default:"system" }}<span class="row-sub">{{ count.created_at|site_clock:count.unit.production_department.site|date:"DATETIME_FORMAT" }}</span>{% if count.notes %}<span class="row-sub">{{ count.notes }}</span>{% endif %}{% if count.is_deleted %}<span class="row-sub">{% blocktrans trimmed with reason=count.void_reason name=count.deleted_by.get_username|default:"system" %}voided by {{ name }}: {{ reason }}{% endblocktrans %}</span>{% endif %}</td>
-        <td>{% if count.is_deleted %}<span class="badge badge-voided">{% trans "Voided" %}</span>{% elif row.void_url and count|unit_voidable %}<a class="op-void" href="{{ row.void_url }}" data-modal>{% trans "Void" %}</a>{% endif %}</td>
+        <td>{% if count.is_deleted %}<span class="badge badge-voided">{{ fw.voided }}</span>{% elif row.void_url and count|unit_voidable %}<a class="op-void" href="{{ row.void_url }}" data-modal>{{ fw.void }}</a>{% endif %}</td>
       </tr>
       {% endwith %}{% endfor %}
     </tbody>

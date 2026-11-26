@@ -11,6 +11,8 @@
 #   rust      sensors-ingest: rustfmt, clippy, the tests against the real schema and a broker, cargo deny, THIRD_PARTY
 #   chemcore  chemcore/scripts/test.sh in the chemcore-tools stage of docker/testrunner.Dockerfile
 #   security  pip-audit, the Python licence gate, npm audit
+#   go-live-stack  by hand only, with the input `stack`: the production stack of deploy/compose.yml
+#             (.github/workflows/go-live-stack.yml, which is also dispatched on its own once it is on main)
 # No secret is used: the database passwords are throwaway values that live only inside a job, and the layer cache is
 # GitHub's own (the job's token, nothing configured).
 name: CI
@@ -31,6 +33,15 @@ on:
         description: "Django test labels to run instead of the whole suite (letters, digits, _ . and spaces)"
         required: false
         default: ""
+      pg_image:
+        description: "The database server image of the suite, pinned by digest (default: scripts/test.sh's)"
+        required: false
+        default: ""
+      stack:
+        description: "Also prove the production stack (go-live-stack.yml): build, start, roles, HTTPS, MQTT, backup, restore"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -105,7 +116,7 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      # The database server is the one scripts/test.sh starts (timescale/timescaledb:2.17.2-pg17, data in memory, the
+      # The database server is the one scripts/test.sh starts (the pinned TimescaleDB 2.32.1 image, data in memory, the
       # job scheduler off, fsync off): a GitHub service container cannot be given those server options, and the
       # parallel run needs the scheduler off (README, Tests).
       - name: Project checks, and the whole suite unless SUITE=0 (scripts/test.sh)
@@ -114,6 +125,7 @@ jobs:
           WORKERS: "4"
           DB_TMPFS: 4g
           LABELS: ${{ inputs.labels }}
+          TEST_PG_IMAGE: ${{ inputs.pg_image }}
         run: |
           TEST_DB_PASSWORD=$(openssl rand -hex 16)
           export TEST_DB_PASSWORD
@@ -122,9 +134,13 @@ jobs:
             echo "::error::labels may hold letters, digits, _ . and spaces"
             exit 1
           fi
+          if [[ -n "$TEST_PG_IMAGE" && ! "$TEST_PG_IMAGE" =~ ^timescale/timescaledb:[0-9.]+-pg[0-9]+@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::pg_image must be a timescale/timescaledb image pinned by digest"
+            exit 1
+          fi
           # The islands' props and the monitoring pages for the page tests below are made by these tests
           # (core/island_props.py, monitoring/tests/test_next_pages.py): a run with labels makes them too.
-          if [[ -n "$LABELS" ]]; then LABELS="$LABELS farm.tests.test_island_pages sensors.tests.test_pages_next farm.tests.test_production_overview_next farm.tests.test_production_units_next farm.tests.test_system_water_next monitoring.tests.test_next_pages farm.tests.test_feeding_pages_next farm.tests.test_harvest_pages_next farm.tests.test_health_pages_next"; fi
+          if [[ -n "$LABELS" ]]; then LABELS="$LABELS farm.tests.test_island_pages sensors.tests.test_pages_next farm.tests.test_production_overview_next farm.tests.test_production_units_next farm.tests.test_system_water_next monitoring.tests.test_next_pages farm.tests.test_feeding_pages_next farm.tests.test_harvest_pages_next farm.tests.test_health_pages_next farm.tests.test_farm_dialogs_next"; fi
           mkdir -p .build/island-props .build/monitor-pages   # the runner's own: the container (root) writes into them, npm reads after
           # shellcheck disable=SC2086 # the labels are words, split on purpose
           bash scripts/test.sh $LABELS
@@ -201,7 +217,7 @@ jobs:
         working-directory: sensors-ingest
     services:
       db:
-        image: timescale/timescaledb:2.17.2-pg17
+        image: timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
         env:
           POSTGRES_USER: balik
           POSTGRES_PASSWORD: ci-throwaway-not-a-secret
@@ -269,7 +285,7 @@ jobs:
       - name: Broker (Mosquitto, users ingest and dev)
         working-directory: .
         run: |
-          MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+          MOSQ=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
           docker volume create si-test-broker-auth
           docker run --rm -v si-test-broker-auth:/mosquitto/auth "$MOSQ" sh -c '
             mosquitto_passwd -c -b /mosquitto/auth/passwd ingest ingest-pw 2>/dev/null
@@ -391,3 +407,10 @@ jobs:
           cache: npm
       - name: npm audit (high and critical)
         run: npm audit --omit=dev --audit-level=high
+
+  # The go-live package's proof, by hand only (`gh workflow run ci.yml --ref <branch> -f stack=true`): a workflow
+  # dispatched on its own must be on the default branch first, so until go-live-stack.yml is there it runs through here.
+  go-live-stack:
+    name: Go-live stack
+    if: github.event_name == 'workflow_dispatch' && inputs.stack
+    uses: ./.github/workflows/go-live-stack.yml

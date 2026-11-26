@@ -70,12 +70,21 @@ class State:
     now: datetime
 
     @property
-    def fresh(self):
-        """Fresh while both the device time of the value and its receipt are within the channel's freshness: a gateway
-        replaying an old backlog delivers values received now but measured long ago, which are not fresh."""
+    def fresh_from(self):
+        """The moment the value's freshness is counted from: the older of its device time and its receipt (a gateway
+        replaying an old backlog delivers values received now but measured long ago, which are not fresh); None
+        without a good value."""
         if self.good_at is None or self.at is None:
+            return None
+        return min(self.good_at, self.at)
+
+    @property
+    def fresh(self):
+        """Fresh while both the device time of the value and its receipt are within the channel's freshness
+        (`fresh_from`)."""
+        if self.fresh_from is None:
             return False
-        return self.now - min(self.good_at, self.at) <= timedelta(seconds=self.fresh_s)
+        return self.now - self.fresh_from <= timedelta(seconds=self.fresh_s)
 
 
 def latest(channel_nos, now=None):

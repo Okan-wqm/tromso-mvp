@@ -1,7 +1,7 @@
 # Fish farm prototype
 
 A small Django prototype of the farm module of Suderra's aquaculture platform: Django 6.1 on
-PostgreSQL 17 with TimescaleDB 2.17 (Docker). The farm module's tabs are ported one at a time.
+PostgreSQL 17 with TimescaleDB 2.32 (Docker). The farm module's tabs are ported one at a time.
 
 What works today:
 
@@ -852,10 +852,11 @@ window cannot be drawn: no value of Salinity (‰, g/kg).").
 
 **The state** is one ladder (`state_of`, the thresholds are the owners', none invented here): critical (a water reading judged
 critical, an old one too: "CO₂: Critical, no recent data", the water page's rule through
-`PointWater.alerts`); warning (a warning reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
-temperature or oxygen is missing or older than its 24 hours, or with no middle point, or whose live sensors could not be read:
-the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old oxygen; never OK, never red, the age is
-printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
+`PointWater.alerts`; and **the oxygen of a unit that holds fish with no fresh value**, see below); warning (a warning
+reading, an old one too, over capacity, an estimate that says weigh now); **no recent data** (a stocked unit whose
+temperature is missing or older than its freshness, or with no middle point, or whose live sensors could not be read:
+the water's own status ranks OK above stale, so a fresh pH would hide a three-day-old temperature; never OK, never red, the
+age is printed; not worked out when the water is hidden); **no limit** (a value of the stocked unit that no water limit row judges for
 every species of its fish, "pH (NBS scale): no limit for these fish": a row for the salmon does not judge it for the lumpfish
 beside them (`Limits.uncovered`); what it means for the fish is not known, so it is never OK. The dissolved oxygen is one
 quantity (owner, 2026-11-07): a % with no row of its own is worked out to mg/L with the solubility (its own observation's
@@ -869,6 +870,11 @@ worked out with its reason, an open health event); ok; empty. Word, shape and re
 (`Reading.judged` beside `status`, farm/water/read.py): an old critical nitrite keeps the card critical ("Nitrite: Critical, no
 recent data, 8 days old") and marks the article `data-stale`, so the announcer says it ("T-01 is now Critical, no recent data"; it takes the order of the states from the page, `data-states`,
 never from a list of its own);
+the same for a probe that stopped, whatever its pH scale (owner decision of 2026-11-20): a TRIS probe's last pH is put on
+the NBS scale at its own moment and says "pH (NBS scale): Critical, no recent data" on the Small and Big cards, the wall,
+the pane and the band's chip (one chip with an NBS probe's tank past the same bound), never "cannot be evaluated"; its
+silence itself is the alarm of its quantity's default "No fresh value" rule (Sensors; critical for the oxygen), which is
+on Company › Alarms, not on the card (monitoring/tests/test_stopped_probe.py);
 a card that falls to no recent data from any state is said too, and the grid's own notices (not updated, signed out, updated
 again) are said in the assertive region. Reference data › Water limits lists **Fish with no limit**: per species and water type
 kept today, the parameters no row judges (`water.read.missing_limits`). The value-against-limits bar draws each stretch as
@@ -1092,7 +1098,61 @@ Production units, which keeps the page title and eyebrow); the fragment has the 
 Decisions of the owner (2026-11-04): a wall page extends its session once a day; Production units stops printing bFCR and last fed
 to roles without feeding rights; the chart's temperature is the unit's own point's (superseded by A9 on 2026-11-07: the loop's fresh value stands in
 when the unit has none of its own); the chart refused and
-says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind.
+says so; "No recent data" when the temperature or the oxygen is older than 24 hours or missing, whatever the unit's kind
+(for the oxygen superseded on 2026-11-23, below).
+
+**A unit with no sampling point of its own** is read at its system (review 4 of the branch, L1): `read.latest(points,
+units=...)` reads it in the same pass as every point, keyed by the unit, its system's tier as a unit point's (A9: the
+loop point's samples and probes, or the system's probes where there is no loop point), each value judged for the unit's
+own fish and saying "From its system, RAS 1 › Middle: the unit has no sampling point of its own." (nb, tr). Every
+reader takes it there: the card (its middle water, its values, its state), the water page's row, Production units and
+the overview (counted and listed), and the alarms: its water-limit levels at the loop point ("N-05, from R5 · Middle:
+…"), or, where the system has no loop point, without a point ("N-05, from its system: …", alarms 0022), always on the
+unit's own site and department, so a card at critical or at warning has its alarm at that level (review 5, M1). The
+drawer and the card's water table say "From its system, …" above those values. The "no active sampling point" warning
+is about a unit read from nowhere (no point of its own, no system: alarms/sources.py `_read_nowhere`), whose oxygen is
+then the critical of no fresh value, so it holds only for a unit the stock counts with fish that the water finds holding
+none now. A unit with a point is read exactly as before.
+
+**A unit with fish whose oxygen has no fresh value is critical** (owner decisions of 2026-11-23; they replace, for the
+dissolved oxygen alone, the grey "no recent data … never red" of 2026-11-04). Where the unit holds fish NOW (after its
+day's operations, `SpeciesBook.holds`: a unit harvested or emptied earlier today holds none; review 2, R1) and neither
+its oxygen in mg/L nor in % has a fresh value for the place (its own, else its system's: A9), never measured included,
+and also a unit with fish and no point of its own whose system does not measure its oxygen either (review 2 R2: it was
+grey, with the alarm system's "no active sampling point" warning, which no longer holds beside the critical), the water's
+one judgement (`farm.water.read.PointWater.silent_oxygen`, counted
+in `status` and `point_status`) makes it critical: the Small and Big cards, the wall, the pane and the band's chip say
+"Dissolved oxygen (mg/L O₂): no recent data, 3 hours old" (the chip "O₂ (mg/L): no recent data", one chip for every unit
+it holds), the water page's row (in both looks; a unit's row is the point that stands for it, `read.anchors`: its middle point,
+else an outlet, review 6, M2), Production units and the production overview say "Critical, no recent data" with that
+sentence. The alarms say it too, once per unit: a silent oxygen probe is its default "No fresh value" rule's critical
+alarm (Sensors); a typed oxygen sample grown old, or a unit with no oxygen probe watched by a "No fresh value" rule, is a
+critical alarm of the alarm system, "T-01: Dissolved oxygen (mg/L O₂): no recent data, 1 day old" (`alarms/sources.py`
+`_silent_subjects`, subject `system:unit:<unit>:no_fresh_oxygen`), never a second one beside the probe's where a rule
+that raises a critical at the channel's freshness covers it (`sensors.alarms.watched`; a farm's own warning or delayed
+rule, or the default lowered to a warning, never makes the critical wait or weaken: review 6, M1); it ends once the oxygen is fresh again, or "no fish in the unit any more". **Fish present
+guard** (the coordinator's call of 2026-11-23, against false alarms): all of it only where the unit holds fish; a fallow
+or empty unit stays grey "no recent data" and raises no alarm, and so do the sensors' default "No fresh value" rules
+(they hold only where their place's water concerns fish, `farm.water.read.with_fish`; a farm's own rule holds whatever
+the fish). The other parameters keep their rule: a silent probe of them is a warning (its default rule), and an old
+value of them changes no card's state (`monitoring/tests/test_silent_oxygen.py`).
+One alarm per problem (review 2 of the branch, the coordinator's calls): a silent oxygen probe beside a FRESH typed
+oxygen (or another probe) is a warning of the alarm system, one per probe wherever it is bound (a unit's point, its
+loop, an inlet or a piece of equipment no unit's water reads: review 3, N2), "PROBE-T › O2: T-02 › Middle: the oxygen
+probe is silent; the oxygen is measured otherwise (by hand or by another probe)" (subject
+`system:oxygen_probe_silent:<channel>`), the card following the fresh value; its default rule stands aside while that
+value is fresh (`read.oxygen_known`) and says its critical once it is not, and the warning ends (R3 p3). One pass of the
+alarm loop reads the silent probes and where the oxygen is known once, for its sensor rules and its warnings
+(`sensors.alarms.OxygenPass`, made by `alarms.engine.run_once` and handed down). An old typed
+oxygen past its CRITICAL limit keeps its critical level of the water limits, which says it: the alarm system's oxygen
+critical stands aside while that level holds or is open on the unit's oxygen (R4 p5); past its warning limit only, its
+warning level stands beside the alarm system's critical, so a critical card is never only a warning alarm (review 3,
+N1). That the critical level and the warning level of one value are two alarms is main's design (ISA-18.2 L and LL: the
+warning is not notified while the critical is open). Two probes of one unit silent together (mg/L and %, or
+a primary and a backup) are an alarm each, one per channel as every sensor rule is (R4 p6). A farm's own "No fresh
+value" rule keeps the severity the farm gave it, a warning too: the farm's explicit choice (R3 p2). The check
+`sensors.W001` and the Alarm rules page do not list an oxygen channel without a rule: a unit with fish whose oxygen has
+no fresh value is the alarm system's critical all the same (R5).
 
 Not built, on purpose: any figure recomputed in `monitoring`, a feed-due alarm (the protocols have meals per day, no clock), trend
 sparklines, a stored calculation, a server cache or a push channel (a measured miss first), a stored status, an "open in the
@@ -2007,12 +2067,16 @@ without values it shows its defaults.
     place's temperature (a sample's) where it is fresh at the pH's own time, as the oxygen's other unit, the replay and
     the trail take it (the review's C2; the provenance then says "The temperature is manual, 19.11.2026 10:00."), and the
     salinity of the same moment (a fresh sensor's, else the point's fresh sample's, else 0 in fresh water), for sea water
-    of 5 ‰ or more and never for fresh water with salt added, while the pH is fresh. It is then shown as the typed
+    of 5 ‰ or more and never for fresh water with salt added. A pH no longer fresh is put on the NBS scale the same way
+    at its own moment, with the place's sensor temperature and salinity fresh THEN (each channel's value at that moment,
+    `read._at_moment`), never with today's, and is shown stale with its value and what the limits said of it, as an NBS
+    one is (owner decision of 2026-11-20: one behaviour for every scale); that its probe stopped is its default "No
+    fresh value" rule's to say (Sensors). It is then shown as the typed
     sample's is ("measured 7.95 on the total scale" beside 8.06; "Measured 7.95 on the total scale by the sensor; put on
     the NBS scale by formula 4 with 12.0 °C and 34.0 ‰ of the same moment."), and its NH₃ is the typed sample's: a TRIS
     probe at 12 °C and S 34 gives the judged NH₃-N the same water typed as a total-scale sample gives. Otherwise (no
-    temperature fresh at its time, no salinity, fresh or salt-added water, a water the core cannot work out at all,
-    a pH no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
+    temperature fresh at its time, no salinity of its moment, fresh or salt-added water, a water the core cannot work
+    out at all; before 2026-11-20 also a pH only no longer fresh) **the pH has no value and cannot be evaluated**, said with the reason (the core's own where it
     refused the water, never "not sea water": C5), and so is an NH₃ worked out from it; the unconverted number is shown
     and used nowhere (a worse fresh sample still decides the status). **It is never silent for the alarms** (the
     review's M1): the unit gets the alarm system's warning "<unit>: pH (NBS scale) cannot be evaluated: <why>" (Alarms,
@@ -3942,6 +4006,39 @@ What works:
   person, logged; the same message received after it was resolved opens it again, since its cause is not dealt with), Alarm rules and Alarm events (each event is an alarm of Company › Alarms, which notifies its recipients and keeps
   who acknowledged it; the Acknowledge button here writes that record, for who may acknowledge the alarm: Alarms: Edit,
   or a person it was sent to).
+- **A probe that stops sending** (owner decision of 2026-11-20, the second review of the water-chemistry audit,
+  question 3): every quantity the water limits judge (`quantities.JUDGED_CODES`: each one a limit can be set on,
+  derived from `farm/water/parameters.py` LIMITED, which holds every input of the judged NH₃) has a **default "No
+  fresh value" rule**, seeded by sensors 0015 on every channel of the quantity, so the channels there are and every
+  channel made later, by any door, are covered by the rule's scope (no row per channel) and take its severity:
+  **critical for the dissolved oxygen** (mg/L and %), a warning for every other quantity (owner decision of
+  2026-11-20, `quantities.default_severity`; an existing rule a migration marks the default keeps its own). It holds only
+  where its place's water concerns fish on the units' own day (owner decision of 2026-11-23: a fallow or empty unit
+  with its probes off raises no alarm, and an open event closes when the fish are gone; `farm.water.read.with_fish`),
+  and there exactly when the place's value is no longer fresh, at the channel's own freshness (its heartbeat times its fresh heartbeats,
+  tuned per channel), counted as the page counts it (the older of the value's device time and its receipt: a backlog
+  replayed at a reconnect keeps it open, as the page keeps saying "no recent data"): the page and the alarm agree to
+  the second, a restart or a change of a pH channel's scale opens or closes nothing, and the alarm closes with the
+  probe's next fresh value. Whatever the pH scale: a stale total-scale pH is no "cannot be evaluated" any more (Water
+  chemistry). The alarm says the rule, the channel and its place: "pH (NBS scale): No fresh value · PROBE-1 › PH:
+  S-01 › Middle". The farm sets its severity; it stays at the freshness (no time past it, no threshold), and switching
+  it off takes the Delete right on Alarm rules (said under the area in the role matrix) and a reason, logged as
+  critical; it is never deleted. The database holds all of it (the check `chk_sensors_alarm_rule_default`, one per
+  quantity `uq_sensors_alarm_rule_default`, the trigger `trg_sensors_alarm_rule_default_kept` against a delete, an
+  unmarking or a move to another quantity). A channel of such a quantity that no active "No fresh value" rule covers
+  (its default switched off and none of its own) is said above the Alarm rules list and by the check `sensors.W001`
+  (`manage.py check --database default`); the new look's list (`?ui=next`, `sensors/lists.py` `alarm_rules`) says the
+  same as the classic one: the Default chip, "at the channel's freshness", the reason under Inactive, no Delete, and
+  that warning. Going back past sensors 0015 leaves the rules as ordinary ones (their
+  alarms are history); going forward again marks them the default once more.
+  **One alarm per silent probe** (the review of 2026-11-23, F4, the coordinator's call): where the farm has its own
+  active "No fresh value" rule of the quantity, or of the channel, the default stands aside there (`sensors.alarms._aside`;
+  an open event of the default closes), so the farm's rule is the one alarm; switched off, the default comes back. An
+  existing rule that sensors 0015 adopts as the default keeps its severity, except the dissolved oxygen's, raised to
+  critical where it was a warning (the owner's decision), the activity log saying so (and going back gives it its own
+  severity again). **A rule switched off or deleted** (F5): the next pass closes its open events, which no pass visits
+  any more (`close_switched_off`; never an active rule's), and their alarms clear with the rule's state and the reason
+  it was switched off in the activity log, so no ghost alarm stays open after the probe sends again.
 - **Administration**: Credentials (a publisher's sign-in at the broker; the secret is made on the server, shown once
   when made or replaced, stored only as Mosquitto's `$7$` PBKDF2-SHA512 hash, masked in the database viewer and never in
   the activity log).
@@ -4120,11 +4217,12 @@ the device.
   raw readings bucketed below an hour, the hour rollup up to a day, and the site's local days from the hours (a day the
   clocks go back has 25 hours). The rollup refreshes every hour over the last 75 days and is compressed after 90; a daily
   job takes in later readings back to the contract's late limit (728 days). The refresh never reaches back into dropped
-  raw data: TimescaleDB 2.17 invalidates a dropped region and a refresh there would empty the rollup.
-- Late or old readings are written one row per statement: TimescaleDB 2.17.2 silently drops the remaining rows of a
-  multi-row `INSERT ... ON CONFLICT` that meets a compressed chunk (`sensors/tests/test_timescale.py` holds the case).
-  A `DELETE` of rows in a compressed chunk fails in 2.17.2 ("btree index keys must be ordered by attribute"); nothing in
-  the application deletes readings (retention drops whole chunks).
+  raw data: TimescaleDB invalidates a dropped region and a refresh there empties the rollup (2.32.1 does,
+  `sensors.tests.test_timescale` holds it).
+- Late or old readings are written one row per statement. TimescaleDB 2.17.2 silently dropped the remaining rows of a
+  multi-row `INSERT ... ON CONFLICT` that met a compressed chunk; 2.32.1, the release everything runs on now, keeps
+  them (`sensors/tests/test_timescale.py` pins it), and one row per statement stays the ingest's rule. Nothing in the
+  application deletes readings (retention drops whole chunks).
 - A value is fresh while both its device time and its receipt are within the channel's freshness (its fresh heartbeats): a
   gateway replaying an old backlog delivers values received now but measured long ago, which are not fresh.
 - The database viewer counts a hypertable by the database's estimate and leaves the readings out (billions of rows).
@@ -4147,7 +4245,8 @@ the device.
   `demo/<code>`, eight water channels each covering every measured parameter together, bound to the tank's middle point
   or the system, a simulator credential with its secret shown once); it is idempotent, touches only what it made (found
   again by its connection's client id, its format's name and its credential's user name), and `--remove` deletes exactly that.
-- `manage.py check_sensors [--loop 60]` checks the alarm rules; `manage.py sensors_housekeeping` (daily) deletes dead
+- `manage.py check_sensors [--loop 60]` checks the alarm rules; `manage.py check --database default` warns of a channel of
+  a judged water quantity without an active "No fresh value" rule (`sensors.W001`); `manage.py sensors_housekeeping` (daily) deletes dead
   letters older than 90 days.
 - `manage.py bench_sensors --confirm-database NAME` writes synthetic readings into a database named on the command line
   (never a farm's) and prints the storage and read figures, the replay's page and its diagrams included (`--frames`,
@@ -4537,7 +4636,9 @@ The owner's answer (2026-11-06, F-091): alarms reach everyone's phone as push no
 from which device, how late) is logged. The server side is built; the push transport plugs in with the app.
 
 - **What raises an alarm** is judged where it is judged today (`alarms/sources.py`): the sensor alarm rules (each event of
-  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes) and the water limits: one read of every live
+  `sensors/alarms.py` is mirrored as an alarm and cleared when it closes, saying the rule, the channel and its place;
+  among them the default "No fresh value" rule of every water quantity the limits judge, so a probe that stops sending
+  is a warning (critical for the dissolved oxygen) whatever its pH scale: Sensors) and the water limits: one read of every live
   unit's water (`farm/water/read.py` `unit_water`: its middle point, its other own points and its system standing in, the
   worst fresh value deciding), so an inlet raises nothing and a depth point or the loop raises its unit's alarm (alarm plan,
   defect 1). A water alarm's subject is the unit's quantity at a level (`water:unit:<unit>:<slot>:<severity>`), never the
@@ -5143,6 +5244,12 @@ there was then (`core_rev_ensure`). A reader ensures its keys, then stamps them,
 - `manage.py core_rev_repair` (the warning's hint) makes the missing triggers again exactly as their migrations made
   them (`core.rev.operations()`), then rebuilds every revision, since changes may have passed unseen meanwhile. It does
   nothing when none is missing.
+- `manage.py core_rev_drop_hypertable_triggers` before a TimescaleDB update (`ALTER EXTENSION timescaledb UPDATE`):
+  an update step renames the constraints of every hypertable chunk and cannot rename a constraint trigger, which every
+  `_apply` trigger is (2.17.2 to 2.32.1 stopped on `water_measurements` with "constraint ... does not exist", half-moved).
+  It drops the triggers of every tracked table that is a hypertable (found from `TRACKED`, the chunks follow), in one
+  transaction, and drops nothing and names it when another constraint trigger sits on a hypertable. `core_rev_repair`
+  makes them again after the update. `deploy/scripts/timescaledb-move.sh` runs both (docs/ops/upgrade.md).
 - `manage.py core_rev_rebuild` after a restore of the database, a load run with the triggers off, or a session run with
   `session_replication_role = replica` (which skips ordinary triggers): every revision moves past every stored figure's
   stamp and a floor is set for keys seen later, so every stored figure is built again. It locks `core_rev` first (SHARE
@@ -5782,7 +5889,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   Water page's own rows, alarms, the office board and muster, reports due, unread messages, feed on hand and cover, the
   latest log and knowledge entries), split per site from the same rows; `config/company_props.py` words it in the
   request's language. A block is left out for a person who may not read its area. The water chip per site says the
-  sampling points' worst judgement (critical, warning, OK, or "Not measured"). The Open alarms tile and each site's
+  sampling points' worst judgement (critical, warning, OK, or "Not measured"), and a unit with fish whose oxygen has
+  no fresh value as "O₂ (mg/L): no recent data", critical, for every viewer (after a critical value, before a warning;
+  a unit with no point of its own counts on its site: review 6, B2). The Open alarms tile and each site's
   Open alarms are the status strip's one reader, the farm and its sites from one reading of the water
   (`alarms.read.attention_all`): the figure counts open alarms (a site's holds the farm-wide ones too, and says how many
   of them are for the whole farm); the line under it counts stocked units on the monitoring cards' ladder, in the strip's
@@ -5930,8 +6039,9 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `frontend/islands/pages/Production.tsx`): the design's layout over the very context the classic page is drawn from
   (`config/production_props.py`): "Today on the farm" as tiles (stock, feed, the water's critical and warning points,
   tasks, reports due, each with its source and time), Needs attention (each row its status chip, what and where, its
-  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, and the
-  way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
+  water values in their status's chip with origin and age, a stale one that was critical or a warning said so, a unit
+  with fish whose oxygen has no fresh value saying why, a unit with no point of its own placed on its department and
+  site, and the way to its page), The farm (structure, systems by status, units by kind), Reports due and "Production team today", the
   HR board's bar (`config.views.team_today`, `core/stack`; the tiles add up to the people planned today) with the muster
   count and the late ones. What the design adds from real sources: the fish card's batch count
   (`farm.stock.views.overview`), the units under a medicine withdrawal today in Needs attention (hold chip, each batch's
@@ -5978,10 +6088,23 @@ Pages drawn by an island in the new look (the classic page is unchanged behind `
   `withdrawal_reason`) with a batch held today in the hold chip, a plan's or a batch's withdrawal (`harvest_from`) with
   the Withdrawal chip and its row critical, "Medicine withdrawal not checked" and "Not checked" as on the classic pages,
   "Notify Mattilsynet" as a critical notice above Health events with each event and the way to its notice, "Notify at
-  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. Every record
-  form and dialog these pages open (Record feeding or meal, Void, Record treatment, Last day, Record sea-lice count, the
-  plans' Record harvest or transfer) is opened as a page from the island (no classic dialog link), still the classic
-  form for now. Held: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
+  once" in a critical chip, a weekly lice average at or over the limit "Over the limit" in a critical chip. The words
+  these builders share with the classic templates are `farm/words.py` constants (the templates say `{{ fw.name }}`, the
+  builders `str(words.NAME)`; sentences with values in them are still the templates' msgids said again in Python).
+- **The farm's operation dialogs** (`farm/dialogs.py`): Record feeding or a meal, a treatment, its last day, a sea-lice
+  count, a stock operation (a mortality, a cull, a harvest or a transfer, from its plan too, a transfer's or a
+  grading's units posted with it as rows) and the voids of a feeding, a treatment, a health event, a count and a stock
+  operation, opened as a page in the new look (the islands' links have no `data-modal`) and drawn by the record-form
+  island from the same form, view, address and context (`core.formprops.dialog_props`: the dialog's submit word, its
+  intro blocks before the fields, a Void as the danger button, its rows as `grid`). What a dialog says before its fields
+  is the partial its classic template includes (`farm/_operation_context.html`, `_operation_lines.html`,
+  `_feeding_intro.html`, `_treatment_intro.html`, a void's `_…_entry.html`), rendered and read as blocks
+  (`core.formpanels.blocks_of`): one source of its words. A handling check's warnings and box, the withdrawal guard's
+  question and a refused save (422, the reasons on their fields) are the form's. The classic dialog stays for an
+  X-Modal request (a drawer's link), a weighing (its estimate is drawn again as it is typed) and a unit without fish to
+  record. Record feeding's unit choice is a list page (`farm/feeding/pages.py choose_props`). Held:
+  `farm/tests/test_farm_dialogs_next.py` (each dialog against its classic one, a save and a refused save through the
+  new page, the classic dialog for X-Modal) and the browser test's `dialog-*` pages. Held, the lists: `farm/tests/test_feeding_pages_next.py`, `test_harvest_pages_next.py`,
   `test_health_pages_next.py` (every page against its classic page on the test world plus `feeding_ops_world`,
   `health_ops_world` and `harvest_ops_world`, in three languages; Harvested's three views together against the classic
   page; the safety facts) and `frontend/test/prodrest.pages.ts` (each page at 1440 and 390: CSP, axe, 4.5:1, no
@@ -6288,7 +6411,8 @@ their own, see Alarms).
   A link that no longer works says so ("The link was already used or has expired") and offers "Request a new link"
   and the sign-in page. Setting the password does not sign in. Between opening the link and saving the password the
   token is in the person's session row, and the link's address is in the access log of whatever stands in front of
-  Django: Django's design; the secure-cookie settings are still on the open deploy list for it.
+  Django: Django's design. With DEBUG off the session cookie travels over https only (Starting a production server),
+  and the production proxy leaves the link's key out of its access log (`deploy/proxy`).
 - **The link starts with `PUBLIC_BASE_URL`**, never with the Host header of the request that caused the mail.
 - **The text** is plain text (`templates/mail/`), in English, Norwegian bokmål and Turkish: in the language saved on
   the recipient's account (the admin chooses it on the user form), otherwise the language of whoever caused the mail.
@@ -6418,19 +6542,47 @@ so Django's `mail.E001` (a development-only mail backend) is closed and no longe
 
 ### Starting a production server
 
-Nothing in the repository starts a production server yet (no image, no entry point, no WSGI server in
-`requirements.txt`), and a WSGI server does not run Django's system checks by itself. Whatever starts it must run,
-in this order and stopping at the first failure:
+The production stack is `deploy/compose.yml`, with its runbooks in `docs/ops/` (install, first admin, upgrade,
+backup and restore with the disk budget, monitoring and the outside heartbeat, secrets, incidents and break glass, access
+(WireGuard recommended), one installation per farm, the go-live checklist). The web image is
+the `web` stage of `docker/testrunner.Dockerfile`: gunicorn (`deploy/web/gunicorn.conf.py`, threaded workers), the
+catalogs and the static files under hashed names built in, run as an unprivileged user. Before anything serves, the
+release step (`deploy/web/release.sh`, as the database's owner role) runs, stopping at the first failure:
 
 ```
-python manage.py check --deploy --fail-level ERROR   # exits 1 on core.E001 (chemistry core), farm.E001, core.E002 to E005 (mail)
-python manage.py migrate                             # runs the same checks first
-python manage.py compile_catalogs
-<the WSGI server> config.wsgi:application
+python manage.py check --deploy --fail-level WARNING   # an unsafe or missing production setting, the chemistry core, the mail
+python manage.py migrate
+<deploy/db/sql/grants.sql>                             # the app role's rights on what the migrations made
+cp -R /app/staticfiles/. /srv/static/                  # the hashed static files to the proxy's volume
 ```
 
-with `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, the database variables and the mail variables
-above in the environment. Should the server be started without the checks all the same and without its mail
+and gunicorn runs the same deploy check in its master before the first worker starts (`on_starting`), so a server
+started any other way refuses an unsafe value too. The web server then signs in as the app role, which may read and
+write rows and nothing else (`docs/ops/database-roles.md`).
+
+**The production settings** (`config/settings.py`, its production block): with `DJANGO_DEBUG=0` the server stands
+behind the stack's TLS proxy, which ends HTTPS, overwrites `X-Forwarded-Proto` and is the only way in:
+
+- `SECURE_PROXY_SSL_HEADER`, `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE` and `CSRF_COOKIE_SECURE` are on, whatever
+  the environment says;
+- HSTS for `DJANGO_HSTS_SECONDS` (an hour unless set, raised to a year once https is proven; 0 is refused, security.W004), subdomains unless
+  `DJANGO_HSTS_INCLUDE_SUBDOMAINS=0`, `preload` only with `DJANGO_HSTS_PRELOAD=1` (a decision for the whole domain's
+  owner; security.W021 is silenced while it is off);
+- `CSRF_TRUSTED_ORIGINS` from `DJANGO_CSRF_TRUSTED_ORIGINS` (comma separated) or the public address; each https
+  (core.E008);
+- the Content-Security-Policy is the same as a development server's;
+- static files under hashed names (ManifestStaticFilesStorage; the proxy keeps them a year, the import map reaches the
+  modules by them, `core/templatetags/assets.py`);
+- Django's warnings and errors go to stderr (with DEBUG off Django's own handler prints nothing).
+
+Every secret may come from a file instead of the environment: `DJANGO_SECRET_KEY_FILE`, `DJANGO_AUDIT_DIGEST_KEY_FILE`,
+`DB_PASSWORD_FILE`, `EMAIL_HOST_PASSWORD_FILE` (the first line; both a variable and its file set, or a file that cannot
+be read or is empty, stop the server). The stack gives every secret as a Docker secret file this way. The deploy
+check also refuses `*` among `DJANGO_ALLOWED_HOSTS` (core.E007) and a missing digest key, or one equal to the secret
+key or shorter than 32 characters (core.E009). `core/tests_production_settings.py` holds all of this, each unsafe value
+by its id; the go-live stack workflow (`.github/workflows/go-live-stack.yml`) proves the running stack from outside.
+
+Should the server be started without the checks all the same and without its mail
 settings, no mail is lost silently: every send fails ("The public address of this server is not set", or the mailer's
 own refusal of a missing host) and shows on the person's row as any failed send. One worker thread per server
 process sends the mails, so a server run as several processes sends several at a time. Nothing in the code ends that
@@ -6460,7 +6612,7 @@ runs the server:
   `core.tests_account_mail.SendTimeTests` fails then, which is the alarm.
 - **An account made active again within a link's lifetime has that link back** (the token is stateless; putting a
   wrong address right ends the link for good).
-- **No limit per client** on "Forgot your password?": the reverse proxy's (above).
+- **No limit per client** on "Forgot your password?" in the application: the production proxy limits it, and the sign-in, per client address (`PROXY_SIGNIN_PER_MINUTE`, `deploy/proxy`).
 - **A mail can reach the same person twice**, at the same address, in the two cases of "Whose a waiting mail is" (the
   mail under way of an owner silent past the lease that completes after all; a mail whose outcome could not be
   written), when the admin sends again. The first row stays "interrupted" though the mail went.
@@ -6602,7 +6754,7 @@ runs the server:
 | `monitoring/` | Operations › Monitoring: the one card read and its state ladder with its words (`read.py`), the copy of a card template (`services.py`), the band above the cards (`read.band`), the card templates' catalogue, validator, resolution, drawing and the wall's slot rule (`cards/`, `cards/slots.py`), boards and templates (`models.py`, `resources.py`, `forms.py`), the page, the fragment and the designer's preview (`views.py`), `templates/monitoring/`, `static/css/monitor.css`, `frontend/poll.ts`, `frontend/announce.ts`, `frontend/designer.ts`, `frontend/windows.ts`, `frontend/wall.ts`, tests (README, Monitoring) |
 | `sensors/` | The Sensors panel: devices, channels and their bindings (`models/`, `bindings.py`), the live water source the farm reads through `farm/water/sources.py` (`provider.py`, `read.py`), alarms and quality (`alarms.py`, `quality.py`), a credential's rotation (`credentials.py`) and a dead letter's resolution (`services.py`), the charts and the trail (`chart.py`, `trail.py`), `sensors/CONTRACT.md`, tests (README, Sensors) |
 | `sensors-ingest/` | The ingest service (Rust): reads the broker's sensor messages and writes the readings (`CONTRACT-REQUESTS.md`, `BENCH.md`) |
-| `core/rev.py`, `core/operations.py`, `core/migrations/0014_rev.py`, `farm/migrations/0050_rev_triggers.py`, `sensors/migrations/0014_rev_triggers.py` | Revisions (`core_rev`): the triggers that move a revision per (scope, key) whenever an input of the water's judgement changes, the `TrackRev` migration operation, the presence check (core.W005), `manage.py core_rev_repair` and `manage.py core_rev_rebuild` (README, Revisions) |
+| `core/rev.py`, `core/operations.py`, `core/migrations/0014_rev.py`, `farm/migrations/0050_rev_triggers.py`, `sensors/migrations/0014_rev_triggers.py` | Revisions (`core_rev`): the triggers that move a revision per (scope, key) whenever an input of the water's judgement changes, the `TrackRev` migration operation, the presence check (core.W005), `manage.py core_rev_repair`, `manage.py core_rev_rebuild` and `manage.py core_rev_drop_hypertable_triggers` (README, Revisions) |
 | `core/checks.py`, `core/ranges.py`, `core/text.py` | The system checks run at start (the built catalogs and assets); periods as PostgreSQL compares them, for exclusion constraints; lower case in the person's language |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the review's write (`services.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |
@@ -6628,6 +6780,7 @@ runs the server:
 | `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
 | `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests) |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
+| `deploy/`, `docs/ops/`, `.github/workflows/go-live-stack.yml` | The go-live package: the production stack (`compose.yml`, the proxy, the broker's TLS listener, the database image with its roles, the backup agent, `web/` the server's start, jobs and release step), the scripts (secrets, certificates, role checks, password rotation), the access templates (Cloudflare, WireGuard), the stack's proof (`ci/`); the runbooks and the go-live checklist (Starting a production server) |
 
 ### Management commands
 
@@ -6660,8 +6813,10 @@ under the wrong kind, fails.
 | `sensor_broker_sync` | sensors | product | Writes the MQTT broker's passwd and acl files from the sensors configuration | An operator, after the sensors configuration changed (the broker reloads the files) |
 | `sensors_ingest_role` | sensors | product | Lets the ingest's database role sign in with the password in a file, or stops it | An operator, at set-up |
 | `hr_roles` | hr | product | Creates the Production manager and Production worker roles when missing | An operator, at set-up |
+| `check_pending_constraints` | core | product | Tries every CHECK constraint the unapplied migrations add against the rows there are now, with the SQL the migration will add; names each broken one and exits 1; reads only | The release step, before `migrate` (`deploy/web/release.sh`); an operator before an upgrade |
 | `private_log_values` | core | product | The conversion of migration `core/0011` again: plain values under private labels in the activity log made private (`--dry-run`) | The database administrator (docs/erasure.md) |
 | `erase_stranger_address` | core | product | Erases, on the data-protection officer's instruction, an address an invitation was mis-sent to: in `account_mails` and in the activity log's rows of the account (a dry run unless `--apply`; it checks only that no account has the address now) | The database administrator (docs/erasure.md, step 8) |
+| `core_rev_drop_hypertable_triggers` | core | product | Drops the revision triggers of every tracked hypertable before a TimescaleDB update (which cannot rename a chunk's constraint trigger); drops nothing and names it when another constraint trigger sits on a hypertable | `deploy/scripts/timescaledb-move.sh`, before `ALTER EXTENSION timescaledb UPDATE`; `core_rev_repair` after it (Revisions) |
 | `core_rev_rebuild` | core | product | Moves every revision of `core_rev` past every stored figure's stamp and sets the floor for keys seen later, so every stored figure is built again; names a missing or disabled revision trigger | The database administrator, after a restore, a load with the triggers off or a session in replica mode (Revisions) |
 | `core_rev_repair` | core | product | Makes the missing, disabled or replica-only revision triggers (core.W005) again as their migrations made them, then rebuilds every revision; does nothing when none is missing | The database administrator, on core.W005 (Revisions) |
 | `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
@@ -6733,7 +6888,7 @@ WORKERS=1 scripts/test.sh                # one process, without --parallel
 ```
 
 `scripts/test.sh` starts a PostgreSQL server for the run alone (the development database's image,
-`timescale/timescaledb:2.17.2-pg17`, in a container `balik-test-db-<run>` on a network of its own, no host port, its data in
+`timescale/timescaledb:2.32.1-pg17` (pinned by digest), in a container `balik-test-db-<run>` on a network of its own, no host port, its data in
 memory), runs `manage.py compile_catalogs` and `manage.py test --noinput --parallel $WORKERS` in the test runner's
 image, stage `tests` of `docker/testrunner.Dockerfile` (the hashed requirements, the water-chemistry core built from the
 checkout and `tblib`; `scripts/testrunner/image.sh` defines it, its Dockerfile, stage, context and a tag hashed from
@@ -6903,11 +7058,12 @@ so run `scripts/test.sh` on the branch before asking for a merge.
 
 | Job | What it runs | The same on a developer's machine |
 |---|---|---|
-| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `ruff check` (the linter, below); `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), where any issue but the four still open fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh`: the four HTTPS settings, until the production settings exist); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
+| `python` | the browser build first (`npm ci`, `npm run build`: `check` fails on core.W001 without `static/js`), then `CHECKS=1 scripts/test.sh` (`SUITE=0` on a pull request) with 4 workers, in the test runner's image (`scripts/testrunner/image.sh`, built with its layers cached): `ruff check` (the linter, below); `compile_catalogs` (a fresh checkout has no `.mo`, and core.W002 would fail the check); `manage.py check --fail-level WARNING`; `check --deploy` with production-like settings (DEBUG off, a random key, a host, an SMTP server, a sender and an https public address: Email), and a random digest key, where any issue fails (`DEPLOY_OPEN` in `scripts/testrunner/in-container.sh` is empty since the production settings exist: Starting a production server); `makemigrations --check`; `data_map --check`; `update_catalogs`, then `git diff --exit-code -- locale` (the catalogs were up to date); `compile_catalogs`; then, except on a pull request, the whole suite with warnings as errors | `CHECKS=1 SUITE=0 scripts/test.sh` (the checks only) or `CHECKS=1 scripts/test.sh`, then `git diff -- locale` |
 | `frontend` | `npm ci`, `npm run check:css` (the committed `static/css/tw.css` is what `frontend/tailwind.css` and the templates build now), `npm run check:tokens` (the tokens' CSS is what `tokens.json` builds), `npm run check:ds` (the design-system gate and its ratchet), `npm run build` (tsc, `tsconfig.json`, then the Tailwind build), `npm test` (the TypeScript tests, the designer's and the layout's browser tests on the runner's Chrome) | the same four |
 | `rust` | in `sensors-ingest/`, on the toolchain of `rust-toolchain.toml` (1.88.0, the release image's and the crate's `rust-version`): `cargo fmt --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked --all-targets` against a TimescaleDB service migrated by Django (`manage.py migrate` in the test runner's image, the server's own packages) and a Mosquitto broker (`REQUIRE_DB=1`: the database and broker tests run, never skip), `cargo deny --locked check` (licences, bans, sources, RustSec advisories), `THIRD_PARTY` equal to what `Cargo.lock` says | `sensors-ingest/tests/run.sh` |
 | `chemcore` | `chemcore/scripts/test.sh` in the `chemcore-tools` stage of `docker/testrunner.Dockerfile` (its layers cached): rustfmt, clippy, `cargo test`, libm the chemistry's only dependency, no WebAssembly, `cargo deny` with advisories, `chemcore/THIRD_PARTY`, `docker/requirements.lock` naming the pins of `requirements.txt`; the built module's handshake with `chemcore/EXPECTED` (core.E001) is the python job's `check`. | the same `docker run` as the script's header |
 | `security` | `pip-audit --strict` on `requirements.txt` and the test runner's, and with `--require-hashes` on what the runner image installs (`docker/requirements.lock`) and the chemcore wheel's build tool (`docker/chemcore-build.lock`, maturin); the Python licence gate (`pip-licenses --allow-only`, the licences [`THIRD_PARTY.md`](THIRD_PARTY.md) allows: AGPL, SSPL, BUSL, non-commercial or any unreviewed licence fails); the banned components, MinIO and rodbus, whatever licence a client library carries (a Python or npm package, or an image a compose file or Dockerfile names; the crates are denied in `deny.toml`); `npm audit --omit=dev --audit-level=high` | see below |
+| `go-live-stack` | by hand only (`gh workflow run ci.yml --ref <branch> -f stack=true`, calling `.github/workflows/go-live-stack.yml`, which is also dispatched on its own once it is on `main`): the production stack of `deploy/compose.yml` built and started on a throwaway runner with throwaway secrets and synthetic data (`deploy/ci/stack.sh`): every service healthy, the database roles (`deploy/scripts/check-roles.sh`), HTTPS, headers, hashed static files, sign-in and a crawl of the pages (`deploy/ci/smoke.py`), MQTT over TLS with client certificates, the heartbeat, green and then red with a failing WAL archiver, a backup shipped to a runner folder, a restore into a second installation with every table's row count, the owner's prune and check, a point-in-time restore, a database password rotated (`docs/ops/`). On the production database image (TimescaleDB 2.32.1); `-f pg_image=<that image>` runs the whole suite on it too | none: no local Docker runs of the stack; on a farm's server `docs/ops/install.md`, step 7 |
 
 The ingest's tests, bench and end-to-end runs make their configuration in SQL of their own (`sensors-ingest/tests/common/mod.rs`,
 `bench/seed.sql`, `bench/multisource_setup.py`, `e2e/seed.sql`) on the schema Django migrates, so a migration breaks them

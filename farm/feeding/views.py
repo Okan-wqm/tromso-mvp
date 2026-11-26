@@ -26,7 +26,7 @@ from core.crud import done, render_page
 from core.dates import read_day
 from core.ui import is_next
 
-from .. import placements
+from .. import dialogs, placements
 from ..clocks import clocks, own_days
 from ..forms.feeding import FeedingForm, feed_label
 from ..forms.stock import VoidForm
@@ -310,11 +310,11 @@ def choose_unit(request):
     left = stock_read.left_within([unit for unit in units if unit.pk not in stock], earliest)
     target = request.GET.get('next', '')
     query = f'?{urlencode({"next": target})}' if target else ''
-    return render_page(request, 'farm/feeding_choose.html', _context(
+    return _page(request, 'farm/feeding_choose.html', _context(
         heading=_('Record feeding'), back_url=_back(request),
         units=[{'unit': unit, 'stock': stock.get(unit.pk), 'left': left.get(unit.pk),
                 'url': reverse('farm:feeding_record', args=[unit.pk]) + query}
-               for unit in units if unit.pk in stock or unit.pk in left]))
+               for unit in units if unit.pk in stock or unit.pk in left]), pages.choose_props)
 
 
 def _split(unit, day, target=FeedTarget.PRODUCTION):
@@ -364,8 +364,9 @@ def record_feeding(request, pk):
                                                 'Treatments, or the fish’s withdrawal stays unknown.'))
                 return done(request, back)
         day = form.cleaned_data.get('date') or local_today(unit)
-        return stock_views._refused(request, 'farm/feeding_form.html', {
-            **context, 'form': form, 'split': _split(unit, day, form.fed_to), 'fasting': fasting_on(unit, day)})
+        return dialogs.page(request, 'farm/feeding_form.html', {
+            **context, 'form': form, 'split': _split(unit, day, form.fed_to), 'fasting': fasting_on(unit, day)},
+            refused=True)
     form = FeedingForm(unit=unit, stock=stock)
     meal = next_meal(unit) if request.GET.get('meal') == 'next' else None
     if meal is not None:
@@ -373,7 +374,7 @@ def record_feeding(request, pk):
         feed = meal['feed']
         form.initial.update({'amount_kg': meal['amount_kg'], 'meals': meal['meals'], 'time': meal['time'],
                              **({'feed': feed.pk} if feed is not None and feed.status == Feed.Status.ACTIVE else {})})
-    return render_page(request, 'farm/feeding_form.html',
+    return dialogs.page(request, 'farm/feeding_form.html',
                        {**context, 'form': form, 'meal': meal, 'split': _split(unit, local_today(unit)),
                         'fasting': fasting_on(unit, local_today(unit))})
 
@@ -397,8 +398,8 @@ def void_feeding(request, pk):
                 messages.success(request, _('Feeding of %(date)s in %(unit)s voided.') % {
                     'date': shown_date(record.date), 'unit': record.unit.code})
                 return done(request, back)
-        return stock_views._refused(request, 'farm/feeding_void.html', {**context, 'form': form})
-    return render_page(request, 'farm/feeding_void.html', {**context, 'form': VoidForm()})
+        return dialogs.page(request, 'farm/feeding_void.html', {**context, 'form': form}, refused=True)
+    return dialogs.page(request, 'farm/feeding_void.html', {**context, 'form': VoidForm()})
 
 
 # ---- what other pages show -----------------------------------------------------------------------

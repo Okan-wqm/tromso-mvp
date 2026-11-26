@@ -9,7 +9,7 @@
 #   broker-auth/                passwd and acl written by manage.py sensor_broker_sync (the broker reloads them)
 services:
   db:
-    image: timescale/timescaledb:2.17.2-pg17
+    image: timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-balik}
@@ -23,7 +23,7 @@ services:
 
   mosquitto:
     profiles: [sensors]
-    image: eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+    image: eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
     restart: unless-stopped
     entrypoint: ["sh", "/mosquitto/config/entrypoint.sh"]
     # Plain MQTT on the host's loopback only; field devices use the TLS listener of conf.d/tls.conf (publish 8883 then).

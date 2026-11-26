@@ -111,6 +111,22 @@ ALL_QUANTITIES = [*WATER, *PROCESS]
 BY_CODE = {quantity.code: quantity for quantity in ALL_QUANTITIES}
 CODES = [quantity.code for quantity in ALL_QUANTITIES]
 WATER_CODES = [quantity.code for quantity in WATER]
+# The quantities the water limits judge: each one a limit can be set on (farm/water/parameters.py LIMITED; the NH₃ a
+# limit judges is worked out from them). A probe of one that stops sending is warned of by its default "No fresh value"
+# rule, whatever its pH scale (owner decision of 2026-11-20; sensors.AlarmRule.is_default, sensors 0015).
+JUDGED_CODES = [quantity.code for quantity in WATER if quantity.code in {parameter.code for parameter in parameters.LIMITED}]
+# The severity each default rule is seeded with (owner decision of 2026-11-20): critical for the dissolved oxygen, in
+# mg/L and in % (one quantity in two units, parameters.SAME_QUANTITY: a dead oxygen probe in a closed system can be fish
+# lost within minutes), a warning for every other. The rule is the quantity's, so a channel made later has its
+# quantity's rule and so this severity; once seeded the severity is the farm's (a migration never overwrites it).
+DEFAULT_CRITICAL = (parameters.OXYGEN_MG_L, parameters.OXYGEN_PCT)
+
+
+def default_severity(code):
+    """The severity a judged quantity's default "No fresh value" rule is seeded with (sensors.models.alarm.Severity)."""
+    return 'critical' if code in DEFAULT_CRITICAL else 'warning'
+
+
 CHOICES = [(quantity.code, quantity.label) for quantity in ALL_QUANTITIES]
 
 

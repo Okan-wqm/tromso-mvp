@@ -23,6 +23,7 @@ Allowed: `Apache-2.0`, `Apache-2.0 OR BSD-3-Clause`, `BSD-2-Clause`, `BSD-3-Clau
 | `babel` | BSD License (BSD-3-Clause) | The translation catalogs without GNU gettext (`core/catalogs.py`) |
 | `cryptography` | Apache-2.0 OR BSD-3-Clause | AES-encrypted PDFs, for pypdf |
 | `cffi`, `pycparser` | MIT-0, BSD-3-Clause | Pulled in by cryptography |
+| `gunicorn` | MIT | The production WSGI server (`deploy/web/gunicorn.conf.py`); no dependency of its own |
 | `psycopg`, `psycopg-binary` | LGPL-3.0-only | The PostgreSQL driver, used unmodified as a library (dynamic linking): allowed for commercial use |
 | `pypdf` | BSD-3-Clause | Reads an uploaded PDF's text (`knowledge/extraction.py`) |
 | `sqlparse` | BSD License (BSD-3-Clause) | Django's SQL formatting |

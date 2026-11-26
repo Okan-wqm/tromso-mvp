@@ -129,10 +129,17 @@ AREAS = [
     Area(_('Sensor readings'), 'sensors.Reading', actions=('view',)),
     # Dead letters: Read is their page, Edit marks one resolved (logged). The ingest writes them; nobody deletes one.
     Area(_('Dead letters'), 'sensors.DeadLetter', actions=('view', 'change')),
-    # The sensors' alarm rules: read, create, edit, delete. Events: Read is their page. Acknowledging one is the alarms'
-    # acknowledgement of its alarm, by the alarms' one rule (alarms.read.may_acknowledge, asked by alarms.services: Alarms:
-    # Edit, or a person it was sent to), not a right of the events of its own (the data-layering audit, L-5).
-    Area(_('Alarm rules'), 'sensors.AlarmRule'),
+    # The sensors' alarm rules: read, create, edit, delete. The default "No fresh value" rule of each water quantity is
+    # never deleted: Delete is what switches one off (with a reason, logged as critical; owner decision of 2026-11-20,
+    # sensors/forms.py SWITCH_OFF), said under the area in the role matrix. Events: Read is their page. Acknowledging one
+    # is the alarms' acknowledgement of its alarm, by the alarms' one rule (alarms.read.may_acknowledge, asked by
+    # alarms.services: Alarms: Edit, or a person it was sent to), not a right of the events of its own (the data-layering
+    # audit, L-5).
+    Area(_('Alarm rules'), 'sensors.AlarmRule',
+         note=_('Delete also switches off the default “No fresh value” rule of a water quantity (with a reason, logged '
+                'as critical): a probe of that quantity that stops sending then raises no alarm of its own (for the '
+                'dissolved oxygen of a unit with fish, the alarm system’s critical alarm still says it, as it does when '
+                'only a warning or delayed rule covers the probe). A default rule is never deleted.')),
     Area(_('Alarm events'), 'sensors.AlarmEvent', actions=('view',)),
     # The broker credentials, a right apart from the devices: Create and Edit show a secret once (made, or replaced).
     Area(_('Sensor credentials'), 'sensors.Credential'),

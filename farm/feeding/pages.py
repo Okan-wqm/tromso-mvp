@@ -18,6 +18,7 @@ from django.utils.translation import gettext as _, ngettext
 from core import listprops as L
 from core.pagesays import squash
 
+from .. import words
 from ..stock.units_next import mix_chips, placement_chips
 from ..templatetags.feeding import age, celsius, fcr, feed_kg, meal_pips, weights
 from ..templatetags.stock import fish, grams, kilos, percent, tonnes
@@ -47,17 +48,17 @@ def _department(unit, joint=', '):
 def _next_meal(line):
     share, basis = line['share'], line['share'].end
     if basis.cleaner_fish:
-        return L.cell(_('Cleaner fish: no feeding table of their own.'))
+        return L.cell(str(words.CLEANER_FISH_NO_FEEDING_TABLE_OF_THEIR))
     if line['why']:
-        chips = [L.chip('hold', _('Fasting'))] if basis.missing == 'fasting' else ()
+        chips = [L.chip('hold', str(words.FASTING))] if basis.missing == 'fasting' else ()
         return L.cell(str(line['why']), chips=chips)
     if share.next_meal_kg is not None:
         band = basis.band
         sub = [band.feed.code + (f', {_pellet(band.feed)}' if band.feed.pellet_size_mm else '')] if band else ()
         return L.cell(feed_kg(share.next_meal_kg), figure=True, sub=sub)
     if share.remaining_kg is not None:
-        return L.cell(_('meals done'))
-    return L.cell(_('no data'))
+        return L.cell(str(words.MEALS_DONE))
+    return L.cell(str(words.NO_DATA))
 
 
 def _today(line):
@@ -80,10 +81,10 @@ def _ration(line):
     if basis.cleaner_fish:
         return L.cell('–')
     if line['why']:
-        return L.cell(_('no data'))
+        return L.cell(str(words.NO_DATA))
     sfr = basis.sfr
     sub = [_('%(meals)s × %(meal)s') % {'meals': share.planned_meals, 'meal': feed_kg(share.meal_kg)},
-           f"{_('SFR')} {percent(sfr.value, 2)}"]
+           f"{str(words.SFR)} {percent(sfr.value, 2)}"]
     if sfr.interpolated:
         sub.append(_('%(low)s at %(low_t)s, %(high)s at %(high_t)s') % {
             'low': percent(sfr.low.sfr_pct, 2), 'low_t': celsius(sfr.low.temperature_c),
@@ -93,7 +94,7 @@ def _ration(line):
 
 def _batch(line):
     share = line['share']
-    chips = [L.chip('neutral', _('Cleaner fish'))] if line['cleaner'] else ()
+    chips = [L.chip('neutral', str(words.CLEANER_FISH))] if line['cleaner'] else ()
     return L.cell(line['batch'].code, sub=[_('%(fish)s fish · %(biomass)s est.') % {
         'fish': fish(share.fish), 'biomass': kilos(share.biomass_kg)}], chips=chips)
 
@@ -124,7 +125,7 @@ def _weight(line):
 def _water(row):
     temperature = row['temperature']
     if not temperature:
-        return L.cell(_('no data'))
+        return L.cell(str(words.NO_DATA))
     if temperature.via == 'unit':
         where = _('unit, %(age)s ago') % {'age': age(temperature.age)}
     else:
@@ -132,7 +133,7 @@ def _water(row):
     if temperature.fresh:
         return L.cell(celsius(temperature.value_c), sub=[where])
     # never drawn as fresh: the stale chip on the figure, and its warning ("Based on the temperature from …")
-    return L.cell(chip=L.chip('stale', celsius(temperature.value_c)), sub=[where, _('stale'), temperature.warning])
+    return L.cell(chip=L.chip('stale', celsius(temperature.value_c)), sub=[where, str(words.STALE), temperature.warning])
 
 
 def _protocol(line, unit):
@@ -152,25 +153,25 @@ def _protocol(line, unit):
         return L.cell(basis.protocol.name, sub=sub)
     if basis.cleaner_fish:
         return L.cell('–')
-    return L.cell(_('no data'))
+    return L.cell(str(words.NO_DATA))
 
 
 def meal_board_props(request, context):
     """The Meal board's props from the view's `context` (the classic page's): a row per batch line of each unit with fish;
     the unit's own cells (its code, fed today, the water, Record meal) on its first line."""
     params, choices = context['params'], context['choices']
-    columns = [L.column('unit', _('Unit')), L.column('next', _('Next meal')), L.column('today', _('Today')),
-               L.column('fed', _('Fed today'), numeric=True), L.column('ration', _('Ration'), numeric=True),
-               L.column('batch', _('Batch')), L.column('weight', _('Avg. weight'), numeric=True),
-               L.column('water', _('Water')), L.column('protocol', _('Protocol'))]
+    columns = [L.column('unit', str(words.UNIT)), L.column('next', str(words.NEXT_MEAL)), L.column('today', str(words.TODAY)),
+               L.column('fed', str(words.FED_TODAY), numeric=True), L.column('ration', str(words.RATION), numeric=True),
+               L.column('batch', str(words.BATCH)), L.column('weight', str(words.AVG_WEIGHT), numeric=True),
+               L.column('water', str(words.WATER)), L.column('protocol', str(words.PROTOCOL))]
     rows = []
     for row in context['rows']:
         unit, day = row['unit'], row['day']
         actions = []
         if row['record_url']:
-            actions.append(L.link(row['record_url'], _('Record meal'), 'utensils', labelled=True))
+            actions.append(L.link(row['record_url'], str(words.RECORD_MEAL), 'utensils', labelled=True))
         if row['water_url']:
-            actions.append(L.link(row['water_url'], _('Record water sample'), 'droplet'))
+            actions.append(L.link(row['water_url'], str(words.RECORD_WATER_SAMPLE), 'droplet'))
         chips, sub = mix_chips(row['mixes'])
         chips_more, sub_more = placement_chips(row['placements'])
         unit_cell = L.cell(unit.code, strong=True, chips=chips + chips_more, sub=[*sub, *sub_more, _department(unit)])
@@ -191,36 +192,33 @@ def meal_board_props(request, context):
             }, actions if first else (), status=status))
     filters = []
     if len(choices['site']) > 1:
-        filters.append(L.choice('site', _('Site'), params['site'],
-                                [('', _('All sites')), *((site.pk, site.name) for site in choices['site'])]))
-    filters.append(L.choice('department', _('Production department'), params['department'],
-                            [('', _('All production departments')),
+        filters.append(L.choice('site', str(words.SITE), params['site'],
+                                [('', str(words.ALL_SITES)), *((site.pk, site.name) for site in choices['site'])]))
+    filters.append(L.choice('department', str(words.PRODUCTION_DEPARTMENT), params['department'],
+                            [('', str(words.ALL_PRODUCTION_DEPARTMENTS)),
                              *((item.pk, item.name) for item in choices['department'])]))
     if choices['system']:
-        filters.append(L.choice('system', _('System'), params['system'],
-                                [('', _('All systems')), *((item.pk, item.name) for item in choices['system'])]))
-    how = _('The ration is the estimated biomass times the SFR of the protocol’s band at the unit’s temperature, read '
-            'between the table’s columns. The estimated weight is the last measured one plus the feed given since, '
-            'divided by the expected FCR (feed above a day’s ration is not counted as growth); after each meal the next '
-            'one is worked out again. Over- and underfeeding are not flagged yet: compare the fed and remaining amounts.')
-    notices = [L.notice('flagged', 'warning', _('Over- and underfeeding are not flagged yet.')),
-               L.notice('how', 'neutral', f"{_('How rations are worked out')}: {how}")]
+        filters.append(L.choice('system', str(words.SYSTEM), params['system'],
+                                [('', str(words.ALL_SYSTEMS)), *((item.pk, item.name) for item in choices['system'])]))
+    how = str(words.THE_RATION_IS_THE_ESTIMATED_BIOMASS_TIMES)
+    notices = [L.notice('flagged', 'warning', str(words.OVER_AND_UNDERFEEDING_ARE_NOT_FLAGGED_YET)),
+               L.notice('how', 'neutral', f"{str(words.HOW_RATIONS_ARE_WORKED_OUT)}: {how}")]
     count = len(context['rows'])
     if context['filtered']:
-        empty = {'title': _('No unit with fish matches these filters.'), 'text': None,
-                 'link': {'href': context['clear_url'], 'label': _('Clear filters')}, 'add': None}
+        empty = {'title': str(words.NO_UNIT_WITH_FISH_MATCHES_THESE_FILTERS), 'text': None,
+                 'link': {'href': context['clear_url'], 'label': str(words.CLEAR_FILTERS)}, 'add': None}
     else:
-        empty = {'title': _('No unit holds fish'), 'text': _('The board lists the units with fish, from Production units.'),
+        empty = {'title': str(words.NO_UNIT_HOLDS_FISH), 'text': str(words.THE_BOARD_LISTS_THE_UNITS_WITH_FISH),
                  'link': None, 'add': None}
     lines = [ngettext('%(count)s unit', '%(count)s units', count) % {'count': count},
-             f"{_('SFR')}: {_(SFR_SAID)}", f"{_('Avg. weight')}: {_(ESTIMATE_SAID)}"] if count else ()
+             f"{str(words.SFR)}: {_(SFR_SAID)}", f"{str(words.AVG_WEIGHT)}: {_(ESTIMATE_SAID)}"] if count else ()
     return L.page_props(request, label=context['title'], columns=columns, rows=rows, filters=filters, notices=notices,
-                        lines=lines, empty=empty, table_label=_('Meal board, scrolls sideways'))
+                        lines=lines, empty=empty, table_label=str(words.MEAL_BOARD_SCROLLS_SIDEWAYS))
 
 
 # ---- Records ---------------------------------------------------------------------------------------
 def _views(context):
-    return L.tabs(_('Records'), [(item['url'], item['label'], None, item['current']) for item in context['views']])
+    return L.tabs(str(words.RECORDS), [(item['url'], item['label'], None, item['current']) for item in context['views']])
 
 
 def _unit_choices(units):
@@ -232,16 +230,16 @@ def _batch_choices(batches):
 
 
 def _record_link(context):
-    return (context['record_url'], _('Record feeding')) if context.get('record_url') else None
+    return (context['record_url'], str(words.RECORD_FEEDING)) if context.get('record_url') else None
 
 
 def records_props(request, context):
     """Feeding records: every feeding, newest first, voided ones struck through with who voided them and why."""
     params, choices = context['params'], context['choices']
-    columns = [L.column('date', _('Date')), L.column('unit', _('Unit')), L.column('batches', _('Batches fed')),
-               L.column('feed', _('Feed')), L.column('given', _('Feed given'), numeric=True),
-               L.column('meals', _('Meals'), numeric=True), L.column('feeder', _('Feeder')),
-               L.column('by', _('Recorded by')), L.column('notes', _('Notes'))]
+    columns = [L.column('date', str(words.DATE)), L.column('unit', str(words.UNIT)), L.column('batches', str(words.BATCHES_FED)),
+               L.column('feed', str(words.FEED)), L.column('given', str(words.FEED_GIVEN), numeric=True),
+               L.column('meals', str(words.MEALS), numeric=True), L.column('feeder', str(words.FEEDER)),
+               L.column('by', str(words.RECORDED_BY)), L.column('notes', str(words.NOTES))]
     from core.templatetags.dates import site_clock
     rows = []
     for row in context['rows']:
@@ -250,18 +248,18 @@ def records_props(request, context):
         site = unit.production_department.site
         notes = []
         if record.high_rate_ack:
-            notes.append(_('Above the usual feed rate, accepted'))
+            notes.append(str(words.ABOVE_THE_USUAL_FEED_RATE_ACCEPTED))
         if record.is_deleted:
             notes.append(_('voided by %(name)s: %(reason)s') % {
                 'reason': record.void_reason, 'name': record.deleted_by.get_username() if record.deleted_by else 'system'})
         feed = record.feed
-        actions = [L.link(row['void_url'], _('Void'), 'x', danger=True, labelled=True)] if row['void_url'] else []
+        actions = [L.link(row['void_url'], str(words.VOID), 'x', danger=True, labelled=True)] if row['void_url'] else []
         rows.append(L.row(record.pk, {
             'date': L.cell(_day(record.date), sub=[formats.time_format(record.time, 'TIME_FORMAT') if record.time else ''],
-                           chips=[L.chip('neutral', _('Voided'))] if record.is_deleted else ()),
+                           chips=[L.chip('neutral', str(words.VOIDED))] if record.is_deleted else ()),
             'unit': L.cell(unit.code, strong=True, sub=[_department(unit, ' · ')]),
             'batches': L.cell(' + '.join(batch.code for batch in row['batches']) or DASH,
-                              sub=[_('Cleaner fish') if record.target == 'cleaner_fish' else '']),
+                              sub=[str(words.CLEANER_FISH) if record.target == 'cleaner_fish' else '']),
             'feed': L.cell(feed.name, sub=[feed.code + (f' · {_pellet(feed)}' if feed.pellet_size_mm else '')]),
             'given': L.cell(feed_kg(record.amount_kg)),
             'meals': L.cell(record.meals or DASH),
@@ -271,19 +269,18 @@ def records_props(request, context):
             'notes': L.cell(record.notes or None, sub=notes),
         }, actions, voided=record.is_deleted))
     filters = [
-        L.choice('site', _('Site'), params['site'], [('', _('All sites')), *((s.pk, s.name) for s in choices['site'])]),
-        L.choice('unit', _('Unit'), params['unit'], [('', _('All units')), *_unit_choices(choices['unit'])]),
-        L.choice('batch', _('Batch'), params['batch'], [('', _('All batches')), *_batch_choices(choices['batch'])]),
-        L.choice('feed', _('Feed'), params['feed'], [('', _('All feeds')), *((f.pk, str(f)) for f in choices['feed'])]),
-        L.day('from', _('From'), params['from']), L.day('to', _('To'), params['to']),
-        L.check('voided', _('Show voided'), params['voided']),
+        L.choice('site', str(words.SITE), params['site'], [('', str(words.ALL_SITES)), *((s.pk, s.name) for s in choices['site'])]),
+        L.choice('unit', str(words.UNIT), params['unit'], [('', str(words.ALL_UNITS)), *_unit_choices(choices['unit'])]),
+        L.choice('batch', str(words.BATCH), params['batch'], [('', str(words.ALL_BATCHES)), *_batch_choices(choices['batch'])]),
+        L.choice('feed', str(words.FEED), params['feed'], [('', str(words.ALL_FEEDS)), *((f.pk, str(f)) for f in choices['feed'])]),
+        L.day('from', str(words.FROM), params['from']), L.day('to', str(words.TO), params['to']),
+        L.check('voided', str(words.SHOW_VOIDED), params['voided']),
     ]
     if context['filtered']:
-        empty = {'title': _('No feeding matches these filters.'), 'text': None,
-                 'link': {'href': context['clear_url'], 'label': _('Clear filters')}, 'add': None}
+        empty = {'title': str(words.NO_FEEDING_MATCHES_THESE_FILTERS), 'text': None,
+                 'link': {'href': context['clear_url'], 'label': str(words.CLEAR_FILTERS)}, 'add': None}
     else:
-        empty = {'title': _('No feeding recorded yet'), 'text': _(
-            'Feed given to a unit is recorded from its drawer on Production units, or with Record feeding.'),
+        empty = {'title': str(words.NO_FEEDING_RECORDED_YET), 'text': str(words.FEED_GIVEN_TO_A_UNIT_IS_RECORDED),
                  'link': None, 'add': None}
     return L.page_props(request, label=context['title'], tabs=_views(context), columns=columns, rows=rows,
                         filters=filters, add=_record_link(context), lines=[
@@ -304,7 +301,7 @@ def _shares(row):
         head = f"{item['batch'].code} · " + _('%(fish)s fish at %(weight)s est.') % {
             'weight': grams(share.end_g), 'fish': fish(share.fish)}
         if basis.cleaner_fish:
-            said = _('Cleaner fish: no feeding table of their own.')
+            said = str(words.CLEANER_FISH_NO_FEEDING_TABLE_OF_THEIR)
         elif item['why']:
             said = str(item['why'])
         else:
@@ -322,9 +319,9 @@ def days_props(request, context):
     """Records by unit and day: per unit and day the calculated ration, the feed given and the deviation, each batch's
     estimated weight and the basis of its ration or why there is none; a weighing's correction on a row of its own."""
     params, choices = context['params'], context['choices']
-    columns = [L.column('date', _('Date')), L.column('unit', _('Unit')), L.column('batches', _('Batches')),
-               L.column('calculated', _('Calculated'), numeric=True), L.column('given', _('Given'), numeric=True),
-               L.column('deviation', _('Deviation'), numeric=True)]
+    columns = [L.column('date', str(words.DATE)), L.column('unit', str(words.UNIT)), L.column('batches', str(words.BATCHES)),
+               L.column('calculated', str(words.CALCULATED), numeric=True), L.column('given', str(words.GIVEN), numeric=True),
+               L.column('deviation', str(words.DEVIATION), numeric=True)]
     rows = []
     for row in context['day_rows']:
         unit, unit_day = row['unit'], row['unit_day']
@@ -335,7 +332,7 @@ def days_props(request, context):
         rows.append(L.row(f'{unit.pk}-{row["day"].isoformat()}', {
             'date': L.cell(_day(row['day'])),
             'unit': L.cell(unit.code, strong=True, sub=[_department(unit, ' · ')]),
-            'batches': L.cell(lines[0], sub=lines[1:]) if lines else L.cell(_('No fish at the end of the day')),
+            'batches': L.cell(lines[0], sub=lines[1:]) if lines else L.cell(str(words.NO_FISH_AT_THE_END_OF_THE)),
             'calculated': L.cell(feed_kg(calculated) if calculated is not None else DASH),
             'given': L.cell(feed_kg(row['given_kg']), sub=[_('and %(kilos)s to the cleaner fish') % {
                 'kilos': feed_kg(row['cleaner_kg'])} if row['cleaner_kg'] else '']),
@@ -348,16 +345,12 @@ def days_props(request, context):
                 'date': L.cell(None), 'unit': L.cell(None), 'batches': L.cell(_correction(item))}))
     filters = []
     if len(choices['site']) > 1:
-        filters.append(L.choice('site', _('Site'), params['site'],
-                                [('', _('All sites')), *((s.pk, s.name) for s in choices['site'])]))
-    filters += [L.choice('unit', _('Unit'), params['unit'], [('', _('All units')), *_unit_choices(choices['unit'])]),
-                L.choice('batch', _('Batch'), params['batch'], [('', _('All batches')), *_batch_choices(choices['batch'])]),
-                L.day('from', _('From'), params['from']), L.day('to', _('To'), params['to'])]
-    notices = [L.notice('how', 'neutral', _(
-        'The calculated ration of a day counts each recorded meal at the ration it had when it was given (the estimated '
-        'weight then), and the meals still to come at the estimate now; a record that does not say its meals counts as '
-        'one. The deviation is the feed given less the calculated ration. It is worked out again from the records, the '
-        'stock and the water samples as they are now.'))]
+        filters.append(L.choice('site', str(words.SITE), params['site'],
+                                [('', str(words.ALL_SITES)), *((s.pk, s.name) for s in choices['site'])]))
+    filters += [L.choice('unit', str(words.UNIT), params['unit'], [('', str(words.ALL_UNITS)), *_unit_choices(choices['unit'])]),
+                L.choice('batch', str(words.BATCH), params['batch'], [('', str(words.ALL_BATCHES)), *_batch_choices(choices['batch'])]),
+                L.day('from', str(words.FROM), params['from']), L.day('to', str(words.TO), params['to'])]
+    notices = [L.notice('how', 'neutral', str(words.THE_CALCULATED_RATION_OF_A_DAY_COUNTS))]
     if context['clipped']:
         notices.append(L.notice('clipped', 'warning', ngettext(
             'A page shows at most %(days)s day: the first day was moved.',
@@ -368,11 +361,33 @@ def days_props(request, context):
     if context['cleaner_kg']:
         said += ' · ' + _('to the cleaner fish %(kilos)s') % {'kilos': feed_kg(context['cleaner_kg'])}
     if context['filtered']:
-        empty = {'title': _('No unit held fish on these days with these filters.'), 'text': None,
-                 'link': {'href': context['clear_url'], 'label': _('Clear filters')}, 'add': None}
+        empty = {'title': str(words.NO_UNIT_HELD_FISH_ON_THESE_DAYS_2), 'text': None,
+                 'link': {'href': context['clear_url'], 'label': str(words.CLEAR_FILTERS)}, 'add': None}
     else:
-        empty = _('No unit held fish on these days.')
+        empty = str(words.NO_UNIT_HELD_FISH_ON_THESE_DAYS)
     return L.page_props(request, label=context['title'], tabs=_views(context), columns=columns, rows=rows,
                         filters=filters, keep=[('view', 'days')], add=_record_link(context), notices=notices,
                         lines=[said], empty=empty, page=context['page'], pager_query=context['pager_query'])
 
+
+
+def choose_props(request, context):
+    """Record feeding from Records (farm/feeding_choose.html): the units with fish, and those whose fish left on a day that
+    may still be dated, each opening its feeding form as a page; a unit's fish in the classic partial's words
+    (farm/_feeding_choice.html)."""
+    rows = []
+    for item in context['units']:
+        unit = item['unit']
+        department = unit.production_department
+        said = squash(strip_tags(render_to_string('farm/_feeding_choice.html', {'item': item}, request=request)))
+        rows.append(L.row(unit.pk, {
+            # the classic link's line: the code, the unit's name, its department and site
+            'unit': L.cell(' · '.join(part for part in (unit.code, unit.name, department.name,
+                                                        department.site.name if department.site else '') if part),
+                           href=item['url'], strong=True),
+            'fish': L.cell(said or None)}))
+    return L.page_props(request, label=context['heading'], columns=[L.column('unit', str(words.UNIT)),
+                                                                     L.column('fish', str(words.FISH))],
+                        rows=rows, notices=[L.notice('choose', 'neutral', str(words.CHOOSE_THE_UNIT_THAT_WAS_FED))],
+                        empty={'title': str(words.NO_UNIT_HOLDS_FISH_A_FEEDING_NEEDS), 'text': None,
+                               'link': {'href': context['back_url'], 'label': _('Cancel')}, 'add': None})

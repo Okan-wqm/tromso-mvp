@@ -121,18 +121,18 @@ class BandPageTests(MonitoringCase):
         html = self.client.get(PAGE, {'full': '1'}).content.decode()
         band = band_of(html)
         tally = next(each for each in band.walk() if 'monitor-tally' in each.classes)
-        self.assertEqual([text(each) for each in tally.children if not isinstance(each, str)],
-                         ['1 Critical', '1 No recent data'])
-        self.assertEqual([each.classes[0] for each in tally.children if not isinstance(each, str)],
-                         ['monitor-critical', 'monitor-blind'])
+        # T-01 holds fish and has no point to read its water at: its oxygen has no fresh value, critical (owner decision
+        # of 2026-11-23; review 2 of fresh-rule, R2: it was "no recent data")
+        self.assertEqual([text(each) for each in tally.children if not isinstance(each, str)], ['2 Critical'])
+        self.assertEqual([each.classes[0] for each in tally.children if not isinstance(each, str)], ['monitor-critical'])
         strip = next(each for each in band.walk() if 'monitor-strip' in each.classes)
         chips = [each for each in strip.children if not isinstance(each, str)]
         self.assertEqual([text(each) for each in chips],
-                         ['Critical T-02 O₂ (mg/L) 5.00 < critical limit 6.00', 'No recent data T-01 no recent data'])
+                         ['Critical T-01 O₂ (mg/L): no recent data', 'Critical T-02 O₂ (mg/L) 5.00 < critical limit 6.00'])
         # the state is a shape and, for a screen reader, its word; each code opens its card
         self.assertTrue([each for each in chips[0].walk() if 'monitor-shape-critical' in each.classes])
         links = [(text(each), each.attrs['href']) for each in strip.walk() if each.tag == 'a']
-        self.assertEqual(links, [('T-02', f'#card-{self.t2.pk}'), ('T-01', f'#card-{self.t1.pk}')])
+        self.assertEqual(links, [('T-01', f'#card-{self.t1.pk}'), ('T-02', f'#card-{self.t2.pk}')])
         for unit in (self.t1, self.t2):
             self.assertIn(f'id="card-{unit.pk}"', html)
 
@@ -153,10 +153,12 @@ class BandPageTests(MonitoringCase):
         with override_settings(MONITOR_BAND_CHIPS=2):
             band = band_of(self.client.get(PAGE, {'full': '1'}).content.decode())
         (more,) = [each for each in band.walk() if 'monitor-strip-more' in each.classes]
-        # (the two warning units are past the same bound: one chip; what is left over says its state)
-        self.assertEqual(text(more), '+2 more units: 2 No recent data')
+        # (the two warning units are past the same bound: one chip; what is left over says its state. T-01 and T-02 hold
+        # fish without a fresh oxygen (T-01 has no point at all): critical, one chip "O₂ (mg/L): no recent data", owner
+        # decision of 2026-11-23, review 2 of fresh-rule R2)
+        self.assertEqual(text(more), '+2 more units: 2 Warning')
         self.assertEqual(text(next(each for each in band.walk() if 'monitor-tally' in each.classes)),
-                         '1 Critical 2 Warning 2 No recent data')
+                         '3 Critical 2 Warning')
 
     def test_the_switch_of_the_screens_cards(self):
         def switch(**query):
@@ -243,6 +245,7 @@ class BandReviewTests(MonitoringCase):
         self.assertEqual(self.client.get(f"{link.attrs['href']}&full=1").content.decode().count('data-key="card:'), 2)
 
     def test_no_chip_and_no_reason_with_a_bound_can_be_cut(self):
+        self.sample(self.t1, hours=1, temperature_c='9', oxygen_mg_l='9')   # T-01 fine (fish and its oxygen fresh)
         self.sample(self.t2, hours=30, oxygen_mg_l='5')                # critical and old: the longest chip there is
         html = self.client.get(PAGE, {'full': '1', 'mode': 'small', 'wall': '1'}).content.decode()
         band = band_of(html)
@@ -260,6 +263,7 @@ class BandReviewTests(MonitoringCase):
         self.assertIn('critical limit 6.00, no recent data', text(first))
 
     def test_a_measured_co2_says_it_is_the_probes(self):
+        self.sample(self.t1, hours=1, temperature_c='9', oxygen_mg_l='9')   # T-01 fine (fish and its oxygen fresh)
         self.sample(self.t2, hours=1, oxygen_mg_l='9', co2_mg_l='16')
         html = self.client.get(PAGE, {'full': '1', 'mode': 'small'}).content.decode()
         chip = next(each for each in band_of(html).walk() if 'monitor-chip-text' in each.classes)

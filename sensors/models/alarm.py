@@ -23,13 +23,37 @@ class Severity(models.TextChoices):
 
 
 THRESHOLD_KINDS = (AlarmKind.HIGH, AlarmKind.LOW, AlarmKind.RATE)
+# The fields a default rule keeps as seeded: it is the "No fresh value" of every channel of its quantity, at the channel's
+# own freshness. What a farm changes on it is its severity and whether it is active.
+DEFAULT_FIXED = ('channel', 'quantity', 'kind', 'threshold', 'for_s', 'hysteresis')
+
+
+def _default_rule():
+    """What the database holds a default rule to (sensors 0015): a "No fresh value" on every channel of a quantity the
+    water limits judge, held at the channel's own freshness (no time past it, no threshold), never deleted, and switched
+    off only with a reason."""
+    seeded = (Q(kind=AlarmKind.NO_DATA, channel__isnull=True, quantity__in=quantities.JUDGED_CODES, threshold__isnull=True,
+                for_s=0, hysteresis=0, is_deleted=False)
+              & (Q(is_active=True) | ~Q(off_reason='')))
+    return Q(is_default=False) | seeded
 
 
 class AlarmRule(AuditedModel):
     """When a channel needs a look: no fresh value, its device offline, above or below a threshold for a time, or a change
     faster than a rate over a time. On one channel, or on every channel of a quantity. Its events become alarms (Company ›
     Alarms, the alarms app), whose recipient rules say who is notified. A high or low rule on a water quantity is refused: the
-    water limits of the species judge those (Water limits)."""
+    water limits of the species judge those (Water limits).
+
+    A DEFAULT rule (`is_default`; owner decision of 2026-11-20) is seeded for every quantity the water limits judge
+    (quantities.JUDGED_CODES): "No fresh value" on every channel of it, so a probe that stops sending is warned of whatever
+    its pH scale, and a channel made later, by any door, is covered from its first pass (the rule is the quantity's, not a
+    row per channel). It holds exactly when the place's value is no longer fresh, at the channel's own freshness (its
+    heartbeat times its fresh heartbeats, which the farm tunes per channel): the page says "no recent data" and the alarm
+    opens at the same moment. It is seeded critical for the dissolved oxygen and a warning for every other quantity
+    (quantities.default_severity), so a channel made later has its quantity's; from then on the farm sets its severity.
+    Switching it off takes the Delete right on Alarm rules and a reason (`off_reason`), logged as critical
+    (sensors/resources.py). It is never deleted (a check and a trigger) and stays a default rule (the trigger); a channel
+    of such a quantity that no active rule covers is a system check's warning (sensors.W001, sensors/checks.py)."""
 
     channel = models.ForeignKey(Channel, null=True, blank=True, on_delete=models.CASCADE, related_name='alarm_rules',
                                 verbose_name=_('Channel'))
@@ -40,6 +64,8 @@ class AlarmRule(AuditedModel):
     hysteresis = models.FloatField(_('Hysteresis'), default=0.0)
     severity = models.CharField(_('Severity'), max_length=10, choices=Severity.choices, default=Severity.WARNING)
     is_active = models.BooleanField(_('Active'), default=True)
+    is_default = models.BooleanField(_('Default rule'), default=False, db_default=False, editable=False)
+    off_reason = models.CharField(_('Why it is switched off'), max_length=300, blank=True)
 
     class Meta:
         db_table = 'sensors_alarm_rule'
@@ -60,6 +86,13 @@ class AlarmRule(AuditedModel):
                 violation_error_message=_('Above, below and a rate need a threshold.')),
             models.CheckConstraint(condition=Q(for_s__gte=0, hysteresis__gte=0) & finite('hysteresis'),
                                    name='chk_sensors_alarm_rule_numbers'),
+            models.CheckConstraint(
+                condition=_default_rule(), name='chk_sensors_alarm_rule_default',
+                violation_error_message=_('A default rule is the “No fresh value” of every channel of its quantity, at '
+                                          'the channel’s own freshness; it is switched off with a reason, never '
+                                          'deleted.')),
+            models.UniqueConstraint(fields=['quantity'], condition=Q(is_default=True), name='uq_sensors_alarm_rule_default',
+                                    violation_error_message=_('This quantity has its default rule already.')),
         ]
 
     def __str__(self):
@@ -76,6 +109,9 @@ class AlarmRule(AuditedModel):
         if self.kind in (AlarmKind.HIGH, AlarmKind.LOW) and code in quantities.WATER_CODES:
             raise ValidationError({'kind': _('The water limits judge a water value above or below: set them on the Water '
                                              'limits page, for the species.')})
+        if self.is_default and not self.is_active and not self.off_reason.strip():
+            raise ValidationError({'off_reason': _('Say why the default rule is switched off: a probe of this quantity '
+                                                   'that stops sending is then warned of by nothing.')})
 
 
 class AlarmEvent(models.Model):

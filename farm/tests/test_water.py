@@ -391,11 +391,15 @@ class LatestTests(WaterTestCase):
         self.limit('temperature_c', warning_high=14)
         self.sample(hours=30, temperature_c='9')          # fresh for 24 h
         self.sample(hours=30, ph='7')                     # fresh for 72 h, no limit
+        self.sample(hours=1, oxygen_mg_l='9')             # fresh for 24 h, no limit
         water = self.latest()
         self.assertEqual(water.get('temperature_c').status, Status.STALE)
         self.assertEqual(water.status, Status.STALE)      # a value with a limit aged: never "No limit" over it
+        # Three days on the oxygen is old too: a unit with fish whose oxygen has no fresh value is critical (owner
+        # decision of 2026-11-23), the temperature still only stale.
         water = self.latest(now=self.now + timedelta(days=3))
-        self.assertEqual(water.status, Status.STALE)
+        self.assertEqual((water.status, water.get('temperature_c').status), (Status.CRITICAL, Status.STALE))
+        self.assertIsNotNone(water.silent_oxygen)
 
     def test_a_stale_value_keeps_what_its_limit_said_beside_its_age(self):
         """A stale critical value is never forgotten (F-244): its status says it is old, its judgement stays."""
@@ -453,6 +457,7 @@ class PointsWaterTests(WaterTestCase):
     def setUp(self):
         super().setUp()
         self.t3 = make_unit('T-03', self.hall)                      # no sampling point at all
+        self.t4 = make_unit('T-04', self.hall)                      # nor this one
         self.units = [self.t1, self.t2, self.t3]
         self.drain, self.inlet = point_of(self.t1, 'bottom_drain'), point_of(self.t1, 'inlet')
         self.stock()
@@ -498,7 +503,11 @@ class PointsWaterTests(WaterTestCase):
             count(self.units, narrow(self.units))
             one = count(self.units[:1], narrow(self.units[:1]))
             self.assertEqual(count(self.units[:2], narrow(self.units[:2])), one)
-            self.assertEqual(count(self.units, narrow(self.units)), one)
+            # T-03 has no point: read at its system in the same read (read.latest `units`, review 4 of fresh-rule):
+            # at most two queries more, the same for every such unit at once
+            bare = count(self.units, narrow(self.units))
+            self.assertLessEqual(bare - one, 2)
+            self.assertEqual(count([*self.units, self.t4], narrow([*self.units, self.t4])), bare)
 
     def test_the_assumed_salinity_is_one_rule_for_the_calculation_and_the_ammonia(self):
         fresh, sea = Tank.WaterType.FRESHWATER, Tank.WaterType.SALTWATER
@@ -1139,7 +1148,7 @@ class ProductionUnitsTests(WaterTestCase):
         self.stock()
         self.limit('co2_mg_l', critical_high=15)
         side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
-        self.sample(co2_mg_l='8')                                      # the middle point is fine
+        self.sample(co2_mg_l='8', oxygen_mg_l='9')                     # the middle point is fine
         self.sample(point=side, co2_mg_l='15.6')                       # the side outlet is critical
         page = self.client.get(reverse('farm:water'))
         self.assertEqual(page.context['critical_count'], 1)
@@ -1154,7 +1163,7 @@ class ProductionUnitsTests(WaterTestCase):
         self.stock()
         self.limit('co2_mg_l', critical_high=15)
         side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
-        self.sample(hours=1, co2_mg_l='8')                             # the middle point's own value is fine
+        self.sample(hours=1, co2_mg_l='8', oxygen_mg_l='9')            # the middle point's own values are fine
         self.sample(point=side, hours=2, co2_mg_l='15.6')              # the side outlet's is critical
         unit = read.unit_water([self.t1])[self.t1.pk]
         self.assertEqual(unit.status, Status.CRITICAL)                  # computed for the unit
@@ -1179,6 +1188,7 @@ class ProductionUnitsTests(WaterTestCase):
         side = SamplingPoint.objects.create(unit=self.t1, name='East side outlet', kind='side_outlet')
         self.sample(point=side, hours=80, co2_mg_l='15.6', alkalinity_mg_l='90')   # older than CO₂'s 72 fresh hours
         self.sample(point=side, hours=1, ph='7.2')                                  # a fresh OK of another parameter
+        self.sample(hours=1, oxygen_mg_l='9')         # the unit's oxygen (none fresh with fish is critical: 2026-11-23)
         page = self.client.get(reverse('farm:water'))
         row = next(row for row in page.context['rows'] if row['point'] == side)
         co2 = row['water'].get('co2_mg_l')

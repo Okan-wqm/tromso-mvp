@@ -4,6 +4,7 @@ unchanged. farm/tests/test_native_geometry.py checks that every code the core gi
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.utils.formats import number_format
+from django.utils.timesince import timesince
 from django.utils.translation import gettext_lazy as _
 
 from . import native, parameters
@@ -106,7 +107,6 @@ def ph_measured_short(sample):
 # says after "pH (NBS scale) cannot be evaluated:" (`unevaluated`).
 PH_SENSOR_REFUSED = {
     'unconverted': _('a pH on the %(scale)s is not put on the NBS scale here'),
-    'stale': _('a pH on the %(scale)s is put on the NBS scale only while it is fresh, and it is no longer fresh'),
     'temperature': _('a pH on the %(scale)s is put on the NBS scale with a temperature of its moment, a sensor’s or a '
                      'sample’s, and none is fresh then'),
     'salinity': _('a pH on the %(scale)s is put on the NBS scale with the salinity of the same moment, and none was '
@@ -386,3 +386,26 @@ def last_own(reading):
         'value': said_value(reading),
         'status': str(Status(reading.judged).label).lower(),
         'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}
+
+
+def from_system(place):
+    """What a value of a unit with no sampling point of its own says (farm/water/read.py `latest`, `units`): it is its
+    system's, read at `place` (the loop point, else the system)."""
+    return _('From its system, %(place)s: the unit has no sampling point of its own.') % {'place': place}
+
+
+def no_fresh_oxygen_short():
+    """The same in short, as a chip says it ("O₂ (mg/L): no recent data"): the band's chip, the company overview's Water
+    cell (owner decision of 2026-11-23)."""
+    return _('%(label)s: no recent data') % {'label': parameters.get(parameters.OXYGEN_MG_L).short}
+
+
+def no_fresh_oxygen(silence):
+    """What a unit with fish whose oxygen has no fresh value says (read.Silence; owner decision of 2026-11-23, critical):
+    'Dissolved oxygen (mg/L O₂): no recent data, 3 hours old', or without an age when it has no oxygen value at all.
+    The card's own words for a value missing or old (monitoring.read)."""
+    reading = silence.reading
+    if reading is None:
+        return _('%(label)s: no recent data') % {'label': parameters.get(parameters.OXYGEN_MG_L).label}
+    return _('%(label)s: no recent data, %(age)s old') % {'label': reading.parameter.label,
+                                                          'age': timesince(reading.at, silence.now, depth=1)}

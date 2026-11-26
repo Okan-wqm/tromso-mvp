@@ -47,6 +47,16 @@ class MigrationTests(TransactionTestCase):
         with self.assertRaisesRegex(RuntimeError, 'system alarm'):
             self.migrate([('alarms', '0003_levels')])
 
+    def test_going_back_past_water_limits_without_a_point_says_why_it_cannot(self):
+        """Review 6 of fresh-rule, m4: alarms 0022 lets a water-limit alarm have no point (a unit read at its system's
+        probes); going back refuses while one exists, saying why, before the stricter check would fail on it."""
+        rows("INSERT INTO alarms (source, parameter, severity, opened_at, summary) "
+             "VALUES ('water_limit', 'oxygen_mg_l', 'critical', %s, 'N-05, from its system: oxygen low')", [AT])
+        with self.assertRaisesRegex(RuntimeError, 'alarms 0022 cannot be reversed: 1 alarm'):
+            self.migrate([('alarms', '0021_follow_up')])
+        self.assertEqual(rows("SELECT count(*) FROM django_migrations WHERE app = 'alarms' "
+                              "AND name = '0022_water_limit_without_point'"), [(1,)])
+
     def cleared(self, causes):
         """{cause: alarm id} of alarms cleared with these causes (a device's clock alarm for "device removed")."""
         from farm.models import ProductionDepartment

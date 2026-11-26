@@ -7,7 +7,7 @@
 #   TEST_DB=other_name tests/run.sh        another test database
 #   DB_NETWORK=net DB_HOST=name tests/run.sh   another database server (its docker network and host name)
 #
-# Needs: docker, the image `timescale/timescaledb:2.17.2-pg17` (psql), the Django image that migrates the schema
+# Needs: docker, the image `timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c` (psql), the Django image that migrates the schema
 # (DJANGO_IMAGE, default the test runner's image as scripts/testrunner/image.sh defines it, the one CI migrates in,
 # built when missing: no server starts without the water-chemistry core in it), and the Rust image (RUST_IMAGE,
 # default sensors-ingest-dev:1.88 = rust:1.88.0-slim-bookworm plus clippy and rustfmt, built by this script when
@@ -28,7 +28,7 @@ if ! docker image inspect "$RUST_IMAGE" >/dev/null 2>&1; then
   printf 'FROM rust:1.88.0-slim-bookworm\nRUN rustup component add clippy rustfmt\n' | docker build -q -t "$RUST_IMAGE" -
 fi
 
-psql() { docker run --rm --network "$NET" -e PGPASSWORD="${DB_PASSWORD:-balik}" timescale/timescaledb:2.17.2-pg17 \
+psql() { docker run --rm --network "$NET" -e PGPASSWORD="${DB_PASSWORD:-balik}" timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c \
   psql -h "$DB_HOST" -U "${DB_USER:-balik}" "$@"; }
 # a fresh database each run: the unlanded migrations may still change
 psql -d postgres -qc "DROP DATABASE IF EXISTS $TEST_DB WITH (FORCE)" >/dev/null
@@ -37,7 +37,7 @@ docker run --rm --network "$NET" -v "$REPO:/app" -w /app -e DB_HOST="$DB_HOST" -
   "$DJANGO_IMAGE" python manage.py migrate --no-input >/dev/null
 
 # a broker with the production configuration (users ingest/ingest-pw and dev/dev-pw) for the live tests
-MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+MOSQ=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
 BROKER=sensors-ingest-test-broker
 cleanup() { docker rm -f -v "$BROKER" >/dev/null 2>&1 || true; docker volume rm si-test-broker-auth >/dev/null 2>&1 || true; }
 cleanup

@@ -14,6 +14,7 @@ from django.utils.translation import gettext as _
 from core import listprops as L
 from core.templatetags.dates import site_clock
 
+from .. import words
 from ..templatetags.health import event_voidable, told_of
 from ..templatetags.stock import fish
 
@@ -22,11 +23,11 @@ DASH = '—'
 
 def event_filters(view, context):
     return [
-        L.choice('site', _('Site'), context['chosen_site'],
-                 [('', _('All sites')), *((site.pk, site.name) for site in context['sites'])]),
-        L.choice('kind', _('Kind'), context['chosen_kind'], [('', _('All kinds')), *context['kinds']]),
-        L.choice('state', _('Status'), context['chosen_state'], [('', _('Open and closed')), *context['states']]),
-        L.check('voided', _('Show voided'), context['show_voided']),
+        L.choice('site', str(words.SITE), context['chosen_site'],
+                 [('', str(words.ALL_SITES)), *((site.pk, site.name) for site in context['sites'])]),
+        L.choice('kind', str(words.KIND), context['chosen_kind'], [('', str(words.ALL_KINDS)), *context['kinds']]),
+        L.choice('state', str(words.STATUS), context['chosen_state'], [('', str(words.OPEN_AND_CLOSED)), *context['states']]),
+        L.check('voided', str(words.SHOW_VOIDED), context['show_voided']),
     ]
 
 
@@ -51,7 +52,7 @@ def _told(context, event):
         return L.cell(_('Notified %(moment)s') % {
             'moment': formats.date_format(site_clock(notified.at, event.site), 'DATETIME_FORMAT')}), None
     if context['told'] is not None and not event.is_deleted:
-        return L.cell(chip=L.chip('critical', _('Notify at once'))), 'critical'
+        return L.cell(chip=L.chip('critical', str(words.NOTIFY_AT_ONCE))), 'critical'
     return L.cell(DASH), None
 
 
@@ -62,7 +63,7 @@ def _closed(event):
             'reason': event.void_reason, 'name': event.deleted_by.get_username() if event.deleted_by else 'system'})
     if event.closed_on:
         return L.cell(formats.date_format(event.closed_on, 'DATE_FORMAT'), sub=sub)
-    return L.cell(chip=L.chip('accent', _('Open')), sub=sub)
+    return L.cell(chip=L.chip('accent', str(words.OPEN_2)), sub=sub)
 
 
 def events(view, objects, context):
@@ -74,18 +75,18 @@ def events(view, objects, context):
         actions = []
         if not event.is_deleted:
             if context.get('can_change'):
-                actions.append(L.link(view.url('edit', event.pk), _('Edit'), 'pencil'))
+                actions.append(L.link(view.url('edit', event.pk), str(words.EDIT), 'pencil'))
             if context.get('can_void') and event_voidable(event):
-                actions.append(L.link(reverse('farm:healthevent_void', args=[event.pk]), _('Void'), 'x', danger=True,
+                actions.append(L.link(reverse('farm:healthevent_void', args=[event.pk]), str(words.VOID), 'x', danger=True,
                                       labelled=True))
         units = [unit.code for unit in event.units.all()]
         examined = [event.vet.name if event.vet else '',
                     (event.lab.name + (f' · {event.lab_reference}' if event.lab_reference else '')) if event.lab else '']
         rows.append(L.row(event.pk, {
             'date': L.cell(formats.date_format(event.date, 'DATE_FORMAT'),
-                           chips=[L.chip('neutral', _('Voided'))] if event.is_deleted else ()),
+                           chips=[L.chip('neutral', str(words.VOIDED))] if event.is_deleted else ()),
             'event': _event(view, context, event),
-            'where': L.cell(event.site.name, sub=[', '.join(units) if units else _('Whole site')]),
+            'where': L.cell(event.site.name, sub=[', '.join(units) if units else str(words.WHOLE_SITE)]),
             'signs': L.cell(', '.join(str(label) for label in event.sign_labels()) or DASH),
             'told': told,
             'examined': L.cell(event.examined_by or DASH, sub=examined),
@@ -94,20 +95,18 @@ def events(view, objects, context):
         }, actions, status=status, voided=event.is_deleted))
     notices = []
     if context['to_notify']:
-        notices.append(L.notice('notify', 'critical', f"{_('Notify Mattilsynet')}: " + _(
-            'A listed disease is suspected or confirmed and Mattilsynet has not been notified: notify at once '
-            '(dyrehelseforskriften § 7), then record the filing of the notice.')))
+        notices.append(L.notice('notify', 'critical', f"{str(words.NOTIFY_MATTILSYNET)}: " + str(words.A_LISTED_DISEASE_IS_SUSPECTED_OR_CONFIRMED)))
         for event, url in context['to_notify']:
             # each event as the classic list names it, and the way to file its notice (or its form, to record the filing)
             href = url or (view.url('edit', event.pk) if context.get('can_change') else None)
             notices.append(L.notice(f'notify-{event.pk}', 'critical',
                                     f'{event} · {event.site.name} · {event.get_confirmation_display()}',
-                                    link=(href, _('Notify Mattilsynet')) if href else None))
+                                    link=(href, str(words.NOTIFY_MATTILSYNET)) if href else None))
     return {
-        'columns': [L.column('date', _('Date')), L.column('event', _('Event')), L.column('where', _('Where')),
-                    L.column('signs', _('Signs')), L.column('told', _('Mattilsynet')),
-                    L.column('examined', _('Examined by')), L.column('deaths', _('Deaths'), numeric=True),
-                    L.column('closed', _('Closed'))],
+        'columns': [L.column('date', str(words.DATE)), L.column('event', str(words.EVENT)), L.column('where', str(words.WHERE)),
+                    L.column('signs', str(words.SIGNS)), L.column('told', str(words.MATTILSYNET)),
+                    L.column('examined', str(words.EXAMINED_BY)), L.column('deaths', str(words.DEATHS), numeric=True),
+                    L.column('closed', str(words.CLOSED))],
         'notices': notices,
         'rows': rows,
     }

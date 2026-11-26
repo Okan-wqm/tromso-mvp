@@ -21,7 +21,7 @@ from alarms import engine
 from alarms.models import Alarm
 from farm.models import Tank
 from farm.templatetags.water import water_value
-from farm.tests.helpers import point_of
+from farm.tests.helpers import may_record, point_of
 from farm.water import read as water_read
 from sensors import bindings
 from sensors.models import ChannelState
@@ -48,6 +48,7 @@ class StoppedProbeCase(MonitoringCase):
 
     def setUp(self):
         super().setUp()
+        may_record(self.user, 'add_binding')            # binds the probes: the binding service asks (L-6)
         Tank.objects.filter(pk__in=[self.t1.pk, self.t2.pk]).update(water_type='saltwater', water_origin='seawater')
         self.t1.refresh_from_db()
         self.t2.refresh_from_db()

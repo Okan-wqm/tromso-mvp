@@ -654,7 +654,7 @@ class HypertableTriggerTests(Gate, TestCase):
 
     def setUp(self):
         super().setUp()
-        user = get_user_model().objects.create_user('rev', 'rev@example.com', 'x')
+        user = may_record(get_user_model().objects.create_user('rev', 'rev@example.com', 'x'))   # the water service asks
         site = Site.objects.create(name='Bergen', code='BG')
         hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
         point = point_of(make_unit('T-01', hall))

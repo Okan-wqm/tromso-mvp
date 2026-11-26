@@ -5,7 +5,7 @@ from datetime import timedelta
 from farm.water import read as water_read, sources as water_sources
 
 from ..models import Alarm
-from . import AlarmsCase
+from . import NO_RULES_ON_PURPOSE, AlarmsCase
 
 
 class Live:
@@ -125,6 +125,7 @@ def without_triggers(sql, params=()):
             cursor.execute('SET session_replication_role = DEFAULT')
 
 
+@NO_RULES_ON_PURPOSE
 class MissingRuleTests(CrossReviewCase):
     """F6: a severity's rule row that is missing (a restore, a hand edit) never stops the evaluation: the pass uses the
     safest value of each field (no on-delay; the longest off-delay, shortest escalation and most delivery attempts of the
@@ -181,6 +182,7 @@ class MissingRuleTests(CrossReviewCase):
         self.assertTrue(SeverityPolicy.objects.filter(severity='critical').exists())
 
 
+@NO_RULES_ON_PURPOSE
 class FailedStepTests(CrossReviewCase):
     """F3: the alarm system supervises itself (EEMUA 191). A step of the pass that fails is a critical system alarm from
     the pass it fails in until it passes again; and the water step is isolated per unit, so one unit that cannot be

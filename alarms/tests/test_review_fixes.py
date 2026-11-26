@@ -37,7 +37,7 @@ from sensors.tests import make_connection
 
 from .. import engine, floods, models, outbox, read, services, watch, worker
 from ..models import Alarm, AlarmWorkerStatus, DeliveryAttempt, Notification, SeverityPolicy
-from . import AlarmsCase
+from . import NOTHING_CONNECTED, AlarmsCase
 from .doubles import RecordingTransport
 from .test_worker import TIMING, make, unlock_all
 
@@ -277,6 +277,7 @@ class PageTests(Case):
             with self.subTest(page=name):
                 self.assertContains(self.client.get(reverse(name)), 'The alarms are NOT being checked')
 
+    @NOTHING_CONNECTED
     def test_the_wall_asks_for_the_notice_again_and_it_follows_the_worker(self):
         wall = self.client.get(reverse('monitoring:monitor'))
         self.assertContains(wall, f'data-poll="{reverse("alarms:alarm_watch_notice")}?sent_note=1"')
@@ -298,6 +299,7 @@ class PageTests(Case):
         reader.groups.add(role('Wall', 'view_stockoperation'))
         self.assertEqual(self.client.get(reverse('alarms:alarm_watch_notice')).status_code, 200)
 
+    @NOTHING_CONNECTED
     def test_the_sensors_overview_says_nothing_is_sent(self):
         self.assertContains(self.client.get(reverse('sensors:home')), 'Nothing is sent yet')
 

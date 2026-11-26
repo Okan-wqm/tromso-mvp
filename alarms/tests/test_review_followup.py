@@ -24,6 +24,7 @@ from django.test import override_settings
 from .. import floods, outbox, read, services
 from ..models import Alarm, DeliveryAttempt, OutboxEntry, SeverityPolicy
 from .doubles import RecordingTransport
+from . import NOTHING_CONNECTED
 from .test_review_fixes import Case
 from farm.tests.helpers import may_record
 
@@ -134,6 +135,7 @@ class LoadTests(Case):
                            "a ON a.id = n.alarm_id WHERE a.parameter = 'many'")
             cursor.execute('ANALYZE alarms; ANALYZE alarm_notifications; ANALYZE alarm_outbox')
 
+    @NOTHING_CONNECTED
     def test_twenty_thousand_waiting_without_a_transport_cost_a_round_and_the_supervision_little(self):
         self.fill(20_000)
         started = time.monotonic()

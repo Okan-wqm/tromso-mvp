@@ -13,7 +13,7 @@ from farm.tests.test_stock import make_unit
 from farm.water import services as water
 
 from .. import engine, outbox
-from ..models import Alarm, AlarmClearance, RecipientRule
+from ..models import Alarm, RecipientRule
 from ..routing import NO_RULES, UNREACHED
 
 D = Decimal
@@ -23,6 +23,13 @@ OXYGEN = D('9.00')
 # The alarm tests run the pass as a farm does (landing review 4, R5): the alarm system's watch on who it reached on, and a
 # connected transport (a double that records what it would send).
 RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
+
+# The two switches a test may turn, each for its stated reason (R5: no production setting differs without one):
+# - a test of raising and clearing that makes no recipient rule on purpose: the watch on who was reached would add its own
+#   farm-wide alarms (no rule is active, a critical told to nobody) to the alarms the test counts;
+NO_RULES_ON_PURPOSE = override_settings(ALARM_SUPERVISE_REACH=False)
+# - a test of what waits, and of what the pages say, while no transport is connected.
+NOTHING_CONNECTED = override_settings(ALARM_TRANSPORTS={})
 
 
 @override_settings(ALARM_SUPERVISE_REACH=True, ALARM_TRANSPORTS=RECORDING)
@@ -68,14 +75,19 @@ class AlarmsCase(TestCase):
     def loop(self, minutes=0, seconds=0):
         """The worker at a moment: its pass, then a round through the outbox (alarms/worker.py); the pass's Summary."""
         at = self.now + timedelta(minutes=minutes, seconds=seconds)
+        # A farm set up with its rules and a connected channel: the watch on who it reached opens nothing in this pass (one
+        # opened before the rules were made clears after its off-delay, as any alarm does).
+        watched = RecipientRule.objects.filter(is_active=True).exists() and not self.reaches_nobody
+        before = set(self.watch_alarms()) if watched else set()
         summary = engine.run_once(at)
         outbox.send_due(at)
-        if RecipientRule.objects.filter(is_active=True).exists() and not self.reaches_nobody:
-            # A farm set up with its rules and a connected channel: the watch on who it reached stays quiet.
-            self.assertFalse(Alarm.objects.filter(source='system', parameter__in=(UNREACHED, NO_RULES))
-                             .exclude(pk__in=AlarmClearance.objects.values('alarm')).exists(),
+        if watched:
+            self.assertFalse(set(self.watch_alarms()) - before,
                              'the alarm system said an alarm reached nobody on a farm with its rules')
         return summary
+
+    def watch_alarms(self):
+        return Alarm.objects.filter(source='system', parameter__in=(UNREACHED, NO_RULES)).values_list('pk', flat=True)
 
     def critical(self):
         """The one critical water alarm (a critical value holds the warning level too: its alarm opens beside it)."""

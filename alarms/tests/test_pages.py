@@ -15,7 +15,7 @@ from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
 from ..models import Acknowledgement, RecipientRule
-from . import AlarmsCase
+from . import NOTHING_CONNECTED, AlarmsCase
 
 READER = ('view_alarm',)
 DESK = ('view_alarm', 'change_alarm', 'view_recipientrule', 'add_recipientrule', 'change_recipientrule',
@@ -41,6 +41,7 @@ class PageTests(AlarmsCase):
             area = next(area for area in access.areas() if area.model.lower() == f'alarms.{model}')
             self.assertEqual(area.actions, actions)
 
+    @NOTHING_CONNECTED
     def test_reading_needs_the_right_and_the_page_says_nothing_is_sent(self):
         self.client.force_login(self.manager)
         self.assertEqual(self.client.get(reverse('alarms:alarm_list')).status_code, 403)
@@ -99,6 +100,7 @@ class PageTests(AlarmsCase):
 class SensorsPageTests(AlarmsCase):
     """The Sensors › Alarm events page acknowledges through the alarms: one record of who saw it."""
 
+    @NOTHING_CONNECTED
     def test_its_acknowledge_writes_the_alarms_acknowledgement(self):
         device = make_device(make_connection(), make_format(), self.bergen)
         flow = make_channel(device, 'flow_m3_h')

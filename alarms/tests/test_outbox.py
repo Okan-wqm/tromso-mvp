@@ -18,7 +18,7 @@ from farm.tests.helpers import role
 from .. import engine, outbox, read, services, watch, worker
 from ..models import Alarm, AlarmWorkerStatus, DeliveryAttempt, Notification, RecipientRule, SeverityPolicy
 from ..transports import Sent, Transport
-from . import AlarmsCase
+from . import NOTHING_CONNECTED, AlarmsCase
 from .doubles import RecordingTransport
 from .test_reaction import TARGET, Farm, critical_units
 from .test_worker import TIMING, other_session, unlock_all
@@ -207,6 +207,7 @@ class WorkerRoundTests(OutboxCase):
         super().setUp()
         self.addCleanup(unlock_all)
 
+    @NOTHING_CONNECTED                                         # the two wait: the row shows them
     def test_the_sender_writes_the_outbox_figures_on_the_workers_row(self):
         self.queued(minutes_ago=7, count=2)
         made = worker.Worker('alarms', worker.Timing(**TIMING), send=None)

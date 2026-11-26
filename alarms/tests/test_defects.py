@@ -13,12 +13,13 @@ from sensors import alarms as sensor_alarms, bindings
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
-from .. import read, services, sources
+from .. import engine, outbox, read, services, sources
 from ..models import (Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification, ParameterDeadband,
                       SeverityPolicy)
-from . import AlarmsCase
+from . import NO_RULES_ON_PURPOSE, AlarmsCase
 
 
+@NO_RULES_ON_PURPOSE
 class UnitSubjectTests(AlarmsCase):
     """Defect 1: the water's alarms are the units' (their middle point stands for them, A9.1), never every active point's:
     an inlet's value is the stream coming in, and a depth point's critical value already decides its unit (worst fresh
@@ -45,6 +46,7 @@ class UnitSubjectTests(AlarmsCase):
                          [(self.mid1.pk, 'critical'), (self.mid1.pk, 'warning')])      # the unit's two levels, no loop's
 
 
+@NO_RULES_ON_PURPOSE
 class LevelTests(AlarmsCase):
     """Defect 2: a water alarm is a level of a unit's parameter, warning (L) and critical (LL) each with its own alarm, raised
     after the severity's on-delay counted in data time, cleared only past the parameter's deadband and after the
@@ -114,6 +116,7 @@ class Unreadable:
         raise ConnectionError('the sensors cannot be read')
 
 
+@NO_RULES_ON_PURPOSE
 class FailedSourceTests(AlarmsCase):
     """Defect 3: while the live sources cannot be read, nothing clears (a sample alone must not end an alarm a sensor
     raised), and the failure is an alarm of its own."""
@@ -227,8 +230,10 @@ class BulkTests(AlarmsCase):
             unit = make_unit(f'B{units}-{number}', self.hall, system=self.ras)
             stock_fish(self.keeper, unit, 100, '50', 10, species=self.salmon)
             self.sample(5.5, point=point_of(unit))
-        with CaptureQueriesContext(connection) as queries:
-            summary = self.loop(minutes=units)
+        at = self.now + timedelta(minutes=units)
+        with CaptureQueriesContext(connection) as queries:              # the pass; the sender's round after it sends one
+            summary = engine.run_once(at)                               # message per notification, a call each
+        outbox.send_due(at)
         self.assertEqual(summary.failed_steps, [])
         return len(queries), summary.opened
 

@@ -650,7 +650,7 @@ class PurgingTests(PurgingBase):
         self.assertEqual(warning.fasted_hours, Decimal('78.0'))              # 18:00 four days ago to today's start
         self.assertEqual(warning.message(),
                          f'Last fed {services.shown_date(self.day(4))} 18:00 in T-01, 30 degree-days before '
-                         f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days.')
+                         f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days. Days counted: 3 days from water samples.')
         self.assertFalse([note for note in result.notes if 'Last fed' in note or 'asks for' in note])   # one line
         # Reached exactly: no warning; one degree-day short: a warning.
         self.purge(degrees=30)
@@ -665,7 +665,7 @@ class PurgingTests(PurgingBase):
         [warning] = self.assess().warnings
         self.assertEqual((warning.fasted_hours, warning.fasted_degree_days), (Decimal('114.0'), Decimal('40.0')))
         self.assertTrue(warning.message().endswith(
-            'the harvest rule asks for 72 h and 60 degree-days.'), warning.message())
+            'the harvest rule asks for 72 h and 60 degree-days. Days counted: 4 days from water samples.'), warning.message())
         self.assertIn('114.0 h and 40 degree-days before', warning.message())
         self.purge(hours=72, degrees=40)                          # the degrees reached, the hours too: clear
         self.assertEqual(self.assess().warnings, [])
@@ -786,7 +786,7 @@ class PurgingFastsTests(PurgingBase):
         self.assertTrue(fast.start.projected)
         self.assertEqual(fast.why(), f'Fasting before the harvest of {services.shown_date(item.date)}: from '
                                      f'{services.shown_date(self.day(1))} 00:00 (60 degree-days). Projected at the '
-                                     'mean water temperature of the last days measured.')
+                                     'mean water temperature of the last days measured. Days counted: 1 day from water samples, 5 days projected.')
         days = fasting.fasts([self.t1], self.day(3), item.date)
         self.assertEqual(sorted(day for _unit, day in days),
                          [self.day(1) + timedelta(days=n) for n in range(0, 7)])

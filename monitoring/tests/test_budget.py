@@ -124,6 +124,9 @@ OWN_POINT_QUERIES = 2       # owner rule A9.1: the other points of the units, on
                             # and once for the ration's temperature (read.water_sources every_point), whatever the number
 OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range (A11, Series carry) and the unit's other
                               # own-water points for the withdrawal's degree-days, whatever the number of units
+DEGREE_DAY_SENSOR_QUERIES = 1  # the probes' coverage of the withdrawal's degree-day days (farm/water/sources.py covered: the
+                               # bindings; no reading statement without one), whatever the number of units (H-2, 2026-11-26)
+DEGREE_DAY_SENSOR_SAVEPOINTS = 2  # the water sources' savepoint and its release around that ask
 TASK_JOB_QUERIES = 2        # the task job behind (tasks.read.unplanned: the sites' clocks and the recurring tasks), read
                             # once for the wall when a card shows tasks, as the Tasks pages say it (landing review, m-3)
 SHOW_TASKS = ('detailed', 'mixed')      # the modes with a card that shows the tasks widget
@@ -151,7 +154,8 @@ class RecordedCountsTests(Counting, MonitoringCase):
         # source now has its own (a savepoint and its release: transaction control, no read), so the reads are compared
         # without them. Card templates add their
         # two queries (the live templates, the live rules), whatever the number of units.
-        added = TEMPLATE_QUERIES + SENSOR_QUERIES + OWN_POINT_QUERIES + OWNER_2026_11_08_QUERIES
+        added = (TEMPLATE_QUERIES + SENSOR_QUERIES + OWN_POINT_QUERIES + OWNER_2026_11_08_QUERIES
+                 + DEGREE_DAY_SENSOR_QUERIES)
         self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + added
                                         + (TASK_JOB_QUERIES if mode in SHOW_TASKS else 0)] * 3
                                  for mode, count in RECORDED.items()})
@@ -159,16 +163,16 @@ class RecordedCountsTests(Counting, MonitoringCase):
         # with ONE read of the fish and their limits for all the cards; the same at 6, 24 and 200 units.
         self.count(units[:6], 'small')
         small = [self.count(units[:size], 'small') - self.savepoints for size in (6, 24, 200)]
-        self.assertEqual(small, [SMALL_READS] * 3)
+        self.assertEqual(small, [SMALL_READS + DEGREE_DAY_SENSOR_QUERIES] * 3)
         # The Big card (2026-11-16): the same chart read, and every active point's water for its other points; the
         # core draws each card's figure, which is no query. The same at 6, 24 and 200 units.
         self.count(units[:6], 'big')
         big = [self.count(units[:size], 'big') - self.savepoints for size in (6, 24, 200)]
-        self.assertEqual(big, [BIG_READS] * 3)
+        self.assertEqual(big, [BIG_READS + DEGREE_DAY_SENSOR_QUERIES] * 3)
         # The pane of a unit gone into (Phase 1D) is ONE unit's Big card: the same reads, whatever the wall beside it.
         self.count(units[:1], 'big')
-        self.assertEqual(self.count(units[:1], 'big') - self.savepoints, BIG_READS)
-        self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS for mode, count in
+        self.assertEqual(self.count(units[:1], 'big') - self.savepoints, BIG_READS + DEGREE_DAY_SENSOR_QUERIES)
+        self.assertEqual(savepoints, {mode: count + SENSOR_SAVEPOINTS + DEGREE_DAY_SENSOR_SAVEPOINTS for mode, count in
                                       {'simple': 4, 'detailed': 12, 'mixed': 12}.items()})
         # chips; + treatments, lice, tasks, and the task job's read (an optional source: its savepoint and release)
 

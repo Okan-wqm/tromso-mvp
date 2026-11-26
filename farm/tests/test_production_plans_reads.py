@@ -327,7 +327,8 @@ class BudgetTests(Fixtures, FeedingTestCase):
     and with a target, so each row reads every part (the withdrawal, the purge in degree-days, the last feeding, the
     forecast)."""
 
-    CEILING = 60          # measured 55 at 3 and at 9 units (2026-11-22), a small margin; never raised without a review
+    CEILING = 65          # measured 55 at 3 and at 9 units (2026-11-22); 63 since the degree-days read the probes' day coverage
+                          # (2026-11-26, H-2: one read of the bindings per water read); never raised without a review
 
     def setUp(self):
         super().setUp()

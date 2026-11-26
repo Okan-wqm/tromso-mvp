@@ -235,7 +235,7 @@ services:
   #       condition: service_completed_successfully
 
   proxy:
-    image: nginx:1.30.7-alpine@sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3
+    image: nginx:1.31.0-alpine@sha256:2f07d83bf561b506400dc183b1b2003803e39efbd22451f848adaba14d28c7c7
     restart: unless-stopped
     environment:
       SITE_HOST: ${SITE_HOST}
@@ -453,7 +453,7 @@ services:
     networks: [data, egress]
 
   cloudflared:
-    image: cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
+    image: cloudflare/cloudflared:2026.11.1@sha256:e613aadbc2d9511785d2e67a86b0c8ac18dd63a3f9af0d06faf04cbfdcb35f2d
     profiles: [cloudflare]
     restart: unless-stopped
     # A tunnel managed in the Cloudflare dashboard: its token in secrets/cloudflared.env (TUNNEL_TOKEN=...), its public

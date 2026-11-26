@@ -1,5 +1,7 @@
 """The platform owner's settings (Company › Administration › Platform settings): one row, bounded by database checks,
 read through core.platform only, changed on its page by who holds Platform settings: Edit, every change logged."""
+import ast
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
@@ -45,6 +47,14 @@ class ReaderTests(TestCase):
 
     def test_the_old_constant_is_gone(self):
         self.assertFalse(hasattr(settings, 'STOCK_BACKDATE_DAYS'))
+
+    def test_the_window_is_defined_here_only(self):
+        """No area keeps a window of its own beside the setting (HR kept a fixed 31 days: the architecture audit of
+        26.11.2026, H-1): every function of that name in the production code is this module's."""
+        from .tests_data_access import production_modules
+        found = [path for path, tree in production_modules() for node in ast.walk(tree)
+                 if isinstance(node, ast.FunctionDef) and node.name == 'correction_window_days']
+        self.assertEqual(found, ['core/platform.py'])
 
     def test_second_approval_follows_the_setting(self):
         self.assertFalse(platform.second_approval_required('withdrawal'))

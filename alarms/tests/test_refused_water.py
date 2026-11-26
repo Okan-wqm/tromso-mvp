@@ -202,8 +202,12 @@ class AlarmTests(RefusedWaterCase):
         self.sample(self.loop, hours=2, **WATER)
         self.refuse(self.t2, water=WATER)
         with no_basis():
-            reading = self.unit_water(self.t2).get(NH3)
-            self.assertEqual((reading.value, reading.judged), (None, 'critical'))
+            # T-02's own refused sample is no worked-out value: the loop's critical is the value shown (review 4 of
+            # derived-fresh), and the refusal is still "cannot be evaluated" (PointWater.refused_newer).
+            water = self.unit_water(self.t2)
+            reading = water.get(NH3)
+            self.assertEqual((reading.value, reading.judged), (Decimal('0.8924'), 'critical'))
+            self.assertEqual([each.code for each in water.unevaluated], [NH3])
             self.run_pass()
         critical = self.open_alarms(source='water_limit', severity='critical', summary__startswith='T-02').get()
         self.assertEqual(critical.summary, f'T-02 · Middle: {LABEL} 0.8924 (critical)')
@@ -221,8 +225,11 @@ class AlarmTests(RefusedWaterCase):
         said = f'T-02 · Middle: {LABEL} 0.8924 (critical)'
         self.assertEqual([(alarm.severity, alarm.summary) for alarm in raised], [('critical', said), ('warning', said)])
         self.sample(self.loop, hours=1, **LOW)
+        # T-02's own TAN alone is no worked-out value: the loop's newer OK value is the value shown (review 4 of
+        # derived-fresh), and T-02's TAN is said.
         reading = self.unit_water(self.t2).get(NH3)
-        self.assertEqual((reading.value, reading.judged, reading.worse), (None, 'not_measured', None))
+        self.assertEqual((reading.judged, reading.worse, reading.point), ('ok', None, self.loop))
+        self.assertIn('at Middle gives no value', reading.note)
         for minutes in (0, 1, 30, 60, 600, 3000):
             self.run_pass(minutes=minutes)
         # Ended once the water that raised them is back inside the limit, with that cause; never opened again.
@@ -331,7 +338,8 @@ class AlarmTests(RefusedWaterCase):
             self.run_pass(minutes=minutes)
         alarm = self.open_alarms().get()
         self.sample(self.t2, hours=0, tan_mg_l='5.000')
-        self.assertEqual(self.unit_water(self.t2).get(NH3).status, 'not_measured')
+        # The refused value (on its basis) stays the point's newest worked-out value (review 4 of derived-fresh).
+        self.assertEqual(self.unit_water(self.t2).get(NH3).status, 'unevaluated')
         for minutes in (61, 62, 120, 600):
             self.run_pass(minutes=minutes)
         self.assertTrue(read.is_open(alarm))

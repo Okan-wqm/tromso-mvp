@@ -784,6 +784,10 @@ class PointWater:
     targets: frozenset = frozenset()    # the sensor targets its place reads (own, then its system's)
     system_point: object = None     # a unit without a point of its own: its system's loop point it is read at, if any
     standing_place: object = None   # a unit without a point of its own: where it is read (its loop point, else system)
+    # {code: Reading}: an own point's sample newer than its newest worked-out value that the core refused to work out
+    # (judged for the place's fish). Never the value shown (review 4 of the branch, L5), but never silent: it is
+    # "cannot be evaluated" on the pages and in the alarm system's warning (V-A; `unevaluated`).
+    refused_newer: dict = field(default_factory=dict)
 
     @staticmethod
     def _rolled_up(counted):
@@ -846,7 +850,10 @@ class PointWater:
     def unevaluated(self):
         """The values the limits would judge that the chemistry core refused to work out (`Reading.unevaluated`), fresh
         or old, in reading order: what the water page, the card, the overview and the alarm say cannot be evaluated."""
-        return [reading for reading in self.readings.values() if reading.code in LIMITED and reading.unevaluated]
+        return [*(reading for reading in self.readings.values() if reading.code in LIMITED and reading.unevaluated),
+                *(reading for code, reading in self.refused_newer.items()
+                  if reading.unevaluated and not (self.readings.get(code) is not None
+                                                  and self.readings[code].unevaluated))]
 
     @property
     def why_unevaluated(self):
@@ -1993,6 +2000,8 @@ def latest(points, now=None, at=None, own=None, units=()):
                         if lacking is not None and lacking.sample is not resolved[code].sample:
                             said = str(messages.lacking_newer(lacking))
                             reading.note = f'{reading.note} {said}' if reading.note else said
+                            if lacking.refused and each.pk in own_ids and code not in point_water.refused_newer:
+                                point_water.refused_newer[code] = judged(lacking)
             if point is None:                       # a unit without a point: every value is its system's
                 said = point_water.standing_said
                 reading.note = f'{reading.note} {said}' if reading.note else said

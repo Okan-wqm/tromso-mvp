@@ -535,6 +535,10 @@ def _refused_subjects(units, found_water, unevaluated, failed, now):
         looked = found is not None and found.for_unit and unit.pk not in unevaluated
         for code in REFUSABLE:
             reading = found.get(code) if looked else None
+            if looked and (reading is None or not reading.unevaluated) and code in found.refused_newer:
+                # An own point's newer sample the core refused, behind the value shown (read.PointWater.refused_newer):
+                # it cannot be evaluated, and says so until a worked-out value there is newer.
+                reading = found.refused_newer[code]
             since = _unevaluated_since(reading, now) if reading is not None and reading.unevaluated else None
             holds = since is not None
             summary = ''

@@ -125,6 +125,8 @@ OWN_POINT_QUERIES = 2       # owner rule A9.1: the other points of the units, on
                             # and once for the ration's temperature (read.water_sources every_point), whatever the number
 OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range (A11, Series carry) and the unit's other
                               # own-water points for the withdrawal's degree-days, whatever the number of units
+NEWEST_WORKED_QUERIES = 1   # every point's samples with a TAN in the read's window, once for the wall: each point's newest
+                            # worked-out NH₃ (farm/water/read.py Context.prefetch_newest_worked; review 4 of derived-fresh)
 TASK_JOB_QUERIES = 2        # the task job behind (tasks.read.unplanned: the sites' clocks and the recurring tasks), read
                             # once for the wall when a card shows tasks, as the Tasks pages say it (landing review, m-3)
 SHOW_TASKS = ('detailed', 'mixed')      # the modes with a card that shows the tasks widget
@@ -152,7 +154,8 @@ class RecordedCountsTests(Counting, MonitoringCase):
         # source now has its own (a savepoint and its release: transaction control, no read), so the reads are compared
         # without them. Card templates add their
         # two queries (the live templates, the live rules), whatever the number of units.
-        added = TEMPLATE_QUERIES + SENSOR_QUERIES + OWN_POINT_QUERIES + OWNER_2026_11_08_QUERIES
+        added = (TEMPLATE_QUERIES + SENSOR_QUERIES + OWN_POINT_QUERIES + OWNER_2026_11_08_QUERIES
+                 + NEWEST_WORKED_QUERIES)
         self.assertEqual(found, {mode: [count - RECORDED_SAVEPOINTS + added
                                         + (TASK_JOB_QUERIES if mode in SHOW_TASKS else 0)] * 3
                                  for mode, count in RECORDED.items()})

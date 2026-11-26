@@ -366,3 +366,85 @@ class SensorTemperatureTests(WaterTestCase):
                 self.assertEqual(PlatformSettingsForm({**{key: value for key, value in data.items() if value is not None},
                                                        'temperature_band_c': band},
                                                       instance=PlatformSettings.get()).is_valid(), ok)
+
+    def test_the_band_is_compared_exactly(self):
+        """Review 3, L1: 12.4 °C against 12.0 °C is 0.4 °C away, within a band of 0.4 °C (the help says "within"),
+        never 0.40000000000000036 by a float."""
+        from core.models import PlatformSettings
+        self.addCleanup(freshness.forget)
+        PlatformSettings.objects.update(temperature_band_c=D('0.4'))
+        freshness.forget()
+        self.send(12.4, 50, 0)
+        self.sample(hours=30, **FULL)
+        self.assertTrue(self.unit_water().get(NH3).fresh(self.now))
+
+    def test_a_probe_value_just_after_the_sample_confirms_or_ends_it(self):
+        """Review 3, L2: the probe's first value 60 s after the sample (within the clock tolerance), 14.0 °C against the
+        sample's 12.0 °C: the same tolerance as the look-up, so it ends the input at once."""
+        with connection.cursor() as cursor:
+            cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) SELECT %s, g, 14.0 FROM '
+                           "generate_series(%s::timestamptz, %s::timestamptz, interval '10 minutes') g",
+                           [self.channel.channel_no, self.ago(hours=3) + timedelta(seconds=60), self.now])
+        self.sample(hours=3, **FULL)
+        nh3 = self.unit_water().get(NH3)
+        self.assertLessEqual(nh3.fresh_until, self.ago(hours=3) + timedelta(seconds=60))
+        self.assertEqual(nh3.status, Status.STALE)
+
+    def test_a_failing_sensor_source_is_said_in_the_nh3(self):
+        """Review 3, L3: a source that fails is not a missing temperature: the NH₃ says the live values could not be
+        read."""
+        from ..water import sources
+        from .test_water_sources import FakeProvider
+        broken = FakeProvider(broken=True)
+        sources.register(broken)
+        self.addCleanup(sources.unregister, broken)
+        self.sample(hours=3, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0')
+        nh3 = self.unit_water().get(NH3)
+        self.assertIsNone(nh3.value)
+        self.assertEqual(nh3.note, 'Needs a temperature: the sample has none, and the live sensor values could not be '
+                                   'read.')
+
+    def test_the_probe_is_asked_only_up_to_the_moment_the_nh3_is_stale_anyway(self):
+        """Review 3, H2: a sample whose pH has run out (80 h old, 72 h) has a stale NH₃ whatever the probe says: its
+        temperature's band is not asked; one whose inputs are fresh (30 h) is asked up to now, no further."""
+        from unittest import mock
+
+        from ..water import sources
+        outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+        self.send(12.0, 59, 0)
+        self.sample(hours=80, **FULL)
+        self.sample(outlet, hours=30, **FULL)
+        with mock.patch.object(sources, 'steady_until', wraps=sources.steady_until) as steady:
+            moment = timezone.now()
+            read.latest([self.mid1, outlet], now=moment)
+        asks = [ask for call in steady.call_args_list for ask in call.args[3]]
+        self.assertEqual([start for _targets, start, _value, _until in asks], [self.ago(hours=30)])
+        self.assertEqual([until for _targets, _start, _value, until in asks], [moment])
+
+    def test_one_rule_for_the_oxygen_the_nh3_and_the_history(self):
+        """Review 3, M2: a sample with a TAN, a pH and an oxygen but no temperature. Its oxygen's temperature is stored
+        with it (the place's probe then, 12.0 °C); its NH₃ takes the same, says where from, and the history works out the
+        same NH₃ as the latest read."""
+        self.send(12.0, 50, 0)
+        sample = self.sample(hours=3, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0', oxygen_mg_l='9.00')
+        sample.refresh_from_db()
+        self.assertEqual(sample.oxygen_basis_temperature_c, D('12.0'))
+        latest = self.unit_water()
+        nh3 = latest.get(NH3)
+        self.assertIsNotNone(nh3.value)
+        self.assertIn('Worked out with the temperature 12.0 °C of', nh3.provenance)
+        history = {row.sample.pk: row for row in read.history([sample])}[sample.pk]
+        self.assertEqual(history.readings[NH3].exact, nh3.exact)
+        self.assertEqual(history.readings['oxygen_saturation_pct'].exact, latest.get('oxygen_saturation_pct').exact)
+
+    def test_the_ph_scale_conversion_temperature_is_recorded(self):
+        """Review 3, L4: a sensor pH put on the NBS scale with a temperature that stops being fresh before the pH: the NH₃
+        worked out from that pH ends with that temperature."""
+        conversion_ends = self.ago(hours=0.5)
+        observation = read.Observation(
+            self.mid1, self.ago(hours=1), read.Origin.SENSOR,
+            {TAN: D('1.000'), PH: D('7.50'), TEMPERATURE: D('12.0'), SALINITY: D('0.0')}, fresh_for=7200,
+            ph=read.SensorPh('total', D('7.40'), formula=4, temperature=D('12.0'), temperature_until=conversion_ends))
+        nh3 = read.Context([self.mid1], self.now - read.WINDOW).readings(observation)[NH3]
+        self.assertEqual(nh3.inputs_until[PH], conversion_ends)
+        self.assertEqual(nh3.fresh_until, conversion_ends)

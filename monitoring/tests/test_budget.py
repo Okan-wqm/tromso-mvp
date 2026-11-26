@@ -236,3 +236,16 @@ class ProbeTemperatureBudgetTests(Counting, MonitoringCase):
         three, nine = self.probed_farm(3, 'A'), self.probed_farm(9, 'B')
         self.count(three, 'simple')                                   # warm what the first call loads once
         self.assertEqual(self.count(three, 'simple'), self.count(nine, 'simple'))
+
+    def test_the_count_does_not_grow_with_several_samples_full_and_lacking(self):
+        """Review 3, M1: each unit has an older full sample, a TAN without a pH or a temperature newer than it (its NH₃
+        lacks its inputs, so the place looks back to the full one), a sample of the other slots, and its probe. Every
+        loaded sample's temperature and every look-back are asked in one batch each: three units cost what nine do."""
+        def more(units):
+            for unit in units:
+                self.sample(unit, hours=6, tan_mg_l='1.000', ph='7.20', temperature_c='9.5', salinity_ppt='0.0')
+                self.sample(unit, hours=1, tan_mg_l='0.700')
+            return units
+        three, nine = more(self.probed_farm(3, 'C')), more(self.probed_farm(9, 'D'))
+        self.count(three, 'simple')                                   # warm what the first call loads once
+        self.assertEqual(self.count(three, 'simple'), self.count(nine, 'simple'))

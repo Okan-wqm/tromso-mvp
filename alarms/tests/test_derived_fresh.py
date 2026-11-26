@@ -114,3 +114,63 @@ class OwnPointEvidenceTests(WaterTestCase):
                                                                                            '0.8924'))
         self.assertIn('last worked-out value at Outlet 0.8924 critical on ', reading.note)
         self.assertIn('lacks what it is worked out from: measure there again', reading.note)
+
+    def test_a_late_lab_critical_raises_after_a_tan_only_outlet_sample_beside_a_newer_ok_middle(self):
+        """Review 3, H1, case 1: the middle OK 2 h ago, the outlet's quick TAN without a pH 1 h ago (the place's newest
+        TAN, so the one shown), the lab's outlet result of 30 h ago keyed in now, critical: it raises, and the place says
+        the outlet's newer sample lacks its inputs."""
+        self.sample(self.t1, hours=2, **GOOD)
+        self.sample(self.outlet, hours=1, tan_mg_l='0.500')
+        self.sample(self.outlet, hours=30, source='lab', **BAD)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.point, reading.judged), (self.outlet, 'critical'))
+        self.assertIn('last worked-out value at Outlet 0.8924 critical on ', reading.note)
+
+    def test_an_open_critical_stays_said_after_a_tan_only_sample_at_its_point(self):
+        """Review 3, H1, case 2: the outlet critical and raised; the middle OK; then a TAN without a pH at the outlet,
+        the place's newest: the level stays open AND the page says it, never "not measured"."""
+        self.sample(self.outlet, hours=40, **BAD)
+        self.passes(-2380, -2379, -2320)
+        self.sample(self.t1, hours=3, **GOOD)
+        self.sample(self.outlet, hours=1, tan_mg_l='0.500')
+        self.passes(0, 1, 60, 120, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.point, reading.value, reading.judged), (self.outlet, None, 'critical'))
+        self.assertIn('last worked-out value at Outlet 0.8924 critical on ', reading.note)
+
+    def test_more_samples_without_a_temperature_than_any_count_never_drop_the_hold(self):
+        """Review 3, M3: the outlet critical; then 25 samples at the outlet with a TAN and a pH but no temperature (no
+        probe anywhere), the middle OK newest: the outlet's critical still holds, looked back at through the whole
+        window, never a count."""
+        self.sample(self.outlet, hours=40, **BAD)
+        self.passes(-2380, -2379, -2320)
+        for hour in range(30, 5, -1):
+            self.sample(self.outlet, hours=hour, tan_mg_l='0.500', ph='7.00')
+        self.sample(self.t1, hours=2, **GOOD)
+        self.passes(0, 1, 60, 120, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+
+
+class SinglePointEvidenceTests(WaterTestCase):
+    """Review 3, H1, the unit with one point: T-01's middle alone, critical and raised, then a TAN without a pH there."""
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+
+    passes = DerivedStaleAlarmTests.passes
+    outcome = DerivedStaleAlarmTests.outcome
+
+    def test_a_tan_only_sample_does_not_hide_the_middles_critical(self):
+        self.sample(self.t1, hours=40, **BAD)
+        self.passes(-2380, -2379, -2320)
+        self.sample(self.t1, hours=1, tan_mg_l='0.500')
+        self.passes(0, 1, 60, 120, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.value, reading.judged), (None, 'critical'))
+        self.assertIn('last worked-out value at Middle 0.8924 critical on ', reading.note)

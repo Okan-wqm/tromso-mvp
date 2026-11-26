@@ -75,7 +75,7 @@ MUTANTS = [
      'return evidence is not None and any(record.minute < evidence.minute for record in candidates)',
      'return evidence is not None', ('SettledTests',)),
     ('held ignores fresh_now', 'if _fresh_now(record) or record.status not in ALERTS or',
-     'if record.status not in ALERTS or', PLACE),
+     'if record.status not in ALERTS or', PE),
     ('as bad as the value shown is held', 'or RANK[record.status] >= shown_rank:', 'or RANK[record.status] > shown_rank:',
      PLACE),
     ('a stale "cannot be evaluated" is held', 'or record.status not in ALERTS or',

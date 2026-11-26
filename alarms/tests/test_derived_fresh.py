@@ -486,7 +486,7 @@ class SystemSensorTests(WaterTestCase):
         self.assertEqual((reading.judged, reading.worse.point, reading.last_own.point), ('critical', self.mid3, self.mid3))
         self.assertIn('no recent data: measure this unit', reading.note)
         self.assertNotIn('Last value at', reading.note)
-        self.passes(0, 1, 60)
+        self.passes(1, 2, 60)
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
 
     def test_the_systems_analyser_never_clears_the_units_own_alarm(self):

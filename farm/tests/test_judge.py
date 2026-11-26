@@ -48,6 +48,11 @@ def record(name, kind, minute, created, point='P', fresh_now=None, stored=True, 
                         fresh_now=(created % 2 == 0) if fresh_now is None else fresh_now, status=status)
 
 
+def key(found):
+    """A record's key, None for none: an assertion on it FAILS for a missing record, never crashes."""
+    return found.key if found is not None else None
+
+
 def said(values):
     """A scenario in a failure's message: (name, status, has a value, refused, fresh at its time, minute, entered)."""
     return [(each.id, each.status, each.value, each.refused, each.fresh_at_own_time, each.measured_at.minute,
@@ -187,17 +192,17 @@ class ExamplesTests(SimpleTestCase):
             with self.subTest(lab_first=lab_first):
                 lab = record('lab', 'critical', 0, 0 if lab_first else 1)
                 kit = record('kit', 'ok', 0, 1 if lab_first else 0)
-                self.assertEqual(judge.point_verdict([lab, kit]).worst.key, 'lab')
+                self.assertEqual(key(judge.point_verdict([lab, kit]).worst), 'lab')
 
     def test_a_refused_value_on_its_basis_ahead_of_a_late_lab_critical(self):
         lab = record('lab', 'critical', 0, 5)                        # measured first, entered last
         refused = record('refused', 'refused_basis_ok', 5, 1)
         verdict = judge.point_verdict([lab, refused])
-        self.assertEqual((verdict.evidence.key, verdict.worst.key, verdict.refused.key), ('lab', 'lab', 'refused'))
+        self.assertEqual((key(verdict.evidence), key(verdict.worst), key(verdict.refused)), ('lab', 'lab', 'refused'))
 
     def test_a_value_stale_from_its_start_ahead_of_a_critical(self):
         verdict = judge.point_verdict([record('bad', 'critical', 0, 0), record('stale', 'stale_ok', 5, 1)])
-        self.assertEqual((verdict.evidence.key, verdict.worst.key), ('bad', 'bad'))
+        self.assertEqual((key(verdict.evidence), key(verdict.worst)), ('bad', 'bad'))
 
     def test_a_refused_sample_older_than_the_evidence_is_no_longer_the_points(self):
         verdict = judge.point_verdict([record('refused', 'refused_bare', 0, 0), record('ok', 'ok', 5, 1)])
@@ -206,13 +211,13 @@ class ExamplesTests(SimpleTestCase):
     def test_of_two_refused_samples_newer_than_the_evidence_the_newest_is_the_points(self):
         verdict = judge.point_verdict([record('ok', 'ok', 0, 0), record('first', 'refused_bare', 5, 1),
                                        record('second', 'refused_bare', 10, 2)])
-        self.assertEqual(verdict.refused.key, 'second')
+        self.assertEqual(key(verdict.refused), 'second')
 
     def test_a_late_result_before_newer_evidence_is_late_never_judged(self):
         ok = record('ok', 'ok', 5, 0)
         lab = record('lab', 'critical', 0, 3)
         verdict = judge.point_verdict([ok, lab])
-        self.assertEqual((verdict.worst.key, [each.key for each in verdict.late], verdict.superseded_by.key),
+        self.assertEqual((key(verdict.worst), [each.key for each in verdict.late], key(verdict.superseded_by)),
                          ('ok', ['lab'], 'ok'))
 
     def test_late_results_are_the_worst_first(self):
@@ -226,7 +231,7 @@ class ExamplesTests(SimpleTestCase):
         evidence = record('evidence', 'ok', 0, 0, seconds=50)
         peer = record('peer', 'critical', 0, 3, seconds=10)
         verdict = judge.point_verdict([evidence, peer])
-        self.assertEqual((verdict.late, verdict.worst.key), ((), 'peer'))
+        self.assertEqual((verdict.late, key(verdict.worst)), ((), 'peer'))
         self.assertEqual(judge.minute(T0 + timedelta(seconds=59, microseconds=5)), T0)
 
     def test_a_value_entered_at_the_evidences_instant_is_not_late(self):
@@ -239,7 +244,7 @@ class ExamplesTests(SimpleTestCase):
         live = record('live', 'ok', 5, 0, stored=False)
         lab = record('lab', 'critical', 0, 3)
         verdict = judge.point_verdict([live, lab])
-        self.assertEqual((verdict.evidence.key, verdict.late, verdict.superseded_by.key), ('live', (), 'lab'))
+        self.assertEqual((key(verdict.evidence), verdict.late, key(verdict.superseded_by)), ('live', (), 'lab'))
         stored = record('stored', 'ok', 5, 0)
         earlier_live = record('earlier live', 'critical', 0, 3, stored=False)
         self.assertEqual(judge.point_verdict([stored, earlier_live]).late, ())
@@ -301,7 +306,7 @@ class PlaceExamplesTests(SimpleTestCase):
         outlet = judge.point_verdict([record('outlet', 'critical', 0, 0, point='outlet', fresh_now=False)])
         middle = judge.point_verdict([record('middle', 'ok', 5, 1, point='middle', fresh_now=True)])
         place = judge.place_verdict(middle.worst, {'outlet': outlet, 'middle': middle}, {'outlet', 'middle'})
-        self.assertEqual(place.held.key, 'outlet')
+        self.assertEqual(key(place.held), 'outlet')
         loop = judge.point_verdict([record('loop', 'ok', 0, 0, point='loop', fresh_now=True)])
         own = judge.point_verdict([record('tan', 'lacking', 5, 1, point='middle')])
         place = judge.place_verdict(loop.worst, {'loop': loop, 'middle': own}, {'middle'})
@@ -312,7 +317,7 @@ class PlaceExamplesTests(SimpleTestCase):
         loop = judge.point_verdict([record('ok', 'ok', 0, 0, point='loop', fresh_now=True),
                                     record('refused', 'refused_bare', 5, 1, point='loop')])
         place = judge.place_verdict(loop.worst, {'loop': loop}, set())
-        self.assertEqual(place.refused.key, 'refused')
+        self.assertEqual(key(place.refused), 'refused')
 
     def test_the_systems_refused_sample_counts_when_the_value_shown_has_no_value(self):
         """Review 5's H2 for an own TAN alone shown: nothing of the unit's own is worked out, so the system's is read."""
@@ -320,14 +325,14 @@ class PlaceExamplesTests(SimpleTestCase):
         loop = judge.point_verdict([record('ok', 'ok', 0, 0, point='loop', fresh_now=True),
                                     record('refused', 'refused_bare', 3, 1, point='loop')])
         place = judge.place_verdict(own.shown, {'o1': own, 'loop': loop}, {'o1'})
-        self.assertEqual(place.refused.key, 'refused')
+        self.assertEqual(key(place.refused), 'refused')
 
     def test_of_the_tiers_refused_samples_the_newest_is_the_places(self):
         first = judge.point_verdict([record('first', 'refused_bare', 0, 0, point='o1')])
         second = judge.point_verdict([record('second', 'refused_bare', 5, 1, point='o2')])
         shown = record('shown', 'ok', 10, 2, point='o1', fresh_now=True)
         place = judge.place_verdict(shown, {'o1': first, 'o2': second}, {'o1', 'o2'})
-        self.assertEqual(place.refused.key, 'second')
+        self.assertEqual(key(place.refused), 'second')
 
     def test_an_older_stale_alert_at_the_system_point_shown_is_held(self):
         """The point shown is the system's loop: a stale critical of its judged set entered before the value shown (the
@@ -335,7 +340,16 @@ class PlaceExamplesTests(SimpleTestCase):
         old = record('old', 'stale_critical', 0, 0, point='loop', fresh_now=False)
         new = record('new', 'ok', 0, 1, point='loop', fresh_now=True)
         place = judge.place_verdict(new, {'loop': judge.point_verdict([old, new])}, {'o1'})
-        self.assertEqual((place.held.key, place.older), ('old', ()))
+        self.assertEqual((key(place.held), place.older), ('old', ()))
+
+    def test_a_fresh_alert_is_never_held(self):
+        """A hold is of a value stale NOW: a fresh critical is the worst fresh value's to say (read.worst_fresh), never
+        held (a value ahead of the clock is fresh by its own freshness or not, and nothing else)."""
+        fresh = record('fresh', 'critical', 0, 0, point='o1', fresh_now=True)
+        shown = record('shown', 'ok', 5, 1, point='o2', fresh_now=True)
+        place = judge.place_verdict(shown, {'o1': judge.point_verdict([fresh]), 'o2': judge.point_verdict([shown])},
+                                    {'o1', 'o2'})
+        self.assertIsNone(place.held)
 
     def test_a_point_read_on_its_own_holds_as_the_point_shown(self):
         """Review 7, M5: an outlet's own row: the lab's critical and the kit's OK of one minute, both stale now, the kit
@@ -343,7 +357,7 @@ class PlaceExamplesTests(SimpleTestCase):
         lab = record('lab', 'critical', 0, 0, point='outlet', fresh_now=False)
         kit = record('kit', 'ok', 0, 1, point='outlet', fresh_now=False)
         place = judge.place_verdict(kit, {'outlet': judge.point_verdict([lab, kit])}, {'outlet'})
-        self.assertEqual(place.held.key, 'lab')
+        self.assertEqual(key(place.held), 'lab')
 
     def test_a_points_late_alert_is_said_with_its_own_evidence_and_an_ok_one_is_not(self):
         """The owner's decision: a late result judged critical or a warning is said by the place with the evidence OF ITS
@@ -419,7 +433,7 @@ class PlaceTests(SimpleTestCase):
                     self.assertNotIn(value.key, older)
                 else:
                     self.assertIn(value.key, older, (point, shown.point))
-                    self.assertTrue(verdict.held is None or verdict.held.key != value.key)
+                    self.assertTrue(verdict.held is None or key(verdict.held) != value.key)
 
     def test_attention_only_turns_an_ok_value_of_the_system_and_never_beside_a_held_value(self):
         seen = 0

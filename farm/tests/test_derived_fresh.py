@@ -350,7 +350,8 @@ class LookBackBudgetTests(WaterTestCase):
         self.assertLessEqual(sum(rows), 2 + 1 + read.LATE_READ)
         nh3 = water.get(NH3)
         self.assertEqual((nh3.judged, nh3.value is not None), (Status.OK, True))
-        self.assertIn(f'And {60 - read.LATE_READ} more late results: see the history.', nh3.note)
+        # (the newest of the sixty was fetched with the evidence, to see its minute: 59 in the late query)
+        self.assertIn(f'And {59 - read.LATE_READ} more late results: see the history.', nh3.note)
 
     def test_the_ceiling_stops_the_look_back_and_the_point_cannot_be_evaluated(self):
         """After judge.CEILING candidates without evidence the look-back stops, fail-closed: a sea unit whose own samples
@@ -477,7 +478,7 @@ class LateResultTests(WaterTestCase):
     order of entry and however many late results there are; the log keeps it in English; a late check that fails never
     blocks the sample and leaves its trace."""
     BAD = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'tan_mg_l': '5.000'}
-    SAID = 'Late result: critical 0.8924 at Middle on '
+    SAID = 'Late result: critical 0.8942 at Middle on '
 
     def setUp(self):
         super().setUp()

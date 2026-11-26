@@ -607,3 +607,57 @@ class LiceCount(AuditedModel):
     def per_fish(self, stage):
         """The average of a stage per fish examined (Vedlegg 1 point 6), unrounded."""
         return Decimal(getattr(self, stage)) / self.fish_counted
+
+
+class FloorOrigin(models.TextChoices):
+    LANDING = 'landing', _('A change of the rule')
+    CLOSING = 'closing', _('A probe day closed')
+    WRITE = 'write', _('A write nobody could be asked about')
+
+
+class WithdrawalFloor(models.Model):
+    """A day before which one batch's withdrawal from one treatment does NOT end, whatever the days add up to: a
+    recorded decision, not a stored end (the withdrawal is still worked out on read, and ends at the later of the two:
+    `until = max(worked out, floor)`, said in its text). `not_before` empty: the end stays unknown until the floor is
+    lifted.
+
+    It is how an end is kept from moving EARLIER without a question (the independent review of 2026-11-26, B-4): when
+    the rule changes at a landing (`manage.py withdrawal_ends`) or the daily job closes a probe day that would move an
+    end earlier (farm/water/services.py), nobody is there to be asked, so the end that was shown stays as a floor. A
+    person lifts it through the withdrawal guard (farm/health/services.py `lift_floor`), which asks the Released
+    question; a floor whose day has passed holds nobody. Never edited: lifted (who, when, why) and, if needed, set
+    again. A withdrawal input: written inside the withdrawal guard only (farm/withdrawal_gate.py)."""
+
+    id = models.BigAutoField(primary_key=True)
+    created_at = models.DateTimeField(_('Set at'), auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+                                   related_name='+', verbose_name=_('Set by'))          # empty: a job or a command
+    treatment = models.ForeignKey(Treatment, on_delete=models.PROTECT, related_name='floors',
+                                  verbose_name=_('Treatment'))
+    batch = models.ForeignKey('farm.Batch', on_delete=models.PROTECT, related_name='+', verbose_name=_('Batch'))
+    not_before = models.DateField(_('Not before'), null=True, blank=True)      # None: unknown until lifted
+    origin = models.CharField(_('Why it was set'), max_length=10, choices=FloorOrigin.choices)
+    reason = models.CharField(_('Reason'), max_length=500)
+    lifted_at = models.DateTimeField(_('Lifted at'), null=True, blank=True)
+    lifted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='+', verbose_name=_('Lifted by'))
+    lift_reason = models.CharField(_('Reason for lifting'), max_length=500, blank=True)
+
+    class Meta:
+        db_table = 'withdrawal_floors'
+        ordering = ['id']
+        verbose_name = _('withdrawal floor')
+        verbose_name_plural = _('withdrawal floors')
+        constraints = [
+            models.CheckConstraint(condition=Q(origin__in=FloorOrigin.values), name='chk_withdrawal_floors_origin'),
+            models.CheckConstraint(condition=~Q(reason=''), name='chk_withdrawal_floors_reason'),
+            models.CheckConstraint(condition=Q(lifted_at__isnull=True, lifted_by__isnull=True, lift_reason='')
+                                   | (Q(lifted_at__isnull=False, lifted_by__isnull=False) & ~Q(lift_reason='')),
+                                   name='chk_withdrawal_floors_lift'),
+        ]
+        indexes = [models.Index(fields=['treatment', 'batch'], condition=Q(lifted_at__isnull=True),
+                                name='withdrawal_floors_live_idx')]
+
+    def __str__(self):
+        day = f'{self.not_before:%Y-%m-%d}' if self.not_before else 'unknown'
+        return f'{self.treatment_id} · {self.batch_id}: not before {day}'

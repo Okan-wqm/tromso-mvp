@@ -10,8 +10,8 @@ class FarmConfig(AppConfig):
         from .handling import withdrawal
         from .health.withdrawal import blockers_while_live, provider, weighed
         from .models import (
-            Feed, FeedingRecord, MedicineWithdrawal, SamplingPoint, Species, StockMovement, StockOperation, System, Tank,
-            Treatment, WaterMeasurement,
+            Feed, FeedingRecord, MedicineWithdrawal, ProbeDay, ProbeDayClosing, SamplingPoint, Species, StockMovement,
+            StockOperation, System, Tank, Treatment, WaterMeasurement, WithdrawalFloor,
         )
 
         # The water's staleness rules (farm/water/freshness.py) are read again after a row is saved and at every request.
@@ -41,5 +41,9 @@ class FarmConfig(AppConfig):
             Treatment: None, Treatment.units.through: None, FeedingRecord: None, WaterMeasurement: None,
             MedicineWithdrawal: None, StockOperation: None, StockMovement: None, Feed: ('feed_type',),
             Species: ('withdrawal_temperature_c',), SamplingPoint: ('is_active', 'kind', 'unit', 'system', 'equipment'),
-            PlatformSettings: ('unknown_withdrawal_days',),
+            # the degree-days' facts and rules: a temperature probe's closed days and the days closed, the floors that
+            # keep an end from moving earlier unasked, and the settings a probe day and the cap are worked out with
+            ProbeDay: None, ProbeDayClosing: None, WithdrawalFloor: None,
+            PlatformSettings: ('unknown_withdrawal_days', 'sensor_day_hours', 'sensor_hold_seconds',
+                               'assumption_cap_days'),
         }, conditional={System: deleted, Tank: {**deleted, **loop}, Species: deleted, SamplingPoint: deleted})

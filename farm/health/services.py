@@ -27,6 +27,7 @@ from datetime import timedelta
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
+from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import access, audit
@@ -34,7 +35,8 @@ from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
 from farm.handling import check
 from farm.health import lice, read as health_read, withdrawal
-from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
+from farm import withdrawal_gate as gate
+from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment, WithdrawalFloor
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
 from farm.stock.dates import check_date, earliest, earliest_today, shown_date, sites_of
@@ -397,3 +399,71 @@ def void_event(user, event, reason):
                 operations + treatments) % {'count': operations + treatments}})
         voided(user, event, reason, [event.site], event_label(event))
         return event
+
+
+# ---- floors: an end that does not move earlier unasked ---------------------------------------------------
+def floor_label(floor):
+    return f'{treatment_label(floor.treatment)} · {floor.batch.code}'
+
+
+def set_floors(moved, origin, reason):
+    """A WithdrawalFloor for each Moved of `moved` (farm.health.withdrawal.earlier): the end the withdrawal had (none:
+    unknown) stays the earliest day its fish go to food, whatever the days add up to now. Not a write of a person:
+    the daily closing of probe days and a landing call it for the ends that would move earlier with nobody there to
+    be asked; each is logged as critical. Inside the withdrawal gate. Returns the floors."""
+    found = []
+    with transaction.atomic(), gate.opened('a floor: the end a withdrawal had, kept'):
+        for each in moved:
+            floor = WithdrawalFloor.objects.create(treatment=each.treatment, batch_id=each.batch_id,
+                                                   not_before=each.was, origin=origin, reason=reason)
+            now = (str(_('no withdrawal of these fish any more')) if each.now is None
+                   else each.now.settled.isoformat() if each.now.settled else str(_('unknown')))
+            with audit.source_language():
+                audit.record(None, AuditLog.Action.CREATE, floor, {
+                    str(_('Not before')): [None, each.was.isoformat() if each.was else str(_('unknown'))],
+                    str(_('The days counted give')): [None, now],
+                    str(_('Reason')): [None, reason]}, label=floor_label(floor), severity=AuditLog.Severity.CRITICAL)
+            found.append(floor)
+    return found
+
+
+def unattended(write, origin, reason):
+    """A write of a withdrawal input that nobody can be asked about (the daily closing of probe days): the withdrawals
+    in force are read, `write()` is made inside the withdrawal gate, they are read again, and every one whose end the
+    write would move EARLIER, or end, keeps the end it had as a floor (`set_floors`): never an earlier end without a
+    question. An end that moves later is the safe direction: the harvests it brings inside a withdrawal are listed by
+    `check_withdrawal` as every harvest inside one is. Returns (what `write()` returned, the floors)."""
+    with transaction.atomic():
+        before = withdrawal.settled_ends(withdrawal.ends_now())
+        with gate.opened('a write nobody can be asked about: an earlier end is floored'):
+            result = write()
+        floors = set_floors(withdrawal.earlier(before), origin, reason)
+    return result, floors
+
+
+def lift_floor(user, floor, reason, withdrawal_ack=None):
+    """Lifts a floor: the withdrawal ends where the days counted put it. Through the withdrawal guard, which asks the
+    Released question when fish held today would go to food earlier (and the second person where the setting asks);
+    logged with its reason. Refused for a floor already lifted."""
+    access.require(user, TREATMENTS['change'])
+    reason = (reason or '').strip()
+    if not reason:
+        raise ValidationError({'reason': _('Say why the floor is lifted.')})
+    with transaction.atomic():
+        stored = WithdrawalFloor.objects.select_related('treatment').get(pk=floor.pk)
+        _units, batch_ids = _treatment_fish(stored.treatment_id, stored.treatment.start_date)
+        floor = WithdrawalFloor.objects.select_for_update(of=('self',)).select_related('treatment', 'batch').get(
+            pk=floor.pk)
+        if floor.lifted_at is not None:
+            raise ValidationError({NON_FIELD_ERRORS: _('This floor is already lifted.')})
+        units = list(floor.treatment.units.select_related('production_department__site'))
+
+        def write():
+            floor.lifted_at, floor.lifted_by, floor.lift_reason = timezone.now(), user, reason
+            floor.save(update_fields=['lifted_at', 'lifted_by', 'lift_reason'])
+            with audit.source_language():
+                audit.record(user, AuditLog.Action.UPDATE, floor, {str(_('Reason for lifting')): [None, reason]},
+                             label=floor_label(floor), severity=AuditLog.Severity.CRITICAL)
+            return floor
+
+        return withdrawal.guarded(user, batch_ids | {floor.batch_id}, _today(units), write, seen=withdrawal_ack)

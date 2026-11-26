@@ -42,12 +42,17 @@ The rules, for a batch b and a treatment T with a medicine:
    the row's days (the margin applied) + 1.
 3. **Degree-days**: the daily mean water temperature of b is added up from the day after T's last day until
    the sum reaches the row's degree-days (the margin applied); the next day is the first day b may be harvested.
-   - The batch's daily mean water temperature and the sum are farm/water/degree_days.py's (`BatchWater.walk`, the one
-     accrual, shared with the purging fast before a harvest): a day with at least 20 h of probe readings at their
-     time-weighted mean, else the day's water samples, else for a past day the species' assumed temperature capped at
-     the coldest day measured in the 7 days before (0 °C without one, said in the warning); a mean of 0 °C or below
-     adds nothing; a day not measured yet is projected. With b in several units that day, the lowest counts. Today
-     without a temperature yet is not counted: it is projected. The text says how many days came from each source.
+   - The batch's daily water temperature and the sum are farm/water/degree_days.py's (`BatchWater.walk`, the one
+     accrual, shared with the purging fast before a harvest): the lowest of the day's closed probe days and water
+     samples at the unit's own places, else at its system's; a past day with nothing measured at the species' assumed
+     temperature under its cap (0 °C without one, said in the warning); a mean of 0 °C or below adds nothing; a day
+     not measured yet, or whose probe day is not closed yet, is projected. With b in several units that day, the
+     lowest counts. The text says how many days came from each source.
+   - **An end never moves earlier without a question.** A sum that needs a probe day not closed yet is "about" and
+     ends tomorrow at the earliest (`waits`). A floor (farm.models.WithdrawalFloor: the end the withdrawal had, kept
+     when a write nobody could be asked about, the daily closing of probe days or a landing, would have moved it
+     earlier) holds the end at its day: `until` is the later of the days' own end (`worked_out`) and the floor, said
+     in the text, until the floor's day passes or a person lifts it through the guard (farm/health/services.py).
 4. Days and degree-days both given: the later end wins. Several treatments: each holds b on its own, and
    the latest end decides what the page shows.
 5. Not reached by today, the rest is projected at the mean of the last 7 days with a temperature within
@@ -82,7 +87,7 @@ from decimal import ROUND_CEILING, Decimal
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
-from django.utils import formats
+from django.utils import formats, timezone
 from django.utils.translation import gettext as _, ngettext
 
 from core import audit
@@ -93,7 +98,7 @@ from farm.feeding import read as feeding_read
 from farm.handling import check
 from farm.handling.withdrawal import WithdrawalBlock, harvest_from, leave_from, source_key
 from farm.models import (Batch, FeedingRecord, HandlingAcknowledgement, MedicineWithdrawal, StockMovement, Tank, Treatment,
-                         WithdrawalAcknowledgement)
+                         WithdrawalAcknowledgement, WithdrawalFloor)
 from farm.models.feed import FeedType
 from farm.models.handling import AcknowledgedWarning, WithdrawalWarning
 from farm.models.health import TreatmentMethod
@@ -179,16 +184,49 @@ class Withdrawal:
     estimated: bool = False               # projected: degree-days still accruing
     treatment: Treatment = None
     feeding: FeedingRecord = None
-    days_without_temperature: int = 0     # past days without a measured temperature
     rule: Rule = None                     # the medicine's withdrawal for the batch's species; None: not recorded
     species: object = None                # the batch's species, for the text of a withdrawal that has no rule
-    assumed_temperature: Decimal = None   # the batch species' assumed temperature those days were counted at; None:
-                                          # it has none and they were counted as 0 °C
-    projected_at_assumed: bool = False    # no temperature was measured lately: projected at the assumed one
     remaining_degree_days: Decimal = None  # what was still to accrue today, when projected or unknown
     gives_up: object = None               # an unknown end: the first day it no longer holds (rule 8); else None
-    # How the degree-days were added up (farm.water.degree_days.Accrual: the days of each source); None without them.
+    # How the degree-days were added up (farm.water.degree_days.Accrual: the days of each source, the species' assumed
+    # temperature, the projection); None without degree-days. What is said of them is read from it, never kept twice.
     accrual: object = field(default=None, compare=False)
+    degrees_decide: bool = False          # the end is the degree-days' (not the row's days')
+    # The end the days themselves give (`worked_out`) when `until` is later than it: held by a floor (`floor`, a
+    # WithdrawalFloor: a recorded decision that the end does not move earlier unasked) or waiting for a probe day that
+    # is not closed yet (`waits`: the sum is "about" and frees nobody today).
+    worked_out: object = None
+    floor: object = field(default=None, compare=False)
+    waits: bool = False
+
+    
+    def settled(self):
+        """The end without the wait for a closing: the days' own, or the floor's when one holds it. What a floor is
+        set at, and what two readings of one withdrawal are compared by (a closing must not look like a move)."""
+        if not self.waits:
+            return self.until
+        return self.floor.not_before if self.floor is not None else self.worked_out
+
+    
+    def days_without_temperature(self):
+        """Past days counted without a measured temperature (at the assumed one, capped or not, or as 0 °C)."""
+        return self.accrual.missing if self.accrual is not None else 0
+
+    
+    def assumed_temperature(self):
+        """The batch species' assumed temperature those days were counted at; None: it has none (0 °C)."""
+        return self.accrual.assumed if self.accrual is not None else None
+
+    
+    def projected_at_assumed(self):
+        """No temperature was measured lately: the degree-days' end is projected at the species' assumed one."""
+        return bool(self.accrual is not None and self.degrees_decide and self.accrual.reached is not None
+                    and self.accrual.projected and self.accrual.projected_at_assumed)
+
+    
+    def unclosed(self):
+        """The probe days its sum still waits for: while there are any, its end is "about" and after today."""
+        return self.accrual.unclosed if self.accrual is not None else 0
 
     @property
     def source(self):
@@ -316,7 +354,7 @@ class Reader:
     def __init__(self, batch_ids, today, spans=None, first=None, last=None, also=(), back=None, ceiling=None):
         self.asked, self.today = set(batch_ids), today
         self.spans = stock_read.spans() if spans is None else spans
-        self._withdrawals = self._lots = None
+        self._withdrawals = self._lots = self._floors = None
         self._ceiling = ceiling
         # A day beyond: a course begun today on a later clock has begun (`there`).
         self.last = max(today, last or today) + DAY
@@ -328,6 +366,7 @@ class Reader:
         self.in_feed = [each for each in every if each.method == TreatmentMethod.IN_FEED]
         self.listed = {each.pk for each in also}
         self.treatments = [each for each in every if each.pk in self.listed or not self._over(each)]
+        self._floored = [each.pk for each in (*self.treatments, *also)]      # the courses whose floors are read
         records = list(FeedingRecord.objects.filter(feed__feed_type=FeedType.MEDICATED, date__lte=self.last)
                        .select_related('feed', 'unit'))
         self.feedings = [record for record in records
@@ -478,20 +517,37 @@ class Reader:
         by_days = end + (rule.days + 1) * DAY if rule.days is not None else None
         if rule.degree_days is None:
             return Withdrawal(batch_id, by_days, treatment=treatment, rule=rule, species=species)
-        by_degrees, estimated, accrual = self.degree_days(batch_id, end, rule.degree_days)
-        if by_degrees is None:
-            until, estimated = None, True
-        elif by_days is not None and by_days > by_degrees:
-            until, estimated = by_days, False
-        else:
-            until = by_degrees
+        worked, estimated, accrual = self.degree_days(batch_id, end, rule.degree_days)
+        degrees_decide = worked is None or by_days is None or by_days <= worked
+        if not degrees_decide:
+            worked, estimated = by_days, False
+        # A floor holds the end while its day is later than the days' own (None: unknown until it is lifted); an end
+        # that is unknown already is held by nothing more.
+        floor = self.floor_of(treatment.pk, batch_id) if worked is not None else None
+        if floor is not None and floor.not_before is not None and floor.not_before <= worked:
+            floor = None
+        until, waits = (worked if floor is None else floor.not_before), False
+        # A probe day not closed yet is projected: the sum is "about" and frees nobody today (the day closes first).
+        if accrual is not None and accrual.unclosed and until is not None and until <= self.today:
+            until, estimated, waits = self.today + DAY, True, True
         return Withdrawal(batch_id, until, estimated, treatment, rule=rule, species=species,
-                          days_without_temperature=accrual.missing if accrual else 0,
-                          assumed_temperature=self.water.assumed(batch_id),
-                          projected_at_assumed=bool(accrual and accrual.projected_at_assumed and by_degrees is not None
-                                                    and until == by_degrees),
-                          remaining_degree_days=rule.degree_days - accrual.counted if estimated and accrual else None,
-                          accrual=accrual)
+                          remaining_degree_days=(rule.degree_days - accrual.counted
+                                                 if degrees_decide and accrual is not None and estimated else None),
+                          accrual=accrual, degrees_decide=degrees_decide, worked_out=worked, floor=floor,
+                          waits=waits)
+
+    def floor_of(self, treatment_id, batch_id):
+        """The live floor that holds the withdrawal of this batch from this treatment latest (an unknown one before any
+        day), or None: the floors of every course of the reader in one query, read when the first degree-day
+        withdrawal asks."""
+        if self._floors is None:
+            self._floors = defaultdict(list)
+            for floor in WithdrawalFloor.objects.filter(lifted_at__isnull=True, treatment__in=self._floored):
+                self._floors[(floor.treatment_id, floor.batch_id)].append(floor)
+        found = self._floors.get((treatment_id, batch_id))
+        if not found:
+            return None
+        return max(found, key=lambda floor: (floor.not_before is None, floor.not_before or date.min, floor.pk))
 
     def uncovered_feedings(self):
         """Withdrawals of unknown end for the medicated feedings of the batches that no live in-feed
@@ -1514,7 +1570,9 @@ def describe(withdrawal):
                     'Medicines.') % {'species': withdrawal.species.common_name, 'medicine': treatment.medicine})
     text = _('%(medicine)s, %(method)s from %(start)s to %(end)s: withdrawal %(rule)s.') % {
         **params, 'rule': withdrawal.rule.text()}
-    if withdrawal.until is None:
+    if withdrawal.floor is not None:
+        text += ' ' + floor_sentence(withdrawal)
+    elif withdrawal.until is None:
         text += ' ' + _('The end cannot be worked out: record the water temperature.')
         # The other record that gives it an end (rule 5); with past days uncounted, the sentence about them says it.
         if withdrawal.assumed_temperature is None and not withdrawal.days_without_temperature:
@@ -1525,8 +1583,29 @@ def describe(withdrawal):
         text += ' ' + projected_sentence(withdrawal.assumed_temperature)
     elif withdrawal.estimated:
         text += ' ' + _('Projected at the mean water temperature of the last days measured.')
+    if withdrawal.unclosed and withdrawal.until is not None:
+        text += ' ' + ngettext(
+            'Not before tomorrow: %(count)d sensor day is not closed yet, and the fish are held until it is.',
+            'Not before tomorrow: %(count)d sensor days are not closed yet, and the fish are held until they are.',
+            withdrawal.unclosed) % {'count': withdrawal.unclosed}
     counted = accrual_text(withdrawal.accrual)
     return f'{text} {counted}' if counted else text
+
+
+def floor_sentence(withdrawal):
+    """What a withdrawal held by a floor says: to which day, what the days themselves give, why and when the floor was
+    set (its origin, in the reader's language: the stored reason is the log's) and how it goes."""
+    floor = withdrawal.floor
+    params = {'worked': shown_date(withdrawal.worked_out), 'why': floor.get_origin_display(),
+              'when': shown_date(timezone.localtime(floor.created_at).date())}
+    if floor.not_before is None:
+        return _('Held without an end by a floor (%(why)s, %(when)s), although the days counted give %(worked)s: '
+                 'the end it had was unknown and is kept. The floor is lifted by the platform’s administrator, who '
+                 'answers the withdrawal question first.') % params
+    return _('Held to %(floor)s by a floor (%(why)s, %(when)s), although the days counted give %(worked)s: the end it '
+             'had is kept. The floor ends by itself on that day, or is lifted before by the platform’s '
+             'administrator, who answers the withdrawal question first.') % {
+        **params, 'floor': shown_date(floor.not_before)}
 
 
 def _held_how(hold):
@@ -1561,6 +1640,69 @@ def provider(units, day):
     return {unit_id: [WithdrawalBlock(batches[withdrawal.batch_id], withdrawal.until, withdrawal.estimated,
                                       describe(withdrawal), withdrawal.source) for withdrawal in held]
             for unit_id, held in withdrawals.items()}
+
+
+def ends_now():
+    """{(treatment id, batch id): Withdrawal} of every withdrawal from a course that holds fish in a unit today (each
+    unit on its site's today), the exposed batch's own: what a write nobody can be asked about, and a landing, compare
+    before and after (`earlier`)."""
+    units = list(Tank.objects.select_related('production_department__site'))
+    stocked = [unit for unit in units if unit.pk in stock_read.stock_of(units)]
+    found = {}
+    for holds in of_units(stocked).values():
+        for hold in holds:
+            held = hold.withdrawal if isinstance(hold, Hold) else hold
+            if held.treatment is not None:
+                found[(held.treatment.pk, held.batch_id)] = held
+    return found
+
+
+def end_of(treatment, batch_id):
+    """The withdrawal of one batch from one course as it stands now, whether or not it still holds fish (None: the
+    course did not reach the batch): read on the earliest today of the course's units."""
+    units = list(treatment.units.select_related('production_department__site'))
+    reader = Reader({batch_id}, earliest_today(units), also=[treatment])
+    return reader.of_treatment(treatment, batch_id) if batch_id in reader.treated(treatment) else None
+
+
+@dataclass(frozen=True)
+class Moved:
+    """A withdrawal whose end is earlier than it was, or that is gone: the course, the batch, the end it had (`was`;
+    None: unknown) and the withdrawal as it stands now (`now`; None: the course no longer reaches the batch)."""
+    treatment: Treatment
+    batch_id: object
+    was: object
+    now: Withdrawal = None
+
+
+def settled_ends(ends):
+    """{(treatment id, batch id): the end without a wait for a closing (`Withdrawal.settled`; None: unknown)} of
+    `ends_now`'s answer: what `earlier` compares, and what a landing keeps in a file."""
+    return {key: held.settled for key, held in ends.items()}
+
+
+def earlier(before, after=None):
+    """[Moved] of the withdrawals of `before` (`settled_ends` as it was) whose end is EARLIER now, or that hold nobody
+    and have no end to compare any more: by `settled`, so a probe day closing on the end that was shown is not a move.
+    `after`: `ends_now` as it is now (read here when not given); a withdrawal that holds nobody any more is read by
+    itself (`end_of`). A course voided since is not listed: its void went through the guard."""
+    after = ends_now() if after is None else after
+    treatments = Treatment.objects.in_bulk({treatment_id for treatment_id, _batch in before})
+    found = []
+    for (treatment_id, batch_id), was in sorted(before.items(), key=str):
+        treatment = treatments.get(treatment_id)
+        if treatment is None:
+            continue
+        now = after.get((treatment_id, batch_id)) or end_of(treatment, batch_id)
+        if now is None or _later(was, now.settled):
+            found.append(Moved(treatment, batch_id, was, now))
+    return found
+
+
+def floors():
+    """The live floors, oldest first, with their course, its medicine and their batch."""
+    return list(WithdrawalFloor.objects.filter(lifted_at__isnull=True)
+                .select_related('treatment__medicine', 'batch').order_by('pk'))
 
 
 def unresolved(today=None):
@@ -1622,25 +1764,35 @@ def unresolved_text(batch, held):
 
 
 def guarded_ceiling(user, write, seen=None):
-    """A change of the platform owner's setting of how long an end without a rule holds fish (rule 8): a change of a
-    rule, through the guard. Made shorter, it frees fish held today: asked. Made longer, it holds fish again that had
-    been let go, and brings the harvests recorded since they were let go inside the withdrawal: asked too
-    (verification V-7), each stored and logged as critical.
+    """A change of the platform owner's settings a withdrawal is worked out from: a change of a rule, through the
+    guard.
 
-    The fish asked of are every batch such a withdrawal can hold at the longest setting there is (the new value is
-    not known before the write): the courses and feedings without a rule of any age (`without_a_rule`), walked with
-    that ceiling from the oldest of them. Those batches are locked first, as every write locks them, and both
-    snapshots read from that oldest day, not from the correction window's (a setting is not a dated record)."""
+    How long an end without a rule holds fish (rule 8): made shorter, it frees fish held today: asked. Made longer, it
+    holds fish again that had been let go, and brings the harvests recorded since they were let go inside the
+    withdrawal: asked too (verification V-7), each stored and logged as critical. The fish asked of are every batch
+    such a withdrawal can hold at the longest setting there is (the new value is not known before the write): the
+    courses and feedings without a rule of any age (`without_a_rule`), walked with that ceiling from the oldest of
+    them.
+
+    The degree-days' rules (the days that cap an assumed temperature; the hours and the hold of a probe day, which
+    count for the days closed from then on): the fish asked of are the batches of every withdrawal in degree-days in
+    force today (`ends_now`), from its course's first day.
+
+    Those batches are locked first, as every write locks them, and both snapshots read from the oldest day, not from
+    the correction window's (a setting is not a dated record)."""
     from core.models import UNKNOWN_WITHDRAWAL_DAYS
     from farm.stock.services import locked
     today = local_today()
     with transaction.atomic():
         known = [held for _batch, held in without_a_rule(today)]
-        if not known:
+        counted = [held for held in ends_now().values() if held.accrual is not None]
+        if not known and not counted:
             return guarded(user, set(), today, write, seen=seen)
-        back = min(held.start for held in known)
-        reader = Reader({held.batch_id for held in known}, today, first=back, ceiling=UNKNOWN_WITHDRAWAL_DAYS[1])
-        batch_ids = {hold.batch_id for hold in reader.lots() if hold.rule is None}
+        back = min(held.start for held in (*known, *counted))
+        batch_ids = {held.batch_id for held in counted}
+        if known:
+            reader = Reader({held.batch_id for held in known}, today, first=back, ceiling=UNKNOWN_WITHDRAWAL_DAYS[1])
+            batch_ids |= {hold.batch_id for hold in reader.lots() if hold.rule is None}
         locked(Batch, batch_ids)
         return guarded(user, batch_ids, today, write, seen=seen, back=back, holding=True)
 

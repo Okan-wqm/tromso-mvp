@@ -4,7 +4,9 @@
 #   every JOBS_BROKER_SECONDS (60)  sensor_broker_sync: the broker's passwd and acl from the Sensors configuration (a
 #                                   credential or device changed on the pages reaches the broker within a minute plus
 #                                   the broker's own 5 s), with the ingest's own broker user (SENSORS_BROKER_EXTRA)
-#   every JOBS_TASKS_SECONDS (3600) generate_tasks: the planned tasks of the recurring tasks
+#   every JOBS_TASKS_SECONDS (3600) generate_tasks: the planned tasks of the recurring tasks; close_probe_days: the
+#                                   temperature probes' days that are over (what a withdrawal's degree-days read
+#                                   of the sensors; a day is closed once, so the hourly turn only finds new ones)
 #   once a day                      sensors_housekeeping: dead letters older than 90 days; clearsessions: expired
 #                                   sign-ins (Django's own)
 # A failing job is logged and tried again at its next turn; the loop goes on. /tmp/jobs.alive is touched on a turn
@@ -40,6 +42,7 @@ while :; do
   fi
   if [ $(( now - tasks_last )) -ge "$TASKS_EVERY" ]; then
     run generate_tasks
+    run close_probe_days
     tasks_last=$now
   fi
   today=$(date -u +%Y-%m-%d)

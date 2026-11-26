@@ -134,6 +134,36 @@ SCREENS = {
              'write, or fish held again by a longer ceiling.',
         columns={'*': computed('what the withdrawal guard found and the person was shown, stored when they went on')},
     ),
+    'WithdrawalFloor': Screen(
+        create=no('never entered: set by the daily closing of probe days and by a landing (manage.py withdrawal_ends) '
+                  'for a withdrawal whose end would move earlier with nobody there to be asked'),
+        edit=no('never edited: a floor is lifted, and set again if needed'),
+        delete=gap('no page lifts a floor yet: manage.py withdrawal_floors lifts one through the withdrawal guard; a '
+                   'floor whose day has passed holds nobody'),
+        read=gap('no page lists them yet: the withdrawal\'s own text says the floor that holds it, and manage.py '
+                 'withdrawal_floors lists them'),
+        note='A day before which one batch\'s withdrawal from one treatment does not end, whatever the days add up to: '
+             'a recorded decision, not a stored end.',
+        columns={'*': computed('the end the withdrawal had when the floor was set, why, and who lifted it and why')},
+    ),
+    'ProbeDay': Screen(
+        create=no('never entered: closed by the daily job (manage.py close_probe_days) from the probe\'s readings, or '
+                  'backfilled by a person through the withdrawal guard (manage.py probe_days)'),
+        edit=no('never edited: a correction voids the row and writes a new one'),
+        delete=gap('no page corrects a probe day yet: manage.py probe_days correct does, through the withdrawal guard'),
+        read=gap('no page lists them yet: a withdrawal\'s text says how many days came from the sensors, and manage.py '
+                 'probe_days list shows a unit\'s'),
+        note='One closed day of one temperature probe at one place: what the degree-days read of the sensors.',
+        columns={'*': computed('what the probe\'s good readings of the day gave when it was closed, and the hours and '
+                               'the hold it was closed with')},
+    ),
+    'ProbeDayClosing': Screen(
+        create=no('never entered: written by the daily job with the probe days of the day'),
+        edit=no('never changed'), delete=no('never deleted: a closed day stays closed'),
+        read=gap('no page shows the days closed yet: manage.py close_probe_days says them as it closes them'),
+        note='A day the daily job has closed for every place on one clock.',
+        columns={'*': computed('the clock, the day and the settings it was closed with')},
+    ),
 
     # --- feeding ---
     'FeedingRecord': Screen(

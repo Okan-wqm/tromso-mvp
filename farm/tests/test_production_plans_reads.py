@@ -16,16 +16,17 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
+from core import platform
 from core.testing import FrozenClock
 
 from .. import withdrawal_gate
 from ..feeding import read as feeding_read
 from ..feeding.services import record_feeding
 from ..handling import check, fasting
-from ..handling.fasting import DAY, LOOKBACK_DAYS
+from ..handling.fasting import DAY
 from ..health import services as health_services
 from ..models import (
-    HandlingRule, Medicine, MedicineWithdrawal, ProductionDepartment, ProductionPlan, Site, Species, System, Tank,
+    HandlingRule, Medicine, MedicineWithdrawal, ProductionDepartment, ProductionPlan, Site, System, Tank,
     WaterMeasurement,
 )
 from ..models.site import zone_of
@@ -39,6 +40,12 @@ from .test_stock import make_unit
 from .test_withdrawal_cleaner_fish import CleanerWithdrawalTestCase
 
 UTC = dt_timezone.utc
+
+
+# How many days main's day-by-day search for the day a fast is complete is run here: it stood at 60 (its
+# MAX_FAST_DAYS), which the one walk no longer has (a purge is bounded by the water, not by a constant); far enough
+# for every purge of these fixtures.
+SEARCHED_DAYS = 400
 
 
 # ---- main's reads at 56b7ea0, copied verbatim (renamed main_*, their module's names written with the module): the
@@ -90,12 +97,13 @@ def main_earliest(unit, batch, today=None, kind=check.WITHDRAWAL_KIND):
     requirement = fasting.requirement_of(kind, batch.species)
     purge_day, degrees_unknown, water = None, False, None
     if requirement is not None and requirement.asks:
-        fed = main_last_fed_at(unit, today, since=today - timedelta(days=LOOKBACK_DAYS))      # the unit's, not the batch's
+        # the unit's, not the batch's; as far back as the rule looks (any day for a rule in degree-days)
+        fed = main_last_fed_at(unit, today, since=fasting.fed_since(requirement, today))
         if fed is not None:
             if requirement.degree_days:
-                water = BatchWater({batch.pk}, today, fed.record.date + DAY)
+                water = BatchWater({batch.pk}, today)
             day = today
-            for _n in range(fasting.MAX_FAST_DAYS + 1):
+            for _n in range(SEARCHED_DAYS + 1):         # main's search, day by day: the oracle of the one walk
                 done = fasting.fasted(unit, day, fed, requirement, water, [batch.pk])
                 if done.ok:
                     purge_day = day if day > today else None
@@ -374,16 +382,16 @@ class WaterOnAnotherClockTests(FrozenClock, FeedingTestCase):
     """A batch's water read beside batches of other clocks is the water it reads alone (main's `earliest`: one
     BatchWater per batch). U-A on UTC with a system whose site is Tokyo (the link written past Tank.clean, as raw
     writes or a restore could leave it); U-K on Kiritimati (UTC+14). At 05:00 UTC it is the 22nd on all three clocks.
-    The loop's sample at 00:30 on Tokyo's first day of the water (today - 30) is before that day starts on U-A's clock
-    but not on U-K's: a read of both batches' units together counts it, U-A's batch alone does not (verification of
-    wip/plans-perf, finding 2). Fed 24 days ago, a 30 degree-day purge counts from 23 days ago, the first day read being
-    7 days before it (the cap of an assumed temperature, farm/water/degree_days.py): the loop is sampled at 1 °C every
-    day from 22 days ago to yesterday (22), and the one day not measured, 23 days ago, counts at the species' assumed
-    10 °C capped at the coldest day measured in the 7 days before it, the first day read: its mean decides."""
+    The loop's sample at 00:30 on Tokyo's clock on the first day read is before that day starts on U-A's clock but not
+    on U-K's: a read of both batches' units together counts it, U-A's batch alone does not (verification of
+    wip/plans-perf, finding 2). `of_each` keeps each batch's read its own.
+
+    Since the degree-days read the days before a walk for the cap of an assumed temperature (farm/water/
+    degree_days.py), the first day read lies before the day the fish came, so that edge can no longer reach a purge:
+    what is held here is that the read is still each batch's own, and that the dates agree with main's search."""
     NOW = datetime(2026, 11, 22, 5, 0, tzinfo=UTC)
-    EARLY, LATE = '2', '10'         # the loop's samples on its first day, at 00:30 and 15:00 on Tokyo's clock
-    MAIN_SAYS = ''                  # alone: 22 + 10 = 32 degree-days, fasted; with the early 2 counted, 22 + 6, held
-    ASSUMED = Decimal('10.0')
+    EARLY, LATE = '2', '10'         # the loop's samples on the first day read, at 00:30 and 15:00 on Tokyo's clock
+    MAIN_SAYS = check.PURGING       # fed 31 days ago, 4 days at 5 °C since: 20 of 30 degree-days
 
     @withdrawal_gate.opened('test fixture: samples straight in the database')
     def sample(self, point, moment, value):
@@ -407,27 +415,30 @@ class WaterOnAnotherClockTests(FrozenClock, FeedingTestCase):
                                     min_fasting_degree_days=Decimal(30))
         self.bx = self.stock(self.ua, count=500, weight='100', days_ago=31)
         self.by = self.stock(self.uk, count=500, weight='100', days_ago=31)
-        with withdrawal_gate.opened('test fixture: the species’ assumed temperature straight in the database'):
-            Species.objects.filter(pk=self.bx.species_id).update(withdrawal_temperature_c=self.ASSUMED)
         for unit in (self.ua, self.uk):
-            record_feeding(self.user, unit=unit, day=local_today(unit) - 24 * DAY, feed=self.feed,
+            record_feeding(self.user, unit=unit, day=local_today(unit) - 31 * DAY, feed=self.feed,
                            amount_kg=Decimal('0.2'))
         loop, zone = point_of(self.system), zone_of(tokyo)
-        self.first = local_today(self.ua) - 30 * DAY
+        today = local_today(self.ua)
+        # The first day `earliest_of` reads for these batches: its `first` is the day the fish came.
+        self.first = BatchWater.first_day(today, today - 31 * DAY, platform.degree_day_rules()[2])
         self.sample(loop, datetime.combine(self.first, time(0, 30), tzinfo=zone), self.EARLY)
         self.sample(loop, datetime.combine(self.first, time(15), tzinfo=zone), self.LATE)
-        for back in range(1, 23):
-            self.sample(loop, datetime.combine(local_today(self.ua) - back * DAY, time(12), tzinfo=zone), '1')
+        for back in range(1, 5):
+            self.sample(loop, datetime.combine(today - back * DAY, time(12), tzinfo=zone), '5')
 
     def test_a_batch_beside_a_batch_on_another_clock_reads_its_own_water(self):
         today = local_today(self.ua)
         self.assertEqual((today, local_today(self.uk)), (date(2026, 11, 22), date(2026, 11, 22)))
-        purge = today - 23 * DAY                    # the day after the feeding: the first read is 7 days before it
-        self.assertEqual(BatchWater.first_day(today, purge), self.first)
-        # The edge is there: the two batches' units read together count the early sample on U-A's first day.
-        alone = BatchWater({self.bx.pk}, today, purge).temperatures.of(self.ua.pk, self.first).value
-        together = BatchWater({self.bx.pk, self.by.pk}, today, purge).temperatures.of(self.ua.pk, self.first).value
-        self.assertEqual((alone, together), (Decimal(self.LATE), (Decimal(self.EARLY) + Decimal(self.LATE)) / 2))
+        # The edge is there: the two batches' units read together count the early sample on the first day read.
+        late, mean = Decimal(self.LATE), (Decimal(self.EARLY) + Decimal(self.LATE)) / 2
+        alone = BatchWater({self.bx.pk}, today).temperatures.of(self.ua.pk, self.first).value
+        together = BatchWater({self.bx.pk, self.by.pk}, today).temperatures.of(self.ua.pk, self.first).value
+        self.assertEqual((alone, together), (late, mean))
+        # ... and `of_each` gives each batch the read it has alone.
+        each = BatchWater.of_each([(self.bx.pk, today, None), (self.by.pk, today, None)])
+        self.assertEqual(each[(self.bx.pk, today, None)].temperatures.of(self.ua.pk, self.first).value, late)
+        self.assertIsNot(each[(self.bx.pk, today, None)], each[(self.by.pk, today, None)])
         main = main_earliest(self.ua, self.bx)
         self.assertEqual(main.decides, self.MAIN_SAYS)
         self.assertEqual(check.earliest_of([(self.ua, self.bx)])[(self.ua.pk, self.bx.pk)], main)
@@ -441,11 +452,8 @@ class WaterOnAnotherClockTests(FrozenClock, FeedingTestCase):
 
 
 class WaterOnAnotherClockWarmEarlyTests(WaterOnAnotherClockTests):
-    """The unsafe side: the early sample is the warm one, so a shared read adds degree-days main never counted and
-    says "free" where main holds the fish (alone: 22 + 2 = 24 degree-days; with the early 20 counted, the mean of 11 is
-    above the assumed 10 °C, so 22 + 10 = 32)."""
+    """The same with the early sample the warm one: the read is each batch's own in either direction."""
     EARLY, LATE = '20', '2'
-    MAIN_SAYS = check.PURGING
 
 
 class HoldingGivenTests(Fixtures, FeedingTestCase):

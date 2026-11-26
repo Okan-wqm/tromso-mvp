@@ -124,9 +124,10 @@ OWN_POINT_QUERIES = 2       # owner rule A9.1: the other points of the units, on
                             # and once for the ration's temperature (read.water_sources every_point), whatever the number
 OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range (A11, Series carry) and the unit's other
                               # own-water points for the withdrawal's degree-days, whatever the number of units
-DEGREE_DAY_SENSOR_QUERIES = 1  # the probes' coverage of the withdrawal's degree-day days (farm/water/sources.py covered: the
-                               # bindings; no reading statement without one), whatever the number of units (H-2, 2026-11-26)
-DEGREE_DAY_SENSOR_SAVEPOINTS = 2  # the water sources' savepoint and its release around that ask
+DEGREE_DAY_SENSOR_QUERIES = 3  # the closed probe days of the withdrawal's degree-days (farm/water/degree_days.py): the newest
+                               # closing of each clock, the probe days of the places, and the rules (the platform's
+                               # settings, read once per water read outside a request), whatever the number of units
+DEGREE_DAY_SENSOR_SAVEPOINTS = 0  # no source is asked: the readings are read when a day is closed, never by a page
 TASK_JOB_QUERIES = 2        # the task job behind (tasks.read.unplanned: the sites' clocks and the recurring tasks), read
                             # once for the wall when a card shows tasks, as the Tasks pages say it (landing review, m-3)
 SHOW_TASKS = ('detailed', 'mixed')      # the modes with a card that shows the tasks widget

@@ -303,9 +303,9 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   allowed): the degree-days one day counts for when no water temperature was measured, so a past day without a
   measurement and a withdrawal projected when none was measured at all do not silently count as nothing (see
   Operations › Health). It is the farm's own assumption, never filled in from the catalogue; a low value is the
-  conservative choice, and empty keeps such a day at 0 °C. It is the last of a day's three sources (a probe's 20 h,
-  the samples, the assumption) and never counts above the coldest day measured in the 7 days before (see Operations ›
-  Health, the degree-days).
+  conservative choice, and empty keeps such a day at 0 °C. It counts only for a day with nothing measured (no closed
+  probe day, no water sample) and never above the coldest day measured around the gap (see Operations › Health, the
+  degree-days).
 - **Stocking**: under **Batches of different sizes**, the **max weight ratio of batches in one unit** (1 to 1000, a
   database check, empty allowed): how many times heavier, on average, one batch of the species may be than another
   sharing a unit with it (the owner: fish of very different weights of the same species must not be in the same tank;
@@ -2768,12 +2768,13 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   over or still to come at the mean of the unit's last 7 measured days within 30, else the species' assumed
   temperature, a projection of 0 °C or below adding nothing); the later of the two starts wins. With no temperature to
   project at, the degree-days are unknown: the hours alone apply and the board says "Degree-days unknown: no
-  temperature."; a fast the water never reaches in 60 days starts at 60 and says so. **The 60 days are a search bound,
-  not a farm's rule** (`fasting.MAX_FAST_DAYS`): the rule that governs it is that a fast is never said complete when it
-  is not. A purge of D degree-days fits in it only in water averaging at least D ÷ 60 °C (the largest rule allowed,
-  1,000 degree-days, needs 16.7 °C); colder, the board says "not reached in 60 days" and the earliest harvest date says
-  the purge cannot be worked out. The last feeding is looked for 31 days back, derived from the longest rule allowed in
-  hours (720 h ÷ 24 + 1, `fasting.LOOKBACK_DAYS`). It says what it projected, "(72 h and 60 degree-days)", and how
+  temperature.". **No horizon is a constant**: a purge is looked for back to the day the fish came (the batch's
+  presence); a fast the water has not reached since then starts on that day and says "The degree-days are not reached
+  since the fish came (20 days) at these temperatures.", never "complete". The last feeding is looked for as far back
+  as the rule needs (`fasting.fed_since`): without a bound for a rule that asks degree-days (fish not fed for a month
+  in cold water have not purged), 31 days for a rule in hours alone (720 h ÷ 24 + 1, derived from the longest rule
+  allowed, `fasting.LOOKBACK_DAYS`). The day a fast is complete, for the earliest harvest date, is asked of the same
+  walk, forward (`fasting.complete_on`: one search, no day-by-day trial, no 60-day give-up). It says what it projected, "(72 h and 60 degree-days)", and how
   many days came from each source. The band stays, so a feeding recorded anyway is still credited at its
   expected FCR; the production plan's forecast skips the same days. Cancelling the plan gives the ration back.
   The feeding dialog says so on such a day ("A feeding can still be recorded").
@@ -2977,35 +2978,75 @@ corrected temperature or a backdated transfer changes it at once:
   (decided for now, the safe side): the degrees are still those of the exposed batch in EVERY unit it is in (the
   lowest counts), also a unit that was never treated, not those of the held fish alone; so an untreated sibling
   tank's cold water still moves the end of the held fish, and for a degree-day medicine deleting that sibling tank
-  or its loop stays blocked (below). **A day's temperature, the safe side** (the coordinator's decision of 26.11.2026
-  on the architecture audit's H-2 and M-3: ending a withdrawal too early is the dangerous direction), per farm-local
-  day, from the first of three sources that has one (`farm/water/degree_days.py`, the one definition and the one
-  accrual, `BatchWater.walk`, that the purging fast adds up too):
-  1. **the sensors**: a temperature probe with **at least 20 hours of fresh, good readings** that day counts at their
-     **time-weighted mean** (each stored reading holds until the channel's next good one, at most its fresh time, the
-     heartbeat times its fresh heartbeats; between two stored rows the water stayed within the channel's deadband),
-     rounded down to 0.01 °C. Read through the sensors' provider (`sensors/provider.py` `covered`, one statement over
-     the hypertable), at the places of owner rule A9: the unit's own-water points (never the inlet), else its system's
-     loop point, or the system's own sensors when it has no loop point; several probes or points, the lowest;
-  2. else **the water samples**: the mean of that day's samples at the unit's own-water points (the lowest point's),
-     else at its system's loop point (never a copy);
-  3. else, for a past day, **the batch species' assumed water temperature** (Reference data › Species; one query reads
-     the species of all the batches), **but never above the coldest daily mean measured (1 or 2) in the 7 days
-     before it**, so an assumption cannot run ahead of the water ("3 days without a measured water temperature are
-     counted at the coldest daily mean measured in the 7 days before each, below the species' assumed
-     temperature."); **0 °C when the species has none** ("... are counted as 0 °C: set the species' assumed
-     temperature in Reference data › Species.").
+  or its loop stays blocked (below). **A day's temperature, the safe side** (the coordinator's decisions of 26.11.2026
+  on the architecture audit's H-2 and M-3 and on the independent review of the first round: ending a withdrawal too
+  early is the dangerous direction, and **an end never moves earlier without a question**). One definition and one
+  accrual (`farm/water/degree_days.py`, `BatchWater.walk`), which the purging fast adds up too:
+  - **Where a unit's water is read**: owner rule A9's tiers, from the one resolver (`farm/water/read.py` `tiers`,
+    which the ration's temperature takes its places from too): the unit's OWN places (its own-water points, never the
+    inlet), and only when the day has nothing there, its SYSTEM's (the loop point, or the system's own sensors when it
+    has no loop point).
+  - **A day counts at the lowest of everything measured in that tier**, the closed probe days and the water samples
+    together. A probe is never believed over lower evidence of the same day, and a system's probe never over the
+    unit's own sample. When a probe's day and the samples differ by more than the tolerance (Platform settings, 1.0 °C)
+    the text says so ("On 2 days (the first 21.11.2026) the probe's daily mean and the water samples differed by more
+    than 1.0 °C: the lower was counted. Check the probe.").
+  - **A probe day is a CLOSED day stored as a fact** (`farm.models.ProbeDay`), as a water sample is: the degree-days
+    never read the sensors' readings, the bindings or a channel's settings, so a late reading, a probe moved, a channel
+    edited or deleted and the readings' retention change nothing once a day is closed. The daily job (`manage.py
+    close_probe_days`, hourly in the server's jobs) closes each day once it is over on the place's clock, oldest
+    first, through the sensors' provider (`farm/water/sources.py` `covered`, `sensors/provider.py`: the one read of the
+    hypertable, by the closing service `farm/water/services.py`). A day counts when **at least 20 of its hours hold a
+    good reading and as many hours are covered** (Platform settings), a good reading standing for the water **until the
+    channel's next stored row, good or not, and an hour at most** (Platform settings; never longer than the channel's
+    own freshness: a dead probe does not keep measuring, a bad or maintenance row ends a hold), **the channel has a
+    range set** (a channel without one flags nothing out of range) and the mean, rounded down to 0.01 °C, lies inside
+    the temperature's plausible range (−3 to 40 °C). The row keeps the hours and the hold it was closed with.
+    **Known gap: there is no calibration record in the sensors area** (only a channel's unit factor and offset), so "the
+    probe was calibrated" cannot be asked of a probe day; the comparison with the samples is what catches a probe that
+    reads wrong.
+  - **The tables start empty**: probe days count from the first day the job closes. History comes only from a guarded
+    action of a person (`manage.py probe_days backfill`, from the readings and the bindings as they stand then, each
+    row marked backfilled), which asks the withdrawal question first; a closed day is corrected the same way
+    (`probe_days correct`: the row is voided with who, when and why, and worked out again). Both tables and the
+    floors are registered whole in the withdrawal gate (`farm/withdrawal_gate.py`): no write of them outside the guard.
+  - **A day a probe is still expected for is not closed yet**: a past day after the last one the job closed, at a
+    place that had a probe day row on that last closed day. It is projected, never assumed and never read from the
+    samples alone, the end is "about", and such a sum **frees nobody today** ("Not before tomorrow: 1 sensor day is not
+    closed yet, and the fish are held until it is."). Today is never a probe day. A job that does not run is therefore
+    visible, never a silent assumption.
+  - **A write nobody can be asked about never moves an end earlier**: when the job closes a day that would end a
+    withdrawal in force earlier than it was shown to (the probe was warmer than the projection), the end it had stays
+    as a **floor** (`farm.models.WithdrawalFloor`: a recorded decision, not a stored end; the withdrawal is still
+    worked out on read and ends at the later of the two, "Held to 29.11.2026 by a floor (A probe day closed,
+    26.11.2026), although the days counted give 27.11.2026 ..."). A floor ends by itself on its day; before, it is
+    lifted only through the withdrawal guard, which asks the Released question (`manage.py withdrawal_floors`). A day
+    that closes on the end that was shown sets none.
+  - **A past day with nothing measured** counts at **the batch species' assumed water temperature** (Reference data ›
+    Species; one query reads the species of all the batches), **but never above the cap**: the coldest daily mean
+    measured in the 7 days (Platform settings) before the gap of unmeasured days began, and not above the first day
+    measured after the gap when there is one. The cap does not run out inside a gap: it lifts only when a measurement
+    says so ("9 days without a measured water temperature are counted below the species' assumed temperature: at the
+    coldest daily mean measured in the 7 days before their gap began, or the first day measured after it when that is
+    colder."). A gap is traced back 30 days before the first day asked. **0 °C when the species has none** ("... are
+    counted as 0 °C: set the species' assumed temperature in Reference data › Species.").
+  - **The rules are the platform owner's settings** (Platform settings › Degree-days: the hours a probe day needs, how
+    long a reading stands, the days that cap an assumption, the tolerance), registered in the withdrawal gate: a
+    change goes through the guard and asks when it would free fish held today.
 
-  With the batch in several units that day, the lowest counts. **A daily mean of 0 °C or below adds nothing**: the sum
-  never goes down. **Every end says how many days came from each source** ("Days counted: 12 days measured by the
-  sensors, 3 days from water samples, 2 days without a measurement, 5 days projected."), and a sensor read that failed
-  is said ("The sensors could not be read: ..."). **Open: the probe days are outside the withdrawal guard**: a probe
-  bound or moved, a channel retired or readings arriving late change a degree-day end without the guard's question
-  (`farm/tests/test_withdrawal_gate_coverage.py` `UNGUARDED_SENSOR_INPUTS`; the readings are written by the ingest and
-  cannot be guarded by Django); the owner decides whether bindings join the guard. Not reached by today, the rest is projected at the mean of the last 7
-  measured days within 30 ("about"); with none measured, at the species' assumed temperature when it has one
-  ("Projected at the assumed 8.0 °C ... no water temperature was measured in the last 30 days"), else, or at a
-  projection of 0 °C or below, the end is unknown ("record the water temperature");
+  With the batch in several units that day, the lowest counts (a unit not closed yet makes the day not closed). **A
+  daily mean of 0 °C or below adds nothing**: the sum never goes down. **Every end says how many days came from each
+  source** ("Days counted: 12 days measured by the sensors, 3 days from water samples, 2 days without a measurement, 1
+  sensor day not closed yet, 5 days projected."). The daily mean of a probe day is weighted by time and so is not the
+  mean the sensor charts show for the same day (theirs is weighted by messages). Not reached by today, the rest is
+  projected at the mean of the last 7 measured days within 30 ("about"); with none measured, at the species' assumed
+  temperature when it has one ("Projected at the assumed 8.0 °C ... no water temperature was measured in the last 30
+  days"), else, or at a projection of 0 °C or below, the end is unknown ("record the water temperature").
+  **At a landing that changes this rule** the ends are measured, not trusted: `manage.py withdrawal_ends dump` with the
+  code before, `withdrawal_ends compare` with the code after; an end that would move earlier stops the landing, or is
+  stored as a floor (`--floor`), so that no open withdrawal ends earlier than it did without a person's answer.
+  **Not built yet**: a page for the probe days, the days closed and the floors (the commands above are the way; the
+  data map lists the gap);
 - both given, the later end wins; a running course counts from its planned last day;
 - **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
   covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
@@ -6771,7 +6812,7 @@ runs the server:
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting, the purging in degree-days, when feeding must stop and the fasts plans ask for (`fasting.py`, `start_of_fast`, `fasting_on`), the check, the earliest suitable harvest date and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `farm/placements.py` | The placement registry: the chip an app puts beside a unit (the experiments', on Production units, its drawer and the meal board); fails open |
-| `farm/water/degree_days.py` | The batch's daily mean water temperature (a probe's 20 h time-weighted mean, else the samples, else the species' assumed temperature capped at the coldest day measured in the 7 days before, else 0 °C; 0 °C or below adds nothing; a day ahead projected) and the one accrual (`BatchWater.walk`) the medicine withdrawal and the purging fast share, with the days of each source (`accrual_text`) |
+| `farm/water/degree_days.py` | The batch's daily water temperature (the lowest of a tier's closed probe days and water samples; a day a probe is still expected for projected; else the species' assumed temperature under its cap, else 0 °C; 0 °C or below adds nothing) and the one accrual (`BatchWater.walk`) the medicine withdrawal and the purging fast share, with the days of each source (`accrual_text`); the probe days are closed, backfilled and corrected by `farm/water/services.py`, the floors set and lifted by `farm/health/services.py`, the landing's ends by `farm/management/commands/withdrawal_ends.py` |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `reports/` | Regulatory reports (its own app): the models (`models.py`), the kinds (`kinds.py`) and periods (`periods.py`), each report's computation from the records (`compute/`), the filing and corrections (`services.py`), what is due (`due.py`), the exports (`exports.py`), the check (`integrity.py`) and the provider the health records read (`health.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |
@@ -6849,6 +6890,10 @@ under the wrong kind, fails.
 | `check_stock` | farm | product | Folds the stock ledger from its first line and reports every broken rule; changes nothing | An operator |
 | `rederive_ph` | farm | product | Puts the stored samples' pH measured on the total, seawater or free scale on the NBS scale again by the application's formula, from what was measured, each change logged with its old value (`--dry-run` reads only; check farm.W001) | The database administrator, at a formula change after the backup (Water chemistry, formula 4) |
 | `check_withdrawal` | farm | product | The withdrawals holding fish today, and harvests and live deliveries recorded inside one; changes nothing | An operator |
+| `close_probe_days` | farm | product | Closes the temperature probes' days that are over (the probe days a withdrawal's and a fast's degree-days read), each day once; an end it would move earlier is kept as a floor | The server's jobs, every hour; by hand until the production deployment has landed (a day not closed is said on the withdrawal, never assumed) |
+| `probe_days` | farm | product | `backfill`: the probe days of some units for days before they were closed; `correct`: voids a closed day and works it out again; `list`. Each write through the withdrawal guard (`--acknowledge` carries the question's fingerprint) | An operator, named with `--by` |
+| `withdrawal_floors` | farm | product | `list`: the floors that keep a withdrawal from ending earlier than it was shown to; `lift`: lifts one through the withdrawal guard | An operator, named with `--by` |
+| `withdrawal_ends` | farm | product | `dump`: the end of every withdrawal holding fish today and the start of every planned fast; `compare`: against a dump made before a change of the rule, fails on an end that moved earlier unless `--floor` stores it as a floor | The landing of a change of the withdrawal rule (run `dump` on the code before, `compare` on the code after) |
 | `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
 | `check_reports` | reports | product | Every report against its frozen content and its key; changes nothing | An operator |
 | `check_experiments` | experiments | product | Every started experiment against the rules the database cannot hold; changes nothing | An operator |

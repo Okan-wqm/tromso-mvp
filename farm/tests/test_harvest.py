@@ -851,15 +851,16 @@ class PurgingFastsTests(PurgingBase):
         self.purge(hours=None, degrees=20)
         self.assertEqual(self.fast(item).first_day, self.day(4))
 
-    def test_a_degree_days_rule_that_the_water_never_reaches_starts_at_the_limit_and_says_so(self):
+    def test_a_degree_days_rule_that_the_water_never_reaches_starts_the_day_the_fish_came_and_says_so(self):
         self.warm(*range(1, 70), value='0')
         item = self.plan(0)
         fast = self.fast(item)
         self.assertTrue(fast.start.unreached)
-        self.assertEqual(fast.first_day, self.today - timedelta(days=fasting.MAX_FAST_DAYS))
-        self.assertIn('The degree-days are not reached in 60 days at these temperatures.', fast.why())
-        # The 40 days before the fish were stocked had no water of theirs: counted without a measurement, as 0 °C.
-        self.assertEqual(fast.start.missing, 40)
+        # Looked for back to the day the fish came (20 days ago), never further: no water before it was theirs.
+        self.assertEqual(fast.first_day, self.day(20))
+        self.assertIn('The degree-days are not reached since the fish came (20 days) at these temperatures.',
+                      fast.why())
+        self.assertEqual(fast.start.missing, 0)
 
     def test_the_meal_board_gives_no_ration_from_that_day(self):
         self.warm(1, 2, 3, 4, 5)

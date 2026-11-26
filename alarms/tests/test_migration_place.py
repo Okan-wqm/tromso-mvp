@@ -1,5 +1,6 @@
 """alarms 0023 run on rows (landing review 2, N5 d): every shape of an existing alarm gets its place, or none and is
 counted; the alarms stay append-only after it; one activity-log entry says what it did."""
+import json
 from datetime import datetime, timezone as utc
 
 from django.db import DatabaseError, connection, transaction
@@ -77,6 +78,7 @@ class AlarmPlaceMigrationTests(TransactionTestCase):
             'no point': (unit['T-04'], None), 'ambiguous': (None, None), 'subject': (unit['T-06'], None),
             'sensor': (unit['T-01'], None), 'clock': (None, None)})
         (changes,) = rows('SELECT changes FROM audit_log WHERE entity_label = %s', [LABEL])[0]
+        changes = json.loads(changes) if isinstance(changes, str) else changes
         self.assertEqual({label: pair[1] for label, pair in changes.items() if label != 'Note'}, {
             'Placed on a unit': '6', 'Placed on a system only': '0',
             'Not placed: a unit code several units of its site have had': '1', 'About no unit': '1'})

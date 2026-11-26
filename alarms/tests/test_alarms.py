@@ -139,7 +139,8 @@ class RoutingTests(AlarmsCase):
     def open_alarm(self, ph=5.5):
         self.sample(ph)
         self.loop()
-        return Alarm.objects.get(severity='critical' if ph < 6 else 'warning')
+        # the water's alarm (a critical told to nobody also raises the alarm system's own: alarms_unreached)
+        return Alarm.objects.get(source='water_limit', severity='critical' if ph < 6 else 'warning')
 
     def test_a_rule_reaches_the_active_members_of_its_role_on_its_site(self):
         self.rule()

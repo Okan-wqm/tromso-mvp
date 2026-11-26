@@ -1346,6 +1346,12 @@ msgid "%(person)s, %(day)s: %(what)s"
 msgstr "%(person)s, %(day)s: %(what)s"
 
 #, python-format
+msgid "%(point)s cannot be evaluated: none of its newest %(count)d samples gives an evaluable value."
+msgstr ""
+"%(point)s değerlendirilemiyor: en yeni %(count)d numunenin hiçbiri değerlendirilebilir bir değer "
+"vermiyor."
+
+#, python-format
 msgid "%(point)s is deleted."
 msgstr "%(point)s silinmiş."
 
@@ -3888,6 +3894,10 @@ msgstr "Referans zamanı"
 
 msgid "Anchor value"
 msgstr "Referans değeri"
+
+#, python-format
+msgid "And %(count)d more late results: see the history."
+msgstr "Ve %(count)d geç sonuç daha: geçmişe bakın."
 
 msgid "Another card template already has this name."
 msgstr "Bu ad başka bir kart şablonunda zaten var."
@@ -11313,6 +11323,14 @@ msgstr "Geldiğinde kanalın saklanan en yeni değerinden daha eski."
 
 msgid "Older than the raw data is kept"
 msgstr "Ham verinin saklanma süresinden daha eski"
+
+#, python-format
+msgid ""
+"Older value at %(point)s: %(status)s %(value)s on %(time)s, before this unit’s own %(newer)s of "
+"%(newer_time)s."
+msgstr ""
+"%(point)s noktasında daha eski değer: %(time)s tarihli %(status)s %(value)s, bu birimin "
+"%(newer_time)s tarihli kendi %(newer)s değerinden önce."
 
 msgid "Oldest waiting since"
 msgstr "En eskisi şu zamandan beri bekliyor"
@@ -19279,6 +19297,9 @@ msgstr "konuşma"
 
 msgid "conversations"
 msgstr "konuşmalar"
+
+msgid "could not be checked"
+msgstr "kontrol edilemedi"
 
 #, python-format
 msgid "counted %(quantity)s"

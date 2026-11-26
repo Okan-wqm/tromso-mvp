@@ -1726,56 +1726,78 @@ A sensor's NH₃ takes the fresh sensor temperature it was combined with. Taking
 typed sample is the separate branch wip/probe-temperature.
 
 **The judgement of a worked-out value is one pure module** (`farm/water/judge.py`; the coordinator's architecture of
-2026-11-26, finished in round 7). It has no database, no clock and no settings, and it is the only decider.
+2026-11-26). It has no database, no clock and no settings, and it is the only decider.
 - **The shell feeds it.** The read layer fetches each point's samples and live values, works them out, judges each
   against the limits, and hands each to the judge as a `judge.Record`. Every Record is built by ONE function,
-  `read.record_of`, for a stored sample, a live (analyser) value, the value shown and the alarms' clear alike. Its
-  fields are:
-  - measured_at, created_at and id: a live value is created at its own moment, with its channel as its id;
-  - whether it has a value, and whether the core refused it;
+  `read.record_of`, for a stored sample, a live (analyser) value, the value shown and the alarms' clear alike. No
+  field of a Record has a default, so a builder that forgets one fails. Its fields are:
+  - where the value BELONGS (`read.bound_at`): a sample's point; a live value's where its sensor is bound, never where
+    it is observed. A system's own analyser, observed at a unit's point because the system has no loop point, is the
+    system's. It never ends the hold of the unit's own value and never clears its alarm.
+  - measured_at, created_at and id: a live value is created at its own moment, and its id says it is live and where;
+  - whether it is a stored sample's, whether it has a value, and whether the core refused it;
   - whether it was fresh at its own time;
-  - whether it is fresh now, by its OWN freshness, never a status;
+  - whether it is fresh now, by its OWN freshness, never a status. Where the shell has no moment this is "not known",
+    and the judge refuses to read it;
   - its status.
-- **The judge decides; the shell only applies it.** The judge decides a point's slot (the record it SHOWS), a hold,
-  what is said, and whether a level may clear (`judge.clears`, which `alarms/sources.clear_evidence` asks). The older
-  `last_own` hold never applies to a worked-out value.
+- **The judge decides; the shell only applies it.** The judge decides a point's slot (the record it shows), the
+  point's own status (the worst of its judged set: what the water page's alert list and the overview count), a hold,
+  what is said, and whether a level may clear (`judge.clears`, which `alarms/sources.clear_evidence` asks).
 - **Who calls it.** The latest read (the pages, the cards), the alarm pass (through it) and the history page.
 
 The judge's rule for each point (`judge.point_verdict`):
 - **The evidence value** is the newest worked-out value that has a value, was not refused by the chemistry core and was
-  fresh at its own time. "Newest" is the ORDER (measured_at, created_at, id): `judge.ORDER_FIELDS`, which `read.ORDER`
-  also ranks the database by (a test ties the two). A live NH₃ (a TAN analyser's) is evidence at its point as a sample
-  is.
+  fresh at its own time. "Newest" is the ORDER (measured_at, created_at, id), written once: `judge.ORDER_FIELDS`, from
+  which `Record.order`, `read.ORDER` and the newest-sample query are all built (a test ties the database's ranking to
+  the judge's, field by field). A live NH₃ of an analyser bound to the point is evidence there as a sample is.
 - **The judged set** is the evidence value plus every value newer than it or of its MINUTE (`judge.minute`, the one
   definition: 08:00:10 and 08:00:50 are one minute). It includes a same-minute peer, a refused value on its basis, and a
-  value stale from its start. The point is the WORST of the set, whatever order they were entered in, and that worst is
-  the value it shows (else its newest record).
+  value stale from its start. The point is the WORST of the set, whatever order they were entered in. That worst is the
+  point's own status, and on a point read on its own (an outlet's row) the rest of the set holds as below.
 - **A sample that gives no value never takes the slot.** This covers a TAN without a pH or a temperature, and one the
   core refused with no basis. It is said: "The sample of … at Outlet gives no value (Needs the pH and the temperature of
   the same sample): measure there again."
 - **A refused sample newer than the evidence** is "cannot be evaluated" at every point of the tier the value is read
   from, the loop's for a unit read at its loop. It stays so (`PointWater.refused_newer`, the alarm system's warning,
   V-A) until an evidence value is newer than it.
-- **A late result** is a value measured before the evidence's minute but entered after it. It is no candidate and never
-  an alarm (the owner's decision). The point says it: "Late result: critical 0.8924 at Middle on …, superseded by 0.0110
-  on …". The activity log keeps it with the sample's entry (`read.late_results_of`). That is one read for all the
-  samples of a write, and a failing read is logged and never blocks the write. The history row says it too, from the
-  same look-back, whatever the page holds.
+- **A late result** is a stored value measured before the minute of the point's stored evidence but entered after it
+  (a live value takes no part in what is late). It is no candidate and never an alarm (the owner's decision), and it
+  is always said:
+  - **On the point:** "Late result: critical 0.8924 at Middle on …, superseded by 0.0110 on …". The read judges the
+    newest 50 late results of a point and says the five worst one by one, the rest as "And N more late results: see
+    the history". No cut is silent.
+  - **In the activity log:** kept with the sample's entry, in English at rest. The entered samples are judged against
+    their point's evidence directly (`read.late_results_of`), so no cap applies and the entry order changes nothing.
+  - **On its history row:** the same way, whatever else the page holds.
+- **The late check at entry never blocks the write.** It is one read for all the samples of a write, in a savepoint.
+  If it fails, each point is read on its own, so one unreadable point does not strip the others' words. The samples of
+  a point that fails are recorded with "Late result: could not be checked" in their entry (tested with an error and
+  with a database error).
+- **The ceiling, fail-closed.** After `judge.CEILING` (512) candidates of a point without one evidence value, the
+  shell stops looking back. That is past two weeks of hourly samples. The point is then "cannot be evaluated: none of
+  its newest 512 samples gives an evaluable value". What was fetched is still judged, and it is never taken for the
+  whole: an OK from elsewhere becomes "cannot be evaluated".
 
-For each place (`judge.place_verdict`):
-- **Held.** A judged value that is stale now and worse than the value shown is kept when it is of one of the unit's
+For each place (`judge.place_verdict`: a unit's own points and its system's, or one point read on its own):
+- **Held.** A judged value that is stale now and worse than the value shown is kept when it is of one of the place's
   own points, of the point shown, or of the system's tier and NEWER than the value shown. The place keeps its
-  judgement and names the point: "Last value at Outlet 0.8924 critical on …, no recent data: measure there".
-- **Said, not held.** Such a value of the system's tier that is OLDER than the value shown is said as a late result
-  (review 6, M7).
+  judgement.
+- **One sentence for one hold.**
+  - Where the system's value is shown and the unit's own value is held, it is the reading's `last_own`, said as every
+    last own value is: "last own value …, no recent data: measure this unit".
+  - Any other held value is said by its point: "Last value at Outlet 0.8924 critical on …, no recent data: measure
+    there".
+- **Said, not held.** A stale alert of the system's tier that is OLDER than the unit's own value shown is said as
+  "Older value at Loop: critical … on …, before this unit's own … of …". It is not called late: it may have been
+  entered on time.
 - **Attention.** An own sample that gives no value and is newer than a system value shown turns an OK unit into
-  "cannot be evaluated", never plain OK.
+  "cannot be evaluated", never plain OK, and never beside a held value.
 - **Clearing.** A level of a worked-out value ends only on evidence that is fresh now by its own freshness and was
   measured strictly after its last bad value (`judge.clears`): a tie never clears, and a stale held value never ends
   one.
 
 Every value of the judged set is a candidate. A9 chooses among them, and the worst fresh value decides, as for every
-value.
+value. Where no tier has a worked-out value, the judge names the value-less record shown (`judge.shown_without_value`).
 
 **The tests.** `farm/tests/test_judge.py` tries every order of entry of tens of thousands of point scenarios (itertools).
 Each has two to four values at a point: critical, warning, OK, refused with or without a basis, value-less, or stale
@@ -1785,22 +1807,31 @@ from its start, each fresh now or not on its own axis, at the same minute or not
   - a clear needs evidence fresh now and strictly newer;
   - one minute's values are judged alike in any order;
   - the point is the worst of its set.
-- **Place scenarios** (two own points and the loop, each value shown in turn) hold the hold, the late saying, the
-  attention and the tier of the refused record.
+- **Place scenarios** (two own points and the loop, each value shown in turn with the place's judgement) hold what is
+  held, what is only said, the attention, the refused record and the value-less ones said.
 - **`settled`.** On every prefix where it says "settled", it gives the full verdict.
-- **Mutants.** `farm/tests/test_judge_mutants.py` builds the reviewers' mutants of the judge in memory, and every one
-  must fail those tests.
+- **The rules one by one**, each in an example.
+- **`farm/tests/test_judge_mutants.py` is a fixed list of named regressions, not mutation testing.** It holds 47
+  one-line changes of the judge: the reviewers' mutants and this branch's rules. Each is built in memory and run
+  against the test classes that guard its rule, and at least one test must FAIL: a test that only crashes is no kill.
+  A line of the judge that changes is an edit of that list in the same commit.
 
-**The shell's look-back is bounded in the database** (`Context.prefetch_newest_worked`; review 6, M3).
-- **Candidates.** Only the samples that can give a value are looked back at: a TAN, a pH and a temperature. They are
-  read newest first in rounds of two, four, eight … ranked by a window function, until the judge calls the point
-  settled (`judge.settled`).
+**"Can give a value" is defined once** (`read.OWN_INPUTS`, from `parameters.AMMONIA_OWN`: a TAN, a pH and a temperature
+of the sample itself; the salinity may be found elsewhere). The derivation's check (`read.gives_value`) and the
+look-back's two streams (`CAN_GIVE`, `CANNOT_GIVE`) are built from it, and a test holds them together on all eight
+combinations. A branch that lets a sample without one of them give a value changes that one definition.
+
+**The shell's look-back is bounded in the database** (`Context.prefetch_newest_worked`).
+- **Candidates.** Only the samples that can give a value are looked back at, newest first in rounds of two, four,
+  eight … ranked by a window function, until the judge calls the point settled (`judge.settled`) or past its ceiling.
 - **No chemistry for the rest.** A sample that cannot give a value never costs a call of the chemistry core. One
   query fetches each point's newest such sample (what is said of it).
-- **Late results.** One query fetches the newest `LATE_SAID` (5) a point, never a sample already fetched.
+- **Late results.** One query fetches the newest `LATE_READ` (50) a point and counts the rest, never a sample already
+  fetched.
 - **Cost.** A wall's queries do not grow with its units (`monitoring/tests/test_budget.py`). The rows stay bounded at
-  depth: sixty samples without their inputs cost one row; sixty refused ones read the window once in log₂ rounds;
-  thirty late ones read at most five (`farm/tests/test_derived_fresh.py`, rows counted by the tests).
+  depth, and the tests that count them assert the verdict too (`farm/tests/test_derived_fresh.py`): sixty samples
+  without their inputs cost one row; sixty refused ones read the window once in log₂ rounds and the unit says
+  "cannot be evaluated"; sixty late ones read fifty and count ten.
 - **The window still ends every look-back.** A held critical lasts up to 30 days (`read.WINDOW`; accepted by the
   coordinator as the safe side).
 

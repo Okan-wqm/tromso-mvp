@@ -110,11 +110,8 @@ class FastPasswordRunner(DiscoverRunner):
         # The account e-mails' jobs run in the request, not on the worker thread (core.accountmail.background): a
         # TestCase's rows are never committed, so no other thread could read them. core.tests_account_mail_worker runs
         # the worker itself.
-        # The alarm system's watch on who it reached is off: a test world has no recipient rule and no transport,
-        # so it would raise its own critical alarms in every pass of the tests of other things. Its own tests turn it
-        # on (experiments.tests.test_review.SafetyNetTests).
         self._fast_hasher = override_settings(PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],
-                                              MAIL_IN_BACKGROUND=False, ALARM_SUPERVISE_REACH=False)
+                                              MAIL_IN_BACKGROUND=False)
         self._fast_hasher.enable()
 
     def teardown_test_environment(self, **kwargs):

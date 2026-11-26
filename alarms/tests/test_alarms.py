@@ -19,7 +19,7 @@ from sensors.tests import make_channel, make_connection, make_device, make_forma
 from .. import read, routing, services
 from ..models import (APPEND_ONLY, Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification,
                       RecipientRule, SeverityPolicy)
-from . import NO_RULES_ON_PURPOSE, NOTHING_CONNECTED, AlarmsCase
+from . import NOTHING_CONNECTED, AlarmsCase, farm_alarms
 from .doubles import FailingTransport, RecordingTransport
 
 PUSH_DOUBLE = {'push': 'alarms.tests.doubles.RecordingTransport'}
@@ -59,7 +59,6 @@ class TableTests(AlarmsCase):
                           channel='push', role=self.operators).full_clean()
 
 
-@NO_RULES_ON_PURPOSE
 class WaterTests(AlarmsCase):
     def test_a_value_past_the_critical_limit_holds_one_alarm_where_it_is(self):
         self.sample(5.5)
@@ -85,7 +84,7 @@ class WaterTests(AlarmsCase):
         self.assertEqual(AlarmClearance.objects.get(alarm=alarm).cause, 'returned')
         self.assertTrue(AuditLog.objects.filter(entity_type='alarm', action='update').exists())
         self.loop(minutes=3)
-        self.assertEqual(Alarm.objects.filter(severity='critical').count(), 1)
+        self.assertEqual(farm_alarms().filter(severity='critical').count(), 1)
 
     def test_a_value_that_goes_stale_never_clears_it(self):
         self.sample(5.5)
@@ -96,7 +95,7 @@ class WaterTests(AlarmsCase):
     def test_a_warning_that_turns_critical_stays_open_beside_the_critical_alarm(self):
         self.sample(6.2, hours=2)
         self.loop()
-        warning = Alarm.objects.get()
+        warning = farm_alarms().get()
         self.assertEqual(warning.severity, 'warning')
         self.sample(5.5)
         self.loop(minutes=1)
@@ -106,10 +105,9 @@ class WaterTests(AlarmsCase):
     def test_values_inside_the_limits_and_parameters_without_one_hold_nothing(self):
         self.sample(7.0)
         self.loop()
-        self.assertFalse(Alarm.objects.exists())
+        self.assertFalse(farm_alarms().exists())
 
 
-@NO_RULES_ON_PURPOSE
 class SensorTests(AlarmsCase):
     def setUp(self):
         super().setUp()
@@ -123,13 +121,13 @@ class SensorTests(AlarmsCase):
                                           opened_at=self.now, peak=4)
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)):
             self.loop()
-            alarm = Alarm.objects.get()
+            alarm = farm_alarms().get()
             self.assertEqual((alarm.source, alarm.sensor_event, alarm.severity, alarm.site, alarm.opened_at),
                              ('sensor_rule', event, 'warning', self.bergen, self.now))
             AlarmEvent.objects.filter(pk=event.pk).update(closed_at=self.now + timedelta(minutes=3))
             self.loop(minutes=4)
         self.assertEqual(AlarmClearance.objects.get().cleared_at, self.now + timedelta(minutes=3))
-        self.assertEqual(Alarm.objects.count(), 1)
+        self.assertEqual(farm_alarms().count(), 1)
 
     def test_the_loop_checks_the_sensor_rules_itself(self):
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)) as evaluate:
@@ -216,7 +214,7 @@ class OutboxTests(AlarmsCase):
         self.sample(5.5)
         self.loop()
         self.assertFalse(DeliveryAttempt.objects.exists())
-        self.assertFalse(read.transport_connected('push'))
+        self.assertFalse(read.connected()['push'])
 
     @override_settings(ALARM_TRANSPORTS=PUSH_DOUBLE)
     def test_a_transport_sends_each_notification_once(self):
@@ -229,7 +227,7 @@ class OutboxTests(AlarmsCase):
         self.assertEqual((attempt.outcome, attempt.notification.recipient), ('sent', self.operator))
         self.assertEqual(read.status(attempt.notification), 'sent')
         self.assertEqual([notification.pk for notification in RecordingTransport.sent], [attempt.notification.pk])
-        self.assertTrue(read.transport_connected('push'))
+        self.assertTrue(read.connected()['push'])
 
     @override_settings(ALARM_TRANSPORTS=PUSH_FAILING)
     def test_a_failing_transport_is_tried_again_up_to_the_severitys_attempts(self):

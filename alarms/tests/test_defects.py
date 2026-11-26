@@ -14,12 +14,11 @@ from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
 from .. import engine, outbox, read, services, sources
-from ..models import (Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification, ParameterDeadband,
+from ..models import (AlarmClearance, AlarmSubjectState, Escalation, Notification, ParameterDeadband,
                       SeverityPolicy)
-from . import NO_RULES_ON_PURPOSE, AlarmsCase
+from . import AlarmsCase, farm_alarms
 
 
-@NO_RULES_ON_PURPOSE
 class UnitSubjectTests(AlarmsCase):
     """Defect 1: the water's alarms are the units' (their middle point stands for them, A9.1), never every active point's:
     an inlet's value is the stream coming in, and a depth point's critical value already decides its unit (worst fresh
@@ -29,7 +28,7 @@ class UnitSubjectTests(AlarmsCase):
         self.sample(5.5, point=point_of(self.t1, 'inlet'))
         self.sample(7.0, hours=0.5)                          # the unit's own water is fine
         self.loop()
-        self.assertFalse(Alarm.objects.exists())
+        self.assertFalse(farm_alarms().exists())
 
     def test_a_depth_points_critical_value_is_its_units_one_alarm(self):
         depth = SamplingPoint.objects.create(unit=self.t1, kind='depth', name='Bottom', depth_m=1)
@@ -42,18 +41,17 @@ class UnitSubjectTests(AlarmsCase):
     def test_a_loops_value_is_judged_for_the_units_fish_and_raises_the_units_alarm_only(self):
         self.sample(5.5, point=point_of(self.ras))
         self.loop()
-        self.assertEqual(sorted((alarm.point.pk, alarm.severity) for alarm in Alarm.objects.all()),
+        self.assertEqual(sorted((alarm.point.pk, alarm.severity) for alarm in farm_alarms().all()),
                          [(self.mid1.pk, 'critical'), (self.mid1.pk, 'warning')])      # the unit's two levels, no loop's
 
 
-@NO_RULES_ON_PURPOSE
 class LevelTests(AlarmsCase):
     """Defect 2: a water alarm is a level of a unit's parameter, warning (L) and critical (LL) each with its own alarm, raised
     after the severity's on-delay counted in data time, cleared only past the parameter's deadband and after the
     off-delay: a severity change never clears and reopens, and a value at the limit does not chatter."""
 
     def open_levels(self):
-        return sorted(alarm.severity for alarm in Alarm.objects.filter(clearance__isnull=True))
+        return sorted(alarm.severity for alarm in farm_alarms().filter(clearance__isnull=True))
 
     def test_a_warning_waits_for_its_on_delay_counted_from_the_value(self):
         self.sample(6.2, hours=0)
@@ -116,7 +114,6 @@ class Unreadable:
         raise ConnectionError('the sensors cannot be read')
 
 
-@NO_RULES_ON_PURPOSE
 class FailedSourceTests(AlarmsCase):
     """Defect 3: while the live sources cannot be read, nothing clears (a sample alone must not end an alarm a sensor
     raised), and the failure is an alarm of its own."""
@@ -137,7 +134,7 @@ class FailedSourceTests(AlarmsCase):
         finally:
             water_sources.unregister(self.unreadable)
         self.assertTrue(read.is_open(self.critical()))
-        system = Alarm.objects.get(source='system')
+        system = farm_alarms().get(source='system')
         self.assertEqual((system.parameter, system.severity, read.is_open(system)), ('sensors_failed', 'critical', True))
         self.loop(minutes=6)
         self.loop(minutes=7)
@@ -181,7 +178,7 @@ class FailureIsolationTests(AlarmsCase):
                 self.assertLogs('alarms.engine', level='ERROR') as logged:
             summary = self.loop()
         self.assertEqual(summary.failed_steps, ['water'])
-        self.assertTrue(Alarm.objects.filter(source='sensor_rule').exists())
+        self.assertTrue(farm_alarms().filter(source='sensor_rule').exists())
         self.assertIn('the water read failed', '\n'.join(logged.output))
         self.assertIn('1 step failed: water', str(summary))
 
@@ -208,7 +205,7 @@ class OneOpenAlarmTests(AlarmsCase):
             services.raise_for(self.key, lambda: services.open_alarm(
                 at=self.now, severity='critical', summary='twice', source='water_limit', point=self.mid1,
                 parameter='ph', site=self.bergen, production_department=self.hall))
-        self.assertEqual(Alarm.objects.filter(severity='critical', source='water_limit').count(), 1)
+        self.assertEqual(farm_alarms().filter(severity='critical', source='water_limit').count(), 1)
         self.assertEqual(AlarmSubjectState.objects.get(key=self.key).open_alarm, self.alarm)
 
 

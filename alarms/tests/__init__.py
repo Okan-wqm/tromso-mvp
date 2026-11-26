@@ -14,7 +14,8 @@ from farm.water import services as water
 
 from .. import engine, outbox
 from ..models import Alarm, RecipientRule
-from ..routing import NO_RULES, UNREACHED
+from ..routing import NO_RULES, TO_OVERSEERS, UNREACHED
+from .doubles import RecordingTransport
 
 D = Decimal
 OXYGEN = D('9.00')
@@ -24,21 +25,31 @@ OXYGEN = D('9.00')
 # connected transport (a double that records what it would send).
 RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
 
-# The two switches a test may turn, each for its stated reason (R5: no production setting differs without one):
-# - a test of raising and clearing that makes no recipient rule on purpose: the watch on who was reached would add its own
-#   farm-wide alarms (no rule is active, a critical told to nobody) to the alarms the test counts;
-NO_RULES_ON_PURPOSE = override_settings(ALARM_SUPERVISE_REACH=False)
-# - a test of what waits, and of what the pages say, while no transport is connected.
+# A test of what waits, and of what the pages say, while no transport is connected (the pilot's state): a world, never a
+# switch of what the alarm system does (landing review 5, N2: its watch on who it reached runs in every test, as on a
+# farm).
 NOTHING_CONNECTED = override_settings(ALARM_TRANSPORTS={})
 
 
-@override_settings(ALARM_SUPERVISE_REACH=True, ALARM_TRANSPORTS=RECORDING)
+def farm_alarms(alarms=None):
+    """The alarms (all of them, or of `alarms`) without the alarm system's own about who it reached (no recipient rule,
+    no connected channel, a critical told to nobody: routing.TO_OVERSEERS). THE helper of a test that counts what its
+    world raises and makes no rule or connects nothing on purpose: the watch runs there as everywhere, and its alarms
+    are beside the point of such a test, not absent."""
+    return (Alarm.objects.all() if alarms is None else alarms).exclude(source='system', parameter__in=TO_OVERSEERS)
+
+
+@override_settings(ALARM_TRANSPORTS=RECORDING)
 class AlarmsCase(TestCase):
     # A test whose world tells nobody of a critical alarm on purpose (a rule of another site, a level nobody is on, the
     # sender failing) says so here, with its reason; every other test that has made a rule asserts the watch is quiet.
     reaches_nobody = ''
 
     def setUp(self):
+        # What the recording transport took is this test's alone (review 5, N9).
+        for kept in (RecordingTransport.sent, RecordingTransport.floods):
+            kept.clear()
+            self.addCleanup(kept.clear)
         User = get_user_model()
         self.keeper = User.objects.create_user('keeper', 'keeper@example.com', 'x')
         self.keeper.groups.add(role('Water keeper', 'view_watermeasurement', 'add_watermeasurement',

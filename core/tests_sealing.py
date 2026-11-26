@@ -191,8 +191,6 @@ SYSTEM_CALLS = {
     'reports/due.py:no_longer_match': 'the due list’s duties that no longer match, over every unit',
     'alarms/sources.py:_unreached': 'the alarm system supervises itself: how many critical alarms were told to nobody '
                                     '(a count, no alarm named)',
-    'alarms/read.py:rules_naming_outsiders': 'the recipient rules’ configuration warning: whether confidential '
-                                             'cells exist and who holds Oversee, no record named',
     'experiments/sealing.py:keepers_of': 'the alarms’ fallback: who keeps the fish of a sealed cell (its lead, the '
                                       'Oversee holders), asked by the alarm loop',
     'farm/stock/read.py:ledger': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is '
@@ -394,8 +392,10 @@ class SealedModelReadSiteTests(SimpleTestCase):
         self.assertEqual(sorted(found), sorted(SEALED_PAST_THE_SEAL))
 
 
-# One owner per rule of the seal (architecture audit 2026-11-26, M-13): the places that may state each rule, with why.
-# A new place that states one is a second copy: read the owner instead (or name it here with its reason).
+# One owner per rule of the seal (architecture audit 2026-11-26, M-13; landing review 5, N3): the places that may state
+# each rule, with why. A new place that states one is a second copy: read the owner instead (or name it here with its
+# reason). The SQL statement of the audience rule (the view experiment_cells, a migration) is held to the owner by
+# experiments.tests.test_review.OneRuleTests.
 RULE_OWNERS = {
     'audience': {
         'experiments/sealing.py:barred_audiences': 'THE audience rule: who reads an experiment only as team or grantee',
@@ -406,26 +406,45 @@ RULE_OWNERS = {
         'experiments/models.py:Experiment.Meta': 'the permission’s declaration',
     },
     'connected channels': {
-        'alarms/transports.py:connected_channels': 'THE channels that can leave: configured and importable',
-        'alarms/transports.py:transport_for': 'builds the transport the sender sends with',
-        'alarms/checks.py:transports_declare_limits': 'the deploy check of the configuration',
+        'alarms/transports.py:configured': 'THE reading of the setting; connected_channels and transport_for ask it',
+        'alarms/checks.py:transports_declare_limits': 'the deploy check of the setting itself (its shape, its keys)',
     },
     'unit of a key': {
-        'alarms/place.py:<module>': 'UNIT_PREFIXES, read by unit_of_key',
-        'alarms/sources.py:water_key': 'the one maker of a water subject’s key',
-        'alarms/sources.py:_oxygen_levels': 'main’s: the oxygen slot and level of the keys water_key makes',
+        'alarms/place.py:<module>': 'UNIT: water_key, unit_subject make the keys; unit_of_key, water_key_parts, '
+                                    'names_unit read them',
+        'sensors/forms.py:place_choices': 'not a subject key: a form’s choice value for a unit, read by that form',
+    },
+    'day on a clock': {
+        'experiments/rawdata.py:filename': 'not a cell’s day: the download’s file name carries the company’s day',
     },
 }
+# The day rule's owner is core.sealing (day_on, _cell_day), which `call_sites` leaves out; it is looked for where a
+# cell's or an alarm's moment is compared with a cell's days.
+RULE_SCOPES = {'day on a clock': ('experiments/', 'alarms/')}
+AUDIENCES = ('open', 'sealed', 'private')
 
 
 def states_a_rule(rule):
     """The node test for one rule of RULE_OWNERS."""
     import ast
 
+    def named_audience(node):
+        return ((isinstance(node, ast.Attribute) and node.attr == 'audience')
+                or (isinstance(node, ast.Name) and node.id == 'audience'))
+
+    def an_audience(node):
+        return any(isinstance(each, ast.Constant) and each.value in AUDIENCES for each in ast.walk(node))
+
     def audience(node, imported):
-        return (isinstance(node, ast.Attribute) and node.attr in ('OPEN', 'SEALED', 'PRIVATE')
+        """Experiment.Audience.X anywhere; a comparison of an `audience` with a literal; a lookup `audience...=` given
+        a literal (`audience != 'open'`, `filter(audience='open')`, `audience__in=['sealed']`)."""
+        if (isinstance(node, ast.Attribute) and node.attr in ('OPEN', 'SEALED', 'PRIVATE')
                 and ((isinstance(node.value, ast.Attribute) and node.value.attr == 'Audience')
-                     or (isinstance(node.value, ast.Name) and node.value.id == 'Audience')))
+                     or (isinstance(node.value, ast.Name) and node.value.id == 'Audience'))):
+            return True
+        if isinstance(node, ast.Compare) and any(named_audience(each) for each in [node.left, *node.comparators]):
+            return an_audience(node)
+        return isinstance(node, ast.keyword) and (node.arg or '').startswith('audience') and an_audience(node.value)
 
     def oversee(node, imported):
         return isinstance(node, ast.Constant) and node.value in ('oversee_experiment', 'experiments.oversee_experiment')
@@ -435,19 +454,53 @@ def states_a_rule(rule):
                 or (isinstance(node, ast.Constant) and node.value == 'ALARM_TRANSPORTS'))
 
     def unit_key(node, imported):
+        """Any text that begins a unit's subject or its name: a literal, an f-string's first part, a startswith."""
         return (isinstance(node, ast.Constant) and isinstance(node.value, str)
-                and node.value.startswith(('water:unit:', 'system:unit:')))
+                and node.value.startswith(('unit:', 'water:unit:', 'system:unit:')))
 
-    return {'audience': audience, 'oversee': oversee, 'connected channels': transports, 'unit of a key': unit_key}[rule]
+    def day(node, imported):
+        """`localtime(...).date()` / `.astimezone(...).date()`: a moment's day on some clock, worked out in place."""
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'date'
+                and isinstance(node.func.value, ast.Call)):
+            return False
+        inner = node.func.value.func
+        return (inner.attr if isinstance(inner, ast.Attribute) else getattr(inner, 'id', '')) in ('localtime',
+                                                                                                'astimezone')
+
+    return {'audience': audience, 'oversee': oversee, 'connected channels': transports, 'unit of a key': unit_key,
+            'day on a clock': day}[rule]
 
 
 class RuleOwnerTests(SimpleTestCase):
     def test_each_rule_of_the_seal_has_one_owner(self):
         for rule, owners in RULE_OWNERS.items():
             with self.subTest(rule=rule):
-                self.assertEqual(sorted(call_sites(states_a_rule(rule))), sorted(owners))
+                found = [site for site in call_sites(states_a_rule(rule))
+                         if site.startswith(RULE_SCOPES.get(rule, ''))]
+                self.assertEqual(sorted(found), sorted(owners))
 
-    def test_a_second_statement_of_the_audience_rule_is_found(self):
+    def test_a_second_statement_of_a_rule_is_found(self):
         import ast
-        tree = ast.parse('def elsewhere(e):\n    return e.audience != Experiment.Audience.OPEN\n')
-        self.assertTrue(any(states_a_rule('audience')(node, set()) for node in ast.walk(tree)))
+        copies = {
+            'audience': ('e.audience != Experiment.Audience.OPEN', "e.audience != 'open'",
+                         "Experiment.objects.filter(audience='open')", "rows.exclude(audience__in=['sealed', 'private'])"),
+            'unit of a key': ("name.startswith('unit:')", "f'unit:{unit.pk}:no_water_point'",
+                              "key.startswith('water:unit:')"),
+            'day on a clock': ('timezone.localtime(alarm.opened_at, zone).date()',
+                               'alarm.opened_at.astimezone(zone).date()'),
+            'connected channels': ("getattr(settings, 'ALARM_TRANSPORTS', {})", 'settings.ALARM_TRANSPORTS'),
+            'oversee': ("user.has_perm('experiments.oversee_experiment')",),
+        }
+        self.assertEqual(sorted(copies), sorted(RULE_OWNERS))
+        for rule, sources in copies.items():
+            for source in sources:
+                with self.subTest(rule=rule, source=source):
+                    self.assertTrue(any(states_a_rule(rule)(node, set()) for node in ast.walk(ast.parse(source))))
+
+    def test_the_owners_own_calls_are_not_copies(self):
+        import ast
+        for rule, source in (('audience', 'audience in sealing.barred_audiences(False)'),
+                             ('unit of a key', 'place.unit_subject(unit.pk, NO_WATER_POINT)'),
+                             ('day on a clock', 'sealing.day_on(moment, zone)')):
+            with self.subTest(rule=rule):
+                self.assertFalse(any(states_a_rule(rule)(node, set()) for node in ast.walk(ast.parse(source))))

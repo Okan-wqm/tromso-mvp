@@ -81,7 +81,7 @@ class ByteLimitTests(Case):
     def queued(self, summary, language, seconds=0):
         Profile.objects.update_or_create(user=self.operator, defaults={'language': language})
         at = self.at(seconds=seconds)
-        alarm = services.open_alarm(source='system', parameter='sensors_failed', severity='critical', at=at,
+        alarm = services.open_alarm(source='system', farm_wide=True, parameter='sensors_failed', severity='critical', at=at,
                                     site=self.bergen, summary=summary)
         (made,) = services.queue_many([Notification(alarm=alarm, recipient=self.operator, channel='push', level=0,
                                                     queued_at=at)])

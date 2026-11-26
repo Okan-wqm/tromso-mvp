@@ -175,13 +175,13 @@ class KindTests(Case):
         snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
         for parameter in ('no_fresh_oxygen', 'unit_unevaluated', 'value_unevaluated'):
             with self.subTest(parameter=parameter):
-                alarm = services.open_alarm(source='system', parameter=parameter, severity='critical', at=self.now,
+                alarm = services.open_alarm(source='system', farm_wide=True, parameter=parameter, severity='critical', at=self.now,
                                             summary=parameter)
                 self.assertEqual(services.shelve(alarm, snoozer, 30, 'probe cleaned', at=self.at(1)).alarm, alarm)
         for parameter in ('alarms_unchecked', 'step_failed', 'notifications_undeliverable', 'alarm_rules',
                           'sensors_failed'):
             with self.subTest(parameter=parameter):
-                alarm = services.open_alarm(source='system', parameter=parameter, severity='critical', at=self.now,
+                alarm = services.open_alarm(source='system', farm_wide=True, parameter=parameter, severity='critical', at=self.now,
                                             summary=parameter)
                 with self.assertRaisesMessage(ValidationError, 'own health is never snoozed'):
                     services.shelve(alarm, snoozer, 30, 'busy', at=self.at(1))

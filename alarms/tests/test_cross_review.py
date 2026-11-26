@@ -309,7 +309,7 @@ class SystemRoutingTests(CrossReviewCase):
     def system_alarm(self, site=None):
         from .. import services
         return services.open_alarm(at=self.now, severity='critical', summary='The sensors cannot be read',
-                                   source='system', parameter='sensors_failed', site=site)
+                                   source='system', parameter='sensors_failed', site=site, farm_wide=True)
 
     def people(self, alarm):
         from .. import routing

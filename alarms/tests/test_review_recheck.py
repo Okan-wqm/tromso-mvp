@@ -129,12 +129,12 @@ class MutantTests(RecheckCase):
 class SnoozeKindTests(RecheckCase):
     def test_sensors_failed_is_never_snoozed_an_unevaluated_unit_is(self):
         snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
-        blind = services.open_alarm(source='system', parameter='sensors_failed', severity='critical', at=self.now,
+        blind = services.open_alarm(source='system', farm_wide=True, parameter='sensors_failed', severity='critical', at=self.now,
                                     summary='The sensors cannot be read')
         with self.assertRaisesMessage(ValidationError, 'never snoozed'):
             services.shelve(blind, snoozer, 30, 'busy', at=self.at(1))
         for parameter in ('unit_unevaluated', 'value_unevaluated'):
-            alarm = services.open_alarm(source='system', parameter=parameter, severity='critical', at=self.now,
+            alarm = services.open_alarm(source='system', farm_wide=True, parameter=parameter, severity='critical', at=self.now,
                                         summary=parameter)
             self.assertEqual(services.shelve(alarm, snoozer, 30, 'calibrating', at=self.at(1)).alarm, alarm)
 

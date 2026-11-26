@@ -65,7 +65,7 @@ class OutboxCase(AlarmsCase):
         at = self.now - timedelta(minutes=minutes_ago)
         made = []
         for number in range(count):
-            alarm = services.open_alarm(source='system', parameter=f'test_{severity}_{minutes_ago}_{number}',
+            alarm = services.open_alarm(source='system', farm_wide=True, parameter=f'test_{severity}_{minutes_ago}_{number}',
                                         severity=severity, at=at, summary=f'{severity} {number}', site=self.bergen)
             made += services.queue_many([Notification(alarm=alarm, recipient=self.operator, channel='push', level=0,
                                                       queued_at=at)])

@@ -37,7 +37,7 @@ class FloodCase(AlarmsCase):
         at = self.now + timedelta(seconds=seconds)
         made = []
         for number in range(count):
-            alarm = services.open_alarm(source='system', parameter=kind, severity=severity, at=at,
+            alarm = services.open_alarm(source='system', farm_wide=True, parameter=kind, severity=severity, at=at,
                                         summary=f'{kind} {seconds}/{number}', site=site or self.bergen)
             made += services.queue_many([Notification(alarm=alarm, recipient=to or self.operator, channel='push',
                                                       level=0, queued_at=at)])

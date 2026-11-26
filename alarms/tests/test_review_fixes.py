@@ -59,7 +59,7 @@ class Case(AlarmsCase):
         at = self.at(seconds=seconds)
         made = []
         for number in range(count):
-            alarm = services.open_alarm(source='system', parameter=parameter, severity=severity, at=at,
+            alarm = services.open_alarm(source='system', farm_wide=True, parameter=parameter, severity=severity, at=at,
                                         summary=f'{parameter} {severity} {seconds}/{number}', site=self.bergen)
             made += services.queue_many([Notification(alarm=alarm, recipient=to or self.operator, channel='push',
                                                       level=0, queued_at=at)])
@@ -190,7 +190,7 @@ class SnoozeRuleTests(Case):
         self.alarm = self.critical()
 
     def test_the_alarm_systems_own_critical_alarm_is_never_snoozed(self):
-        own = services.open_alarm(source='system', parameter='alarms_unchecked', severity='critical', at=self.now,
+        own = services.open_alarm(source='system', farm_wide=True, parameter='alarms_unchecked', severity='critical', at=self.now,
                                   summary='not checked')
         with self.assertRaisesMessage(ValidationError, 'never snoozed'):
             services.shelve(own, self.snoozer, 10, 'busy', at=self.at(1))

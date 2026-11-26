@@ -217,3 +217,8 @@ def lice_counts(unit_ids, first, last):
     """The live sea-lice counts of these units from `first` to `last` (both included), as recorded (an experiment's raw
     data, experiments/rawdata.py), read through the sealed manager."""
     return LiceCount.objects.filter(unit__in=unit_ids, date__range=(first, last))
+
+
+def event_sites():
+    """The sites of the health events the person looking may see (a subquery for a list's choices: core.sealing)."""
+    return HealthEvent.objects.values('site')

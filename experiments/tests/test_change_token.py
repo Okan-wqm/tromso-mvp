@@ -138,7 +138,7 @@ class MovesTests(TokenCase):
             self.assertEqual(self.client.get(following).status_code, 204)
             self.client.force_login(self.lead)
             following = self.client.get(reverse(CARDS))['X-Poll-Next']
-            water_services.record(self.lead, point=self.sealed_point, measured_at=timezone.now() - timedelta(minutes=4),
+            water_services.record(self.boss, point=self.sealed_point, measured_at=timezone.now() - timedelta(minutes=4),
                                   source='manual', values={'ph': Decimal('7.1')})
             self.assertEqual(self.client.get(following).status_code, 200)
 

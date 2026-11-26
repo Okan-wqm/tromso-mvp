@@ -1005,23 +1005,19 @@ def _carried(content, lazy):
 def log_access(kind, entity_type, entity_id, part='', route='', reason=''):
     """One row of the read log (core.AccessEvent) for the viewer of the moment: a view, an export, a refusal, an
     `oversee` read of a cell's facts or a superuser's `support` read. Reading as the system logs nothing."""
-    from .models import AccessEvent
+    from . import readlog
     current = viewer()
     if current is None or current.user_id is None:
         return None
-    return AccessEvent.objects.create(user_id=current.user_id, user_name=current.username, kind=kind,
-                                      entity_type=entity_type, entity_id=str(entity_id), part=part, route=route[:120],
-                                      reason=reason[:300])
+    return readlog.write(current, kind, entity_type, entity_id, part, route, reason)
 
 
 def log_accesses(kind, entity_type, entity_ids, part='', route='', reason=''):
     """`log_access` for several records at once, one row each (in the order given, once per record), in one statement:
     a page that shows many (the Oversee cards of a wall) logs them without a write per card."""
-    from .models import AccessEvent
+    from . import readlog
     current = viewer()
     entity_ids = list(dict.fromkeys(str(each) for each in entity_ids))
     if current is None or current.user_id is None or not entity_ids:
         return []
-    return AccessEvent.objects.bulk_create([
-        AccessEvent(user_id=current.user_id, user_name=current.username, kind=kind, entity_type=entity_type,
-                    entity_id=each, part=part, route=route[:120], reason=reason[:300]) for each in entity_ids])
+    return readlog.write_many(current, kind, entity_type, entity_ids, part, route, reason)

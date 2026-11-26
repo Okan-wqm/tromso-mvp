@@ -3609,6 +3609,23 @@ say nothing a sequence does not), a duplicate name or code is refused in the sam
 ingest's channel states and the revision counters (`core_rev`) hold ids, no text. A database viewer export asks why, and the reason is in the read log.
 `manage.py experiments_sealing_preflight` says what the owner must know before it goes live.
 
+**Alarms on confidential work** (landing reviews, 2026-11-25/26): an alarm, and a sensor rule's event, is sealed by its
+own place and day only: the unit or system it is about, kept on it when it opens (`alarms/place.py`: a unit subject's
+key, its point, its sensor channel's binding then, or a place its producer states), never by its sensor channel's
+history. An alarm that names no place must be declared farm-wide by its producer, or it is refused. When no rule names a
+person who may see a sealed alarm, its keepers are told (the experiment's lead and the Oversee holders of the cells of
+its opening day); a critical alarm told to nobody at all raises the alarm system's own critical alarm, which names none
+of them and goes to the rules and every Oversee holder. The attention counts are kept per what a person reads.
+
+**Known limitations** (recorded, not fixed):
+- A voided or deleted stock line of an open tank counts as a shown child of its batch and operation (review 2, N7): a
+  stocking first booked into an open tank, voided and rebooked into a sealed one leaves its batch visible to outsiders,
+  as the open tank's own history.
+- What a request has read of the person is read again after a rollback of the block it was read in, but not after a
+  rollback of an outermost transaction followed by a new one in the same request (review 2, N8): Django has no hook on a
+  transaction's start. No view does that today.
+- A write made by a database trigger or outside the platform is not seen by the request that is running (review S3).
+
 ## Regulatory reports (Production › Reports, `/reports/`)
 
 The reports the farm owes Mattilsynet and Fiskeridirektoratet, made from the records and filed by people. Its own app

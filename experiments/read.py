@@ -522,7 +522,7 @@ def chips(units, user):
                     title=f'{experiment.name} ({experiment.get_status_display()})',
                     url=reverse('experiments:experiment_detail', args=[experiment.pk]),
                     notice=experiment.care_instructions)]
-    if user.has_perm('experiments.oversee_experiment') and not user.is_superuser:
+    if experiments_sealing.holds_oversee(user):
         for day, unit_ids in by_day.items():
             for unit_id, card in cards([pk for pk in unit_ids if pk not in found], day).items():
                 found[unit_id] = [card]

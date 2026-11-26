@@ -1030,8 +1030,8 @@ def _may_seal_past(user, experiment, audience):
     its tanks before it is started is the farm's own; starting a sealed or private experiment whose day 0 has passed,
     or sealing a started open one, makes those days' records the experiment's, and only a person who holds Oversee
     (who keeps every tank's fish) does that."""
-    if (audience != Experiment.Audience.OPEN and experiment.starts_on is not None
-            and experiment.starts_on < site_today(experiment.site) and not user.has_perm('.'.join(sealing.OVERSEE))):
+    if (audience in sealing.barred_audiences(False) and experiment.starts_on is not None
+            and experiment.starts_on < site_today(experiment.site) and not sealing.holds_oversee(user)):
         raise _refused(_('Day 0 has passed: this seals the records of its tanks since then, so a person who holds '
                          'Oversee does it.'))
 
@@ -1045,7 +1045,7 @@ def set_audience(user, experiment, audience):
         locked = Experiment.objects.select_for_update().get(pk=experiment.pk)
         if locked.audience == audience:
             return locked
-        if locked.status != Status.DRAFT and locked.audience == Experiment.Audience.OPEN:
+        if locked.status != Status.DRAFT and locked.audience not in sealing.barred_audiences(False):
             _may_seal_past(user, locked, audience)
         before = locked.get_audience_display()
         locked.audience = audience

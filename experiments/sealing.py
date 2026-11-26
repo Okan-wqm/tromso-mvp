@@ -65,13 +65,23 @@ def _seen(user_id, part):
     return Q(pk__in=members.values('experiment_id')) | Q(pk__in=shares.values('experiment_id'))
 
 
+def barred_audiences(is_super):
+    """THE audience rule (architecture audit 2026-11-26, M-13): the audiences of the experiments a person reads only as
+    one of its team or with a share of it: for the platform admin the private ones alone (owner amendment C4), for
+    anyone else every audience but open. The seal's statement (`hidden_work`), the change token (`reach`), the viewer
+    (`load`, `in_team`), the read log (`note_reads`) and the services read it here; core/tests_sealing.py's RULE_OWNERS
+    holds it."""
+    if is_super:
+        return (Experiment.Audience.PRIVATE,)
+    return tuple(audience for audience in Experiment.Audience if audience != Experiment.Audience.OPEN)
+
+
 def hidden_work(part):
     """The ids of the experiments whose `part` whoever is looking may not read (a subquery, read when the statement
-    runs): those that are not open and are not theirs to read; for the platform admin only the private ones (owner
-    amendment C4)."""
+    runs): those of a barred audience (`barred_audiences`) that are not theirs to read."""
     admin = Q(sealing.Viewing('super'))
-    rows = Experiment._base_manager.filter((admin & Q(audience=Experiment.Audience.PRIVATE))
-                                           | (~admin & ~Q(audience=Experiment.Audience.OPEN)))
+    rows = Experiment._base_manager.filter((admin & Q(audience__in=barred_audiences(True)))
+                                           | (~admin & Q(audience__in=barred_audiences(False))))
     return rows.exclude(_seen(sealing.Viewing('user'), part)).values('pk')
 
 
@@ -113,13 +123,12 @@ def reach(user):
     # Oversee as `load` reads it (the platform admin is not an overseer: what the seal shows them is the audience's
     # rule), from the rights Django has already read for the request.
     oversee = holds_oversee(user)
+    barring = barred_audiences(user.is_superuser)
     hidden, seen = {part: set() for part in REACH_PARTS}, ['oversee'] if oversee else []
     for pk, audience, *reads in rows:
         parts = []
         for part, read in zip(REACH_PARTS, reads):
-            barred = (audience == Experiment.Audience.PRIVATE if user.is_superuser
-                      else audience != Experiment.Audience.OPEN)
-            if barred and not read:
+            if audience in barring and not read:
                 hidden[part].add(str(pk))
             else:
                 parts.append(part)
@@ -144,7 +153,7 @@ def load(user):
     barred = frozenset()
     if user.is_superuser:
         reached = team.union(*granted.values())
-        barred = frozenset(Experiment._base_manager.filter(audience=Experiment.Audience.PRIVATE)
+        barred = frozenset(Experiment._base_manager.filter(audience__in=barred_audiences(True))
                            .exclude(pk__in=list(reached)).values_list('pk', flat=True))
     return sealing.Viewer(user_id=user.pk, username=user.get_username(), is_super=user.is_superuser,
                           oversee=holds_oversee(user),
@@ -170,7 +179,8 @@ def note_reads(ids, route, part=''):
     ids = [value for value in ids if _uuid(value)]            # an activity log names records of every kind
     if not ids:
         return
-    sealed = Experiment._base_manager.filter(pk__in=list(ids)).exclude(audience=Experiment.Audience.OPEN)         .exclude(pk__in=list(current.team)).values_list('pk', flat=True)
+    sealed = (Experiment._base_manager.filter(pk__in=list(ids), audience__in=barred_audiences(False))
+              .exclude(pk__in=list(current.team)).values_list('pk', flat=True))
     for pk in sealed:
         kind = AccessEvent.Kind.SUPPORT if current.is_super and pk not in current.everything() else AccessEvent.Kind.VIEW
         sealing.log_access(kind, 'experiment', pk, part=part, route=route)
@@ -229,8 +239,8 @@ def in_team(experiment, current=None):
     """Whether the viewer works on the experiment: its team now, the system, anyone on an open experiment, the platform
     admin on one that is not private (owner amendment C4). Who may change it, if their role may."""
     current = sealing.viewer() if current is None else current
-    return (current is None or experiment.audience == Experiment.Audience.OPEN or experiment.pk in current.team
-            or (current.is_super and experiment.audience != Experiment.Audience.PRIVATE))
+    return (current is None or experiment.pk in current.team
+            or experiment.audience not in barred_audiences(current.is_super))
 
 
 def cells():

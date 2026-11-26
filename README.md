@@ -3591,7 +3591,7 @@ at the cost it had before: each activity-log entry is stamped when it is written
 included; `*` when the row is gone), and the token leaves out the entries stamped with a work hidden from the person,
 read from one statement a request (`core.sealing.reach`: per part the experiments hidden from them, Oversee, and a
 digest of what they read, added to the token so a grant, a share's end or an audience change moves it). The seal
-itself is never read on a poll. The activity log's pages and the database viewer's audit_log decide from the seals
+itself is never read on a poll. Each of the seal's rules has one owner: the audience rule (who reads an experiment only as team or grantee: for the platform admin the private ones, for anyone else all but open) is `experiments.sealing.barred_audiences`, read by the seal's statement, the token, the viewer and the read log; Oversee is `holders` (SQL) and `holds_oversee` (Python); the channels that can leave are `alarms.transports.connected_channels`; a subject key's unit is `alarms.place.unit_of_key`; a moment's day on a cell's clock is `core.sealing.day_on` / `_cell_day`. `core/tests_sealing.py` (`RULE_OWNERS`) fails when another place states one of them. The activity log's pages and the database viewer's audit_log decide from the seals
 at read time and also leave out an entry stamped with a work hidden from the person: an entry's text is written once
 and may name what its record reached then (a transfer from an open tank into a sealed one names both units). A person who reads no confidential work gets the token as before. The delete plan says that records the person may not see are
 reached, never how many. The seal's own reads (its parents and children, the stamp, the log's read-time rule) take a

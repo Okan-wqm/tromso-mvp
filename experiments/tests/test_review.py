@@ -617,3 +617,45 @@ class SealingStartsWithTheStartTests(ReviewCase):
                                                               codename='oversee_experiment'))
         lead = get_user_model().objects.get(pk=self.lead.pk)            # the rights read afresh
         self.assertEqual(services.set_audience(lead, self.experiment, 'sealed').audience, 'sealed')
+
+
+class SiteClockTests(ReviewCase):
+    """Review 3, S4: a cell's days are its site's, so the seal reads a moment's day on that site's clock: a sample taken
+    in the first half hour of the cell's first day in Tokyo is sealed, one in the first half hour after its last day
+    is not, though on the company's clock (Oslo) both fall a day earlier."""
+
+    def test_a_sites_own_clock_draws_the_cells_edges(self):
+        from datetime import date, datetime
+        from decimal import Decimal
+        from zoneinfo import ZoneInfo
+        from core.codes import next_code
+        from farm.models import ProductionDepartment, WaterMeasurement
+        from farm.tests.helpers import point_of
+        from farm.tests.test_stock import make_unit
+        from ..models import ExperimentGroup, Replicate, ReplicateUnit
+        tokyo = Site.objects.create(name='Tokyo', code='TY', timezone='Asia/Tokyo')
+        hall = ProductionDepartment.objects.create(site=tokyo, name='Hall T', code='HT')
+        tank = make_unit('TY-01', hall)
+        first, last = date(2026, 11, 10), date(2026, 11, 12)
+        trial = Experiment.objects.create(code=next_code(Experiment, 'E-2026-'), name='Tokyo trial', site=tokyo,
+                                          species=self.salmon, duration_days=2, starts_on=first,
+                                          hypothesis='Tokyo', primary_endpoint='bfcr')
+        group = ExperimentGroup.objects.create(experiment=trial, name='Only')
+        replicate = Replicate.objects.create(group=group, number=1)
+        ReplicateUnit.objects.create(replicate=replicate, unit=tank, from_on=first, until_on=last)
+        with withdrawal_gate.opened('test: the trial started past the service'):
+            Experiment.objects.filter(pk=trial.pk).update(status='running', allocation_method='manual',
+                                                          allocation_note='By hand')
+        Member.objects.create(experiment=trial, user=self.lead, role='lead')
+        point, zone = point_of(tank), ZoneInfo('Asia/Tokyo')
+
+        def sample(day, hour, minute):
+            return WaterMeasurement.objects.create(point=point, source='manual', ph=Decimal('7.2'),
+                                                   measured_at=datetime(day.year, day.month, day.day, hour, minute,
+                                                                        tzinfo=zone)).pk
+        before = sample(date(2026, 11, 9), 23, 30)
+        opening = sample(first, 0, 30)
+        closing = sample(last, 23, 30)
+        after = sample(date(2026, 11, 13), 0, 30)
+        self.assertEqual(self.seen(self.researcher, WaterMeasurement, point=point), {before, after})
+        self.assertEqual(self.seen(self.lead, WaterMeasurement, point=point), {before, opening, closing, after})

@@ -16,13 +16,19 @@ from django.db.models import Q
 
 from farm.models.water import NBS
 from farm.water import sources
-from farm.water.parameters import PH, get as parameter_of
+from farm.water.parameters import PH
 
 from . import quantities
 from .models import Binding, ChannelState, ChannelStatus
 from .quality import BAD_MASK
 
 TARGET_FIELDS = {sources.POINT: 'point_id', sources.SYSTEM: 'system_id'}
+# The band check's memory (review 4 of the branch, M4): {ask: {"final": (moment, kind, value) or None, "through": the last
+# reading confirmed}}, per process; emptied whole past STEADY_KEPT asks. ROWS_READ: the probe rows it has read, a test's
+# measure of its cost.
+_STEADY = {}
+STEADY_KEPT = 20000
+ROWS_READ = [0]
 
 
 def _bindings(targets):
@@ -77,53 +83,18 @@ class SensorSource:
 
     def value_at(self, targets, code, moment):
         """Per target, each channel's newest clean reading at or before `moment` taken while it was bound there."""
-        return self.values_at(targets, code, [moment])[0]
+        return self.values_for(code, [(targets, moment)])[0]
 
     def values_at(self, targets, code, moments):
-        """`value_at` at each of `moments`, in their order. Two queries whatever the number of bindings and moments: the
-        bindings, then for each binding and each moment it had begun by, its newest clean reading at or before the
-        moment in ONE statement (a LATERAL lookup on the hypertable's (channel_no, ts) key), never a query per binding
-        or per moment."""
-        moments = list(moments)
-        if not moments:
-            return []
-        bindings = list(_bindings(targets).filter(channel__quantity=code, valid_from__lte=max(moments)))
-        if not bindings:
-            return [{} for _moment in moments]
-        with connection.cursor() as cursor:
-            cursor.execute(
-                'SELECT b.id, m.n, r.ts, r.value FROM unnest(%s::uuid[], %s::integer[], %s::timestamptz[], '
-                '%s::timestamptz[]) AS b(id, channel_no, valid_from, valid_to) '
-                'CROSS JOIN unnest(%s::timestamptz[]) WITH ORDINALITY AS m(moment, n) '
-                'CROSS JOIN LATERAL (SELECT ts, value FROM sensors_reading WHERE channel_no = b.channel_no '
-                'AND ts >= b.valid_from AND ts <= m.moment AND (b.valid_to IS NULL OR ts < b.valid_to) '
-                f'AND (quality & {BAD_MASK}) = 0 ORDER BY ts DESC LIMIT 1) r WHERE b.valid_from <= m.moment',
-                [[binding.pk for binding in bindings], [binding.channel.channel_no for binding in bindings],
-                 [binding.valid_from for binding in bindings], [binding.valid_to for binding in bindings], moments])
-            rows = {(binding_id, n - 1): (ts, value) for binding_id, n, ts, value in cursor.fetchall()}
-        answers = []
-        for index, moment in enumerate(moments):
-            newest = {}
-            for binding in bindings:                # in the bindings' own order, as when each was read on its own
-                row = rows.get((binding.pk, index))
-                if binding.valid_from > moment or row is None:
-                    continue
-                key = (_target(binding), binding.channel.channel_no)
-                if key not in newest or row[0] > newest[key].at:
-                    newest[key] = sources.SensorValue(code=code, value=row[1], at=row[0],
-                                                      fresh_for=binding.channel.fresh_s, role=binding.role,
-                                                      channel_no=binding.channel.channel_no, **_scale(binding.channel))
-            found = {}
-            for (target, _channel_no), value in newest.items():
-                found.setdefault(target, []).append(value)
-            answers.append(found)
-        return answers
+        """`value_at` at each of `moments`, in their order: `values_for` with the same targets at every moment, the one
+        lookup (review 4 of the branch, L2)."""
+        return self.values_for(code, [(targets, moment) for moment in moments])
 
     def values_for(self, code, asks):
         """`value_at` for each ask (targets, moment) of its own: each binding paired only with the asks whose targets it
         is bound to, so the lookups grow with the samples, never with bindings times moments (review 3 of the branch,
         H2). Two queries for all the asks: the bindings, then each pair's newest clean reading at or before its moment
-        in ONE statement (a LATERAL lookup on the hypertable's (channel_no, ts) key)."""
+        in ONE statement (a LATERAL lookup on the hypertable's (channel_no, ts) key). THE lookup of a value at a moment."""
         everything = {target for targets, _moment in asks for target in targets}
         bindings = list(_bindings(everything).filter(channel__quantity=code)) if asks else []
         pairs = [(index, binding) for index, (targets, moment) in enumerate(asks) for binding in bindings
@@ -160,24 +131,40 @@ class SensorSource:
 
     def steady_until(self, code, band, tolerance, asks):
         """For each ask (targets, start, value, until): when the targets' clean readings of `code` (the channels bound
-        there, while bound) stopped confirming `value`. The reading in force at `start` (the newest at or before it within
-        its channel's freshness, else the first at most `tolerance` after it: the clock tolerance the look-up of the
-        value takes too, review 3, L2) and every later one up to the ask's own `until` and no further (the moment its
-        NH₃ is stale anyway, H2), in time order across the ask's channels. The first one further than `band` from
-        `value`, compared at the parameter's decimals in numeric (L1), ends it at its own time; a gap longer than the
-        channel's freshness (or the last reading's freshness running out) at that reading's time plus its freshness.
-        None when no reading was in force at `start`. Two statements for all the asks, the bindings and one on the
+        there, while bound) stopped confirming `value`, as (moment, kind, the reading's value) or None.
+
+        - The reading in force at `start` is the newest at or before it within its channel's freshness, else the first at
+          most `tolerance` after it (the clock tolerance the look-up of the value takes too, review 3, L2).
+        - From it, every later reading up to the ask's `until`, in time order across the ask's channels:
+          - the first one further than `band` from `value`, compared unrounded in numeric (review 4, L4), ends it at its
+            own time ('band', with that reading's value);
+          - a gap longer than the channel's freshness ends it at the reading before the gap plus its freshness ('gap');
+          - otherwise it holds until the last reading's freshness runs out ('last': for now, the probe may send more).
+        - None when no reading was in force at `start`.
+
+        The check keeps what it confirmed (review 4, M4): a final end ('band', 'gap') is never asked again, and an
+        unfinished one is asked again only from its last confirmed reading on (`_STEADY`), so a later read reads only
+        the rows after it (ROWS_READ counts them). Two statements for all the asks: the bindings, and one on the
         hypertable's (channel_no, ts) key (farm/water/sources.py, freshness.temperature_until)."""
         everything = {target for targets, _start, _value, _until in asks for target in targets}
         bindings = list(_bindings(everything).filter(channel__quantity=code)) if asks else []
-        rows = []
+        found, rows, keys = [None] * len(asks), [], {}
         for index, (targets, start, value, until) in enumerate(asks):
-            for binding in bindings:
-                if (_target(binding) in targets and binding.valid_from <= until
-                        and (binding.valid_to is None or binding.valid_to > start)):
-                    rows.append((index, binding.channel.channel_no, binding.valid_from, binding.valid_to,
-                                 binding.channel.fresh_s, start, str(value), until))
-        found = [None] * len(asks)
+            paired = [binding for binding in bindings if _target(binding) in targets and binding.valid_from <= until
+                      and (binding.valid_to is None or binding.valid_to > start)]
+            if not paired:
+                continue
+            key = (code, tuple(sorted((binding.channel.channel_no, binding.valid_from, binding.valid_to,
+                                       binding.channel.fresh_s) for binding in paired)),
+                   start, str(value), str(band), tolerance)
+            kept = _STEADY.get(key)
+            if kept is not None and kept['final'] is not None:
+                found[index] = kept['final']
+                continue
+            keys[index] = key
+            through = kept['through'] if kept is not None else None
+            rows += [(index, binding.channel.channel_no, binding.valid_from, binding.valid_to, binding.channel.fresh_s,
+                      start, str(value), until, through) for binding in paired]
         if not rows:
             return found
         columns = list(zip(*rows))
@@ -185,48 +172,39 @@ class SensorSource:
             cursor.execute(
                 'WITH q AS (SELECT * FROM unnest(%(asks)s::integer[], %(channels)s::integer[], %(froms)s::timestamptz[], '
                 '%(tos)s::timestamptz[], %(fresh)s::integer[], %(starts)s::timestamptz[], %(values)s::numeric[], '
-                '%(untils)s::timestamptz[]) AS q(ask, channel_no, valid_from, valid_to, fresh_s, start, wanted, until)), '
-                'r AS (SELECT q.ask, q.start, q.wanted, q.fresh_s, r.ts, r.value FROM q JOIN sensors_reading r '
-                'ON r.channel_no = q.channel_no '
-                'AND r.ts >= greatest(q.valid_from, q.start - make_interval(secs => q.fresh_s)) '
+                '%(untils)s::timestamptz[], %(throughs)s::timestamptz[]) '
+                'AS q(ask, channel_no, valid_from, valid_to, fresh_s, start, wanted, until, through)), '
+                'r AS (SELECT q.ask, q.start, q.wanted, q.fresh_s, q.through, r.ts, r.value FROM q '
+                'JOIN sensors_reading r ON r.channel_no = q.channel_no '
+                'AND r.ts >= greatest(q.valid_from, coalesce(q.through, q.start - make_interval(secs => q.fresh_s))) '
                 'AND r.ts <= q.until AND (q.valid_to IS NULL OR r.ts < q.valid_to) '
                 f'AND (r.quality & {BAD_MASK}) = 0), '
-                'f AS (SELECT ask, coalesce(max(ts) FILTER (WHERE ts <= start), '
-                'min(ts) FILTER (WHERE ts > start AND ts <= start + %(tolerance)s)) AS first FROM r GROUP BY ask), '
-                'o AS (SELECT r.*, lead(r.ts) OVER (PARTITION BY r.ask ORDER BY r.ts) AS next FROM r) '
-                'SELECT o.ask, min(CASE WHEN abs(round(o.value::numeric, %(decimals)s) - o.wanted) > %(band)s THEN o.ts '
-                'WHEN o.next IS NULL OR o.next - o.ts > make_interval(secs => o.fresh_s) '
-                'THEN o.ts + make_interval(secs => o.fresh_s) END) '
-                'FROM o JOIN f ON f.ask = o.ask WHERE f.first IS NOT NULL AND o.ts >= f.first GROUP BY o.ask',
+                'f AS (SELECT ask, CASE WHEN bool_or(through IS NOT NULL) THEN min(ts) '
+                'ELSE coalesce(max(ts) FILTER (WHERE ts <= start), '
+                'min(ts) FILTER (WHERE ts > start AND ts <= start + %(tolerance)s)) END AS first FROM r GROUP BY ask), '
+                'o AS (SELECT r.*, lead(r.ts) OVER (PARTITION BY r.ask ORDER BY r.ts) AS next FROM r '
+                'JOIN f ON f.ask = r.ask WHERE f.first IS NOT NULL AND r.ts >= f.first), '
+                'e AS (SELECT ask, value, CASE WHEN abs(value::numeric - wanted) > %(band)s::numeric THEN ts '
+                'ELSE ts + make_interval(secs => fresh_s) END AS ends, '
+                "CASE WHEN abs(value::numeric - wanted) > %(band)s::numeric THEN 'band' "
+                "WHEN next IS NULL THEN 'last' ELSE 'gap' END AS kind FROM o "
+                'WHERE abs(value::numeric - wanted) > %(band)s::numeric OR next IS NULL '
+                'OR next - ts > make_interval(secs => fresh_s)), '
+                'c AS (SELECT ask, count(*) AS n, max(ts) AS last FROM o GROUP BY ask) '
+                'SELECT DISTINCT ON (e.ask) e.ask, e.ends, e.kind, e.value, c.n, c.last FROM e JOIN c ON c.ask = e.ask '
+                'ORDER BY e.ask, e.ends',
                 {'asks': list(columns[0]), 'channels': list(columns[1]), 'froms': list(columns[2]),
                  'tos': list(columns[3]), 'fresh': list(columns[4]), 'starts': list(columns[5]),
-                 'values': list(columns[6]), 'untils': list(columns[7]), 'tolerance': tolerance,
-                 'decimals': parameter_of(code).decimals, 'band': str(band)})
-            for index, moment in cursor.fetchall():
-                found[index] = moment
-        return found
-        columns = list(zip(*rows))
-        with connection.cursor() as cursor:
-            cursor.execute(
-                'WITH q AS (SELECT * FROM unnest(%(asks)s::integer[], %(channels)s::integer[], %(froms)s::timestamptz[], '
-                '%(tos)s::timestamptz[], %(fresh)s::integer[], %(starts)s::timestamptz[], %(values)s::float8[]) '
-                'AS q(ask, channel_no, valid_from, valid_to, fresh_s, start, wanted)), '
-                'r AS (SELECT q.ask, q.start, q.wanted, q.fresh_s, r.ts, r.value FROM q JOIN sensors_reading r '
-                'ON r.channel_no = q.channel_no '
-                'AND r.ts >= greatest(q.valid_from, q.start - make_interval(secs => q.fresh_s)) '
-                'AND r.ts <= %(until)s AND (q.valid_to IS NULL OR r.ts < q.valid_to) '
-                f'AND (r.quality & {BAD_MASK}) = 0), '
-                'f AS (SELECT ask, max(ts) AS first FROM r WHERE ts <= start GROUP BY ask), '
-                'o AS (SELECT r.*, lead(r.ts) OVER (PARTITION BY r.ask ORDER BY r.ts) AS next FROM r) '
-                'SELECT o.ask, min(CASE WHEN abs(o.value - o.wanted) > %(band)s THEN o.ts '
-                'WHEN o.next IS NULL OR o.next - o.ts > make_interval(secs => o.fresh_s) '
-                'THEN o.ts + make_interval(secs => o.fresh_s) END) '
-                'FROM o JOIN f ON f.ask = o.ask WHERE o.ts >= f.first GROUP BY o.ask',
-                {'asks': list(columns[0]), 'channels': list(columns[1]), 'froms': list(columns[2]),
-                 'tos': list(columns[3]), 'fresh': list(columns[4]), 'starts': list(columns[5]),
-                 'values': list(columns[6]), 'until': until, 'band': float(band)})
-            for index, moment in cursor.fetchall():
-                found[index] = moment
+                 'values': list(columns[6]), 'untils': list(columns[7]), 'throughs': list(columns[8]),
+                 'tolerance': tolerance, 'band': str(band)})
+            answered = cursor.fetchall()
+        if len(_STEADY) > STEADY_KEPT:
+            _STEADY.clear()
+        for index, ends, kind, value, count, last in answered:
+            ROWS_READ[0] += count
+            found[index] = (ends, kind, value)
+            _STEADY[keys[index]] = ({'final': found[index], 'through': None} if kind != 'last'
+                                    else {'final': None, 'through': last})
         return found
 
 

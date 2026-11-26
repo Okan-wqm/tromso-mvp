@@ -9239,6 +9239,10 @@ msgstr "Son sıra numarası"
 msgid "Last sign-in"
 msgstr "Son giriş"
 
+#, python-format
+msgid "Last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there"
+msgstr "%(point)s noktasındaki son değer %(value)s %(status)s (%(time)s), yeni veri yok: orayı ölçün"
+
 msgid "Last weighed"
 msgstr "Son tartım"
 
@@ -14338,6 +14342,10 @@ msgstr "Paslanmaz çelik"
 msgid "Stale"
 msgstr "Eski"
 
+#, python-format
+msgid "Stale since %(time)s: its %(input)s ended"
+msgstr "%(time)s itibarıyla eski: %(input)s artık taze değil"
+
 msgid "Stale, was critical"
 msgstr "Eski, kritikti"
 
@@ -16268,6 +16276,10 @@ msgstr "Tuzluluk tatlı suyunkidir."
 
 msgid "The same quantity"
 msgstr "Aynı miktar"
+
+#, python-format
+msgid "The sample of %(time)s at %(point)s gives no value (%(why)s): measure there again."
+msgstr "%(point)s noktasındaki %(time)s numunesi değer vermiyor (%(why)s): orayı yeniden ölçün."
 
 msgid "The scale must span at least half a pH unit, from the lower end to the higher."
 msgstr "Ölçek, alt uçtan üst uca en az yarım pH birimi kapsamalıdır."
@@ -20001,18 +20013,6 @@ msgstr "son bilinen konum, eski: %(values)s"
 msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
 msgstr "son kendi değeri %(value)s %(status)s (%(time)s), yeni veri yok: bu birimi ölçün"
 
-#, python-format
-msgid "last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there"
-msgstr "%(point)s noktasındaki son değer %(value)s %(status)s (%(time)s), yeni veri yok: orayı ölçün"
-
-#, python-format
-msgid ""
-"last worked-out value at %(point)s %(value)s %(status)s on %(time)s; the sample of %(newer)s "
-"there lacks what it is worked out from: measure there again"
-msgstr ""
-"%(point)s noktasında son hesaplanan değer %(value)s %(status)s (%(time)s); oradaki %(newer)s "
-"numunesinde hesaplama için gerekenler eksik: orayı yeniden ölçün"
-
 msgid "leave outside these days"
 msgstr "bu günlerin dışında izin"
 
@@ -20591,6 +20591,9 @@ msgstr "roller"
 msgid "safe"
 msgstr "güvenli"
 
+msgid "salinity"
+msgstr "tuzluluk"
+
 msgid "sample"
 msgstr "örnek"
 
@@ -20753,6 +20756,9 @@ msgstr "görev"
 msgid "tasks"
 msgstr "görevler"
 
+msgid "temperature"
+msgstr "sıcaklık"
+
 msgid "the 7th of the next month"
 msgstr "sonraki ayın 7’si"
 
@@ -20773,6 +20779,9 @@ msgstr "balıklar yaklaşık %(date)s tarihinden itibaren çiftlikten çıkabili
 msgid "the layout being designed"
 msgstr "tasarlanan yerleşim"
 
+msgid "the live sensor values could not be read"
+msgstr "canlı sensör değerleri okunamadı"
+
 #, python-format
 msgid "the oldest since %(since)s"
 msgstr "en eskisi %(since)s itibarıyla"
@@ -20786,6 +20795,14 @@ msgstr ""
 
 msgid "the options must be a set of named values."
 msgstr "seçenekler adlandırılmış değerler kümesi olmalı."
+
+#, python-format
+msgid "the probe read %(value)s °C, beyond the %(band)s °C band"
+msgstr "sensör %(value)s °C okudu, %(band)s °C bandının dışında"
+
+#, python-format
+msgid "the probe sent no fresh value from %(time)s"
+msgstr "sensör %(time)s itibarıyla taze değer göndermedi"
 
 msgid "the rule for every unit"
 msgstr "her birim için kural"

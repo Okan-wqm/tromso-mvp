@@ -20,11 +20,12 @@ A provider is an object with three methods, and a fourth it may have:
         for each ask (targets, moment), in their order: `value_at` of its own targets at its own moment, each binding
         paired only with the asks whose targets it is bound to (never every binding with every moment); a provider
         without it is asked `value_at` per ask.
-    steady_until(code, band, tolerance, asks) -> [datetime | None]   (optional)
-        for each ask (targets, start, value, until): the moment the targets' live value of the parameter, in force at
-        `start` (the newest at or before it, else the first at most `tolerance` after it) and within `band` of `value`
-        (compared at the parameter's decimals, exactly), first went further than `band` or stale, looked at up to the
-        ask's own `until` and no further; None when no value was in force (freshness.temperature_until).
+    steady_until(code, band, tolerance, asks) -> [(moment, kind, value) | None]   (optional)
+        for each ask (targets, start, value, until): when the targets' live value of the parameter, in force at `start`
+        (the newest at or before it, else the first at most `tolerance` after it) and within `band` of `value` (exactly,
+        unrounded), first went further than `band` ('band', that reading's value) or stale ('gap'; 'last' while the
+        probe may still send), looked at up to the ask's own `until`; None when no value was in force
+        (freshness.temperature_until).
 
 A pH value carries its channel's scale and the moment that scale holds from (SensorValue): the provider says what the
 channel is set to, the farm decides what the value is on the NBS scale (farm/water/read.py, Context.sensor_ph).
@@ -194,22 +195,24 @@ def values_for(code, asks):
 def steady_until(code, band, tolerance, asks):
     """For each ask (targets, start, value, until), in their order: when the targets' live value of `code` stopped
     confirming `value` (within `band`, fresh), from `start` up to the ask's own `until`, the earliest moment any provider
-    that can say it gives (a provider's `steady_until`), None when none had a value in force at `start`. One ask of each
-    provider for all of them. A provider that fails, or has no such method, confirms nothing: each input keeps its own
-    end."""
+    that can say it gives as (moment, kind, value) (a provider's `steady_until`), None when none had a value in force
+    at `start`; and whether a provider failed. One ask of each provider for all of them. A provider that fails says so
+    (`failed`, review 4 of the branch, M3): the caller ends what it cannot confirm at once and says why, never keeps
+    an end it was not given."""
     asks = [(list(dict.fromkeys(targets)), start, value, until) for targets, start, value, until in asks]
-    found = [None] * len(asks)
+    found, failed = [None] * len(asks), False
     if not asks or not _providers:
-        return found
+        return found, failed
     for provider in list(_providers):
         if not hasattr(provider, 'steady_until'):
             continue
         try:
             with transaction.atomic():
                 answers = provider.steady_until(code, band, tolerance, asks)
-        except Exception:                                        # fail safe: nothing confirmed
+        except Exception:                                        # nothing confirmed, and said
             logger.exception('A water source (%r) failed; nothing is confirmed by it.', provider)
+            failed = True
             continue
-        found = [answer if mine is None else mine if answer is None else min(mine, answer)
+        found = [answer if mine is None else mine if answer is None else min(mine, answer, key=lambda each: each[0])
                  for mine, answer in zip(found, answers)]
-    return found
+    return found, failed

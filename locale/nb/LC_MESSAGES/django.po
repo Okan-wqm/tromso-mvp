@@ -9203,6 +9203,10 @@ msgstr "Siste sekvensnummer"
 msgid "Last sign-in"
 msgstr "Sist innlogget"
 
+#, python-format
+msgid "Last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there"
+msgstr "Siste verdi ved %(point)s %(value)s %(status)s %(time)s, ingen nye data: mål der"
+
 msgid "Last weighed"
 msgstr "Sist veid"
 
@@ -14303,6 +14307,10 @@ msgstr "Rustfritt stål"
 msgid "Stale"
 msgstr "Utdatert"
 
+#, python-format
+msgid "Stale since %(time)s: its %(input)s ended"
+msgstr "Utdatert siden %(time)s: %(input)s er ikke lenger fersk"
+
 msgid "Stale, was critical"
 msgstr "Utdatert, var kritisk"
 
@@ -16231,6 +16239,10 @@ msgstr "Saliniteten er ferskvannets."
 
 msgid "The same quantity"
 msgstr "Samme mengde"
+
+#, python-format
+msgid "The sample of %(time)s at %(point)s gives no value (%(why)s): measure there again."
+msgstr "Prøven fra %(time)s ved %(point)s gir ingen verdi (%(why)s): mål der igjen."
 
 msgid "The scale must span at least half a pH unit, from the lower end to the higher."
 msgstr "Skalaen må spenne over minst en halv pH-enhet, fra den nedre enden til den øvre."
@@ -19953,18 +19965,6 @@ msgstr "siste kjente posisjon, gammelt: %(values)s"
 msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
 msgstr "siste egne verdi %(value)s %(status)s %(time)s, ingen nye data: mål denne enheten"
 
-#, python-format
-msgid "last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there"
-msgstr "siste verdi ved %(point)s %(value)s %(status)s %(time)s, ingen nye data: mål der"
-
-#, python-format
-msgid ""
-"last worked-out value at %(point)s %(value)s %(status)s on %(time)s; the sample of %(newer)s "
-"there lacks what it is worked out from: measure there again"
-msgstr ""
-"siste beregnede verdi ved %(point)s %(value)s %(status)s %(time)s; prøven fra %(newer)s der "
-"mangler det den beregnes fra: mål der igjen"
-
 msgid "leave outside these days"
 msgstr "permisjon utenfor disse dagene"
 
@@ -20543,6 +20543,9 @@ msgstr "roller"
 msgid "safe"
 msgstr "trygg"
 
+msgid "salinity"
+msgstr "salinitet"
+
 msgid "sample"
 msgstr "prøve"
 
@@ -20705,6 +20708,9 @@ msgstr "oppgave"
 msgid "tasks"
 msgstr "oppgaver"
 
+msgid "temperature"
+msgstr "temperatur"
+
 msgid "the 7th of the next month"
 msgstr "den 7. i neste måned"
 
@@ -20725,6 +20731,9 @@ msgstr "fisken kan forlate anlegget fra omtrent %(date)s"
 msgid "the layout being designed"
 msgstr "oppsettet som utformes"
 
+msgid "the live sensor values could not be read"
+msgstr "sensorverdiene kunne ikke leses"
+
 #, python-format
 msgid "the oldest since %(since)s"
 msgstr "det eldste siden %(since)s"
@@ -20738,6 +20747,14 @@ msgstr ""
 
 msgid "the options must be a set of named values."
 msgstr "valgene må være et sett navngitte verdier."
+
+#, python-format
+msgid "the probe read %(value)s °C, beyond the %(band)s °C band"
+msgstr "sensoren viste %(value)s °C, utenfor båndet på %(band)s °C"
+
+#, python-format
+msgid "the probe sent no fresh value from %(time)s"
+msgstr "sensoren sendte ingen fersk verdi fra %(time)s"
 
 msgid "the rule for every unit"
 msgstr "regelen for alle enheter"

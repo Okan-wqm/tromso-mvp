@@ -412,13 +412,14 @@ def no_fresh_oxygen(silence):
 
 
 def last_at_point(reading):
-    """What the page, the card and the alarm say of a worked-out value at another of the unit's own points that keeps its
-    status after it went stale (read.held_at_points; the review of 2026-11-26, F1): only a fresh value at THAT point ends
-    it, so the point is named: "last value at Outlet 0.8924 critical on 02.11.2026 10:00, no recent data: measure there"."""
+    """What the page, the card and the alarm say of a worked-out value at one of the unit's own points that keeps its
+    status after it went stale (read.held_at_points; the review of 2026-11-26, F1): only a fresh worked-out value at THAT
+    point ends it, so the point is named: "Last value at Outlet 0.8924 critical on 02.11.2026 10:00, no recent data:
+    measure there"."""
     from ..models.water_point import local_time
     from .evaluate import Status
     from .read import said_value
-    return _('last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there') % {
+    return _('Last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there') % {
         'point': reading.point.name, 'value': said_value(reading),
         'status': str(Status(reading.judged).label).lower(),
         'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}
@@ -431,22 +432,46 @@ def temperature_from_sensor(value, source):
         'value': number_format(value, 1), 'source': source}
 
 
-def lacking_at_point(reading, newer):
-    """What the page, the card and the alarm say of a worked-out value at another of the unit's own points that keeps its
-    status because the point's newer sample (`newer`, a Reading without a value) lacks what it is worked out from
-    (read.held_at_points; the coordinator's decision of 2026-11-26, 4): "last worked-out value at Outlet 0.8924 critical
-    on 02.11.2026 10:00; the sample of 03.11.2026 08:00 there lacks what it is worked out from: measure there again"."""
+def lacking_newer(reading):
+    """What a worked-out value says of a point's sample newer than its newest worked-out value that gives none
+    (read.latest; review 4 of the branch, H1, H2): it never takes the worked-out value's place, it is said, with why:
+    "The sample of 03.11.2026 08:00 at Outlet gives no value (Needs the pH and the temperature of the same sample):
+    measure there again." """
     from ..models.water_point import local_time
-    from .evaluate import Status
-    from .read import said_value
-    return _('last worked-out value at %(point)s %(value)s %(status)s on %(time)s; the sample of %(newer)s there lacks '
-             'what it is worked out from: measure there again') % {
-        'point': reading.point.name, 'value': said_value(reading),
-        'status': str(Status(reading.judged).label).lower(),
-        'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M'),
-        'newer': local_time(newer.at, newer.point).strftime('%d.%m.%Y %H:%M')}
+    return _('The sample of %(time)s at %(point)s gives no value (%(why)s): measure there again.') % {
+        'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M'), 'point': reading.point.name,
+        'why': str(reading.note).rstrip('.')}
+
+
+# The words of an input a worked-out value was ended by (`ended_by`).
+INPUT_WORDS = {'tan_mg_l': _('TAN'), 'ph': _('pH'), 'temperature_c': _('temperature'), 'salinity_ppt': _('salinity')}
+
+
+def ended_by(code, end, point, why=''):
+    """What a worked-out value no longer fresh because an input ended says (read.Context._say_ended; review 4 of the
+    branch, M5): "Stale since 26.11.2026 10:12: its temperature ended: the probe read 13.5 °C, beyond the 1.0 °C band."
+    """
+    from ..models.water_point import local_time
+    said = _('Stale since %(time)s: its %(input)s ended') % {
+        'time': local_time(end, point).strftime('%d.%m.%Y %H:%M'), 'input': INPUT_WORDS.get(code, code)}
+    return f'{said}: {why}.' if why else f'{said}.'
+
+
+def probe_beyond_band(value, band):
+    """Why a temperature input ended: the place's probe read further from it than the band (`ended_by`)."""
+    return _('the probe read %(value)s °C, beyond the %(band)s °C band') % {
+        'value': number_format(value, 1), 'band': number_format(band, 1)}
+
+
+def probe_silent(end, point):
+    """Why a temperature input ended: the place's probe sent no fresh value from that moment (`ended_by`)."""
+    from ..models.water_point import local_time
+    return _('the probe sent no fresh value from %(time)s') % {
+        'time': local_time(end, point).strftime('%d.%m.%Y %H:%M')}
 
 
 # A sample's NH₃ without a temperature of its own where the live sources, asked for the place's probe at its time, failed
 # (read.Context.temperature_of; review 3 of the branch, L3): never said as a temperature that is not there.
 TEMPERATURE_UNREAD = _('Needs a temperature: the sample has none, and the live sensor values could not be read.')
+# Why a temperature input ended at once: the live sources failed while it was asked (review 4 of the branch, M1, M3).
+SENSORS_UNREAD = _('the live sensor values could not be read')

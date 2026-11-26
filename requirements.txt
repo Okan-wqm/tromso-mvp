@@ -9,7 +9,7 @@ psycopg==3.3.9
 psycopg-binary==3.3.9
 # Reads the text of an uploaded PDF (knowledge/extraction.py); a recent release, as each patch closes ways a
 # hostile PDF could exhaust the reader.
-pypdf==6.21.4
+pypdf==7.1.1
 sqlparse==0.6.1
 typing_extensions==4.16.0
 tzdata==2026.6

@@ -44,6 +44,11 @@ class AuditedModel(models.Model):
     objects = ActiveManager()
     all_objects = models.Manager()
 
+    # One writer per record (core/tests_data_access.py, rule S): True on a model its area's services.py writes and
+    # nothing else does. Every tab of it hands its writes to the service (core.crud.Resource.service_writes), no other
+    # module builds or writes it, and the delete plan's restore refuses it (core.softdelete.restore).
+    service_written = False
+
     # What a delete's confirmation says of the records of this model that keep pointing at the deleted one
     # (their link is DO_NOTHING, core.softdelete): where they are while it is deleted.
     kept_note = _('They stay as they are, out of sight while this is deleted, and come back when it is restored.')

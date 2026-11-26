@@ -24,7 +24,8 @@ needs the same way:
   tab's `scoped` narrows the rows to it, and every link and redirect stays in it;
 - one writer: a tab whose records its area's service writes (`service_writes`) hands every write to that service, which
   checks its own rules, locks in its own order and logs; crud keeps the form, the verb, the scope, the version and the
-  pages (hr/tests/test_one_writer.py holds an HR record to one writer).
+  pages (core/tests_data_access.py, rule S, holds a record to one writer; a service tab with something crud would
+  have saved beside the record is refused when it is declared).
 """
 import copy
 import uuid
@@ -447,7 +448,28 @@ class Resource:
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
+        if cls.service_writes:
+            dropped = cls.left_to_crud()
+            if dropped:
+                raise TypeError(f'{cls.__name__} has service_writes, so crud saves nothing beside the record, and it has '
+                                f'{", ".join(dropped)}: the service writes those too, or the tab is not a service tab.')
         Resource.registry.append(cls)
+
+    @classmethod
+    def left_to_crud(cls):
+        """What crud would save or run beside the record and does not for a tab with `service_writes`: refused when
+        the tab is declared, so nothing is dropped without a word."""
+        found = []
+        if cls.form_class is not None and cls.model is not None:
+            fields = getattr(cls.form_class._meta, 'fields', None) or ()
+            found += [f'the many-to-many field {field.name} on its form (form.save_m2m)'
+                      for field in cls.model._meta.many_to_many if field.name in fields]
+        if cls.row_lists:
+            found.append('row lists')
+        for hook in ('after_save', 'change_severity'):
+            if getattr(cls, hook).__func__ is not getattr(Resource, hook).__func__:
+                found.append(f'its own {hook}')
+        return found
 
     model = None
     form_class = None
@@ -601,6 +623,8 @@ class Resource:
     # own checks), the verb, the scope, the record's lock and its version, and then hands the write to these, which call
     # the service: it checks its rules itself, locks in its own order and writes its own audit row. A ValidationError
     # it raises is shown on the form, each message on its field when the field is there; a PermissionDenied is a 403.
+    # crud saves nothing beside the record for such a tab (no form.save_m2m, no row list, no change_severity, no
+    # after_save): a tab that has one of them is refused when it is declared (left_to_crud).
     service_writes = False
 
     @classmethod
@@ -864,6 +888,13 @@ class CreateView(FormView):
             return done(request, self.url('detail', obj.pk))
         return done(request, self.url('list'))
 
+    def refused(self, form):
+        """The form again after a refusal at the save (the database, the service, a rule under a lock): 422, as an
+        edit's refusal answers; a form that is not valid is the page again as before."""
+        response = self.page(form)
+        response.status_code = 422
+        return response
+
     def post(self, request):
         r = self.resource
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
@@ -902,13 +933,13 @@ class CreateView(FormView):
                     if not (constraint_error(form, error) or trigger_refusal(form, error)):
                         raise
                     form.instance._state.adding = True     # the page is the new-record form again
-                    return self.page(form)
+                    return self.refused(form)
             except ValidationError as error:
                 # Its key stands for a record of another kind (EntryKey.note), the service refused it, or a rule
                 # `after_save` checks under its lock refused it: nothing was written.
                 refusal_on_form(form, error)
                 form.instance._state.adding = True
-                return self.page(form)
+                return self.refused(form)
             else:
                 r.after_commit(request, obj, created=True)
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.

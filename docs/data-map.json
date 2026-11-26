@@ -14770,6 +14770,7 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
@@ -16510,6 +16511,7 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_one_path.py",
@@ -24531,7 +24533,7 @@
           "why": ""
         }
       },
-      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.",
+      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page. The Attendance page's entries, corrections and voids are hr.services.enter_presence, correct_presence and void_presence.",
       "forms": [
         {
           "form": "AttendanceRecordForm",
@@ -24566,6 +24568,7 @@
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_list_next.py",
         "hr/tests/test_menu_access.py",
@@ -24897,7 +24900,7 @@
           "why": ""
         }
       },
-      "note": "Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move.",
+      "note": "Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move. The form saves through hr.services.add_employee and change_employee; a last day is hr.services.leave_company.",
       "forms": [
         {
           "form": "EmployeeForm",
@@ -24938,6 +24941,7 @@
         "hr/tests/test_employees.py",
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_correction.py",
@@ -25604,7 +25608,7 @@
           "why": ""
         }
       },
-      "note": "One approval step: Edit also approves, rejects and cancels; nobody decides their own request.",
+      "note": "One approval step: Edit also approves, rejects and cancels; nobody decides their own request. Filed and changed through hr.services.file_leave and change_leave.",
       "forms": [
         {
           "form": "LeaveRequestForm",
@@ -26651,6 +26655,7 @@
         "hr/tests/test_boundary.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_one_path.py",
         "hr/tests/test_one_writer.py",
@@ -27345,7 +27350,7 @@
           "why": ""
         }
       },
-      "note": "A cell is planned on its own dialog or in a batch (hr.services.plan_shifts): all cells or none.",
+      "note": "A cell is planned on its own dialog (hr.services.plan_day) or in a batch (hr.services.plan_shifts): all cells or none, by the same rules.",
       "forms": [
         {
           "form": "ShiftAssignmentForm",

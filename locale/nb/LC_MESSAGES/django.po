@@ -8463,13 +8463,15 @@ msgstr ""
 
 msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
-"the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
-"stay as they are. 1 to 3650; 31 until you set another."
+"the store, a plan, a treatment) may be dated, how old a record may be voided, and how long after "
+"its last day an approved leave may still be shortened or cancelled. Older records stay as they "
+"are. 1 to 3650; 31 until you set another."
 msgstr ""
 "Hvor mange dager tilbake en daglig registrering (en beholdningsoperasjon, en fôring, en "
-"vannprøve, en lagerbevegelse, en plan, en behandling) kan dateres, og hvor gammel en registrering"
-" kan være når den annulleres. Eldre registreringer blir stående som de er. 1 til 3650; 31 til "
-"dere setter noe annet."
+"vannprøve, en lagerbevegelse, en plan, en behandling) kan dateres, hvor gammel en registrering "
+"kan være når den annulleres, og hvor lenge etter siste dag en godkjent permisjon fortsatt kan "
+"forkortes eller kanselleres. Eldre registreringer blir stående som de er. 1 til 3650; 31 til dere"
+" setter noe annet."
 
 msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
 msgstr "Hvor mange hjerteslag en verdi forblir fersk uten en ny; deretter viser stedet ingen nye data."
@@ -17115,6 +17117,9 @@ msgstr "Dette oppsettet er for stort til å lagres."
 #, python-format
 msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
 msgstr "Denne permisjonen sluttet %(day)s, for mer enn %(days)s dager siden: den kan ikke rettes lenger."
+
+msgid "This leave type is no longer offered."
+msgstr "Denne permisjonstypen tilbys ikke lenger."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."

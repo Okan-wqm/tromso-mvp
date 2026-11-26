@@ -1465,7 +1465,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 68 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 69 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1588,7 +1588,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 91 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 92 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2236,11 +2236,11 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 - **edit**: attendance records tab (`/hr/time/attendance/<uuid:pk>/`); hr.views.punch (`/production/team/today/clock-<str:direction>/`, `/hr/today/clock-<str:direction>/`)
 - **delete**: attendance records tab (`/hr/time/attendance/<uuid:pk>/delete/`)
 - **read**: attendance records tab (`/hr/time/attendance/`); hr.views.today (`/production/team/`, `/hr/`)
-- **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.
+- **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page. The Attendance page's entries, corrections and voids are hr.services.enter_presence, correct_presence and void_presence.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › attendance_records (never shown: note)
 - **forms**: `AttendanceRecordForm`
 - **constraints**: chk_attendance_records_order (check); chk_attendance_records_via (check); chk_attendance_records_note (check); excl_attendance_employee_span (exclusion: employee, clock_in, clock_out)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 13 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 14 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2268,11 +2268,11 @@ The people of the company for HR: number, name (or the account that names them),
 - **edit**: employees tab (`/hr/team/<uuid:pk>/`)
 - **delete**: none, by design: a person leaves with a last day (left_on); the record and its history stay readable
 - **read**: employees tab (`/hr/team/`, `/hr/team/<uuid:pk>/view/`)
-- **how it works**: Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move.
+- **how it works**: Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move. The form saves through hr.services.add_employee and change_employee; a last day is hr.services.leave_company.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 26 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 27 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2331,7 +2331,7 @@ A person’s request to be away from a first to a last day, and how it was decid
 - **edit**: leave requests tab (`/hr/leave/<uuid:pk>/`); hr.views.approve (`/hr/leave/<uuid:pk>/approve/`, `/production/team/leave/<uuid:pk>/approve/`); hr.views.reject (`/hr/leave/<uuid:pk>/reject/`, `/production/team/leave/<uuid:pk>/reject/`); hr.views.cancel (`/hr/leave/<uuid:pk>/cancel/`, `/production/team/leave/<uuid:pk>/cancel/`)
 - **delete**: none, by design: a wrong request is cancelled, not deleted
 - **read**: leave requests tab (`/hr/leave/`, `/hr/leave/<uuid:pk>/view/`)
-- **how it works**: One approval step: Edit also approves, rejects and cancels; nobody decides their own request.
+- **how it works**: One approval step: Edit also approves, rejects and cancels; nobody decides their own request. Filed and changed through hr.services.file_leave and change_leave.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_requests (never shown: decision_note, reason)
 - **forms**: `LeaveRequestForm`
 - **constraints**: chk_leave_requests_days (check); chk_leave_requests_status (check); chk_leave_requests_decided (check); chk_leave_requests_pending_undecided (check); excl_leave_requests_employee_days (exclusion: employee, first_day, last_day)
@@ -2434,7 +2434,7 @@ Where each person works from a day: one department, production or office, and th
 - **how it works**: One placement covers any day (exclusion constraint); a move closes the open one the day before.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › postings
 - **constraints**: chk_postings_one_department (check); chk_postings_period (check); excl_postings_employee_period (exclusion: employee, valid_from, valid_until)
-- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 10 more
+- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2498,7 +2498,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **edit**: plans tab (`/hr/schedule/<uuid:pk>/`); hr.views.plan (`/production/team/schedule/plan/`, `/hr/schedule/plan/`)
 - **delete**: plans tab (`/hr/schedule/<uuid:pk>/delete/`); hr.views.plan (`/production/team/schedule/plan/`, `/hr/schedule/plan/`)
 - **read**: plans tab (`/hr/schedule/`)
-- **how it works**: A cell is planned on its own dialog or in a batch (hr.services.plan_shifts): all cells or none.
+- **how it works**: A cell is planned on its own dialog (hr.services.plan_day) or in a batch (hr.services.plan_shifts): all cells or none, by the same rules.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)

@@ -8496,12 +8496,15 @@ msgstr ""
 
 msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
-"the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
-"stay as they are. 1 to 3650; 31 until you set another."
+"the store, a plan, a treatment) may be dated, how old a record may be voided, and how long after "
+"its last day an approved leave may still be shortened or cancelled. Older records stay as they "
+"are. 1 to 3650; 31 until you set another."
 msgstr ""
 "Günlük bir kaydın (bir stok işlemi, bir yemleme, bir su numunesi, bir depo hareketi, bir plan, "
-"bir tedavi) kaç gün geriye tarihlenebileceği ve bir kaydın ne kadar eskiyken iptal edilebileceği."
-" Daha eski kayıtlar olduğu gibi kalır. 1 ile 3650 arası; siz başka bir değer verene kadar 31."
+"bir tedavi) kaç gün geriye tarihlenebileceği, bir kaydın ne kadar eskiyken iptal edilebileceği ve"
+" onaylanmış bir iznin son gününden sonra ne kadar süre daha kısaltılabileceği ya da iptal "
+"edilebileceği. Daha eski kayıtlar olduğu gibi kalır. 1 ile 3650 arası; siz başka bir değer verene"
+" kadar 31."
 
 msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
 msgstr ""
@@ -17165,6 +17168,9 @@ msgstr "Bu yerleşim kaydedilemeyecek kadar büyük."
 #, python-format
 msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
 msgstr "Bu izin %(day)s tarihinde, %(days)s günden daha önce bitti: artık düzeltilemez."
+
+msgid "This leave type is no longer offered."
+msgstr "Bu izin türü artık sunulmuyor."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."

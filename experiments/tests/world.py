@@ -243,7 +243,19 @@ def sealed_ids(cls):
     return found
 
 
+# The random tokens of an answer, new on every one: the CSRF token (form field, cookie, the page's JSON) and the
+# Content-Security-Policy's nonce (the page's script tags and the header). THE patterns: the walk
+# (test_confidential.normal) and every search of a page for a sealed name (`page_text`) take them out.
+CSRF = re.compile(rb'(csrfmiddlewaretoken" value="|csrftoken=|"csrfToken": ")[^"; ]+')
+NONCE = re.compile(rb'''(nonce="|'nonce-)[A-Za-z0-9+/=_-]+''')
+
+
+def without_tokens(data):
+    """`data` (bytes) with the random tokens' values taken out."""
+    return NONCE.sub(rb'\1-', CSRF.sub(rb'\1-', data))
+
+
 def page_text(response):
-    """A page's HTML without its random tokens (the CSP nonce, the CSRF token): a sealed name searched in it is never
-    "found" in a token that happens to spell it (run 45787013960: the nonce held "XQZ")."""
-    return re.sub(r'name="csrfmiddlewaretoken" value="[^"]+"|nonce="[^"]+"', '', response.content.decode())
+    """A page's text without its random tokens: a sealed name looked for in it is never "found" in a token that happens
+    to spell it (runs 45787013960 and 45794140443: a nonce and a CSRF token held "XQZ")."""
+    return without_tokens(response.content).decode()

@@ -60,7 +60,7 @@ class CollaboratorTests(TestCase):
     def test_the_lead_adds_them_they_read_it_and_nothing_else_and_taken_off_they_read_nothing(self):
         detail = ('experiments:experiment_detail', self.experiment.pk)
         self.assertEqual(self.page(*detail).status_code, 404)
-        self.assertNotContains(self.page('experiments:experiment_list'), 'XQZ')
+        self.assertNotIn('XQZ', world.page_text(self.page('experiments:experiment_list')))
 
         self.assertEqual(self.team([self.lead_row(), {'user': self.visitor.pk, 'role': 'researcher'}]).status_code, 302)
         self.assertContains(self.page(*detail), 'XQZ diet trial')
@@ -72,12 +72,12 @@ class CollaboratorTests(TestCase):
         for farm_page in ('farm:production_units', 'tasks:task_list', 'farm:feeding_records', 'sensors:channel_list'):
             with self.subTest(page=farm_page):
                 self.assertEqual(self.page(farm_page).status_code, 403)
-        self.assertNotIn(b'XQZ', self.page('home').content)
+        self.assertNotIn('XQZ', world.page_text(self.page('home')))
 
         self.assertEqual(self.team([self.lead_row()]).status_code, 302)        # taken off the team
         self.assertFalse(Member.objects.filter(user=self.visitor).exists())
         self.assertEqual(self.page(*detail).status_code, 404)
-        self.assertNotContains(self.page('experiments:experiment_list'), 'XQZ')
+        self.assertNotIn('XQZ', world.page_text(self.page('experiments:experiment_list')))
 
     def test_a_share_gives_them_its_parts_and_any_active_account_with_a_role_is_offered(self):
         get_user_model().objects.create_user('plain', 'plain@example.com', 'x')               # no role at all

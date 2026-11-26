@@ -69,9 +69,9 @@ class ShareTests(AccessCase):
         self.give('water')
         response = self.detail(self.researcher)
         self.assertContains(response, 'XQZ diet trial')
-        self.assertNotContains(response, 'XQZ more protein')                  # the hypothesis is design
+        self.assertNotIn('XQZ more protein', world.page_text(response))                  # the hypothesis is design
         self.assertEqual(self.detail(self.researcher, 'overview').status_code, 200)
-        self.assertNotContains(self.detail(self.researcher, 'overview'), 'XQZ group')
+        self.assertNotIn('XQZ group', world.page_text(self.detail(self.researcher, 'overview')))
         self.assertEqual(self.seen(self.researcher, Factor), set())
         self.assertEqual(self.seen(self.researcher, ReplicateUnit), {row.pk for row in self.placements})
 

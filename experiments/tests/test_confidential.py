@@ -61,9 +61,6 @@ ROUTE_RECORDS = {
 # The search typed into every list: the canary in lower case, so the box echoing it is not a finding while a record
 # found by it (searches ignore case) is.
 SEARCH = world.CANARY.lower()
-CSRF = re.compile(rb'(csrfmiddlewaretoken" value="|csrftoken=|"csrfToken": ")[^"; ]+')
-# The Content-Security-Policy's nonce, new on every answer: in the page's script tags and in the header.
-NONCE = re.compile(rb'''(nonce="|'nonce-)[A-Za-z0-9+/=_-]+''')
 # What else is new on every answer: a form's sending key and the Expires header. The clock stands still while two worlds
 # are compared (`still`), so a time shown on a page and the monitoring screen's change token are compared as they are:
 # the token moves only with what the person may read (review F9).
@@ -127,7 +124,7 @@ def content(response):
 def normal(data, ids=()):
     """An answer with what differs between two renders of the same page taken out: the CSRF tokens, the
     Content-Security-Policy's nonce, what is new every answer or minute (FRESH), and the ids tried."""
-    data = NONCE.sub(rb'\1-', CSRF.sub(rb'\1-', data))
+    data = world.without_tokens(data)
     for fresh in FRESH:
         data = fresh.sub(rb'\1-', data)
     for value in ids:

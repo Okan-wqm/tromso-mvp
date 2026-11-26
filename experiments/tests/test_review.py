@@ -6,6 +6,7 @@ courses as the person may see them; F5 the store's feed book the same for everyo
 disease still owed; F7 Oversee keeps the fish of a private experiment, never its science; F8 every read of the platform
 admin logged, the change token, a results share, the search, the alarms and their fallback, the delete plan's words;
 the lead's on-call number on the Oversee card."""
+import re
 import uuid
 from datetime import timedelta
 from io import StringIO
@@ -199,7 +200,7 @@ class ShareTests(ReviewCase):
         self.client.force_login(self.researcher)
         url = reverse('experiments:experiment_list')
         self.assertContains(self.client.get(url, {'q': 'XQZ diet'}), 'XQZ diet trial')
-        self.assertNotContains(self.client.get(url, {'q': 'more protein'}), 'XQZ diet trial')
+        self.assertNotIn('XQZ diet trial', world.page_text(self.client.get(url, {'q': 'more protein'})))
         self.give('design')
         self.assertContains(self.client.get(url, {'q': 'more protein'}), 'XQZ diet trial')
 
@@ -321,7 +322,7 @@ class AlarmTests(ReviewCase):
             tiles = {tile['key']: tile for tile in sensor_views.state_tiles(tech, timezone.now())}
         self.assertEqual((tiles['alarms']['count'], tiles['alarms']['critical']), (0, 0))
         self.client.force_login(tech)
-        self.assertNotContains(self.client.get(reverse('sensors:alarm_events')), 'XQZ')
+        self.assertNotIn('XQZ', world.page_text(self.client.get(reverse('sensors:alarm_events'))))
         acknowledge = self.client.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]))
         self.assertEqual(acknowledge.status_code, 404)
 
@@ -771,3 +772,12 @@ class OneRuleTests(ReviewCase):
                 fresh = type(user)._base_manager.get(pk=user.pk)
                 self.assertEqual(user.pk in held, provider.holds_oversee(fresh))
         self.assertEqual((holder.pk in held, self.keeper.pk in held, self.boss.pk in held), (True, True, False))
+
+    def test_no_page_is_searched_raw_for_a_sealed_name(self):
+        """A sealed name ("XQZ", "SQZ", "DQZ") is looked for in a page only through world.page_text: a CSRF token or a
+        nonce spells three letters by chance (runs 45787013960, 45794140443)."""
+        import pathlib
+        raw = re.compile(r'assertNotContains\([^\n]*[XSD]QZ|assertNotIn\(b?[\'"][XSD]QZ[^\n]*\.content')
+        found = [f'{path.name}:{number}' for path in sorted(pathlib.Path(__file__).parent.glob('test_*.py'))
+                 for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1) if raw.search(line)]
+        self.assertEqual(found, [])

@@ -426,7 +426,7 @@ def last_at_point(reading):
 
 def temperature_from_sensor(value, source):
     """What an NH₃ of a sample without a temperature says beside it: the place's sensor temperature at the sample's time
-    it was worked out with (read.Context.temperature_found; the coordinator's decision of 2026-11-26, a)."""
+    it was worked out with (read.Context.temperature_of; the coordinator's decision of 2026-11-26, a)."""
     return _('Worked out with the temperature %(value)s °C of %(source)s: the sample has none.') % {
         'value': number_format(value, 1), 'source': source}
 
@@ -445,3 +445,8 @@ def lacking_at_point(reading, newer):
         'status': str(Status(reading.judged).label).lower(),
         'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M'),
         'newer': local_time(newer.at, newer.point).strftime('%d.%m.%Y %H:%M')}
+
+
+# A sample's NH₃ without a temperature of its own where the live sources, asked for the place's probe at its time, failed
+# (read.Context.temperature_of; review 3 of the branch, L3): never said as a temperature that is not there.
+TEMPERATURE_UNREAD = _('Needs a temperature: the sample has none, and the live sensor values could not be read.')

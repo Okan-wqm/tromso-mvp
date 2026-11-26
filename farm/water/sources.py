@@ -16,11 +16,15 @@ A provider is an object with three methods, and a fourth it may have:
     bound(targets, code, since, until) -> {target}
         the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
         never asks per moment for a place nothing was bound to).
-    steady_until(code, until, band, asks) -> [datetime | None]   (optional)
-        for each ask (targets, start, value), in their order: the moment the targets' live value of the parameter,
-        fresh at `start` and within `band` of `value` then, first went further than `band` from `value` or stale, looked
-        at up to `until` (the last value's freshness end when it has not yet); None when no value was fresh at `start`
-        (freshness.temperature_until). Every ask of a page in one statement, never one per ask.
+    values_for(code, asks) -> [{target: [SensorValue]}]   (optional)
+        for each ask (targets, moment), in their order: `value_at` of its own targets at its own moment, each binding
+        paired only with the asks whose targets it is bound to (never every binding with every moment); a provider
+        without it is asked `value_at` per ask.
+    steady_until(code, band, tolerance, asks) -> [datetime | None]   (optional)
+        for each ask (targets, start, value, until): the moment the targets' live value of the parameter, in force at
+        `start` (the newest at or before it, else the first at most `tolerance` after it) and within `band` of `value`
+        (compared at the parameter's decimals, exactly), first went further than `band` or stale, looked at up to the
+        ask's own `until` and no further; None when no value was in force (freshness.temperature_until).
 
 A pH value carries its channel's scale and the moment that scale holds from (SensorValue): the provider says what the
 channel is set to, the farm decides what the value is on the NBS scale (farm/water/read.py, Context.sensor_ph).
@@ -162,12 +166,38 @@ def bound(targets, code, since, until):
     return found
 
 
-def steady_until(code, until, band, asks):
-    """For each ask (targets, start, value), in their order: when the targets' live value of `code` stopped confirming
-    `value` (within `band`, fresh), from `start` up to `until`, the earliest moment any provider that can say it gives
-    (a provider's `steady_until`), None when none had a fresh value at `start`. One ask of each provider for all of them.
-    A provider that fails, or has no such method, confirms nothing: each input keeps its own end."""
-    asks = [(list(dict.fromkeys(targets)), start, value) for targets, start, value in asks]
+def values_for(code, asks):
+    """For each ask (targets, moment), in their order, an Answer: the providers' values of `code` at the ask's moment for
+    the ask's targets alone (a provider's `values_for`: each binding paired only with its own asks, review 3 of the
+    branch, H2; else `value_at` per ask). A provider that raises is left out of every answer, and each says so."""
+    asks = [(list(dict.fromkeys(targets)), moment) for targets, moment in asks]
+    merged, failed = [{} for _ask in asks], False
+    if not asks or not _providers:
+        return [Answer({}) for _ask in asks]
+    for provider in list(_providers):
+        try:
+            with transaction.atomic():
+                if hasattr(provider, 'values_for'):
+                    found = provider.values_for(code, asks)
+                else:
+                    found = [provider.value_at(targets, code, moment) for targets, moment in asks]
+        except Exception:                                        # fail open, and say so
+            logger.exception('A water source (%r) failed; its values are left out.', provider)
+            failed = True
+            continue
+        for slot, answer in zip(merged, found):
+            for target, values in answer.items():
+                slot.setdefault(target, []).extend(values)
+    return [Answer(slot, failed) for slot in merged]
+
+
+def steady_until(code, band, tolerance, asks):
+    """For each ask (targets, start, value, until), in their order: when the targets' live value of `code` stopped
+    confirming `value` (within `band`, fresh), from `start` up to the ask's own `until`, the earliest moment any provider
+    that can say it gives (a provider's `steady_until`), None when none had a value in force at `start`. One ask of each
+    provider for all of them. A provider that fails, or has no such method, confirms nothing: each input keeps its own
+    end."""
+    asks = [(list(dict.fromkeys(targets)), start, value, until) for targets, start, value, until in asks]
     found = [None] * len(asks)
     if not asks or not _providers:
         return found
@@ -176,7 +206,7 @@ def steady_until(code, until, band, asks):
             continue
         try:
             with transaction.atomic():
-                answers = provider.steady_until(code, until, band, asks)
+                answers = provider.steady_until(code, band, tolerance, asks)
         except Exception:                                        # fail safe: nothing confirmed
             logger.exception('A water source (%r) failed; nothing is confirmed by it.', provider)
             continue

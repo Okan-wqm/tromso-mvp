@@ -10131,6 +10131,9 @@ msgstr "Trenger fersk temperatur fra sensorene sammen med sensorens oksygen."
 msgid "Needs a look"
 msgstr "Trenger oppmerksomhet"
 
+msgid "Needs a temperature: the sample has none, and the live sensor values could not be read."
+msgstr "Trenger en temperatur: prøven har ingen, og sensorverdiene kunne ikke leses."
+
 msgid "Needs approval"
 msgstr "Må godkjennes"
 

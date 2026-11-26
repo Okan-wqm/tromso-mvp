@@ -50,7 +50,7 @@ def _load():
     platform = PlatformSettings.get()
     return {'hours': dict(WaterFreshness.objects.values_list('parameter', 'fresh_hours')),
             'tolerance': timedelta(seconds=platform.clock_tolerance_seconds),
-            'band': float(platform.temperature_band_c)}
+            'band': platform.temperature_band_c}
 
 
 def _rules():

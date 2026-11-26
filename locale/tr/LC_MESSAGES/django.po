@@ -10166,6 +10166,9 @@ msgstr "Sensörün oksijen değeriyle birlikte sensörlerden güncel bir sıcakl
 msgid "Needs a look"
 msgstr "Göz atılmalı"
 
+msgid "Needs a temperature: the sample has none, and the live sensor values could not be read."
+msgstr "Bir sıcaklık gerekli: numunede yok ve canlı sensör değerleri okunamadı."
+
 msgid "Needs approval"
 msgstr "Onay gerekir"
 

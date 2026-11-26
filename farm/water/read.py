@@ -451,6 +451,49 @@ def sensor_targets(point):
 
 
 @dataclass(frozen=True)
+class Tier:
+    """One tier of owner rule A9 for a unit: the places whose values count together, the unit's OWN (`via` UNIT: its
+    own-water points) or one SYSTEM's (`via` SYSTEM, `owner` the system: its loop point, or with no loop point the
+    system's own sensors). `points`: the sampling points whose samples count; `targets`: [(live target, origin)] of
+    the sensors that count, in the order a tie goes; `keys`: what a Series of them is read under (a point's id, or
+    SYSTEM_KEY for a system without a loop point)."""
+    via: str
+    owner: object
+    points: tuple
+    targets: tuple
+    keys: tuple
+
+
+def tiers(units, *, nested):
+    """{unit id: [Tier]}: owner rule A9's tiers of each unit, nearest first, for every reader of a unit's water over
+    time: the unit's own-water points (`water_sources` with every point; never the inlet), then its system (its loop
+    point, or the system's own sensors when it has no loop point, as the water page reads them), then, when `nested`,
+    the loop points of the systems that one is nested in. The ration's temperature (farm/feeding/temperature.py) and
+    the degree-days' day (farm/water/degree_days.py) both take their places from here: which tier wins and how is
+    theirs (the newest fresh value; the lowest of a day), where a unit's water is read is not."""
+    units = list(units)
+    found_sources = water_sources(units, nested=nested, every_point=True)
+    looped = {source.owner.pk for found in found_sources.values() for source in found if source.via == SYSTEM}
+    bare = {unit.system_id for unit in units if unit.system_id and unit.system_id not in looped}
+    systems = System.objects.select_related('site').in_bulk(bare) if bare else {}
+    found = {}
+    for unit in units:
+        own = [source.point for source in found_sources[unit.pk] if source.via == UNIT]
+        made = []
+        if own:
+            made.append(Tier(UNIT, unit, tuple(own), tuple(target for point in own for target in sensor_targets(point)),
+                             tuple(point.pk for point in own)))
+        if unit.system_id in systems:
+            system = systems[unit.system_id]
+            made.append(Tier(SYSTEM, system, (), (((sources.SYSTEM, system.pk), Origin.SYSTEM_SENSOR),),
+                             (SYSTEM_KEY(system.pk),)))
+        made += [Tier(SYSTEM, source.owner, (source.point,), tuple(sensor_targets(source.point)), (source.point.pk,))
+                 for source in found_sources[unit.pk] if source.via == SYSTEM]
+        found[unit.pk] = made
+    return found
+
+
+@dataclass(frozen=True)
 class Found:
     """A value found at a moment (Series.latest): when it was measured, the value, how long it stays fresh (seconds, None
     for a sample: the parameter's hours), where it came from and the point it was measured at."""

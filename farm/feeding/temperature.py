@@ -25,11 +25,10 @@ from decimal import Decimal
 
 from django.utils.translation import ngettext
 
-from farm.models import System
 from farm.models.site import zone_of
 from farm.models.water_point import local_time
 from farm.water import parameters, read
-from farm.water.read import SYSTEM, SYSTEM_KEY, UNIT, Series, water_sources
+from farm.water.read import Series
 
 TEMPERATURE = parameters.get(parameters.TEMPERATURE)
 # The days the samples of a ration's range are read for at once; an older one is found by Series' `carry`.
@@ -69,15 +68,13 @@ class TemperatureBook:
     newest before them); `at(unit, moment)` is the lookup."""
 
     def __init__(self, units, since, until):
-        units = list(units)
-        self.sources = water_sources(units, nested=True, every_point=True)
-        points = {source.point.pk: source.point for sources in self.sources.values() for source in sources}
+        # Where each unit's water is read (owner rule A9's tiers): farm.water.read.tiers, the one resolver.
+        self.places = read.tiers(units, nested=True)
+        points = {point.pk: point for found in self.places.values() for tier in found for point in tier.points}
         # A system without a loop point stands in through its own sensors, as on the water page (read._places).
-        looped = {source.owner.pk for sources in self.sources.values() for source in sources if source.via == SYSTEM}
-        bare = {unit.system_id for unit in units if unit.system_id and unit.system_id not in looped}
-        self.systems = System.objects.select_related('site').in_bulk(bare) if bare else {}
+        bare = {tier.owner.pk for found in self.places.values() for tier in found if not tier.points}
         self.series = Series(points.values(), TEMPERATURE.code, since - READ_DAYS, until, live=True, carry=True,
-                             systems=list(self.systems))
+                             systems=list(bare))
 
     def prefetch(self, moments):
         """Reads the sensors at every moment of `moments` at once (Series.prefetch): the moments `at` will be asked."""
@@ -85,18 +82,8 @@ class TemperatureBook:
 
     def tiers(self, unit):
         """[[(key, owner, via)]]: the unit's own points, then its system (its loop, or its own sensors without one),
-        then each parent system's loop, nearest first: the tiers `choose` reads."""
-        tiers = []
-        for source in self.sources.get(unit.pk, []):
-            place = (source.point.pk, source.owner, source.via)
-            if source.via == UNIT and tiers and tiers[-1][0][2] == UNIT:
-                tiers[-1].append(place)
-            else:
-                tiers.append([place])
-        if unit.system_id in self.systems:
-            first = 1 if tiers and tiers[0][0][2] == UNIT else 0
-            tiers.insert(first, [(SYSTEM_KEY(unit.system_id), self.systems[unit.system_id], SYSTEM)])
-        return tiers
+        then each parent system's loop, nearest first: the tiers `choose` reads (farm.water.read.tiers)."""
+        return [[(key, tier.owner, tier.via) for key in tier.keys] for tier in self.places.get(unit.pk, [])]
 
     def at(self, unit, moment):
         """The Temperature the unit's ration reads at `moment`, or None when none was ever recorded there."""

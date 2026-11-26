@@ -223,7 +223,8 @@ def seen_at(reading, now):
 def clear_evidence(reading, severity, rules, last_bad_at, now, own_held=False, unit_id=None):
     """Whether this pass's reading says the level is over: fresh, taken after the last value that held it (an older value
     that is the newest again, its bad successor voided or its probe taken out, says nothing new: alarm plan, defect 4),
-    and clear of it by the deadband. Times are `seen_at`, the same clamp as the raise. A value the chemistry core refused
+    and clear of it by the deadband. Times are `seen_at`, the same clamp as the raise (a worked-out value's is its own
+    time, through the judge's Record: read.record_of). A value the chemistry core refused
     to work out (`Reading.refused`: no value, or its limits' basis alone, a value the judged one is at least) says
     nothing of the level being over. A reading without a value of its own is judged by its water's other values
     (`known`), their newest the one taken after the last bad value. A level the unit's own value holds (`own_held`, the
@@ -451,8 +452,14 @@ def _water_subjects(unit, found, failed, rules, now):
 
 
 def own(reading, unit_id):
-    """Whether a value was measured at the unit's own points (the rule at the top)."""
-    return reading.point is not None and getattr(reading.point, 'unit_id', None) == unit_id
+    """Whether a value was measured at the unit's own points (the rule at the top). A worked-out value of a sensor bound
+    to the unit's SYSTEM (a system without a loop point: observed at the unit's point) is the system's, never the unit's
+    own (read.bound_at: where a value belongs; review 7 of derived-fresh, H1): it never ends a level the unit's own
+    value holds. For a measured parameter that conflation is main's and stays here (the one-freshness, one-judge
+    branch takes it)."""
+    if reading.point is None or getattr(reading.point, 'unit_id', None) != unit_id:
+        return False
+    return not reading.parameter.inputs or water_read.bound_at(reading) == reading.point.pk
 
 
 def _note_own(reading, severity, rules, unit_id, state):

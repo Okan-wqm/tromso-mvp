@@ -37,7 +37,7 @@ from farm.stock import dates
 from farm.stock.services import AlreadyRecorded, lock_fish
 
 from . import messages, parameters
-from .read import POINT_RELATED, Context, oxygen_basis, ph_on_nbs, scale_origin
+from .read import POINT_RELATED, Context, late_results_of, oxygen_basis, ph_on_nbs, scale_origin
 
 logger = logging.getLogger(__name__)
 
@@ -208,17 +208,32 @@ def _log_create(user, sample, late=''):
 
 def _late_words(samples):
     """{sample id: its late result's words} (the owner's decision on review 5 of derived-fresh: a late NH₃ critical or
-    warning is kept in the log with its sample, never an alarm; read.late_results_of): ONE read for all the samples of a
-    write, never one a sample (review 6, M4). It never blocks the write: a read that fails is logged loudly and the
-    samples are recorded without the words."""
-    from .read import late_results_of
+    warning is kept in the log with its sample, never an alarm; read.late_results_of), in the log's source language
+    (English at rest, translated at display). ONE read for all the samples of a write. It never blocks the write: when
+    the read fails (each in a savepoint, so the write's transaction stays usable), each point is read on its own, so one
+    unreadable point does not strip the others' words, and the samples of a point that fails say so in their entry
+    ("Late result: could not be checked"): the record says the check did not run, the server log why."""
+    def read(group):
+        with transaction.atomic(), audit.source_language():
+            return late_results_of(group)
+
     try:
-        with transaction.atomic():
-            return late_results_of(samples)
+        return read(samples)
     except Exception:
-        logger.exception('The late results of %d water samples could not be worked out; they are recorded without.',
+        logger.exception('The late results of %d water samples could not be read together; each point on its own.',
                          len(samples))
-        return {}
+    found, by_point = {}, {}
+    for sample in samples:
+        by_point.setdefault(sample.point_id, []).append(sample)
+    for group in by_point.values():
+        try:
+            found.update(read(group))
+        except Exception:
+            logger.exception('The late results of the water samples at %s could not be worked out.', group[0].point)
+            with audit.source_language():
+                found.update({sample.pk: str(messages.LATE_UNCHECKED) for sample in group
+                              if sample.tan_mg_l is not None})
+    return found
 
 
 def _write(user, samples, keys):

@@ -133,6 +133,10 @@ MEASURED = [
 # the safe-side basis, and are not counted (the coordinator's decision of 2026-11-26): `uncounted`.
 AMMONIA_INPUTS = ('tan_mg_l', 'ph', 'temperature_c', 'salinity_ppt')
 AMMONIA_UNCOUNTED = ('alkalinity_mg_l', 'conductivity_25_us_cm', 'hardness_mg_l')
+# What a stored sample must hold itself for its ammonia to give a value: the salinity may be found at its point or be
+# fresh water's 0, the others never come from elsewhere (farm/water/read.py OWN_INPUTS: the derivation's check and the
+# look-back's filter are both built from this).
+AMMONIA_OWN = ('tan_mg_l', 'ph', 'temperature_c')
 NH3_N = _parameter('nh3_n_mg_l', _('Un-ionised ammonia (mg/L NH₃ as N)'), _('NH₃-N (mg/L)'), 4, 0, 100,
                    measured=False, inputs=AMMONIA_INPUTS, uncounted=AMMONIA_UNCOUNTED)
 NH4_N = _parameter('nh4_n_mg_l', _('Ammonium (mg/L NH₄⁺ as N)'), _('NH₄-N (mg/L)'), 3, 0, 100, measured=False,

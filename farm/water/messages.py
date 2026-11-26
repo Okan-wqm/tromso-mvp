@@ -460,3 +460,35 @@ def late_result(late, evidence):
         'status': str(Status(late.judged).label).lower(), 'value': said_value(late), 'point': late.point.name,
         'time': local_time(late.at, late.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(evidence),
         'newer_time': local_time(evidence.at, evidence.point).strftime('%d.%m.%Y %H:%M')}
+
+
+def late_more(count):
+    """What a place says of the late results it does not say one by one (read.LATE_SAID are said; review 7, M1: a cap
+    that says it cut hides nothing)."""
+    return _('And %(count)d more late results: see the history.') % {'count': count}
+
+
+def older_at_system(older, shown):
+    """What a unit says of a stale critical or warning of its system's tier that is OLDER than the unit's own value shown
+    (farm/water/judge.py `older`): never held, never called late (it may have been entered on time): "Older value at
+    Loop: critical 0.8924 on 23.11.2026 10:00, before this unit's own 0.0011 of 25.11.2026 09:00." """
+    from ..models.water_point import local_time
+    from .evaluate import Status
+    from .read import said_value
+    return _('Older value at %(point)s: %(status)s %(value)s on %(time)s, before this unit’s own %(newer)s of '
+             '%(newer_time)s.') % {
+        'point': older.point.name, 'status': str(Status(older.judged).label).lower(), 'value': said_value(older),
+        'time': local_time(older.at, older.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(shown),
+        'newer_time': local_time(shown.at, older.point).strftime('%d.%m.%Y %H:%M')}
+
+
+def look_back_ceiling(point, count):
+    """What a place says of a point whose newest `count` samples (judge.CEILING) hold no evaluable value: it cannot be
+    evaluated, and what was read is never taken for the whole."""
+    return _('%(point)s cannot be evaluated: none of its newest %(count)d samples gives an evaluable value.') % {
+        'point': point, 'count': count}
+
+
+# What a sample's log entry says under "Late result" when the late check of its point failed (services._late_words): the
+# record itself says the check did not run, never silence.
+LATE_UNCHECKED = _('could not be checked')

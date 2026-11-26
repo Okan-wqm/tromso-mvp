@@ -2042,6 +2042,9 @@ def _worked_said(reading, shown, live, where, own_ids, point_water, context, jud
         held = judged_of(verdict.held)
         reading.judged = reading.status = held.judged
         reading.worse = held
+        if held.point is not None and held.point.pk in own_ids:
+            # The unit's own value: the page, the card and the alarm say it from Reading.last_own, one source.
+            reading.last_own = held
         _say(reading, messages.last_at_point(held))
     for record in verdict.said:
         _say(reading, messages.lacking_newer(record.key))

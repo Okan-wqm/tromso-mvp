@@ -171,8 +171,8 @@ class ExamplesTests(SimpleTestCase):
         self.assertEqual(place.refused.key, 'refused')
 
     def test_a_tie_never_clears(self):
-        self.assertFalse(judge.clears(record('kit', 'ok', 0, 1), T0))
-        self.assertTrue(judge.clears(record('kit', 'ok', 5, 1), T0))
+        self.assertFalse(judge.clears(record('kit', 'ok', 0, 1, fresh_now=True), T0))
+        self.assertTrue(judge.clears(record('kit', 'ok', 5, 1, fresh_now=True), T0))
 
 
 class PointRuleTests(SimpleTestCase):

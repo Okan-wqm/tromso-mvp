@@ -151,7 +151,7 @@ class EmploymentChangesTests(EmploymentCase):
         response = self.client.post(reverse('hr:production_employee_edit', args=[self.in_a.pk]), {
             'employee_number': self.in_a.employee_number, 'employment_type': self.in_a.employment_type,
             'user': str(self.ann.pk), 'joined_on': '2026-02-01', 'version': str(self.in_a.version)})
-        self.assertEqual(response.status_code, 200)              # the form again, not saved
+        self.assertEqual(response.status_code, 422)              # the form again with the service's refusal, not saved
         self.assertIn('joined_on', response.context['form'].errors)
         self.in_a.refresh_from_db()
         self.assertEqual(self.in_a.joined_on, JOINED)

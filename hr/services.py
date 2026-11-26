@@ -1,6 +1,12 @@
 """What changes people's records in HR, each function one transaction with its audit row. A service takes the person
 who acts, checks the verb and their scope itself (a page that already did is not trusted), and refuses with a
-ValidationError (a sentence for the person) or PermissionDenied; a refusal leaves no row and no log entry."""
+ValidationError (a sentence for the person, on the field it is about when there is one) or PermissionDenied; a refusal
+leaves no row and no log entry.
+
+These are the only writers of HR's people and their records (hr/tests/test_one_writer.py): the tabs of employees,
+attendance, leave requests and the roster hand their saves here (core.crud.Resource.service_writes), so each rule is
+written once and every page, command or later caller runs the same one. The person's form, the attendance form, the
+leave form and the plan's dialog only read what was typed."""
 from datetime import timedelta
 
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -9,21 +15,23 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import gettext as _
 
-from core import audit
+from core import audit, softdelete
 from core.models import AuditLog
 from core.platform import correction_window_days
 from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import clock, leave, read, rules, scope, units
-from .models import (AttendanceRecord, Employee, LeaveRequest, Posting, SchedulingSettings,
-                     ShiftAssignment)
+from .models import (AttendanceRecord, Employee, LeaveRequest, Posting, SchedulingSettings, ShiftAssignment)
 from .models.leave import LeaveStatus
 
 POSTING_FIELDS = ['production_department', 'office_department', 'title', 'valid_from', 'valid_until']
+# A person's own columns: what their form writes (`add_employee`, `change_employee`); the last day is `leave_company`'s.
+PERSON_FIELDS = ['employee_number', 'user', 'first_name', 'last_name', 'employment_type', 'joined_on']
 
 
 EMPLOYEE_VERBS = ('hr.change_employee', 'hr.add_employee')
+KEEP = object()           # a value left as it is (a reason the editor may not read)
 
 
 def _verb(user, perms):
@@ -38,6 +46,17 @@ def _allowed(user, employee, perms=EMPLOYEE_VERBS):
     _verb(user, perms)
     if not scope.can_reach(user, employee) or own_record(user, employee):
         raise PermissionDenied
+
+
+def _reached(user, employee, day, refusal):
+    """The person in the user's team on `day` (scope.can_reach), else refused: with `refusal`, a sentence, when they are the
+    user's person today (the page offered them, and the day is another lead's), else PermissionDenied (a person the user
+    does not reach at all is not theirs to hear about)."""
+    if scope.can_reach(user, employee, day):
+        return
+    if scope.can_reach(user, employee):
+        raise ValidationError(refusal)
+    raise PermissionDenied
 
 
 def check_employed(employee, first, last=None):
@@ -68,7 +87,8 @@ def lock_employed(employee, first, last=None):
 
 
 class PersonFirst:
-    """For a tab of a person's records: an edit locks the person before the record (`Resource.edited`, HR's lock order)."""
+    """For a tab of a person's records: an edit locks the person before the record (`Resource.edited`, HR's lock order),
+    before crud locks the record and hands the edit to the service."""
 
     @classmethod
     def edited(cls, request, record, write, seen):
@@ -77,13 +97,13 @@ class PersonFirst:
 
 
 def punch_day(employee, moment):
-    """The day of a punch on its site's clock (hr.read.local_day): the day the employment rule reads."""
-    return read.local_day(employee, moment)[0]
+    """The day of a punch on the clock that governs it (hr.read.governing): the day the employment rule reads."""
+    return read.governing(employee, moment).day
 
 
 def employment_conflicts(employee, joined_on, left_on):
     """The records of `employee` that would lie outside the employment from `joined_on` to `left_on` (None: still here),
-    as sentences: live plans before the first day (those after a last day are removed with it, `align_placements`),
+    as sentences: live plans before the first day (those after a last day are removed with it, `_align_placements`),
     pending or approved leave before it, approved leave or pending leave begun before a last day that runs past it
     (pending leave that starts after it is cancelled with it), and punches outside it on their site's clock."""
     found = []
@@ -91,7 +111,8 @@ def employment_conflicts(employee, joined_on, left_on):
     if plans.exists():
         found.append(_('planned shifts before %(day)s') % {'day': date_format(joined_on)})
     held = LeaveRequest.objects.filter(employee=employee, status__in=[LeaveStatus.PENDING, LeaveStatus.APPROVED])
-    late = held.filter(last_day__gt=left_on).exclude(status=LeaveStatus.PENDING, first_day__gt=left_on)         if left_on is not None else held.none()
+    late = held.filter(last_day__gt=left_on).exclude(status=LeaveStatus.PENDING, first_day__gt=left_on) \
+        if left_on is not None else held.none()
     if held.filter(first_day__lt=joined_on).exists() or late.exists():
         found.append(_('leave outside these days'))
     punches = AttendanceRecord.objects.filter(employee=employee)
@@ -104,6 +125,7 @@ def employment_conflicts(employee, joined_on, left_on):
     return None
 
 
+# ---- people and their placements --------------------------------------------------------------------------------------
 def _values(posting):
     with audit.source_language():
         return audit.snapshot(posting, POSTING_FIELDS)
@@ -123,6 +145,90 @@ def _save(user, posting):
     posting.save()
 
 
+def _person_values(employee, fields=PERSON_FIELDS):
+    with audit.source_language():
+        return audit.snapshot(employee, fields)
+
+
+def _check_account(user, account, linked=None):
+    """Who links or unlinks a person's account: a holder of Everyone only. Whose account a person is decides who reads
+    their private words (a leave reason is the account's own)."""
+    if getattr(account, 'pk', None) != getattr(linked, 'pk', None) and not user.has_perm(scope.ALL):
+        raise PermissionDenied
+
+
+def check_bounds(joined_on, left_on):
+    """The employment runs from the first day to the last, which may be the same day (the person form asks it first, so
+    the field says it; the service again)."""
+    if left_on is not None and left_on < joined_on:
+        raise ValidationError({'left_on': _('A person cannot leave before they joined.')})
+
+
+def _named(employee):
+    """A person with an account is named by it: their own first and last name stay empty (a database check as well)."""
+    if employee.user_id is not None:
+        employee.first_name = employee.last_name = ''
+
+
+def add_employee(user, values, placement=None):
+    """A new person from the person form: their own columns (`values`, PERSON_FIELDS and `left_on`), their last day when
+    it is known already (`leave_company`) and the placement they start in (`placement`: department, title, first day;
+    `move`, which refuses a start after the last day), in one transaction, each logged. Needs Create on Employees; the
+    placement and the last day ask the rest (a department the user places in, the person in their team)."""
+    _verb(user, ('hr.add_employee',))
+    _check_account(user, values.get('user'))
+    check_bounds(values['joined_on'], values.get('left_on'))
+    with transaction.atomic():
+        employee = Employee(created_by=user, updated_by=user, **{name: values[name] for name in PERSON_FIELDS
+                                                                  if name in values})
+        _named(employee)
+        employee.save()
+        audit.record_create(user, employee, _person_values(employee), entity_type=audit.entity_type_of(Employee))
+        if values.get('left_on') is not None:
+            employee = leave_company(user, employee, values['left_on'])
+        if placement is not None:
+            move(user, employee, *placement)
+        _align_placements(user, employee)
+        return employee
+
+
+def change_employee(user, employee, values, placement=None):
+    """Saves the person form: the person's own columns (`values`, PERSON_FIELDS and `left_on`), then a new placement
+    (`placement`, `move`), one transaction. A first or last day is refused while records of theirs lie outside it
+    (`employment_conflicts`); a changed last day is `leave_company`'s, written in the order that keeps the employment's
+    days in order at every step."""
+    _allowed(user, employee)
+    with transaction.atomic():
+        current = Employee.objects.select_for_update().get(pk=employee.pk)
+        _check_account(user, values.get('user', current.user), current.user)
+        joined = values.get('joined_on', current.joined_on)
+        left = values.get('left_on', current.left_on)
+        check_bounds(joined, left)
+        if joined != current.joined_on:
+            conflict = employment_conflicts(current, joined, left)
+            if conflict is not None:
+                raise ValidationError({'joined_on': conflict.messages})
+        # The new last day first when the old first day allows it (the database keeps the last day after the first at
+        # every write), else the new first day first.
+        last_first = left != current.left_on and (left is None or left >= current.joined_on)
+        if last_first:
+            current = leave_company(user, current, left)
+        before = _person_values(current)
+        for name in PERSON_FIELDS:
+            if name in values:
+                setattr(current, name, values[name])
+        _named(current)
+        current.updated_by, current.version = user, current.version + 1
+        current.save()
+        audit.record_update(user, current, before, _person_values(current), entity_type=audit.entity_type_of(Employee))
+        if left != current.left_on:
+            current = leave_company(user, current, left)
+        if placement is not None:
+            move(user, current, *placement)
+            _align_placements(user, current)          # a placement that starts on a last day ends on it
+        return current
+
+
 def move(user, employee, department, title, from_day):
     """Places `employee` in `department` with `title` from `from_day`. The open placement ends the day before; a
     first placement just starts. The same department and title is no change; a change dated the first day of the
@@ -136,19 +242,19 @@ def move(user, employee, department, title, from_day):
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
         field = units.field_of(department)
         if from_day < employee.joined_on:
-            raise ValidationError(_('A person cannot be placed before they joined.'))
+            raise ValidationError({'from_day': _('A person cannot be placed before they joined.')})
         if employee.left_on is not None and from_day > employee.left_on:
-            raise ValidationError(_('A person who has left cannot be placed after their last day.'))
+            raise ValidationError({'from_day': _('A person who has left cannot be placed after their last day.')})
         current = Posting.objects.filter(employee=employee).order_by('-valid_from').first()
         if current is not None and current.valid_until is not None and current.valid_until >= from_day:
-            raise ValidationError(_('The new placement must start after the last one ended (%(day)s).')
-                                  % {'day': current.valid_until})
+            raise ValidationError({'from_day': _('The new placement must start after the last one ended (%(day)s).')
+                                   % {'day': current.valid_until}})
         if current is not None and current.valid_until is None:
             if current.department == department and current.title == title:
                 return current
             if from_day < current.valid_from:
-                raise ValidationError(_('The change cannot start before the current placement did (%(day)s).')
-                                      % {'day': current.valid_from})
+                raise ValidationError({'from_day': _('The change cannot start before the current placement did '
+                                                     '(%(day)s).') % {'day': current.valid_from}})
             before = _values(current)
             if from_day == current.valid_from:
                 current.production_department = department if field == 'production_department' else None
@@ -168,68 +274,67 @@ def move(user, employee, department, title, from_day):
 
 
 def leave_company(user, employee, on):
-    """Closes the person's record on `on`, their last day: `left_on`, and every placement ends with it (a later one
-    is deleted, one that runs past it is cut). The account stays; deactivating it is the platform admin's choice."""
+    """Sets the person's last day, `on` (None: they work here again, with no last day): `left_on`, and every placement ends
+    with it (a later one is deleted, one that runs past it is cut), as do the plans after it and the pending leave that
+    starts after it. Refused before the first day, and while approved leave or punches lie past it. The one writer of a
+    last day, from the person form (`change_employee`) or any other caller. The account stays; deactivating it is the
+    platform admin's choice."""
     _allowed(user, employee)
     with transaction.atomic():
         employee = Employee.objects.select_for_update().get(pk=employee.pk)
-        if on < employee.joined_on:
-            raise ValidationError(_('A person cannot leave before they joined.'))
+        check_bounds(employee.joined_on, on)
         conflict = employment_conflicts(employee, employee.joined_on, on)
         if conflict is not None:
-            raise conflict
-        with audit.source_language():
-            before = audit.snapshot(employee, ['left_on'])
+            raise ValidationError({'left_on': conflict.messages})
+        before = _person_values(employee, ['left_on'])
         employee.left_on = on
         employee.updated_by = user
         employee.version += 1
         employee.save()
-        with audit.source_language():
-            audit.record_update(user, employee, before, audit.snapshot(employee, ['left_on']),
-                                entity_type=audit.entity_type_of(Employee))
-        align_placements(user, employee)
+        audit.record_update(user, employee, before, _person_values(employee, ['left_on']),
+                            entity_type=audit.entity_type_of(Employee))
+        _align_placements(user, employee)
         return employee
 
 
-def align_placements(user, employee):
+def _align_placements(user, employee):
     """Makes the placements agree with the person's last day: those that start after it are deleted, the one that runs
-    past it ends on it. Nothing is done for a person who has not left. For who may create or edit people (the employee
-    tab's save and `leave_company` call it after their own check)."""
-    _verb(user, EMPLOYEE_VERBS)
+    past it ends on it; the plans after it are removed and the pending leave that starts after it is cancelled. Nothing
+    is done for a person who has not left. A step of `leave_company`, inside its checked call."""
     if employee.left_on is None:
         return
-    with transaction.atomic():
-        for posting in Posting.objects.filter(employee=employee).order_by('valid_from'):
-            before = _values(posting)
-            if posting.valid_from > employee.left_on:
-                posting.soft_delete(user)
-                audit.record(user, AuditLog.Action.DELETE, posting, entity_type=audit.entity_type_of(Posting))
-            elif posting.valid_until is None or posting.valid_until > employee.left_on:
-                posting.valid_until = employee.left_on
-                _save(user, posting)
-                _log_change(user, posting, before)
-        for plan in ShiftAssignment.objects.filter(employee=employee, day__gt=employee.left_on):
-            plan.soft_delete(user)
-            audit.record(user, AuditLog.Action.DELETE, plan, entity_type=audit.entity_type_of(ShiftAssignment))
-        for pending in LeaveRequest.objects.filter(employee=employee, status=LeaveStatus.PENDING,
-                                                   first_day__gt=employee.left_on):
-            before = _leave_values(pending)
-            pending.status = LeaveStatus.CANCELLED
-            pending.updated_by, pending.version = user, pending.version + 1
-            pending.save()
-            audit.record_update(user, pending, before, _leave_values(pending),
-                                entity_type=audit.entity_type_of(LeaveRequest))
+    for posting in Posting.objects.filter(employee=employee).order_by('valid_from'):
+        before = _values(posting)
+        if posting.valid_from > employee.left_on:
+            posting.soft_delete(user)
+            audit.record(user, AuditLog.Action.DELETE, posting, entity_type=audit.entity_type_of(Posting))
+        elif posting.valid_until is None or posting.valid_until > employee.left_on:
+            posting.valid_until = employee.left_on
+            _save(user, posting)
+            _log_change(user, posting, before)
+    for plan in ShiftAssignment.objects.filter(employee=employee, day__gt=employee.left_on):
+        plan.soft_delete(user)
+        audit.record(user, AuditLog.Action.DELETE, plan, entity_type=audit.entity_type_of(ShiftAssignment))
+    for pending in LeaveRequest.objects.filter(employee=employee, status=LeaveStatus.PENDING,
+                                               first_day__gt=employee.left_on):
+        before = _leave_values(pending)
+        pending.status = LeaveStatus.CANCELLED
+        pending.updated_by, pending.version = user, pending.version + 1
+        pending.save()
+        audit.record_update(user, pending, before, _leave_values(pending),
+                            entity_type=audit.entity_type_of(LeaveRequest))
 
 
 # ---- the roster -------------------------------------------------------------------------------------------------
 CLEAR = object()          # a cell cleared: the plan for that day is removed (a soft delete, logged)
 MARGIN = 15               # days either side of a change read for the rest across a border and a run of days
+PLAN_FIELDS = ['employee', 'day', 'shift', 'note']
+PRIVATE_PLAN = ['note']
+
 
 def holiday_days(first, last, site):
     """The days between `first` and `last` that are holidays for `site` (None: only those of every site)."""
     return leave.holidays_for(first, last, site)
-
-
 
 
 def evaluate(employee, changes):
@@ -275,9 +380,20 @@ def _cell_permission(existing, shift):
 
 def plan_shifts(user, cells, shift):
     """Sets `shift` (a Shift, None for planned off, or CLEAR) on every cell, (employee, day), or on none: the cells
-    are checked first (the verb each needs, the person in the user's team on that day) and the rules run for each
-    person; a blocking finding refuses the whole batch and names the first conflicting cells. Returns the warnings as
-    [(employee, Finding)], which are also written into the audit rows."""
+    are checked first (the verb each needs, the person in the user's team on that day, never the user's own days) and the
+    rules run for each person; a blocking finding refuses the whole batch and names the first conflicting cells. Returns
+    the warnings as [(employee, Finding)], which are also written into the audit rows."""
+    return _plan(user, cells, shift)[1]
+
+
+def plan_day(user, employee, day, shift, note):
+    """One cell from its own dialog: `shift` (a Shift, or None for planned off) and the lead's `note`, by the rules of
+    `plan_shifts`. Returns (the plan as saved, its warnings [Finding])."""
+    rows, warnings = _plan(user, [(employee, day)], shift, note)
+    return rows[(employee.pk, day)], [finding for _person, finding in warnings]
+
+
+def _plan(user, cells, shift, note=KEEP):
     _verb(user, PLAN_PERMISSIONS)              # who may plan no cell at all is refused before the cells are read
     by_person = {}
     for employee, day in cells:
@@ -287,12 +403,12 @@ def plan_shifts(user, cells, shift):
         list(Employee.objects.select_for_update().filter(pk__in=list(by_person)).order_by('pk').values_list('pk', flat=True))
         for employee, changes in by_person.values():
             if own_record(user, employee):
-                raise PermissionDenied
+                raise ValidationError(_('You do not plan your own days.'))
             existing = {row.day: row for row in ShiftAssignment.objects.select_for_update().filter(
                 employee=employee, day__in=list(changes))}
             for day in changes:
-                if not scope.can_reach(user, employee, day) or not user.has_perm(
-                        _cell_permission(existing.get(day), shift)):
+                _reached(user, employee, day, _('You do not plan this person on this day.'))
+                if not user.has_perm(_cell_permission(existing.get(day), shift)):
                     raise PermissionDenied
                 if shift is not CLEAR:
                     check_employed(employee, day)
@@ -306,50 +422,62 @@ def plan_shifts(user, cells, shift):
             warnings += [(employee, item) for item in found if not item.blocks]
             writes.append((employee, changes, existing))
         if blocking:
-            raise ValidationError([
+            # One cell (its own dialog) is told the rule; several name the person and the day of each.
+            raise ValidationError([rules.text(item) for _employee, item in blocking] if len(cells) == 1 else [
                 _('%(person)s, %(day)s: %(what)s') % {'person': employee, 'day': item.day, 'what': rules.text(item)}
                 for employee, item in blocking[:5]])
         codes = {}
         for employee, item in warnings:
             codes.setdefault(employee.pk, set()).add(item.code)
+        rows = {}
         for employee, changes, existing in writes:
             for day in changes:
-                _write_cell(user, employee, day, shift, existing.get(day), codes.get(employee.pk, ()))
-    return warnings
+                rows[(employee.pk, day)] = _write_cell(user, employee, day, shift, existing.get(day),
+                                                       codes.get(employee.pk, ()), note)
+    return rows, warnings
 
 
-def _write_cell(user, employee, day, shift, row, warning_codes):
-    """Writes one cell and its audit row (English at rest, like every row), with the warnings the plan went on past."""
-    entity_type = audit.entity_type_of(ShiftAssignment)
+def _plan_values(row):
     with audit.source_language():
-        before = audit.snapshot(row, ['shift']) if row is not None else {}
-        if shift is CLEAR:
-            audit.record(user, AuditLog.Action.DELETE, row, before and {key: [value, None] for key, value in before.items()
-                                                                       if value is not None}, entity_type=entity_type)
-            row.soft_delete(user)
-            return
-        if row is None:
-            row = ShiftAssignment(employee=employee, day=day, shift=shift, created_by=user, updated_by=user)
-            row.save()
-            audit.record_create(user, row, {**audit.snapshot(row, ['shift']), **_warnings_entry(warning_codes)},
-                                entity_type=entity_type)
-            return
-        row.shift, row.updated_by, row.version = shift, user, row.version + 1
+        return audit.snapshot(row, PLAN_FIELDS, private=PRIVATE_PLAN)
+
+
+def _write_cell(user, employee, day, shift, row, warning_codes, note=KEEP):
+    """Writes one cell and its audit row (English at rest, like every row), with the warnings the plan went on past.
+    Returns the row."""
+    entity_type = audit.entity_type_of(ShiftAssignment)
+    before = _plan_values(row) if row is not None else {}
+    if shift is CLEAR:
+        audit.record(user, AuditLog.Action.DELETE, row, {key: [value, None] for key, value in before.items()
+                                                         if value is not None}, entity_type=entity_type)
+        row.soft_delete(user)
+        return row
+    if row is None:
+        row = ShiftAssignment(employee=employee, day=day, shift=shift, note='' if note is KEEP else note,
+                              created_by=user, updated_by=user)
         row.save()
-        changed = audit.diff(before, audit.snapshot(row, ['shift']))
-        if changed:
-            audit.record(user, AuditLog.Action.UPDATE, row, {**changed, **_warnings_entry(warning_codes)},
-                         entity_type=entity_type)
+        audit.record_create(user, row, {**_plan_values(row), **_warnings_entry(warning_codes)}, entity_type=entity_type)
+        return row
+    row.shift, row.updated_by, row.version = shift, user, row.version + 1
+    if note is not KEEP:
+        row.note = note
+    row.save()
+    changed = audit.diff(before, _plan_values(row))
+    if changed:
+        audit.record(user, AuditLog.Action.UPDATE, row, {**changed, **_warnings_entry(warning_codes)},
+                     entity_type=entity_type)
+    return row
 
 
 def _warnings_entry(codes):
     """The warnings a plan was saved with, by their sentences (msgids, shown translated)."""
-    return {'Warnings': [audit.message(rules.TEXT[code]) for code in sorted(codes)]} if codes else {}
+    with audit.source_language():
+        return {'Warnings': [audit.message(rules.TEXT[code]) for code in sorted(codes)]} if codes else {}
 
 
 # ---- leave --------------------------------------------------------------------------------------------------------
-LEAVE_FIELDS = ['status', 'last_day', 'decision_note', 'decided_by']     # last_day: a started leave shortened
-PRIVATE_LEAVE = ['decision_note']
+LEAVE_FIELDS = ['employee', 'leave_type', 'first_day', 'last_day', 'reason', 'status', 'decision_note', 'decided_by']
+PRIVATE_LEAVE = ['reason', 'decision_note']
 
 
 def _leave_values(request):
@@ -367,11 +495,83 @@ def _own(user, leave_request):
     return leave_request.employee.user_id is not None and leave_request.employee.user_id == user.pk
 
 
-def _decider(user, leave_request, listed=False):
-    """Edit on Leave requests, the person in the user's team (not asked again for a request `listed` from it), and not the
-    user's own request (one rule; a database trigger holds the last part whatever writes)."""
-    return (user.has_perm('hr.change_leaverequest') and not _own(user, leave_request)
-            and (listed or scope.can_reach(user, leave_request.employee, leave_request.first_day)))
+def check_days(first_day, last_day):
+    """The days of a request in order (the form asks it first, so the field says it; the service again)."""
+    if last_day < first_day:
+        raise ValidationError({'last_day': _('The last day cannot be before the first.')})
+
+
+def _check_leave(employee, leave_type, first_day, last_day, exclude=None):
+    """What a request for these days must keep, with the person's row locked: the days inside the employment, at least one
+    day charged, and the type's yearly allowance (the other requests of the year, `exclude` left out)."""
+    check_days(first_day, last_day)
+    if leave_type.status != 'active':
+        raise ValidationError({'leave_type': _('This leave type is no longer offered.')})
+    check_employed(employee, first_day, last_day)
+    site = read.site_on(employee, first_day)
+    charged = leave.charged_by_year(first_day, last_day, site)
+    if not charged:
+        raise ValidationError({'last_day': _('These days are all weekends or holidays: nothing would be charged.')})
+    if leave_type.annual_days is not None:
+        for year, days in charged.items():
+            used = leave.used(employee, leave_type, year, site, exclude=exclude)
+            if used + days > leave_type.annual_days:
+                raise ValidationError({'leave_type': _('This is %(days)s days of %(kind)s in %(year)s and %(left)s are '
+                                                       'left.') % {'days': days, 'kind': leave_type.name, 'year': year,
+                                                                   'left': leave_type.annual_days - used}})
+
+
+def file_leave(user, employee, leave_type, first_day, last_day, reason=''):
+    """Files a request for leave: for oneself, or by a lead for a person of their team. It is pending, or granted at once
+    for a type that needs no approval (no decider: `decided_at` only). The reason is the person's own words: what anyone
+    else types for them is dropped. Needs Create on Leave requests."""
+    _verb(user, ('hr.add_leaverequest',))
+    if not scope.can_reach(user, employee):
+        raise PermissionDenied
+    with transaction.atomic():
+        employee = lock_employed(employee, first_day, last_day)
+        _check_leave(employee, leave_type, first_day, last_day)
+        request = LeaveRequest(employee=employee, leave_type=leave_type, first_day=first_day, last_day=last_day,
+                               reason=reason if employee.user_id == user.pk else '', created_by=user, updated_by=user)
+        if not leave_type.needs_approval:
+            request.status, request.decided_at = LeaveStatus.APPROVED, timezone.now()
+        request.save()
+        audit.record_create(user, request, _leave_values(request), entity_type=audit.entity_type_of(LeaveRequest))
+        return request
+
+
+def change_leave(user, leave_request, leave_type, first_day, last_day, reason=KEEP):
+    """Changes a pending request: its type, its days and, for who may read it (scope.sees_reason), its reason. Needs Edit
+    on Leave requests and the person in the user's team on its first day; a decided request is not changed (a started
+    one is corrected: `shorten_leave`, `cancel_leave`)."""
+    _verb(user, ('hr.change_leaverequest',))
+    with transaction.atomic():
+        current = _lock(leave_request)
+        if not scope.can_reach(user, current.employee, current.first_day):
+            raise PermissionDenied
+        if reason is not KEEP and not scope.sees_reason(user, current.employee):
+            raise PermissionDenied
+        if current.status != LeaveStatus.PENDING:
+            raise ValidationError(_('Only a pending request can be changed.'))
+        _check_leave(current.employee, leave_type, first_day, last_day, exclude=current)
+        before = _leave_values(current)
+        current.leave_type, current.first_day, current.last_day = leave_type, first_day, last_day
+        if reason is not KEEP:
+            current.reason = reason
+        current.updated_by, current.version = user, current.version + 1
+        current.save()
+        audit.record_update(user, current, before, _leave_values(current), entity_type=audit.entity_type_of(LeaveRequest))
+        return current
+
+
+def _decider(user, leave_request):
+    """Edit on Leave requests, the person in the user's team on the request's first day, and not the user's own request:
+    scope.deciding, the one rule, asked of this request (a list reads it for all its rows at once: `viewer_decides`). A
+    database trigger holds the last part whatever writes."""
+    marked = getattr(leave_request, 'viewer_decides', None)
+    if marked is not None:
+        return marked
+    return scope.deciding(user, LeaveRequest.objects.filter(pk=leave_request.pk)).exists()
 
 
 def can_decide(user, leave_request):
@@ -394,11 +594,11 @@ def past_correction(leave_request, today=None):
     return None
 
 
-def can_correct(user, leave_request, listed=False, today=None):
+def can_correct(user, leave_request, today=None):
     """Whether `user` may shorten or cancel an approved request that has begun: a decider only, never the person (the
     days are history now; a lead or HR puts them right when the person came back early or never went), and only within
     the correction window after its last day."""
-    return (leave_request.status == LeaveStatus.APPROVED and _decider(user, leave_request, listed)
+    return (leave_request.status == LeaveStatus.APPROVED and _decider(user, leave_request)
             and past_correction(leave_request, today) is None)
 
 
@@ -411,21 +611,16 @@ def _refuse_correction(user, current):
     raise PermissionDenied
 
 
-def can_cancel(user, leave_request, today=None, listed=False):
+def can_cancel(user, leave_request, today=None):
     """Whether `user` may cancel the request: the person, or a decider; a pending request any time, an approved one only
-    while its first day has not started on the site's clock. `listed`: the request came from the viewer's own team already
-    (a list), so the team is not asked again."""
+    while its first day has not started on the site's clock (after it, a correction: `can_correct`)."""
     if leave_request.status == LeaveStatus.APPROVED:
         today = today or _leave_today(leave_request)
         if leave_request.first_day <= today:
-            return can_correct(user, leave_request, listed, today)
+            return can_correct(user, leave_request, today)
     elif leave_request.status != LeaveStatus.PENDING:
         return False
-    if _own(user, leave_request):
-        return True
-    if not user.has_perm('hr.change_leaverequest'):
-        return False
-    return listed or scope.can_reach(user, leave_request.employee, leave_request.first_day)
+    return _own(user, leave_request) or _decider(user, leave_request)
 
 
 def _lock(leave_request):
@@ -536,7 +731,7 @@ def forgotten_refusal(record, now=None):
     hours = SchedulingSettings.get().forgotten_after_hours
     if record is None or not rules.forgotten(record.clock_in, record.clock_out, now or timezone.now(), hours):
         return None
-    _day, zone = read.local_day(record.employee, record.clock_in)
+    zone = read.governing(record.employee, record.clock_in).zone
     return ValidationError(
         _('Your clock-in of %(since)s was never closed: it has been open more than %(hours)s hours and counts as a '
           'forgotten clock-out. Ask your lead, or whoever keeps attendance for you, to close it on the Attendance page '
@@ -603,16 +798,33 @@ def check_times(clock_in_at, clock_out_at, now=None):
                                               'left.')})
 
 
-def enter_presence(user, employee, clock_in_at, clock_out_at, note):
-    """A lead records presence for a person of their team: times already on the site's clock as instants, and a reason
-    (required: the CHECK on the table says so too). Needs Create on Attendance and the person in the user's team."""
-    if not user.has_perm('hr.add_attendancerecord') or not scope.can_reach(
-            user, employee, read.local_day(employee, clock_in_at)[0]) or own_record(user, employee):
+def _keeps_attendance(user, employee, moment, still_open=False):
+    """`user` keeps `employee`'s attendance at `moment`: the person in their team on the day that governs the moment
+    (hr.read.governing) or, for a stretch still open, today (scope.reaches_stretch); never their own attendance."""
+    if own_record(user, employee):
+        raise ValidationError(_('You do not enter or correct your own attendance.'))
+    if not scope.reaches_stretch(user, employee, read.governing(employee, moment).day, still_open):
+        if scope.can_reach(user, employee):
+            raise ValidationError(_('You do not see this person on this day.'))
         raise PermissionDenied
+
+
+def _note(note, needed):
     note = (note or '').strip()
-    if not note:
-        raise ValidationError(_('Say why the time was entered by hand.'))
+    if needed and not note:
+        raise ValidationError({'note': _('Say why the time was entered by hand.')})
+    return note
+
+
+def enter_presence(user, employee, clock_in_at, clock_out_at, note):
+    """A lead records presence for a person of their team (the Attendance page's new stretch): the times as instants
+    (`check_times`), and a reason (required: the CHECK on the table says so too). Needs Create on Attendance and the person
+    in the user's team on the stretch's day; the person is locked before the stretch is written, and it lies inside their
+    employment on its day."""
+    _verb(user, ('hr.add_attendancerecord',))
+    _keeps_attendance(user, employee, clock_in_at)
     check_times(clock_in_at, clock_out_at)
+    note = _note(note, True)
     with transaction.atomic():
         employee = lock_employed(employee, punch_day(employee, clock_in_at),
                                  punch_day(employee, clock_out_at) if clock_out_at is not None else None)
@@ -620,3 +832,50 @@ def enter_presence(user, employee, clock_in_at, clock_out_at, note):
                                   via=AttendanceRecord.Via.ENTERED, note=note, created_by=user, updated_by=user)
         _save_punch(user, record, True)
         return record
+
+
+def correct_presence(user, record, clock_in_at, clock_out_at, note):
+    """A lead corrects a stretch (the Attendance page's edit; a forgotten clock-out is closed so): the times as instants
+    and the note. A time changed is a time typed by hand, whoever clocked: the stretch is an entered one then and needs its
+    reason, as an entered one always does; one whose times stay is left as it was made. Needs Edit on Attendance and the
+    person in the user's team on the stretch's day, or today while it is still open (review R9); never one's own."""
+    _verb(user, ('hr.change_attendancerecord',))
+    with transaction.atomic():
+        employee = lock_person(record.employee_id)
+        current = AttendanceRecord.objects.select_for_update(of=('self',)).get(pk=record.pk)
+        still_open = current.clock_out is None
+        _keeps_attendance(user, employee, current.clock_in, still_open)
+        _keeps_attendance(user, employee, clock_in_at, still_open)
+        check_times(clock_in_at, clock_out_at)
+        typed = clock_in_at != current.clock_in or clock_out_at != current.clock_out
+        note = _note(note, typed or current.via == AttendanceRecord.Via.ENTERED)
+        check_employed(employee, punch_day(employee, clock_in_at),
+                       punch_day(employee, clock_out_at) if clock_out_at is not None else None)
+        before = _punch_values(current)
+        current.clock_in, current.clock_out, current.note = clock_in_at, clock_out_at, note
+        if typed:
+            current.via = AttendanceRecord.Via.ENTERED
+        current.updated_by, current.version = user, current.version + 1
+        _save_punch(user, current, False, before)
+        return current
+
+
+def void_presence(user, record):
+    """Voids a stretch (the Attendance page's delete): Delete on Attendance and the stretch the user's to correct
+    (`correct_presence`'s reach), never their own; the person is locked before the stretch; logged by the delete plan."""
+    _verb(user, ('hr.delete_attendancerecord',))
+    with transaction.atomic():
+        employee = lock_person(record.employee_id)
+        current = AttendanceRecord.objects.select_for_update(of=('self',)).filter(pk=record.pk).first()
+        if current is None:
+            return None                         # voided meanwhile: nothing left to do
+        if own_record(user, employee):
+            raise PermissionDenied
+        if not scope.reaches_stretch(user, employee, read.governing(employee, current.clock_in).day,
+                                     current.clock_out is None):
+            raise PermissionDenied
+        plan = softdelete.plan_delete(current)
+        if not plan.can_delete:
+            raise ValidationError(plan.blockers)
+        softdelete.execute(plan, user)
+        return current

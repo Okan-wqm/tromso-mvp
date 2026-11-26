@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.db.models import Case, Q, Value, When
+from django.db.models import Case, Exists, OuterRef, Q, Value, When
 from django.utils.translation import gettext_lazy as _
 
 from django.template.defaultfilters import floatformat
@@ -47,7 +47,8 @@ class LeaveRequestResource(services.PersonFirst, Resource):
     team lead's to see, its type only the person's, a decider's (Edit) and Everyone's, its reason only the person's and the
     holders of Everyone's. Edit also approves, rejects and cancels
     (the matrix has no extra column): the decision is `hr.services.decide_leave`, never the form. Nobody deletes a request:
-    a wrong one is cancelled."""
+    a wrong one is cancelled. Every write is hr.services' (file_leave, change_leave and the decisions): the tab reads the
+    form and hands it over."""
 
     model = LeaveRequest
     form_class = LeaveRequestForm
@@ -59,15 +60,23 @@ class LeaveRequestResource(services.PersonFirst, Resource):
     detail_template = 'hr/leave_detail.html'
     icon = 'calendar-off'
     private_fields = ('reason', 'decision_note')
+    service_writes = True
 
     @classmethod
     def queryset(cls):
         return super().queryset().select_related('employee__user', 'leave_type', 'decided_by')
 
     @classmethod
-    def after_save(cls, request, item, created):
-        """The employment rule again under the person's lock (the form checked it before any lock)."""
-        services.lock_employed(item.employee, item.first_day, item.last_day)
+    def create_record(cls, request, form):
+        values = form.cleaned_data
+        return services.file_leave(request.user, values['employee'], values['leave_type'], values['first_day'],
+                                   values['last_day'], values.get('reason', ''))
+
+    @classmethod
+    def change_record(cls, request, form, current):
+        values = form.cleaned_data
+        return services.change_leave(request.user, current, values['leave_type'], values['first_day'], values['last_day'],
+                                     values['reason'] if 'reason' in form.fields else services.KEEP)
 
     @classmethod
     def scoped(cls, request, objects):
@@ -108,7 +117,10 @@ class LeaveRequestResource(services.PersonFirst, Resource):
         if tab != 'all':
             objects = objects.filter(status=tab)
         total = objects.count()
-        shown = list(objects.order_by('first_day', 'employee__last_name')[:cls.LIMIT])
+        # whether the viewer decides each request, by the one rule (scope.deciding), read with the rows
+        decides = scope.deciding(request.user, LeaveRequest.objects.filter(pk=OuterRef('pk')))
+        shown = list(objects.annotate(viewer_decides=Exists(decides)).order_by('first_day', 'employee__last_name')[
+            :cls.LIMIT])
         counts = {name: everything.filter(status=name).count() for name in ('pending', 'approved', 'rejected')}
         return cls.shown(request, shown), {'tabs': TABS, 'tab': tab, 'counts': counts, 'total': total,
                                            'limit': cls.LIMIT, 'all_count': sum(counts.values()) +
@@ -118,13 +130,11 @@ class LeaveRequestResource(services.PersonFirst, Resource):
     def shown(cls, request, requests):
         """Each request with what the viewer may do and see, in a fixed number of queries: the charge in days (the holidays
         and the people's sites read once), the reason (the person's and Everyone's only) and the buttons. The requests are
-        the viewer's team's already (`scoped`), so the team is not asked again per row."""
-        everyone = request.user.has_perm(scope.ALL)
+        the viewer's team's already (`scoped`), and whether the viewer decides each is read with them (`viewer_decides`)."""
         sees_types = cls.sees_every_type(request.user)
         sites = read.sites_of([(item.employee_id, item.first_day) for item in requests])
         holidays = leave.holiday_table([item.first_day for item in requests], [item.last_day for item in requests])
         weekdays = SchedulingSettings.get().working_weekdays
-        can_edit = request.user.has_perm('hr.change_leaverequest')
         rows = []
         for item in requests:
             own = item.employee.user_id == request.user.pk
@@ -132,12 +142,12 @@ class LeaveRequestResource(services.PersonFirst, Resource):
                 'request': item,
                 'days': leave.leave_days(item.first_day, item.last_day, sites[(item.employee_id, item.first_day)],
                                          weekdays, holidays),
-                'show_reason': own or everyone,
+                'show_reason': scope.sees_reason(request.user, item.employee),
                 'show_type': own or sees_types,
-                'can_decide': can_edit and not own and item.status == LeaveStatus.PENDING,
-                'can_cancel': services.can_cancel(request.user, item, listed=True,
+                'can_decide': services.can_decide(request.user, item),
+                'can_cancel': services.can_cancel(request.user, item,
                                                   today=site_today(sites[(item.employee_id, item.first_day)])),
-                'can_shorten': item.first_day < item.last_day and services.can_correct(request.user, item, listed=True),
+                'can_shorten': item.first_day < item.last_day and services.can_correct(request.user, item),
                 'shorten_to': item.last_day - timedelta(days=1),          # the latest new last day the service takes
             })
         return rows

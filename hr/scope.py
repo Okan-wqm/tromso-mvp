@@ -124,13 +124,39 @@ def by_day(user, objects, employee='employee', day='day', realm=None):
     return objects.filter(Q(**{f'{employee}__user': user}) | Exists(placed))
 
 
-def stretches(user, objects, realm=None, day='clocked_day'):
-    """Attendance stretches (annotated with their `day`) that `user` reaches: a stretch belongs to the manager of the
-    department the person was placed in on its day (`by_day`), and while it is still open also to whoever reaches the
-    person today. An open stretch is today's business: a person who moved since they clocked in is told to ask their
-    lead, and their lead of today is who closes a forgotten clock-out (review R9). Once closed it is history of its day."""
+def stretches(user, objects, realm=None, day='governing_day'):
+    """Attendance stretches (annotated with their `day`: hr.read.governed) that `user` reaches: a stretch belongs to the
+    manager of the department the person was placed in on its day (`by_day`), and while it is still open also to whoever
+    reaches the person today. An open stretch is today's business: a person who moved since they clocked in is told to
+    ask their lead, and their lead of today is who closes a forgotten clock-out (review R9). Once closed it is history of
+    its day. The SQL form of `reaches_stretch`, held to it by a test."""
     still_open = Q(clock_out__isnull=True, employee__in=team(user, realm=realm).values('pk'))
     return objects.filter(Q(pk__in=by_day(user, objects, 'employee', day, realm).values('pk')) | still_open)
+
+
+def reaches_stretch(user, employee, day, still_open=False):
+    """Whether `user` reaches a stretch of `employee` whose day is `day` (hr.read.governing): the person in their team on
+    that day, or, for a stretch `still_open`, today (`stretches`, the same rule for a query)."""
+    return can_reach(user, employee, day) or (still_open and can_reach(user, employee))
+
+
+LEAVE_DECIDER = 'hr.change_leaverequest'
+
+
+def deciding(user, requests, realm=None):
+    """The leave requests among `requests` that `user` decides (approves, rejects, corrects) as a decider: Edit on Leave
+    requests, the person in their team on the request's first day (`by_day`), never their own request (a database trigger
+    holds that part whatever writes). The one rule: hr.services asks it of one request, a list of all its rows at once and
+    the badge counts with it."""
+    if not user.has_perm(LEAVE_DECIDER):
+        return requests.none()
+    return by_day(user, requests, 'employee', 'first_day', realm).exclude(employee__user=user)
+
+
+def sees_reason(user, employee):
+    """Whether `user` reads (and so may change) the reason of `employee`'s leave requests: the person's own words, for
+    themselves and the holders of Everyone only; a lead reads the type and the days, never the reason."""
+    return (employee.user_id is not None and employee.user_id == user.pk) or user.has_perm(ALL)
 
 
 def team(user, day=None, realm=None):

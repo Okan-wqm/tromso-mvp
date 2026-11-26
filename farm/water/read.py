@@ -67,7 +67,8 @@ from functools import partial
 
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db import models
-from django.db.models import Func, Q, UUIDField
+from django.db.models import F, Func, Q, UUIDField, Window
+from django.db.models.functions import RowNumber
 from django.utils import timezone
 from django.utils.formats import number_format
 from django.utils.translation import gettext as _, gettext_lazy
@@ -78,7 +79,7 @@ from farm.models.water_point import FlowRole, PointKind, kinds_with, local_time,
 from farm.stock.dates import local_today
 from farm.stock.read import Presence
 
-from . import chemistry, messages, parameters, sources
+from . import chemistry, judge, messages, parameters, sources
 from . import freshness
 from .evaluate import ALERTS, MAX_AHEAD, RANK, Limits, Status, ahead, crossed as bound_crossed, is_fresh, worst
 from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
@@ -87,6 +88,11 @@ from .parameters import NH3_N, NH4_N, OXYGEN_MG_L, OXYGEN_PCT, TAN
 IONIC_INPUTS = parameters.AMMONIA_UNCOUNTED
 # How far back the latest values, and a salinity for a sample without one, are looked for.
 WINDOW = timedelta(days=30)
+# The samples the look-back of a point's worked-out values has read in this process (Context.prefetch_newest_worked):
+# a test's measure of its rows (review 5 of derived-fresh, M3).
+SAMPLES_READ = [0]
+# The key of a point's manual readings under which every worked-out value it judges is kept (`_manual`, `_resolve`).
+WORKED_SET = 'worked set'
 OXYGEN = 'oxygen'
 # A reading per parameter, except oxygen: one reading of mg/L and % together.
 SLOTS = {code: Q(**{f'{code}__isnull': False}) for code in parameters.COLUMNS if code not in (OXYGEN_MG_L, OXYGEN_PCT)}
@@ -410,15 +416,23 @@ class Observation:
         return found if found is not None else freshness.fresh_until(code, self.at, self.fresh_for)
 
 
+@dataclass
+class Worked:
+    """What the shell fetched of a point's worked-out values for the judge (farm/water/judge.py): `found`, [(sample,
+    {code: Reading})] newest first in the order (measured_at, created_at, id), down to the point's evidence value and its
+    minute (`judge.settled`); `late`, those measured before the evidence and entered after it. The judge alone says what
+    they mean (`Context.verdict`)."""
+    found: list = field(default_factory=list)
+    late: list = field(default_factory=list)
+
+
 @dataclass(frozen=True)
 class SampleTemperature:
-    """A sample's temperature by THE rule (Context.temperature_of): the value (None: none), when it stops being fresh,
-    what is said of where it came from when not the sample's own, and whether the live sources failed to say it."""
+    """The temperature an NH₃ is worked out with (Context.temperature_of): the value (None: none), when it stops being
+    fresh, and what ended it before that in words (`why`, else '')."""
     value: Decimal | None
     until: datetime | None = None
-    said: str = ''
-    failed: bool = False
-    why: str = ''           # what ended it before its own end, in words (review 4 of the branch, M5), else ''
+    why: str = ''
 
 
 @dataclass(frozen=True)
@@ -945,12 +959,8 @@ class Context:
         points = list(points)
         self.served = self._served(points)                # point id -> the live units its water concerns
         self.served.update({unit.pk: [unit] for unit in units})     # a unit read without a point (`latest`, `units`)
-        # Set by `know` (the latest read and the history): the moment of the read, and {point id: [the live targets of its
-        # place, tier by tier (A9)]}: what a sample's temperature takes the place's probe from (`temperature_of`).
-        # Elsewhere (the calculator's limits) neither is known and no probe is asked.
-        self.now, self.until, self.tiers, self._temperatures = None, None, {}, {}
-        self._worked, self._newest = {}, {}      # a sample's readings; a point's newest worked-out value (newest_worked)
-        self.sources_failed = False              # a live source failed while a sample's temperature was asked
+        self.until = None                        # a read of the past: the samples up to that moment (`latest`)
+        self._worked, self._newest = {}, {}      # a sample's readings; a point's worked-out values (`worked_at`)
         self.book = SpeciesBook({unit.pk for units in self.served.values() for unit in units})
         species = set(self.book.species.values())
         self.limits = Limits(WaterLimit.objects.filter(species_id__in=species, species__is_deleted=False))
@@ -1163,7 +1173,7 @@ class Context:
                 parameters.PH: (ph, self._ph_until(observation) if ph is not None else None),
                 parameters.TEMPERATURE: (temperature.value, temperature.until),
                 parameters.SALINITY: (salinity, salinity_until)}
-        found = self._ammonia_of(observation, {code: value for code, (value, _end) in used.items()}, temperature)
+        found = self._ammonia_of(observation, {code: value for code, (value, _end) in used.items()})
         ends = {code: end if value is not None else None for code, (value, end) in used.items()}
         why = {parameters.TEMPERATURE: temperature.why} if temperature.why else {}
         for reading in found.values():
@@ -1179,223 +1189,124 @@ class Context:
             ends.append(observation.ph.temperature_until)
         return min(ends)
 
-    def temperature_of(self, observation):
-        """THE rule of a sample's NH₃ temperature (the coordinator's decision on review 4, H3): its own value, else the
-        place's probe at its time (fresh then, stamped at most the clock tolerance after it), ending at that channel's
-        freshness. Never a temperature copied from another sample (the oxygen's stored basis is the oxygen's alone,
-        `_oxygen_temperature`: a voided or another point's temperature never reaches an NH₃). A sensor observation's is
-        its own (the fresh sensor temperature it was combined with). Where the read knows the place (`tiers`) and the
-        moment (`now`), the temperature ends where the place's live temperature says (freshness.temperature_until: within
-        the band, fresh; a probe that cannot be read ends it at once and says so). Worked out in batches
-        (`prefetch_temperatures`); a sample met on its own is a batch of one. A SampleTemperature."""
-        own = observation.get(parameters.TEMPERATURE)
-        if observation.live:
-            return SampleTemperature(own, observation.until(parameters.TEMPERATURE) if own is not None else None)
-        key = self._temperature_key(observation)
-        if key not in self._temperatures:
-            self.prefetch_temperatures([observation])
-        return self._temperatures[key]
-
     @staticmethod
-    def _temperature_key(observation):
-        return (observation.point.pk, observation.at, observation.get(parameters.TEMPERATURE), observation.get(TAN),
-                observation.get(parameters.PH))
-
-    def know(self, places, now, until=None):
-        """Tells the Context the moment of its read (`now`, and `until`: the samples it reads, for a read of the past)
-        and each point's place ({point id: Places}), tier by tier (A9): what `temperature_of` takes a sample's probe
-        temperature from. A unit's point is always taken in the place that stands for its unit (its own points' and its
-        system's tiers), whatever else the caller read (review 4 of the branch, M2: the history of an outlet alone asks
-        the unit's probes as the latest read does); any other point in its own."""
-        self.now, self.until = now, until
-        covered = {each.own[0].unit_id for each in places.values() if each.for_unit and each.own and each.own[0].unit_id}
-        missing = {point.unit_id for each in places.values() for point in (*each.own, *each.system)
-                   if point.unit_id and point.unit_id not in covered}
-        standing = list(middle_points([Tank(pk=unit_id) for unit_id in missing]).values()) if missing else []
-        every = [*(_places(standing).values() if standing else ()), *places.values()]
-        for each in sorted(every, key=lambda place: not place.for_unit):
-            for own_point in each.own:
-                self.tiers.setdefault(own_point.pk, [tier for tier in (each.own_targets, each.system_targets) if tier])
-            for system_point in each.system:
-                self.tiers.setdefault(system_point.pk, [each.system_targets] if each.system_targets else [])
-
-    def prefetch_temperatures(self, observations):
-        """Works out `temperature_of` for many samples at once: ONE ask of the live sources for each sample's probe value
-        at its time, each binding paired only with the times of the samples whose place it measures
-        (sources.values_for), and ONE for how long each sample's temperature stayed within the band
-        (sources.steady_until), whatever the number of samples (monitoring/tests/test_budget.py). Only a sample whose
-        NH₃ can be worked out asks: for a value when it has none of its own, and for the band only while its NH₃ is not
-        stale through its other inputs (its TAN, its pH, its salinity, its own row; review 3, H2). A source that fails
-        ends the temperature at once and says so (review 4, M1, M3), and the read says its sensors failed."""
-        wanted = {}
-        for observation in observations:
-            observation = observe(observation)
-            if not observation.live:
-                wanted.setdefault(self._temperature_key(observation), observation)
-        wanted = {key: each for key, each in wanted.items() if key not in self._temperatures}
-        if not wanted:
-            return
-        tolerance = freshness.tolerance()
-        plans, asks = {}, []
-        for key, observation in wanted.items():
-            plan = self._temperature_plan(observation)
-            plans[key] = plan
-            if plan['look']:
-                asks.append((key, [target for tier in self.tiers[observation.point.pk]
-                                   for target, _origin, _point in tier], observation.at + tolerance))
-        answers = dict(zip([key for key, _targets, _moment in asks],
-                           sources.values_for(parameters.TEMPERATURE, [(targets, moment)
-                                                                       for _key, targets, moment in asks])))
-        unread = str(messages.SENSORS_UNREAD)
-        steady = []
-        for key, observation in wanted.items():
-            plan = plans[key]
-            answer = answers.get(key)
-            if answer is not None and answer.failed:
-                self.sources_failed = True
-            sensed = (self._sensed_temperature(observation.at, self.tiers[observation.point.pk], answer)
-                      if answer is not None else None)
-            if plan['value'] is None:
-                if sensed is None:
-                    self._temperatures[key] = SampleTemperature(
-                        None, None, failed=answer is not None and answer.failed)
-                    continue
-                live = sensed[0]
-                value = live.get(parameters.TEMPERATURE)
-                plan.update(value=value, start=live.at, end=live.until(parameters.TEMPERATURE),
-                            said=str(messages.temperature_from_sensor(value, Basis(
-                                value, live.origin, live.channel_no, live.at).said(observation.point))))
-            elif answer is not None and answer.failed:
-                # Its own temperature, and the place's probe could not be asked whether it still holds: ended at once.
-                self._temperatures[key] = SampleTemperature(plan['value'], plan['start'], plan['said'], True, unread)
-                continue
-            self._temperatures[key] = SampleTemperature(plan['value'], plan['end'], plan['said'])
-            cap = self._stale_anyway(observation)
-            if sensed is not None and cap is not None and cap > self.now:
-                steady.append((key, sensed[1], plan['start'], plan['value'], min(cap, self.now)))
-        band = freshness.temperature_band()
-        confirmed, failed = sources.steady_until(parameters.TEMPERATURE, band, tolerance,
-                                                 [(targets, start, value, until)
-                                                  for _key, targets, start, value, until in steady])
-        if failed:
-            self.sources_failed = True
-        for (key, _targets, start, _value, _until), result in zip(steady, confirmed):
-            found = self._temperatures[key]
-            if failed:
-                self._temperatures[key] = replace(found, until=start, failed=True, why=unread)
-            elif result is not None:
-                end, kind, value = result
-                why = (str(messages.probe_beyond_band(value, band)) if kind == 'band'
-                       else str(messages.probe_silent(end, wanted[key].point)) if kind == 'gap' else '')
-                self._temperatures[key] = replace(found, until=freshness.temperature_until(found.until, end), why=why)
-
-    def _temperature_plan(self, observation):
-        """What a sample's NH₃ temperature is before the probes are asked: its own, else none yet; and whether the place's
-        probes are to be asked (`look`: the read knows the place and the moment, the sample's NH₃ can be worked out (a
-        TAN and a pH), and it needs a probe value, or its band can still end a temperature not stale anyway)."""
+    def temperature_of(observation):
+        """The temperature an NH₃ is worked out with: the observation's own (a sample's typed one; a sensor TAN's, the
+        fresh sensor temperature it was combined with), ending as that value does (`Observation.until`). Never another
+        sample's (the oxygen's stored basis is the oxygen's alone, `_oxygen_temperature`). A sample without one gives no
+        NH₃, and says so."""
         own = observation.get(parameters.TEMPERATURE)
-        plan = ({'value': own, 'start': observation.at, 'said': '', 'end': observation.until(parameters.TEMPERATURE)}
-                if own is not None else {'value': None, 'start': observation.at, 'end': None, 'said': ''})
-        known = self.now is not None and bool(self.tiers.get(observation.point.pk))
-        cap = self._stale_anyway(observation)
-        plan['look'] = known and cap is not None and (plan['value'] is None or cap > self.now)
-        return plan
+        return SampleTemperature(own, observation.until(parameters.TEMPERATURE) if own is not None else None)
 
-    def _stale_anyway(self, observation):
-        """The moment a sample's NH₃ is stale through its inputs other than the temperature (its TAN, its pH, its
-        salinity) and its own row, or None when it has no TAN or no pH (no NH₃ is worked out): the probes are asked how
-        long its temperature stayed within the band up to this moment and no further (review 3, H2)."""
-        if observation.get(TAN) is None or observation.get(parameters.PH) is None:
-            return None
-        ends = [observation.until(TAN), self._ph_until(observation),
-                freshness.fresh_until(NH3_N.code, observation.at)]
-        salinity_until = self.salinity_found(observation)[1]
-        if salinity_until is not None:
-            ends.append(salinity_until)
-        return min(ends)
-
-    @staticmethod
-    def _sensed_temperature(at, tiers, answer):
-        """(the place's live temperature at `at` as an Observation, the targets of its tier) or None, from the sources'
-        `answer` at `at` plus the clock tolerance: the newest value of the first tier (A9: the place's own sensors, then
-        its system's) that is fresh at `at`, stamped at or before it or at most the clock tolerance after it (one moment
-        for two clocks, `fresh_at`), the primary first at one time."""
-        for tier in tiers:
-            found = [Observation.of_sensor(point, value, origin) for target, origin, point in tier
-                     for value in sources.ordered(answer.values.get(target, []))]
-            found = [each for each in found if each.get(parameters.TEMPERATURE) is not None
-                     and is_fresh(parameters.get(parameters.TEMPERATURE), each.at, at, each.fresh_for)]
-            if found:
-                return newest(found), [target for target, _origin, _point in tier]
-        return None
-
-    # -- a point's newest worked-out value --
-    def newest_worked(self, point):
-        """({code: Reading} of the point's NEWEST WORKED-OUT value of each worked-out code, or {} when none in the read's
-        window; its newest sample newer than that whose value cannot be worked out, or None). The one rule of a worked-out
-        value's candidate at a point (review 4 of the branch, H1, H2, L5): a newer sample that cannot be worked out (a
-        TAN without a pH or a temperature, a value the core refused) never takes the place of a worked-out one, at any
-        point of any tier; it is only said (`latest`). Batched (`prefetch_newest_worked`)."""
+    # -- a point's worked-out values: the shell of the judge (farm/water/judge.py) --
+    def worked_at(self, point):
+        """What the shell fetched of a point's worked-out values (a Worked). Batched (`prefetch_newest_worked`)."""
         if point.pk not in self._newest:
             self.prefetch_newest_worked([point])
         return self._newest[point.pk]
 
+    @staticmethod
+    def record(sample, reading, tier=0, now=None, status=None):
+        """The judge's Record of one worked-out reading of a stored sample: its order, whether it has a value, whether the
+        core refused it, whether it was fresh at its own time and is fresh `now`, and its judgement for the place's fish
+        (`status`). The Reading is its key."""
+        return judge.Record(key=reading, point=sample.point_id, tier=tier, measured_at=sample.measured_at,
+                            created_at=sample.created_at, id=str(sample.pk), value=reading.value is not None,
+                            refused=bool(reading.refused), fresh_at_own_time=reading.fresh_until > reading.at,
+                            fresh_now=reading.fresh(now) if now is not None else True,
+                            status=status if status is not None else Status.NOT_MEASURED)
+
+    def records(self, point, code, tier=0, now=None, status_of=None):
+        """[Record] of `code` of every sample the shell fetched at `point` (`worked_at`), late ones too."""
+        worked = self.worked_at(point)
+        return [self.record(sample, readings[code], tier, now, status_of(readings[code]) if status_of else None)
+                for sample, readings in (*worked.found, *worked.late) if readings.get(code) is not None]
+
+    def verdict(self, point, code, tier=0, now=None, status_of=None):
+        """The judge's PointVerdict of `code` at `point` (judge.point_verdict)."""
+        return judge.point_verdict(self.records(point, code, tier, now, status_of))
+
+    def readings_of(self, point, reading):
+        """{code: Reading} of the stored sample at `point` a worked-out `reading` (a Record's key) is of."""
+        return next((found for _sample, found in (*self.worked_at(point).found, *self.worked_at(point).late)
+                     if any(each is reading for each in found.values())), {})
+
+    def _newest_samples(self, point_ids, offset, size):
+        """The samples with a TAN of the points in the read's window (up to its moment for a read of the past), ranked
+        newest first per point by (measured_at, created_at, id), those ranked offset+1 to offset+size: bounded in the
+        database (a window function), never the whole window (review 5, M3)."""
+        rows = WaterMeasurement.objects.filter(point__in=point_ids, measured_at__gte=self._since + WINDOW,
+                                               tan_mg_l__isnull=False)
+        if self.until is not None:
+            rows = rows.filter(measured_at__lte=self.until)
+        rows = (rows.annotate(rank=Window(RowNumber(), partition_by=[F('point_id')],
+                                          order_by=[F('measured_at').desc(), F('created_at').desc(), F('id').desc()]))
+                .filter(rank__gt=offset, rank__lte=offset + size).select_related(*POINT_RELATED))
+        found = sorted(rows, key=lambda sample: (str(sample.point_id), sample.rank))
+        SAMPLES_READ[0] += len(found)
+        return found
+
     def prefetch_newest_worked(self, points):
-        """`newest_worked` for many points at once: ONE query for every sample with a TAN of all of them in the read's
-        window (up to the read's moment for a read of the past), in the order (measured_at, created_at, id), newest
-        first; then, newest first, rounds of one, two, four … samples a point, each round one batch of temperatures
-        (`prefetch_temperatures`), until each point has its newest worked-out value or no sample left. The statements
-        grow with how far back a point has to look, never with the points; each sample is worked out once (`readings`).
-        The whole window is looked through: a held critical ends only with the window (review 3, M3)."""
+        """`worked_at` for many points at once: newest first, rounds of two, four, eight … samples a point
+        (`_newest_samples`), one query each, until the judge says a point is settled (`judge.settled`: its evidence value
+        and a value older than its minute, or no sample left): the statements grow with how far back a point has to look,
+        never with the points, and only the window ends a look-back. Then ONE query for the late results of every point
+        with evidence (measured before it, entered after it)."""
         points = [point for point in points if point.pk not in self._newest]
         if not points:
             return
-        rows = WaterMeasurement.objects.select_related(*POINT_RELATED).filter(
-            point__in=[point.pk for point in points], measured_at__gte=self._since + WINDOW, tan_mg_l__isnull=False)
-        if self.until is not None:
-            rows = rows.filter(measured_at__lte=self.until)
-        by_point = defaultdict(list)
-        for sample in rows.order_by('-measured_at', '-created_at', '-id'):
-            by_point[sample.point_id].append(sample)
         for point in points:
-            self._newest[point.pk] = ({}, None)
-        pending, size = {pk: 0 for pk in by_point}, 1
+            self._newest[point.pk] = Worked()
+        pending, offset, size = [point.pk for point in points], 0, 2
         while pending:
-            self.prefetch_temperatures([sample for pk, index in pending.items()
-                                        for sample in by_point[pk][index:index + size]])
-            for pk, index in list(pending.items()):
-                found, lacking = self._newest[pk]
-                for sample in by_point[pk][index:index + size]:
-                    readings = self.readings(sample)
-                    worked = readings.get(NH3_N.code)
-                    if worked is not None and worked.value is not None:
-                        found = {code: readings[code] for code in DERIVED if code in readings}
-                        break
-                    if lacking is None and worked is not None:
-                        lacking = worked
-                self._newest[pk] = (found, lacking)
-                if found or index + size >= len(by_point[pk]):
-                    del pending[pk]
-                else:
-                    pending[pk] = index + size
-            size *= 2
+            rows = self._newest_samples(pending, offset, size)
+            by_point = defaultdict(list)
+            for sample in rows:
+                by_point[sample.point_id].append(sample)
+            still = []
+            for pk in pending:
+                got = by_point.get(pk, [])
+                worked = self._newest[pk]
+                worked.found += [(sample, {code: found for code, found in self.readings(sample).items()
+                                           if code in DERIVED}) for sample in got]
+                records = [self.record(sample, readings[NH3_N.code]) for sample, readings in worked.found
+                           if NH3_N.code in readings]
+                if not judge.settled(records, exhausted=len(got) < size):
+                    still.append(pk)
+            pending, offset, size = still, offset + size, size * 2
+        self._late_results(points)
 
-    def _ammonia_of(self, observation, used, sample_temperature):
+    def _late_results(self, points):
+        """The owner's decision on review 5: a worked-out value measured before a point's evidence value but entered after
+        it is a late result (the judge says it: `PointVerdict.late`): never a candidate, never an alarm, said on the point
+        (`latest`) and kept in the activity log when it is entered (`late_result_of`). ONE query for every point with
+        evidence."""
+        condition = Q()
+        for point in points:
+            evidence = self.verdict(point, NH3_N.code).evidence
+            if evidence is not None:
+                condition |= Q(point_id=point.pk, measured_at__lt=evidence.measured_at,
+                               created_at__gt=evidence.created_at)
+        if not condition:
+            return
+        for sample in (WaterMeasurement.objects.select_related(*POINT_RELATED)
+                       .filter(condition, measured_at__gte=self._since + WINDOW, tan_mg_l__isnull=False)
+                       .order_by('-measured_at', '-created_at', '-id')):
+            self._newest[sample.point_id].late.append(
+                (sample, {code: found for code, found in self.readings(sample).items() if code in DERIVED}))
+
+    def _ammonia_of(self, observation, used):
         """The readings of `_ammonia`, from the values it recorded as used (`used`, {code: value}) and nothing else of
-        the water's (the ionic-strength inputs, `parameters.AMMONIA_UNCOUNTED`, only move the best estimate). A
-        temperature the live sources could not be asked for says so (`SampleTemperature.failed`, review 3, L3)."""
+        the water's (the ionic-strength inputs, `parameters.AMMONIA_UNCOUNTED`, only move the best estimate)."""
         tan, ph, temperature, salinity = (used[code] for code in (TAN, parameters.PH, parameters.TEMPERATURE,
                                                                   parameters.SALINITY))
-        temperature_said = sample_temperature.said
         if ph is None and observation.ph is not None and observation.ph.refused:
             # The sensor's pH could not be put on the NBS scale: the NH₃ is not known, and where the fish have an NH₃
             # limit it cannot be evaluated (the reason said), never worked out from the unconverted number.
             return {NH3_N.code: Reading(NH3_N, None, observation, True, str(messages.nh3_ph_not_converted(
                 observation.ph.refused)), refused=observation.ph.refused)}
         if ph is None or temperature is None:
-            why = (messages.TEMPERATURE_UNREAD if ph is not None and sample_temperature.failed
-                   else self._same_source_missing(observation))
-            return {NH3_N.code: Reading(NH3_N, None, observation, True, str(why))}
+            return {NH3_N.code: Reading(NH3_N, None, observation, True, self._same_source_missing(observation))}
         if salinity is None:
             return {NH3_N.code: Reading(NH3_N, None, observation, True, self._salinity_missing())}
         inputs = self.ionic_inputs_for(observation)
@@ -1414,7 +1325,7 @@ class Context:
         corrected = (tan * Decimal(equilibria.nh3_share_corrected(float(ph)))).quantize(NH3_N.step)
         said = ' '.join(filter(None, (str(messages.provenance(equilibria)),
                                       messages.judged('nh3', equilibria.nh3_basis, corrected, equilibria),
-                                      self._ph_scale_said(observation), temperature_said)))
+                                      self._ph_scale_said(observation))))
         return {NH3_N.code: Reading(NH3_N, nh3, observation, True, provenance=said, exact=exact),
                 NH4_N.code: Reading(NH4_N, (tan - exact).quantize(NH4_N.step), observation, True, provenance=said,
                                     exact=tan - exact)}
@@ -1627,7 +1538,7 @@ def _newest_ids(points, since, until=None):
         rows = rows.filter(measured_at__lte=until)
     rows = (rows.values('point_id')
             .annotate(**{f'newest_{slot}': First(ArrayAgg('id', filter=condition,
-                                                           order_by=('-measured_at', '-created_at')),
+                                                           order_by=('-measured_at', '-created_at', '-id')),
                                                   output_field=UUIDField())
                          for slot, condition in SLOTS.items()}))
     for row in rows:
@@ -1644,15 +1555,18 @@ def _manual(point, newest, samples, context):
         for code in codes:
             if code in readings:
                 found[code] = readings[code]
-    # The worked-out codes: the point's newest worked-out value, never a newer sample that cannot be worked out
-    # (Context.newest_worked; review 4 of the branch); with none, the newest sample's, which says why it has no value.
-    worked, lacking = context.newest_worked(point)
+    # The worked-out codes by the judge (farm/water/judge.py): the point's evidence value (else its newest judged one,
+    # else its newest sample's, which says why it has no value), and every value the judge judges beside it
+    # (WORKED_SET): the candidates of the place.
     for code in DERIVED:
         found.pop(code, None)
-    if worked:
-        found.update(worked)
-    elif lacking is not None:
-        found[NH3_N.code] = lacking
+    verdicts = {code: context.verdict(point, code) for code in DERIVED}
+    pick = verdicts[NH3_N.code].evidence or verdicts[NH3_N.code].worst
+    if pick is not None:
+        found.update(context.readings_of(point, pick.key))
+    elif context.worked_at(point).found:
+        found.update(context.worked_at(point).found[0][1])
+    found[WORKED_SET] = {code: [record.key for record in verdicts[code].judged] for code in DERIVED}
     return found
 
 
@@ -1776,7 +1690,7 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
                                                  context.temperature_of(together))
     for code in DERIVED:
         tiers = [[*(found[code] for found in [live_worked.get(tier, {})] if found.get(code) is not None),
-                  *(manual[code] for manual in manuals if manual.get(code) is not None)]
+                  *(each for manual in manuals for each in manual.get(WORKED_SET, {}).get(code, []))]
                  for tier, manuals in enumerate((own_manual, system_manual))]
         tiers = [[each for each in tier if each.value is not None] for tier in tiers]
         found = choose(tiers, now, lambda reading: reading.fresh(now))
@@ -1787,9 +1701,9 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
     if NH3_N.code not in chosen and tan is not None:
         # Nothing worked out in any tier: the TAN shown says why.
         if tan.sample.live and tan.fresh(now):
-            together = Observation.combined([tan.sample, *(fresh_live[code] for code in (
-                parameters.PH, parameters.TEMPERATURE, parameters.SALINITY) if fresh_live.get(code) is not None)])
-            chosen.update(context._ammonia(together, *context.salinity_found(together), context.temperature_of(together)))
+            # The live NH₃ already worked out from that TAN's tier (`live_worked`, once: review 5, L2).
+            chosen.update(next((live_worked[tier] for tier, fresh_tier in enumerate((fresh_own, fresh_system))
+                                if tier in live_worked and fresh_tier.get(TAN) is tan.sample), {}))
         elif tan.sample.live:
             # Its one input used, the TAN, ended (`inputs_until`, the others none).
             chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, _('Not worked out: the TAN is no longer fresh.'),
@@ -1932,11 +1846,8 @@ def latest(points, now=None, at=None, own=None, units=()):
     samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(
         {sample_id for slots in ids.values() for sample_id in slots.values()})
     context = Context(everything, since, units)
-    # The moment of the read and each point's place, tier by tier: every loaded sample's temperature in one batch
-    # (Context.prefetch_temperatures; review 3, M1).
-    context.know(places, moment, until=at)
-    context.prefetch_temperatures(samples.values())
-    # Every point's newest worked-out value, looked back at in batches (Context.prefetch_newest_worked; review 4).
+    # Every point's worked-out values, looked back at in batches for the judge (Context.prefetch_newest_worked).
+    context.until = at
     context.prefetch_newest_worked(everything)
     wanted = [target for each in places.values()
               for target, _origin, _point in (*each.own_targets, *each.system_targets)]
@@ -1952,8 +1863,7 @@ def latest(points, now=None, at=None, own=None, units=()):
     for point, place in [*((point, point) for point in points), *((None, unit) for unit in units)]:
         # `place`: the point, or a unit without one (its water's clock and fish; keyed by its id)
         where = places[place.pk]
-        point_water = water[place.pk] = PointWater(point, sensors_failed=answer.failed or context.sources_failed,
-                                                   for_unit=where.for_unit,
+        point_water = water[place.pk] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit,
                                                    system_point=where.system[0] if point is None and where.system
                                                    else None,
                                                    standing_place=_system_place(where, place) if point is None
@@ -1991,24 +1901,14 @@ def latest(points, now=None, at=None, own=None, units=()):
                 if where.for_unit and reading.point is not None and reading.point.pk not in own_ids:
                     last_own(reading, [judged(each) for each in found if each.value is not None and each.point is not None
                                        and each.point.pk in own_ids], moment)
-                if where.for_unit and code in DERIVED:      # F1: a stale worked-out alert at an own point holds
-                    held_at_points(reading, [judged(each) for each in (resolved[code], *found) if each.value is not None
-                                             and each.point is not None and each.point.pk in own_ids], moment)
-                if code in DERIVED:                         # a newer sample that cannot be worked out is said
-                    for each in (*where.own, *where.system):
-                        lacking = context.newest_worked(each)[1]
-                        if lacking is not None and lacking.sample is not resolved[code].sample:
-                            said = str(messages.lacking_newer(lacking))
-                            reading.note = f'{reading.note} {said}' if reading.note else said
-                            if lacking.refused and each.pk in own_ids and code not in point_water.refused_newer:
-                                point_water.refused_newer[code] = judged(lacking)
+                if code in DERIVED:
+                    _worked_said(reading, resolved[code], where, own_ids, point_water, context, judged, moment)
             if point is None:                       # a unit without a point: every value is its system's
                 said = point_water.standing_said
                 reading.note = f'{reading.note} {said}' if reading.note else said
             point_water.readings[code] = reading
         point_water.targets = frozenset(target for target, _origin, _point in (*where.own_targets,
                                                                                  *where.system_targets))
-        point_water.sensors_failed = point_water.sensors_failed or context.sources_failed
         if where.for_unit:
             _silence(point_water, context.holds_fish(place, day), moment)
     return water
@@ -2092,31 +1992,74 @@ def last_own(reading, own, now):
     return reading
 
 
-def held_at_points(reading, own, now):
-    """The review of 2026-11-26, F1 (the coordinator's rule), with review 4's candidates: a worked-out value judged
-    critical or a warning at one of the unit's own points is over only when THAT point says so with a fresh worked-out
-    value. Its inputs make it stale sooner than its base (an NH₃ ends with its temperature, its TAN still fresh), and a
-    stale value no longer decides the status (`worst_fresh`), so a newer OK value at another own point (the middle beside
-    an outlet) would end its alarm without anyone measuring the outlet again, and a late lab critical would raise
-    nothing. For each own point (`own`: the place's own worked-out values of the code, judged for its fish, the value
-    shown among them), its NEWEST worked-out value: when it is not the value shown, stale and worse, the reading keeps
-    that judgement and says it, as `last_own` does for the system tier (`worse`, the note "Last value at Outlet …, no
-    recent data: measure there"); so the page, the card and the alarm (a level the unit's own value holds,
-    alarms/sources.py `own_held`) stay at it until that point gives a fresh worked-out value. A newer sample that cannot
-    be worked out is never a point's worked-out value (Context.newest_worked), so it is no evidence."""
-    newest_at = {}
-    for each in own:
-        if each.point.pk not in newest_at or each.at > newest_at[each.point.pk].at:
-            newest_at[each.point.pk] = each
-    for each in newest_at.values():
-        if (each.sample is reading.sample or each.fresh(now) or each.judged not in ALERTS
-                or RANK[each.judged] >= RANK[reading.judged]):
-            continue
-        reading.judged = reading.status = each.judged
-        reading.worse = each
-        said = str(messages.last_at_point(each))
+def _worked_said(reading, shown, where, own_ids, point_water, context, judged, moment):
+    """Applies the judge's verdict of a place (judge.place_verdict) to its worked-out reading `reading` (`shown` judged):
+    the value held at a point and why, the newer samples that give no value, the refused sample of the tier read
+    ("cannot be evaluated", `PointWater.refused_newer`, its warning: V-A), the late results, and the attention an own
+    sample without its inputs asks. The shell decides nothing of it."""
+    code = reading.code
+    judgements = {}
+
+    def status_of(each):
+        judgements[id(each)] = judgements.get(id(each)) or judged(each)
+        return judgements[id(each)].judged
+
+    def judged_of(record):
+        return judgements.get(id(record.key)) or judged(record.key)
+
+    points = {point.pk: context.verdict(point, code, 0 if point.pk in own_ids else 1, moment, status_of)
+              for point in (*where.own, *where.system)}
+    shown_record = _record_shown(shown, reading, own_ids, moment)
+    verdict = judge.place_verdict(shown_record, points, own_ids, where.for_unit)
+    if verdict.held is not None:
+        held = judged_of(verdict.held)
+        reading.judged = reading.status = held.judged
+        reading.worse = held
+        _say(reading, messages.last_at_point(held))
+    for record in verdict.said:
+        _say(reading, messages.lacking_newer(record.key))
+    if verdict.refused is not None and code not in point_water.refused_newer:
+        point_water.refused_newer[code] = judged_of(verdict.refused)
+    for late, evidence in verdict.late:
+        _say(reading, messages.late_result(judged_of(late), evidence.key))
+    if verdict.attention:
+        reading.judged = Status.UNEVALUATED
+        if reading.status != Status.STALE:
+            reading.status = Status.UNEVALUATED
+
+
+def _record_shown(shown, reading, own_ids, moment):
+    """The judge's Record of the value a place shows (`shown`, judged as `reading`), a sample's or a sensor's."""
+    if shown.point is None:
+        return None
+    sample = shown.sample.sample
+    return judge.Record(key=shown, point=shown.point.pk, tier=0 if shown.point.pk in own_ids else 1,
+                        measured_at=shown.at, created_at=sample.created_at if sample is not None else shown.at,
+                        id=str(sample.pk) if sample is not None else '', value=shown.value is not None,
+                        refused=bool(shown.refused), fresh_at_own_time=shown.fresh_until > shown.at,
+                        fresh_now=shown.fresh(moment), status=reading.judged)
+
+
+def _say(reading, said):
+    said = str(said)
+    if said not in reading.note:
         reading.note = f'{reading.note} {said}' if reading.note else said
-    return reading
+
+
+def late_result_of(sample):
+    """The words of a late result for the activity log when a sample is entered (the owner's decision on review 5): the
+    judge calls it late (measured before its point's evidence value, entered after it) and its NH₃ is critical or a
+    warning for the fish of its day; '' otherwise. One read of the point."""
+    if sample.tan_mg_l is None:
+        return ''
+    context = Context([sample.point], timezone.now() - WINDOW)
+    day = _local_day(sample)
+    verdict = context.verdict(sample.point, NH3_N.code,
+                              status_of=lambda reading: context.judge(replace(reading), day).judged)
+    for record in verdict.late:
+        if record.id == str(sample.pk) and record.status in ALERTS:
+            return str(messages.late_result(context.judge(replace(record.key), day), verdict.evidence.key))
+    return ''
 
 
 def worst_fresh(reading, others, now=None):
@@ -2404,11 +2347,6 @@ def history(samples):
         return []
     points = list({sample.point_id: sample.point for sample in samples}.values())
     context = Context(points, min(sample.measured_at for sample in samples))
-    # The same rule of a sample's temperature as the latest read (Context.temperature_of; review 3, M2): its place, the
-    # unit's tiers whatever else the page holds (`know`, review 4, M2), and the moment; every sample's temperature in
-    # one batch.
-    context.know(_places(points), timezone.now())
-    context.prefetch_temperatures(samples)
     rows = []
     for sample in samples:
         readings = context.readings(sample)
@@ -2417,6 +2355,16 @@ def history(samples):
             for reading in readings.values():
                 context.judge(reading, day)
         rows.append(HistoryRow(sample, readings))
+    # The judge (farm/water/judge.py) on the page's samples of each point: a late result (measured before an evidence
+    # value of the page, entered after it) says so on its row, as the latest read says it on the point.
+    live = [row for row in rows if not row.sample.is_deleted]
+    for point_id in {row.sample.point_id for row in live}:
+        records = [Context.record(row.sample, row.readings[NH3_N.code], status=row.readings[NH3_N.code].judged)
+                   for row in live if row.sample.point_id == point_id and NH3_N.code in row.readings]
+        verdict = judge.point_verdict(records)
+        for late in verdict.late:
+            if late.status in ALERTS:
+                _say(late.key, messages.late_result(late.key, verdict.evidence.key))
     return rows
 
 

@@ -413,7 +413,7 @@ def no_fresh_oxygen(silence):
 
 def last_at_point(reading):
     """What the page, the card and the alarm say of a worked-out value at one of the unit's own points that keeps its
-    status after it went stale (read.held_at_points; the review of 2026-11-26, F1): only a fresh worked-out value at THAT
+    status after it went stale (farm/water/judge.py place_verdict `held`; the review of 2026-11-26, F1): only a fresh worked-out value at THAT
     point ends it, so the point is named: "Last value at Outlet 0.8924 critical on 02.11.2026 10:00, no recent data:
     measure there"."""
     from ..models.water_point import local_time
@@ -425,16 +425,11 @@ def last_at_point(reading):
         'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}
 
 
-def temperature_from_sensor(value, source):
-    """What an NH₃ of a sample without a temperature says beside it: the place's sensor temperature at the sample's time
-    it was worked out with (read.Context.temperature_of; the coordinator's decision of 2026-11-26, a)."""
-    return _('Worked out with the temperature %(value)s °C of %(source)s: the sample has none.') % {
-        'value': number_format(value, 1), 'source': source}
 
 
 def lacking_newer(reading):
-    """What a worked-out value says of a point's sample newer than its newest worked-out value that gives none
-    (read.latest; review 4 of the branch, H1, H2): it never takes the worked-out value's place, it is said, with why:
+    """What a worked-out value says of a point's sample newer than its evidence value that gives none (farm/water/judge.py
+    `said`; reviews 4 and 5 of the branch): it never takes a worked-out value's place, it is said, with why:
     "The sample of 03.11.2026 08:00 at Outlet gives no value (Needs the pH and the temperature of the same sample):
     measure there again." """
     from ..models.water_point import local_time
@@ -449,29 +444,23 @@ INPUT_WORDS = {'tan_mg_l': _('TAN'), 'ph': _('pH'), 'temperature_c': _('temperat
 
 def ended_by(code, end, point, why=''):
     """What a worked-out value no longer fresh because an input ended says (read.Context._say_ended; review 4 of the
-    branch, M5): "Stale since 26.11.2026 10:12: its temperature ended: the probe read 13.5 °C, beyond the 1.0 °C band."
-    """
+    branch, M5): "Stale since 26.11.2026 10:12: its pH ended." """
     from ..models.water_point import local_time
     said = _('Stale since %(time)s: its %(input)s ended') % {
         'time': local_time(end, point).strftime('%d.%m.%Y %H:%M'), 'input': INPUT_WORDS.get(code, code)}
     return f'{said}: {why}.' if why else f'{said}.'
 
 
-def probe_beyond_band(value, band):
-    """Why a temperature input ended: the place's probe read further from it than the band (`ended_by`)."""
-    return _('the probe read %(value)s °C, beyond the %(band)s °C band') % {
-        'value': number_format(value, 1), 'band': number_format(band, 1)}
 
 
-def probe_silent(end, point):
-    """Why a temperature input ended: the place's probe sent no fresh value from that moment (`ended_by`)."""
+def late_result(late, evidence):
+    """A late result (the owner's decision on review 5): a worked-out value measured before a point's evidence value
+    but entered after it, said on the point and in the activity log, never alarmed: "Late result: critical 0.8924 at
+    Outlet on 25.11.2026 10:00, superseded by 0.0110 on 25.11.2026 18:00." """
     from ..models.water_point import local_time
-    return _('the probe sent no fresh value from %(time)s') % {
-        'time': local_time(end, point).strftime('%d.%m.%Y %H:%M')}
-
-
-# A sample's NH₃ without a temperature of its own where the live sources, asked for the place's probe at its time, failed
-# (read.Context.temperature_of; review 3 of the branch, L3): never said as a temperature that is not there.
-TEMPERATURE_UNREAD = _('Needs a temperature: the sample has none, and the live sensor values could not be read.')
-# Why a temperature input ended at once: the live sources failed while it was asked (review 4 of the branch, M1, M3).
-SENSORS_UNREAD = _('the live sensor values could not be read')
+    from .evaluate import Status
+    from .read import said_value
+    return _('Late result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on %(newer_time)s.') % {
+        'status': str(Status(late.judged).label).lower(), 'value': said_value(late), 'point': late.point.name,
+        'time': local_time(late.at, late.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(evidence),
+        'newer_time': local_time(evidence.at, evidence.point).strftime('%d.%m.%Y %H:%M')}

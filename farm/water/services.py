@@ -198,6 +198,12 @@ def _log_create(user, sample):
         changes = {str(_('Measured at')): [None, local_time(sample.measured_at, sample.point).isoformat()]}
         changes.update({label_: [None, value] for label_, value in audit.snapshot(sample, LOGGED).items()
                         if value is not None})
+        # A late result (the owner's decision on review 5 of derived-fresh): its NH₃ critical or a warning, its point's
+        # evidence newer: kept in the log with the sample, never an alarm (read.late_result_of).
+        from .read import late_result_of
+        late = late_result_of(sample)
+        if late:
+            changes[str(_('Late result'))] = [None, late]
         audit.record(user, AuditLog.Action.CREATE, sample, changes, label=label(sample))
 
 

@@ -45,7 +45,7 @@ from farm.models import Tank, WaterLimit
 from farm.stock import read as stock_read
 from farm.templatetags.water import figure_past
 from farm.models.water_point import site_of
-from farm.water import messages as water_messages, parameters, read as water_read
+from farm.water import judge as water_judge, messages as water_messages, parameters, read as water_read
 from farm.water.read import LIMITED, OXYGEN
 from farm.water.evaluate import ALERTS, RANK, Status, judge, worst
 from sensors import alarms as sensor_alarms, clock as sensor_clock
@@ -234,6 +234,16 @@ def clear_evidence(reading, severity, rules, last_bad_at, now, own_held=False, u
                                                                               default=None))
     if decider is None:
         return False
+    if reading.parameter.inputs:
+        # A worked-out value: THE judge says whether it may end a level (farm/water/judge.py `clears`: evidence fresh now,
+        # measured strictly after the last bad value; a tie never clears).
+        sample = decider.sample.sample
+        record = water_judge.Record(
+            key=decider, point=None, tier=0, measured_at=seen_at(decider, now),
+            created_at=sample.created_at if sample is not None else decider.at, id=str(sample.pk) if sample else '',
+            value=decider.value is not None, refused=bool(decider.refused or reading.refused),
+            fresh_at_own_time=decider.fresh_until > decider.at, fresh_now=reading.status != Status.STALE)
+        return water_judge.clears(record, last_bad_at) and judged_clear(reading, rules) not in HOLDS[severity]
     return (reading.status != Status.STALE and not reading.refused
             and (last_bad_at is None or seen_at(decider, now) > last_bad_at)
             and judged_clear(reading, rules) not in HOLDS[severity])

@@ -13,6 +13,10 @@ A provider is an object with three methods, and a fourth it may have:
     values_at(targets, code, moments) -> [{target: [SensorValue]}]   (optional)
         `value_at` at each of several moments, in their order, in one ask (a reader that knows the moments it will
         look up asks once, not once per moment); a provider without it is asked `value_at` per moment.
+    covered(asks, code) -> {index: [Covered]}   (optional)
+        for each ask (target, start, end), by its index in `asks`, each channel's time-weighted mean of its good
+        readings over that span and the seconds they cover (a reading holds until the channel's next good one, at most
+        its `fresh_for`); the degree-days' daily means (farm/water/degree_days.py). A provider without it adds nothing.
     bound(targets, code, since, until) -> {target}
         the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
         never asks per moment for a place nothing was bound to).
@@ -52,6 +56,16 @@ class SensorValue:
     channel_no: int
     ph_scale: str = ''
     ph_scale_from: datetime | None = None
+
+
+@dataclass(frozen=True)
+class Covered:
+    """One channel's time-weighted mean of one parameter over a span (`covered`), in the parameter's unit, and the
+    seconds of the span its fresh good readings covered."""
+    channel_no: int
+    role: str
+    mean: float
+    seconds: float
 
 
 @dataclass(frozen=True)
@@ -133,6 +147,29 @@ def values_at(targets, code, moments):
             for target, values in answer.items():
                 slot.setdefault(target, []).extend(values)
     return [Answer(slot, failed) for slot in merged]
+
+
+def covered(asks, code):
+    """The providers' time-weighted means of one parameter over spans: `asks` is [(target, start, end)], the answer's
+    values {index of the ask: [Covered]}, one ask of each provider for all of them. A provider that raises is left out
+    and the answer says so (`failed`)."""
+    asks = list(asks)
+    if not asks or not _providers:
+        return Answer({})
+    merged, failed = {}, False
+    for provider in list(_providers):
+        if not hasattr(provider, 'covered'):
+            continue
+        try:
+            with transaction.atomic():
+                found = provider.covered(asks, code)
+        except Exception:                                        # fail open, and say so
+            logger.exception('A water source (%r) failed; its values are left out.', provider)
+            failed = True
+            continue
+        for index, values in found.items():
+            merged.setdefault(index, []).extend(values)
+    return Answer(merged, failed)
 
 
 def ordered(values):

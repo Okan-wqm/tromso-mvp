@@ -232,6 +232,14 @@ msgstr[1] "%(count)d tellinger"
 
 #, python-format
 msgid ""
+"%(count)d critical alarm(s) reached nobody: no recipient rule names a person who may see them. A "
+"person who holds Oversee sees them on Alarms: tell the people who keep those fish."
+msgstr ""
+"%(count)d kritisk(e) alarm(er) nådde ingen: ingen mottakerregel navngir en person som kan se dem."
+" En person med Tilsyn ser dem under Alarmer: si fra til dem som steller disse fiskene."
+
+#, python-format
+msgid ""
 "%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log."
 " The first opened %(opened)s, the last cleared %(cleared)s."
 msgstr ""

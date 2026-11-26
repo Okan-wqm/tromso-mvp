@@ -235,6 +235,15 @@ msgstr[1] "%(count)d sayım"
 
 #, python-format
 msgid ""
+"%(count)d critical alarm(s) reached nobody: no recipient rule names a person who may see them. A "
+"person who holds Oversee sees them on Alarms: tell the people who keep those fish."
+msgstr ""
+"%(count)d kritik alarm kimseye ulaşmadı: hiçbir alıcı kuralı onları görebilecek birini "
+"adlandırmıyor. Gözetim yetkisi olan bir kişi onları Alarmlar sayfasında görür: o balıklara "
+"bakanlara haber verin."
+
+#, python-format
+msgid ""
 "%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log."
 " The first opened %(opened)s, the last cleared %(cleared)s."
 msgstr ""

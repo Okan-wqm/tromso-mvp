@@ -28,8 +28,11 @@ def water_key_parts(key):
     """(unit id, slot, severity) of a key `water_key` made, or None for any other key."""
     if not (key and key.startswith(WATER_UNIT)):
         return None
-    parts = key[len(WATER_UNIT):].split(':')
-    return tuple(parts) if len(parts) == 3 else None
+    try:
+        unit_id, slot, severity = key[len(WATER_UNIT):].split(':')
+    except ValueError:                       # not a key water_key made
+        return None
+    return unit_id, slot, severity
 
 
 def unit_subject(unit_id, what):

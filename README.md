@@ -1702,14 +1702,43 @@ out from (`farm/water/parameters.py` `inputs`; the NH₃-N and the NH₄-N: the 
 salinity), and it stops being fresh at the first moment one of them does (`freshness.derived_until`), never later than
 its own row (7 days for both). Each input's end is its own: a sample's value its time plus its parameter's hours, a
 sensor's its channel's, a salinity found at the point or the owner's middle point that value's own, an oxygen basis's
-salinity the basis's time plus the salinity's hours; fresh water's assumed 0 has none. So the NH₃ of a sample goes stale
-with the sample's temperature (24 h), not with its TAN (7 days), and an NH₃ worked out with a salinity measured 160 h
+salinity the basis's time plus the salinity's hours; fresh water's assumed 0 has none. So without a temperature probe the NH₃ of a
+sample goes stale with the sample's temperature (24 h), not with its TAN (7 days), and an NH₃ worked out with a salinity measured 160 h
 earlier goes stale 8 h after. The ionic-strength inputs (alkalinity, conductivity at 25 °C, hardness) only move the best
-estimate, never below the safe-side basis, and are not counted. The rule is answered in one place,
-`read.Reading.fresh_until` (`Reading.fresh`), which the water page, the drawer, the overview, the monitoring cards and
-the alarm engine all read; `evaluate.is_fresh` refuses a worked-out parameter without it, and a parameter made with
-`measured=False` and no `inputs` is refused where it is declared (`farm/tests/test_derived_fresh.py` guards both, and
-that each input alone running out ends every worked-out value).
+estimate, never below the safe-side basis, and are declared as read but not counted (`uncounted`). The rule is
+answered in one place, `read.Reading.fresh_until` (`Reading.fresh`), which the water page, the drawer, the overview,
+the monitoring cards and the alarm engine all read; `evaluate.is_fresh` refuses a worked-out parameter without it, and
+a parameter made with `measured=False` and no `inputs` is refused where it is declared.
+
+**Each input used is recorded** (the review of 2026-11-26, F2): the derivation (`read.Context._ammonia`) reads every
+input once, works the value out from that record and nothing else, and keeps it on the reading with each input's end
+(`Reading.inputs_until`). `Reading.fresh_until` refuses a record that leaves out a declared input or holds one not
+declared. A guard drops each measured value of a full sample in turn: a declared input must change or empty the value,
+any other measured value must leave it as it was unless it is declared `uncounted` (`farm/tests/test_derived_fresh.py`).
+
+**The temperature where a probe measures the place** (the coordinator's decision of 2026-11-26). The place's live
+temperature is A9's: the unit's own points' probes, then its system's.
+- A TAN sample without a temperature of its own is worked out with the place's probe temperature at the sample's time
+  (the newest value fresh then, stamped at most the clock tolerance after it). The value says so: "Worked out with the
+  temperature 12.0 °C of sensor #3, …: the sample has none". That temperature is the input recorded. With no fresh probe
+  value at that time, nothing is worked out, as before.
+- The temperature input of a sample's NH₃, whether typed or taken from the probe, stays fresh while the place's live
+  temperature stays fresh and within 1.0 °C of it (`freshness.TEMPERATURE_BAND`, the one constant;
+  `freshness.temperature_until`). It ends the moment the probe moves further or goes stale (its last value plus the
+  channel's freshness), and at once when the probe is already further off at the sample's time. Where the place has no
+  fresh probe value at that time, the input keeps its own 24 h.
+- The probe's history is read in one statement (`sources.steady_until`, the sensors' `SensorSource.steady_until`). A
+  failing source confirms nothing, and the input keeps its own end.
+- Only the latest read knows the place and the moment (`latest`). A past sample in the history is worked out from its
+  own temperature alone.
+
+**A stale alert at another own point holds** (the review of 2026-11-26, F1). Inputs make a worked-out value stale
+sooner than its base: an NH₃ ends with its temperature while its TAN is still fresh. A stale value no longer decides the
+status (`worst_fresh`). For a worked-out parameter, each of the unit's own points is therefore asked for its newest
+value (`read.held_at_points`, beside `last_own` for the system tier). If that value is stale and judged worse, the
+place keeps its judgement and names the point: "last value at Outlet 0.8924 critical on …, no recent data: measure
+there". The alarm (a level the unit's own value holds, `own_held`) then ends only on a fresh value at that point. A
+late lab critical at one point raises beside a newer OK value at another.
 
 **A sample** is one row: what a person measured at one point at one moment, a typed column per
 parameter, empty when not measured, at least one value (a database check). The point is one sampling point

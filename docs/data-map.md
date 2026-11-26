@@ -58,7 +58,7 @@ When an alarm stopped holding: the sensor rule's event closed, or a fresh water 
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_clearances
 - **constraints**: chk_alarm_clearances_cause (check)
-- **tests that mention it**: `core/tests_data_access.py`, `experiments/tests/test_review.py`, `sensors/tests/test_fresh_rule.py` and 4 more
+- **tests that mention it**: `core/tests_data_access.py`, `experiments/tests/test_review.py`, `sensors/tests/test_fresh_rule.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -493,7 +493,7 @@ The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first
 - **read**: none, by design: read only by the form path, to find the record a key created
 - **how it works**: The same form sent twice creates one record: the second sending finds the first one's record here.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › entry_keys
-- **tests that mention it**: `core/tests_data_access.py`, `core/tests_entry_key.py`, `farm/tests/test_water_points.py` and 2 more
+- **tests that mention it**: `core/tests_data_access.py`, `core/tests_entry_key.py`, `core/tests_sealing.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

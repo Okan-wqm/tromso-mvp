@@ -324,6 +324,7 @@
         "core/tests_data_access.py",
         "experiments/tests/test_review.py",
         "sensors/tests/test_fresh_rule.py",
+        "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
@@ -4122,6 +4123,7 @@
       "tests": [
         "core/tests_data_access.py",
         "core/tests_entry_key.py",
+        "core/tests_sealing.py",
         "farm/tests/test_water_points.py",
         "tasks/tests/test_pages.py",
         "experiments/tests/test_review.py"

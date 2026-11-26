@@ -232,16 +232,6 @@ msgstr[1] "%(count)d tellinger"
 
 #, python-format
 msgid ""
-"%(count)d critical alarm(s) reached nobody at their level: no recipient rule names a person who "
-"may see them, or their notifications cannot leave. A person who holds Oversee sees them on "
-"Alarms: tell the people who keep those fish."
-msgstr ""
-"%(count)d kritisk(e) alarm(er) nådde ingen på sitt nivå: ingen mottakerregel navngir en person "
-"som kan se dem, eller varslene deres kan ikke sendes. En person med Tilsyn ser dem under Alarmer:"
-" si fra til dem som steller disse fiskene."
-
-#, python-format
-msgid ""
 "%(count)d critical alarms happened and cleared while no message could be sent; see the alarm log."
 " The first opened %(opened)s, the last cleared %(cleared)s."
 msgstr ""
@@ -1415,6 +1405,16 @@ msgstr "%(replicate)s: siste dag kommer på eller etter første dag."
 #, python-format
 msgid "%(rule)s at %(time)s"
 msgstr "%(rule)s kl. %(time)s"
+
+#, python-format
+msgid ""
+"%(rule)s names people who do not hold Oversee: an alarm on a confidential experiment’s tanks "
+"reaches them only if they work on that experiment, and otherwise goes to its lead and the Oversee"
+" holders instead."
+msgstr ""
+"%(rule)s navngir personer som ikke har Tilsyn: en alarm på karene til et konfidensielt forsøk når"
+" dem bare hvis de arbeider på det forsøket, og går ellers til forsøkslederen og dem som har "
+"Tilsyn."
 
 #, python-format
 msgid ""
@@ -10356,10 +10356,10 @@ msgstr "Ingen alarm er åpen."
 
 msgid ""
 "No alarm recipient rule is active: nobody is told of any alarm. Make the recipient rules (Company"
-" › Alarms)."
+" › Alarms › Alarm recipients)."
 msgstr ""
 "Ingen mottakerregel for alarmer er aktiv: ingen blir varslet om noen alarm. Lag mottakerreglene "
-"(Selskap › Alarmer)."
+"(Selskap › Alarmer › Alarmmottakere)."
 
 msgid "No alarm yet."
 msgstr "Ingen alarmer ennå."
@@ -10645,6 +10645,13 @@ msgstr "Ingen midtpunkt"
 
 msgid "No notes yet."
 msgstr "Ingen notater ennå."
+
+msgid ""
+"No notification channel is connected: no alarm leaves this system. Every alarm is shown on the "
+"pages only, until a transport is connected."
+msgstr ""
+"Ingen varslingskanal er tilkoblet: ingen alarm forlater dette systemet. Hver alarm vises bare på "
+"sidene til en transport er tilkoblet."
 
 msgid "No one in the team yet."
 msgstr "Ingen i teamet ennå."
@@ -11481,6 +11488,15 @@ msgstr "Ett objekt per melding: en JSON pointer til denne kanalens verdi, f.eks.
 
 msgid "One object, a value per channel at its own path"
 msgstr "Ett objekt, én verdi per kanal på sin egen sti"
+
+msgid ""
+"One or more critical alarms reached nobody at their level: no recipient rule names a person who "
+"may see them, or their notifications cannot leave. A person who holds Oversee sees them on "
+"Alarms: tell the people who keep those fish."
+msgstr ""
+"En eller flere kritiske alarmer nådde ingen på sitt nivå: ingen mottakerregel navngir en person "
+"som kan se dem, eller varslene deres kan ikke sendes. En person med Tilsyn ser dem under Alarmer:"
+" si fra til dem som steller disse fiskene."
 
 msgid "One person’s plan for one day: the shift they start that day, or none for planned off."
 msgstr "Én persons plan for én dag: skiftet de starter den dagen, eller ingen for planlagt fri."

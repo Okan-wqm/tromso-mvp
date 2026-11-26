@@ -3624,11 +3624,19 @@ own place and day only: the unit or system it is about, kept on it when it opens
 key, its point, its sensor channel's binding then, or a place its producer states), never by its sensor channel's
 history. An alarm that names no place must be declared farm-wide by its producer, or it is refused. At every level
 where no rule names a person who may see a sealed alarm, its keepers are told (the experiment's lead and the Oversee
-holders of the cells of its opening day), on every channel of that level's rules, or every connected channel. A
-critical alarm nobody was told of at its current level on a channel that can leave raises the alarm system's own
-critical alarm, which names none of them and goes to the rules and every Oversee holder; while no recipient rule is
-active at all, the alarm system raises "no alarm recipient rule is active" for the Oversee holders too (the
-coordinator's decision of 2026-11-26, review 3). A cell's days are its site's: the seal reads a moment's day on the
+holders of the cells of its opening day, read on each cell's site's clock; on a level whose rule names those on shift,
+the keepers on shift first), each on one channel that can leave: the level's first connected rule channel, else the
+first connected channel. A critical alarm nobody was told of at its current level raises the alarm system's own
+critical alarm ("one or more critical alarms reached nobody", no count), which names none of them and goes to the rules
+and, on every connected channel, every Oversee holder. Once a transport is connected only a notification on a connected
+channel counts as telling; while none is, the alarm system raises its own standing "no notification channel is
+connected" instead, and the net counts only who was queued. While no recipient rule is active at all, it raises "no
+alarm recipient rule is active" (the coordinator's decisions of 2026-11-26, reviews 3 and 4). Which channels are
+connected is read from the configuration, the transport imported once and never built to answer; a path that does
+not import is a channel not connected, logged. The recipient rules' page warns of a rule that names people without
+Oversee while confidential cells exist. The test run turns this watch off for the tests of other things
+(`ALARM_SUPERVISE_REACH`, config/test_runner.py: their worlds have no rule and no transport); the alarm tests
+(`alarms.tests.AlarmsCase`) run it on with a recording transport and assert it stays quiet where a rule exists. A cell's days are its site's: the seal reads a moment's day on the
 cell's site's clock (`core.sealing._cell_day` and `day_on`). The attention counts are kept per what a person reads.
 
 **Known limitations** (recorded, not fixed):
@@ -3646,6 +3654,10 @@ cell's site's clock (`core.sealing._cell_day` and `day_on`). The attention count
 - A sensor rule and its channel stay sealed by the channel's history (any binding ever on a cell), while their events
   and alarms are sealed by their own place: after a probe moves from a sealed tank to an open one, the open tank's people
   get its alarms but cannot open the rule that raises them (review 3, S9).
+- Changing a site's time zone while a confidential experiment runs there moves every sealed day of its cells at once:
+  rows at the old and new edges change visibility (review 4, L4).
+- alarms 0023 places only open silent-probe warnings: a closed one stays unplaced and readable by everyone, naming its
+  tank (review 4, L5; no deployed database had alarms).
 - A sensor event with no binding (older rows) mirrors as a farm-wide alarm naming its channel; an alarm opened the day
   before its tank's cell starts stays unsealed for its whole life, by its opening day; a subject's state row with no
   open alarm is not sealed (only the platform admin's database viewer shows it); `from core.sealing import system as

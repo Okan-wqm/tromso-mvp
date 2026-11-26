@@ -15,7 +15,6 @@ from django.db.models.functions import Now
 from django.utils import timezone
 
 from core import sealing
-from core.dates import company_today
 
 from .models import Experiment, ExperimentShare, Member, SealedCell
 
@@ -81,9 +80,11 @@ def holders():
     to them or to one of their roles. Every SQL reading of Oversee is this one (review 3, S10)."""
     app, codename = OVERSEE
     right = {'content_type__app_label': app, 'codename': codename}
+    # The platform admin is never an overseer, as in Python (`holds_oversee`; review 4, L6).
     return get_user_model()._base_manager.filter(
         Q(**{f'user_permissions__{key}': value for key, value in right.items()})
-        | Q(**{f'groups__permissions__{key}': value for key, value in right.items()}), is_active=True)
+        | Q(**{f'groups__permissions__{key}': value for key, value in right.items()}), is_active=True,
+        is_superuser=False)
 
 
 def holds_oversee(user):
@@ -175,31 +176,28 @@ def note_reads(ids, route, part=''):
         sealing.log_access(kind, 'experiment', pk, part=part, route=route)
 
 
-def keepers(unit_id, system_id, day=None):
-    """The people who keep the fish of a unit or system an experiment holds on `day` (today by default; an alarm's
-    opening day, the day its seal reads): its live lead and every active person holding Oversee (`keepers_of`)."""
-    place = (unit_id, system_id, day or company_today())
-    return keepers_of([place])[place]
-
-
 def keepers_of(places):
-    """{(unit id, system id, day): [the people who keep those fish]} for many places at once (the alarms' fallback
-    when no recipient rule names anyone who may see an alarm): the live leads of the experiments whose cells hold the
-    unit or system that day, and every holder of Oversee. Three statements whatever the number of places (review 3,
-    S5): the cells, the leads, the people."""
+    """{(unit id, system id, moment): [the people who keep those fish]} for many places at once (the alarms' fallback
+    when no recipient rule names anyone who may see an alarm; `moment` the alarm's opening): the live leads of the
+    experiments whose cells hold the unit or system on that moment's day, read on each cell's own site's clock (the
+    seal's one day rule, core.sealing.day_on with the cell's `zone`; review 4, R1: no site is read per alarm), and every
+    holder of Oversee (a place of (None, None, None): the holders alone). Four statements whatever the number of
+    places (review 4, L1): the cells, the leads, the holders, the people."""
+    from zoneinfo import ZoneInfo
     places = list(dict.fromkeys(places))
     if not places:
         return {}
     with sealing.system('the alarms’ fallback'):
-        units = {str(unit) for unit, _system, _day in places if unit}
-        systems = {str(system) for _unit, system, _day in places if system}
+        units = {str(unit) for unit, _system, _moment in places if unit}
+        systems = {str(system) for _unit, system, _moment in places if system}
         cells = list(SealedCell.objects.filter(Q(unit__in=units) | Q(system__in=systems))
-                     .values_list('unit', 'system', 'from_on', 'until_on', 'work'))
+                     .values_list('unit', 'system', 'from_on', 'until_on', 'work', 'zone'))
         works = {}
-        for unit, system, day in places:
-            works[(unit, system, day)] = {work for cell_unit, cell_system, first, last, work in cells
-                                          if first <= day <= last and ((unit and str(cell_unit) == str(unit))
-                                                                       or (system and str(cell_system) == str(system)))}
+        for unit, system, moment in places:
+            works[(unit, system, moment)] = {
+                work for cell_unit, cell_system, first, last, work, zone in cells
+                if moment is not None and first <= sealing.day_on(moment, ZoneInfo(zone)) <= last
+                and ((unit and str(cell_unit) == str(unit)) or (system and str(cell_system) == str(system)))}
         every_work = set().union(*works.values())
         leads = {}
         for experiment, user in Member._base_manager.filter(live(), experiment__in=every_work,
@@ -257,8 +255,8 @@ class Provider:
     oversees = staticmethod(oversees)
     reach = staticmethod(reach)
     note_reads = staticmethod(note_reads)
-    keepers = staticmethod(keepers)
     keepers_of = staticmethod(keepers_of)
+    holders = staticmethod(holders)
 
 
 def register():

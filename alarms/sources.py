@@ -54,7 +54,7 @@ from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
 from .place import UNIT_PREFIXES, bound, unit_of_key
-from .routing import NO_RULES, TO_OVERSEERS, UNREACHED
+from .routing import NO_CHANNEL, NO_RULES, TO_OVERSEERS, UNREACHED
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
 logger = logging.getLogger(__name__)
@@ -337,20 +337,24 @@ def settle(subjects, now, rules):
 
 def _unreached():
     """How many open critical alarms, not acknowledged, nobody was told of at their CURRENT level (the highest it has
-    escalated to, 0 before any; review 3, S1) on a channel that can leave (a transport is connected for it; S3): an
-    alarm on confidential work whose rules and keepers name nobody who may see it, an alarm no rule reaches, one whose
-    notifications wait on an unconnected channel. The alarm saying so names none of them (they may be sealed). Counted
-    on a farm with no recipient rule too (S2): its Oversee holders are told."""
+    escalated to, 0 before any; review 3, S1): an alarm on confidential work whose rules and keepers name nobody who may
+    see it, an alarm no rule reaches. Once a channel is connected, only a notification on a connected channel counts
+    (S3: one waiting on an unconnected channel reaches nobody); while none is, the alarm system says that alone
+    (NO_CHANNEL) and this counts who was queued at all (review 4, R3), so it still shows a sealed alarm that reached
+    nobody who may see it. The alarm saying so names none of them (they may be sealed). Counted on a farm with no
+    recipient rule too (S2): its Oversee holders are told."""
     from django.db.models import Exists, Max, OuterRef, Subquery
     from django.db.models.functions import Coalesce
 
-    from .models import Acknowledgement, AlarmClearance, Channel as Way, Escalation, Notification
-    from .read import transport_connected
-    connected = [channel for channel in Way.values if transport_connected(channel)]
+    from .models import Acknowledgement, AlarmClearance, Escalation, Notification
+    from .transports import connected_channels
+    connected = connected_channels()
     with sealing.system('the alarm system supervises itself: the critical alarms told to nobody'):
         level = Coalesce(Subquery(Escalation.objects.filter(alarm=OuterRef('pk')).order_by().values('alarm')
                                   .annotate(top=Max('level')).values('top')[:1]), 0)
-        told = Notification.objects.filter(alarm=OuterRef('pk'), level=OuterRef('current'), channel__in=connected)
+        told = Notification.objects.filter(alarm=OuterRef('pk'), level=OuterRef('current'))
+        if connected:
+            told = told.filter(channel__in=connected)
         return (Alarm.objects.filter(severity=Severity.CRITICAL).exclude(parameter__in=TO_OVERSEERS)
                 .exclude(Exists(AlarmClearance.objects.filter(alarm=OuterRef('pk'))))
                 .exclude(Exists(Acknowledgement.objects.filter(alarm=OuterRef('pk'))))
@@ -773,15 +777,21 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
     from django.conf import settings
     watched = settings.ALARM_SUPERVISE_REACH
     unreached = _unreached() if watched else 0
+    # No count in the text (review 4, R3; review 3, S8): everyone the rules reach sees this alarm.
     subjects.append(system_subject(UNREACHED, bool(unreached), Severity.CRITICAL, _text(_(
-        '%(count)d critical alarm(s) reached nobody at their level: no recipient rule names a person who may see them, '
+        'One or more critical alarms reached nobody at their level: no recipient rule names a person who may see them, '
         'or their notifications cannot leave. A person who holds Oversee sees them on Alarms: tell the people who keep '
-        'those fish.'), count=unreached), now, farm_wide=True))
+        'those fish.')), now, farm_wide=True))
+    from .transports import connected_channels
+    subjects.append(system_subject(NO_CHANNEL, watched and not connected_channels(), Severity.CRITICAL, _text(_(
+        'No notification channel is connected: no alarm leaves this system. Every alarm is shown on the pages only, '
+        'until a transport is connected.')), now, farm_wide=True))
     from .models import RecipientRule
     subjects.append(system_subject(NO_RULES, watched and not RecipientRule.objects.filter(is_active=True).exists(),
                                    Severity.CRITICAL,
                                    _text(_('No alarm recipient rule is active: nobody is told of any alarm. Make the '
-                                           'recipient rules (Company › Alarms).')), now, farm_wide=True))
+                                           'recipient rules (Company › Alarms › Alarm recipients).')), now,
+                                   farm_wide=True))
     from . import outbox
     stuck = outbox.stuck(rules, now)
     subjects.append(system_subject(UNDELIVERABLE, bool(stuck), Severity.CRITICAL, _text(_(

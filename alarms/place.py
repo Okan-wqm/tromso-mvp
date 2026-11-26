@@ -68,14 +68,6 @@ def declared(spec, key=''):
                 or (stated is not None and any(stated)) or spec.get('farm_wide'))
 
 
-def opening_day(alarm):
-    """The day an alarm opened, on its site's clock: the day its seal reads its cells on (alarms/sealing.py; the seal's
-    one day rule, core.sealing.day_on, review 3, S4)."""
-    from core import sealing
-    from farm.models.site import zone_of
-    return sealing.day_on(alarm.opened_at, zone_of(alarm.site))
-
-
 def of_alarm(alarm):
     """(unit id, system id) of an alarm: its kept place, or, for a row written without one (straight in the database),
     its point's. The seal reads the same two paths (alarms/sealing.py)."""

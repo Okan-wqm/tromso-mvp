@@ -20,7 +20,7 @@ from core import sealing
 
 from hr import read as hr_read
 
-from . import place
+from . import place, transports
 from .models import RANK, Channel, RecipientRule, Source
 
 # The alarm system's own alarm that critical alarms reached nobody (alarms/sources.py, landing review 2, N3): it names
@@ -28,8 +28,10 @@ from .models import RANK, Channel, RecipientRule, Source
 UNREACHED = 'alarms_unreached'
 # The alarm system's own alarm that no recipient rule is active (review 3, S2): nobody would be told of any alarm.
 NO_RULES = 'alarm_rules_none'
+# The alarm system's own alarm that no notification channel is connected (review 4, R3): no alarm leaves the system.
+NO_CHANNEL = 'alarm_channels_none'
 # The alarm system's own alarms that go to every holder of Oversee besides the rules.
-TO_OVERSEERS = (UNREACHED, NO_RULES)
+TO_OVERSEERS = (UNREACHED, NO_RULES, NO_CHANNEL)
 
 
 class Router:
@@ -54,6 +56,7 @@ class Router:
         self.sealed = self._sealed(self.routed)
         self._keepers = None
         self._overseers = None
+        self.connected = transports.connected_channels()       # read once a router (review 4, R4)
 
     @staticmethod
     def _sealed(ids):
@@ -120,7 +123,12 @@ class Router:
         # has rules (review 3, S1: an escalation is never lost to the seal), and at the first when no rule reaches it.
         if alarm.pk in self.sealed and not found and (at_level or (first and not reaching)) \
                 and not any(self.sees(person, alarm) for rule in at_level for person in self.people(rule)):
-            for person in self.keepers(alarm):
+            keepers = self.keepers(alarm)
+            if any(rule.on_shift_only for rule in at_level):
+                # The level says "those on shift": its keepers on shift first, all of them when none is (review 4, R6).
+                on_shift = self.on_shift()
+                keepers = [person for person in keepers if person.pk in on_shift] or keepers
+            for person in keepers:
                 found.setdefault(person.pk, (person, None))
         if alarm.source == Source.SYSTEM and alarm.parameter in TO_OVERSEERS and first:
             for person in self.overseers():
@@ -128,22 +136,27 @@ class Router:
         return sorted(found.values(), key=lambda pair: pair[0].get_username())
 
     def deliveries(self, alarm, level):
-        """[(user, channel, rule)] of `recipients`: the rule's channel; for a person told without a rule (a keeper of
-        the fish, an overseer), every channel of the level's rules, or every connected channel when the level has none
-        (review 3, S3: never push alone while push may be the one channel not connected)."""
+        """[(user, channel, rule)] of `recipients`: the rule's channel. A person told without a rule (review 4, R2, R6):
+        an overseer of the alarm system's own TO_OVERSEERS alarms on every connected channel; a keeper of the fish on
+        one channel that can leave: the level's first connected rule channel, else the first connected channel; push
+        only when nothing is connected."""
         found = []
         for user, rule in self.recipients(alarm, level):
-            channels = [rule.channel] if rule is not None else self.unruled_channels(alarm, level)
+            if rule is not None:
+                channels = [rule.channel]
+            elif alarm.source == Source.SYSTEM and alarm.parameter in TO_OVERSEERS:
+                channels = list(self.connected) or [Channel.PUSH]
+            else:
+                channels = [self.keeper_channel(alarm, level)]
             found += [(user, channel, rule) for channel in channels]
         return found
 
-    def unruled_channels(self, alarm, level):
-        from .read import transport_connected
-        ruled = sorted({rule.channel for rule in self.reaching(alarm) if rule.level == level})
-        if ruled:
-            return ruled
-        connected = [channel for channel in Channel.values if transport_connected(channel)]
-        return connected or [Channel.PUSH]
+    def keeper_channel(self, alarm, level):
+        """The one channel a keeper is told on at `level`: the level's first connected rule channel, else the first
+        connected channel, else push (nothing is connected: it waits, and the alarm system says so)."""
+        ruled = [rule.channel for rule in self.reaching(alarm) if rule.level == level]
+        return next((channel for channel in ruled if channel in self.connected),
+                    self.connected[0] if self.connected else Channel.PUSH)
 
     def keepers(self, alarm):
         """Who keeps the fish of a sealed alarm's cell: its experiment's live lead and the active Oversee holders, among
@@ -153,9 +166,9 @@ class Router:
         if provider is None:
             return []
         if self._keepers is None:
-            # Every sealed alarm's place at once, on the day it opened, the day its seal reads (review 2, N4): one open
-            # past its cell's last day keeps the keepers it had; one read a router (review 3, S5).
-            wanted = {pk: (*place.of_alarm(self.alarms[pk]), place.opening_day(self.alarms[pk])) for pk in self.sealed}
+            # Every sealed alarm's place at once, with the moment it opened, read on each cell's own clock (review 4,
+            # R1): one open past its cell's last day keeps the keepers it had; one read a router (review 3, S5).
+            wanted = {pk: (*place.of_alarm(self.alarms[pk]), self.alarms[pk].opened_at) for pk in self.sealed}
             found = provider.keepers_of([spot for spot in wanted.values() if spot[0] or spot[1]])
             self._keepers = {pk: found.get(spot, []) for pk, spot in wanted.items()}
         return [person for person in self._keepers.get(alarm.pk, []) if self.sees(person, alarm)]

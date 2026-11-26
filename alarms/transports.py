@@ -2,10 +2,14 @@
 path of a Transport class}). None is connected today (the mobile app that receives the push comes later): the setting is
 empty, the outbox waits, and the pages say that nothing is sent. A transport plugs in by being named there; nothing else
 changes. The tests use a double (alarms/tests/doubles.py) that records what it would send."""
+import functools
+import logging
 from dataclasses import dataclass
 
 from django.conf import settings
 from django.utils.module_loading import import_string
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -56,6 +60,27 @@ class Transport:
     def send(self, notification, flood=None):
         """`flood`: send one message for the whole flood instead of the notification's own (alarms/floods.py)."""
         raise NotImplementedError
+
+
+@functools.lru_cache(maxsize=None)
+def _importable(path):
+    """Whether the transport class at `path` imports (once per process and path); an error is logged, never raised."""
+    try:
+        import_string(path)
+    except Exception:                                        # a mistyped path, a missing package
+        logger.exception('The alarm transport %s cannot be imported: its channel counts as not connected.', path)
+        return False
+    return True
+
+
+def connected_channels():
+    """THE channels a notification can leave on now (landing review 4, R4, L8): those settings.ALARM_TRANSPORTS names a
+    transport for that imports. Never builds a transport to answer (a constructor may open a connection), and a path
+    that does not import is a channel not connected, logged: asking never fails, so it cannot roll back a pass's notify
+    or supervision. The routing, the safety net, the sender and the pages all ask here."""
+    from .models import Channel
+    configured = getattr(settings, 'ALARM_TRANSPORTS', {}) or {}
+    return [channel for channel in Channel.values if configured.get(channel) and _importable(configured[channel])]
 
 
 def transport_for(channel):

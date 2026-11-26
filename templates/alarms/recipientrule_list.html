@@ -3,7 +3,7 @@
 {% comment %} Company › Alarms › Alarm recipients (alarms.resources.RecipientRuleResource): who is notified of which alarms, at
    which level. {% endcomment %}
 {% block search_placeholder %}{% trans "Search" %}{% endblock %}
-{% block notice %}{% include "alarms/_not_sent.html" with connected=connected %}{% endblock %}
+{% block notice %}{% include "alarms/_not_sent.html" with connected=connected %}{% for rule in outsiders %}<p class="ui-safety" role="status">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed %}{{ rule }} names people who do not hold Oversee: an alarm on a confidential experiment’s tanks reaches them only if they work on that experiment, and otherwise goes to its lead and the Oversee holders instead.{% endblocktrans %}</p>{% endfor %}{% endblock %}
 {% block empty_text %}{% trans "Nobody is notified of an alarm until a rule says who: a role or a person, on a site or every site, from a severity, at a level." %}{% endblock %}
 {% block above %}{% alarm_watch %}{% endblock %}
 {% block items %}

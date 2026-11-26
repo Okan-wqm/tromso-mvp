@@ -25,7 +25,7 @@ class RecipientRuleResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        return objects, {'connected': read.connected()}
+        return objects, {'connected': read.connected(), 'outsiders': read.rules_naming_outsiders()}
 
 
 class SeverityPolicyResource(Resource):

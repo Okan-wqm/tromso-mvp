@@ -770,13 +770,16 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
     subjects = [system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
         'The alarm rules are incomplete (no rule row for: %(severities)s): the safest values are used until the rows '
         'are restored.'), severities=missing or '-'), now, farm_wide=True)]
-    unreached = _unreached()
+    from django.conf import settings
+    watched = settings.ALARM_SUPERVISE_REACH
+    unreached = _unreached() if watched else 0
     subjects.append(system_subject(UNREACHED, bool(unreached), Severity.CRITICAL, _text(_(
         '%(count)d critical alarm(s) reached nobody at their level: no recipient rule names a person who may see them, '
         'or their notifications cannot leave. A person who holds Oversee sees them on Alarms: tell the people who keep '
         'those fish.'), count=unreached), now, farm_wide=True))
     from .models import RecipientRule
-    subjects.append(system_subject(NO_RULES, not RecipientRule.objects.filter(is_active=True).exists(), Severity.CRITICAL,
+    subjects.append(system_subject(NO_RULES, watched and not RecipientRule.objects.filter(is_active=True).exists(),
+                                   Severity.CRITICAL,
                                    _text(_('No alarm recipient rule is active: nobody is told of any alarm. Make the '
                                            'recipient rules (Company › Alarms).')), now, farm_wide=True))
     from . import outbox

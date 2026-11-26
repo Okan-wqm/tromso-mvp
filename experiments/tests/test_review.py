@@ -379,6 +379,7 @@ class AlarmTests(ReviewCase):
                                       'parameter': 'step', 'farm_wide': True}])
         self.assertEqual((made[0].unit_id, made[0].system_id), (None, None))
 
+    @override_settings(ALARM_TRANSPORTS={'push': 'alarms.tests.doubles.RecordingTransport'})
     def test_a_critical_alarm_told_to_nobody_is_said_to_the_overseers(self):
         """Review 2, N3, the safety net: a critical alarm told to nobody counts in the alarm system's own alarm, which
         names none of them and goes to every holder of Oversee besides the rules."""
@@ -456,9 +457,10 @@ class AlarmTests(ReviewCase):
 RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
 
 
+@override_settings(ALARM_SUPERVISE_REACH=True)
 class SafetyNetTests(ReviewCase):
     """Review 3: sealing never weakens an alarm's escalation, and the alarm system says when a critical alarm reached
-    nobody at its level, through the real pass (alarms.engine.run_once, its supervision step)."""
+    nobody at its level, through the real pass (alarms.engine.run_once, its supervision step; its watch on)."""
 
     def rule(self, **fields):
         from alarms.models import RecipientRule

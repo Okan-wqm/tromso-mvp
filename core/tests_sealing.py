@@ -191,7 +191,7 @@ SYSTEM_CALLS = {
     'reports/due.py:no_longer_match': 'the due list’s duties that no longer match, over every unit',
     'alarms/sources.py:_unreached': 'the alarm system supervises itself: how many critical alarms were told to nobody '
                                     '(a count, no alarm named)',
-    'experiments/sealing.py:keepers': 'the alarms’ fallback: who keeps the fish of a sealed cell (its lead, the '
+    'experiments/sealing.py:keepers_of': 'the alarms’ fallback: who keeps the fish of a sealed cell (its lead, the '
                                       'Oversee holders), asked by the alarm loop',
     'farm/stock/read.py:ledger': 'the stock fold: a fold over part of a batch’s lines is a wrong figure; what is '
                                  'shown of it is narrowed where it is shown',

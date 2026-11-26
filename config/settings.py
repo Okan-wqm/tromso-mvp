@@ -455,6 +455,11 @@ SENSORS_BROKER_AUTH_DIR = os.environ.get('SENSORS_BROKER_AUTH_DIR', str(BASE_DIR
 # The alarms' transports, {channel: dotted path of an alarms.transports.Transport}. None is connected: the mobile app that
 # receives the push comes later, so every notification waits in the outbox and the pages say that nothing is sent.
 ALARM_TRANSPORTS = {}
+# The alarm system's watch on who it reached (alarms/sources.py, landing review 3): a critical alarm nobody was told of
+# at its level on a channel that can leave, and no active recipient rule at all, are its own critical alarms. Always on
+# for a farm; the test run turns it off for the tests of other things (config/test_runner.py), whose worlds have no rule
+# and no transport, and the tests of the watch turn it on.
+ALARM_SUPERVISE_REACH = True
 
 # The alarm worker (manage.py run_alarm_worker, alarms/worker.py; the compose service `alarms`), in seconds unless said,
 # each from the environment. The deployment's, like the ingest's batching: how the process runs, not a rule of the farm

@@ -59,13 +59,14 @@ class Router:
         return set(ids) - open_to_all
 
     def sees(self, person, alarm):
-        """Whether `person` may see `alarm` (asked only for an alarm on a sealed cell)."""
+        """Whether `person` may see `alarm` (asked only for an alarm on a sealed cell): which of the router's sealed
+        alarms they may see is read once per person (one Reach, one statement; landing review 2, N6), never once per
+        person and alarm."""
         from .models import Alarm
-        key = (person.pk, alarm.pk)
-        if key not in self._sees:
+        if person.pk not in self._sees:
             with sealing.as_viewer(person):
-                self._sees[key] = Alarm.objects.filter(pk=alarm.pk).exists()
-        return self._sees[key]
+                self._sees[person.pk] = set(Alarm.objects.filter(pk__in=list(self.sealed)).values_list('pk', flat=True))
+        return alarm.pk in self._sees[person.pk]
 
     def on_shift(self):
         if self._on_shift is None:

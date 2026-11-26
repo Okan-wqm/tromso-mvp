@@ -24,6 +24,7 @@ from django.test import override_settings
 from .. import floods, outbox, read, services
 from ..models import Alarm, DeliveryAttempt, OutboxEntry, SeverityPolicy
 from .doubles import RecordingTransport
+from . import NOTHING_CONNECTED
 from .test_review_fixes import Case
 from farm.tests.helpers import may_record
 
@@ -134,6 +135,7 @@ class LoadTests(Case):
                            "a ON a.id = n.alarm_id WHERE a.parameter = 'many'")
             cursor.execute('ANALYZE alarms; ANALYZE alarm_notifications; ANALYZE alarm_outbox')
 
+    @NOTHING_CONNECTED
     def test_twenty_thousand_waiting_without_a_transport_cost_a_round_and_the_supervision_little(self):
         self.fill(20_000)
         started = time.monotonic()
@@ -178,13 +180,13 @@ class KindTests(Case):
                              'add_alarmshelve')
         for parameter in ('no_fresh_oxygen', 'unit_unevaluated', 'value_unevaluated'):
             with self.subTest(parameter=parameter):
-                alarm = services.open_alarm(source='system', parameter=parameter, severity='critical', at=self.now,
+                alarm = services.open_alarm(source='system', farm_wide=True, parameter=parameter, severity='critical', at=self.now,
                                             summary=parameter)
                 self.assertEqual(services.shelve(alarm, snoozer, 30, 'probe cleaned', at=self.at(1)).alarm, alarm)
         for parameter in ('alarms_unchecked', 'step_failed', 'notifications_undeliverable', 'alarm_rules',
                           'sensors_failed'):
             with self.subTest(parameter=parameter):
-                alarm = services.open_alarm(source='system', parameter=parameter, severity='critical', at=self.now,
+                alarm = services.open_alarm(source='system', farm_wide=True, parameter=parameter, severity='critical', at=self.now,
                                             summary=parameter)
                 with self.assertRaisesMessage(ValidationError, 'own health is never snoozed'):
                     services.shelve(alarm, snoozer, 30, 'busy', at=self.at(1))

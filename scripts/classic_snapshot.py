@@ -20,6 +20,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 import django  # noqa: E402
 
 django.setup()
+from core import sealing  # noqa: E402
+
+# A script of the test world, like a management command, reads as the system; each page it renders has its viewer.
+sealing.enter_process_system('script classic_snapshot')
 from django.conf import settings  # noqa: E402
 from django.db import connection, transaction  # noqa: E402
 

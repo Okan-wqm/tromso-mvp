@@ -18,12 +18,14 @@ from core.templatetags.dates import on, zone_for
 from .. import outbox, read, services
 from ..models import DeliveryAttempt, OutboxEntry
 from .doubles import RecordingTransport
+from . import NOTHING_CONNECTED
 from .test_review_fixes import Case
 
 RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
 
 
 class ClearedCriticalTests(Case):
+    @NOTHING_CONNECTED                                         # the transport is down until the test connects it
     def test_a_critical_that_came_and_went_while_the_transport_was_down_is_sent_once_saying_so(self):
         (notification,) = self.system(1, 'critical')
         services.clear(notification.alarm, self.at(1), 'restored')

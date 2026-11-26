@@ -12,6 +12,8 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.utils.translation import gettext as _
 
+from core import sealing
+
 FORMAT_VERSION = 1
 
 
@@ -103,10 +105,11 @@ def fingerprint(scope):
     Re-run on read, it changes when a row the report read is voided, edited or added (a backdated record), or when
     a unit moves (OUR-05)."""
     digest = hashlib.sha256()
-    for label, rows in scope:
-        names = [name for name in ('id', 'version', 'is_deleted') if _has(rows.model, name)]
-        for row in sorted(rows.values_list(*names), key=str):
-            digest.update(f'{label}:{row}\n'.encode())
+    with sealing.system('the regulatory report'):              # every row, whoever asks (as compute reads them)
+        for label, rows in scope:
+            names = [name for name in ('id', 'version', 'is_deleted') if _has(rows.model, name)]
+            for row in sorted(rows.values_list(*names), key=str):
+                digest.update(f'{label}:{row}\n'.encode())
     return digest.hexdigest()
 
 

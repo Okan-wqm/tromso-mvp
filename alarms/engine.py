@@ -24,8 +24,7 @@ from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification,
-                     NotificationKind, Severity, Source)
+from .models import Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, NotificationKind, Severity, Source
 
 logger = logging.getLogger(__name__)
 LOCK = 4_261_607_201          # the alarm loop's advisory lock key (any constant no other code takes)
@@ -61,7 +60,7 @@ def _route(alarms, now, summary, rules, resumed=None):
     if not alarms:
         return
     resumed = resumed or {}
-    router = routing.Router(now)
+    router = routing.Router(now, alarms)
     ids = [alarm.pk for alarm in alarms]
     levels = dict(Escalation.objects.filter(alarm__in=ids).values('alarm').annotate(top=Max('level'))
                   .values_list('alarm', 'top'))
@@ -75,11 +74,11 @@ def _route(alarms, now, summary, rules, resumed=None):
         level = levels.get(alarm.pk, 0)
         while True:
             key = (alarm.pk, level)
-            for user, rule in router.recipients(alarm, level):
-                if (user.pk, rule.channel) not in sent[key]:
-                    sent[key].add((user.pk, rule.channel))
+            for user, channel, rule in router.deliveries(alarm, level):
+                if (user.pk, channel) not in sent[key]:
+                    sent[key].add((user.pk, channel))
                     first.setdefault(key, now)
-                    queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
+                    queued.append(Notification(alarm=alarm, recipient=user, channel=channel, level=level, rule=rule,
                                                queued_at=now))
             if key in first and now - max(first[key], resumed.get(alarm.pk, first[key])) < rules.escalation_after(
                     alarm.severity):
@@ -102,16 +101,16 @@ def _remind(alarms, now, summary, ended):
         return
     told = set(Notification.objects.filter(shelve__in=[ended[alarm.pk] for alarm in alarms],
                                            kind=NotificationKind.RESUMED).values_list('shelve', 'recipient', 'channel'))
-    router = routing.Router(now)
+    router = routing.Router(now, alarms)
     levels = dict(Escalation.objects.filter(alarm__in=[alarm.pk for alarm in alarms]).values('alarm')
                   .annotate(top=Max('level')).values_list('alarm', 'top'))
     queued = []
     for alarm in alarms:
         shelve, level = ended[alarm.pk], levels.get(alarm.pk, 0)
-        for user, rule in router.recipients(alarm, level):
-            if (shelve.pk, user.pk, rule.channel) not in told:
-                told.add((shelve.pk, user.pk, rule.channel))
-                queued.append(Notification(alarm=alarm, recipient=user, channel=rule.channel, level=level, rule=rule,
+        for user, channel, rule in router.deliveries(alarm, level):
+            if (shelve.pk, user.pk, channel) not in told:
+                told.add((shelve.pk, user.pk, channel))
+                queued.append(Notification(alarm=alarm, recipient=user, channel=channel, level=level, rule=rule,
                                            queued_at=now, kind=NotificationKind.RESUMED, shelve=shelve))
     summary.queued += len(services.queue_many(queued))
 
@@ -122,16 +121,14 @@ def _unsuppressed(alarms):
     (ISA-18.2: the low level under the low-low one); it is still raised and recorded, and notified once the critical
     clears with the warning still open."""
     # A water level's unit is its subject's (`water:unit:<unit>:...`), never its point's: a unit read at its system has
-    # its levels at the loop point or at none (review 5 of fresh-rule, M1). One query.
-    units = {alarm_id: key.split(':')[2] for alarm_id, key in AlarmSubjectState.objects.filter(
-        open_alarm__in=[alarm.pk for alarm in alarms if alarm.source == Source.WATER_LIMIT],
-        key__startswith='water:unit:').values_list('open_alarm_id', 'key')}
+    # its levels at the loop point or at none (review 5 of fresh-rule, M1). The alarm keeps that unit when it opens
+    # (alarms/place.py reads it from the subject's key: one reading of a key, review 3, S10).
 
     def subject(alarm):
         """The subject of a level, or None for an alarm that has no levels: a unit's quantity (cross review F7: the
         unit, never the point that stood for it), or a device's clock."""
         if alarm.source == Source.WATER_LIMIT:
-            unit = units.get(alarm.pk) or (str(alarm.point.unit_id) if alarm.point_id else None)
+            unit = str(alarm.unit_id) if alarm.unit_id else (str(alarm.point.unit_id) if alarm.point_id else None)
             return 'water', unit, sources.slot_of(alarm.parameter)
         if alarm.parameter == sources.DEVICE_CLOCK:
             return 'clock', alarm.device_id

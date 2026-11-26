@@ -34,7 +34,8 @@ class PermissionMatrix(forms.CheckboxSelectMultiple):
             sections.setdefault(area.group, []).append(
                 {'label': area.label, 'cells': [(label, cells.get(action)) for action, label in access.ACTIONS],
                  # under the area: what its rights also reach (Area.note), then its lines shown only to some
-                 'notes': [*([area.note] if area.note else []), *navigation.notes(area.perm(access.READ))]})
+                 'notes': [*([area.note] if area.note else []), *([area.duties] if area.duties else []),
+                           *navigation.notes(area.perm(access.READ))]})
         context['widget']['columns'] = [label for _, label in access.ACTIONS]
         context['widget']['sections'] = sections.items()
         return context

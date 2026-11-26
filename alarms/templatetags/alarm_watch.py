@@ -8,14 +8,16 @@
 from django import template
 from django.conf import settings
 
-from .. import read, watch
+from .. import watch
+from ..models import Channel
+from ..transports import connected_channels
 
 register = template.Library()
 
 
 def notice(promise=False, sent_note=False):
     return {'watch': watch.state(), 'promise': promise, 'sent_note': sent_note,
-            'connected': read.transport_connected('push')}
+            'connected': Channel.PUSH in connected_channels()}
 
 
 @register.inclusion_tag('alarms/_watch.html')

@@ -22,7 +22,7 @@ from django.db.models.lookups import IContains
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from . import query
+from . import query, sealing
 
 PAGE_SIZE = 100
 EXPORT_LIMIT = 50_000
@@ -156,7 +156,9 @@ class Grid:
 
     # --- the rows -----------------------------------------------------------------------------
     def queryset(self):
-        rows = self.table.model._base_manager.all()   # soft-deleted rows included: this is the database
+        # Soft-deleted rows included: this is the database. Rows the person may not see are not (core.sealing: a private
+        # experiment's records, owner amendment C4).
+        rows = sealing.narrow(self.table.model._base_manager.all())
         if self.deleted != 'show':
             rows = rows.filter(is_deleted=self.deleted == 'only')
         for name, term in self.filters.items():
@@ -193,7 +195,7 @@ class Grid:
         target = column.field.target_field
         # A record's name may read its own links (any model's __str__): fetched once for the whole page (FETCH_PEERS),
         # where select_related() without fields, deprecated in Django 6.1, joined every non-null link up front.
-        records = column.field.related_model._base_manager.filter(
+        records = sealing.narrow(column.field.related_model._base_manager.all()).filter(
             **{f'{target.attname}__in': {value for value in values if value is not None}}).fetch_mode(FETCH_PEERS)
         return {getattr(record, target.attname): str(record) for record in records}
 
@@ -246,6 +248,11 @@ class Grid:
     @property
     def export_href(self):
         return self.href('core:database_export')
+
+    @property
+    def export_params(self):
+        """[(name, value)] of this view's query, for the export's form (which adds the reason)."""
+        return [(key, value) for key, value in self.params.items() if value]
 
     @cached_property
     def pager(self):

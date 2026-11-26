@@ -103,10 +103,11 @@ def _filtered_treatments(params, request):
         params['voided'] = ''
         treatments = treatments.filter(is_deleted=False)
     choices = {
-        'site': Site.objects.filter(production_departments__tanks__treatments__isnull=False).distinct()
+        # Through the treatments the person may see (core.sealing), never a join that reaches a sealed one.
+        'site': Site.objects.filter(pk__in=Treatment.objects.values('units__production_department__site'))
         .order_by('name'),
-        'unit': Tank.all_objects.filter(treatments__isnull=False).distinct().order_by('code'),
-        'medicine': Medicine.all_objects.filter(treatments__isnull=False).distinct().order_by('name'),
+        'unit': Tank.all_objects.filter(pk__in=Treatment.objects.values('units')).order_by('code'),
+        'medicine': Medicine.all_objects.filter(pk__in=Treatment.objects.values('medicine')).order_by('name'),
         'batch': Batch.objects.order_by('-input_date', '-code'),
         'method': Treatment.Method.choices,
     }
@@ -254,9 +255,10 @@ def _filtered_counts(params, request):
         params['voided'] = ''
         counts = counts.filter(is_deleted=False)
     choices = {
-        'site': Site.objects.filter(production_departments__tanks__lice_counts__isnull=False).distinct()
+        # Through the lice counts the person may see (core.sealing).
+        'site': Site.objects.filter(pk__in=LiceCount.objects.values('unit__production_department__site'))
         .order_by('name'),
-        'unit': Tank.all_objects.filter(lice_counts__isnull=False).distinct().order_by('code'),
+        'unit': Tank.all_objects.filter(pk__in=LiceCount.objects.values('unit')).order_by('code'),
     }
     for key, lookup in (('site', 'unit__production_department__site'), ('unit', 'unit')):
         if params[key] in {str(pk) for pk in choices[key].values_list('pk', flat=True)}:

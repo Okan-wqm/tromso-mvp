@@ -35,7 +35,7 @@ class SizeCase(Case):
         made = []
         for number in range(count):
             alarm = services.open_alarm(
-                source='system', parameter='sensors_failed', severity='critical', at=at, site=self.bergen,
+                source='system', parameter='sensors_failed', severity='critical', at=at, site=self.bergen, farm_wide=True,
                 summary=f'T-{seconds:03d}{number:03d} · Middle: Dissolved oxygen 3.1 mg/L (critical){words}')
             made += services.queue_many([Notification(alarm=alarm, recipient=self.operator, channel='push', level=0,
                                                       queued_at=at)])

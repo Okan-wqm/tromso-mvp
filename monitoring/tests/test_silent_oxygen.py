@@ -24,6 +24,7 @@ from django.utils import translation
 
 from alarms import engine
 from alarms.models import Alarm
+from alarms.tests import farm_alarms
 from core.island_props import props_of
 from core.pagesays import unsaid
 from farm.models import SamplingPoint, System, Tank
@@ -405,7 +406,7 @@ class LoopAndPassTests(SilentOxygenCase):
             self.assertEqual(engine.run_once(self.now).failed_steps, [])
             self.assertEqual(engine.run_once(self.now + timedelta(seconds=31)).failed_steps, [])
         self.assertEqual(known.call_count, 2)                                   # once per pass, two passes
-        self.assertEqual(sorted(Alarm.objects.filter(clearance__isnull=True).values_list('source', 'severity',
+        self.assertEqual(sorted(farm_alarms().filter(clearance__isnull=True).values_list('source', 'severity',
                                                                                          'parameter')),
                          [('system', 'warning', PROBE_SILENT)] * 2)
 

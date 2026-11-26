@@ -75,6 +75,9 @@ MODEL_WRITERS = ('save', 'delete', 'soft_delete', '_write', 'restore', 'note')
 # (d) {module: (ceiling, reason)}: writes outside (a) to (c), counted per module. Lower a ceiling with a fix, never raise it.
 WRITES_ALLOWED = {
     'core/language.py': (1, "a person's language, their own profile's one field (core.language.set_language)"),
+    'core/readlog.py': (2, 'the read log (core.AccessEvent): who read which confidential record, its one write path, '
+                           'called by core.sealing where a read happens (one row, or one statement for a page)'),
+    'experiments/roles.py': (1, 'the recommended roles of manage.py experiments_roles (a command, as hr/roles.py)'),
     'core/rev.py': (2, "the revision counters' repair (manage.py core_rev_*): the database moves them, these "
                        'restore them'),
     'farm/equipment_types.py': (2, "the equipment types' seed, run by a migration's RunPython on the historical "
@@ -148,7 +151,7 @@ READS_ALLOWED = {
     ('farm/models/tank.py', 'StockMovement'): 2,
     ('farm/models/water_point.py', 'WaterMeasurement'): 2,
     ('farm/resources/feed.py', 'FeedingRecord'): 2,
-    ('farm/resources/feeding_protocol.py', 'Batch'): 4,
+    ('farm/resources/feeding_protocol.py', 'Batch'): 3,
     ('farm/resources/harvest_plan.py', 'StockMovement'): 1,
     ('farm/resources/health_event.py', 'HealthEvent'): 5,
     ('farm/resources/medicine.py', 'Treatment'): 2,
@@ -200,6 +203,9 @@ PRESENT_ALLOWED = {
 SERVICE_WRITES = {'save', 'create', 'bulk_create', 'bulk_update', 'update', 'delete', 'soft_delete', 'get_or_create',
                   'update_or_create'}
 HOOKS = (('add', 'create_record'), ('change', 'change_record'), ('delete', 'delete_record'))
+# Every way to a model's rows by name: its managers, and the two that pass a sealed or soft-delete manager
+# (`_base_manager`, `_default_manager`: the spellings core/tests_sealing.py holds for the sealed models).
+ROW_MANAGERS = ('objects', 'all_objects', '_base_manager', '_default_manager')
 # {tab: the two writers}: a tab crud saves although its area's service writes the same model too. Found when the guard
 # came (the review of wip/hr-one-path, M-2); each is looked at and closed on wip/one-writer-guard. Never add one.
 SECOND_WRITER_TABS = {
@@ -271,8 +277,17 @@ def models_written(module, tree, models=None):
             found[model_named(func.id)] += 1
         elif isinstance(func, ast.Attribute) and func.attr in SERVICE_WRITES:
             chain = _chain(func.value)
-            if len(chain) > 1 and chain[1] in MANAGERS and model_named(chain[0]):
+            if len(chain) > 1 and chain[1] in ROW_MANAGERS and model_named(chain[0]):
                 found[model_named(chain[0])] += 1
+            elif chain[:1] == ['QuerySet']:
+                # `QuerySet(Model)...update()`: the rows as stored, past every manager (core/tests_sealing.py reads the
+                # same spelling for a sealed model)
+                root = func.value
+                while isinstance(root, (ast.Attribute, ast.Call)) and not (
+                        isinstance(root, ast.Call) and isinstance(root.func, ast.Name)):
+                    root = root.value if isinstance(root, ast.Attribute) else root.func
+                if isinstance(root, ast.Call) and root.args and isinstance(root.args[0], ast.Name)                         and model_named(root.args[0].id):
+                    found[model_named(root.args[0].id)] += 1
     return found
 
 
@@ -769,5 +784,11 @@ class OneWriterTests(SimpleTestCase):
                          {'Employee': 1})
         elsewhere = ast.parse('from hr.models import ShiftAssignment' + chr(10) + 'ShiftAssignment(day=None)')
         self.assertEqual({model.__name__ for model in models_written('tasks/views.py', elsewhere)}, {'ShiftAssignment'})
+        for spelling in ('Employee._base_manager.filter(pk=1).update(left_on=None)',
+                         'Employee._default_manager.filter(pk=1).delete()',
+                         'QuerySet(Employee).filter(pk=1).update(left_on=None)'):
+            past = ast.parse('from hr.models import Employee' + chr(10) + spelling)
+            self.assertEqual({model.__name__: count for model, count in models_written('core/admin.py', past).items()},
+                             {'Employee': 1}, spelling)
         other = ast.parse('class Report:' + chr(10) + '    pass' + chr(10) + 'Report()')
         self.assertEqual(models_written('sensors/demo.py', other), Counter())

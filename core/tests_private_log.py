@@ -635,7 +635,7 @@ class ViewerTests(TestCase):
         grid = page.context['grid']
         index = [column.name for column in grid.columns].index('changes')
         self.assertEqual({row.cells[index].kind for row in grid.rows}, {'masked'})
-        export = self.client.get(reverse('core:database_export', args=['audit_log']))
+        export = self.client.get(reverse('core:database_export', args=['audit_log']), {'reason': 'Checking the log'})
         text = (export.content if not export.streaming else b''.join(export.streaming_content)).decode()
         self.assertNotIn('changes', text.splitlines()[0])
         self.assertIn('A record', page.content.decode())                     # the rest of the row is there

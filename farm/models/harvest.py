@@ -14,7 +14,8 @@ from django.db.models import Q
 from django.db.models.functions import Lower
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
-from core.models import ActiveManager, AuditedModel
+from core.models import ActiveManager, AuditedModel, SealedManager
+from core.sealing import SealedMixin
 from core.softdelete import protected
 
 from .species import Species
@@ -131,7 +132,7 @@ def offered_facilities(species=None):
 
 
 # ---- what a harvest adds to its operation -----------------------------------------------------------
-class LiveHarvests(models.Manager):
+class LiveHarvests(SealedMixin, models.Manager):
     """The records of harvests that count: their operation is not voided."""
 
     def get_queryset(self):
@@ -162,7 +163,7 @@ class HarvestRecord(models.Model):
     vessel = models.CharField(_('Wellboat or vehicle'), max_length=100, blank=True)
 
     objects = LiveHarvests()
-    all_objects = models.Manager()
+    all_objects = SealedManager()
 
     class Meta:
         db_table = 'harvest_records'

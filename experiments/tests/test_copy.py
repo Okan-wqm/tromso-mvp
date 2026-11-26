@@ -118,6 +118,7 @@ class CopyPageTests(PageTestCase):
         super().setUp()
         self.create()
         self.trial = Experiment.objects.get()
+        Experiment.objects.filter(pk=self.trial.pk).update(audience='open')   # the roles here; sealed: test_access
         low, high = self.protocol('Low protein'), self.protocol('High protein')
         services.save_design(self.user, self.trial, [services.FactorRow('Diet', 'diet')],
                              [services.GroupRow('Control', 'control', 2, [services.Cell(protocol=low)]),

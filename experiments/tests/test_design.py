@@ -487,6 +487,7 @@ class DesignPageTests(PageTestCase):
         super().setUp()
         self.create()
         self.trial = Experiment.objects.get()
+        Experiment.objects.filter(pk=self.trial.pk).update(audience='open')   # the roles here; sealed: test_access
         self.url = reverse('experiments:experiment_design', args=[self.trial.pk])
         self.edit = reverse('experiments:experiment_edit', args=[self.trial.pk])
         self.high, self.low = self.protocol('High protein'), self.protocol('Low protein')

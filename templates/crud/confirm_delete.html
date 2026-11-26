@@ -44,6 +44,7 @@
       <ul>{% for record in group.records %}<li>{{ record }}</li>{% endfor %}</ul>
     </section>
     {% endfor %}
+    {% if plan.restricted %}<p class="affected-note">{% trans "Some records you may not see are affected too." %}</p>{% endif %}
     <p>{% trans "It disappears from every list but is not erased: the record stays in the database, the activity log keeps its history, and it can be restored from the admin." %}</p>
   {% else %}
   <p>{% trans "This removes it permanently. The activity log keeps a record that it was deleted." %}</p>

@@ -11,7 +11,7 @@ from django.db.models import F, Q
 from django.db.models.functions import Round
 from django.utils.translation import gettext, gettext_lazy as _
 
-from core.models import ActiveManager, AuditedModel
+from core.models import ActiveManager, AuditedModel, SealedManager
 
 from ..water import parameters
 from ..water.evaluate import ANY_WATER
@@ -232,7 +232,7 @@ class WaterMeasurement(AuditedModel):
     void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
 
     objects = SampleManager()
-    all_objects = models.Manager()
+    all_objects = SealedManager()
 
     class Meta:
         db_table = 'water_measurements'

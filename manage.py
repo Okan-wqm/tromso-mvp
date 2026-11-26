@@ -15,6 +15,12 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+    # A command reads every record (a migration, a report job); runserver's requests each read as their person
+    # (core.sealing).
+    from core import sealing
+    reason = sealing.process_reason(sys.argv)
+    if reason:
+        sealing.enter_process_system(reason)
     execute_from_command_line(sys.argv)
 
 

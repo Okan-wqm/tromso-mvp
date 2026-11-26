@@ -83,7 +83,7 @@ from django.db.models import Q
 from django.utils import formats
 from django.utils.translation import gettext as _, ngettext
 
-from core import audit
+from core import audit, sealing
 from core.platform import correction_window_days, unknown_withdrawal_days
 from core.models import AuditLog
 from farm import withdrawal_gate as gate
@@ -270,6 +270,7 @@ def _rank(hold):
 LIFE = object()        # Reader(first=LIFE): from the first day that can matter to the batches asked
 
 
+@sealing.reads_as_system('the medicine withdrawal')
 class Reader:
     """The withdrawals of a set of batches, read on `today`.
 
@@ -681,6 +682,7 @@ def earliest_days(batch_sets):
         if batch_ids else None) for key, batch_ids in batch_sets.items()}
 
 
+@sealing.reads_as_system('the medicine withdrawal')
 def _reached(unit_ids=(), species=None):
     """(the batches ever in `unit_ids` or of `species`, the farm's earliest today among the units they were in: the
     longest held; `reach`)."""
@@ -1008,6 +1010,7 @@ class HarvestInside:
         return self.line.operation_id, self.line.batch_id
 
 
+@sealing.reads_as_system('the medicine withdrawal')
 def _harvest_lines(batch_ids=None, since=None, unit_ids=()):
     """The live lines of the fish that left the farm and may be eaten: a harvest's and a live delivery's
     (check.WITHDRAWAL_LINES, the owner's decisions 12 and 13), of `batch_ids`, and of any batch out of `unit_ids`; from
@@ -1509,7 +1512,8 @@ def describe(withdrawal):
         record = withdrawal.feeding
         return _('Medicated feed %(feed)s was fed in %(unit)s on %(date)s and no in-feed treatment covers that '
                  'day: the withdrawal end is unknown. Record the treatment under Health › Treatments.') % {
-            'feed': record.feed, 'unit': record.unit.code, 'date': shown_date(record.date)}
+            'feed': record.feed, 'unit': _shown(Tank, [record.unit.code])[record.unit.code],
+            'date': shown_date(record.date)}
     treatment = withdrawal.treatment
     params = {'medicine': treatment.medicine, 'method': str(treatment.get_method_display()).lower(),
               'start': shown_date(treatment.start_date), 'end': shown_date(treatment.end_date)}
@@ -1535,10 +1539,24 @@ def describe(withdrawal):
     return text
 
 
+def _shown(model, codes):
+    """{code: what to print}: a unit's or a batch's code when whoever is looking may see it, else "a restricted unit"
+    or "a restricted batch" (core.sealing: a hold caused through a sealed tank names neither the tank nor its fish)."""
+    codes = [code for code in codes if code]
+    if sealing.who() is None:                                   # the system: every code is said
+        return {code: code for code in codes}
+    seen = sealing.memo(('codes seen', model._meta.label),          # once a request, however many holds are said
+                        lambda: set(model.all_objects.values_list('code', flat=True)))
+    other = _('a restricted unit') if model is Tank else _('a restricted batch')
+    return {code: code if code in seen else other for code in codes}
+
+
 def _held_how(hold):
     """How the fish of a Hold came to be held, when it is not said by the withdrawal itself: '' for the exposed fish
-    in a unit they were exposed in."""
-    units = ', '.join(hold.treated_in)
+    in a unit they were exposed in. A unit or a batch the person may not see is not named (`_shown`)."""
+    units_shown = _shown(Tank, [*hold.treated_in, hold.via_unit])
+    batches_shown = _shown(Batch, [hold.via_batch, hold.of_batch])
+    units = ', '.join(dict.fromkeys(units_shown[code] for code in hold.treated_in))
     if not hold.shared:
         if hold.unit_id in hold.exposed_in or not units:
             return ''
@@ -1552,9 +1570,11 @@ def _held_how(hold):
     if hold.chain and hold.via_batch != hold.of_batch:
         # The batch they shared the unit with was never treated: it waits with the treated batch, the source.
         return _('These fish shared %(unit)s with %(batch)s, which waits with %(source)s (%(how)s).') % {
-            'unit': hold.via_unit, 'batch': hold.via_batch, 'source': hold.of_batch, 'how': how}
+            'unit': units_shown.get(hold.via_unit, hold.via_unit), 'batch': batches_shown.get(hold.via_batch, hold.via_batch),
+            'source': batches_shown.get(hold.of_batch, hold.of_batch), 'how': how}
     return _('These fish shared %(unit)s with %(batch)s (%(how)s).') % {
-        'unit': hold.via_unit, 'batch': hold.via_batch, 'how': how}
+        'unit': units_shown.get(hold.via_unit, hold.via_unit), 'batch': batches_shown.get(hold.via_batch, hold.via_batch),
+        'how': how}
 
 
 def provider(units, day):
@@ -1641,7 +1661,8 @@ def guarded_ceiling(user, write, seen=None):
     from farm.stock.services import locked
     today = local_today()
     with transaction.atomic():
-        known = [held for _batch, held in without_a_rule(today)]
+        with sealing.system('the medicine withdrawal'):        # a guard weighs every course, whoever asks
+            known = [held for _batch, held in without_a_rule(today)]
         if not known:
             return guarded(user, set(), today, write, seen=seen)
         back = min(held.start for held in known)

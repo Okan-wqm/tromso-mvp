@@ -87,6 +87,11 @@ class OwnPointEvidenceTests(WaterTestCase):
         self.assertEqual((reading.point, reading.judged, reading.worse.point), (self.mid1, 'critical', self.outlet))
         self.assertIn('Last value at Outlet 0.8924 critical on ', reading.note)
         self.assertIn('no recent data: measure there', reading.note)
+        # ONE sentence for the hold (review 7, M4): the unit has a fresh value of its own, so it is not "last own value …
+        # measure this unit"; that is said only where the system's value stands in (LastOwnTests).
+        self.assertIsNone(reading.last_own)
+        self.assertNotIn('last own value', reading.note)
+        self.assertEqual(reading.note.count('measure there'), 1)
         self.sample(self.outlet, hours=1, **GOOD)
         self.passes(601, 602, 660, 720, 1200)
         self.assertEqual(self.outcome(NH3), {'critical': 'returned', 'warning': 'returned'})
@@ -350,14 +355,16 @@ class Round7Tests(WaterTestCase):
 
     def test_a_late_loop_critical_older_than_the_value_shown_is_said(self):
         """M7, the older way: T-01's own OK 2 h ago is shown; the loop's lab critical measured 30 h ago keyed in now is
-        older than it: no alarm, and the unit says it as a late result."""
+        older than it: no alarm, and the unit says it as an older value of its loop (it may have been entered on time: it
+        is not called late)."""
         self.sample(self.t1, hours=2, **GOOD)
         self.sample(self.loop, hours=30, source='lab', **BAD)
         self.passes(0, 1, 60)
         self.assertEqual(self.outcome(NH3), {})
         reading = self.unit_water().get(NH3)
         self.assertEqual(reading.judged, 'ok')
-        self.assertIn(f'Late result: critical 0.8924 at {self.loop.name} on ', reading.note)
+        self.assertIn(f'Older value at {self.loop.name}: critical 0.8924 on ', reading.note)
+        self.assertNotIn('Late result', reading.note)
 
 
 class Round7SeaTests(WaterTestCase):
@@ -420,3 +427,74 @@ class LiveEvidenceTests(WaterTestCase):
         reading = self.unit_water().get(NH3)
         self.assertTrue(reading.sample.live)
         self.assertEqual((reading.judged, reading.worse), ('ok', None))
+
+
+class SystemSensorTests(WaterTestCase):
+    """Review 7, H1: a RAS with NO loop point, a TAN analyser with its pH and temperature probes bound to the SYSTEM; T-03's
+    own lab NH₃ critical. The analyser's fresh OK is the system's value, never the unit's own point's: it is shown (A9),
+    and it neither ends the hold of the unit's own critical nor clears its alarm."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.models import System
+        from farm.tests.helpers import may_record, point_of
+        from farm.tests.test_stock import make_unit
+        from farm.water import read as water_read
+        from sensors import bindings
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        self.ras2 = System.objects.create(name='RAS 2', code='R2', site=self.bergen, production_department=self.hall)
+        self.t3 = make_unit('T-03', self.hall, system=self.ras2)
+        self.mid3 = point_of(self.t3)
+        self.assertEqual(water_read.middle_points([self.ras2]), {})        # the system has no loop point
+        self.stock(self.t3)
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        may_record(self.user, 'add_binding')
+        device = make_device(make_connection(), make_format(), self.bergen, code='ANALYSER')
+        self.channels = {}
+        for quantity, value in (('tan_mg_l', 0.5), ('ph', 7.0), ('temperature_c', 12.0)):
+            channel = make_channel(device, quantity, code=quantity.upper())
+            bindings.move(self.user, channel, system=self.ras2, at=self.now - timedelta(days=5))
+            self.channels[channel] = value
+
+    def live(self, minutes=0):
+        """The analyser and its probes send, 30 s before the pass of `minutes`."""
+        from django.db import connection
+
+        from sensors.models import ChannelState
+        at = self.now + timedelta(minutes=minutes, seconds=-30)
+        for channel, value in self.channels.items():
+            ChannelState.objects.update_or_create(channel_no=channel.channel_no, defaults=dict(
+                last_value=value, last_value_ts=at, last_good_at=at, last_seen_at=at))
+            with connection.cursor() as cursor:
+                cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, %s)',
+                               [channel.channel_no, at, value])
+
+    def passes(self, *minutes):
+        for each in minutes:
+            self.live(each)
+            engine.run_once(self.now + timedelta(minutes=each))
+
+    outcome = DerivedStaleAlarmTests.outcome
+
+    def test_the_systems_analyser_never_ends_the_units_own_hold(self):
+        """T-03's own lab critical 30 h ago (stale now), the system's analyser fresh and OK: the analyser's value is
+        shown, the unit's own critical is held and said as its last own value, and its alarm raises."""
+        self.sample(self.mid3, hours=30, source='lab', **BAD)
+        self.live()
+        reading = self.unit_water(self.t3).get(NH3)
+        self.assertTrue(reading.sample.live)
+        self.assertEqual((reading.judged, reading.worse.point, reading.last_own.point), ('critical', self.mid3, self.mid3))
+        self.assertIn('no recent data: measure this unit', reading.note)
+        self.assertNotIn('Last value at', reading.note)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+
+    def test_the_systems_analyser_never_clears_the_units_own_alarm(self):
+        """Raised by T-03's own fresh critical; a day later that value is stale and the system's analyser still reads OK:
+        the alarm stays open (it ended "returned" on a value that is not the unit's)."""
+        self.sample(self.mid3, hours=2, source='lab', **BAD)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        self.passes(1800, 1801, 1860, 1920, 2400)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+

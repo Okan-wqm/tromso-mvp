@@ -3574,6 +3574,7 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
         "farm/tests/test_delete_plan.py",
+        "farm/tests/test_derived_fresh.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_fast_of_the_unit.py",
@@ -20076,6 +20077,7 @@
         "sensors/tests/test_replay.py",
         "sensors/tests/test_water_history.py",
         "alarms/tests/__init__.py",
+        "alarms/tests/test_derived_fresh.py",
         "alarms/tests/test_reaction.py"
       ]
     },

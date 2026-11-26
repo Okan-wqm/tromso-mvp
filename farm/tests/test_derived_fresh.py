@@ -325,34 +325,76 @@ class LookBackBudgetTests(WaterTestCase):
     def test_sixty_refused_samples_read_the_window_once_in_a_few_statements(self):
         for hour in range(60, 0, -1):
             self.sample(hours=hour / 2, **self.FULL, conductivity_25_us_cm='40000')
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
         rows, queries = self.read()
         self.assertLessEqual(rows, 61)
         self.sample(hours=0.1, **self.FULL, conductivity_25_us_cm='40000')
         _rows, more = self.read()
         self.assertLessEqual(more - queries, 1)            # rounds of 2, 4, 8 …: log₂ of the depth
+        water = self.unit_water()                          # and the verdict: it cannot be evaluated, and says so
+        self.assertEqual(water.get(NH3).judged, Status.UNEVALUATED)
+        self.assertEqual([each.code for each in water.unevaluated], [NH3])
 
-    def test_thirty_late_results_are_read_at_most_late_said(self):
+    def test_sixty_late_results_are_read_at_most_late_read_and_the_rest_counted(self):
+        """Sixty late results, the OLDEST one critical: LATE_READ are read and judged, the others counted, and the read
+        says how many it does not say one by one: no cut is silent (review 7, M1)."""
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
         self.sample(hours=1, **self.FULL)
-        for hour in range(30, 0, -1):
+        self.sample(hours=40, source='lab', ph='9.00', temperature_c='12.0', salinity_ppt='0.0', tan_mg_l='5.000')
+        for hour in range(59, 0, -1):
             self.sample(hours=2 + hour / 2, source='lab', **self.FULL)
         with counting() as rows:
             water = self.unit_water()
-        self.assertLessEqual(sum(rows), 2 + 1 + read.LATE_SAID)
-        self.assertIsNotNone(water.get(NH3).value)
+        self.assertLessEqual(sum(rows), 2 + 1 + read.LATE_READ)
+        nh3 = water.get(NH3)
+        self.assertEqual((nh3.judged, nh3.value is not None), (Status.OK, True))
+        self.assertIn(f'And {60 - read.LATE_READ} more late results: see the history.', nh3.note)
+
+    def test_the_ceiling_stops_the_look_back_and_the_point_cannot_be_evaluated(self):
+        """After judge.CEILING candidates without evidence the look-back stops, fail-closed: a sea unit whose own samples
+        never give a value (no salinity anywhere of its own), shown OK from its loop, cannot be evaluated and says why;
+        what was fetched is never taken for the whole."""
+        Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater', water_origin='seawater')
+        self.t1.refresh_from_db()
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        for hour in range(14, 2, -1):
+            self.sample(hours=hour, tan_mg_l='1.000', ph='7.50', temperature_c='12.0')       # needs the salinity
+        self.sample(self.loop, hours=1, tan_mg_l='1.000', ph='7.50', temperature_c='12.0', salinity_ppt='30.0')
+        with counting() as rows:
+            whole = self.unit_water().get(NH3)
+        self.assertEqual((whole.point, whole.judged), (self.loop, Status.OK))
+        self.assertGreaterEqual(sum(rows), 12)
+        with mock.patch.object(judge, 'CEILING', 4), counting() as rows:
+            nh3 = self.unit_water().get(NH3)
+        self.assertLessEqual(sum(rows), 2 + 4 + 1)             # the unit's two rounds and the loop's one, never the window
+        self.assertIn('Middle cannot be evaluated: none of its newest 4 samples gives an evaluable value.', nh3.note)
+        self.assertEqual((nh3.point, nh3.judged), (self.loop, Status.UNEVALUATED))
 
 
 class ShellParityTests(WaterTestCase):
     def test_the_database_ranks_as_the_judge_orders(self):
-        """Review 6, L4: same minute, same entry moment: the database's ORDER (the uuid) and the judge's (its text) agree."""
+        """The one order: nine samples of three measurement times, three entry moments (their order against the
+        measurement's) and their ids (three share both times): the database's ORDER and the judge's order agree, field
+        by field, on more rows than the look-back's first rounds fetch."""
         from ..models import WaterMeasurement
-        samples = [self.sample(hours=1, **FULL) for _each in range(4)]
-        WaterMeasurement.objects.filter(pk__in=[sample.pk for sample in samples]).update(
-            created_at=samples[0].created_at)
+        samples = [self.sample(hours=1 + index // 3, **FULL) for index in range(9)]
+        base = samples[0].created_at
+        for index, sample in enumerate(samples):
+            entered = base if index >= 6 else base + timedelta(minutes=(index * 7) % 5)
+            WaterMeasurement.objects.filter(pk=sample.pk).update(created_at=entered)
+        self.assertEqual([each.expression.name for each in read.ORDER], list(judge.ORDER_FIELDS))
+        self.assertEqual(read.ORDER_BY, tuple(f'-{name}' for name in judge.ORDER_FIELDS))
         context = read.Context([self.mid1], self.now - read.WINDOW)
-        ranked = context._ranked(context._window([self.mid1.pk]), 0, 10)
+        ranked = [sample for offset, size in ((0, 2), (2, 4), (6, 8))
+                  for sample in context._ranked(context._window([self.mid1.pk]), offset, size)]
+        self.assertEqual(len(ranked), 9)
         records = [read.record_of(context.readings(sample)[NH3]) for sample in ranked]
-        self.assertEqual([record.id for record in records],
-                         [record.id for record in judge.newest_first(records)])
+        self.assertEqual([record.id for record in records], [record.id for record in judge.newest_first(records)])
+        self.assertEqual([record.order for record in records],
+                         [(sample.measured_at, sample.created_at, str(sample.pk)) for sample in ranked])
 
     def test_nh4_follows_nh3s_evidence(self):
         """Review 6, L6: the look-back settles on the NH₃; the NH₄ of the same samples has the same evidence sample."""
@@ -361,3 +403,182 @@ class ShellParityTests(WaterTestCase):
         context = read.Context([self.mid1], self.now - read.WINDOW)
         nh3, nh4 = (context.verdict(self.mid1, code).evidence for code in (NH3, NH4))
         self.assertEqual(nh3.id, nh4.id)
+
+
+class ShellRecordTests(WaterTestCase):
+    """The shell's one Record builder (read.record_of) and where a value belongs (read.bound_at), field by field."""
+
+    def live(self, point, origin):
+        observation = read.Observation(point, self.ago(hours=0.01), origin, {TAN: D('0.500')}, fresh_for=180)
+        return read.Reading(parameters.get(NH3), D('0.0010'), observation, True,
+                            inputs_until={code: self.now + timedelta(hours=1) for code in parameters.get(NH3).inputs})
+
+    def test_a_live_value_belongs_where_its_sensor_is_bound(self):
+        """Review 7, H1: a system's own sensor observed at a unit's point is the SYSTEM's; a probe on the point, and the
+        system's sensor at its loop point, are the point's."""
+        from ..water import sources
+        system = read.record_of(self.live(self.mid1, read.Origin.SYSTEM_SENSOR), self.now)
+        self.assertEqual(system.point, (sources.SYSTEM, self.ras.pk))
+        self.assertEqual((system.stored, system.id, system.fresh_now), (False, f'live:{system.point}', True))
+        self.assertEqual(system.created_at, system.measured_at)
+        self.assertEqual(read.record_of(self.live(self.mid1, read.Origin.SENSOR)).point, self.mid1.pk)
+        self.assertEqual(read.record_of(self.live(self.loop, read.Origin.SYSTEM_SENSOR)).point, self.loop.pk)
+        self.assertEqual(read.bound_at(self.live(self.t1, read.Origin.SYSTEM_SENSOR)), (sources.SYSTEM, self.ras.pk))
+
+    def test_a_record_without_a_moment_says_fresh_now_is_not_known(self):
+        self.sample(hours=1, **FULL)
+        nh3 = self.unit_water().get(NH3)
+        record = read.record_of(nh3)
+        self.assertIsNone(record.fresh_now)
+        self.assertEqual((record.stored, record.value, record.refused, record.fresh_at_own_time, record.status),
+                         (True, True, False, True, Status.NOT_MEASURED))
+        self.assertTrue(read.record_of(nh3, self.now).fresh_now)
+        self.assertFalse(read.record_of(nh3, self.now + timedelta(hours=30)).fresh_now)
+
+    def test_a_value_stale_from_its_start_is_no_evidence(self):
+        """Its salinity, looked up from a sample exactly its 168 h older, ends at the sample's own moment: stale from its
+        start (fresh_at_own_time False), so the judge never takes it for evidence."""
+        Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater', water_origin='seawater')
+        self.t1.refresh_from_db()
+        self.sample(hours=170, salinity_ppt='30.0')
+        self.sample(hours=2, tan_mg_l='1.000', ph='7.50', temperature_c='12.0')
+        context = read.Context([self.mid1], self.now - read.WINDOW)
+        verdict = context.verdict(self.mid1, NH3)
+        self.assertIsNone(verdict.evidence)
+        self.assertEqual([(record.value, record.fresh_at_own_time) for record in verdict.judged], [(True, False)])
+
+
+class CanGiveAValueTests(WaterTestCase):
+    """Review 7, M7: what a sample must hold itself for its ammonia to give a value is defined once (read.OWN_INPUTS): the
+    derivation and the look-back's two streams agree on all eight combinations of a TAN, a pH and a temperature."""
+
+    def test_the_streams_and_the_derivation_agree(self):
+        import itertools
+
+        from ..models import WaterMeasurement
+        self.assertEqual(read.OWN_INPUTS, parameters.AMMONIA_OWN)
+        values = {TAN: '1.000', PH: '7.50', TEMPERATURE: '12.0'}
+        context = read.Context([self.mid1], self.now - read.WINDOW)
+        for index, held in enumerate(itertools.product((True, False), repeat=3)):
+            chosen = {code: value for (code, value), has in zip(values.items(), held) if has}
+            sample = self.sample(hours=1 + index, salinity_ppt='0.0', **chosen)
+            can = WaterMeasurement.objects.filter(read.HAS_TAN & read.CAN_GIVE, pk=sample.pk).exists()
+            cannot = WaterMeasurement.objects.filter(read.CANNOT_GIVE, pk=sample.pk).exists()
+            nh3 = context.readings(sample).get(NH3)
+            with self.subTest(held=sorted(chosen)):
+                self.assertEqual(can, all(held))
+                self.assertEqual(can + cannot, 1 if TAN in chosen else 0)       # a TAN: exactly one stream
+                self.assertEqual(nh3 is not None and nh3.value is not None, can)
+                self.assertEqual(read.gives_value(lambda code, sample=sample: getattr(sample, code)), all(held))
+
+
+class LateResultTests(WaterTestCase):
+    """Review 7, M1 to M3: a late critical is always said (the page, its history row, the activity log), whatever the
+    order of entry and however many late results there are; the log keeps it in English; a late check that fails never
+    blocks the sample and leaves its trace."""
+    BAD = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'tan_mg_l': '5.000'}
+    SAID = 'Late result: critical 0.8924 at Middle on '
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        self.sample(hours=1, **FULL)                                    # this morning's kit: the evidence
+
+    def logged(self, sample):
+        from core.models import AuditLog
+        return AuditLog.objects.get(entity_type='water sample', action='create',
+                                    entity_id=str(sample.pk)).changes.get('Late result')
+
+    def six(self, critical_first):
+        """The lab's results of the last week keyed in after the kit's: the oldest critical, five newer ones OK."""
+        hours = [150, 120, 96, 72, 48, 24]
+        made = {}
+        for hour in (hours if critical_first else reversed(hours)):
+            made[hour] = self.sample(hours=hour, source='lab', **(self.BAD if hour == 150 else FULL))
+        return made[150], [made[hour] for hour in hours[1:]]
+
+    def said_everywhere(self, critical_first):
+        critical, others = self.six(critical_first)
+        self.assertTrue(self.logged(critical)[1].startswith(self.SAID), self.logged(critical))
+        self.assertEqual([self.logged(each) for each in others], [None] * 5)
+        self.assertIn(self.SAID, self.unit_water().get(NH3).note)
+        rows = {row.sample.pk: row for row in read.history([critical, *others])}
+        self.assertIn(self.SAID, rows[critical.pk].readings[NH3].note)
+        self.assertNotIn('Late result', rows[others[0].pk].readings[NH3].note)
+
+    def test_a_late_critical_keyed_first_of_six_is_said_everywhere(self):
+        self.said_everywhere(critical_first=True)
+
+    def test_a_late_critical_keyed_last_of_six_is_said_everywhere(self):
+        self.said_everywhere(critical_first=False)
+
+    def test_more_late_alerts_than_are_said_one_by_one_are_counted(self):
+        for hour in range(8):
+            self.sample(hours=30 + hour, source='lab', **self.BAD)
+        note = self.unit_water().get(NH3).note
+        self.assertEqual(note.count('Late result: critical'), read.LATE_SAID)
+        self.assertIn(f'And {8 - read.LATE_SAID} more late results: see the history.', note)
+
+    def test_the_log_keeps_the_words_in_english_whatever_the_users_language(self):
+        from django.utils import translation
+        for language in ('tr', 'nb'):
+            with self.subTest(language=language), translation.override(language):
+                sample = self.sample(hours=30 if language == 'tr' else 31, source='lab', **self.BAD)
+                value = self.logged(sample)[1]
+                self.assertTrue(value.startswith(self.SAID), value)
+                self.assertIn(', superseded by ', value)
+
+    def test_a_late_check_that_fails_never_blocks_the_sample_and_says_so_in_its_entry(self):
+        from django.db import connection
+
+        from ..models import WaterMeasurement
+        from ..water import services
+
+        def bad_statement(_samples):
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT 1 / 0')
+
+        for failure in (ValueError('an input left out'), bad_statement):
+            with self.subTest(failure=str(failure)), self.assertLogs('farm.water.services', level='ERROR'), \
+                    mock.patch.object(services, 'late_results_of', side_effect=failure):
+                sample = self.sample(hours=30 if isinstance(failure, ValueError) else 31, source='lab', **self.BAD)
+            self.assertTrue(WaterMeasurement.objects.filter(pk=sample.pk).exists())       # stored, the transaction usable
+            self.assertEqual(self.logged(sample), [None, 'could not be checked'])
+
+    def test_one_unreadable_point_does_not_strip_the_others_words(self):
+        from ..models import WaterMeasurement
+        from ..water import services
+        late = self.sample(hours=30, source='lab', **self.BAD)
+        other = self.sample(self.t2, hours=30, source='lab', **self.BAD)
+        samples = list(WaterMeasurement.objects.select_related(*read.POINT_RELATED).filter(pk__in=[late.pk, other.pk]))
+        real = read.late_results_of
+
+        def unreadable_at_t2(group):
+            if any(sample.point_id == self.mid2.pk for sample in group):
+                raise ValueError('T-02 cannot be read')
+            return real(group)
+
+        with self.assertLogs('farm.water.services', level='ERROR'), \
+                mock.patch.object(services, 'late_results_of', side_effect=unreadable_at_t2):
+            words = services._late_words(samples)
+        self.assertTrue(words[late.pk].startswith(self.SAID), words)
+        self.assertEqual(words[other.pk], 'could not be checked')
+
+
+class PointOwnStatusTests(WaterTestCase):
+    """Review 7, M5: a point's OWN status, and a point read on its own, are the judge's: the worst of its judged set."""
+
+    def test_an_outlets_own_row_is_the_worst_of_its_minute(self):
+        from ..water import services
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+        at = self.ago(hours=30)
+        for source, values in (('lab', LateResultTests.BAD), ('manual', FULL)):          # the kit's OK keyed in last
+            services.record(self.user, point=outlet, measured_at=at, source=source,
+                            values={code: D(value) for code, value in values.items()})
+        water = read.latest([outlet])[outlet.pk]
+        self.assertFalse(water.for_unit)
+        self.assertEqual(water.point_status, Status.CRITICAL)
+        self.assertEqual(water.get(NH3).judged, Status.CRITICAL)

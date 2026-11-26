@@ -53,7 +53,7 @@
         <td class="nowrap">{{ row.last_fed|fed_on:row.today }}</td>
         <td>{% if row.withdrawal is None %}<span class="muted">{{ fw.not_checked }}</span>{% elif row.withdrawal %}{% for block in row.withdrawal %}<span class="row-line over-text">{{ block.batch.code }}: {{ block|harvest_from }}</span>{% endfor %}{% else %}{{ fw.none }}{% endif %}{% if row.earliest.decides %}<span class="row-sub">{{ row.earliest.text }}</span>{% endif %}</td>
         <td class="row-actions">
-          <a class="button button-ghost" href="{{ row.growth_url }}">{{ fw.growth_plan }}</a>
+          <a class="ui-btn" href="{{ row.growth_url }}">{{ fw.growth_plan }}</a>
           {% if row.plan_harvest_url %}<a class="button button-ghost" href="{{ row.plan_harvest_url }}" data-modal>{{ fw.plan_harvest }}</a>{% endif %}
           {% if plan and can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:productionplan_delete' plan.pk %}" data-modal title="{{ fw.delete }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{{ fw.delete }}</span></a>{% endif %}
         </td>

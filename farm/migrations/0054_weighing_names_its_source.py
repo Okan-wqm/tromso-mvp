@@ -6,7 +6,7 @@ class Migration(migrations.Migration):
     were there their source."""
 
     dependencies = [
-        ('farm', '0053_weight_source_and_interpolation_day'),
+        ('farm', '0053_weight_source_and_step_rules'),
     ]
 
     operations = [

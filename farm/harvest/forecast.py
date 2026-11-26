@@ -44,6 +44,12 @@ class Forecast:
     curve: growth.Curve = None
     monthly: bool = False
     horizon_days: int = None
+    held: object = None           # the temperature held (feeding.temperature.Temperature), with its age: never silent
+
+    @property
+    def stale(self):
+        """What to say when the temperature held is not fresh ('' when it is, or when none is held)."""
+        return self.held.warning if self.held is not None and self.planned else ''
 
     @property
     def day(self):
@@ -106,7 +112,7 @@ def _ahead(policy, unit, batch, start, weight_g, fish, target_g, horizon_days, f
                             temperature.value_c)
 
     curve = growth.curve(start, weight_g, Decimal(fish), target_g, horizon_days, terms_of)
-    return Forecast(weight_g, Decimal(fish), start, curve, bool(monthly), horizon_days)
+    return Forecast(weight_g, Decimal(fish), start, curve, bool(monthly), horizon_days, held)
 
 
 def forecasts(shares, targets):

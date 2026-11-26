@@ -149,6 +149,8 @@ def forecast_said(forecast):
                 'date': _day(forecast.day), 'temperature': floatformat(forecast.temperature_c, '1')}
         said['lines'] = [reached, _('%(feed)s of feed to the target · economic FCR %(fcr)s') % {
             'feed': feed_kg(forecast.curve.feed_kg), 'fcr': fcr(forecast.curve.economic_fcr)}]
+        if forecast.stale:
+            said['lines'].append(str(forecast.stale))       # a temperature held that is not fresh is said, never silent
     return said
 
 

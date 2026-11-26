@@ -2,15 +2,15 @@
 
 - the weight source a weighing takes when it names none, "Manual sample" (code `manual`), and that source on every
   weighing line already in the ledger (they were all samples weighed by hand: there was no other way to enter one);
-- on every feeding protocol that exists, the day the FCR began to be read between the bands: the day this migration
-  runs. The days before it keep each band's own FCR, so nothing a protocol gave for a past day changes (owner decision
-  Q3); a protocol made afterwards has no such day and is read between the bands throughout.
+- on every feeding protocol that exists, the between-band rule it has always followed: a step at the band's edge, for
+  its FCR, its uneaten share and its SFR. So nothing an existing protocol gives changes, on any day (owner decision Q3:
+  an assigned protocol is fixed); a protocol made afterwards is smooth between its bands unless its maker chooses
+  otherwise, and an existing one is made smooth on a copy (Duplicate), or by its rule while it is not assigned.
 
-Backwards: the day and the lines' source are emptied, the seeded source removed."""
+Backwards: the lines' source is emptied and the seeded source removed; the rules go with their columns."""
 import uuid
 
 from django.db import migrations
-from django.utils import timezone
 
 MANUAL = 'manual'
 NAME = 'Manual sample'
@@ -24,12 +24,11 @@ def write(apps, schema_editor):
         source = WeightSource.objects.create(id=uuid.uuid4(), code=MANUAL, name=NAME, notes=NOTES)
     apps.get_model('farm', 'StockMovement').objects.filter(kind='weighing', weight_source__isnull=True).update(
         weight_source=source)
-    apps.get_model('farm', 'FeedingProtocol').objects.filter(interpolated_from__isnull=True).update(
-        interpolated_from=timezone.localdate())
+    apps.get_model('farm', 'FeedingProtocol').objects.update(fcr_between='step', uneaten_between='step',
+                                                             sfr_between='step')
 
 
 def remove(apps, schema_editor):
-    apps.get_model('farm', 'FeedingProtocol').objects.update(interpolated_from=None)
     apps.get_model('farm', 'StockMovement').objects.filter(weight_source__code=MANUAL).update(weight_source=None)
     apps.get_model('farm', 'WeightSource').objects.filter(code=MANUAL, created_by__isnull=True).delete()
 

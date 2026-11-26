@@ -102,7 +102,8 @@ def lines(unit, batch, target_g, found):
         else:
             said.append(_('Every day at %(temperature)s, the unit’s latest temperature at the start, held.') % {
                 'temperature': celsius(forecast.temperature_c)})
-    return [*said, str(words.THE_PLAN_AHEAD_COUNTS), str(words.THE_SFR_IS_ITS_BANDS)]
+            said.append(forecast.stale)             # "Based on the temperature from … (N days old)", or nothing
+    return [*(line for line in said if line), str(words.THE_PLAN_AHEAD_COUNTS), str(words.THE_SFR_IS_ITS_BANDS)]
 
 
 def props(request, context):

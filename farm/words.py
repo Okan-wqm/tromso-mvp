@@ -16,16 +16,26 @@ ONE_ROW_PER_WEIGHT_BAND_FROM = _('One row per weight band, from its lower weight
       'meet without gaps and only the last may have no upper weight. Fish outside the bands, or in '
       'water outside the first and last temperature column, get no ration. In each cell the SFR, the %% '
       'of the body weight fed a day; 0 means no feeding at that temperature. An empty FCR, uneaten share or '
-      'mortality is the protocol’s. The FCR and the uneaten share of fish between two bands are read in '
-      'between them; the SFR is its band’s. The table is saved as a whole.')
+      'mortality is the protocol’s. How fish between two bands are read (smooth, or a step at the edge) '
+      'is chosen on the General tab; the values it gives are shown under the saved table. The table is '
+      'saved as a whole.')
 UNEATEN_FEED = _('Uneaten feed')
 ECONOMIC_FCR = _('Economic FCR')
 MORTALITY_A_MONTH = _('Mortality a month')
-BETWEEN_TWO_BANDS_THE_FCR = _('Each band’s FCR and uneaten share sit at the middle of the band (a band without an upper '
-                              'weight: at its lower weight). For fish between two middles both are read in between, so '
-                              'neither jumps at a band’s edge; the SFR is read from the fish’s own band at the water '
-                              'temperature. The economic FCR is the FCR on the feed given: the FCR divided by the '
-                              'share eaten.')
+BETWEEN_TWO_BANDS_THE_FCR = _('Each band’s FCR, uneaten share and SFR sit at the middle of the band (a band without an '
+                              'upper weight: at its lower weight). With the rule “Smooth between bands” the value '
+                              'of fish between two middles is read in between, so it does not jump at a band’s '
+                              'edge; with “Step at the band edge” it is the fish’s own band’s. The rule is chosen '
+                              'per quantity on the General tab. The economic FCR is the FCR on the feed given: the '
+                              'FCR divided by the share eaten.')
+VALUES_USED_OVER_THE_WEIGHT = _('Values used over the fish’s weight')
+THE_VALUES_THE_TABLE_GIVES = _('What the stored table gives fish of each weight, worked out by the rule the rations and '
+                               'the production plan use: at each band’s lower weight and at the weight where the '
+                               'band’s entered values sit.')
+FISH_WEIGHT = _('Fish weight')
+POINT = _('Point')
+ENTERED_FOR_THE_BAND = _('entered for the band')
+THE_BANDS_LOWER_WEIGHT = _('the band’s lower weight')
 FROM_G = _('From (g)')
 UP_TO_G = _('Up to (g)')
 REMOVE = _('Remove')
@@ -213,9 +223,10 @@ THE_PLAN_AHEAD_COUNTS = _('Every day of the plan counts the day’s ration as gi
                           'adds nothing. A weighing sets the estimate to the measured weight, and the plan ahead '
                           'starts again from it.')
 THE_TABLE_SHOWS_ONE_DAY_A_WEEK = _('The table shows one day a week and the last day; the file has every day.')
-THE_SFR_IS_ITS_BANDS = _('The SFR is read from the fish’s own weight band at the temperature; the FCR and the uneaten '
-                         'share are read between the bands, without a jump. A month of mortality is 30 days; the '
-                         'fish that die are taken to weigh the average.')
+THE_SFR_IS_ITS_BANDS = _('The FCR, the uneaten share and the SFR of fish between two weight bands follow the '
+                         'protocol’s own rule for each (smooth, or a step at the band’s edge: its Feeding table tab '
+                         'shows the values). A month of mortality is 30 days; the fish that die are taken to weigh '
+                         'the average.')
 NO_MEASURED_POINT_YET = _('No measured weight in this unit yet.')
 HARVESTS_AND_TRANSPORTS = _('Harvests and transports')
 EDIT_OR_CANCEL = _('Edit or cancel')

@@ -28,8 +28,9 @@ class WeightSourceResource(Resource):
     empty_text = _('How an average weight was measured: a sample weighed by hand, a biomass camera.')
 
     @classmethod
-    def queryset(cls):
-        return super().queryset().annotate(used=Count('weighings', filter=Q(weighings__operation__is_deleted=False)))
+    def list_queryset(cls, request):
+        """The sources with the live weighings that name each (the list's own: a record's lock takes no GROUP BY)."""
+        return super().list_queryset(request).annotate(used=Count('weighings', filter=Q(weighings__operation__is_deleted=False)))
 
     @classmethod
     def filter_list(cls, request, objects):

@@ -14,7 +14,9 @@ from core.widgets import DayInput
 
 from ..feeding import assignments
 from ..models import Batch, Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species, StockMovement, Tank
-from ..models.feeding_protocol import FIXED_ONCE_ASSIGNED, MAX_SFR, TEMPERATURE, ProtocolStatus
+from ..models.feeding_protocol import (
+    BETWEEN_FIELDS, FIXED_ONCE_ASSIGNED, MAX_SFR, TEMPERATURE, BetweenBands, ProtocolStatus,
+)
 from ..stock.dates import earliest, local_today, too_old
 
 DECIMAL = {'inputmode': 'decimal'}
@@ -22,7 +24,7 @@ MAX_COLUMNS = 12      # temperature columns a table can have: what a screen show
 MAX_BANDS = 30
 
 PROTOCOL_TABS = [('general', _('General'), ['name', 'species', 'status', 'expected_fcr', 'uneaten_pct',
-                                             'mortality_pct_month', 'notes'])]
+                                             'mortality_pct_month', *BETWEEN_FIELDS, 'notes'])]
 
 
 class ProtocolForm(CodedFormMixin, TabbedForm):
@@ -55,11 +57,19 @@ class ProtocolForm(CodedFormMixin, TabbedForm):
             'mortality_pct_month': _('The share of the fish expected to die in a month (30 days), 0 to 30 %%; a band '
                                      'may have its own. Empty: none. Read by the production plan only: it lowers '
                                      'the fish, the biomass and the feed ahead, never the average weight.'),
+            'fcr_between': _('For fish between two weight bands. Smooth: each band’s value sits at the middle of the '
+                             'band and is read in between, with no jump at a band’s edge. Step: the fish’s own '
+                             'band’s value, changing at the edge. The Feeding table tab shows the values this '
+                             'gives. The same choice for the uneaten feed and for the SFR.'),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['species'].queryset = Species.objects.order_by('common_name')
+        for name in BETWEEN_FIELDS:
+            # one of the two rules, never empty: a form that does not send it keeps the protocol's (a new one: smooth)
+            self.fields[name].required = False
+            self.fields[name].choices = BetweenBands.choices
         self.fields['species'].empty_label = _('Select a species')
         if self.instance.is_assigned():
             for name in FIXED_ONCE_ASSIGNED:
@@ -71,6 +81,14 @@ class ProtocolForm(CodedFormMixin, TabbedForm):
             self.fields['status'].choices = [(ProtocolStatus.DRAFT, ProtocolStatus.DRAFT.label)]
             self.fields['status'].help_text = _('A new protocol is a draft: fill in its feeding table, then set it '
                                                 'active.')
+
+
+    def clean(self):
+        cleaned = super().clean()
+        for name in BETWEEN_FIELDS:
+            if not cleaned.get(name):
+                cleaned[name] = getattr(self.instance, name)
+        return cleaned
 
 
 # ---- the feeding table --------------------------------------------------------------------------------------

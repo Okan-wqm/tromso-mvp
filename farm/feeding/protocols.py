@@ -17,7 +17,8 @@ from farm.models.feeding_protocol import ProtocolStatus
 CHANGE, ADD = 'farm.change_feedingprotocol', 'farm.add_feedingprotocol'
 TABLE = gettext_lazy('Feeding table')
 # The general fields a copy takes over (FeedingProtocol), and how the log names a copy's table.
-COPIED = ('species', 'expected_fcr', 'uneaten_pct', 'mortality_pct_month', 'notes')
+COPIED = ('species', 'expected_fcr', 'uneaten_pct', 'mortality_pct_month', 'fcr_between', 'uneaten_between',
+          'sfr_between', 'notes')
 
 
 def _number(value):
@@ -94,8 +95,7 @@ def copy_name(name):
 
 def duplicate(user, protocol, snapshot):
     """A draft copy of the protocol and its table, to change and assign from a date; logged as created, with its
-    fields (`snapshot`: the tab's) and its table. The copy is a new protocol: its FCR is read between the bands on every
-    day (`interpolated_from` is the original's history, not copied)."""
+    fields (`snapshot`: the tab's) and its table."""
     access.require(user, ADD)
     with transaction.atomic():
         source = FeedingProtocol.objects.get(pk=protocol.pk)

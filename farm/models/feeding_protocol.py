@@ -72,7 +72,21 @@ class ProtocolStatus(models.TextChoices):
 
 
 # What a protocol's rations and growth are read from, beside its table: fixed once it is assigned (owner decision Q3).
-FIXED_ONCE_ASSIGNED = ('species', 'expected_fcr', 'uneaten_pct', 'mortality_pct_month')
+FIXED_ONCE_ASSIGNED = ('species', 'expected_fcr', 'uneaten_pct', 'mortality_pct_month', 'fcr_between',
+                       'uneaten_between', 'sfr_between')
+
+
+class BetweenBands(models.TextChoices):
+    """How a quantity of the table is read for fish between two bands (farm/feeding/ration.py, Table)."""
+    SMOOTH = 'smooth', _('Smooth between bands')
+    STEP = 'step', _('Step at the band edge')
+
+
+BETWEEN_FIELDS = ('fcr_between', 'uneaten_between', 'sfr_between')
+
+
+def _between(label):
+    return models.CharField(label, max_length=6, choices=BetweenBands.choices, default=BetweenBands.SMOOTH)
 
 
 class FeedingProtocol(AuditedModel):
@@ -80,13 +94,14 @@ class FeedingProtocol(AuditedModel):
     and temperature. Source table: farm.feeding_protocols_v2.
 
     A draft is built and changed freely; an active one takes assignments; a retired one keeps its past
-    assignments and takes no new ones. Once a protocol is assigned its table, species, expected FCR, uneaten share
-    and expected mortality are fixed (owner decision Q3): the rations computed from it for past days never change under the Records page,
+    assignments and takes no new ones. Once a protocol is assigned its table, species, expected FCR, uneaten share,
+    expected mortality and between-band rules are fixed (owner decision Q3): the rations computed from it for past days never change under the Records page,
     and a change is made on a copy (Duplicate). The expected FCR here is the fallback of every band that has
     none; it is the biological FCR, on the feed eaten: the growth is the feed given, less the uneaten share, divided
     by it (farm/feeding/growth.py). The uneaten share (empty: none) and the expected mortality a month (empty: none;
-    read by the plan ahead only) are fallbacks of the bands in the same way. The FCR and the uneaten share are read
-    between the bands' anchor weights without a jump (ration.Table).
+    read by the plan ahead only) are fallbacks of the bands in the same way. For fish between two bands the FCR,
+    the uneaten share and the SFR each follow the protocol's own rule: smooth (read between the bands' anchor weights
+    without a jump) or a step at the band's edge (ration.Table).
 
     Differences from the source: the temperature response is a column of the table, per band (the source had
     one multiplier for every fish size, FP-28), interpolated between columns and never extrapolated; a fish
@@ -106,10 +121,11 @@ class FeedingProtocol(AuditedModel):
                                       validators=UNEATEN)
     mortality_pct_month = models.DecimalField(_('Expected mortality (%/month)'), max_digits=4, decimal_places=2,
                                               null=True, blank=True, validators=MORTALITY)
-    # Set once, by the migration that brought the interpolation (farm 0052), on the protocols that existed then: the
-    # days before it keep each band's own FCR (owner decision Q3: what a protocol gave for past days never changes).
-    # Empty on every protocol made since: read between the bands on every day.
-    interpolated_from = models.DateField(_('FCR read between the bands from'), null=True, blank=True, editable=False)
+    # How each quantity is read for fish between two bands (owner decision 14, 2026-11-26): smooth, or a step at the
+    # band's edge. The protocols that existed before the rule have `step` (migration 0053): they behave as they did.
+    fcr_between = _between(_('FCR between bands'))
+    uneaten_between = _between(_('Uneaten feed between bands'))
+    sfr_between = _between(_('SFR between bands'))
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
 
     class Meta:
@@ -129,6 +145,8 @@ class FeedingProtocol(AuditedModel):
             models.CheckConstraint(condition=Q(mortality_pct_month__isnull=True)
                                    | Q(mortality_pct_month__gte=0, mortality_pct_month__lte=MAX_MORTALITY),
                                    name='chk_feeding_protocols_mortality', violation_error_message=MORTALITY_MESSAGE),
+            *(models.CheckConstraint(condition=Q(**{f'{name}__in': BetweenBands.values}),
+                                     name=f'chk_feeding_protocols_{name}') for name in BETWEEN_FIELDS),
         ]
 
     def __str__(self):
@@ -224,11 +242,6 @@ class ProtocolBand(models.Model):
     def __str__(self):
         upper = f'{self.max_weight_g.normalize():f}' if self.max_weight_g is not None else '…'
         return f'{self.min_weight_g.normalize():f}–{upper} g'
-
-    def contains(self, weight_g):
-        """Whether fish of this average weight are in the band: from its lower weight up to, not including, its
-        upper one."""
-        return weight_g >= self.min_weight_g and (self.max_weight_g is None or weight_g < self.max_weight_g)
 
 
 class ProtocolRate(models.Model):

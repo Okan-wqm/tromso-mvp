@@ -66,13 +66,13 @@ class FeedingProtocolResource(Resource):
         """The feeding table tab: the grid (to edit while the protocol is not assigned) or the table as it is."""
         form, rows = table_forms(obj, data=data, draft=draft)
         return {'table_form': form, 'bands': rows, 'frozen': obj.is_assigned(), 'band_terms': band_terms(obj),
-                'step_note': step_note(obj),
+                'used': used_props(obj),
                 'table_url': reverse('farm:feedingprotocol_table', args=[obj.pk]),
                 'duplicate_url': reverse('farm:feedingprotocol_duplicate', args=[obj.pk])
                 if request.user.has_perm(cls.perm('add')) else '',
                 'table_notices': table_notices(obj)}
 
-    next_extras = frozenset({'table_form', 'bands', 'frozen', 'band_terms', 'step_note', 'table_url', 'duplicate_url', 'table_notices'})
+    next_extras = frozenset({'table_form', 'bands', 'frozen', 'band_terms', 'used', 'table_url', 'duplicate_url', 'table_notices'})
 
     @classmethod
     def next_panels(cls, view, form, protocol, extra):
@@ -107,8 +107,7 @@ class FeedingProtocolResource(Resource):
                         'mortality': listprops.cell(percent(terms['mortality_pct_month'], 2)),
                         **{f't{index}': listprops.cell(percent(cell.sfr_pct, 2))
                            for index, cell in enumerate(band.cells)}})
-                    for terms in extra['band_terms'] for band in [terms['band']]]), formpanels.help_text(words.BETWEEN_TWO_BANDS_THE_FCR),
-                *([formpanels.help_text(extra['step_note'])] if extra.get('step_note') else [])]
+                    for terms in extra['band_terms'] for band in [terms['band']]]), formpanels.help_text(words.BETWEEN_TWO_BANDS_THE_FCR)]
         else:
             columns = list(bands.columns)
             cells = {column_name(temperature) for temperature in columns}
@@ -129,6 +128,10 @@ class FeedingProtocolResource(Resource):
                     hidden=[table_form['version']],
                     errors=[*table_form.non_field_errors(), *bands.non_form_errors()],
                     actions=[formpanels.button(words.SAVE_TABLE, primary=True)])]
+        used = extra.get('used')
+        if used:
+            blocks += [formpanels.table(used['title'], used['columns'], used['rows']),
+                       *(formpanels.help_text(line) for line in used['lines'])]
         blocks += [formpanels.notice(text, 'warning') for text in extra.get('table_notices', ())]
         if extra.get('duplicate_url'):
             blocks += [formpanels.post(extra['duplicate_url'], words.DUPLICATE),
@@ -145,14 +148,39 @@ class FeedingProtocolResource(Resource):
                      name='feedingprotocol_duplicate')]
 
 
-def step_note(protocol):
-    """What a protocol older than the interpolation says of its past days ('' for one made since)."""
-    if protocol is None or protocol.interpolated_from is None:
-        return ''
-    from django.utils import formats
-    return _('Until %(date)s this protocol’s FCR was read per band, with a step at each band’s edge: the days before keep '
-             'that. From that day it is read between the bands.') % {
-        'date': formats.date_format(protocol.interpolated_from, 'DATE_FORMAT')}
+def used_props(protocol):
+    """The values a stored table actually gives over the fish's weight (ration.Table.used: the functions the ration and
+    the growth read), as the columns and rows both looks draw: a row at every band's lower weight and at every band's
+    anchor weight, where the values entered sit (said in the Point column); the FCR, the uneaten share and the SFR at each
+    temperature column, each with its between-band rule in its heading's line. None without a stored table."""
+    from ..templatetags.feeding import celsius, fcr
+    from ..templatetags.stock import grams, percent
+    if protocol is None or protocol.pk is None:
+        return None
+    table = tables([protocol.pk])[protocol.pk]
+    if not table.bands:
+        return None
+    columns = table.columns()
+    return {
+        'title': str(words.VALUES_USED_OVER_THE_WEIGHT),
+        'lines': [str(words.THE_VALUES_THE_TABLE_GIVES), _('FCR: %(fcr)s · uneaten feed: %(uneaten)s · SFR: %(sfr)s') % {
+            'fcr': protocol.get_fcr_between_display(), 'uneaten': protocol.get_uneaten_between_display(),
+            'sfr': protocol.get_sfr_between_display()}],
+        'columns': [listprops.column('weight', words.FISH_WEIGHT, numeric=True),
+                    listprops.column('point', words.POINT),
+                    listprops.column('band', words.WEIGHT_BAND),
+                    listprops.column('fcr', words.EXPECTED_FCR, numeric=True),
+                    listprops.column('uneaten', words.UNEATEN_FEED, numeric=True),
+                    *(listprops.column(f't{index}', words.sfr_at(celsius(temperature)), numeric=True)
+                      for index, temperature in enumerate(columns))],
+        'rows': [listprops.row(f'used-{index}', {
+            'weight': listprops.cell(grams(used.weight_g), strong=used.anchor),
+            'point': listprops.cell(words.ENTERED_FOR_THE_BAND if used.anchor else words.THE_BANDS_LOWER_WEIGHT),
+            'band': listprops.cell(band_range(used.band.min_weight_g, used.band.max_weight_g)),
+            'fcr': listprops.cell(fcr(used.fcr)), 'uneaten': listprops.cell(percent(used.uneaten_pct, 1)),
+            **{f't{at}': listprops.cell(percent(value, 3)) for at, value in enumerate(used.sfr)}})
+            for index, used in enumerate(table.used())],
+    }
 
 
 def band_terms(protocol):

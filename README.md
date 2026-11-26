@@ -1704,9 +1704,9 @@ out from (`farm/water/parameters.py` `inputs`; the NH₃-N and the NH₄-N: the 
 salinity), and it stops being fresh at the first moment one of them does (`freshness.derived_until`), never later than
 its own row (7 days for both). Each input's end is its own: a sample's value its time plus its parameter's hours, a
 sensor's its channel's, a salinity found at the point or the owner's middle point that value's own, an oxygen basis's
-salinity the basis's time plus the salinity's hours; fresh water's assumed 0 has none. So without a temperature probe the NH₃ of a
-sample goes stale with the sample's temperature (24 h), not with its TAN (7 days), and an NH₃ worked out with a salinity measured 160 h
-earlier goes stale 8 h after. The ionic-strength inputs (alkalinity, conductivity at 25 °C, hardness) only move the best
+salinity the basis's time plus the salinity's hours; fresh water's assumed 0 has none. So the NH₃ of a sample goes stale with the sample's
+temperature (24 h), not with its TAN (7 days), and an NH₃ worked out with a salinity measured 160 h earlier goes stale
+8 h after. The ionic-strength inputs (alkalinity, conductivity at 25 °C, hardness) only move the best
 estimate, never below the safe-side basis, and are declared as read but not counted (`uncounted`). The rule is
 answered in one place, `read.Reading.fresh_until` (`Reading.fresh`), which the water page, the drawer, the overview,
 the monitoring cards and the alarm engine all read; `evaluate.is_fresh` refuses a worked-out parameter without it, and
@@ -1718,85 +1718,63 @@ input once, works the value out from that record and nothing else, and keeps it 
 declared. A guard drops each measured value of a full sample in turn: a declared input must change or empty the value,
 any other measured value must leave it as it was unless it is declared `uncounted` (`farm/tests/test_derived_fresh.py`).
 
-**One rule for a sample's NH₃ temperature** (the coordinator's decision on review 4, H3; `read.Context.temperature_of`):
-the sample's own value, else the place's probe at the sample's time. The probe value is the newest one fresh then,
-stamped at most the clock tolerance after the sample. It ends at that channel's freshness, and the band can keep it or
-end it (below).
-- **Never another sample's temperature.** The temperature stored with a sample's oxygen when it was written (the oxygen
-  basis) is the oxygen's alone, so a conversion never moves (`Context._oxygen_temperature`). A voided temperature, or
-  another point's, never reaches an NH₃.
-- **The same sample gets the same temperature.** It does not matter whether the sample also has an oxygen.
-- **The place's live temperature** is A9's: the unit's own points' probes, then its system's. A unit's point always reads
-  its unit's tiers, whatever else the read holds (`Context.know`). The history of an outlet alone asks the same probes
-  as the latest read.
-- **Where the temperature came from is said.** A temperature that is not the sample's own says so: "Worked out with the
-  temperature 12.0 °C of sensor #3, …: the sample has none". That temperature is the input recorded. With no
-  temperature, nothing is worked out. If the live sources failed, the NH₃ says that instead: "Needs a temperature: the
-  sample has none, and the live sensor values could not be read".
+**An NH₃'s temperature is its own sample's.** The oxygen of a sample is converted with the temperature stored with it
+when it was written, its basis, so a conversion never moves. That basis is the oxygen's alone
+(`read.Context._oxygen_temperature`); a voided temperature, or another point's, never reaches an NH₃. A sample without
+a temperature of its own gives no NH₃, as before, and says so: "Needs the pH and the temperature of the same sample".
+A sensor's NH₃ takes the fresh sensor temperature it was combined with. Taking the place's probe temperature for a
+typed sample is the separate branch wip/probe-temperature.
 
-**The probe and the band** (the coordinator's decisions of 2026-11-26):
-- **The setting.** The temperature input stays fresh while the place's live temperature stays fresh and within the band
-  of it (`freshness.temperature_until`). The band is the platform owner's setting: Company › Administration › Platform
-  settings › Water freshness, "Temperature band (°C)" (`PlatformSettings.temperature_band_c`, core 0016). It is 1.0 °C
-  until set, and 0.1 to 5.0, checked by the form and the database. It is read with the freshness rows
-  (`freshness.temperature_band`).
-- **The comparison is exact.** The probe's value is compared unrounded, in numeric: 12.4 °C is within 0.4 °C of 12.0 °C,
-  and 12.54 °C is not within 0.5 °C.
-- **The reading in force** is the newest at or before the sample's time, else the first at most the clock tolerance
-  after it. That is the same tolerance as the value's look-up.
-- **The probe can end the input early, on purpose** (the safe side). The input ends the moment the probe moves further
-  than the band, at the gap where the probe falls silent longer than its freshness, or at the last value's freshness.
-  This can be inside the temperature's own 24 h. It ends at once when the probe was already further off at the
-  sample's time. If the place had no probe value in force then, a typed temperature keeps its own 24 h.
-- **A source that fails ends it at once and says so** (review 4, M1, M3). If the value's look-up or the band check
-  fails, the temperature ends at once and the NH₃ says "the live sensor values could not be read". The place's
-  `sensors_failed` is set too, so the pages say the sensors could not be read and the alarm pass raises its
-  "sensors could not be read" alarm.
-- **Why a stale NH₃ ended** (review 4, M5). A stale NH₃ says which input ended it and why: "Stale since 26.11.2026 10:12:
-  its temperature ended: the probe read 13.5 °C, beyond the 1.0 °C band."
-- **Bounded and kept.** The band is asked only for a sample whose NH₃ can be worked out (a TAN and a pH), and only while
-  it is not stale through its other inputs. It is asked only up to the moment of the read. A final end (a reading past
-  the band, or a gap) is kept per process and never asked again. An unfinished one is asked again only from its last
-  confirmed reading, so a later read reads only the rows after it (review 4, M4; `sensors.provider.ROWS_READ` measures
-  it).
-- **Batched.** A read works out every sample's temperature at once (`Context.prefetch_temperatures`):
-  - one `sources.values_for` (THE look-up of a value at a moment: `values_at` is it at several moments), with each probe
-    paired only with the times of the samples whose place it measures;
-  - one `sources.steady_until`.
+**The judgement of a worked-out value is one pure module** (`farm/water/judge.py`; the coordinator's architecture of
+2026-11-26). It has no database, no clock and no settings. The read layer is its shell: it fetches each point's
+samples, works their values out, judges each against the limits, and hands the judge plain records (`judge.Record`:
+measured_at, created_at and id, whether it has a value, whether it was refused, whether it was fresh at its own time
+and is fresh now, and its status). Everything that decides a value's slot, a hold, what is said and whether a level may
+clear is the judge's. The latest read (the pages, the cards), the alarm pass (through it and `judge.clears`) and the
+history page all call it.
 
-  A monitoring wall costs the same queries at three units or at nine, with several samples per unit, full and lacking
-  (`monitoring/tests/test_budget.py`).
-- **The pH conversion counts too.** A sensor's pH put on the NBS scale ends no later than the temperature it was
-  converted with (`SensorPh.temperature_until`).
+The judge's rule for each point (`judge.point_verdict`):
+- **The evidence value** is the newest worked-out value that has a value, was not refused by the chemistry core and was
+  fresh at its own time. "Newest" is ordered by (measured_at, created_at, id).
+- **The judged set** is the evidence value plus every value newer than it or of its minute: a same-minute peer, a
+  refused value on its basis, a value stale from its start. The point is the WORST of the set, whatever order they were
+  entered in. So a lab critical and a field kit's OK of the same bottle and minute are critical in either entry order.
+- **A sample that gives no value never takes the slot.** This covers a TAN without a pH or a temperature, and one the
+  core refused with no basis. It is said: "The sample of … at Outlet gives no value (Needs the pH and the temperature of
+  the same sample): measure there again."
+- **A refused sample newer than the evidence** is "cannot be evaluated" at every point of the tier the value is read
+  from, the loop's for a unit read at its loop. It stays so (`PointWater.refused_newer`, the alarm system's warning,
+  V-A) until an evidence value is newer than it.
+- **A late result** is a value measured before the evidence but entered after it. It is no candidate and never an alarm
+  (the owner's decision). The point says it: "Late result: critical 0.8924 at Middle on …, superseded by 0.0110 on …".
+  The activity log keeps it with the sample's entry, and the history row says it too.
 
-**Each point's candidate is its newest worked-out value** (review 4 of the branch, H1, H2, L5;
-`Context.newest_worked`).
-- **The rule.** For a worked-out code, each point's candidate is its NEWEST WORKED-OUT value, at every tier: the unit's
-  own points and its system's loop. "Newest" is ordered by (measured_at, created_at, id).
-- **What stays out.** A newer sample that cannot be worked out never takes the slot: a TAN without a pH or a
-  temperature, or a value the core refused without even a basis value. It is only said: "The sample of … at Outlet
-  gives no value (Needs the pH and the temperature of the same sample): measure there again."
-- **Choosing among them.** A9 chooses among these candidates and the value worked out from a tier's fresh live TAN, as
-  for every value. Every candidate takes part in the worst fresh value.
-- **Where it holds.** The same minute in either entry order, a loop-sampled RAS and a one-point unit all keep a critical
-  raised and shown.
-- **Rounds.** The look-back reads every sample with a TAN in the read's window, newest first, in rounds of one, two,
-  four … samples a point. Each round is one batch of temperatures, so the statements grow with how far back a point
-  must look, never with the points. It has no count: only the window ends it. The latest read, and through it the pages,
-  the cards and the alarm pass, take it there.
+For each place (`judge.place_verdict`):
+- **Held.** A judged value of one of the unit's own points, or of the point of the value shown, that is stale now and
+  worse than the value shown is kept. The place keeps its judgement and names the point: "Last value at Outlet 0.8924
+  critical on …, no recent data: measure there".
+- **Attention.** An own sample that gives no value and is newer than a system value shown makes the unit "cannot be
+  evaluated", never plain OK.
+- **Clearing.** A level of a worked-out value ends only on evidence that is fresh now and was measured strictly after
+  its last bad value (`judge.clears`): a tie never clears.
 
-**A stale alert at an own point holds** (the review of 2026-11-26, F1).
-- **Why it is needed.** Inputs make a worked-out value stale sooner than its base: an NH₃ ends with its temperature while
-  its TAN is still fresh. A stale value no longer decides the status (`worst_fresh`).
-- **The rule** (`read.held_at_points`, beside `last_own` for the system tier). For a worked-out parameter, each of the
-  unit's own points is asked for its newest worked-out value. If that is not the value shown, is stale and is judged
-  worse, the place keeps its judgement and names the point: "Last value at Outlet 0.8924 critical on …, no recent data:
-  measure there".
-- **What ends it.** The alarm (a level the unit's own value holds, `own_held`) ends only on a fresh worked-out value at
-  that point. A late lab critical at one point raises beside a newer OK value at another.
-- **The hold lasts as long as the read's window, 30 days** (`read.WINDOW`; accepted by the coordinator as the safe
-  side). An outlet's critical NH₃ that nobody measures again keeps its unit critical, and its alarm open, for up to 30
-  days after the sample. After that the sample is outside every read and no longer holds anything.
+Every value of the judged set is a candidate. A9 chooses among them, and the worst fresh value decides, as for every
+value.
+
+**The tests.** `farm/tests/test_judge.py` tries every order of entry of tens of thousands of small scenarios
+(itertools). Each scenario has two to four values at a point: critical, OK, refused with or without a basis value,
+value-less, or stale from its start, at the same minute or not. Each must keep four invariants:
+- a critical is never hidden by a value that is no evidence;
+- a clear needs evidence strictly newer;
+- one minute's values are judged alike in any order;
+- the point is the worst of its set.
+
+**The shell's look-back is bounded in the database** (`Context.prefetch_newest_worked`). It reads each point's samples
+with a TAN, newest first, in rounds of two, four, eight … ranked by a window function. It stops once the judge calls the
+point settled (`judge.settled`: its evidence value and a value older than its minute, or no sample left). Each round is
+one query for all the points, so a wall's queries do not grow with its units (`monitoring/tests/test_budget.py`), and
+the rows read stay bounded (`read.SAMPLES_READ`, tested). The window still ends every look-back: a held critical lasts up
+to 30 days (`read.WINDOW`; accepted by the coordinator as the safe side).
 
 **A sample** is one row: what a person measured at one point at one moment, a typed column per
 parameter, empty when not measured, at least one value (a database check). The point is one sampling point
@@ -5030,11 +5008,6 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **Clock tolerance (seconds)**, 0 to 3600, 300 until the owner sets another (cross review F10): how far ahead of the
   server's clock a water value may be stamped and still count as fresh. A value further ahead, up to the ingest
   contract's hour, still decides its unit's status and its alarm, but is not shown as the newest.
-- **Temperature band (°C)**, on the Water freshness tab, 0.1 to 5.0, 1.0 until the owner sets another (the
-  coordinator's decisions of 2026-11-26; core 0016). Where a probe measures the temperature of a place, this is how far
-  the probe may be from the temperature a sample's NH₃ was worked out with and still keep that temperature fresh. The
-  probe further off, or silent, makes the NH₃ stale from then on (Operations › Water chemistry, the temperature where a
-  probe measures the place).
 
 ## Roles and users
 

@@ -3844,18 +3844,11 @@ msgstr "En invitasjon til %(name)s sendes akkurat nå: vent på den, raden viser
 msgid ""
 "An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
 "(a year). A worked-out value (NH₃-N, NH₄-N) is never fresher than the oldest value it is worked "
-"out from (TAN, pH, temperature, salinity), whatever its own hours. Where a probe measures the "
-"temperature of the place, the temperature of a sample (or the probe’s at its time, when it has "
-"none) stays fresh while the probe stays within the temperature band of Platform settings (1.0 °C "
-"until set) of it; the probe further off, or silent, ends it then, even inside its own hours."
+"out from (TAN, pH, temperature, salinity), whatever its own hours."
 msgstr ""
 "En eldre verdi vises som utdatert med alderen sin, aldri OK, og opphever aldri en alarm. 1 til "
 "8760 timer (et år). En beregnet verdi (NH₃-N, NH₄-N) er aldri ferskere enn den eldste verdien den"
-" er beregnet fra (TAN, pH, temperatur, salinitet), uansett egne timer. Der en sensor måler "
-"temperaturen på stedet, forblir temperaturen i en prøve (eller sensorens på prøvetidspunktet, når"
-" prøven ikke har en) fersk så lenge sensoren holder seg innenfor temperaturbåndet i "
-"Plattforminnstillinger (1,0 °C til noe annet er satt); er sensoren lenger unna, eller stille, "
-"slutter den da, også innenfor egne timer."
+" er beregnet fra (TAN, pH, temperatur, salinitet), uansett egne timer."
 
 msgid "An open alarm closes only once the value is back past the threshold by this much."
 msgstr "En åpen alarm lukkes først når verdien er tilbake forbi terskelen med så mye."
@@ -9226,6 +9219,15 @@ msgstr "%(minutes)s min for sent"
 msgid "Late limit (days)"
 msgstr "Grense for sen ankomst (dager)"
 
+msgid "Late result"
+msgstr "Sent resultat"
+
+#, python-format
+msgid ""
+"Late result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
+"%(newer_time)s."
+msgstr "Sent resultat: %(status)s %(value)s ved %(point)s %(time)s, erstattet av %(newer)s %(newer_time)s."
+
 msgid "Latest"
 msgstr "Siste"
 
@@ -10134,9 +10136,6 @@ msgstr "Trenger fersk temperatur fra sensorene sammen med sensorens oksygen."
 
 msgid "Needs a look"
 msgstr "Trenger oppmerksomhet"
-
-msgid "Needs a temperature: the sample has none, and the live sensor values could not be read."
-msgstr "Trenger en temperatur: prøven har ingen, og sensorverdiene kunne ikke leses."
 
 msgid "Needs approval"
 msgstr "Må godkjennes"
@@ -14765,9 +14764,6 @@ msgstr "Temperatur (°C)"
 msgid "Temperature and oxygen"
 msgstr "Temperatur og oksygen"
 
-msgid "Temperature band (°C)"
-msgstr "Temperaturbånd (°C)"
-
 msgid "Temperature columns (°C)"
 msgstr "Temperaturkolonner (°C)"
 
@@ -18323,17 +18319,6 @@ msgstr ""
 " offset; OPC UA: node_id; MQTT: ingenting."
 
 msgid ""
-"Where a probe measures the temperature of a place, how far it may be from the temperature a "
-"sample’s NH₃ was worked out with and still keep that temperature fresh. Further off, or the probe"
-" silent, the NH₃ is stale from then on, even inside the temperature’s own hours. 0.1 to 5.0; 1.0 "
-"until you set another."
-msgstr ""
-"Der en sensor måler temperaturen på et sted: hvor langt den kan ligge fra temperaturen en prøves "
-"NH₃ ble beregnet med, og fortsatt holde den temperaturen fersk. Lenger unna, eller sensoren "
-"stille, er NH₃ utdatert fra da av, også innenfor temperaturens egne timer. 0,1 til 5,0; 1,0 til "
-"du setter noe annet."
-
-msgid ""
 "Where a water sample is taken: a named place on one unit, one system’s loop or one piece of "
 "equipment, of a kind that says whether it sees the stream in, the water within or the stream out."
 msgstr ""
@@ -18673,10 +18658,6 @@ msgstr "Regnet ut fra verdiene"
 #, python-format
 msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose."
 msgstr "Regnet ut med fosfat %(p)s mg/L som P (%(po4)s som PO₄): feil fosfat endrer denne dosen."
-
-#, python-format
-msgid "Worked out with the temperature %(value)s °C of %(source)s: the sample has none."
-msgstr "Beregnet med temperaturen %(value)s °C fra %(source)s: prøven har ingen."
 
 msgid "Working"
 msgstr "Jobber"
@@ -20731,9 +20712,6 @@ msgstr "fisken kan forlate anlegget fra omtrent %(date)s"
 msgid "the layout being designed"
 msgstr "oppsettet som utformes"
 
-msgid "the live sensor values could not be read"
-msgstr "sensorverdiene kunne ikke leses"
-
 #, python-format
 msgid "the oldest since %(since)s"
 msgstr "det eldste siden %(since)s"
@@ -20747,14 +20725,6 @@ msgstr ""
 
 msgid "the options must be a set of named values."
 msgstr "valgene må være et sett navngitte verdier."
-
-#, python-format
-msgid "the probe read %(value)s °C, beyond the %(band)s °C band"
-msgstr "sensoren viste %(value)s °C, utenfor båndet på %(band)s °C"
-
-#, python-format
-msgid "the probe sent no fresh value from %(time)s"
-msgstr "sensoren sendte ingen fersk verdi fra %(time)s"
 
 msgid "the rule for every unit"
 msgstr "regelen for alle enheter"

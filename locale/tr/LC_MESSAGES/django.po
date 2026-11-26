@@ -3855,18 +3855,12 @@ msgstr "%(name)s için bir davet şu anda gönderiliyor: bekleyin, satır ne old
 msgid ""
 "An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
 "(a year). A worked-out value (NH₃-N, NH₄-N) is never fresher than the oldest value it is worked "
-"out from (TAN, pH, temperature, salinity), whatever its own hours. Where a probe measures the "
-"temperature of the place, the temperature of a sample (or the probe’s at its time, when it has "
-"none) stays fresh while the probe stays within the temperature band of Platform settings (1.0 °C "
-"until set) of it; the probe further off, or silent, ends it then, even inside its own hours."
+"out from (TAN, pH, temperature, salinity), whatever its own hours."
 msgstr ""
 "Daha eski bir değer yaşıyla birlikte eski gösterilir, asla Normal değil, ve hiçbir alarmı "
 "kapatmaz. 1 ile 8760 saat (bir yıl). Hesaplanan bir değer (NH₃-N, NH₄-N), kendi saatleri ne "
 "olursa olsun, hesaplandığı en eski değerden (TAN, pH, sıcaklık, tuzluluk) asla daha taze "
-"sayılmaz. Yerin sıcaklığını bir sensör ölçüyorsa, bir numunenin sıcaklığı (numunede yoksa "
-"sensörün o andaki değeri) sensör Platform ayarlarındaki sıcaklık bandı (ayarlanana kadar 1,0 °C) "
-"içinde kaldıkça taze kalır; sensör daha uzağa giderse ya da susarsa, kendi saatleri içinde bile o"
-" anda biter."
+"sayılmaz."
 
 msgid "An open alarm closes only once the value is back past the threshold by this much."
 msgstr "Açık bir alarm, ancak değer eşiğin bu kadar ötesine geri döndüğünde kapanır."
@@ -9262,6 +9256,17 @@ msgstr "%(minutes)s dk geç"
 msgid "Late limit (days)"
 msgstr "Gecikme sınırı (gün)"
 
+msgid "Late result"
+msgstr "Geç sonuç"
+
+#, python-format
+msgid ""
+"Late result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
+"%(newer_time)s."
+msgstr ""
+"Geç sonuç: %(point)s noktasında %(time)s tarihli %(status)s %(value)s, yerini %(newer_time)s "
+"tarihli %(newer)s aldı."
+
 msgid "Latest"
 msgstr "Son değerler"
 
@@ -10169,9 +10174,6 @@ msgstr "Sensörün oksijen değeriyle birlikte sensörlerden güncel bir sıcakl
 
 msgid "Needs a look"
 msgstr "Göz atılmalı"
-
-msgid "Needs a temperature: the sample has none, and the live sensor values could not be read."
-msgstr "Bir sıcaklık gerekli: numunede yok ve canlı sensör değerleri okunamadı."
 
 msgid "Needs approval"
 msgstr "Onay gerekir"
@@ -14802,9 +14804,6 @@ msgstr "Sıcaklık (°C)"
 msgid "Temperature and oxygen"
 msgstr "Sıcaklık ve oksijen"
 
-msgid "Temperature band (°C)"
-msgstr "Sıcaklık bandı (°C)"
-
 msgid "Temperature columns (°C)"
 msgstr "Sıcaklık sütunları (°C)"
 
@@ -18370,17 +18369,6 @@ msgstr ""
 "register; S7: db, offset; OPC UA: node_id; MQTT: hiçbir şey."
 
 msgid ""
-"Where a probe measures the temperature of a place, how far it may be from the temperature a "
-"sample’s NH₃ was worked out with and still keep that temperature fresh. Further off, or the probe"
-" silent, the NH₃ is stale from then on, even inside the temperature’s own hours. 0.1 to 5.0; 1.0 "
-"until you set another."
-msgstr ""
-"Bir yerin sıcaklığını bir sensör ölçüyorsa: sensörün, bir numunenin NH₃ değerinin hesaplandığı "
-"sıcaklıktan ne kadar uzak olup o sıcaklığı hâlâ taze tutabileceği. Daha uzakta ya da sensör "
-"susmuşsa NH₃, sıcaklığın kendi saatleri içinde bile o andan itibaren eskidir. 0,1 ile 5,0; siz "
-"başka bir değer girene kadar 1,0."
-
-msgid ""
 "Where a water sample is taken: a named place on one unit, one system’s loop or one piece of "
 "equipment, of a kind that says whether it sees the stream in, the water within or the stream out."
 msgstr ""
@@ -18721,10 +18709,6 @@ msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong pho
 msgstr ""
 "Fosfat %(p)s mg/L P olarak (%(po4)s PO₄ olarak) alınarak hesaplandı: yanlış bir fosfat bu dozu "
 "değiştirir."
-
-#, python-format
-msgid "Worked out with the temperature %(value)s °C of %(source)s: the sample has none."
-msgstr "%(source)s kaynağının %(value)s °C sıcaklığıyla hesaplandı: numunede sıcaklık yok."
 
 msgid "Working"
 msgstr "Çalışan"
@@ -20779,9 +20763,6 @@ msgstr "balıklar yaklaşık %(date)s tarihinden itibaren çiftlikten çıkabili
 msgid "the layout being designed"
 msgstr "tasarlanan yerleşim"
 
-msgid "the live sensor values could not be read"
-msgstr "canlı sensör değerleri okunamadı"
-
 #, python-format
 msgid "the oldest since %(since)s"
 msgstr "en eskisi %(since)s itibarıyla"
@@ -20795,14 +20776,6 @@ msgstr ""
 
 msgid "the options must be a set of named values."
 msgstr "seçenekler adlandırılmış değerler kümesi olmalı."
-
-#, python-format
-msgid "the probe read %(value)s °C, beyond the %(band)s °C band"
-msgstr "sensör %(value)s °C okudu, %(band)s °C bandının dışında"
-
-#, python-format
-msgid "the probe sent no fresh value from %(time)s"
-msgstr "sensör %(time)s itibarıyla taze değer göndermedi"
 
 msgid "the rule for every unit"
 msgstr "her birim için kural"

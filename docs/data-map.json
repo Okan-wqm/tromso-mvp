@@ -4064,19 +4064,6 @@
           ],
           "how": "form",
           "why": ""
-        },
-        {
-          "name": "temperature_band_c",
-          "field": "temperature_band_c",
-          "type": "numeric(2, 1)",
-          "null": false,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "PlatformSettingsForm › Water freshness"
-          ],
-          "how": "form",
-          "why": ""
         }
       ],
       "constraints": [
@@ -4108,12 +4095,6 @@
         },
         {
           "name": "chk_platform_settings_unknown_withdrawal",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_platform_settings_temperature_band",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -4179,7 +4160,6 @@
             "second_approval_withdrawal": "Records",
             "unknown_withdrawal_days": "Records",
             "clock_tolerance_seconds": "Clocks",
-            "temperature_band_c": "Water freshness",
             "version": ""
           }
         }

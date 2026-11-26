@@ -328,3 +328,14 @@ class MinuteTests(SimpleTestCase):
                             id='b', value=True, status=OK)
         self.assertEqual(judge.point_verdict([early, late]).worst.key, 'early')
         self.assertEqual(judge.minute(T0 + timedelta(seconds=59, microseconds=5)), T0)
+
+    def test_a_points_late_alert_is_said_by_the_place_and_an_ok_one_is_not(self):
+        """The owner's decision: a late result judged critical or a warning is said by the place, with the evidence that
+        superseded it; a late OK is not said."""
+        for kind, said in (('critical', True), ('warning', True), ('ok', False)):
+            evidence = record('evidence', 'ok', 5, 0, point='o1', fresh_now=True)
+            late = record('late', kind, 0, 3, point='o1', fresh_now=False)
+            o1 = judge.point_verdict([evidence, late])
+            place = judge.place_verdict(evidence, {'o1': o1}, {'o1'})
+            self.assertEqual([(each.key, newer.key) for each, newer in place.late],
+                             [('late', 'evidence')] if said else [], kind)

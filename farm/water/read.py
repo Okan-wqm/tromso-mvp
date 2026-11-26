@@ -1253,7 +1253,7 @@ class Context:
         basis = observation.basis.get(parameters.TEMPERATURE)
         if own is not None:
             plan = {'value': own, 'start': observation.at, 'said': '',
-                    'end': freshness.fresh_until(parameters.TEMPERATURE, observation.at)}
+                    'end': observation.until(parameters.TEMPERATURE)}
         elif basis is not None:
             start = basis.at or observation.at
             plan = {'value': basis.value, 'start': start, 'end': freshness.fresh_until(parameters.TEMPERATURE, start),
@@ -1694,7 +1694,8 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
                                 if fresh_live.get(code) is not None)]
         if tan.fresh(now):
             together = Observation.combined(inputs)
-            worked = context._ammonia(together, *context.salinity_found(together))
+            worked = context._ammonia(together, *context.salinity_found(together),
+                                      context.temperature_of(together))
             chosen.update(worked)
             for code, reading in worked.items():
                 if reading.value is not None:

@@ -541,8 +541,11 @@ class DerivedTests(WaterTestCase):
         self.assertEqual(nh4.value, D('1.986'))
         self.sample(hours=1, tan_mg_l='2', ph='7.5')                      # no temperature in the newer sample
         nh3 = self.reading('nh3_n_mg_l')
-        self.assertEqual((nh3.value, nh3.note, nh3.status),
-                         (None, 'Needs the pH and the temperature of the same sample.', Status.NOT_MEASURED))
+        # It cannot be worked out, which says nothing of the water being better: the point's last worked-out value (the
+        # warning of the sample before) keeps the status and says so (review 3 of derived-fresh, H1).
+        self.assertEqual((nh3.value, nh3.status), (None, Status.WARNING))
+        self.assertTrue(nh3.note.startswith('Needs the pH and the temperature of the same sample. last worked-out value '
+                                            'at Middle 0.0137 warning on '), nh3.note)
 
     def test_the_salinity_is_the_samples_else_the_units_latest_else_none_outside_fresh_water(self):
         Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater')

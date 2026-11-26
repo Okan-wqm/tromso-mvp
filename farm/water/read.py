@@ -211,8 +211,8 @@ def water_sources(units, *, nested, every_point=False):
     owner rule A9.1, as `latest` reads a unit), then the loop point of its system and, when `nested`, of the systems
     that system is nested in, nearest first. A point is a source while it is active and its owner live; an owner with no
     middle point gives none. The feeding temperature reads `nested` and `every_point` (a ration may be sized on a parent
-    loop's water); the withdrawal's degree-days do not (a day without a temperature of its own counts as 0 °C and says
-    so, the safe side)."""
+    loop's water); the degree-days read `every_point` but not `nested` (a day without a temperature of its own and its
+    system's counts at the species' assumed temperature, capped, or as 0 °C, and says so: farm/water/degree_days.py)."""
     units = list(units)
     systems = System.objects.in_bulk() if any(unit.system_id for unit in units) else {}
     chains = {unit.pk: system_chain(unit, systems) if nested else

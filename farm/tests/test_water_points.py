@@ -670,8 +670,8 @@ class ReadTests(PointTestCase):
         self.sample(point=self.t1, hours=0, temperature_c='8')
         self.sample(point=self.loop, hours=0, temperature_c='11')
         temperatures = Temperatures([self.t1, self.t2], today - timedelta(days=1), today)
-        self.assertEqual(temperatures.of(self.t1.pk, today), D(8))                # the unit's own, not the inlet's
-        self.assertEqual(temperatures.of(self.t2.pk, today), D(11))               # else its system's loop
+        self.assertEqual(temperatures.of(self.t1.pk, today).value, D(8))          # the unit's own, not the inlet's
+        self.assertEqual(temperatures.of(self.t2.pk, today).value, D(11))         # else its system's loop
         self.assertIsNone(temperatures.of(self.t2.pk, today - timedelta(days=1)))
 
     def test_the_calculator_takes_the_values_of_a_unit_or_a_loop_from_its_middle_point(self):

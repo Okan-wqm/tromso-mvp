@@ -1700,7 +1700,7 @@ A species the farm grows or stocks, with its names, codes and the water it lives
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › species
 - **forms**: `SpeciesForm`
 - **constraints**: uq_species_code_live (unique: code); uq_species_scientific_name_live (unique: scientific_name); chk_species_scientific_name (check); chk_species_code (check); chk_species_official_code (check); chk_species_category (check); chk_species_status (check); chk_species_cleaner_fish_type (check); chk_species_withdrawal_temperature (check); chk_species_max_weight_ratio (check); chk_species_water (check)
-- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 28 more
+- **tests that mention it**: `core/test_languages.py`, `core/test_world.py`, `core/tests_rev.py` and 29 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

@@ -14,22 +14,31 @@ How long the fish have fasted (`fasted`), never overstated (owner rule):
   of its day) to the start of the handling's day on the site's clock, since an operation has a date and no time. A
   feeding on the day itself gives 0 hours;
 - **degree-days** are the batch's daily mean water temperatures of the **full days after the day of the last feeding
-  up to the day before the handling**: the days of the feeding and of the handling are not counted. A day's temperature
-  is farm/water/degree_days.py's, the one the medicine withdrawal adds up: a past day without a measured temperature
-  counts at the species' assumed temperature (Setup › Reference data › Species), else as 0 °C, and the warning says so.
+  up to the day before the handling**: the days of the feeding and of the handling are not counted. The days and their
+  sum are farm/water/degree_days.py's one walk (`BatchWater.walk`), the one the medicine withdrawal adds up: a probe
+  day (20 h of readings) at its time-weighted mean, else the day's water samples, else for a past day the species'
+  assumed temperature (Setup › Reference data › Species) capped at the coldest day measured in the 7 days before, else
+  0 °C; a mean of 0 °C or below adds nothing; the warning says how many days came from each source.
 
 When feeding must stop for a handling on day D (`start_of_fast`, **the one function** the meal board, the plan rows and
 the earliest harvest date ask): the fast starts at the later of the two starts the rule asks for, counted back from D.
 By hours it is the start of D's day less the hours; by degree-days, the day s such that the full days s to D − 1 add up
-to the rule's degree-days (a past day as above, a day not over or still to come at the mean of the batch's last 7
-measured days, else the species' assumed temperature; with none, the degree-days are unknown and the hours rule alone
-applies, and it is said). Every day from the day the fast starts on to D is a fasting day in full, for the whole unit
-(two batches in a unit cannot be fed apart). A fast that the degrees do not reach in MAX_FAST_DAYS days starts then, and
-says so.
+to the rule's degree-days (the same walk, backward from D − 1: a day not over or still to come at the mean of the
+batch's last 7 measured days, else the species' assumed temperature; with none, the degree-days are unknown and the
+hours rule alone applies, and it is said). Every day from the day the fast starts on to D is a fasting day in full, for
+the whole unit (two batches in a unit cannot be fed apart).
+
+**The days looked at.** The last feeding is looked for LOOKBACK_DAYS back: one day more than the longest rule
+allowed in hours (farm.models.handling.MAX_FASTING_HOURS, 720 h), so fish not fed in that time have fasted long enough
+for any rule. A purge in degree-days is looked for at most MAX_FAST_DAYS (60) back: a search bound, not a farm's rule,
+and the rule that governs it is that the fast is never said complete when it is not. A purge of D degree-days is found
+within it only in water averaging at least D ÷ 60 °C (the largest allowed, MAX_FASTING_DEGREE_DAYS, 1000, needs
+16.7 °C); in colder water the fast starts 60 days before D and says "not reached in 60 days", and the earliest harvest
+date says the purge cannot be worked out (farm/handling/check.py). The bound covers the longest rule in hours too.
 
 A planned harvest or transport (HandlingPlanItem, planned or overdue) asks the unit to fast so. The meal board asks
 `fasting_on`."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import ROUND_DOWN, Decimal
 
@@ -38,15 +47,14 @@ from django.utils import formats
 from django.utils.translation import gettext as _, ngettext
 
 from farm.models import HandlingPlanItem, HandlingRule
-from farm.models.handling import HandlingKind
+from farm.models.handling import MAX_FASTING_HOURS, HandlingKind
 from farm.models.site import zone_of
 from farm.stock.dates import local_today, start_of
-from farm.water.degree_days import PENDING, BatchWater, degree_days_text, missing_sentence, projected_sentence
+from farm.water.degree_days import BatchWater, accrual_text, degree_days_text, projected_sentence
 
-# How far back the last feeding is looked for: longer than the longest rule (720 h), so a fish not fed in
-# that time has fasted long enough for any rule.
-LOOKBACK_DAYS = 31
-# How many days back a purge of degree-days is looked for.
+# How far back the last feeding is looked for: one day longer than the longest rule allowed (the module's docstring).
+LOOKBACK_DAYS = MAX_FASTING_HOURS // 24 + 1
+# How many days back a purge of degree-days is looked for: a search bound (the module's docstring).
 MAX_FAST_DAYS = 60
 DAY = timedelta(days=1)
 HOUR = Decimal('0.1')
@@ -176,46 +184,50 @@ class Start:
     """When the fast before a handling must start (see `start_of_fast`): the moment (None when it cannot be worked out:
     degrees asked, none known, no hours), and how it was found."""
     starts_at: datetime | None
-    unknown: bool = False             # the degree-days could not be worked out: no temperature to project at
-    unreached: bool = False           # the degree-days are not reached in MAX_FAST_DAYS days at these temperatures
-    projected: bool = False           # days ahead were counted at a projection
-    projected_at_assumed: bool = False
-    missing: int = 0                  # past days counted without a measured temperature
-    assumed: Decimal | None = None
+    # How the degree-days were added up, backward from the day before the handling (farm.water.degree_days.Accrual);
+    # None when the rule asks for none.
+    accrual: object = field(default=None, compare=False)
+
+    @property
+    def unknown(self):
+        """The degree-days could not be worked out: no temperature to project at."""
+        return self.accrual is not None and self.accrual.unknown
+
+    @property
+    def unreached(self):
+        """The degree-days are not reached in MAX_FAST_DAYS days at these temperatures."""
+        return self.accrual is not None and not self.accrual.unknown and self.accrual.reached is None
+
+    @property
+    def projected(self):
+        """Days ahead were counted at a projection."""
+        return self.accrual is not None and bool(self.accrual.projected)
+
+    @property
+    def projected_at_assumed(self):
+        return self.projected and self.accrual.projected_at_assumed
+
+    @property
+    def missing(self):
+        """Past days counted without a measured temperature."""
+        return self.accrual.missing if self.accrual is not None else 0
+
+    @property
+    def assumed(self):
+        return self.accrual.assumed if self.accrual is not None else None
 
 
 def start_of_fast(unit, day, requirement, water=None, batch_id=None):
     """The Start of the fast for a handling on `day`: the later of the hours' start and the degree-days' start (module
     docstring). `water` (BatchWater with `batch_id`) is needed when the requirement asks for degree-days."""
-    candidates = []
+    candidates, accrual = [], None
     if requirement.hours:
         candidates.append(start_of(day, unit) - timedelta(hours=requirement.hours))
-    unknown = unreached = projected = at_assumed = False
-    missing, assumed = 0, None
     if requirement.degree_days:
-        assumed = water.assumed(batch_id)
-        mean, at_assumed = water.projection(batch_id)
-        total, counted_day = Decimal(0), day
-        for _n in range(MAX_FAST_DAYS):
-            counted_day -= DAY
-            counted = water.day(batch_id, counted_day)
-            if counted.how == PENDING:
-                if mean is None:
-                    unknown = True
-                    break
-                value, projected = mean, True
-            else:
-                value = counted.value
-                missing += counted.missing
-            total += value
-            if total >= requirement.degree_days:
-                candidates.append(start_of(counted_day, unit))
-                break
-        else:
-            unreached = True
-            candidates.append(start_of(counted_day, unit))
-    return Start(min(candidates, default=None), unknown, unreached, projected, projected and at_assumed, missing,
-                 assumed)
+        accrual = water.walk(batch_id, day - DAY, backward=True, needed=requirement.degree_days, days=MAX_FAST_DAYS)
+        if not accrual.unknown:            # reached, or not in MAX_FAST_DAYS: the fast starts on the last day walked
+            candidates.append(start_of(accrual.reached or accrual.last, unit))
+    return Start(min(candidates, default=None), accrual)
 
 
 # ---- the fasts plans ask for --------------------------------------------------------------------------
@@ -271,9 +283,8 @@ class Fast:
         if start.projected:
             text += ' ' + (projected_sentence(start.assumed) if start.projected_at_assumed else
                            _('Projected at the mean water temperature of the last days measured.'))
-        if start.missing:
-            text += ' ' + missing_sentence(start.missing, start.assumed)
-        return text
+        counted = accrual_text(start.accrual)
+        return f'{text} {counted}' if counted else text
 
 
 def fast_of(item, water=None, requirement=None, done_too=False):

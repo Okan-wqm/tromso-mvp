@@ -261,10 +261,28 @@ msgstr[0] "%(count)d dag (%(hours)d t)"
 msgstr[1] "%(count)d dager (%(hours)d t)"
 
 #, python-format
+msgid "%(count)d day from water samples"
+msgid_plural "%(count)d days from water samples"
+msgstr[0] "%(count)d dag fra vannprøver"
+msgstr[1] "%(count)d dager fra vannprøver"
+
+#, python-format
+msgid "%(count)d day measured by the sensors"
+msgid_plural "%(count)d days measured by the sensors"
+msgstr[0] "%(count)d dag målt av sensorene"
+msgstr[1] "%(count)d dager målt av sensorene"
+
+#, python-format
 msgid "%(count)d day planned."
 msgid_plural "%(count)d days planned."
 msgstr[0] "%(count)d dag planlagt."
 msgstr[1] "%(count)d dager planlagt."
+
+#, python-format
+msgid "%(count)d day projected"
+msgid_plural "%(count)d days projected"
+msgstr[0] "%(count)d dag fremskrevet"
+msgstr[1] "%(count)d dager fremskrevet"
 
 #, python-format
 msgid ""
@@ -293,6 +311,26 @@ msgstr[0] ""
 msgstr[1] ""
 "%(count)d dager uten målt vanntemperatur telles med den antatte %(temperature)s °C (artens "
 "innstilling i Referansedata)."
+
+#, python-format
+msgid ""
+"%(count)d day without a measured water temperature is counted at the coldest daily mean measured "
+"in the %(days)d days before it, below the species’ assumed temperature."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted at the coldest daily mean "
+"measured in the %(days)d days before each, below the species’ assumed temperature."
+msgstr[0] ""
+"%(count)d dag uten målt vanntemperatur telles med det kaldeste døgnsnittet målt de %(days)d "
+"dagene før den, under artens antatte temperatur."
+msgstr[1] ""
+"%(count)d dager uten målt vanntemperatur telles med det kaldeste døgnsnittet målt de %(days)d "
+"dagene før hver av dem, under artens antatte temperatur."
+
+#, python-format
+msgid "%(count)d day without a measurement"
+msgid_plural "%(count)d days without a measurement"
+msgstr[0] "%(count)d dag uten måling"
+msgstr[1] "%(count)d dager uten måling"
 
 #, python-format
 msgid "%(count)d delivery or return of the store names it for “%(category)s”: keep it ticked."
@@ -5969,6 +6007,10 @@ msgstr "Dager i året"
 
 msgid "Days and punches"
 msgstr "Dager og stemplinger"
+
+#, python-format
+msgid "Days counted: %(parts)s."
+msgstr "Dager telt: %(parts)s."
 
 msgid "Days from the baseline weighing to the final weighing."
 msgstr "Dager fra grunnveiingen til sluttveiingen."
@@ -15221,13 +15263,19 @@ msgid "The degree-days are not reached in %(days)d days at these temperatures."
 msgstr "Døgngradene nås ikke på %(days)d dager ved disse temperaturene."
 
 msgid ""
-"The degree-days one day counts for when no water temperature was measured: a past day without "
-"one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
-" low value is the conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C."
+"The degree-days one day counts for when no water temperature was measured: a day counts at its "
+"probe’s time-weighted mean when the probe covered at least 20 hours, else at the mean of its "
+"water samples, else at this value, but never above the coldest day measured in the 7 days before "
+"it; a withdrawal is projected at it when none was measured at all. A mean of 0 °C or below adds "
+"nothing. It is the farm’s own assumption: a low value is the conservative choice. Empty: such a "
+"day counts as 0 °C. 0 to 40 °C."
 msgstr ""
-"Døgngradene én dag teller for når ingen vanntemperatur er målt: en dag i fortiden uten måling, og"
-" en tilbakeholdelsestid som anslås når ingenting er målt. Det er driftens egen antakelse: en lav "
-"verdi er det forsiktige valget. Tom: en slik dag telles som 0 °C. 0 til 40 °C."
+"Døgngradene én dag teller for når ingen vanntemperatur er målt: en dag teller med sondens "
+"tidsvektede snitt når sonden dekket minst 20 timer, ellers med snittet av vannprøvene, ellers med"
+" denne verdien, men aldri over den kaldeste dagen målt de 7 dagene før; en tilbakeholdelsestid "
+"fremskrives med den når ingenting er målt. Et snitt på 0 °C eller lavere legger ikke til noe. Det"
+" er driftens egen antakelse: en lav verdi er det forsiktige valget. Tom: en slik dag telles som 0"
+" °C. 0 til 40 °C."
 
 msgid "The department this one belongs to in the organisation chart; none for a top-level one."
 msgstr "Avdelingen denne hører under i organisasjonskartet; ingen for en på øverste nivå."
@@ -16300,6 +16348,11 @@ msgstr "Sensorregelen slår ikke lenger til"
 #, python-format
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "Sensorene ved %(place)s: først de som er der nå, så de som var der før."
+
+msgid ""
+"The sensors could not be read: their days are counted from the water samples or the assumed "
+"temperature."
+msgstr "Sensorene kunne ikke leses: dagene deres telles fra vannprøvene eller den antatte temperaturen."
 
 #, python-format
 msgid ""

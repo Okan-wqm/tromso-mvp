@@ -59,7 +59,7 @@ from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule
 from farm.models.stock import MovementKind, OperationKind
 from farm.stock.dates import local_today
 from farm.stock.read import Presence
-from farm.water.degree_days import BatchWater, degree_days_text, missing_sentence
+from farm.water.degree_days import BatchWater, accrual_text, degree_days_text
 
 from . import fasting, withdrawal
 from .fasting import DAY, LOOKBACK_DAYS, asks_text, both_text, hours_text, shown_moment
@@ -196,9 +196,8 @@ class HandlingWarning:
                 'fasted': both_text(
                     None if self.required_hours is None else hours_text(self.fasted_hours),
                     None if self.required_degree_days is None else degree_days_text(self.fasted_degree_days))}
-        if self.accrual is not None and self.accrual.missing:
-            text += ' ' + missing_sentence(self.accrual.missing, self.accrual.assumed)
-        return text
+        counted = accrual_text(self.accrual)
+        return f'{text} {counted}' if counted else text
 
 
 @dataclass
@@ -395,8 +394,9 @@ def _fasting(result, batches):
         return
     result.notes.append(_('The %(kind)s rule for %(species)s asks for %(asked)s.') % {
         'kind': label, 'species': species.common_name, 'asked': requirement.text()})
-    if done.accrual is not None and done.accrual.missing:
-        result.notes.append(missing_sentence(done.accrual.missing, done.accrual.assumed))
+    counted = accrual_text(done.accrual)
+    if counted:
+        result.notes.append(counted)
 
 
 # ---- the earliest suitable harvest date ---------------------------------------------------------------

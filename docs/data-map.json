@@ -17621,6 +17621,7 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_withdrawals.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_size_mix.py",
         "farm/tests/test_size_mix_review.py",

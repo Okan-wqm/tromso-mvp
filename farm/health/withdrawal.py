@@ -42,10 +42,12 @@ The rules, for a batch b and a treatment T with a medicine:
    the row's days (the margin applied) + 1.
 3. **Degree-days**: the daily mean water temperature of b is added up from the day after T's last day until
    the sum reaches the row's degree-days (the margin applied); the next day is the first day b may be harvested.
-   - The batch's daily mean water temperature, a past day without one counted at the species' assumed
-     temperature (else 0 °C, said in the warning) and a day not measured yet projected, is farm/water/degree_days.py's
-     (`BatchWater`), shared with the purging fast before a harvest: one definition for both. With b in several units
-     that day, the lowest counts. Today without a temperature yet is not counted: it is projected.
+   - The batch's daily mean water temperature and the sum are farm/water/degree_days.py's (`BatchWater.walk`, the one
+     accrual, shared with the purging fast before a harvest): a day with at least 20 h of probe readings at their
+     time-weighted mean, else the day's water samples, else for a past day the species' assumed temperature capped at
+     the coldest day measured in the 7 days before (0 °C without one, said in the warning); a mean of 0 °C or below
+     adds nothing; a day not measured yet is projected. With b in several units that day, the lowest counts. Today
+     without a temperature yet is not counted: it is projected. The text says how many days came from each source.
 4. Days and degree-days both given: the later end wins. Several treatments: each holds b on its own, and
    the latest end decides what the page shows.
 5. Not reached by today, the rest is projected at the mean of the last 7 days with a temperature within
@@ -99,8 +101,8 @@ from farm.models.stock import MovementKind
 from farm.stock import read as stock_read
 from farm.stock.dates import earliest_today, local_today, shown_date
 from farm.stock.read import Presence
-from farm.water.degree_days import (DAY, LOOKBACK_DAYS, PENDING, ZERO, BatchWater, degree_days_text,
-                                    missing_sentence, projected_sentence)
+from farm.water.degree_days import (DAY, LOOKBACK_DAYS, BatchWater, accrual_text, degree_days_text,
+                                    projected_sentence)
 
 
 def _plain(value):
@@ -185,6 +187,8 @@ class Withdrawal:
     projected_at_assumed: bool = False    # no temperature was measured lately: projected at the assumed one
     remaining_degree_days: Decimal = None  # what was still to accrue today, when projected or unknown
     gives_up: object = None               # an unknown end: the first day it no longer holds (rule 8); else None
+    # How the degree-days were added up (farm.water.degree_days.Accrual: the days of each source); None without them.
+    accrual: object = field(default=None, compare=False)
 
     @property
     def source(self):
@@ -450,27 +454,15 @@ class Reader:
 
     # ---- the batch's water (farm/water/degree_days.py) ------------------------------------------------
     def degree_days(self, batch_id, end, needed):
-        """(first day, estimated, days without a temperature, degree-days still to accrue, projected at the
-        assumed temperature) of a withdrawal of `needed` degree-days after the last day `end` (rule 3 and 5); the
-        first day is None when unknown."""
+        """(first day, estimated, Accrual) of a withdrawal of `needed` degree-days after the last day `end` (rules 3 and
+        5): the one walk of farm/water/degree_days.py from the day after `end` until the sum reaches `needed`. The first
+        day is None when it is never reached (nothing to project at, or a projection of 0 °C or below)."""
         if needed <= 0:
-            return end + DAY, False, 0, ZERO, False
-        total, missing, day = ZERO, 0, end
-        while day < self.today:
-            counted = self.water.day(batch_id, day + DAY)
-            if counted.how == PENDING:
-                break                       # today has no temperature yet: projected, not counted
-            day += DAY
-            missing += counted.missing
-            total += counted.value
-            if total >= needed:
-                return day + DAY, False, missing, ZERO, False
-        remaining = needed - total
-        mean, assumed = self.water.projection(batch_id)
-        if mean is None or mean <= 0:
-            return None, True, missing, remaining, False
-        days = int((remaining / mean).to_integral_value(rounding=ROUND_CEILING))
-        return day + days * DAY + DAY, True, missing, remaining, assumed
+            return end + DAY, False, None
+        accrual = self.water.walk(batch_id, end + DAY, needed=needed)
+        if accrual.reached is None:
+            return None, True, accrual
+        return accrual.reached + DAY, bool(accrual.projected), accrual
 
     # ---- the withdrawals ----------------------------------------------------------------------------
     def of_treatment(self, treatment, batch_id):
@@ -486,7 +478,7 @@ class Reader:
         by_days = end + (rule.days + 1) * DAY if rule.days is not None else None
         if rule.degree_days is None:
             return Withdrawal(batch_id, by_days, treatment=treatment, rule=rule, species=species)
-        by_degrees, estimated, missing, remaining, at_assumed = self.degree_days(batch_id, end, rule.degree_days)
+        by_degrees, estimated, accrual = self.degree_days(batch_id, end, rule.degree_days)
         if by_degrees is None:
             until, estimated = None, True
         elif by_days is not None and by_days > by_degrees:
@@ -494,9 +486,12 @@ class Reader:
         else:
             until = by_degrees
         return Withdrawal(batch_id, until, estimated, treatment, rule=rule, species=species,
-                          days_without_temperature=missing, assumed_temperature=self.water.assumed(batch_id),
-                          projected_at_assumed=at_assumed and until == by_degrees,
-                          remaining_degree_days=remaining if estimated else None)
+                          days_without_temperature=accrual.missing if accrual else 0,
+                          assumed_temperature=self.water.assumed(batch_id),
+                          projected_at_assumed=bool(accrual and accrual.projected_at_assumed and by_degrees is not None
+                                                    and until == by_degrees),
+                          remaining_degree_days=rule.degree_days - accrual.counted if estimated and accrual else None,
+                          accrual=accrual)
 
     def uncovered_feedings(self):
         """Withdrawals of unknown end for the medicated feedings of the batches that no live in-feed
@@ -1530,9 +1525,8 @@ def describe(withdrawal):
         text += ' ' + projected_sentence(withdrawal.assumed_temperature)
     elif withdrawal.estimated:
         text += ' ' + _('Projected at the mean water temperature of the last days measured.')
-    if withdrawal.days_without_temperature:
-        text += ' ' + missing_sentence(withdrawal.days_without_temperature, withdrawal.assumed_temperature)
-    return text
+    counted = accrual_text(withdrawal.accrual)
+    return f'{text} {counted}' if counted else text
 
 
 def _held_how(hold):

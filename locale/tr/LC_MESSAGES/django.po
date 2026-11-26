@@ -264,10 +264,28 @@ msgstr[0] "%(count)d gün (%(hours)d sa)"
 msgstr[1] "%(count)d gün (%(hours)d sa)"
 
 #, python-format
+msgid "%(count)d day from water samples"
+msgid_plural "%(count)d days from water samples"
+msgstr[0] "su numunelerinden %(count)d gün"
+msgstr[1] "su numunelerinden %(count)d gün"
+
+#, python-format
+msgid "%(count)d day measured by the sensors"
+msgid_plural "%(count)d days measured by the sensors"
+msgstr[0] "sensörlerin ölçtüğü %(count)d gün"
+msgstr[1] "sensörlerin ölçtüğü %(count)d gün"
+
+#, python-format
 msgid "%(count)d day planned."
 msgid_plural "%(count)d days planned."
 msgstr[0] "%(count)d gün planlandı."
 msgstr[1] "%(count)d gün planlandı."
+
+#, python-format
+msgid "%(count)d day projected"
+msgid_plural "%(count)d days projected"
+msgstr[0] "öngörülen %(count)d gün"
+msgstr[1] "öngörülen %(count)d gün"
 
 #, python-format
 msgid ""
@@ -296,6 +314,26 @@ msgstr[0] ""
 msgstr[1] ""
 "Ölçülmüş su sıcaklığı olmayan %(count)d gün, varsayılan %(temperature)s °C ile sayıldı (Referans "
 "verilerindeki türün ayarı)."
+
+#, python-format
+msgid ""
+"%(count)d day without a measured water temperature is counted at the coldest daily mean measured "
+"in the %(days)d days before it, below the species’ assumed temperature."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted at the coldest daily mean "
+"measured in the %(days)d days before each, below the species’ assumed temperature."
+msgstr[0] ""
+"Ölçülmüş su sıcaklığı olmayan %(count)d gün, önceki %(days)d günde ölçülen en soğuk günlük "
+"ortalamayla sayıldı; türün varsayılan sıcaklığının altında."
+msgstr[1] ""
+"Ölçülmüş su sıcaklığı olmayan %(count)d gün, her birinden önceki %(days)d günde ölçülen en soğuk "
+"günlük ortalamayla sayıldı; türün varsayılan sıcaklığının altında."
+
+#, python-format
+msgid "%(count)d day without a measurement"
+msgid_plural "%(count)d days without a measurement"
+msgstr[0] "ölçümsüz %(count)d gün"
+msgstr[1] "ölçümsüz %(count)d gün"
 
 #, python-format
 msgid "%(count)d delivery or return of the store names it for “%(category)s”: keep it ticked."
@@ -5988,6 +6026,10 @@ msgstr "Yıllık gün"
 
 msgid "Days and punches"
 msgstr "Günler ve giriş-çıkışlar"
+
+#, python-format
+msgid "Days counted: %(parts)s."
+msgstr "Sayılan günler: %(parts)s."
 
 msgid "Days from the baseline weighing to the final weighing."
 msgstr "Başlangıç tartımından son tartıma kadar geçen gün sayısı."
@@ -15259,13 +15301,19 @@ msgid "The degree-days are not reached in %(days)d days at these temperatures."
 msgstr "Bu sıcaklıklarda gün-derece %(days)d günde ulaşılamıyor."
 
 msgid ""
-"The degree-days one day counts for when no water temperature was measured: a past day without "
-"one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
-" low value is the conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C."
+"The degree-days one day counts for when no water temperature was measured: a day counts at its "
+"probe’s time-weighted mean when the probe covered at least 20 hours, else at the mean of its "
+"water samples, else at this value, but never above the coldest day measured in the 7 days before "
+"it; a withdrawal is projected at it when none was measured at all. A mean of 0 °C or below adds "
+"nothing. It is the farm’s own assumption: a low value is the conservative choice. Empty: such a "
+"day counts as 0 °C. 0 to 40 °C."
 msgstr ""
-"Su sıcaklığı ölçülmediğinde bir günün saydığı gün-derece: sıcaklığı olmayan geçmiş bir gün ve hiç"
-" ölçüm yokken öngörülen bekleme süresi. Çiftliğin kendi varsayımıdır: düşük bir değer temkinli "
-"seçimdir. Boş: böyle bir gün 0 °C sayılır. 0 ila 40 °C."
+"Su sıcaklığı ölçülmediğinde bir günün saydığı gün-derece: bir gün, sensör en az 20 saati "
+"kapsadıysa sensörün zamana göre ağırlıklı ortalamasıyla, yoksa su numunelerinin ortalamasıyla, "
+"yoksa bu değerle sayılır, ama asla önceki 7 günde ölçülen en soğuk günün üstünde değil; hiç ölçüm"
+" yokken bekleme süresi bununla öngörülür. 0 °C veya altındaki bir ortalama hiçbir şey eklemez. "
+"Çiftliğin kendi varsayımıdır: düşük bir değer temkinli seçimdir. Boş: böyle bir gün 0 °C sayılır."
+" 0 ila 40 °C."
 
 msgid "The department this one belongs to in the organisation chart; none for a top-level one."
 msgstr "Bu departmanın organizasyon şemasında bağlı olduğu departman; en üst düzey için boş bırakın."
@@ -16337,6 +16385,11 @@ msgstr "Sensör kuralı artık geçerli değil"
 #, python-format
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "%(place)s yerindeki sensörler: önce şu an orada olanlar, sonra daha önce orada olanlar."
+
+msgid ""
+"The sensors could not be read: their days are counted from the water samples or the assumed "
+"temperature."
+msgstr "Sensörler okunamadı: günleri su numunelerinden veya varsayılan sıcaklıktan sayıldı."
 
 #, python-format
 msgid ""

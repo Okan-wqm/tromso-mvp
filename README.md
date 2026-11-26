@@ -303,7 +303,9 @@ code, filters by category, water environment, cleaner fish (any, lumpfish, wrass
   allowed): the degree-days one day counts for when no water temperature was measured, so a past day without a
   measurement and a withdrawal projected when none was measured at all do not silently count as nothing (see
   Operations › Health). It is the farm's own assumption, never filled in from the catalogue; a low value is the
-  conservative choice, and empty keeps such a day at 0 °C.
+  conservative choice, and empty keeps such a day at 0 °C. It is the last of a day's three sources (a probe's 20 h,
+  the samples, the assumption) and never counts above the coldest day measured in the 7 days before (see Operations ›
+  Health, the degree-days).
 - **Stocking**: under **Batches of different sizes**, the **max weight ratio of batches in one unit** (1 to 1000, a
   database check, empty allowed): how many times heavier, on average, one batch of the species may be than another
   sharing a unit with it (the owner: fish of very different weights of the same species must not be in the same tank;
@@ -2661,11 +2663,12 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
 - *Fasting*: the hours from the fish's **last feeding** to the **start of the handling's day** on the site's
   clock (an operation has a date and no time), and, **for a harvest whose rule asks for purging, the degree-days**: the
   sum of the batch's daily mean water temperatures of the **full days after the day of the last feeding up to the day
-  before the harvest** (the day of the feeding and the harvest's own day are not counted). A day's temperature is the
-  one the medicine withdrawal adds up (`farm/water/degree_days.py`, one definition for both: the unit's middle point,
-  else its system's loop; a past day without a measured temperature counts at the species' assumed temperature, else as
-  0 °C, and the warning says so). Each thing the rule asks for must be reached, so the warning shows each: "Last fed
-  3 Nov 2026, 02:52, 48.0 h and 36 degree-days before 6 Nov 2026: the harvest rule asks for 72 h and 60 degree-days." **The fast is of the fish in the unit
+  before the harvest** (the day of the feeding and the harvest's own day are not counted). The days and their sum are
+  the medicine withdrawal's (`farm/water/degree_days.py`, one definition and one accrual, `BatchWater.walk`, for both;
+  the three sources of a day, the cap and "0 °C or below adds nothing" are under Operations › Health, the
+  degree-days). Each thing the rule asks for must be reached, so the warning shows each, then how many days came from
+  each source: "Last fed 3 Nov 2026, 02:52, 48.0 h and 36 degree-days before 6 Nov 2026: the harvest rule asks for 72 h
+  and 60 degree-days. Days counted: 2 days measured by the sensors, 1 day from water samples." **The fast is of the fish in the unit
   handled** (the owner, 14.11.2026: fish of two batches in one unit are one group; flow fault S-01): one fast for the
   unit, whichever batch a dialog names, counted from the latest feeding of production fish along the fish's own path
   (`farm.feeding.read.last_fed_of`, `Paths`): this unit's feedings since each of its batches came into it, the
@@ -2761,11 +2764,17 @@ dialog), have they fasted long enough? Nothing is blocked (owner decision): both
   2026: from 12 Nov 2026, 00:00 (72 h)". **When feeding must stop** for a handling on day D is one function
   (`fasting.start_of_fast`, which the board, the plan rows and the earliest harvest date ask): by hours, the start of D
   less the hours; by degree-days, found **backwards from D**: the day s such that the full days s to D − 1 add up to the
-  rule's degree-days, a past day at its measured temperature (or the assumed one, else 0 °C), a day not over or still to
-  come at the mean of the unit's last 7 measured days within 30, else the species' assumed temperature; the later of
-  the two starts wins. With no temperature to project at, the degree-days are unknown: the hours alone apply and the
-  board says "Degree-days unknown: no temperature."; a fast the water never reaches in 60 days starts at 60 and says so.
-  It says what it projected, "(72 h and 60 degree-days)", and how many days were counted without a measurement. The band stays, so a feeding recorded anyway is still credited at its
+  rule's degree-days (the same walk as the withdrawal's, backward: a past day as under Operations › Health, a day not
+  over or still to come at the mean of the unit's last 7 measured days within 30, else the species' assumed
+  temperature, a projection of 0 °C or below adding nothing); the later of the two starts wins. With no temperature to
+  project at, the degree-days are unknown: the hours alone apply and the board says "Degree-days unknown: no
+  temperature."; a fast the water never reaches in 60 days starts at 60 and says so. **The 60 days are a search bound,
+  not a farm's rule** (`fasting.MAX_FAST_DAYS`): the rule that governs it is that a fast is never said complete when it
+  is not. A purge of D degree-days fits in it only in water averaging at least D ÷ 60 °C (the largest rule allowed,
+  1,000 degree-days, needs 16.7 °C); colder, the board says "not reached in 60 days" and the earliest harvest date says
+  the purge cannot be worked out. The last feeding is looked for 31 days back, derived from the longest rule allowed in
+  hours (720 h ÷ 24 + 1, `fasting.LOOKBACK_DAYS`). It says what it projected, "(72 h and 60 degree-days)", and how
+  many days came from each source. The band stays, so a feeding recorded anyway is still credited at its
   expected FCR; the production plan's forecast skips the same days. Cancelling the plan gives the ration back.
   The feeding dialog says so on such a day ("A feeding can still be recorded").
 - *The earliest suitable harvest date* (`check.earliest`, on a harvest's dialog and the drawer's Harvest and handling
@@ -2968,17 +2977,32 @@ corrected temperature or a backdated transfer changes it at once:
   (decided for now, the safe side): the degrees are still those of the exposed batch in EVERY unit it is in (the
   lowest counts), also a unit that was never treated, not those of the held fish alone; so an untreated sibling
   tank's cold water still moves the end of the held fish, and for a degree-day medicine deleting that sibling tank
-  or its loop stays blocked (below). A unit's daily mean is the mean
-  of that farm-local day's temperatures in the unit, else in its system's loop (the water samples, never a
-  copy); with the batch in several units that day, the lowest counts. **A past day without a measured
-  temperature counts at the batch species' assumed water temperature** (Reference data › Species; one query reads
-  the species of all the batches), **and as 0 °C when the species has none**, and the warning says how many days
-  and at what ("3 days without a measured water temperature are counted at the assumed 8.0 °C (the species'
-  setting in Reference data)", or "... are counted as 0 °C: set the species' assumed temperature in Reference data
-  › Species."); not reached by today, the rest is projected at the mean of the last 7 measured days within 30
-  ("about"); with none measured, at the species' assumed temperature when it has one ("Projected at the assumed
-  8.0 °C ... no water temperature was measured in the last 30 days"), else the end is unknown ("record the water
-  temperature");
+  or its loop stays blocked (below). **A day's temperature, the safe side** (the coordinator's decision of 26.11.2026
+  on the architecture audit's H-2 and M-3: ending a withdrawal too early is the dangerous direction), per farm-local
+  day, from the first of three sources that has one (`farm/water/degree_days.py`, the one definition and the one
+  accrual, `BatchWater.walk`, that the purging fast adds up too):
+  1. **the sensors**: a temperature probe with **at least 20 hours of fresh, good readings** that day counts at their
+     **time-weighted mean** (each stored reading holds until the channel's next good one, at most its fresh time, the
+     heartbeat times its fresh heartbeats; between two stored rows the water stayed within the channel's deadband),
+     rounded down to 0.01 °C. Read through the sensors' provider (`sensors/provider.py` `covered`, one statement over
+     the hypertable), at the places of owner rule A9: the unit's own-water points (never the inlet), else its system's
+     loop point, or the system's own sensors when it has no loop point; several probes or points, the lowest;
+  2. else **the water samples**: the mean of that day's samples at the unit's own-water points (the lowest point's),
+     else at its system's loop point (never a copy);
+  3. else, for a past day, **the batch species' assumed water temperature** (Reference data › Species; one query reads
+     the species of all the batches), **but never above the coldest daily mean measured (1 or 2) in the 7 days
+     before it**, so an assumption cannot run ahead of the water ("3 days without a measured water temperature are
+     counted at the coldest daily mean measured in the 7 days before each, below the species' assumed
+     temperature."); **0 °C when the species has none** ("... are counted as 0 °C: set the species' assumed
+     temperature in Reference data › Species.").
+
+  With the batch in several units that day, the lowest counts. **A daily mean of 0 °C or below adds nothing**: the sum
+  never goes down. **Every end says how many days came from each source** ("Days counted: 12 days measured by the
+  sensors, 3 days from water samples, 2 days without a measurement, 5 days projected."), and a sensor read that failed
+  is said ("The sensors could not be read: ..."). Not reached by today, the rest is projected at the mean of the last 7
+  measured days within 30 ("about"); with none measured, at the species' assumed temperature when it has one
+  ("Projected at the assumed 8.0 °C ... no water temperature was measured in the last 30 days"), else, or at a
+  projection of 0 °C or below, the end is unknown ("record the water temperature");
 - both given, the later end wins; a running course counts from its planned last day;
 - **medicated feed** (a feed of the type Medicated) fed to a batch on a day no live in-feed treatment of the unit
   covers holds it with an unknown end until the treatment is recorded or the feeding voided; the feeding dialog
@@ -6744,7 +6768,7 @@ runs the server:
 | `farm/models/harvest.py`, `farm/harvest/` | Harvest: slaughter facilities, a harvest's record, production plans and plan items; the Harvested list and its totals (`read.py`, `views.py`), the drawer's harvest part; the plan pages (`farm/resources/harvest_plan.py`, `farm/forms/harvest.py`) |
 | `farm/models/handling.py`, `farm/handling/` | The handling check: the withdrawal registry (`withdrawal.py`), fasting, the purging in degree-days, when feeding must stop and the fasts plans ask for (`fasting.py`, `start_of_fast`, `fasting_on`), the check, the earliest suitable harvest date and the acknowledgement (`check.py`); the handling rules tab (`farm/forms/handling.py`, `farm/resources/handling_rule.py`) |
 | `farm/placements.py` | The placement registry: the chip an app puts beside a unit (the experiments', on Production units, its drawer and the meal board); fails open |
-| `farm/water/degree_days.py` | The batch's daily mean water temperature and the degree-days it adds up to (a past day without a measurement at the species' assumed temperature, else 0 °C; a day ahead projected): the one definition the medicine withdrawal and the purging fast share |
+| `farm/water/degree_days.py` | The batch's daily mean water temperature (a probe's 20 h time-weighted mean, else the samples, else the species' assumed temperature capped at the coldest day measured in the 7 days before, else 0 °C; 0 °C or below adds nothing; a day ahead projected) and the one accrual (`BatchWater.walk`) the medicine withdrawal and the purging fast share, with the days of each source (`accrual_text`) |
 | `inventory/` | The store (its own app): storage locations, items, lots and the ledger (`models.py`), the fold (`fold.py`), reading it for the pages (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_inventory`), the location tab (`resources.py`), the page and dialogs (`views.py`, `forms.py`, `templatetags/inventory.py`, `templates/inventory/`) |
 | `reports/` | Regulatory reports (its own app): the models (`models.py`), the kinds (`kinds.py`) and periods (`periods.py`), each report's computation from the records (`compute/`), the filing and corrections (`services.py`), what is due (`due.py`), the exports (`exports.py`), the check (`integrity.py`) and the provider the health records read (`health.py`) |
 | `messaging/` | Messages: models (`models.py`), the one write path (`services.py`), the reads (`read.py`), the event a push or an AI assistant listens to (`events.py`), the pages and fragments (`views.py`, `templates/messaging/`, `static/css/messages.css`) |

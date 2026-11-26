@@ -896,4 +896,6 @@ class WaterFreshnessForm(TabbedForm):
         help_texts = {'fresh_hours': _('An older value is shown stale with its age, never OK, and never clears an alarm. '
                                        '1 to 8760 hours (a year). A worked-out value (NH₃-N, NH₄-N) is never fresher '
                                        'than the oldest value it is worked out from (TAN, pH, temperature, salinity), '
-                                       'whatever its own hours.')}
+                                       'whatever its own hours. Where a probe measures the temperature of the place, the '
+                                       'temperature of a sample (or the probe’s at its time, when it has none) stays '
+                                       'fresh while the probe stays within 1.0 °C of it.')}

@@ -3835,12 +3835,15 @@ msgstr "%(name)s için bir davet şu anda gönderiliyor: bekleyin, satır ne old
 msgid ""
 "An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
 "(a year). A worked-out value (NH₃-N, NH₄-N) is never fresher than the oldest value it is worked "
-"out from (TAN, pH, temperature, salinity), whatever its own hours."
+"out from (TAN, pH, temperature, salinity), whatever its own hours. Where a probe measures the "
+"temperature of the place, the temperature of a sample (or the probe’s at its time, when it has "
+"none) stays fresh while the probe stays within 1.0 °C of it."
 msgstr ""
 "Daha eski bir değer yaşıyla birlikte eski gösterilir, asla Normal değil, ve hiçbir alarmı "
 "kapatmaz. 1 ile 8760 saat (bir yıl). Hesaplanan bir değer (NH₃-N, NH₄-N), kendi saatleri ne "
 "olursa olsun, hesaplandığı en eski değerden (TAN, pH, sıcaklık, tuzluluk) asla daha taze "
-"sayılmaz."
+"sayılmaz. Yerin sıcaklığını bir sensör ölçüyorsa, bir numunenin sıcaklığı (numunede yoksa "
+"sensörün o andaki değeri) sensör ondan 1,0 °C içinde kaldıkça taze kalır."
 
 msgid "An open alarm closes only once the value is back past the threshold by this much."
 msgstr "Açık bir alarm, ancak değer eşiğin bu kadar ötesine geri döndüğünde kapanır."
@@ -18664,6 +18667,10 @@ msgstr ""
 "Fosfat %(p)s mg/L P olarak (%(po4)s PO₄ olarak) alınarak hesaplandı: yanlış bir fosfat bu dozu "
 "değiştirir."
 
+#, python-format
+msgid "Worked out with the temperature %(value)s °C of %(source)s: the sample has none."
+msgstr "%(source)s kaynağının %(value)s °C sıcaklığıyla hesaplandı: numunede sıcaklık yok."
+
 msgid "Working"
 msgstr "Çalışan"
 
@@ -19950,6 +19957,10 @@ msgstr "son bilinen konum, eski: %(values)s"
 #, python-format
 msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
 msgstr "son kendi değeri %(value)s %(status)s (%(time)s), yeni veri yok: bu birimi ölçün"
+
+#, python-format
+msgid "last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there"
+msgstr "%(point)s noktasındaki son değer %(value)s %(status)s (%(time)s), yeni veri yok: orayı ölçün"
 
 msgid "leave outside these days"
 msgstr "bu günlerin dışında izin"

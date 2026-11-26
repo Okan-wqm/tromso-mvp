@@ -3824,11 +3824,15 @@ msgstr "En invitasjon til %(name)s sendes akkurat nå: vent på den, raden viser
 msgid ""
 "An older value is shown stale with its age, never OK, and never clears an alarm. 1 to 8760 hours "
 "(a year). A worked-out value (NH₃-N, NH₄-N) is never fresher than the oldest value it is worked "
-"out from (TAN, pH, temperature, salinity), whatever its own hours."
+"out from (TAN, pH, temperature, salinity), whatever its own hours. Where a probe measures the "
+"temperature of the place, the temperature of a sample (or the probe’s at its time, when it has "
+"none) stays fresh while the probe stays within 1.0 °C of it."
 msgstr ""
 "En eldre verdi vises som utdatert med alderen sin, aldri OK, og opphever aldri en alarm. 1 til "
 "8760 timer (et år). En beregnet verdi (NH₃-N, NH₄-N) er aldri ferskere enn den eldste verdien den"
-" er beregnet fra (TAN, pH, temperatur, salinitet), uansett egne timer."
+" er beregnet fra (TAN, pH, temperatur, salinitet), uansett egne timer. Der en sensor måler "
+"temperaturen på stedet, forblir temperaturen i en prøve (eller sensorens på prøvetidspunktet, når"
+" prøven ikke har en) fersk så lenge sensoren holder seg innenfor 1,0 °C av den."
 
 msgid "An open alarm closes only once the value is back past the threshold by this much."
 msgstr "En åpen alarm lukkes først når verdien er tilbake forbi terskelen med så mye."
@@ -18615,6 +18619,10 @@ msgstr "Regnet ut fra verdiene"
 msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose."
 msgstr "Regnet ut med fosfat %(p)s mg/L som P (%(po4)s som PO₄): feil fosfat endrer denne dosen."
 
+#, python-format
+msgid "Worked out with the temperature %(value)s °C of %(source)s: the sample has none."
+msgstr "Beregnet med temperaturen %(value)s °C fra %(source)s: prøven har ingen."
+
 msgid "Working"
 msgstr "Jobber"
 
@@ -19901,6 +19909,10 @@ msgstr "siste kjente posisjon, gammelt: %(values)s"
 #, python-format
 msgid "last own value %(value)s %(status)s on %(time)s, no recent data: measure this unit"
 msgstr "siste egne verdi %(value)s %(status)s %(time)s, ingen nye data: mål denne enheten"
+
+#, python-format
+msgid "last value at %(point)s %(value)s %(status)s on %(time)s, no recent data: measure there"
+msgstr "siste verdi ved %(point)s %(value)s %(status)s %(time)s, ingen nye data: mål der"
 
 msgid "leave outside these days"
 msgstr "permisjon utenfor disse dagene"

@@ -324,7 +324,6 @@
         "core/tests_data_access.py",
         "experiments/tests/test_review.py",
         "sensors/tests/test_fresh_rule.py",
-        "alarms/tests/__init__.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",

@@ -395,6 +395,25 @@ class AlarmTests(ReviewCase):
         self.assertIn(self.lead.pk, {user.pk for user in provider.keepers(tank.pk, None, began)})
         self.assertNotIn(self.lead.pk, {user.pk for user in provider.keepers(tank.pk, None, began - timedelta(days=1))})
 
+    def test_routing_reads_each_persons_reach_once_however_many_sealed_alarms(self):
+        """Review 2, N6: who may see which sealed alarm is read once per person a pass, not once per person and alarm."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from alarms import routing, services
+        self.rule(user=self.researcher)
+        self.rule(user=self.lead)
+        more = services.open_alarms([{'at': timezone.now(), 'severity': 'critical', 'summary': f'XQZ-1 oxygen {number}',
+                                      'source': 'water_limit', 'point': self.sealed_point, 'parameter': 'oxygen_mg_l'}
+                                     for number in range(4)])
+
+        def cost(alarms):
+            router = routing.Router(timezone.now(), alarms)
+            with CaptureQueriesContext(connection) as captured:
+                for alarm in alarms:
+                    self.assertEqual({user.username for user, _rule in router.recipients(alarm, 0)}, {'lead'})
+            return len(captured)
+        self.assertEqual(cost([self.alarm]), cost([self.alarm, *more]))
+
     def test_a_router_routes_only_the_alarms_it_was_made_for(self):
         """Review L1: a router reads which of its alarms are sealed when it is made; one asked about another alarm
         refuses, never routes it as unsealed."""

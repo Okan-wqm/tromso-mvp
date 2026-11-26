@@ -350,3 +350,27 @@ class ExperimentLogTests(TokenCase):
         self.assertEqual(self.seen(ids), set())
         self.give('data')
         self.assertEqual(self.seen(ids), set(ids))
+
+    def test_the_history_tab_costs_the_same_however_many_hidden_entries(self):
+        """Review 2, N6: with work hidden from the reader the log's exclusion is one condition compiled into the one
+        statement (core.audit.HiddenEntries), never a query per entry."""
+        from farm.resources.tank import TankResource
+        editor = world.person('editor', *world.area_perms(actions=('view', 'change'), exclude_apps=('reports',)))
+        url = reverse(TankResource.url_name('edit'), args=[self.open_tank.pk])
+        self.client.force_login(editor)
+        self.client.get(url)
+
+        def stamped_with_x(entries):
+            for entry in entries:
+                entry.works = [str(self.experiment.pk)]
+
+        def cost():
+            with CaptureQueriesContext(connection) as captured:
+                self.assertEqual(self.client.get(url).status_code, 200)
+            return len(captured)
+        before = cost()
+        with mock.patch.object(audit, 'stamp', side_effect=stamped_with_x):
+            for number in range(20):
+                audit.record(self.boss, AuditLog.Action.UPDATE, self.open_tank, {'Note': [None, f'QQV {number}']},
+                             entity_type=TankResource.entity_type())
+        self.assertEqual(cost(), before)

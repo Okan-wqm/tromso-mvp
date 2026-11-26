@@ -236,6 +236,7 @@ class DegreeDaysTests(CeilingTestCase):
         self.user.groups.add(role('Platform owner', 'view_platformsettings', 'change_platformsettings'))
         row = PlatformSettings.get()
         data = {'correction_window_days': row.correction_window_days, 'clock_tolerance_seconds': 300,
+                'temperature_band_c': '1.0',
                 'unknown_withdrawal_days': 30, 'version': row.version}
         self.assertEqual(self.client.post(reverse('core:platformsettings_edit', args=[row.pk]), data).status_code, 302)
         self.assertEqual(self.ends(self.tank), [(self.p.pk, None)])
@@ -252,6 +253,7 @@ class SettingTestCase(CeilingTestCase):
 
     def edit(self, days, **more):
         data = {'correction_window_days': self.row.correction_window_days, 'clock_tolerance_seconds': 300,
+                'temperature_band_c': '1.0',
                 'unknown_withdrawal_days': days, 'version': PlatformSettings.get().version, **more}
         return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]), data)
 

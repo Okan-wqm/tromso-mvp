@@ -149,11 +149,14 @@ def going_on(call, *args, **kwargs):
         return call(*args, withdrawal_ack=asked.change.fingerprint, **kwargs)
 
 
-def inputs_at(code, at):
+def inputs_at(code, at, fresh=None):
     """What a hand-made Reading of `code` records as used (read.Reading.inputs_until): for a worked-out parameter each
-    of its inputs as if measured at `at`, each ending by its own hours (freshness.fresh_until); {} for a measured one."""
-    from farm.water import freshness, parameters
-    return {each: freshness.fresh_until(each, at) for each in parameters.get(code).inputs}
+    of its inputs as if measured at `at` and fresh for a day (`fresh`), read without the database (a SimpleTestCase
+    builds them too); {} for a measured one."""
+    from datetime import timedelta
+
+    from farm.water import parameters
+    return {each: at + (fresh or timedelta(days=1)) for each in parameters.get(code).inputs}
 
 
 # The rights a fixture needs to write the farm's records through their services, which ask who may themselves (the

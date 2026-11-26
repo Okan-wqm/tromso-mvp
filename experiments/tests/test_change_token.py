@@ -276,8 +276,11 @@ class SealDepthTests(TokenCase):
     def test_the_depth_is_read_from_the_seals(self):
         from alarms.models import Acknowledgement, Alarm
         from sensors.models import AlarmEvent, Binding
-        self.assertEqual([sealing.seal_depth(model) for model in (Binding, AlarmEvent, Alarm, Acknowledgement)],
-                         [0, 3, 4, 5])
+        # The alarm and the sensor event are sealed by their own place (review 2, N1, N3); a rule by its channel, the
+        # channel by its bindings.
+        from sensors.models import AlarmRule
+        self.assertEqual([sealing.seal_depth(model) for model in (Binding, AlarmEvent, Alarm, Acknowledgement, AlarmRule)],
+                         [0, 0, 0, 1, 2])
 
     def test_an_open_sensor_alarms_acknowledgement_is_stamped_with_no_work(self):
         """W2: at a fixed depth the chain ran out before the binding and gave UNKNOWN, hiding an open tank's

@@ -305,6 +305,96 @@ class AlarmTests(ReviewCase):
                     self.assertEqual(sealed in units(first), first == self.lead)
                     self.assertEqual(sealed in units(then), then == self.lead)
 
+    def test_a_default_rules_event_on_a_sealed_binding_is_sealed(self):
+        """Review 2, N1: an event of a rule of every channel of a quantity (no channel to be sealed through) is sealed by
+        the place its channel was bound to: not in the Sensors list, the tile's count, nor open to acknowledge."""
+        from sensors import views as sensor_views
+        from sensors.models import AlarmEvent, AlarmRule
+        rule = AlarmRule.objects.create(quantity='oxygen_mg_l', kind='no_data', severity='critical')
+        event = AlarmEvent.objects.create(rule=rule, channel_no=self.sealed_channel.channel_no, binding=self.binding,
+                                          opened_at=timezone.now())
+        self.assertEqual(self.seen(self.researcher, AlarmEvent, pk=event.pk), set())
+        self.assertEqual(self.seen(self.lead, AlarmEvent, pk=event.pk), {event.pk})
+        tech = world.person('tech', 'sensors.view_alarmevent', 'sensors.change_alarmevent')
+        with sealing.as_viewer(tech):
+            tiles = {tile['key']: tile for tile in sensor_views.state_tiles(tech, timezone.now())}
+        self.assertEqual((tiles['alarms']['count'], tiles['alarms']['critical']), (0, 0))
+        self.client.force_login(tech)
+        self.assertNotContains(self.client.get(reverse('sensors:alarm_events')), 'XQZ')
+        acknowledge = self.client.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]))
+        self.assertEqual(acknowledge.status_code, 404)
+
+    def test_a_probe_moved_from_a_sealed_tank_alarms_the_open_tank_to_its_people(self):
+        """Review 2, N3 (the coordinator's decision): an alarm is sealed by its own place only. A probe that served X's
+        tank and now serves an open one raises alarms about the open one, which its rules' people get, never nobody."""
+        from alarms import sources
+        from farm.tests.helpers import point_of
+        from sensors.models import AlarmEvent, AlarmRule, Binding
+        now = timezone.now()
+        Binding.objects.filter(pk=self.binding.pk).update(valid_to=now - timedelta(hours=1))
+        moved = Binding.objects.create(channel=self.sealed_channel, point=point_of(self.open_tank),
+                                       valid_from=now - timedelta(hours=1))
+        rule = AlarmRule.objects.create(channel=self.sealed_channel, kind='no_data', severity='critical')
+        event = AlarmEvent.objects.create(rule=rule, channel_no=self.sealed_channel.channel_no, binding=moved,
+                                          opened_at=now)
+        alarm = sources.mirror(event)
+        self.assertEqual(alarm.unit_id, self.open_tank.pk)
+        watch = world.person('watch', 'alarms.view_alarm')
+        self.rule(user=watch)
+        self.assertEqual(set(self.recipients(alarm)), {'watch'})
+
+    def test_the_silent_probe_warning_carries_its_bindings_place(self):
+        """Review 2, N2: the silent oxygen probe's warning names the probe's place; it is opened with that place, so
+        it is sealed with X's tank."""
+        from alarms import services, sources
+        from alarms.models import Alarm
+
+        class Pass:
+            def probes(this):
+                return {'place': [self.binding]}
+
+            def known(this):
+                return {'place'}
+        (subject,) = [found for found in sources._probe_subjects(Pass(), False, timezone.now()) if found.holds]
+        (alarm,) = services.raise_many([(subject.key, subject.spec())]).values()
+        self.assertEqual(alarm.unit_id, self.sealed_tanks[0].pk)
+        self.assertEqual(self.seen(self.researcher, Alarm, pk=alarm.pk), set())
+
+    def test_an_alarm_that_names_no_place_is_refused_unless_farm_wide(self):
+        """Review 2, N2, the class: a producer that says neither its place nor that it is farm-wide is refused, when it
+        builds its subject and when the service opens it."""
+        from alarms import services, sources
+        now = timezone.now()
+        with self.assertRaises(ValueError):
+            sources.system_subject('somewhere', True, 'warning', 'T-05: something', now)
+        with self.assertRaises(ValueError):
+            services.open_alarms([{'at': now, 'severity': 'warning', 'summary': 'T-05: something', 'source': 'system',
+                                   'parameter': 'somewhere'}])
+        made = services.open_alarms([{'at': now, 'severity': 'warning', 'summary': 'A step failed', 'source': 'system',
+                                      'parameter': 'step', 'farm_wide': True}])
+        self.assertEqual((made[0].unit_id, made[0].system_id), (None, None))
+
+    def test_a_critical_alarm_told_to_nobody_is_said_to_the_overseers(self):
+        """Review 2, N3, the safety net: a critical alarm told to nobody counts in the alarm system's own alarm, which
+        names none of them and goes to every holder of Oversee besides the rules."""
+        from alarms import routing, services, sources
+        self.rule(user=self.researcher, min_severity='critical')
+        self.assertEqual(sources._unreached(), 0)               # the world's critical alarm was told to its lead
+        services.open_alarms([{'at': timezone.now(), 'severity': 'critical', 'summary': 'XQZ-1 oxygen 3.1 below 6.0',
+                               'source': 'water_limit', 'point': self.sealed_point, 'parameter': 'oxygen_mg_l'}])
+        self.assertEqual(sources._unreached(), 1)               # a sealed critical alarm, told to nobody
+        (alarm,) = services.raise_many([('system:alarms_unreached', {
+            'at': timezone.now(), 'severity': 'critical', 'summary': '1 critical alarm(s) reached nobody',
+            'source': 'system', 'parameter': routing.UNREACHED, 'farm_wide': True})]).values()
+        self.assertIn('keeper', set(self.recipients(alarm)))
+
+    def test_the_keepers_are_those_of_the_alarms_opening_day(self):
+        """Review 2, N4: the cells of the day an alarm opened, the day its seal reads."""
+        from .. import sealing as provider
+        tank, began = self.sealed_tanks[0], self.experiment.starts_on
+        self.assertIn(self.lead.pk, {user.pk for user in provider.keepers(tank.pk, None, began)})
+        self.assertNotIn(self.lead.pk, {user.pk for user in provider.keepers(tank.pk, None, began - timedelta(days=1))})
+
     def test_a_router_routes_only_the_alarms_it_was_made_for(self):
         """Review L1: a router reads which of its alarms are sealed when it is made; one asked about another alarm
         refuses, never routes it as unsealed."""

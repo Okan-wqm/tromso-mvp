@@ -1725,12 +1725,20 @@ temperature is A9's: the unit's own points' probes, then its system's.
   temperature 12.0 °C of sensor #3, …: the sample has none". That temperature is the input recorded. With no fresh probe
   value at that time, nothing is worked out, as before.
 - The temperature input of a sample's NH₃, whether typed or taken from the probe, stays fresh while the place's live
-  temperature stays fresh and within 1.0 °C of it (`freshness.TEMPERATURE_BAND`, the one constant;
-  `freshness.temperature_until`). It ends the moment the probe moves further or goes stale (its last value plus the
-  channel's freshness), and at once when the probe is already further off at the sample's time. Where the place has no
-  fresh probe value at that time, the input keeps its own 24 h.
-- The probe's history is read in one statement (`sources.steady_until`, the sensors' `SensorSource.steady_until`). A
-  failing source confirms nothing, and the input keeps its own end.
+  temperature stays fresh and within the band of it (`freshness.temperature_until`). The band is the platform owner's
+  setting: Company › Administration › Platform settings › Water freshness, "Temperature band (°C)"
+  (`PlatformSettings.temperature_band_c`, core 0016), 1.0 °C until set, 0.1 to 5.0, checked by the form and the
+  database, read with the freshness rows (`freshness.temperature_band`) and read again when the row is saved.
+- **The probe can end the input early, on purpose** (the coordinator's decision: the safe side). The input ends the
+  moment the probe moves further than the band or goes stale (its last value plus the channel's freshness), even
+  inside the temperature's own 24 h, and at once when the probe is already further off at the sample's time: the
+  probe says the water is no longer at the temperature the NH₃ was worked out with. Where the place has no fresh
+  probe value at that time, the input keeps its own 24 h.
+- **One ask per read, whatever the number of units.** `latest` works out every TAN sample's temperature at once
+  (`Context.prefetch_temperatures`): one `sources.values_at` for the probe values at every sample's time, and one
+  `sources.steady_until` for how long each stayed within the band (the sensors' `SensorSource.steady_until`, one
+  statement on the hypertable for all of them). A monitoring wall costs the same queries at three units or at nine
+  (`monitoring/tests/test_budget.py`). A failing source confirms nothing, and the input keeps its own end.
 - Only the latest read knows the place and the moment (`latest`). A past sample in the history is worked out from its
   own temperature alone.
 
@@ -1741,6 +1749,16 @@ value (`read.held_at_points`, beside `last_own` for the system tier). If that va
 place keeps its judgement and names the point: "last value at Outlet 0.8924 critical on …, no recent data: measure
 there". The alarm (a level the unit's own value holds, `own_held`) then ends only on a fresh value at that point. A
 late lab critical at one point raises beside a newer OK value at another.
+- **A newer sample that cannot be worked out is no evidence** (the coordinator's decision of 2026-11-26). A TAN at the
+  point without a pH or a temperature gives an NH₃ with no value, which says nothing of the water being better. The
+  point's last worked-out value before it (`Context.worked_before`: its live samples with a TAN and a pH in the read's
+  window, the newest 20 worked out) stands for the point, fresh or not. A worse one holds the same way, and the place
+  says "last worked-out value at Outlet 0.8924 critical on …; the sample of … there lacks what it is worked out from:
+  measure there again". This costs one query for each point whose newest sample lacks its inputs, and nothing
+  otherwise.
+- **The hold lasts as long as the read's window, 30 days** (`read.WINDOW`; accepted by the coordinator as the safe
+  side). An outlet's critical NH₃ that nobody measures again keeps its unit critical, and its alarm open, for up to 30
+  days after the sample. After that the sample is outside every read and no longer holds anything.
 
 **A sample** is one row: what a person measured at one point at one moment, a typed column per
 parameter, empty when not measured, at least one value (a database check). The point is one sampling point
@@ -4974,6 +4992,11 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **Clock tolerance (seconds)**, 0 to 3600, 300 until the owner sets another (cross review F10): how far ahead of the
   server's clock a water value may be stamped and still count as fresh. A value further ahead, up to the ingest
   contract's hour, still decides its unit's status and its alarm, but is not shown as the newest.
+- **Temperature band (°C)**, on the Water freshness tab, 0.1 to 5.0, 1.0 until the owner sets another (the
+  coordinator's decisions of 2026-11-26; core 0016). Where a probe measures the temperature of a place, this is how far
+  the probe may be from the temperature a sample's NH₃ was worked out with and still keep that temperature fresh. The
+  probe further off, or silent, makes the NH₃ stale from then on (Operations › Water chemistry, the temperature where a
+  probe measures the place).
 
 ## Roles and users
 

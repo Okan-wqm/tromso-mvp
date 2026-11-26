@@ -4,8 +4,7 @@ from datetime import timedelta
 
 from farm.water import read as water_read, sources as water_sources
 
-from ..models import Alarm
-from . import AlarmsCase
+from . import AlarmsCase, farm_alarms
 
 
 class Live:
@@ -29,7 +28,7 @@ def sensor_value(code, number, at, fresh_for=60, channel_no=77):
 
 
 def open_levels(**filters):
-    return sorted(alarm.severity for alarm in Alarm.objects.filter(clearance__isnull=True, source='water_limit',
+    return sorted(alarm.severity for alarm in farm_alarms().filter(clearance__isnull=True, source='water_limit',
                                                                     **filters))
 
 
@@ -133,7 +132,7 @@ class MissingRuleTests(CrossReviewCase):
 
     def system_alarms(self):
         from ..read import is_open
-        return {alarm.parameter: is_open(alarm) for alarm in Alarm.objects.filter(source='system')}
+        return {alarm.parameter: is_open(alarm) for alarm in farm_alarms().filter(source='system')}
 
     def test_a_missing_warning_rule_never_stops_the_critical(self):
         without_triggers("DELETE FROM alarm_severity_policies WHERE severity = 'warning'")
@@ -142,7 +141,7 @@ class MissingRuleTests(CrossReviewCase):
         self.assertEqual(summary.failed_steps, [])
         self.assertIn('critical', open_levels())
         self.assertEqual(self.system_alarms(), {'alarm_rules': True})
-        self.assertEqual(Alarm.objects.get(source='system').severity, 'critical')
+        self.assertEqual(farm_alarms().get(source='system').severity, 'critical')
 
     def test_a_missing_critical_rule_raises_the_critical_at_once(self):
         from ..models import SeverityPolicy
@@ -195,7 +194,7 @@ class FailedStepTests(CrossReviewCase):
         self.mid2 = point_of(self.t2)
 
     def system(self, **filters):
-        return Alarm.objects.filter(source='system', **filters)
+        return farm_alarms().filter(source='system', **filters)
 
     def test_a_step_that_fails_every_pass_is_a_critical_system_alarm_until_it_passes(self):
         from unittest import mock
@@ -309,7 +308,7 @@ class SystemRoutingTests(CrossReviewCase):
     def system_alarm(self, site=None):
         from .. import services
         return services.open_alarm(at=self.now, severity='critical', summary='The sensors cannot be read',
-                                   source='system', parameter='sensors_failed', site=site)
+                                   source='system', parameter='sensors_failed', site=site, farm_wide=True)
 
     def people(self, alarm):
         from .. import routing
@@ -466,10 +465,10 @@ class UnwatchedUnitTests(CrossReviewCase):
                       lambda: SamplingPoint.objects.filter(unit=self.t1).update(is_active=False))
         self.loop()
         self.loop(seconds=31)
-        alarm = Alarm.objects.get(source='system', parameter='oxygen_mg_l')
+        alarm = farm_alarms().get(source='system', parameter='oxygen_mg_l')
         self.assertEqual((alarm.severity, alarm.site), ('critical', self.bergen))
         self.assertIn('T-01', alarm.summary)
-        self.assertFalse(Alarm.objects.filter(parameter='no_water_point').exists())
+        self.assertFalse(farm_alarms().filter(parameter='no_water_point').exists())
         guarded_units(self.keeper, [self.t1.pk], None,
                       lambda: SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=True))
         self.sample(7.2)                                            # its pH and its oxygen, fresh
@@ -486,4 +485,4 @@ class UnwatchedUnitTests(CrossReviewCase):
                       lambda: SamplingPoint.objects.filter(unit=unit).update(is_active=False))
         self.loop()
         self.loop(seconds=31)
-        self.assertFalse(Alarm.objects.filter(parameter='no_water_point').exists())
+        self.assertFalse(farm_alarms().filter(parameter='no_water_point').exists())

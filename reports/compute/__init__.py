@@ -2,6 +2,8 @@
 the exports, the filing and the "still matches?" check all call, so they cannot disagree."""
 from django.utils.translation import gettext as _
 
+from core import sealing
+
 from ..kinds import KINDS, ReportKind
 from . import biomass, cleaner, lice, notices, slaughter, smolt
 from .common import FORMAT_VERSION, Result, content_hash, fingerprint, flatten  # noqa: F401
@@ -60,8 +62,10 @@ def scope(report, version=None):
 
 def compute(report):
     """The report's Result as the records give it now, with the contact person the authority can ask (every report
-    names one, Mattilsynet's `kontaktperson`)."""
-    result = COMPUTE[report.kind](report)
+    names one, Mattilsynet's `kontaktperson`). Read as the system: a legal figure counts every unit, a sealed
+    experiment's too (core.sealing; who may open a report is the right to read reports, owner amendment C1)."""
+    with sealing.system('the regulatory report'):
+        result = COMPUTE[report.kind](report)
     result.content['contact'] = {'name': report.contact_name, 'email': report.contact_email,
                                  'phone': report.contact_phone}
     if not all(value.strip() for value in result.content['contact'].values()):

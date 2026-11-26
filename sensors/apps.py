@@ -8,6 +8,8 @@ class SensorsConfig(AppConfig):
         from farm.water import sources
 
         from . import checks, resources  # noqa: F401  registers the checks; declares the tabs on Resource.registry
+        from .sealing import declare_all
+        declare_all()       # how this app's records are sealed (core.sealing)
         from .provider import PROVIDER
         # The bound water channels join the water read (farm/water/read.py); the farm never imports this app.
         sources.register(PROVIDER)

@@ -1,0 +1,5 @@
+{% load i18n %}{% comment %} The safety notices of Alarm recipients (alarms.resources.RecipientRuleResource), drawn by every look of
+   the page: nothing is sent while no transport is connected (`connected`), and each active rule that names people who
+   do not hold Oversee (`outsiders`, alarms.read.rules_naming_outsiders: a fact of the configuration, said whether or
+   not a confidential experiment runs now). {% endcomment %}
+{% include "alarms/_not_sent.html" with connected=connected %}{% for rule in outsiders %}<p class="ui-safety" role="status">{% include "icons/_icon.html" with name="alert" %}{% blocktrans trimmed %}{{ rule }} names people who do not hold Oversee. An alarm on the tanks of a confidential experiment reaches only those of them who work on that experiment or hold Oversee; when none of them does, it goes to the experiment’s lead and the Oversee holders instead.{% endblocktrans %}</p>{% endfor %}

@@ -29,6 +29,7 @@ from farm.water import read as water_read
 
 from .. import engine, read, rules as alarm_rules, sources
 from ..models import Alarm, Severity
+from . import farm_alarms
 
 # Its oxygen with it: a unit with fish and no fresh oxygen is critical (owner decision of 2026-11-23), which these tests
 # are not about (monitoring/tests/test_silent_oxygen.py).
@@ -66,7 +67,7 @@ class RefusedWaterCase(WaterTestCase):
         """The open alarms but the alarm system's oxygen one: a stocked unit of the fixture without a sample (T-01 where
         only T-02 is sampled) holds fish and no fresh oxygen, critical (owner decision of 2026-11-23,
         monitoring/tests/test_silent_oxygen.py); these tests are about the NH₃."""
-        return (Alarm.objects.filter(clearance__isnull=True, **filters).exclude(source='system', parameter='oxygen_mg_l')
+        return (farm_alarms().filter(clearance__isnull=True, **filters).exclude(source='system', parameter='oxygen_mg_l')
                 .order_by('source', 'severity'))
 
     def opened(self):
@@ -142,7 +143,7 @@ class ReadingTests(RefusedWaterCase):
         self.run_pass()
         self.assertFalse(self.open_alarms().exists())
         # none raised and cleared either: the only alarm of the pass is the unsampled T-01's oxygen (2026-11-23)
-        self.assertEqual(list(Alarm.objects.values_list('source', 'parameter')), [('system', 'oxygen_mg_l')])
+        self.assertEqual(list(farm_alarms().values_list('source', 'parameter')), [('system', 'oxygen_mg_l')])
 
     def test_the_history_row_says_it(self):
         for hours, (water, wanted) in enumerate(((LOW, 'unevaluated'), (WATER, 'critical')), start=1):

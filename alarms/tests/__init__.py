@@ -4,7 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from farm.models import ProductionDepartment, Site, System, WaterLimit
@@ -14,13 +14,42 @@ from farm.water import services as water
 
 from .. import engine, outbox
 from ..models import Alarm, RecipientRule
+from ..routing import NO_RULES, TO_OVERSEERS, UNREACHED
+from .doubles import RecordingTransport
 
 D = Decimal
 OXYGEN = D('9.00')
 
 
+# The alarm tests run the pass as a farm does (landing review 4, R5): the alarm system's watch on who it reached on, and a
+# connected transport (a double that records what it would send).
+RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
+
+# A test of what waits, and of what the pages say, while no transport is connected (the pilot's state): a world, never a
+# switch of what the alarm system does (landing review 5, N2: its watch on who it reached runs in every test, as on a
+# farm).
+NOTHING_CONNECTED = override_settings(ALARM_TRANSPORTS={})
+
+
+def farm_alarms(alarms=None):
+    """The alarms (all of them, or of `alarms`) without the alarm system's own about who it reached (no recipient rule,
+    no connected channel, a critical told to nobody: routing.TO_OVERSEERS). THE helper of a test that counts what its
+    world raises and makes no rule or connects nothing on purpose: the watch runs there as everywhere, and its alarms
+    are beside the point of such a test, not absent."""
+    return (Alarm.objects.all() if alarms is None else alarms).exclude(source='system', parameter__in=TO_OVERSEERS)
+
+
+@override_settings(ALARM_TRANSPORTS=RECORDING)
 class AlarmsCase(TestCase):
+    # A test whose world tells nobody of a critical alarm on purpose (a rule of another site, a level nobody is on, the
+    # sender failing) says so here, with its reason; every other test that has made a rule asserts the watch is quiet.
+    reaches_nobody = ''
+
     def setUp(self):
+        # What the recording transport took is this test's alone (review 5, N9).
+        for kept in (RecordingTransport.sent, RecordingTransport.floods):
+            kept.clear()
+            self.addCleanup(kept.clear)
         User = get_user_model()
         self.keeper = User.objects.create_user('keeper', 'keeper@example.com', 'x')
         self.keeper.groups.add(role('Water keeper', 'view_watermeasurement', 'add_watermeasurement',
@@ -57,9 +86,19 @@ class AlarmsCase(TestCase):
     def loop(self, minutes=0, seconds=0):
         """The worker at a moment: its pass, then a round through the outbox (alarms/worker.py); the pass's Summary."""
         at = self.now + timedelta(minutes=minutes, seconds=seconds)
+        # A farm set up with its rules and a connected channel: the watch on who it reached opens nothing in this pass (one
+        # opened before the rules were made clears after its off-delay, as any alarm does).
+        watched = RecipientRule.objects.filter(is_active=True).exists() and not self.reaches_nobody
+        before = set(self.watch_alarms()) if watched else set()
         summary = engine.run_once(at)
         outbox.send_due(at)
+        if watched:
+            self.assertFalse(set(self.watch_alarms()) - before,
+                             'the alarm system said an alarm reached nobody on a farm with its rules')
         return summary
+
+    def watch_alarms(self):
+        return Alarm.objects.filter(source='system', parameter__in=(UNREACHED, NO_RULES)).values_list('pk', flat=True)
 
     def critical(self):
         """The one critical water alarm (a critical value holds the warning level too: its alarm opens beside it)."""

@@ -64,9 +64,9 @@ from django.utils.translation import gettext as _
 from sensors.models.alarm import Severity
 
 from . import floods, read, rules as alarm_rules, services
-from .models import (RANK, Acknowledgement, AlarmClearance, Channel, DeliveryAttempt, Notification, NotificationKind,
+from .models import (RANK, Acknowledgement, AlarmClearance, DeliveryAttempt, Notification, NotificationKind,
                      Outcome, OutboxEntry)
-from .transports import Failed, Flood, Sent, transport_for
+from .transports import Failed, Flood, Sent, connected_channels, transport_for
 
 logger = logging.getLogger(__name__)
 CLAIM = 426_160_720           # the advisory lock class of a notification being sent (with its id): an identity
@@ -116,11 +116,6 @@ class Delivery:
         if self.waiting:
             text += f'; {self.waiting} waiting, nothing sent: no transport is connected for their channel'
         return text
-
-
-def _connected():
-    """The channels a transport is connected for (settings.ALARM_TRANSPORTS)."""
-    return [channel for channel in Channel.values if transport_for(channel) is not None]
 
 
 def _queued(channels=None):
@@ -410,7 +405,7 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
     moment = (lambda: now) if now is not None else timezone.now
     began, started = moment(), clock()
     services.drop_delivered()
-    channels = _connected()
+    channels = connected_channels()
     unsent = _queued()
     elsewhere = unsent.exclude(channel__in=channels).exclude(pk__in=_late().values('pk')).aggregate(
         count=Count('pk'), oldest=Min('queued_at'))

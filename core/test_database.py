@@ -69,7 +69,7 @@ class DatabaseViewerTestCase(TestCase):
         return self.client.get(table_url(name), query)
 
     def download(self, name, **query):
-        return self.client.get(export_url(name), query)
+        return self.client.get(export_url(name), {'reason': 'Checking the export', **query})
 
 
 class FormulaGuardTests(TestCase):
@@ -497,6 +497,16 @@ class ExportTests(DatabaseViewerTestCase):
         self.tromso = self.make_site(name='Tromsø Grow-out', code='TG')
         self.tromso.soft_delete(self.admin)
         self.alta = self.make_site(name='Alta Smolt', code='AS')
+
+    def test_an_export_needs_a_reason_and_is_logged_with_it(self):
+        from core.models import AccessEvent
+        response = self.client.get(export_url('sites'), {'deleted': 'hide'})
+        self.assertRedirects(response, table_url('sites') + '?deleted=hide', fetch_redirect_response=False)
+        self.assertFalse(AccessEvent.objects.exists())
+        self.assertEqual(len(exported(self.download('sites', deleted='hide'))), 2)
+        event = AccessEvent.objects.get()
+        self.assertEqual((event.kind, event.entity_type, event.entity_id, event.reason, event.user_name),
+                         ('export', 'table', 'sites', 'Checking the export', 'root'))
 
     def test_it_is_a_streamed_csv_download(self):
         response = self.download('sites')

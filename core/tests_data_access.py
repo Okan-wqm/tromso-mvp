@@ -63,6 +63,9 @@ MODEL_WRITERS = ('save', 'delete', 'soft_delete', '_write', 'restore', 'note')
 # (d) {module: (ceiling, reason)}: writes outside (a) to (c), counted per module. Lower a ceiling with a fix, never raise it.
 WRITES_ALLOWED = {
     'core/language.py': (1, "a person's language, their own profile's one field (core.language.set_language)"),
+    'core/readlog.py': (2, 'the read log (core.AccessEvent): who read which confidential record, its one write path, '
+                           'called by core.sealing where a read happens (one row, or one statement for a page)'),
+    'experiments/roles.py': (1, 'the recommended roles of manage.py experiments_roles (a command, as hr/roles.py)'),
     'core/rev.py': (2, "the revision counters' repair (manage.py core_rev_*): the database moves them, these "
                        'restore them'),
     'farm/equipment_types.py': (2, "the equipment types' seed, run by a migration's RunPython on the historical "
@@ -136,7 +139,7 @@ READS_ALLOWED = {
     ('farm/models/tank.py', 'StockMovement'): 2,
     ('farm/models/water_point.py', 'WaterMeasurement'): 2,
     ('farm/resources/feed.py', 'FeedingRecord'): 2,
-    ('farm/resources/feeding_protocol.py', 'Batch'): 4,
+    ('farm/resources/feeding_protocol.py', 'Batch'): 3,
     ('farm/resources/harvest_plan.py', 'StockMovement'): 1,
     ('farm/resources/health_event.py', 'HealthEvent'): 5,
     ('farm/resources/medicine.py', 'Treatment'): 2,

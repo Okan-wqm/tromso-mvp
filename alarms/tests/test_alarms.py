@@ -19,7 +19,7 @@ from sensors.tests import make_channel, make_connection, make_device, make_forma
 from .. import read, routing, services
 from ..models import (APPEND_ONLY, Acknowledgement, Alarm, AlarmClearance, DeliveryAttempt, Escalation, Notification,
                       RecipientRule, SeverityPolicy)
-from . import AlarmsCase
+from . import NOTHING_CONNECTED, AlarmsCase, farm_alarms
 from .doubles import FailingTransport, RecordingTransport
 
 PUSH_DOUBLE = {'push': 'alarms.tests.doubles.RecordingTransport'}
@@ -84,7 +84,7 @@ class WaterTests(AlarmsCase):
         self.assertEqual(AlarmClearance.objects.get(alarm=alarm).cause, 'returned')
         self.assertTrue(AuditLog.objects.filter(entity_type='alarm', action='update').exists())
         self.loop(minutes=3)
-        self.assertEqual(Alarm.objects.filter(severity='critical').count(), 1)
+        self.assertEqual(farm_alarms().filter(severity='critical').count(), 1)
 
     def test_a_value_that_goes_stale_never_clears_it(self):
         self.sample(5.5)
@@ -95,7 +95,7 @@ class WaterTests(AlarmsCase):
     def test_a_warning_that_turns_critical_stays_open_beside_the_critical_alarm(self):
         self.sample(6.2, hours=2)
         self.loop()
-        warning = Alarm.objects.get()
+        warning = farm_alarms().get()
         self.assertEqual(warning.severity, 'warning')
         self.sample(5.5)
         self.loop(minutes=1)
@@ -105,7 +105,7 @@ class WaterTests(AlarmsCase):
     def test_values_inside_the_limits_and_parameters_without_one_hold_nothing(self):
         self.sample(7.0)
         self.loop()
-        self.assertFalse(Alarm.objects.exists())
+        self.assertFalse(farm_alarms().exists())
 
 
 class SensorTests(AlarmsCase):
@@ -121,13 +121,13 @@ class SensorTests(AlarmsCase):
                                           opened_at=self.now, peak=4)
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)):
             self.loop()
-            alarm = Alarm.objects.get()
+            alarm = farm_alarms().get()
             self.assertEqual((alarm.source, alarm.sensor_event, alarm.severity, alarm.site, alarm.opened_at),
                              ('sensor_rule', event, 'warning', self.bergen, self.now))
             AlarmEvent.objects.filter(pk=event.pk).update(closed_at=self.now + timedelta(minutes=3))
             self.loop(minutes=4)
         self.assertEqual(AlarmClearance.objects.get().cleared_at, self.now + timedelta(minutes=3))
-        self.assertEqual(Alarm.objects.count(), 1)
+        self.assertEqual(farm_alarms().count(), 1)
 
     def test_the_loop_checks_the_sensor_rules_itself(self):
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)) as evaluate:
@@ -140,7 +140,8 @@ class RoutingTests(AlarmsCase):
     def open_alarm(self, ph=5.5):
         self.sample(ph)
         self.loop()
-        return Alarm.objects.get(severity='critical' if ph < 6 else 'warning')
+        # the water's alarm (a critical told to nobody also raises the alarm system's own: alarms_unreached)
+        return Alarm.objects.get(source='water_limit', severity='critical' if ph < 6 else 'warning')
 
     def test_a_rule_reaches_the_active_members_of_its_role_on_its_site(self):
         self.rule()
@@ -164,6 +165,7 @@ class RoutingTests(AlarmsCase):
         self.assertEqual(routing.recipients(alarm, 0, self.now), [])
 
     def test_an_on_shift_rule_reaches_only_the_people_on_shift_now(self):
+        self.reaches_nobody = 'its only rule is on shift only, and nobody is on shift when the alarm opens'
         self.rule(on_shift_only=True)
         alarm = self.open_alarm()
         with mock.patch('hr.read.on_shift', return_value=set()):
@@ -186,30 +188,33 @@ class OutboxTests(AlarmsCase):
         self.loop()
         notification = Notification.objects.get()
         self.assertEqual((notification.recipient, notification.channel, notification.level), (self.operator, 'push', 0))
-        self.assertEqual(read.status(notification), 'queued')
+        self.assertEqual(read.status(notification), 'sent')                 # a transport is connected: it went out
         self.assertTrue(AuditLog.objects.filter(entity_type='alarm notification', action='create').exists())
         self.loop(minutes=1)
         self.assertEqual(Notification.objects.count(), 1)
 
     def test_a_rule_added_later_still_reaches_an_open_alarm_never_a_cleared_one(self):
+        # The water alarm's notifications (the alarm system's own, that no rule reached it, reach the rule made later too).
+        water_told = Notification.objects.filter(alarm__source='water_limit')
         self.sample(5.5, hours=2)
         self.loop()
         self.rule()
         self.loop(minutes=1)
-        self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(water_told.count(), 1)
         self.sample(7.0)
         self.loop(minutes=2)
         self.loop(minutes=3)                                       # cleared after the off-delay
         self.rule(user=self.manager, level=0)
         self.loop(minutes=4)
-        self.assertEqual(Notification.objects.count(), 1)
+        self.assertEqual(water_told.count(), 1)
 
+    @NOTHING_CONNECTED
     def test_nothing_is_sent_without_a_transport(self):
         self.rule()
         self.sample(5.5)
         self.loop()
         self.assertFalse(DeliveryAttempt.objects.exists())
-        self.assertFalse(read.transport_connected('push'))
+        self.assertFalse(read.connected()['push'])
 
     @override_settings(ALARM_TRANSPORTS=PUSH_DOUBLE)
     def test_a_transport_sends_each_notification_once(self):
@@ -222,7 +227,7 @@ class OutboxTests(AlarmsCase):
         self.assertEqual((attempt.outcome, attempt.notification.recipient), ('sent', self.operator))
         self.assertEqual(read.status(attempt.notification), 'sent')
         self.assertEqual([notification.pk for notification in RecordingTransport.sent], [attempt.notification.pk])
-        self.assertTrue(read.transport_connected('push'))
+        self.assertTrue(read.connected()['push'])
 
     @override_settings(ALARM_TRANSPORTS=PUSH_FAILING)
     def test_a_failing_transport_is_tried_again_up_to_the_severitys_attempts(self):
@@ -287,8 +292,9 @@ class EscalationTests(AlarmsCase):
         self.loop(minutes=2)
         self.sample(5.5, hours=0.25)
         self.loop(minutes=3)
-        second = Alarm.objects.filter(severity='critical').exclude(pk=self.alarm.pk).get()
+        second = Alarm.objects.filter(severity='critical', source='water_limit').exclude(pk=self.alarm.pk).get()
         self.assertTrue(read.nobody_notified(second))
+        self.assertTrue(Alarm.objects.filter(source='system', parameter=routing.UNREACHED).exists())   # and said so
         self.assertFalse(read.nobody_notified(self.alarm))
 
 
@@ -334,6 +340,7 @@ class AcknowledgementTests(AlarmsCase):
 
 
 class CommandTests(AlarmsCase):
+    @NOTHING_CONNECTED
     def test_run_alarms_runs_one_pass(self):
         from io import StringIO
         from django.core.management import call_command
@@ -342,6 +349,7 @@ class CommandTests(AlarmsCase):
         out = StringIO()
         with mock.patch.object(timezone, 'now', return_value=self.now):
             call_command('run_alarms', stdout=out)
-        self.assertIn('2 opened', out.getvalue())                    # the critical level and the warning level
+        # the critical level, the warning level and the alarm system's own: no channel is connected
+        self.assertIn('3 opened', out.getvalue())
         self.assertIn('1 queued', out.getvalue())
         self.assertIn('nothing sent: no transport', out.getvalue())

@@ -18,7 +18,7 @@ from farm.tests.helpers import role
 
 from .. import outbox, read, services
 from ..models import Alarm, AlarmShelve, AlarmShelveEnd, Escalation, Notification, RecipientRule, SeverityPolicy
-from . import AlarmsCase
+from . import NOTHING_CONNECTED, AlarmsCase
 from .doubles import RecordingTransport
 from farm.tests.helpers import may_record
 
@@ -125,16 +125,6 @@ class BehaviourTests(SnoozeCase):
         self.loop(minutes=90)                                          # nothing ran from 1 to 90
         self.assertEqual(Escalation.objects.get().escalated_at, self.at(90))
 
-    @override_settings(ALARM_TRANSPORTS={'push': 'alarms.tests.doubles.RecordingTransport'})
-    def test_a_notification_queued_before_waits_and_goes_out_when_it_ends(self):
-        RecordingTransport.sent.clear()
-        self.addCleanup(RecordingTransport.sent.clear)
-        self.snooze(60)
-        found = outbox.send_due(self.at(2))
-        self.assertEqual((found.snoozed, found.sent, [(sent.recipient, sent.kind) for sent in RecordingTransport.sent]),
-                         (1, 1, [(self.operator, 'snoozed')]))      # the word that it was snoozed goes at once
-        self.assertEqual(outbox.send_due(self.at(62)).sent, 1)
-
     def test_its_raises_and_clears_go_on_while_snoozed(self):
         self.snooze(240)
         self.sample(7.0, hours=0.5)
@@ -192,3 +182,18 @@ class PageTests(SnoozeCase):
                                               {'minutes': '30', 'reason': 'x'}).status_code, 403)
         self.assertEqual(self.client.get(reverse('alarms:alarm_snoozes')).status_code, 403)
         self.assertFalse(AlarmShelve.objects.exists())
+
+
+@NOTHING_CONNECTED
+class QueuedBeforeTests(SnoozeCase):
+    """The level-0 notification its setUp's pass queued waits: no transport is connected until the test connects one."""
+
+    @override_settings(ALARM_TRANSPORTS={'push': 'alarms.tests.doubles.RecordingTransport'})
+    def test_a_notification_queued_before_waits_and_goes_out_when_it_ends(self):
+        RecordingTransport.sent.clear()
+        self.addCleanup(RecordingTransport.sent.clear)
+        self.snooze(60)
+        found = outbox.send_due(self.at(2))
+        self.assertEqual((found.snoozed, found.sent, [(sent.recipient, sent.kind) for sent in RecordingTransport.sent]),
+                         (1, 1, [(self.operator, 'snoozed')]))      # the word that it was snoozed goes at once
+        self.assertEqual(outbox.send_due(self.at(62)).sent, 1)

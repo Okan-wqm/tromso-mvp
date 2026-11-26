@@ -8,7 +8,7 @@ from django.db.models import F, Q
 from django.utils.functional import cached_property
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy, pgettext_lazy
 
-from core.models import AuditedModel, CodedMixin, TreeMixin
+from core.models import AuditedModel, CodedMixin, SealedManager, TreeMixin
 from core.schema import Schema, SchemaValuesField
 
 from .production_department import ProductionDepartment
@@ -227,6 +227,8 @@ class EquipmentSystem(models.Model):
     is_primary = models.BooleanField(pgettext_lazy('link', 'Primary'), default=False)
     role = models.CharField(_('Role'), max_length=50, blank=True)
     criticality = models.PositiveSmallIntegerField(_('Criticality'), choices=CRITICALITY, default=3)
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'equipment_systems'

@@ -57,7 +57,8 @@ class ExperimentMigrationTests(TransactionTestCase):
         self.assertEqual(deferrable, [])                      # nothing is circular: refused at the statement
         exclusions = rows("SELECT conname, conrelid::regclass::text FROM pg_constraint WHERE contype = 'x' "
                           "AND conrelid::regclass::text ~ '^experiment'")
-        self.assertEqual(exclusions, [('excl_replicate_units_unit', 'experiment_replicate_units')])
+        self.assertEqual(sorted(exclusions), [('excl_replicate_systems_system', 'experiment_replicate_systems'),
+                                              ('excl_replicate_units_unit', 'experiment_replicate_units')])
         uniques = {name for (name,) in rows("SELECT conname FROM pg_constraint WHERE contype = 'u' "
                                             "AND conrelid::regclass::text ~ '^experiment'")}
         self.assertTrue({'uq_experiments_code', 'uq_experiment_factors_id_experiment',
@@ -78,7 +79,7 @@ class ExperimentMigrationTests(TransactionTestCase):
                                                     "'^fk_experiment'")}, set(COMPOSITE_KEYS))
 
     def test_the_triggers_come_and_go_with_their_migration_and_the_tables_stay(self):
-        self.assertEqual((len(triggers()), functions()), (7, FUNCTIONS))
+        self.assertEqual((len(triggers()), functions()), (10, FUNCTIONS))       # 0002's seven, 0003's three
         self.migrate([FIRST])
         self.assertEqual((triggers(), functions()), (set(), set()))
         self.assertTrue(all(present(table) for table in TABLES))

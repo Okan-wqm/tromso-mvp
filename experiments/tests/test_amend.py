@@ -183,8 +183,10 @@ class ReplaceTests(AmendTestCase):
         cases = [
             (dict(new=self.tanks[0]), ['The new tank is the one that leaves.']),
             (dict(new=self.p1), ['P-01 is not on the site of the experiment (Bergen).']),
-            (dict(new=self.tanks[1]), [f'T-02 is booked to {self.trial.code} on some of these days.']),
-            (dict(new=self.tanks[5]), [f'T-06 is booked to {other.code} on some of these days.']),
+            (dict(new=self.tanks[1]), [f'T-02 is booked by another experiment from {self.first.isoformat()} to '
+                                       f'{self.end.isoformat()}.']),
+            (dict(new=self.tanks[5]), [f'T-06 is booked by another experiment from {self.today.isoformat()} to '
+                                       f'{(self.today + timedelta(days=56)).isoformat()}.']),
             (dict(new=self.tanks[4], from_day=self.day(1)), ['The new tank comes in today at the earliest.']),
             (dict(new=self.tanks[4], from_day=self.end + timedelta(days=1)),
              [f'The new tank comes in on or before the last day of the placement ({self.end.isoformat()}).']),
@@ -320,7 +322,7 @@ class AmendPageTests(AmendTestCase):
         self.assertEqual(sorted(response.context['form'].errors), ['last_day', 'reason'])
         response = self.client.post(self.replace_url, {'version': version, 'new_unit': str(self.tanks[2].pk),
                                                        'from_day': self.today.isoformat(), 'reason': 'x'})
-        self.assertContains(response, 'T-03 is booked to', status_code=422)
+        self.assertContains(response, 'T-03 is booked by another experiment from', status_code=422)
         self.assertEqual(self.placed(self.tanks[1]).until_on, self.end)
 
     def test_the_dialogs_speak_each_language(self):

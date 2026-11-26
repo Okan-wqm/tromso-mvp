@@ -41,7 +41,7 @@ def places(specs, keys=None):
     for spec, key in zip(specs, keys):
         point, event = spec.get('point'), spec.get('sensor_event')
         unit = system = None
-        if spec.get('place') is not None:             # stated by its producer (a probe's binding: review 2, N2)
+        if spec.get('place') is not None and any(spec['place']):     # stated (a probe's binding: review 2, N2)
             unit, system = spec['place']
         elif point is not None:
             unit, system = by_point.get(_id(point), (None, None))
@@ -63,8 +63,9 @@ def declared(spec, key=''):
     """Whether an alarm about to open says where it is: a point, a sensor event, a unit subject's key, a stated
     `place`, or `farm_wide` (an alarm of the alarm system about no unit: a failed step, a device's clock). One that says
     none is refused (alarms.services.open_alarms): it could name a unit with no seal to hide it (landing review 2, N2)."""
+    stated = spec.get('place')
     return bool(spec.get('point') is not None or spec.get('sensor_event') is not None or unit_of_key(key)
-                or spec.get('place') is not None or spec.get('farm_wide'))
+                or (stated is not None and any(stated)) or spec.get('farm_wide'))
 
 
 def opening_day(alarm):

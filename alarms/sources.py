@@ -53,7 +53,7 @@ from sensors import alarms as sensor_alarms, clock as sensor_clock
 from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
-from .place import UNIT_PREFIXES, bound
+from .place import UNIT_PREFIXES, bound, unit_of_key
 from .routing import NO_RULES, TO_OVERSEERS, UNREACHED
 from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
@@ -371,7 +371,7 @@ def system_subject(name, holds, severity, summary, now, *, parameter=None, where
     neither is refused here, when the pass builds it, so a new producer that names a unit cannot open an alarm the seal
     has no path to."""
     parameter = parameter or name
-    if place is None and not farm_wide and not name.startswith('unit:'):
+    if not (place and any(place)) and not farm_wide and not name.startswith('unit:'):
         raise ValueError(f'The system subject {name!r} names no place: give its place, or say it is farm-wide.')
     return Subject(f'system:{name}', holds, not holds if clear_ok is None else clear_ok, bad_at or now, severity, lambda: {
         'at': now, 'severity': severity, 'summary': summary, 'source': Source.SYSTEM, 'parameter': parameter,
@@ -447,7 +447,7 @@ def _removed(units, now):
         query |= Q(key__startswith=prefix)
     for key, severity in AlarmSubjectState.objects.filter(query, open_alarm__isnull=False).values_list(
             'key', 'open_alarm__severity'):
-        if key.split(':')[2] not in there:
+        if unit_of_key(key) not in there:
             found.append(Subject(key, False, False, now, severity, None, structural=ClearCause.UNIT_REMOVED))
     return found
 
@@ -648,6 +648,7 @@ def _probe_subjects(oxygen_pass, failed, now):
             subjects.append(system_subject(
                 f'{PROBE_PREFIX}{channel.channel_no}', holds, Severity.WARNING, summary, now,
                 parameter=OXYGEN_PROBE_SILENT, clear_ok=not failed and not holds, place=bound(binding),
+                farm_wide=not any(bound(binding)),          # a probe bound to equipment: plant, no unit or system
                 where={'site': channel.device.site, 'production_department': _department_at(binding)} if holds else None))
     for key in AlarmSubjectState.objects.filter(key__startswith=f'system:{PROBE_PREFIX}',
                                                 open_alarm__isnull=False).values_list('key', flat=True):

@@ -24,7 +24,7 @@ from farm.models import FeedingRecord, HealthEvent, Site, Tank, Treatment
 
 from farm.tests.helpers import role, rows_data
 
-from .. import read, services
+from .. import read, sealing as provider, services
 from ..models import Experiment, ExperimentShare, Factor, Member
 from . import world
 from .test_pages import RESEARCHER
@@ -738,3 +738,36 @@ class SiteClockTests(ReviewCase):
         after = sample(date(2026, 11, 13), 0, 30)
         self.assertEqual(self.seen(self.researcher, WaterMeasurement, point=point), {before, after})
         self.assertEqual(self.seen(self.lead, WaterMeasurement, point=point), {before, opening, closing, after})
+
+
+class OneRuleTests(ReviewCase):
+    """Architecture audit 2026-11-26, M-13: the audience rule and Oversee each have one owner (experiments/sealing.py),
+    and every reader of them agrees: the seal's statement, the change token and the viewer for the audience; SQL and
+    Python for Oversee. core/tests_sealing.py's RULE_OWNERS holds that nobody states them again."""
+
+    def test_the_seal_the_token_and_the_viewer_read_one_audience_rule(self):
+        outsider = world.person('outsider', 'experiments.view_experiment')
+        for audience in Experiment.Audience.values:
+            Experiment.objects.filter(pk=self.experiment.pk).update(audience=audience)
+            experiment = Experiment._base_manager.get(pk=self.experiment.pk)
+            for user in (outsider, self.boss):
+                with self.subTest(audience=audience, user=user.username):
+                    with sealing.as_viewer(user):
+                        statement = Experiment._base_manager.filter(
+                            pk__in=provider.hidden_work('design')).filter(pk=experiment.pk).exists()
+                    token = str(experiment.pk) in provider.reach(user).hidden.get('design', ())
+                    viewer = not provider.in_team(experiment, provider.load(user))
+                    rule = audience in provider.barred_audiences(user.is_superuser)
+                    self.assertEqual((statement, token, viewer), (rule, rule, rule))
+                    self.assertEqual(rule, audience != 'open' if not user.is_superuser else audience == 'private')
+
+    def test_oversee_reads_the_same_in_sql_and_in_python(self):
+        holder = world.person('holder', 'experiments.oversee_experiment')
+        gone = world.person('gone', 'experiments.oversee_experiment', is_active=False)
+        plain = world.person('plain', 'experiments.view_experiment')
+        held = set(provider.holders().values_list('pk', flat=True))
+        for user in (holder, gone, plain, self.boss, self.keeper):
+            with self.subTest(user=user.username):
+                fresh = type(user)._base_manager.get(pk=user.pk)
+                self.assertEqual(user.pk in held, provider.holds_oversee(fresh))
+        self.assertEqual((holder.pk in held, self.keeper.pk in held, self.boss.pk in held), (True, True, False))

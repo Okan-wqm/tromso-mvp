@@ -392,3 +392,62 @@ class SealedModelReadSiteTests(SimpleTestCase):
         names = sealed_names()
         found = call_sites(lambda node, imported: reads_a_sealed_model_past_its_seal(node, imported, names))
         self.assertEqual(sorted(found), sorted(SEALED_PAST_THE_SEAL))
+
+
+# One owner per rule of the seal (architecture audit 2026-11-26, M-13): the places that may state each rule, with why.
+# A new place that states one is a second copy: read the owner instead (or name it here with its reason).
+RULE_OWNERS = {
+    'audience': {
+        'experiments/sealing.py:barred_audiences': 'THE audience rule: who reads an experiment only as team or grantee',
+        'experiments/models.py:Experiment': 'the field’s default (sealed), from the choices that define the audiences',
+    },
+    'oversee': {
+        'experiments/sealing.py:<module>': 'OVERSEE, read by holders (SQL) and holds_oversee (Python) alone',
+        'experiments/models.py:Experiment.Meta': 'the permission’s declaration',
+    },
+    'connected channels': {
+        'alarms/transports.py:connected_channels': 'THE channels that can leave: configured and importable',
+        'alarms/transports.py:transport_for': 'builds the transport the sender sends with',
+        'alarms/checks.py:transports_declare_limits': 'the deploy check of the configuration',
+    },
+    'unit of a key': {
+        'alarms/place.py:<module>': 'UNIT_PREFIXES, read by unit_of_key',
+        'alarms/sources.py:water_key': 'the one maker of a water subject’s key',
+        'alarms/sources.py:_oxygen_levels': 'main’s: the oxygen slot and level of the keys water_key makes',
+    },
+}
+
+
+def states_a_rule(rule):
+    """The node test for one rule of RULE_OWNERS."""
+    import ast
+
+    def audience(node, imported):
+        return (isinstance(node, ast.Attribute) and node.attr in ('OPEN', 'SEALED', 'PRIVATE')
+                and ((isinstance(node.value, ast.Attribute) and node.value.attr == 'Audience')
+                     or (isinstance(node.value, ast.Name) and node.value.id == 'Audience')))
+
+    def oversee(node, imported):
+        return isinstance(node, ast.Constant) and node.value in ('oversee_experiment', 'experiments.oversee_experiment')
+
+    def transports(node, imported):
+        return ((isinstance(node, ast.Attribute) and node.attr == 'ALARM_TRANSPORTS')
+                or (isinstance(node, ast.Constant) and node.value == 'ALARM_TRANSPORTS'))
+
+    def unit_key(node, imported):
+        return (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                and node.value.startswith(('water:unit:', 'system:unit:')))
+
+    return {'audience': audience, 'oversee': oversee, 'connected channels': transports, 'unit of a key': unit_key}[rule]
+
+
+class RuleOwnerTests(SimpleTestCase):
+    def test_each_rule_of_the_seal_has_one_owner(self):
+        for rule, owners in RULE_OWNERS.items():
+            with self.subTest(rule=rule):
+                self.assertEqual(sorted(call_sites(states_a_rule(rule))), sorted(owners))
+
+    def test_a_second_statement_of_the_audience_rule_is_found(self):
+        import ast
+        tree = ast.parse('def elsewhere(e):\n    return e.audience != Experiment.Audience.OPEN\n')
+        self.assertTrue(any(states_a_rule('audience')(node, set()) for node in ast.walk(tree)))

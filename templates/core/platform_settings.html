@@ -18,6 +18,16 @@
   <p class="panel-help">{% blocktrans trimmed count days=row.correction_window_days %}A record can be dated at most {{ days }} day back, and voided while it is no older. Older records stay as they are.{% plural %}A record can be dated at most {{ days }} days back, and voided while it is no older. Older records stay as they are.{% endblocktrans %}</p>
   <p class="panel-help">{% blocktrans trimmed count days=row.unknown_withdrawal_days %}A medicine withdrawal whose end is unknown holds the fish for {{ days }} day after the course’s last day; after that the course is listed as unresolved on the Treatments page.{% plural %}A medicine withdrawal whose end is unknown holds the fish for {{ days }} days after the course’s last day; after that the course is listed as unresolved on the Treatments page.{% endblocktrans %}</p>
 </section>
+<section class="detail-section">
+  <h2 class="section-title">{% trans "Degree-days" %}</h2>
+  <p class="muted">{% trans "How a day’s water temperature counts for a medicine withdrawal and a purging fast. A change goes through the withdrawal question when it would move a withdrawal." %}</p>
+  <dl class="facts">
+    <div><dt>{% trans "A probe day needs readings in (hours)" %}</dt><dd>{{ row.sensor_day_hours }}</dd></div>
+    <div><dt>{% trans "A probe reading stands for (seconds)" %}</dt><dd>{{ row.sensor_hold_seconds }}</dd></div>
+    <div><dt>{% trans "Measured days that cap an assumed temperature" %}</dt><dd>{{ row.assumption_cap_days }}</dd></div>
+    <div><dt>{% trans "Probe and samples may differ by (°C)" %}</dt><dd>{{ row.probe_sample_tolerance_c }}</dd></div>
+  </dl>
+</section>
 {% if can_change %}<p><a class="button button-inline" href="{% url 'core:platformsettings_edit' row.pk %}" data-modal>{% include "icons/_icon.html" with name="pencil" %}{% trans "Edit the settings" %}</a></p>{% endif %}
 {% endfor %}
 {% endblock %}

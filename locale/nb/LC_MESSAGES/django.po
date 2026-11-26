@@ -493,6 +493,12 @@ msgstr[0] "%(count)d vannprøve registrert."
 msgstr[1] "%(count)d vannprøver registrert."
 
 #, python-format
+msgid "%(count)d weighing names it: it is kept with them."
+msgid_plural "%(count)d weighings name it: it is kept with them."
+msgstr[0] "%(count)d veiing viser til den: den beholdes sammen med den."
+msgstr[1] "%(count)d veiinger viser til den: den beholdes sammen med dem."
+
+#, python-format
 msgid "%(count)d withdrawal row saved."
 msgid_plural "%(count)d withdrawal rows saved."
 msgstr[0] "%(count)d tilbakeholdelsesrad lagret."
@@ -857,6 +863,10 @@ msgid "%(feed)s is not listed as suitable for %(species)s at %(weight)s (Referen
 msgstr "%(feed)s er ikke oppført som egnet for %(species)s på %(weight)s (Referansedata › Fôr)."
 
 #, python-format
+msgid "%(feed)s of feed to the target · economic FCR %(fcr)s"
+msgstr "%(feed)s fôr til målet · økonomisk FCR %(fcr)s"
+
+#, python-format
 msgid "%(feed)s · %(size)s mm"
 msgstr "%(feed)s · %(size)s mm"
 
@@ -907,6 +917,10 @@ msgstr "%(fish)s fisk"
 #, python-format
 msgid "%(fish)s fish at %(weight)s est."
 msgstr "%(fish)s fisk på estimert %(weight)s"
+
+#, python-format
+msgid "%(fish)s fish weighed, %(kilos)s"
+msgstr "%(fish)s fisk veid, %(kilos)s"
 
 #, python-format
 msgid ""
@@ -1829,6 +1843,10 @@ msgstr ""
 "siden av rensefisken."
 
 #, python-format
+msgid "%(unit)s · %(batch)s: %(fish)s fish at %(weight)s on %(date)s (%(start)s)."
+msgstr "%(unit)s · %(batch)s: %(fish)s fisk på %(weight)s den %(date)s (%(start)s)."
+
+#, python-format
 msgid "%(unit)s: %(fish)d fish counted on %(date)s, where the regulation asks for %(least)d in this week."
 msgstr "%(unit)s: %(fish)d fisk telt %(date)s, der forskriften krever %(least)d denne uken."
 
@@ -2747,6 +2765,9 @@ msgstr "En prosessverdi knyttes til et utstyr eller et system."
 msgid "A production department stays on the site it was created on."
 msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet på."
 
+msgid "A production plan looks ahead (days)"
+msgstr "En produksjonsplan ser framover (dager)"
+
 #, python-format
 msgid ""
 "A protocol gives, per weight band of the fish, the feed, the meals a day and the specific feeding"
@@ -2902,6 +2923,9 @@ msgid ""
 msgstr ""
 "Et skift er en start og en slutt etter lokalitetens veggklokke, med en pause. Legg til skiftene "
 "vaktplanen bruker."
+
+msgid "A short name in lower-case letters, digits and hyphens, chosen once."
+msgstr "Et kort navn med små bokstaver, sifre og bindestreker, valgt én gang."
 
 msgid "A short rest, a long week or too many days in a row"
 msgstr "Kort hvile, lang uke eller for mange dager på rad"
@@ -3822,6 +3846,10 @@ msgstr "En hendelse avsluttes på eller etter datoen sin."
 msgid "An expected FCR is between 0.50 and 3.00."
 msgstr "En forventet FCR er mellom 0,50 og 3,00."
 
+#, python-format
+msgid "An expected mortality is between 0 and 30 %% a month."
+msgstr "Forventet dødelighet er mellom 0 og 30 %% per måned."
+
 msgid "An experiment has one diet factor."
 msgstr "Et forsøk har én fôrregimefaktor."
 
@@ -4018,6 +4046,12 @@ msgstr "En annen enhet på lokaliteten har allerede denne offisielle enhets-ID-e
 
 msgid "Another user already uses this email."
 msgstr "Denne e-postadressen brukes allerede av en annen bruker."
+
+msgid "Another weight source already has this code."
+msgstr "En annen vektkilde har allerede denne koden."
+
+msgid "Another weight source already has this name."
+msgstr "En annen vektkilde har allerede dette navnet."
 
 msgid "Answer"
 msgstr "Svar"
@@ -4345,6 +4379,9 @@ msgstr "Tilbake"
 
 msgid "Back inside the limit"
 msgstr "Tilbake innenfor grensen"
+
+msgid "Back to Production plans"
+msgstr "Tilbake til Produksjonsplaner"
 
 msgid "Back to draft"
 msgstr "Tilbake til utkast"
@@ -6391,6 +6428,9 @@ msgstr "Nede"
 msgid "Download"
 msgstr "Last ned"
 
+msgid "Download every day (CSV)"
+msgstr "Last ned hver dag (CSV)"
+
 msgid "Download the drawn values (CSV)"
 msgstr "Last ned de tegnede verdiene (CSV)"
 
@@ -6506,6 +6546,17 @@ msgstr "EU-listeført, kategori C, D og E"
 msgid "EU-listed, category A"
 msgstr "EU-listeført, kategori A"
 
+msgid ""
+"Each band’s FCR and uneaten share sit at the middle of the band (a band without an upper weight: "
+"at its lower weight). For fish between two middles both are read in between, so neither jumps at "
+"a band’s edge; the SFR is read from the fish’s own band at the water temperature. The economic "
+"FCR is the FCR on the feed given: the FCR divided by the share eaten."
+msgstr ""
+"FCR og uspist andel for hvert bånd ligger midt i båndet (et bånd uten øvre vekt: ved den nedre "
+"vekten). For fisk mellom to midtpunkter leses begge imellom dem, så ingen av dem hopper ved en "
+"båndgrense; SFR leses fra fiskens eget bånd ved vanntemperaturen. Økonomisk FCR er FCR på utfôret"
+" mengde: FCR delt på andelen som spises."
+
 msgid "Each day"
 msgstr "Hver dag"
 
@@ -6565,6 +6616,9 @@ msgstr "Tidligste egnede dato for levende levering: ukjent."
 
 msgid "Earthen"
 msgstr "Jord"
+
+msgid "Eaten"
+msgstr "Spist"
 
 msgid "Economic FCR"
 msgstr "Økonomisk FCR"
@@ -6794,6 +6848,9 @@ msgstr[1] "Ufullstendig estimat: %(days)s fôringsdager uten forventet FCR"
 msgid "Estimated %(weight)s on %(date)s"
 msgstr "Estimert %(weight)s %(date)s"
 
+msgid "Estimated before it"
+msgstr "Estimert før den"
+
 msgid "Estimated now · target reached"
 msgstr "Anslått nå · mål nådd"
 
@@ -6830,6 +6887,22 @@ msgid "Every day"
 msgid_plural "Every %(count)d days"
 msgstr[0] "Hver dag"
 msgstr[1] "Hver %(count)d. dag"
+
+#, python-format
+msgid "Every day at %(temperature)s, the unit’s latest temperature at the start, held."
+msgstr "Hver dag ved %(temperature)s, enhetens siste temperatur ved starten, holdt fast."
+
+msgid "Every day at the site’s water temperature of its month (Setup › Sites)."
+msgstr "Hver dag ved lokalitetens vanntemperatur for måneden (Oppsett › Lokaliteter)."
+
+msgid ""
+"Every day of the plan counts the day’s ration as given. A past day is never planned: the estimate"
+" between weighings grows on the feedings recorded only, and a day without one adds nothing. A "
+"weighing sets the estimate to the measured weight, and the plan ahead starts again from it."
+msgstr ""
+"Hver dag i planen regner dagens rasjon som gitt. En dag som er gått planlegges aldri: estimatet "
+"mellom veiinger vokser bare på registrerte fôringer, og en dag uten fôring legger ingenting til. "
+"En veiing setter estimatet til den målte vekten, og planen framover starter på nytt derfra."
 
 msgid "Every department"
 msgstr "Alle avdelinger"
@@ -6970,6 +7043,9 @@ msgstr "Forventet FCR"
 msgid "Expected harvest"
 msgstr "Forventet høsting"
 
+msgid "Expected mortality (%/month)"
+msgstr "Forventet dødelighet (%/måned)"
+
 msgid "Experiment"
 msgstr "Forsøk"
 
@@ -7015,6 +7091,15 @@ msgid ""
 msgstr ""
 "Fôrfaktor og fôrtallene regnes ut på nytt uten den. For å rette en fôring, annuller den og "
 "registrer den på nytt."
+
+msgid "FCR in force"
+msgstr "Gjeldende FCR"
+
+msgid "FCR read between the bands from"
+msgstr "FCR leses mellom båndene fra"
+
+msgid "FCR realised · expected"
+msgstr "FCR oppnådd · forventet"
 
 msgid ""
 "FCR runs from stocking to the last weighing, on weighed biomass only. Dead fish leave at the last"
@@ -7170,6 +7255,14 @@ msgstr "Fôr i bruk"
 msgid "Feed on hand"
 msgstr "Fôr på lager"
 
+#, python-format
+msgid ""
+"Feed over these days: %(feed)s given, %(eaten)s eaten, %(uneaten)s uneaten; economic FCR of the "
+"period %(fcr)s; %(fish)s fish and %(biomass)s at the end."
+msgstr ""
+"Fôr over disse dagene: %(feed)s gitt, %(eaten)s spist, %(uneaten)s uspist; økonomisk FCR for "
+"perioden %(fcr)s; %(fish)s fisk og %(biomass)s ved slutten."
+
 msgid "Feed per shot (g)"
 msgstr "Fôr per skudd (g)"
 
@@ -7182,6 +7275,12 @@ msgstr "Fôringsrate %(rate)s av biomassen per dag de siste 7 dagene"
 
 msgid "Feed size (mm)"
 msgstr "Fôrstørrelse (mm)"
+
+msgid "Feed that day"
+msgstr "Fôr den dagen"
+
+msgid "Feed to date"
+msgstr "Fôr til og med dagen"
 
 msgid "Feed today"
 msgstr "Fôr i dag"
@@ -8017,6 +8116,9 @@ msgstr "Oppgi verdiens sti: apparatets meldingsformat er ett objekt."
 msgid "Give the volume to follow the amounts."
 msgstr "Oppgi volumet for å følge mengdene."
 
+msgid "Give the water temperature of all twelve months, or of none."
+msgstr "Oppgi vanntemperaturen for alle tolv månedene, eller for ingen."
+
 msgid "Give the withdrawal in degree-days, in days or both, as the SPC states it (0 when it has none)."
 msgstr ""
 "Oppgi tilbakeholdelsestiden i døgngrader, dager eller begge, slik preparatomtalen oppgir den (0 "
@@ -8136,6 +8238,13 @@ msgstr "Vekstfôr"
 msgid "Growth"
 msgstr "Vekst"
 
+msgid "Growth plan"
+msgstr "Vekstplan"
+
+#, python-format
+msgid "Growth plan · %(unit)s · %(batch)s"
+msgstr "Vekstplan · %(unit)s · %(batch)s"
+
 msgid "Growth stage"
 msgstr "Vekststadium"
 
@@ -8227,6 +8336,9 @@ msgstr "Høstet"
 msgctxt "page"
 msgid "Harvested"
 msgstr "Høstet"
+
+msgid "Harvested out"
+msgstr "Høstet ut"
 
 msgid "Harvesting"
 msgstr "Høsting"
@@ -8373,6 +8485,20 @@ msgstr "Timer regelen krever"
 msgid "How"
 msgstr "Hvordan"
 
+msgid ""
+"How an average weight was measured. Every weighing names its source, so a production plan reads "
+"the measured weights one way whatever measured them: a sample weighed by hand today, a biomass "
+"camera when the farm has one. A weighing takes “Manual sample” unless another source is chosen; "
+"the choice is offered in the weighing dialog once there is more than one source."
+msgstr ""
+"Hvordan en snittvekt ble målt. Hver veiing oppgir kilden sin, så en produksjonsplan leser de "
+"målte vektene på én måte uansett hva som målte dem: en prøve veid for hånd i dag, et "
+"biomassekamera når anlegget har ett. En veiing får «Manual sample» om ikke en annen kilde velges;"
+" valget tilbys i veiedialogen når det finnes mer enn én kilde."
+
+msgid "How an average weight was measured: a sample weighed by hand, a biomass camera."
+msgstr "Hvordan en snittvekt ble målt: en prøve veid for hånd, et biomassekamera."
+
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
 
@@ -8462,6 +8588,13 @@ msgstr ""
 "registrert slakting inn i en tilbakeholdelsestid, spør først."
 
 msgid ""
+"How many days ahead a production plan walks a batch’s growth. A target weight not reached within "
+"them is said as not reached. 7 to 3650; 730 until you set another."
+msgstr ""
+"Hvor mange dager framover en produksjonsplan regner veksten til en fiskegruppe. En målvekt som "
+"ikke nås innen dem, vises som ikke nådd. 7 til 3650; 730 til du setter en annen."
+
+msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
 "the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
 "stay as they are. 1 to 3650; 31 until you set another."
@@ -8518,6 +8651,9 @@ msgstr "Hvor ofte apparatet sender en melding. Frakoblet etter tre ganger dette 
 
 msgid "How rations are worked out"
 msgstr "Slik regnes rasjonene ut"
+
+msgid "How the weight was measured."
+msgstr "Hvordan vekten ble målt."
 
 msgid "How this was worked out"
 msgstr "Slik ble dette regnet ut"
@@ -8883,6 +9019,9 @@ msgstr "Den er utført: annuller først operasjonen som registrerte den."
 #, python-format
 msgid "It is not ready: %(problems)s"
 msgstr "Den er ikke klar: %(problems)s"
+
+msgid "It is the source of a weighing that names none: it is kept."
+msgstr "Den er kilden til en veiing som ikke oppgir noen: den beholdes."
 
 #, python-format
 msgid "It operates %(count)d slaughter facility: keep “%(category)s” ticked."
@@ -9671,6 +9810,9 @@ msgstr ""
 "Målt %(value)s på %(scale)s; satt på NBS-skalaen med formel %(formula)d og prøvens "
 "%(temperature)s °C og %(salinity)s ‰."
 
+msgid "Measured against the plan"
+msgstr "Målt mot planen"
+
 msgid "Measured at"
 msgstr "Målt"
 
@@ -9888,6 +10030,9 @@ msgstr "Mer enn to elementer er store: de store skiller seg ikke lenger ut."
 
 msgid "Mortality"
 msgstr "Dødelighet"
+
+msgid "Mortality a month"
+msgstr "Dødelighet per måned"
 
 #, python-format
 msgid "Mortality recorded: %(count)s fish of %(batch)s in %(unit)s."
@@ -10309,6 +10454,9 @@ msgstr "Ingen telling samsvarer med disse filtrene."
 msgid "No count recorded yet"
 msgstr "Ingen telling registrert ennå"
 
+msgid "No day is planned."
+msgstr "Ingen dag er planlagt."
+
 msgid "No dead letters."
 msgstr "Ingen ulagrede meldinger."
 
@@ -10519,6 +10667,9 @@ msgstr "Uten partinummer"
 msgid "No manager"
 msgstr "Ingen leder"
 
+msgid "No measured weight in this unit yet."
+msgstr "Ingen målt vekt i denne enheten ennå."
+
 msgid "No medicine withdrawal in force."
 msgstr "Ingen tilbakeholdelsestid gjelder."
 
@@ -10678,6 +10829,10 @@ msgstr "Ingen kar"
 
 msgid "No tank is placed."
 msgstr "Ingen kar er plassert."
+
+#, python-format
+msgid "No target weight is set: the plan runs %(days)d days ahead."
+msgstr "Ingen målvekt er satt: planen går %(days)d dager framover."
 
 msgid "No target, reagent or dosing volume is set for these fish yet."
 msgstr "Ingen mål, reagens eller doseringsvolum er satt for denne fisken ennå."
@@ -11377,14 +11532,16 @@ msgid ""
 "One row per weight band, from its lower weight up to, not including, its upper one; the bands "
 "meet without gaps and only the last may have no upper weight. Fish outside the bands, or in water"
 " outside the first and last temperature column, get no ration. In each cell the SFR, the %% of "
-"the body weight fed a day; 0 means no feeding at that temperature. An empty FCR is the "
-"protocol’s. The table is saved as a whole."
+"the body weight fed a day; 0 means no feeding at that temperature. An empty FCR, uneaten share or"
+" mortality is the protocol’s. The FCR and the uneaten share of fish between two bands are read in"
+" between them; the SFR is its band’s. The table is saved as a whole."
 msgstr ""
-"Én rad per vektklasse, fra den nedre vekten opp til, men ikke med, den øvre; vektklassene møtes "
-"uten hull, og bare den siste kan stå uten øvre vekt. Fisk utenfor vektklassene, eller i vann "
-"utenfor første og siste temperaturkolonne, får ingen rasjon. I hver celle SFR, %% av kroppsvekten"
-" som fôres per dag; 0 betyr ingen fôring ved den temperaturen. Tom FCR betyr protokollens. "
-"Tabellen lagres samlet."
+"Én rad per vektbånd, fra den nedre vekten opp til, men ikke med, den øvre; båndene møtes uten "
+"hull, og bare det siste kan være uten øvre vekt. Fisk utenfor båndene, eller i vann utenfor "
+"første og siste temperaturkolonne, får ingen rasjon. I hver celle står SFR, %% av kroppsvekten "
+"som fôres per dag; 0 betyr ingen fôring ved den temperaturen. Tom FCR, uspist andel eller "
+"dødelighet er protokollens. FCR og uspist andel for fisk mellom to bånd leses imellom dem; SFR er"
+" båndets egen. Tabellen lagres som en helhet."
 
 msgid "One rule per severity is made by the platform; it is changed, never added or deleted."
 msgstr "Plattformen lager én regel per alvorlighetsgrad; den endres, legges aldri til eller slettes."
@@ -12171,8 +12328,14 @@ msgstr "Plan"
 msgid "Plan a trial: its hypothesis, its groups and the tanks they get."
 msgstr "Planlegg et forsøk: hypotesen, gruppene og karene de får."
 
+msgid "Plan from"
+msgstr "Plan fra"
+
 msgid "Plan harvest"
 msgstr "Planlegg høsting"
+
+msgid "Plan temperatures"
+msgstr "Plantemperaturer"
 
 msgid "Plan this day"
 msgstr "Planlegg denne dagen"
@@ -12215,8 +12378,14 @@ msgstr "Planlagt rund vekt (kg)"
 msgid "Planned slaughter"
 msgstr "Planlagt slakting"
 
+msgid "Planned that day"
+msgstr "Planlagt den dagen"
+
 msgid "Planned today"
 msgstr "Planlagt i dag"
+
+msgid "Plans"
+msgstr "Planer"
 
 msgid "Platform admin"
 msgstr "Plattformadministrator"
@@ -13524,6 +13693,9 @@ msgstr "Søk på navn, godkjenningsnummer, sted eller driftsselskap"
 msgid "Search by name, code or manufacturer"
 msgstr "Søk etter navn, kode eller produsent"
 
+msgid "Search by name, code or notes"
+msgstr "Søk på navn, kode eller notater"
+
 msgid "Search by name, code or region"
 msgstr "Søk etter navn, kode eller region"
 
@@ -14681,6 +14853,14 @@ msgstr "Kar, dammer og merder"
 msgid "Target"
 msgstr "Mål"
 
+#, python-format
+msgid "Target %(target)s: %(why)s"
+msgstr "Mål %(target)s: %(why)s"
+
+#, python-format
+msgid "Target %(target)s: reached on %(date)s."
+msgstr "Mål %(target)s: nås %(date)s."
+
 msgid "Target CO₂"
 msgstr "Mål-CO₂"
 
@@ -14833,6 +15013,14 @@ msgstr "MQTT-klient-ID-en innhentingstjenesten kobler til med; unik blant tilkob
 
 msgid "The MT number, when the medicine has one."
 msgstr "MT-nummeret, når legemiddelet har et."
+
+msgid ""
+"The SFR is read from the fish’s own weight band at the temperature; the FCR and the uneaten share"
+" are read between the bands, without a jump. A month of mortality is 30 days; the fish that die "
+"are taken to weigh the average."
+msgstr ""
+"SFR leses fra fiskens eget vektbånd ved temperaturen; FCR og uspist andel leses mellom båndene, "
+"uten hopp. En måned med dødelighet er 30 dager; fisken som dør regnes å veie snittet."
 
 msgid "The abstract or summary, as the document gives it."
 msgstr "Sammendraget slik dokumentet gir det."
@@ -15590,11 +15778,13 @@ msgid "The key values"
 msgstr "Nøkkelverdiene"
 
 msgid ""
-"The kg of feed per kg of growth the table expects; a band may have its own. The estimated weight "
-"between weighings grows by the feed divided by it."
+"The kg of feed eaten per kg of growth the table expects (the biological FCR); a band may have its"
+" own. Between two bands it is read in between them, with no jump at a band’s edge. The estimated "
+"weight between weighings and the production plan grow by the feed eaten divided by it."
 msgstr ""
-"Kg fôr per kg tilvekst som tabellen forventer; en vektklasse kan ha sin egen. Den estimerte "
-"vekten mellom veiinger øker med fôret delt på den."
+"Kg spist fôr per kg tilvekst som tabellen forventer (biologisk FCR); et bånd kan ha sin egen. "
+"Mellom to bånd leses den imellom dem, uten hopp ved en båndgrense. Den estimerte vekten mellom "
+"veiinger og produksjonsplanen vokser med spist fôr delt på den."
 
 #, python-format
 msgid "The kind of factor %(name)s is not one of the two."
@@ -16303,6 +16493,26 @@ msgstr "Sensorene ved %(place)s: først de som er der nå, så de som var der f�
 
 #, python-format
 msgid ""
+"The share of the feed given that the fish do not eat, 0 to 50 %%; a band may have its own. Empty:"
+" all of it is eaten. The feed given less this share is what grows the fish; the FCR on the feed "
+"given (the economic FCR) is worked out from the two and shown, never entered."
+msgstr ""
+"Andelen av utfôret mengde som fisken ikke spiser, 0 til 50 %%; et bånd kan ha sin egen. Tom: alt "
+"spises. Utfôret mengde minus denne andelen er det fisken vokser på; FCR på utfôret mengde "
+"(økonomisk FCR) regnes ut fra de to og vises, den oppgis aldri."
+
+#, python-format
+msgid ""
+"The share of the fish expected to die in a month (30 days), 0 to 30 %%; a band may have its own. "
+"Empty: none. Read by the production plan only: it lowers the fish, the biomass and the feed "
+"ahead, never the average weight."
+msgstr ""
+"Andelen av fisken som forventes å dø på en måned (30 dager), 0 til 30 %%; et bånd kan ha sin "
+"egen. Tom: ingen. Leses bare av produksjonsplanen: den senker antall fisk, biomassen og fôret "
+"framover, aldri snittvekten."
+
+#, python-format
+msgid ""
 "The shift %(shift)s and the %(window)s minutes a person may clock in before it are longer than "
 "%(hours)s hours: a person on it would count as forgotten before it ends."
 msgstr ""
@@ -16490,6 +16700,9 @@ msgstr ""
 "Systemene det betjener, på produksjonsavdelingens lokalitet: minst ett, og ett av dem dets "
 "primære system. Kritikalitet er hvor mye systemet er avhengig av det, fra 1 (lite) til 5 (helt)."
 
+msgid "The table shows one day a week and the last day; the file has every day."
+msgstr "Tabellen viser én dag i uken og den siste dagen; filen har hver dag."
+
 #, python-format
 msgid "The tank is booked until %(day)s already: a placement is only ever shortened."
 msgstr "Karet er allerede booket til %(day)s: en plassering kan bare forkortes."
@@ -16520,13 +16733,18 @@ msgstr ""
 
 msgid ""
 "The target weight each batch is grown to for harvest. The estimated weight now is the feeding "
-"protocols’ estimate; the day it reaches the target walks it forward on the ration of each day, at"
-" the unit’s latest temperature held, with no growth on a fasting day. The expected harvest is the"
-" date given when the batch was stocked."
+"protocols’ estimate from the feedings recorded; the plan walks it forward a day at a time, every "
+"day’s ration counted as given: the feed less the protocol’s uneaten share, divided by its FCR, at"
+" the site’s monthly water temperatures or, without them, the unit’s latest temperature held, with"
+" no growth on a fasting day. Growth plan opens the curve, the feed to the target and the measured"
+" weights beside it. The expected harvest is the date given when the batch was stocked."
 msgstr ""
-"Målvekten hver fiskegruppe vokser til før høsting. Anslått vekt nå er fôringsprotokollenes "
-"anslag; dagen målet nås, regnes fram med rasjonen for hver dag, ved enhetens siste temperatur "
-"holdt fast, uten vekst på en sultedag. Forventet høsting er datoen som ble gitt ved utsett."
+"Målvekten hver fiskegruppe vokses til før høsting. Estimert vekt nå er fôringsprotokollenes "
+"estimat fra de registrerte fôringene; planen regner den framover én dag om gangen, med hver dags "
+"rasjon regnet som gitt: fôret minus protokollens uspiste andel, delt på dens FCR, ved "
+"lokalitetens månedlige vanntemperaturer eller, uten dem, enhetens siste temperatur holdt fast, "
+"uten vekst på en fastedag. Vekstplan åpner kurven, fôret til målet og de målte vektene ved siden "
+"av. Forventet høsting er datoen som ble oppgitt da fiskegruppen ble satt ut."
 
 #, python-format
 msgid "The task is %(status)s: its checklist can no longer be ticked."
@@ -16610,6 +16828,10 @@ msgstr ""
 "Behandlingen med %(medicine)s i %(units)s fra %(start)s til %(end)s ble registrert for "
 "«%(reason)s», ikke mot lakselus, så den er ikke med i denne rapporten: ble den gitt mot lakselus,"
 " annuller den og registrer den på nytt med årsaken «%(sea_lice)s»."
+
+#, python-format
+msgid "The uneaten share of the feed is between 0 and 50 %%."
+msgstr "Den uspiste andelen av fôret er mellom 0 og 50 %%."
 
 msgid "The unit factor is a number other than 0."
 msgstr "Enhetsfaktoren er et tall forskjellig fra 0."
@@ -16769,6 +16991,15 @@ msgstr "Vannet i enhetene den gjelder for. En rad for enhetens vanntype går for
 
 msgid "The water surface when the pond is full."
 msgstr "Vannflaten når dammen er full."
+
+msgid ""
+"The water temperature a production plan reads for each day ahead in that month. Give all twelve, "
+"or none: without them a plan holds the unit’s latest temperature for every day ahead, and says "
+"so."
+msgstr ""
+"Vanntemperaturen en produksjonsplan leser for hver dag framover i den måneden. Oppgi alle tolv, "
+"eller ingen: uten dem holder en plan enhetens siste temperatur for hver dag framover, og sier "
+"det."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Vannet mengdene gjelder: et kar eller et kretsløp. Tomt: bare dosene per m³."
@@ -17428,6 +17659,9 @@ msgstr "I dag viser de forfalte oppgavene, dem med frist i dag og dem som er utf
 msgid "Today on the farm"
 msgstr "I dag på anlegget"
 
+msgid "Today’s estimate"
+msgstr "Dagens estimat"
+
 msgid "Today’s ration"
 msgstr "Dagens rasjon"
 
@@ -17609,6 +17843,15 @@ msgstr "Under tilbakeholdelsestid i dag"
 msgid "Undo"
 msgstr "Angre"
 
+msgid "Uneaten"
+msgstr "Uspist"
+
+msgid "Uneaten feed"
+msgstr "Uspist fôr"
+
+msgid "Uneaten feed (%)"
+msgstr "Uspist fôr (%)"
+
 msgid "Unique"
 msgstr "Unik"
 
@@ -17716,6 +17959,14 @@ msgstr ""
 
 msgid "Until"
 msgstr "Til og med"
+
+#, python-format
+msgid ""
+"Until %(date)s this protocol’s FCR was read per band, with a step at each band’s edge: the days "
+"before keep that. From that day it is read between the bands."
+msgstr ""
+"Fram til %(date)s ble denne protokollens FCR lest per bånd, med et trinn ved hver båndgrense: "
+"dagene før beholder det. Fra den dagen leses den mellom båndene."
 
 msgid "Up to (g)"
 msgstr "Opp til (g)"
@@ -18016,6 +18267,10 @@ msgstr "Vannprøver, rulles sidelengs"
 msgid "Water source"
 msgstr "Vannkilde"
 
+#, python-brace-format
+msgid "Water temperature ahead, {month} (°C)"
+msgstr "Vanntemperatur framover, {month} (°C)"
+
 msgid "Water treatment"
 msgstr "Vannbehandling"
 
@@ -18088,6 +18343,9 @@ msgstr "Veiing"
 msgid "Weighing recorded: %(batch)s in %(unit)s, average %(weight)s g."
 msgstr "Veiing registrert: %(batch)s i %(unit)s, snitt %(weight)s g."
 
+msgid "Weighings"
+msgstr "Veiinger"
+
 msgid "Weight band"
 msgstr "Vektklasse"
 
@@ -18099,6 +18357,12 @@ msgstr "Vekt av dødfisken (kg)"
 
 msgid "Weight of the fish (kg)"
 msgstr "Vekten av fisken (kg)"
+
+msgid "Weight source"
+msgstr "Vektkilde"
+
+msgid "Weight sources"
+msgstr "Vektkilder"
 
 #, python-format
 msgid "Welcome, %(name)s. The company’s figures will appear here."
@@ -18145,6 +18409,12 @@ msgstr "Hva det handler om. Kunnskapsoppføringene hentet fra det har egne emner
 
 msgid "What it is made for. A medicated feed is given on a vet’s prescription."
 msgstr "Hva det er laget for. Medisinfôr gis etter resept fra veterinær."
+
+msgid "What it is, and how far its weights can be trusted."
+msgstr "Hva den er, og hvor langt vektene dens er til å stole på."
+
+msgid "What measured the weight, as the pages name it: a sample weighed by hand, a biomass camera."
+msgstr "Hva som målte vekten, slik sidene kaller det: en prøve veid for hånd, et biomassekamera."
 
 msgid ""
 "What only the authority can answer, and on which a rule of a report rests. Until a question is "
@@ -19400,6 +19670,9 @@ msgstr "f.eks. Aquaculture"
 msgid "e.g. Atlantic salmon"
 msgstr "f.eks. Atlantic salmon"
 
+msgid "e.g. Biomass camera"
+msgstr "f.eks. Biomassekamera"
+
 msgid "e.g. Carbon dioxide and the growth of Atlantic salmon"
 msgstr "f.eks. Karbondioksid og veksten til atlantisk laks"
 
@@ -19661,6 +19934,9 @@ msgstr "faktornivå"
 
 msgid "factor levels"
 msgstr "faktornivåer"
+
+msgid "fasting day"
+msgstr "fastedag"
 
 #, python-format
 msgid "fed %(fed)s, %(remaining)s to go"
@@ -20654,6 +20930,10 @@ msgstr "t"
 msgid "target on %(date)s, at %(temperature)s °C held"
 msgstr "målet nås %(date)s, ved %(temperature)s °C holdt fast"
 
+#, python-format
+msgid "target on %(date)s, at the site’s monthly temperatures"
+msgstr "mål %(date)s, ved lokalitetens månedlige temperaturer"
+
 msgid "target reached"
 msgstr "målet er nådd"
 
@@ -20865,6 +21145,12 @@ msgstr "vannprøver"
 #, python-format
 msgid "weighed %(date)s"
 msgstr "veid %(date)s"
+
+msgid "weight source"
+msgstr "vektkilde"
+
+msgid "weight sources"
+msgstr "vektkilder"
 
 msgid "whatever is in it"
 msgstr "alt som er i den"

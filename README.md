@@ -1414,17 +1414,37 @@ the SFR, % of the body weight a day (0–15; 0 is "do not feed at this temperatu
 (`feeding_protocol_rates`, −3 to 40 °C). The protocol's own expected FCR (0.50–3.00) is the fallback of a band without
 one, always shown with its source. The bands meet without gaps (checked when the table is saved) and never overlap
 (an exclusion constraint, `btree_gist`, created by migration 0015); every cell is filled (the grid is saved whole).
-The dialog has a General tab (name, unique among live protocols in any case; species; status; expected FCR;
-notes), the **Feeding table** tab, a grid of the bands by the temperature columns: the columns are typed as
+The dialog has a General tab (name, unique among live protocols in any case; species; status; expected FCR; uneaten
+feed; expected mortality; notes), the **Feeding table** tab, a grid of the bands by the temperature columns: the columns are typed as
 "4 8 12 16", **at least two** (one column gave an SFR at exactly its own temperature and none on every other day, audit
 F-080; a table stored with one keeps that), and changing them renders the grid again with what was entered (`data-refresh`, nothing saved); the
 whole table is saved at once, replacing the stored bands and cells, guarded by the protocol's version and logged on
 the protocol as one change ("Feeding table", before and after). A band whose feed is not listed as suitable for the
 species at its weights is noticed, not refused. Status: a new protocol is a draft; it is set active once it has a
 table; a retired one keeps the days it fed and takes no new assignment, and it cannot be retired while an
-assignment covers today or later. **Once a protocol is assigned its table, species and expected FCR are fixed**
+assignment covers today or later. **Once a protocol is assigned its table, species, expected FCR, uneaten share and expected mortality are fixed**
 (owner decision Q3): the rations of past days are read from it; **Duplicate** makes a draft copy ("… (copy)") with
 its table, to change and assign from a date.
+
+**How feed becomes growth** is one pure rule, `farm/feeding/growth.py` (no database, no clock, no settings; tested on its
+own over whole grids of values, `farm/tests/test_growth.py`), used by the estimate between weighings and by the
+production plan alike; nothing else in the code turns feed into weight.
+- **The FCR entered is the biological FCR**, on the feed eaten. A protocol also has an **uneaten share** of the feed given
+  (`uneaten_pct`, 0–50 %, empty: none), which a band may override like the FCR: growth = feed given × (1 − uneaten) ÷ FCR.
+  The **economic FCR**, on the feed given, is FCR ÷ (1 − uneaten): computed and shown (the fixed table, the growth plan),
+  never entered.
+- **The FCR and the uneaten share are read between the bands, without a jump** (`growth.interpolate`, the one place):
+  each band's value sits at the middle of the band (a band without an upper weight: at its lower weight), is linear
+  between two neighbouring middles and constant before the first and after the last. The SFR keeps its own rule: the
+  fish's own band, interpolated over the temperature only (a band carries the pellet and the meals, which change in
+  steps). Open for the owner: SFR over weight too, and the lower edge instead of the middle as the anchor.
+- **An expected mortality** in % a month (`mortality_pct_month`, 0–30, on the protocol and per band, empty: none) is read
+  by the production plan only: it lowers the fish, so the biomass and the feed, never the average weight. A month is
+  30 days, compounded daily.
+- The three are fixed once the protocol is assigned, like its table (Q3). A protocol that existed when the interpolation
+  landed keeps each band's own FCR for the days before that (`interpolated_from`, written once by migration 0053 and
+  never edited), so nothing it gave for a past day changed; a protocol made since, a copy too, is read between the bands
+  on every day.
 
 **An assignment** (table `protocol_assignments`) is one row per target: a unit (the protocol feeds whatever is in
 it), a whole batch (it follows the batch into every unit it is moved to, through transfers and splits) or a batch in
@@ -1470,8 +1490,8 @@ written back: bFCR, eFCR, density, capacity and the 10 % acknowledgement read th
 the measured value at every stocking, weighing (a grading's remainder too) and fish graded in. Fish that leave take
 the estimate's own average; fish moved by a plain transfer carry their estimated grams and the day of their last
 measured point; graded fish carry their measured weight. **After each feeding** (in the day's order: its time, then
-the order of entry) the batch gains its part of the feed (the record's split by book biomass) × 1000 ÷ the expected
-FCR at its estimated weight then, and the next meal is worked out again from the new estimate (owner decision Q9),
+the order of entry) the batch gains what its part of the feed (the record's split by book biomass) grows by the growth rule: the part eaten
+(less the uneaten share) ÷ the expected FCR, both at its estimated weight then, and the next meal is worked out again from the new estimate (owner decision Q9),
 but growth is credited only up to the day's calculated ration (Q4): feed above it is shown as "over the ration" and
 not counted. Feed of fish without an expected FCR (no protocol, outside the bands) adds nothing and the estimate says
 "incomplete: N feeding days without an expected FCR". A day without a temperature has no ration to cap with, so its
@@ -2608,16 +2628,42 @@ weight, to edit), the batch's expected harvest (entered at stocking: one fact, o
 last fed and a medicine withdrawal; **Plan harvest** starts a planned harvest of the share at the target weight
 (fish = the share's count, round kilos = fish × target, on the day the target is reached). Plans of batches no
 longer in stock follow. **The estimated weight now** is the feeding protocols' estimate (Operations › Feeding);
-**the day the target is reached** walks it forward a day at a time (`farm/harvest/forecast.py`): each day the fish
-eat that day's ration (the protocol in force, the band at the weight reached, its SFR at the unit's latest
-temperature, held constant and shown) and grow by it ÷ the band's expected FCR; a fasting day before a planned
-harvest or transport gives no growth; no protocol, a weight outside the bands or no temperature stops it with the
-reason, never a default, and so does two years without reaching it. Nothing is stored.
+**the plan ahead** walks it forward a day at a time (`farm/harvest/forecast.py`, on `growth.curve`): each day the
+fish alive are given that day's ration (the protocol in force, the band at the weight reached, its SFR at the
+temperature) and grow by the growth rule (the feed less the uneaten share, ÷ the FCR, both read between the bands); the
+band's expected mortality takes its share of the fish at the day's end; a fasting day before a planned harvest or
+transport gives no feed and no growth; no protocol, a weight outside the bands or no temperature stops it with the
+reason, never a default, and so does the platform owner's horizon (Platform settings, "A production plan looks ahead",
+730 days until they set another). The temperature ahead is the site's water temperature of the day's month when the
+site has its twelve (Setup › Sites, tab Plan temperatures: all twelve or none, a database check), else the unit's
+latest temperature held; the row says which. The row says the day the target is reached, the feed to it and the economic
+FCR of those days (feed given ÷ growth). Past days are never planned: the estimate grows on recorded feedings only.
+Nothing is stored.
+
+**Growth plan** (`/operations/production-plans/growth/<unit>/<batch>/`, the row's link; the production plans' Read) is
+the batch's curve: a row a week and the last day (date, average, fish, biomass, feed that day and to date, eaten,
+uneaten, the FCR in force with the economic one, the temperature) and **every day as a file** (`?format=csv`: English
+column names, a decimal point, ISO dates). Beside it, **Measured against the plan**: every measured point of the batch's
+stay in the unit (its stocking, each weighing) with the estimate the weighing replaced, the difference in g and %, the
+realised bFCR since the previous point against the expected FCR on the feed given, and what the plan said for that
+day. **Plan from** chooses the start: today's estimate, or a measured point (`?from=<day>`), from which the plan is
+worked out again from the weight and fish measured then and the protocol in force on each day, so "where the plan said
+we would be" is reproducible; a day that is no measured point of the stay shows today's. One page of words for both
+looks (`farm/harvest/plan_page.py`: the classic template draws the props the island draws). A drawn chart of the two
+lines is not built: the page is tables.
+
+**A measured weight names its source** (Setup › Reference data › **Weight sources**, table `weight_sources`): every
+weighing line has one (`stock_movements.weight_source`, a database check; a weighing that names none takes the seeded
+"Manual sample", which is kept), with its sample (fish weighed, their weight) where it has one. The measured points of a
+batch in a unit are read in one place, whatever measured them (`farm.feeding.read.measured_points`, from the walk's own
+points), so a biomass camera is one more row of reference data on a weighing and no second path; the weighing dialog
+asks for the source once there is more than one. No camera is built.
 
 The page reads its rows together, not one by one: the withdrawals in force of every unit shown in one ask of the
 registry (`check.holding_of`), every row's earliest suitable harvest date in one pass (`check.earliest_of`), the last
 feedings of the stock in one read (`feeding.read.last_fed_in`, what the units list says, without walking the
-feedings), and the forecast: one projection walk plus a per-batch walk of up to 730 days for a batch with a target.
+feedings), and the forecast: one projection walk plus a per-batch walk of up to the horizon's days for a batch with a
+target.
 Nothing is kept between requests, so nothing can be stale. Measured on the development data (20 rows, warm median of
 5, on a loaded machine, 22.11.2026): 825 queries and about 10 s before, 131 queries and about 1.8 s after; the page
 is the same byte for byte with the clock pinned, and its query count does not grow with its rows. The tests
@@ -4915,6 +4961,9 @@ The rules the platform owner (the customer the platform is given to) sets for th
   messages name the days it says. The regulatory reports re-read a filed report for changes only inside it.
   (Not this window: the fast's 31-day look-back for the last feeding, longer than the longest handling rule, and the
   31 days one page of feeding records covers.)
+- **A production plan looks ahead (days)**, 7 to 3650, 730 until the owner sets another: how many days ahead a batch's
+  growth is walked (Operations › Harvest › Production plans); a target not reached within them is said as not reached.
+  `core.platform.plan_horizon_days()` is its one reader.
 - **A second person approves a withdrawal warning acknowledgement** (F-164): `core.platform.second_approval_required(
   'withdrawal')` is asked by the one hook (`farm/handling/check.py` `second_person_must_approve`); an unknown kind is an
   error, never a quiet no. The second person's approval flow is not built yet, so the setting FAILS CLOSED (cross review
@@ -6663,6 +6712,8 @@ runs the server:
 | `/operations/harvests/` | Operations › Harvest › Harvested: every harvest, the book against the scale, totals per batch and site |
 | `/operations/harvest-plan/` | Operations › Harvest › Harvest plan: planned harvests and transports; `?unit=<id>` one unit's |
 | `/operations/production-plans/` | Operations › Harvest › Production plans: the target weight per batch in stock |
+| `/operations/production-plans/growth/<unit>/<batch>/` | A batch's growth plan: `?from=<day>` from a measured point, `?format=csv` every day as a file |
+| `/weight-sources/` | Setup › Reference data › Weight sources: how an average weight was measured |
 | `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
 | `/slaughter-facilities/` | Harvest and logistics › Slaughter facilities |
 | `/handling-rules/` | Reference data › Handling rules |
@@ -6733,10 +6784,10 @@ runs the server:
 | `core/schema.py` | Fields described by a schema (a type's specifications): the form fields and the check of stored values |
 | `farm/equipment_types.py` | The equipment type catalogue, written into the database by migrations |
 | `alarms/` | Alarms: the append-only rows (`models.py`), what raises them (`sources.py`), who is notified (`routing.py`), the write path (`services.py`), the pass (`engine.py`), the worker (`worker.py`, `manage.py run_alarm_worker`) with its look at what changed (`changes.py`), the outbox's delivery (`outbox.py`) and floods (`floods.py`), whether the alarms are checked (`watch.py`, `{% alarm_watch %}`), the transports (`transports.py`), the pages (`views.py`) |
-| `core/platform.py` | The platform owner's settings as the code reads them: the correction window and second approval |
+| `core/platform.py` | The platform owner's settings as the code reads them: the correction window, second approval and the production plan's horizon |
 | `farm/models/stock.py`, `farm/stock/` | The stock ledger: batches, operations and their lines; the fold (`fold.py`), reading it (`read.py`), the one write path (`services.py`), the integrity check (`integrity.py`, `manage.py check_stock`), the Production units page and dialogs (`views.py`, `farm/forms/stock.py`, `farm/templatetags/stock.py`) |
 | `farm/models/feeding.py`, `farm/feeding/` | The feeding records: the walk of the feed along the stock's timeline (`fold.py`), reading it for the pages, FCR and the feed rate (`read.py`), the one write path (`services.py`), the Meal board, Records and the dialogs (`views.py`, `farm/forms/feeding.py`, `farm/templatetags/feeding.py`); the farm's dates shared with the stock (`farm/stock/dates.py`) |
-| `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`), the assignments' rows and write path that the dialog and an experiment's start share (`assignments.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
+| `farm/models/feeding_protocol.py`, `farm/feeding/` | Feeding protocols and assignments: the one rule that turns feed into growth, pure (`growth.py`), the ration on read (`ration.py`), the estimated weight kept along the walk (`projection.py`), the measured points of a batch in a unit (`read.measured_points`), the temperature a ration reads (`temperature.py`), the table's write path and Duplicate (`protocols.py`), the assignments' rows and write path that the dialog and an experiment's start share (`assignments.py`); the tabs (`farm/resources/feeding_protocol.py`, `farm/forms/feeding_protocol.py`) |
 | `farm/models/health.py`, `farm/health/`, `farm/handling/` | Fish health: medicines, treatments, health events, lice counts; the disease catalogue (`diseases.py`), the statutory lice rules (`lice.py`), the withdrawal worked out on read (`withdrawal.py`), the lice weeks and the records' days (`read.py`), the one write path (`services.py`), the pages and dialogs (`views.py`, `farm/forms/health.py`, `farm/resources/medicine.py`, `farm/resources/health_event.py`, `farm/templatetags/health.py`); the withdrawal registry the harvest side reads (`farm/handling/withdrawal.py`) |
 | `farm/models/water_point.py`, `farm/water/points.py`, `farm/forms/water_point.py`, `farm/resources/water_point.py` | Sampling points: the model with its kinds, flow roles and rules, the default points and the share report, the form and the tab |
 | `farm/models/water.py`, `farm/water/` | Water chemistry: samples and limits; the parameters (`parameters.py`), the chemistry worked out from a sample or the calculator (`chemistry.py`), judging on read (`evaluate.py`), the one read API of the samples: the latest values, the history, a unit's water and where its temperature is read from (`read.py`), the one write path (`services.py`), the Water Quality Management Chart (`deffeyes.py`), the small charts (`charts.py`), the dosing (`dosing.py`), the calculator's one calculation and a point's values for it (`calculation.py`), the page, the calculator and the dialogs (`views.py`, `farm/forms/water.py`, `farm/templatetags/water.py`) |

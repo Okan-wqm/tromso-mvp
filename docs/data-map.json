@@ -3590,6 +3590,7 @@
         "farm/tests/test_phosphate_unit.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_rederive_ph.py",
         "farm/tests/test_restore.py",
@@ -4062,6 +4063,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "plan_horizon_days",
+          "field": "plan_horizon_days",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Plans"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -4093,6 +4107,12 @@
         },
         {
           "name": "chk_platform_settings_unknown_withdrawal",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_plan_horizon",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -4158,6 +4178,7 @@
             "second_approval_withdrawal": "Records",
             "unknown_withdrawal_days": "Records",
             "clock_tolerance_seconds": "Clocks",
+            "plan_horizon_days": "Plans",
             "version": ""
           }
         }
@@ -4181,6 +4202,7 @@
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_second_approval_said_first.py",
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_delivery_after.py",
@@ -7419,6 +7441,7 @@
         "farm/tests/test_emptied_unit.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_opening_balance.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix.py",
@@ -9200,7 +9223,7 @@
       "app": "farm",
       "model": "ProtocolBand",
       "table": "feeding_protocol_bands",
-      "description": "A weight band of a protocol's feeding table: fish from the lower weight up to, not including, the upper one (an empty upper weight: no upper end), the feed they get (its pellet is the feed's), their meals a day and their expected FCR (empty: the protocol's).",
+      "description": "A weight band of a protocol's feeding table: fish from the lower weight up to, not including, the upper one (an empty upper weight: no upper end), the feed they get (its pellet is the feed's), their meals a day their expected FCR, their uneaten share of the feed and their expected mortality a month (each empty: the protocol's).",
       "columns": [
         {
           "name": "id",
@@ -9296,6 +9319,32 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "uneaten_pct",
+          "field": "uneaten_pct",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "BandRowForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "mortality_pct_month",
+          "field": "mortality_pct_month",
+          "type": "numeric(4, 2)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "BandRowForm"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -9319,6 +9368,18 @@
         },
         {
           "name": "chk_feeding_protocol_bands_expected_fcr",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_feeding_protocol_bands_uneaten",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_feeding_protocol_bands_mortality",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -9421,7 +9482,9 @@
             "max_weight_g": "",
             "feed": "",
             "meals_per_day": "",
-            "expected_fcr": ""
+            "expected_fcr": "",
+            "uneaten_pct": "",
+            "mortality_pct_month": ""
           }
         }
       ],
@@ -9438,6 +9501,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
@@ -9801,6 +9865,43 @@
           "why": ""
         },
         {
+          "name": "uneaten_pct",
+          "field": "uneaten_pct",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ProtocolForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "mortality_pct_month",
+          "field": "mortality_pct_month",
+          "type": "numeric(4, 2)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "ProtocolForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "interpolated_from",
+          "field": "interpolated_from",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
           "name": "notes",
           "field": "notes",
           "type": "varchar(2000)",
@@ -9831,6 +9932,18 @@
         },
         {
           "name": "chk_feeding_protocols_expected_fcr",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_feeding_protocols_uneaten",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_feeding_protocols_mortality",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -9912,6 +10025,8 @@
             "species": "General",
             "status": "General",
             "expected_fcr": "General",
+            "uneaten_pct": "General",
+            "mortality_pct_month": "General",
             "notes": "General",
             "version": ""
           }
@@ -9932,7 +10047,10 @@
         "core/test_world.py",
         "core/tests_formpanels.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_harvest_pages_next.py",
+        "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_one_column_table.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
@@ -11024,6 +11142,7 @@
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_probe_review.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix_review.py",
         "farm/tests/test_stock.py",
@@ -11895,6 +12014,7 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_plan_form_notice.py",
         "farm/tests/test_plan_moved.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_withdrawal_wording.py",
         "reports/tests/test_compute.py",
@@ -14748,6 +14868,7 @@
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_restore.py",
@@ -15069,6 +15190,7 @@
         "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_harvest.py",
+        "farm/tests/test_harvest_pages_next.py",
         "farm/tests/test_production_plans_reads.py"
       ]
     },
@@ -15452,6 +15574,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
         "farm/tests/test_cleaner_ration.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/test_amend.py",
@@ -16194,6 +16317,162 @@
           "why": ""
         },
         {
+          "name": "plan_temperature_01",
+          "field": "plan_temperature_01",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_02",
+          "field": "plan_temperature_02",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_03",
+          "field": "plan_temperature_03",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_04",
+          "field": "plan_temperature_04",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_05",
+          "field": "plan_temperature_05",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_06",
+          "field": "plan_temperature_06",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_07",
+          "field": "plan_temperature_07",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_08",
+          "field": "plan_temperature_08",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_09",
+          "field": "plan_temperature_09",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_10",
+          "field": "plan_temperature_10",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_11",
+          "field": "plan_temperature_11",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "plan_temperature_12",
+          "field": "plan_temperature_12",
+          "type": "numeric(3, 1)",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "SiteForm › Plan temperatures"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
           "name": "facilities",
           "field": "facilities",
           "type": "jsonb",
@@ -16239,6 +16518,84 @@
         }
       ],
       "constraints": [
+        {
+          "name": "chk_sites_plan_temperatures_whole",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_01",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_02",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_03",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_04",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_05",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_06",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_07",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_08",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_09",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_10",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_11",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_sites_plan_temperature_12",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
         {
           "name": "uq_sites_code_live",
           "kind": "unique",
@@ -16420,6 +16777,18 @@
             "organisation_number": "Reports",
             "production_form": "Reports",
             "reports_from": "Reports",
+            "plan_temperature_01": "Plan temperatures",
+            "plan_temperature_02": "Plan temperatures",
+            "plan_temperature_03": "Plan temperatures",
+            "plan_temperature_04": "Plan temperatures",
+            "plan_temperature_05": "Plan temperatures",
+            "plan_temperature_06": "Plan temperatures",
+            "plan_temperature_07": "Plan temperatures",
+            "plan_temperature_08": "Plan temperatures",
+            "plan_temperature_09": "Plan temperatures",
+            "plan_temperature_10": "Plan temperatures",
+            "plan_temperature_11": "Plan temperatures",
+            "plan_temperature_12": "Plan temperatures",
             "version": ""
           }
         }
@@ -16472,10 +16841,12 @@
         "farm/tests/test_migration_altitude.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_migration_site_zone.py",
         "farm/tests/test_overview_truth.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -17618,6 +17989,7 @@
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
+        "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_size_mix.py",
@@ -17848,6 +18220,23 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "weight_source_id",
+          "field": "weight_source",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "weight_sources",
+            "model": "farm.WeightSource",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "WeighingForm"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -17913,6 +18302,12 @@
         },
         {
           "name": "chk_stock_movements_harvest_weighed",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_stock_movements_weight_source",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -18064,7 +18459,8 @@
             "notes": "",
             "sample_count": "",
             "sample_weight_kg": "",
-            "avg_weight_g": ""
+            "avg_weight_g": "",
+            "weight_source": ""
           }
         },
         {
@@ -18185,6 +18581,8 @@
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
+        "farm/tests/test_migration_production_plan.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_second_approval_said_first.py",
         "farm/tests/test_stock.py",
         "farm/tests/test_window_refusals.py",
@@ -18596,7 +18994,8 @@
             "notes": "",
             "sample_count": "",
             "sample_weight_kg": "",
-            "avg_weight_g": ""
+            "avg_weight_g": "",
+            "weight_source": ""
           }
         },
         {
@@ -18731,6 +19130,7 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
+        "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_migration_purging.py",
         "farm/tests/test_opening_balance.py",
         "farm/tests/test_overview_truth.py",
@@ -21124,11 +21524,13 @@
         "farm/tests/test_feeding.py",
         "farm/tests/test_fix_seed_size_mix.py",
         "farm/tests/test_harvest.py",
+        "farm/tests/test_harvest_pages_next.py",
         "farm/tests/test_health.py",
         "farm/tests/test_island_pages.py",
         "farm/tests/test_lock_order.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
+        "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_ph_scale.py",
         "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_production_overview_next.py",
@@ -23854,6 +24256,284 @@
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_migration_subjects.py"
+      ]
+    },
+    {
+      "app": "farm",
+      "model": "WeightSource",
+      "table": "weight_sources",
+      "description": "How an average weight was measured: reference data (Setup › Reference data › Weight sources).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "WeightSourceForm › Weight source"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "code",
+          "field": "code",
+          "type": "varchar(30)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "WeightSourceForm › Weight source"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "notes",
+          "field": "notes",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "WeightSourceForm › Weight source"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_weight_sources_name_live",
+          "kind": "unique",
+          "fields": [
+            "name"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_weight_sources_code",
+          "kind": "unique",
+          "fields": [
+            "code"
+          ],
+          "conditional": false
+        },
+        {
+          "name": "chk_weight_sources_manual_kept",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "weight sources tab",
+              "url_names": [
+                "farm:weightsource_create"
+              ],
+              "routes": [
+                "/weight-sources/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "weight sources tab",
+              "url_names": [
+                "farm:weightsource_edit"
+              ],
+              "routes": [
+                "/weight-sources/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "weight sources tab",
+              "url_names": [
+                "farm:weightsource_delete"
+              ],
+              "routes": [
+                "/weight-sources/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "weight sources tab",
+              "url_names": [
+                "farm:weightsource_list"
+              ],
+              "routes": [
+                "/weight-sources/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "WeightSourceForm",
+          "module": "farm.forms.weight_source",
+          "fields": {
+            "name": "Weight source",
+            "code": "Weight source",
+            "notes": "Weight source",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "farm/tests/test_migration_production_plan.py",
+        "farm/tests/test_production_plan.py",
+        "farm/tests/test_stock.py"
       ]
     },
     {

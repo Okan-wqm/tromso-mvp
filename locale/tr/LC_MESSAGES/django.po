@@ -494,6 +494,12 @@ msgstr[0] "%(count)d su numunesi kaydedildi."
 msgstr[1] "%(count)d su numunesi kaydedildi."
 
 #, python-format
+msgid "%(count)d weighing names it: it is kept with them."
+msgid_plural "%(count)d weighings name it: it is kept with them."
+msgstr[0] "%(count)d tartım onu gösteriyor: onlarla birlikte saklanır."
+msgstr[1] "%(count)d tartım onu gösteriyor: onlarla birlikte saklanır."
+
+#, python-format
 msgid "%(count)d withdrawal row saved."
 msgid_plural "%(count)d withdrawal rows saved."
 msgstr[0] "%(count)d bekleme süresi satırı kaydedildi."
@@ -860,6 +866,10 @@ msgstr ""
 " Yemler)."
 
 #, python-format
+msgid "%(feed)s of feed to the target · economic FCR %(fcr)s"
+msgstr "hedefe kadar %(feed)s yem · ekonomik FCR %(fcr)s"
+
+#, python-format
 msgid "%(feed)s · %(size)s mm"
 msgstr "%(feed)s · %(size)s mm"
 
@@ -911,6 +921,10 @@ msgstr "%(fish)s balık"
 #, python-format
 msgid "%(fish)s fish at %(weight)s est."
 msgstr "%(fish)s balık, tahmini %(weight)s"
+
+#, python-format
+msgid "%(fish)s fish weighed, %(kilos)s"
+msgstr "%(fish)s balık tartıldı, %(kilos)s"
 
 #, python-format
 msgid ""
@@ -1840,6 +1854,10 @@ msgstr ""
 " anda tek üretim balığı türü bulunur."
 
 #, python-format
+msgid "%(unit)s · %(batch)s: %(fish)s fish at %(weight)s on %(date)s (%(start)s)."
+msgstr "%(unit)s · %(batch)s: %(date)s tarihinde %(weight)s ağırlığında %(fish)s balık (%(start)s)."
+
+#, python-format
 msgid "%(unit)s: %(fish)d fish counted on %(date)s, where the regulation asks for %(least)d in this week."
 msgstr "%(unit)s: %(date)s tarihinde %(fish)d balık sayıldı; yönetmelik bu hafta için %(least)d ister."
 
@@ -2758,6 +2776,9 @@ msgstr "Proses değeri bir ekipman parçasına veya bir sisteme atanır."
 msgid "A production department stays on the site it was created on."
 msgstr "Üretim departmanı, oluşturulduğu sahada kalır."
 
+msgid "A production plan looks ahead (days)"
+msgstr "Üretim planı ileriye bakar (gün)"
+
 #, python-format
 msgid ""
 "A protocol gives, per weight band of the fish, the feed, the meals a day and the specific feeding"
@@ -2910,6 +2931,9 @@ msgid ""
 msgstr ""
 "Vardiya, sahanın duvar saatine göre bir başlangıç ve bitiştir; bir mola içerir. Çizelgenin "
 "kullandığı vardiyaları ekleyin."
+
+msgid "A short name in lower-case letters, digits and hyphens, chosen once."
+msgstr "Küçük harf, rakam ve kısa çizgilerden oluşan, bir kez seçilen kısa bir ad."
 
 msgid "A short rest, a long week or too many days in a row"
 msgstr "Kısa dinlenme, uzun hafta ya da çok fazla art arda gün"
@@ -3833,6 +3857,10 @@ msgstr "Bir olay kendi tarihinde veya sonrasında kapatılır."
 msgid "An expected FCR is between 0.50 and 3.00."
 msgstr "Beklenen FCR 0,50 ile 3,00 arasındadır."
 
+#, python-format
+msgid "An expected mortality is between 0 and 30 %% a month."
+msgstr "Beklenen ölüm oranı ayda %%0 ile %%30 arasındadır."
+
 msgid "An experiment has one diet factor."
 msgstr "Bir denemenin tek bir yem rejimi faktörü vardır."
 
@@ -4029,6 +4057,12 @@ msgstr "Sahanın başka bir biriminde bu resmî birim numarası zaten var."
 
 msgid "Another user already uses this email."
 msgstr "Bu e-postayı başka bir kullanıcı zaten kullanıyor."
+
+msgid "Another weight source already has this code."
+msgstr "Başka bir ağırlık kaynağı bu kodu zaten kullanıyor."
+
+msgid "Another weight source already has this name."
+msgstr "Başka bir ağırlık kaynağı bu adı zaten kullanıyor."
 
 msgid "Answer"
 msgstr "Yanıt"
@@ -4352,6 +4386,9 @@ msgstr "Geri"
 
 msgid "Back inside the limit"
 msgstr "Limitin içine döndü"
+
+msgid "Back to Production plans"
+msgstr "Üretim planlarına dön"
 
 msgid "Back to draft"
 msgstr "Taslağa geri al"
@@ -6413,6 +6450,9 @@ msgstr "Kapalı"
 msgid "Download"
 msgstr "İndir"
 
+msgid "Download every day (CSV)"
+msgstr "Her günü indir (CSV)"
+
 msgid "Download the drawn values (CSV)"
 msgstr "Çizilen değerleri indir (CSV)"
 
@@ -6524,6 +6564,17 @@ msgstr "AB listesinde, C, D ve E kategorileri"
 msgid "EU-listed, category A"
 msgstr "AB listesinde, A kategorisi"
 
+msgid ""
+"Each band’s FCR and uneaten share sit at the middle of the band (a band without an upper weight: "
+"at its lower weight). For fish between two middles both are read in between, so neither jumps at "
+"a band’s edge; the SFR is read from the fish’s own band at the water temperature. The economic "
+"FCR is the FCR on the feed given: the FCR divided by the share eaten."
+msgstr ""
+"Her bandın FCR’si ve yenmeyen payı bandın ortasında durur (üst ağırlığı olmayan bantta: alt "
+"ağırlığında). İki orta nokta arasındaki balık için ikisi de arada okunur, böylece hiçbiri bant "
+"sınırında sıçramaz; SFR balığın kendi bandından su sıcaklığına göre okunur. Ekonomik FCR, verilen"
+" yem üzerinden FCR’dir: FCR bölü yenen pay."
+
 msgid "Each day"
 msgstr "Her gün"
 
@@ -6582,6 +6633,9 @@ msgstr "Canlı teslimat için en erken uygun tarih: bilinmiyor."
 
 msgid "Earthen"
 msgstr "Toprak"
+
+msgid "Eaten"
+msgstr "Yenen"
 
 msgid "Economic FCR"
 msgstr "Ekonomik FCR"
@@ -6815,6 +6869,9 @@ msgstr[1] "Tahmin eksik: beklenen FCR’si olmayan %(days)s yemleme günü"
 msgid "Estimated %(weight)s on %(date)s"
 msgstr "%(date)s tarihinde tahmini %(weight)s"
 
+msgid "Estimated before it"
+msgstr "Ondan önceki tahmin"
+
 msgid "Estimated now · target reached"
 msgstr "Şimdiki tahmin · hedefe ulaşma"
 
@@ -6851,6 +6908,22 @@ msgid "Every day"
 msgid_plural "Every %(count)d days"
 msgstr[0] "Her gün"
 msgstr[1] "%(count)d günde bir"
+
+#, python-format
+msgid "Every day at %(temperature)s, the unit’s latest temperature at the start, held."
+msgstr "Her gün %(temperature)s: birimin başlangıçtaki son sıcaklığı sabit tutulur."
+
+msgid "Every day at the site’s water temperature of its month (Setup › Sites)."
+msgstr "Her gün, sahanın o aya ait su sıcaklığında (Kurulum › Sahalar)."
+
+msgid ""
+"Every day of the plan counts the day’s ration as given. A past day is never planned: the estimate"
+" between weighings grows on the feedings recorded only, and a day without one adds nothing. A "
+"weighing sets the estimate to the measured weight, and the plan ahead starts again from it."
+msgstr ""
+"Planın her günü, günün rasyonunu verilmiş sayar. Geçmiş bir gün asla planlanmaz: tartımlar "
+"arasındaki tahmin yalnızca kaydedilen yemlemelerle büyür, yemleme kaydı olmayan gün hiçbir şey "
+"eklemez. Tartım, tahmini ölçülen ağırlığa getirir ve ilerideki plan oradan yeniden başlar."
 
 msgid "Every department"
 msgstr "Her departman"
@@ -6992,6 +7065,9 @@ msgstr "Beklenen FCR"
 msgid "Expected harvest"
 msgstr "Beklenen hasat"
 
+msgid "Expected mortality (%/month)"
+msgstr "Beklenen ölüm oranı (%/ay)"
+
 msgid "Experiment"
 msgstr "Deney"
 
@@ -7037,6 +7113,15 @@ msgid ""
 msgstr ""
 "FCR ve yem rakamları onsuz yeniden hesaplanır. Bir yemlemeyi düzeltmek için iptal edip yeniden "
 "kaydedin."
+
+msgid "FCR in force"
+msgstr "Geçerli FCR"
+
+msgid "FCR read between the bands from"
+msgstr "FCR’nin bantlar arasında okunmaya başladığı gün"
+
+msgid "FCR realised · expected"
+msgstr "FCR gerçekleşen · beklenen"
 
 msgid ""
 "FCR runs from stocking to the last weighing, on weighed biomass only. Dead fish leave at the last"
@@ -7195,6 +7280,14 @@ msgstr "Kullanılan yem"
 msgid "Feed on hand"
 msgstr "Eldeki yem"
 
+#, python-format
+msgid ""
+"Feed over these days: %(feed)s given, %(eaten)s eaten, %(uneaten)s uneaten; economic FCR of the "
+"period %(fcr)s; %(fish)s fish and %(biomass)s at the end."
+msgstr ""
+"Bu günlerdeki yem: %(feed)s verildi, %(eaten)s yendi, %(uneaten)s yenmedi; dönemin ekonomik "
+"FCR’si %(fcr)s; sonunda %(fish)s balık ve %(biomass)s."
+
 msgid "Feed per shot (g)"
 msgstr "Atış başına yem (g)"
 
@@ -7207,6 +7300,12 @@ msgstr "Yemleme oranı: son 7 günde günlük biyokütlenin %(rate)s kadarı"
 
 msgid "Feed size (mm)"
 msgstr "Yem boyutu (mm)"
+
+msgid "Feed that day"
+msgstr "O günün yemi"
+
+msgid "Feed to date"
+msgstr "O güne kadarki yem"
 
 msgid "Feed today"
 msgstr "Bugün verilen yem"
@@ -8045,6 +8144,9 @@ msgstr "Değerin yolunu girin: cihazın mesaj biçimi tek bir nesnedir."
 msgid "Give the volume to follow the amounts."
 msgstr "Miktarları izlemek için hacmi girin."
 
+msgid "Give the water temperature of all twelve months, or of none."
+msgstr "On iki ayın hepsinin su sıcaklığını girin ya da hiçbirini girmeyin."
+
 msgid "Give the withdrawal in degree-days, in days or both, as the SPC states it (0 when it has none)."
 msgstr "Bekleme süresini KÜB’de yazdığı gibi gün-derece, gün ya da ikisiyle girin (yoksa 0)."
 
@@ -8164,6 +8266,13 @@ msgstr "Büyütme yemi"
 msgid "Growth"
 msgstr "Büyüme"
 
+msgid "Growth plan"
+msgstr "Büyüme planı"
+
+#, python-format
+msgid "Growth plan · %(unit)s · %(batch)s"
+msgstr "Büyüme planı · %(unit)s · %(batch)s"
+
 msgid "Growth stage"
 msgstr "Büyüme evresi"
 
@@ -8257,6 +8366,9 @@ msgstr "Hasat edildi"
 msgctxt "page"
 msgid "Harvested"
 msgstr "Hasat edilenler"
+
+msgid "Harvested out"
+msgstr "Hasatla boşaltıldı"
 
 msgid "Harvesting"
 msgstr "Hasat"
@@ -8403,6 +8515,20 @@ msgstr "Kuralın istediği saat"
 msgid "How"
 msgstr "Nasıl"
 
+msgid ""
+"How an average weight was measured. Every weighing names its source, so a production plan reads "
+"the measured weights one way whatever measured them: a sample weighed by hand today, a biomass "
+"camera when the farm has one. A weighing takes “Manual sample” unless another source is chosen; "
+"the choice is offered in the weighing dialog once there is more than one source."
+msgstr ""
+"Ortalama ağırlığın nasıl ölçüldüğü. Her tartım kaynağını belirtir; böylece üretim planı, ölçülen "
+"ağırlıkları neyle ölçülmüş olursa olsun tek yoldan okur: bugün elle tartılan bir örnek, çiftlikte"
+" olduğunda bir biyokütle kamerası. Başka bir kaynak seçilmedikçe tartım “Manual sample” kaynağını"
+" alır; birden fazla kaynak olduğunda seçim tartım penceresinde sunulur."
+
+msgid "How an average weight was measured: a sample weighed by hand, a biomass camera."
+msgstr "Ortalama ağırlığın nasıl ölçüldüğü: elle tartılan bir örnek, bir biyokütle kamerası."
+
 msgid "How deep the top of the cage can be lowered."
 msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
 
@@ -8495,6 +8621,13 @@ msgstr ""
 "süresinin içine sokacak bir değişiklik önce sorar."
 
 msgid ""
+"How many days ahead a production plan walks a batch’s growth. A target weight not reached within "
+"them is said as not reached. 7 to 3650; 730 until you set another."
+msgstr ""
+"Üretim planının bir partinin büyümesini kaç gün ileriye yürüttüğü. Bu süre içinde ulaşılamayan "
+"hedef ağırlık, ulaşılamadı olarak gösterilir. 7 ile 3650 arası; siz değiştirene kadar 730."
+
+msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
 "the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
 "stay as they are. 1 to 3650; 31 until you set another."
@@ -8554,6 +8687,9 @@ msgstr ""
 
 msgid "How rations are worked out"
 msgstr "Rasyonlar nasıl hesaplanır"
+
+msgid "How the weight was measured."
+msgstr "Ağırlığın nasıl ölçüldüğü."
 
 msgid "How this was worked out"
 msgstr "Bu nasıl hesaplandı"
@@ -8919,6 +9055,9 @@ msgstr "Tamamlandı: önce onu kaydeden işlemi iptal edin."
 #, python-format
 msgid "It is not ready: %(problems)s"
 msgstr "Hazır değil: %(problems)s"
+
+msgid "It is the source of a weighing that names none: it is kept."
+msgstr "Kaynak belirtmeyen tartımın kaynağıdır: saklanır."
 
 #, python-format
 msgid "It operates %(count)d slaughter facility: keep “%(category)s” ticked."
@@ -9707,6 +9846,9 @@ msgstr ""
 "%(scale)s %(value)s ölçüldü; formül %(formula)d ve numunenin %(temperature)s °C ile %(salinity)s "
 "‰ değerleriyle NBS ölçeğine çevrildi."
 
+msgid "Measured against the plan"
+msgstr "Plana karşı ölçülen"
+
 msgid "Measured at"
 msgstr "Ölçüm zamanı"
 
@@ -9926,6 +10068,9 @@ msgstr "İkiden fazla bileşen büyük: büyükler artık öne çıkmıyor."
 
 msgid "Mortality"
 msgstr "Ölüm"
+
+msgid "Mortality a month"
+msgstr "Aylık ölüm oranı"
 
 #, python-format
 msgid "Mortality recorded: %(count)s fish of %(batch)s in %(unit)s."
@@ -10344,6 +10489,9 @@ msgstr "Bu filtrelere uyan sayım yok."
 msgid "No count recorded yet"
 msgstr "Henüz sayım kaydedilmedi"
 
+msgid "No day is planned."
+msgstr "Planlanan gün yok."
+
 msgid "No dead letters."
 msgstr "Kaydedilemeyen mesaj yok."
 
@@ -10548,6 +10696,9 @@ msgstr "Lot numarası yok"
 msgid "No manager"
 msgstr "Yönetici yok"
 
+msgid "No measured weight in this unit yet."
+msgstr "Bu birimde henüz ölçülmüş ağırlık yok."
+
 msgid "No medicine withdrawal in force."
 msgstr "Yürürlükte ilaç bekleme süresi yok."
 
@@ -10705,6 +10856,10 @@ msgstr "Tank yok"
 
 msgid "No tank is placed."
 msgstr "Yerleştirilmiş tank yok."
+
+#, python-format
+msgid "No target weight is set: the plan runs %(days)d days ahead."
+msgstr "Hedef ağırlık belirlenmedi: plan %(days)d gün ileriye yürür."
 
 msgid "No target, reagent or dosing volume is set for these fish yet."
 msgstr "Bu balıklar için henüz hedef, reaktif veya dozlama hacmi tanımlanmadı."
@@ -11408,14 +11563,17 @@ msgid ""
 "One row per weight band, from its lower weight up to, not including, its upper one; the bands "
 "meet without gaps and only the last may have no upper weight. Fish outside the bands, or in water"
 " outside the first and last temperature column, get no ration. In each cell the SFR, the %% of "
-"the body weight fed a day; 0 means no feeding at that temperature. An empty FCR is the "
-"protocol’s. The table is saved as a whole."
+"the body weight fed a day; 0 means no feeding at that temperature. An empty FCR, uneaten share or"
+" mortality is the protocol’s. The FCR and the uneaten share of fish between two bands are read in"
+" between them; the SFR is its band’s. The table is saved as a whole."
 msgstr ""
-"Her ağırlık aralığı için bir satır: alt ağırlıktan başlayıp üst ağırlığa kadar, üst ağırlık "
-"hariç; aralıklar boşluksuz birbirine bitişir ve yalnızca sonuncusunun üst ağırlığı olmayabilir. "
-"Aralıkların dışındaki balıklar ya da ilk ve son sıcaklık sütununun dışındaki sudakiler rasyon "
-"almaz. Her hücrede SFR, yani günde verilen yemin vücut ağırlığına oranı (%%); 0, o sıcaklıkta "
-"yemleme yok demektir. Boş bırakılan FCR, protokolün FCR’sidir. Tablo bir bütün olarak kaydedilir."
+"Her ağırlık bandı için bir satır: alt ağırlığından üst ağırlığına kadar (üst ağırlık dahil "
+"değil); bantlar boşluksuz birleşir ve yalnızca sonuncusu üst ağırlıksız olabilir. Bantların "
+"dışındaki ya da ilk ve son sıcaklık sütununun dışındaki sudaki balıklara rasyon verilmez. Her "
+"hücrede SFR, yani günde verilen yemin vücut ağırlığına oranı (%%) bulunur; 0, o sıcaklıkta "
+"yemleme yok demektir. Boş bırakılan FCR, yenmeyen pay ya da ölüm oranı protokolünkidir. İki bant "
+"arasındaki balığın FCR’si ve yenmeyen payı arada okunur; SFR bandının kendisininkidir. Tablo "
+"bütün olarak kaydedilir."
 
 msgid "One rule per severity is made by the platform; it is changed, never added or deleted."
 msgstr ""
@@ -12206,8 +12364,14 @@ msgstr "Plan"
 msgid "Plan a trial: its hypothesis, its groups and the tanks they get."
 msgstr "Bir deneme planlayın: hipotezi, grupları ve aldıkları tanklar."
 
+msgid "Plan from"
+msgstr "Planın başlangıcı"
+
 msgid "Plan harvest"
 msgstr "Hasat planla"
+
+msgid "Plan temperatures"
+msgstr "Plan sıcaklıkları"
 
 msgid "Plan this day"
 msgstr "Bu günü planla"
@@ -12250,8 +12414,14 @@ msgstr "Planlanan canlı ağırlık (kg)"
 msgid "Planned slaughter"
 msgstr "Planlı kesim"
 
+msgid "Planned that day"
+msgstr "O gün için planlanan"
+
 msgid "Planned today"
 msgstr "Bugün planlanan"
+
+msgid "Plans"
+msgstr "Planlar"
 
 msgid "Platform admin"
 msgstr "Platform yöneticisi"
@@ -13559,6 +13729,9 @@ msgstr "Ad, onay numarası, yer veya işletmeciye göre ara"
 msgid "Search by name, code or manufacturer"
 msgstr "Ad, kod ya da üreticiye göre ara"
 
+msgid "Search by name, code or notes"
+msgstr "Ada, koda ya da notlara göre ara"
+
 msgid "Search by name, code or region"
 msgstr "Ada, koda veya bölgeye göre ara"
 
@@ -14718,6 +14891,14 @@ msgstr "Tanklar, havuzlar ve kafesler"
 msgid "Target"
 msgstr "Hedef"
 
+#, python-format
+msgid "Target %(target)s: %(why)s"
+msgstr "Hedef %(target)s: %(why)s"
+
+#, python-format
+msgid "Target %(target)s: reached on %(date)s."
+msgstr "Hedef %(target)s: %(date)s tarihinde ulaşılır."
+
 msgid "Target CO₂"
 msgstr "Hedef CO₂"
 
@@ -14871,6 +15052,15 @@ msgstr "Veri alım servisinin bağlandığı MQTT istemci kimliği; bağlantıla
 
 msgid "The MT number, when the medicine has one."
 msgstr "İlacın varsa ruhsat (MT) numarası."
+
+msgid ""
+"The SFR is read from the fish’s own weight band at the temperature; the FCR and the uneaten share"
+" are read between the bands, without a jump. A month of mortality is 30 days; the fish that die "
+"are taken to weigh the average."
+msgstr ""
+"SFR, balığın kendi ağırlık bandından sıcaklığa göre okunur; FCR ve yenmeyen pay bantlar arasında,"
+" sıçrama olmadan okunur. Ölüm oranında bir ay 30 gündür; ölen balıkların ortalama ağırlıkta "
+"olduğu kabul edilir."
 
 msgid "The abstract or summary, as the document gives it."
 msgstr "Belgenin verdiği haliyle özet."
@@ -15627,11 +15817,13 @@ msgid "The key values"
 msgstr "Temel değerler"
 
 msgid ""
-"The kg of feed per kg of growth the table expects; a band may have its own. The estimated weight "
-"between weighings grows by the feed divided by it."
+"The kg of feed eaten per kg of growth the table expects (the biological FCR); a band may have its"
+" own. Between two bands it is read in between them, with no jump at a band’s edge. The estimated "
+"weight between weighings and the production plan grow by the feed eaten divided by it."
 msgstr ""
-"Tablonun beklediği, kg büyüme başına kg yem; bir ağırlık aralığının kendi değeri olabilir. "
-"Tartımlar arasında tahmini ağırlık, yemin bu değere bölümü kadar artar."
+"Tablonun kg büyüme başına beklediği yenen yem kg’si (biyolojik FCR); bir bandın kendi değeri "
+"olabilir. İki bant arasında, bant sınırında sıçrama olmadan arada okunur. Tartımlar arasındaki "
+"tahmini ağırlık ve üretim planı, yenen yemin buna bölümü kadar büyür."
 
 #, python-format
 msgid "The kind of factor %(name)s is not one of the two."
@@ -16340,6 +16532,26 @@ msgstr "%(place)s yerindeki sensörler: önce şu an orada olanlar, sonra daha �
 
 #, python-format
 msgid ""
+"The share of the feed given that the fish do not eat, 0 to 50 %%; a band may have its own. Empty:"
+" all of it is eaten. The feed given less this share is what grows the fish; the FCR on the feed "
+"given (the economic FCR) is worked out from the two and shown, never entered."
+msgstr ""
+"Verilen yemin balıkların yemediği payı, %%0 ile %%50 arası; bir bandın kendi değeri olabilir. "
+"Boş: hepsi yenir. Balığı büyüten, verilen yemden bu payın düşülmüş hâlidir; verilen yem üzerinden"
+" FCR (ekonomik FCR) bu ikisinden hesaplanıp gösterilir, asla girilmez."
+
+#, python-format
+msgid ""
+"The share of the fish expected to die in a month (30 days), 0 to 30 %%; a band may have its own. "
+"Empty: none. Read by the production plan only: it lowers the fish, the biomass and the feed "
+"ahead, never the average weight."
+msgstr ""
+"Bir ayda (30 gün) ölmesi beklenen balıkların payı, %%0 ile %%30 arası; bir bandın kendi değeri "
+"olabilir. Boş: yok. Yalnızca üretim planı okur: ilerideki balık sayısını, biyokütleyi ve yemi "
+"düşürür, ortalama ağırlığı asla düşürmez."
+
+#, python-format
+msgid ""
 "The shift %(shift)s and the %(window)s minutes a person may clock in before it are longer than "
 "%(hours)s hours: a person on it would count as forgotten before it ends."
 msgstr ""
@@ -16526,6 +16738,9 @@ msgstr ""
 "Hizmet ettiği sistemler, üretim departmanının sahasında: en az biri ve bunlardan biri birincil "
 "sistemi. Kritiklik, sistemin ona ne kadar bağlı olduğudur: 1 (az) ile 5 (tamamen) arası."
 
+msgid "The table shows one day a week and the last day; the file has every day."
+msgstr "Tablo haftada bir günü ve son günü gösterir; dosyada her gün vardır."
+
 #, python-format
 msgid "The tank is booked until %(day)s already: a placement is only ever shortened."
 msgstr "Tank zaten %(day)s tarihine kadar ayrılmış: bir yerleşim yalnızca kısaltılabilir."
@@ -16556,14 +16771,18 @@ msgstr ""
 
 msgid ""
 "The target weight each batch is grown to for harvest. The estimated weight now is the feeding "
-"protocols’ estimate; the day it reaches the target walks it forward on the ration of each day, at"
-" the unit’s latest temperature held, with no growth on a fasting day. The expected harvest is the"
-" date given when the batch was stocked."
+"protocols’ estimate from the feedings recorded; the plan walks it forward a day at a time, every "
+"day’s ration counted as given: the feed less the protocol’s uneaten share, divided by its FCR, at"
+" the site’s monthly water temperatures or, without them, the unit’s latest temperature held, with"
+" no growth on a fasting day. Growth plan opens the curve, the feed to the target and the measured"
+" weights beside it. The expected harvest is the date given when the batch was stocked."
 msgstr ""
-"Her partinin hasat için büyütüldüğü hedef ağırlık. Şimdiki tahmini ağırlık yemleme "
-"protokollerinin tahminidir; hedefe ulaşma günü, her günün rasyonuyla, birimin son sıcaklığı sabit"
-" tutularak ileri yürütülür; aç bırakma gününde büyüme olmaz. Beklenen hasat, parti stoklanırken "
-"verilen tarihtir."
+"Her partinin hasat için büyütüldüğü hedef ağırlık. Şimdiki tahmini ağırlık, yemleme "
+"protokollerinin kaydedilen yemlemelerden çıkardığı tahmindir; plan bunu gün gün ileriye yürütür "
+"ve her günün rasyonunu verilmiş sayar: yemden protokolün yenmeyen payı düşülür, FCR’sine bölünür;"
+" sahanın aylık su sıcaklıkları, onlar yoksa birimin sabit tutulan son sıcaklığı kullanılır; aç "
+"bırakma gününde büyüme olmaz. Büyüme planı eğriyi, hedefe kadarki yemi ve yanında ölçülen "
+"ağırlıkları açar. Beklenen hasat, parti stoklanırken girilen tarihtir."
 
 #, python-format
 msgid "The task is %(status)s: its checklist can no longer be ticked."
@@ -16649,6 +16868,10 @@ msgstr ""
 "%(units)s içinde %(start)s – %(end)s arasında %(medicine)s ile yapılan tedavi deniz biti için "
 "değil “%(reason)s” için kaydedildi, bu yüzden bu raporda yok: deniz bitine karşı verildiyse iptal"
 " edip “%(sea_lice)s” nedeniyle yeniden kaydedin."
+
+#, python-format
+msgid "The uneaten share of the feed is between 0 and 50 %%."
+msgstr "Yemin yenmeyen payı %%0 ile %%50 arasındadır."
 
 msgid "The unit factor is a number other than 0."
 msgstr "Birim çarpanı, 0 dışında bir sayıdır."
@@ -16812,6 +17035,15 @@ msgstr "Uygulandığı birimlerin suyu. Birimin su tipine ait satır, her su iç
 
 msgid "The water surface when the pond is full."
 msgstr "Havuz doluyken su yüzeyi."
+
+msgid ""
+"The water temperature a production plan reads for each day ahead in that month. Give all twelve, "
+"or none: without them a plan holds the unit’s latest temperature for every day ahead, and says "
+"so."
+msgstr ""
+"Üretim planının o aydaki her ileri gün için okuduğu su sıcaklığı. On ikisini de girin ya da "
+"hiçbirini girmeyin: bunlar olmadan plan, ilerideki her gün için birimin son sıcaklığını sabit "
+"tutar ve bunu belirtir."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
@@ -17475,6 +17707,9 @@ msgstr "Bugün; gecikmiş görevleri, bugün süresi dolanları ve bugün tamaml
 msgid "Today on the farm"
 msgstr "Bugün çiftlikte"
 
+msgid "Today’s estimate"
+msgstr "Bugünkü tahmin"
+
 msgid "Today’s ration"
 msgstr "Bugünkü rasyon"
 
@@ -17656,6 +17891,15 @@ msgstr "Bugün bekleme süresinde"
 msgid "Undo"
 msgstr "Geri al"
 
+msgid "Uneaten"
+msgstr "Yenmeyen"
+
+msgid "Uneaten feed"
+msgstr "Yenmeyen yem"
+
+msgid "Uneaten feed (%)"
+msgstr "Yenmeyen yem (%)"
+
 msgid "Unique"
 msgstr "Benzersiz"
 
@@ -17763,6 +18007,14 @@ msgstr ""
 
 msgid "Until"
 msgstr "Bitiş"
+
+#, python-format
+msgid ""
+"Until %(date)s this protocol’s FCR was read per band, with a step at each band’s edge: the days "
+"before keep that. From that day it is read between the bands."
+msgstr ""
+"%(date)s tarihine kadar bu protokolün FCR’si bant bant, her bant sınırında bir basamakla "
+"okunuyordu: önceki günler öyle kalır. O günden itibaren bantlar arasında okunur."
 
 msgid "Up to (g)"
 msgstr "Üst sınır (g)"
@@ -18063,6 +18315,10 @@ msgstr "Su numuneleri, yana kayar"
 msgid "Water source"
 msgstr "Su kaynağı"
 
+#, python-brace-format
+msgid "Water temperature ahead, {month} (°C)"
+msgstr "İlerideki su sıcaklığı, {month} (°C)"
+
 msgid "Water treatment"
 msgstr "Su arıtma"
 
@@ -18135,6 +18391,9 @@ msgstr "Tartım"
 msgid "Weighing recorded: %(batch)s in %(unit)s, average %(weight)s g."
 msgstr "Tartım kaydedildi: %(unit)s içinde %(batch)s, ortalama %(weight)s g."
 
+msgid "Weighings"
+msgstr "Tartımlar"
+
 msgid "Weight band"
 msgstr "Ağırlık aralığı"
 
@@ -18146,6 +18405,12 @@ msgstr "Ölü balıkların ağırlığı (kg)"
 
 msgid "Weight of the fish (kg)"
 msgstr "Balıkların ağırlığı (kg)"
+
+msgid "Weight source"
+msgstr "Ağırlık kaynağı"
+
+msgid "Weight sources"
+msgstr "Ağırlık kaynakları"
 
 #, python-format
 msgid "Welcome, %(name)s. The company’s figures will appear here."
@@ -18192,6 +18457,14 @@ msgstr "Neyle ilgili olduğu. Ondan alınan bilgi kayıtlarının kendi konular�
 
 msgid "What it is made for. A medicated feed is given on a vet’s prescription."
 msgstr "Ne için yapıldığı. İlaçlı yem veteriner reçetesiyle verilir."
+
+msgid "What it is, and how far its weights can be trusted."
+msgstr "Ne olduğu ve ağırlıklarına ne kadar güvenilebileceği."
+
+msgid "What measured the weight, as the pages name it: a sample weighed by hand, a biomass camera."
+msgstr ""
+"Ağırlığı neyin ölçtüğü, sayfalarda geçtiği adıyla: elle tartılan bir örnek, bir biyokütle "
+"kamerası."
 
 msgid ""
 "What only the authority can answer, and on which a rule of a report rests. Until a question is "
@@ -19446,6 +19719,9 @@ msgstr "örn. Aquaculture"
 msgid "e.g. Atlantic salmon"
 msgstr "örn. Atlantic salmon"
 
+msgid "e.g. Biomass camera"
+msgstr "ör. Biyokütle kamerası"
+
 msgid "e.g. Carbon dioxide and the growth of Atlantic salmon"
 msgstr "örn. Karbondioksit ve Atlantik somonunun büyümesi"
 
@@ -19707,6 +19983,9 @@ msgstr "faktör düzeyi"
 
 msgid "factor levels"
 msgstr "faktör düzeyleri"
+
+msgid "fasting day"
+msgstr "aç bırakma günü"
 
 #, python-format
 msgid "fed %(fed)s, %(remaining)s to go"
@@ -20702,6 +20981,10 @@ msgstr "t"
 msgid "target on %(date)s, at %(temperature)s °C held"
 msgstr "hedefe %(date)s tarihinde, %(temperature)s °C sabit"
 
+#, python-format
+msgid "target on %(date)s, at the site’s monthly temperatures"
+msgstr "hedef %(date)s, sahanın aylık sıcaklıklarıyla"
+
 msgid "target reached"
 msgstr "hedefe ulaşıldı"
 
@@ -20913,6 +21196,12 @@ msgstr "su numuneleri"
 #, python-format
 msgid "weighed %(date)s"
 msgstr "%(date)s tartıldı"
+
+msgid "weight source"
+msgstr "ağırlık kaynağı"
+
+msgid "weight sources"
+msgstr "ağırlık kaynakları"
 
 msgid "whatever is in it"
 msgstr "içinde ne varsa"

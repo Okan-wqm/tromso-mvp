@@ -88,6 +88,17 @@ class SeedTests(TestCase):
         self.assertEqual(SchedulingSettings.objects.count(), 1)
 
     @override_settings(DEBUG=True)
+    def test_it_writes_the_peoples_records_through_the_services_so_each_is_logged(self):
+        from core import audit
+        from core.models import AuditLog
+        self.seed()
+        for model in (Employee, Posting, ShiftAssignment, LeaveRequest, AttendanceRecord):
+            logged = set(AuditLog.objects.filter(entity_type=audit.entity_type_of(model), action='create')
+                         .values_list('entity_id', flat=True))
+            with self.subTest(model=model.__name__):
+                self.assertEqual({str(pk) for pk in model.objects.values_list('pk', flat=True)}, logged)
+
+    @override_settings(DEBUG=True)
     def test_the_four_roles_see_what_the_walk_through_expects(self):
         self.seed()
         client = self.client

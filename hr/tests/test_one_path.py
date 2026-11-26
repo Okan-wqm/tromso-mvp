@@ -130,8 +130,8 @@ class TabsCallTheServiceTests(PeopleTestCase):
 class AnotherClockTests(PeopleTestCase):
     """The company is on Oslo's clock (settings.COMPANY_TIME_ZONE); departments A and B are on a site in Auckland
     (UTC+13 in March). Ann is in A up to 2 March and in B from 3 March. 01:00 on 3 March in Auckland is 12:00 UTC on
-    2 March, still 2 March on the company's clock: the placement of the company's day (A) gives the site and its clock,
-    and on that clock the stretch is of 3 March, B's day (hr.read.governing)."""
+    2 March, still 2 March on the company's clock: the placement of the company's day (A) governs the stretch, so it is
+    A's lead's to enter and to list, shown on A's site's clock as 3 March 01:00 (hr.read.governing)."""
 
     def setUp(self):
         super().setUp()
@@ -150,14 +150,17 @@ class AnotherClockTests(PeopleTestCase):
                                                         {'from': '01.03.2026', 'to': '04.03.2026'}).context['objects']]
 
     def test_a_stretch_a_lead_enters_is_on_that_leads_list_and_no_one_elses(self):
-        self.client.force_login(self.boss_b)
+        self.client.force_login(self.boss_a)
         response = self.client.post(reverse('hr:production_attendancerecord_create'), {
             'employee': str(self.in_a.pk), 'clock_in': '2026-03-03T01:00', 'clock_out': '2026-03-03T05:00',
             'note': 'Phone was dead'})
         self.assertEqual(response.status_code, 302, response.context and response.context['form'].errors)
         record = AttendanceRecord.objects.get()
         self.assertEqual(record.clock_in, datetime(2026, 3, 2, 12, tzinfo=UTC))
-        self.assertEqual((self.listed(self.boss_b), self.listed(self.boss_a)), ([record.pk], []))
+        self.assertEqual((self.listed(self.boss_a), self.listed(self.boss_b)), ([record.pk], []))
+        self.client.force_login(self.boss_a)
+        shown = self.client.get(reverse('hr:production_attendancerecord_edit', args=[record.pk])).context['form']
+        self.assertEqual(shown['clock_in'].value().isoformat(), '2026-03-03T01:00:00')
 
 
 class MoveDayBoardTests(FrozenClock, PeopleTestCase):
@@ -224,3 +227,128 @@ class PlanPerDayTests(FrozenClock, PeopleTestCase):
         said = [str(message) for message in get_messages(response.wsgi_request)]
         self.assertIn('You do not plan your own days.', said)
         self.assertEqual(ShiftAssignment.objects.count(), 0)
+
+
+# ---- the review of the branch (F:/dev/balik-notes/hr-one-path/REVIEW-1.md) ------------------------------------------
+def hr_functions():
+    """(module, function node) of every function of the HR production code."""
+    import ast
+    from pathlib import Path
+    hr = Path(__file__).resolve().parent.parent
+    for path in sorted(hr.rglob('*.py')):
+        if 'tests' in path.parts or 'migrations' in path.parts:
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
+            if isinstance(node, ast.FunctionDef):
+                yield path.relative_to(hr.parent).as_posix(), node
+
+
+class OnePlaceTests(PeopleTestCase):
+    def test_the_week_starts_in_one_place(self):
+        self.assertEqual([module for module, function in hr_functions() if function.name == 'monday'], ['hr/rules.py'])
+
+    def test_the_person_is_locked_by_one_helper_at_one_strength(self):
+        """L-1: every lock of a person's row is hr.services.lock_person's or lock_people's (FOR NO KEY UPDATE)."""
+        import ast
+        found = {f'{module}:{function.name}' for module, function in hr_functions()
+                 if 'Employee.objects.select_for_update' in ast.unparse(function)}
+        self.assertEqual(found, {'hr/services.py:lock_person', 'hr/services.py:lock_people'})
+
+
+class PlanRaceTests(PeopleTestCase):
+    """M-3: a plan saved between a dialog's check and its save is not overwritten: Create expects no plan for the cell,
+    Edit the plan it read."""
+
+    def setUp(self):
+        super().setUp()
+        self.planner = user('planner', *EVERY_VERB, group='Planner role')
+        ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=self.planner)
+        self.early = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
+        self.late = Shift.objects.create(name='Late', code='LATE', starts_at=time(14), ends_at=time(22))
+        self.client.force_login(self.planner)
+
+    def test_a_create_that_meets_a_plan_saved_meanwhile_is_refused_and_changes_nothing(self):
+        from ..resources.roster import ShiftAssignmentResource
+        create = ShiftAssignmentResource.create_record.__func__
+
+        def raced(cls, request, form):
+            ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 2), shift=self.late)   # another lead's
+            return create(cls, request, form)
+        with mock.patch.object(ShiftAssignmentResource, 'create_record', classmethod(raced)):
+            response = self.client.post(reverse('hr:production_shiftassignment_create'), {
+                'employee': str(self.in_a.pk), 'day': '2026-03-02', 'shift': str(self.early.pk), 'note': ''})
+        self.assertEqual(response.context['form'].errors, {'day': ['This person already has a plan for this day.']})
+        self.assertEqual(ShiftAssignment.objects.count(), 0)                  # the raced row went with the refused save
+
+    def test_the_service_refuses_a_cell_that_is_not_as_the_caller_expects(self):
+        other = ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 2), shift=self.late)
+        elsewhere = ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 3), shift=self.late)
+        for expected in (None, elsewhere):
+            with self.subTest(expected=expected), self.assertRaisesMessage(
+                    Exception, 'This person already has a plan for this day.'):
+                services.plan_day(self.planner, self.in_a, date(2026, 3, 2), self.early, '', expected)
+        other.refresh_from_db()
+        self.assertEqual((other.shift, other.version), (self.late, 1))
+        row, _warnings = services.plan_day(self.planner, self.in_a, date(2026, 3, 2), self.early, '', other)
+        self.assertEqual((row.pk, row.shift), (other.pk, self.early))
+
+
+class BatchPlanBoundTests(PlanPerDayTests):
+    def test_two_cells_centuries_apart_are_checked_cell_by_cell(self):
+        """L-2: the view asks the reach of each cell, never a set of every day between the first and the last."""
+        from .. import scope
+        with mock.patch.object(scope, '_days', side_effect=AssertionError('a span of days was built')):
+            response = self.paint((self.in_a, date(1900, 1, 1)), (self.in_a, date(2100, 12, 31)))
+        self.assertIn(response.status_code, (302, 404))
+        self.assertEqual(ShiftAssignment.objects.count(), 0)
+
+
+class LeaveReachTests(LeaveTestCase):
+    """L-4: a request is filed and moved only to a first day on which the person is the user's (the day it is listed and
+    decided by). Ann is the lead's until 31 May 2027 and another lead's from June."""
+
+    def setUp(self):
+        super().setUp()
+        Posting.objects.filter(employee=self.in_a).update(valid_until=date(2027, 5, 31))
+        place(self.in_a, self.dept_b, start=date(2027, 6, 1))
+
+    def test_a_lead_does_not_file_for_a_first_day_that_is_another_leads(self):
+        response = self.file(self.lead, self.in_a, date(2027, 6, 7), date(2027, 6, 8))
+        self.assertEqual(response.context['form'].errors, {'first_day': ['You do not see this person on this day.']})
+        self.assertEqual(self.file(self.ann_user, self.in_a, date(2027, 6, 7), date(2027, 6, 8)).status_code, 302)
+
+    def test_a_lead_does_not_move_a_request_to_a_first_day_that_is_another_leads(self):
+        request = request_for(self.in_a, date(2027, 5, 24), date(2027, 5, 25), self.annual)
+        with self.assertRaisesMessage(Exception, 'You do not see this person on this day.'):
+            services.change_leave(self.lead, request, self.annual, date(2027, 6, 7), date(2027, 6, 8))
+        request.refresh_from_db()
+        self.assertEqual(request.first_day, date(2027, 5, 24))
+        services.change_leave(self.lead, request, self.annual, date(2027, 5, 27), date(2027, 5, 28))
+
+
+class RefusedAtTheSaveTests(PeopleTestCase):
+    def test_a_refusal_at_the_save_answers_422_on_create_as_on_edit(self):
+        """L-6: the form again with the reason, and the status every refusal at the save has."""
+        lead = user('boss', *EVERY_VERB, group='Lead role')
+        ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=lead)
+        self.client.force_login(lead)
+        response = self.client.post(reverse('hr:production_attendancerecord_create'), {
+            'employee': str(self.in_a.pk), 'clock_in': '2026-03-02T07:00', 'clock_out': '', 'note': ''})
+        self.assertEqual((response.status_code, list(response.context['form'].errors)), (422, ['note']))
+        self.assertEqual(AttendanceRecord.objects.count(), 0)
+
+
+class RestoreTests(PeopleTestCase):
+    def test_the_admins_restore_refuses_a_record_its_service_writes(self):
+        """M-2: a voided stretch brought back by the delete plan's restore would skip the service's rules (the lead's
+        reach, the employment, never one's own): it is refused with the way forward, and nothing changes."""
+        from django.core.exceptions import ValidationError
+
+        from core import softdelete
+        record = AttendanceRecord.objects.create(employee=self.in_a, clock_in=datetime(2026, 3, 2, 6, tzinfo=UTC),
+                                                 clock_out=datetime(2026, 3, 2, 14, tzinfo=UTC), via='self')
+        record.soft_delete(self.hr)
+        with self.assertRaises(ValidationError) as refused:
+            softdelete.restore(record, self.hr)
+        self.assertIn('enter it again', ' '.join(refused.exception.messages))
+        self.assertTrue(AttendanceRecord.all_objects.get(pk=record.pk).is_deleted)

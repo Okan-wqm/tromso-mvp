@@ -22,6 +22,18 @@ no database, about a second.
   shared builders, PRESENTATION): they shape what their view read through the area's reader into an island's props, so
   they neither write nor query (no manager, no `get_object_or_404`, no cursor). Every module named like a builder is one
   of them or is listed in NOT_PRESENTATION with its reason.
+- **Rule S, one writer per record** (the architecture audit of 26.11.2026, H-5). A kind of record is written by its tab
+  (core.crud saves the form) or by its area's service, never by both: two writers keep two copies of its rules. A model
+  that declares `service_written = True` (HR's people, placements, plans, leave requests and attendance) is written by
+  its app's `services.py` only: every tab of it hands every write it offers to the service
+  (`Resource.service_writes`; each hook is read and must call into `services`, itself or through a method of its own
+  class), has no `after_save`, and NO other production module (a view, a command, the admin, another app) builds or
+  writes it by name; the delete plan's restore refuses it (core.softdelete.restore). The models a `services.py` writes
+  are found, not listed: those it logs (`audit.entity_type_of(Model)`), builds (`Model(...)`) or writes through a
+  manager, the name resolved by the module's own imports. What is not yet one writer is a ratchet, exact and never
+  raised: the tabs crud still saves beside a service that writes their model (SECOND_WRITER_TABS, each with what the
+  two writers are; closed on wip/one-writer-guard) and the modules that build or write an undeclared service-written
+  model by name (BUILT_ELSEWHERE, a count and a reason).
 
 The scan is by name: it sees the usual spellings (a write through `getattr` or a variable holding a manager is not
 seen). It keeps developers inside the layers; the database's roles keep a mistake or a compromise from rewriting
@@ -183,6 +195,126 @@ PRESENT_ALLOWED = {
                                'the ledger, not a count of fish now',
     'farm/health/read.py': 'the fish a health event recorded, per event: what was handled, not what is there',
 }
+
+# ---- rule S ------------------------------------------------------------------------------------------------------------
+SERVICE_WRITES = {'save', 'create', 'bulk_create', 'bulk_update', 'update', 'delete', 'soft_delete', 'get_or_create',
+                  'update_or_create'}
+HOOKS = (('add', 'create_record'), ('change', 'change_record'), ('delete', 'delete_record'))
+# {tab: the two writers}: a tab crud saves although its area's service writes the same model too. Found when the guard
+# came (the review of wip/hr-one-path, M-2); each is looked at and closed on wip/one-writer-guard. Never add one.
+SECOND_WRITER_TABS = {
+    'ReportResource': "crud creates and edits a draft's answers; reports.services.submit files it (status, receipt, "
+                      'frozen content) and start_correction creates a draft of its own: a second creator',
+    'TaskResource': 'crud creates and edits a task; tasks.services moves its status (start, complete, cancel, reopen) and '
+                    'materialise creates the tasks of a series: a second creator',
+    'ExperimentResource': "crud creates and edits an experiment's own columns (with an after_save); experiments.services "
+                          'writes its allocation and status (save_places, randomise, start) and copy creates one: a '
+                          'second creator',
+    'CardTemplateResource': 'crud creates and edits a template; monitoring.services.copy_template creates its copy: a '
+                            'second creator',
+}
+# {(module, model): (count, reason)}: an undeclared service-written model built or written by name outside its service.
+BUILT_ELSEWHERE = {
+    ('alarms/engine.py', 'Notification'): (2, "the pass builds the notifications alarms.services.queue_many writes"),
+    ('alarms/engine.py', 'Escalation'): (1, "the pass builds the escalations alarms.services writes in one statement"),
+    ('alarms/sources.py', 'AlarmSubjectState'): (1, "a subject's state built for the pass; alarms.services writes them"),
+    ('farm/forms/feeding.py', 'FeedingRecord'): (1, "the feeding form's empty instance on its unit; the save is the "
+                                                    "service's"),
+    ('farm/forms/health.py', 'Treatment'): (1, "the treatment form's empty instance; the save is the service's"),
+    ('farm/forms/health.py', 'LiceCount'): (1, "the lice count form's empty instance; the save is the service's"),
+    ('farm/water/rederive.py', 'WaterMeasurement'): (1, 'the pH re-derivation behind the gate (WRITES_ALLOWED)'),
+}
+
+
+def _models():
+    from django.apps import apps
+    found = {}
+    for model in apps.get_models():
+        found.setdefault(model.__name__, []).append(model)
+    return found
+
+
+def _imported(module, tree):
+    """{name: the absolute module it is imported from} for the `from x import name` lines of a module."""
+    package = module.split('/')[:-1]
+    found = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            base = package[:len(package) - node.level + 1] if node.level else []
+            source = '.'.join([*base, *(node.module.split('.') if node.module else [])])
+            for alias in node.names:
+                found[alias.asname or alias.name] = source
+    return found
+
+
+def models_written(module, tree, models=None):
+    """Counter of the models a module builds or writes by name (`Model(...)`, `Model.objects....create()`), and those it
+    logs (`audit.entity_type_of(Model)`, counted 0: a write through a variable is seen by its log entry): {model: n}. A
+    name is a model when the module imports it from that model's app."""
+    models = models or _models()
+    imported = _imported(module, tree)
+    found = Counter()
+
+    def model_named(name):
+        source = imported.get(name, '')
+        return next((model for model in models.get(name, ())
+                     if source.split('.')[0] == model.__module__.split('.')[0] and 'models' in source.split('.')), None)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Attribute) and func.attr == 'entity_type_of' and node.args \
+                and isinstance(node.args[0], ast.Name) and model_named(node.args[0].id):
+            found[model_named(node.args[0].id)] += 0
+        elif isinstance(func, ast.Name) and model_named(func.id):
+            found[model_named(func.id)] += 1
+        elif isinstance(func, ast.Attribute) and func.attr in SERVICE_WRITES:
+            chain = _chain(func.value)
+            if len(chain) > 1 and chain[1] in MANAGERS and model_named(chain[0]):
+                found[model_named(chain[0])] += 1
+    return found
+
+
+def service_written():
+    """{model: the services.py that writes it} for every model its own app's services write."""
+    models = _models()
+    found = {}
+    for module, tree in production_modules():
+        if module.endswith('/services.py'):
+            for model in models_written(module, tree, models):
+                if module.split('/')[0] == model.__module__.split('.')[0]:
+                    found[model] = module
+    return found
+
+
+def written_elsewhere(owners):
+    """{(module, model name): count} of the service-written models built or written by name outside their service."""
+    models = _models()
+    found = {}
+    for module, tree in production_modules():
+        for model, count in models_written(module, tree, models).items():
+            if count and model in owners and owners[model] != module:
+                found[(module, model.__name__)] = count
+    return found
+
+
+def calls_a_service(tab, hook, seen=()):
+    """Whether a tab's hook calls into `services` (the area's service module, by the name every area imports it under),
+    itself or through a method of its own class."""
+    import inspect
+    import textwrap
+    tree = ast.parse(textwrap.dedent(inspect.getsource(getattr(tab, hook))))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            chain = _chain(node.func)
+            if chain[:1] == ['services'] and len(chain) > 1:
+                return True
+            if chain[:1] == ['cls'] and len(chain) == 2 and chain[1] not in seen and hasattr(tab, chain[1]) \
+                    and calls_a_service(tab, chain[1], (*seen, hook)):
+                return True
+    return False
+
 
 # ---- rule V ------------------------------------------------------------------------------------------------------------
 # A props builder is found by what it is, wherever it lives (the landing review, M-3): a function named for what crud and
@@ -558,3 +690,84 @@ class NonLiteralSqlTests(SimpleTestCase):
         counts = {module: len(data['sql']) for module, data in scan().items() if data['sql']}
         self.assertEqual(counts, {module: ceiling for module, (ceiling, _why) in NON_LITERAL_SQL.items()},
                          'SQL run from a name: rule W cannot read its verb. Use a literal, or list it with its reason.')
+
+
+class OneWriterTests(SimpleTestCase):
+    """Rule S. The tabs are the declared ones (the URL configuration declares every Resource)."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from importlib import import_module
+
+        from django.conf import settings
+
+        from core.crud import Resource
+        import_module(settings.ROOT_URLCONF)
+        cls.Resource = Resource
+        cls.owners = service_written()
+        cls.declared = {model for models in _models().values() for model in models
+                        if getattr(model, 'service_written', False)}
+
+    def test_the_scan_finds_what_the_services_write(self):
+        names = {model.__name__ for model in self.owners}
+        self.assertTrue({'AttendanceRecord', 'Employee', 'LeaveRequest', 'Posting', 'ShiftAssignment', 'StockOperation',
+                         'Task', 'Report'} <= names, names)
+        self.assertEqual({model.__name__ for model in self.declared},
+                         {'AttendanceRecord', 'Employee', 'LeaveRequest', 'Posting', 'ShiftAssignment'})
+
+    def test_a_declared_model_is_written_by_its_service(self):
+        for model in self.declared:
+            with self.subTest(model=model.__name__):
+                self.assertIn(model, self.owners, f'{model.__name__} says service_written and no services.py of its app '
+                                                  'writes it')
+
+    def test_a_tab_of_a_declared_model_hands_every_write_to_the_service(self):
+        Resource = self.Resource
+        for tab in Resource.registry:
+            with self.subTest(tab=tab.__name__):
+                if tab.model not in self.declared:
+                    self.assertFalse(tab.service_writes, f'{tab.__name__}: {tab.model.__name__} does not declare '
+                                                         'service_written')
+                    continue
+                self.assertTrue(tab.service_writes, f'{tab.__name__}: {tab.model.__name__} is written by its service '
+                                                    'only, so the tab hands its writes to it (Resource.service_writes)')
+                for action, hook in HOOKS:
+                    if tab.allows(action):
+                        self.assertIsNot(getattr(tab, hook).__func__, getattr(Resource, hook).__func__,
+                                         f'{tab.__name__} offers {action}: its {hook} calls the service')
+                        self.assertTrue(calls_a_service(tab, hook), f'{tab.__name__}.{hook} calls no service')
+                self.assertIs(tab.after_save.__func__, Resource.after_save.__func__,
+                              f'{tab.__name__}: crud never runs after_save on a tab the service writes')
+
+    def test_nothing_else_builds_or_writes_a_declared_model(self):
+        found = {key: count for key, count in written_elsewhere(self.owners).items()
+                 if key[1] in {model.__name__ for model in self.declared}}
+        self.assertEqual(found, {}, 'A model that declares service_written is written by its services.py only: call the '
+                                    'service (a command acts as a person who may).')
+
+    def test_the_tabs_crud_still_saves_beside_a_service_are_the_listed_ones(self):
+        found = {tab.__name__ for tab in self.Resource.registry
+                 if tab.model in self.owners and not tab.service_writes}
+        self.assertEqual(found, set(SECOND_WRITER_TABS), 'A tab whose model its service writes too: hand its writes to '
+                                                         'the service (service_writes); a closed one leaves the list.')
+        for tab, why in SECOND_WRITER_TABS.items():
+            self.assertTrue(why.strip(), tab)
+
+    def test_what_is_built_outside_its_service_is_listed_with_its_reason(self):
+        declared = {model.__name__ for model in self.declared}
+        found = {key: count for key, count in written_elsewhere(self.owners).items() if key[1] not in declared}
+        self.assertEqual(found, {key: count for key, (count, _why) in BUILT_ELSEWHERE.items()},
+                         'A service-written model built or written by name outside its service: lower a count with a '
+                         'fix, never raise it.')
+
+    def test_the_scan_sees_a_second_writer_in_any_module(self):
+        """The mutation the review ran: a write of a person in a view."""
+        tree = ast.parse('from .models import Employee' + chr(10) + 'def sneaky(pk, day):' + chr(10)
+                         + '    Employee.objects.filter(pk=pk).update(left_on=day)')
+        self.assertEqual({model.__name__: count for model, count in models_written('hr/views.py', tree).items()},
+                         {'Employee': 1})
+        elsewhere = ast.parse('from hr.models import ShiftAssignment' + chr(10) + 'ShiftAssignment(day=None)')
+        self.assertEqual({model.__name__ for model in models_written('tasks/views.py', elsewhere)}, {'ShiftAssignment'})
+        other = ast.parse('class Report:' + chr(10) + '    pass' + chr(10) + 'Report()')
+        self.assertEqual(models_written('sensors/demo.py', other), Counter())

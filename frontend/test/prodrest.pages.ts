@@ -50,7 +50,7 @@ const EXPECTED: Record<string, string[]> = {
     .map((name) => `feeding-${name}`),
   // Operations › Harvest (farm/harvest/pages.py, lists.py) and Health (farm/health/pages.py, lists.py)
   'farm.tests.test_harvest_pages_next': ['harvested-en', 'harvested-nb', 'harvested-tr', 'harvested-batch-en', 'plan-en',
-    'targets-en'].map((name) => `harvest-${name}`),
+    'targets-en', 'growth-plan-en'].map((name) => `harvest-${name}`),
   // the farm's operation dialogs opened as pages (farm/dialogs.py)
   'farm.tests.test_farm_dialogs_next': ['feed', 'meal', 'feed-void', 'treat', 'last-day', 'treat-void', 'event-void', 'lice',
     'lice-void', 'harvest', 'transfer', 'stock-void'].map((name) => `dialog-${name}-en`).concat(['dialog-treat-nb', 'dialog-treat-tr']),

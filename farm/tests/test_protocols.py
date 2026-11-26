@@ -57,9 +57,11 @@ def cells(*pairs):
     return tuple(Cell(D(str(temperature)), D(str(sfr))) for temperature, sfr in pairs)
 
 
-def band(low, high, meals=4, fcr=None, table=((12, '1.10'), (14, '1.30')), feed='GR-4', pk=1):
+def band(low, high, meals=4, fcr=None, table=((12, '1.10'), (14, '1.30')), feed='GR-4', pk=1, uneaten=None,
+         mortality=None):
     return Band(pk, D(str(low)), None if high is None else D(str(high)), feed, meals,
-                None if fcr is None else D(str(fcr)), cells(*table))
+                None if fcr is None else D(str(fcr)), cells(*table), None if uneaten is None else D(str(uneaten)),
+                None if mortality is None else D(str(mortality)))
 
 
 @dataclass
@@ -80,8 +82,11 @@ class Row:
         return 'batch_in_unit' if self.unit_id and self.batch_id else 'unit' if self.unit_id else 'batch'
 
 
-def protocol(name='Trout grow-out', species='S', fcr='1.00'):
+def protocol(name='Trout grow-out', species='S', fcr='1.00', uneaten=None, mortality=None, interpolated_from=None):
     return SimpleNamespace(name=name, species_id=species, expected_fcr=D(fcr), pk=name, species=species,
+                           uneaten_pct=None if uneaten is None else D(uneaten),
+                           mortality_pct_month=None if mortality is None else D(mortality),
+                           interpolated_from=interpolated_from,
                            __str__=lambda self: name)
 
 
@@ -130,10 +135,13 @@ class LookupTests(SimpleTestCase):
         cold = policy(temp=temperature('4.0')).basis('T1', 'B1', nov(2), D(80))
         self.assertEqual((cold.missing, cold.fcr), (ration.OUTSIDE_TABLE, D('1.00')))   # the FCR needs the band only
         ok = policy().basis('T1', 'B1', nov(2), D(80))
-        self.assertEqual((ok.missing, ok.sfr.value, ok.meals, ok.fcr, ok.fcr_source), ('', D('1.22'), 4, D('1.00'),
-                                                                                         'protocol'))
+        self.assertEqual((ok.missing, ok.sfr.value, ok.meals, ok.fcr), ('', D('1.22'), 4, D('1.00')))
         small = policy().basis('T1', 'B1', nov(2), D(20))
-        self.assertEqual((small.fcr, small.fcr_source), (D('0.90'), 'band'))
+        self.assertEqual(small.fcr, D('0.90'))                 # below the first band's middle (25 g): its own FCR
+        # between the middles of the 0–50 g band (25 g, FCR 0.90) and of the 50–100 g band (75 g, 1.00): read in between
+        self.assertEqual(policy().basis('T1', 'B1', nov(2), D(50)).fcr, D('0.95'))
+        self.assertEqual(policy().basis('T1', 'B1', nov(2), D(40)).fcr, D('0.93'))
+        self.assertEqual((ok.uneaten_pct, ok.economic_fcr, ok.mortality_pct_month), (0, D('1.00'), None))
         self.assertEqual(ok.ration_kg(D(1170)), D('14.274'))
 
     def test_precedence_batch_in_unit_then_unit_then_whole_batch(self):

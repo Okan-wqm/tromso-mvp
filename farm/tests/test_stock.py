@@ -21,7 +21,7 @@ from core.audit import message
 from core.models import AuditLog, Profile
 
 from ..models import (
-    Batch, ProductionDepartment, Site, Species, StockMovement, StockOperation, Supplier, Tank,
+    Batch, ProductionDepartment, Site, Species, StockMovement, StockOperation, Supplier, Tank, WeightSource,
 )
 from ..stock import integrity, read, services
 from ..stock.fold import Line, Op, StockError, fold
@@ -530,12 +530,15 @@ class ConstraintTests(StockTestCase):
             {'kind': 'input', 'count_delta': 5, 'avg_weight_g': 1, 'measured_weight_kg': 1},   # measured on a removal only
             {'kind': 'input', 'count_delta': 5, 'avg_weight_g': 1, 'size_class': 'L'},          # size on a move only
             {'kind': 'escape', 'count_delta': -5},                                     # kind
+            {'kind': 'weighing', 'count_delta': 0, 'avg_weight_g': 10},                # a weighing names its source
+            {'kind': 'input', 'count_delta': 5, 'avg_weight_g': 1, 'weight_source': WeightSource.manual()},  # only it
         ]
         for fields in bad:
             with self.subTest(fields=fields), self.assertRaises(IntegrityError), transaction.atomic():
                 StockMovement.objects.create(**good, **fields)
         StockMovement.objects.create(**good, kind='weighing', count_delta=0, avg_weight_g=Decimal('33.3333'),
-                                     sample_count=3, sample_weight_kg=Decimal('0.1'))
+                                     sample_count=3, sample_weight_kg=Decimal('0.1'),
+                                     weight_source=WeightSource.manual())
         with self.assertRaises(IntegrityError), transaction.atomic():
             StockOperation.objects.filter(pk=operation.pk).update(is_deleted=True)          # a void needs its reason
         with self.assertRaises(IntegrityError), transaction.atomic():

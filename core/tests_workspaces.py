@@ -216,6 +216,7 @@ class MenuPlacementTests(TestCase):
             'farm.Medicine': 'Production · Setup · Reference data',
             'farm.SlaughterFacility': 'Production · Setup · Harvest and logistics',
             'farm.HandlingRule': 'Production · Setup · Reference data',
+            'farm.WeightSource': 'Production · Setup · Reference data',
             'monitoring.CardTemplate': 'Production · Setup · Reference data',
             'monitoring.CardTemplateAssignment': 'Production · Setup · Reference data',
             'monitoring.PhWindowScale': 'Production · Setup · Reference data',

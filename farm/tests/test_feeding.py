@@ -77,8 +77,10 @@ class WalkTests(SimpleTestCase):
         walked, days = worked_example()
         stay = walked.stays[('T1', 'B1')][-1]
         self.assertEqual(stay.points, [
-            Point(PointKind.START, oct_(1), Decimal(500), Decimal(0), Decimal(0), Decimal(0)),
-            Point(PointKind.WEIGHING, oct_(15), Decimal(686), Decimal(10), Decimal(10), Decimal(0))])
+            Point(PointKind.START, oct_(1), Decimal(500), Decimal(0), Decimal(0), Decimal(0), 10000, 1),
+            Point(PointKind.WEIGHING, oct_(15), Decimal(686), Decimal(10), Decimal(10), Decimal(0), 9800, 3)])
+        # each point keeps its fish and the line that measured it: 686 kg over 9,800 fish is the 70 g weighed
+        self.assertEqual([point.avg_weight_g for point in stay.points], [Decimal(50), Decimal(70)])
         window = read.window(stay)
         self.assertEqual((window.feed_kg, window.gain_kg, window.economic_gain_kg), (168, 196, 186))
         conversion = read.Conversion([window])

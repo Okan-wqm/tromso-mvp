@@ -85,6 +85,41 @@ class HarvestPagesNextTests(FrozenClock, TestCase):
                     if language == 'en':
                         keep(f'harvest-{key}-en', {'island': 'list-page', 'props': props})
 
+    def test_a_batchs_growth_plan_says_the_same_in_both_looks_in_three_languages(self):
+        from farm.models import ProductionPlan, Tank
+        plan, tank = ProductionPlan.objects.get(), Tank.objects.get(code='TT-01')
+        url = reverse('farm:production_plan', args=[tank.pk, plan.batch.pk])
+        for language in ('en', 'nb', 'tr'):
+            with self.subTest(language=language):
+                from core.language import save_account_language
+                save_account_language(self.admin, language)
+                self.client.cookies['django_language'] = language
+                old = self.client.get(url, {'ui': 'classic'}).content.decode()
+                old = old.replace('ui%3Dclassic', 'ui%3Dnext').replace('ui=classic', 'ui=next')
+                new = self.client.get(url, {'ui': 'next'}).content.decode()
+                props = props_of(new, 'list-page')
+                self.assertTrue(props['sections'][0]['rows'])          # the stocking, a measured point
+                self.assertEqual(unsaid(old, props, new_html=new), [])
+                if language == 'en':
+                    keep('harvest-growth-plan-en', {'island': 'list-page', 'props': props})
+
+    def test_no_feeding_table_of_the_test_world_moves_with_the_interpolation(self):
+        # Owner decision 9 (production plan, 2026-11-26): before the FCR is read between the bands, how far do the
+        # estimates and the reach days of the test world move? Not at all: every table of the test world has one FCR
+        # in all its bands, and one value read between its anchors is that value at every weight.
+        from farm.feeding.growth import anchor
+        from farm.feeding.read import tables
+        from farm.models import FeedingProtocol
+        found = tables(list(FeedingProtocol.all_objects.values_list('pk', flat=True)))
+        self.assertGreaterEqual(len(found), 3)
+        for table in found.values():
+            self.assertEqual(len({table.fcr_of(band) for band in table.bands}), 1, table.protocol)
+            for band in table.bands:
+                for weight in (band.min_weight_g, anchor(band.min_weight_g, band.max_weight_g),
+                               band.min_weight_g + 1):
+                    self.assertEqual(table.fcr_at(weight), table.fcr_of(band))
+                    self.assertEqual(table.uneaten_at(weight), 0)
+
     def test_a_withdrawal_on_a_plans_day_is_said_and_marks_the_row_critical(self):
         _old, new = self.pages('farm:handlingplanitem_list')
         rows = props_of(new, 'list-page')['table']['rows']

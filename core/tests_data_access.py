@@ -63,6 +63,9 @@ MODEL_WRITERS = ('save', 'delete', 'soft_delete', '_write', 'restore', 'note')
 # (d) {module: (ceiling, reason)}: writes outside (a) to (c), counted per module. Lower a ceiling with a fix, never raise it.
 WRITES_ALLOWED = {
     'core/language.py': (1, "a person's language, their own profile's one field (core.language.set_language)"),
+    'core/sealing.py': (2, 'the read log (core.AccessEvent): who read which confidential record, written where the read '
+                           'happens, one row or one statement for a page of them (log_access, log_accesses)'),
+    'experiments/roles.py': (1, 'the recommended roles of manage.py experiments_roles (a command, as hr/roles.py)'),
     'core/rev.py': (2, "the revision counters' repair (manage.py core_rev_*): the database moves them, these "
                        'restore them'),
     'farm/equipment_types.py': (2, "the equipment types' seed, run by a migration's RunPython on the historical "

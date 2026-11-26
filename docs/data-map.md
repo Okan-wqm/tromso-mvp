@@ -447,7 +447,7 @@ Who read which confidential record, when and how: the one read log (the activity
 - **how it works**: The read log of confidential records; an experiment’s lead reads its rows on the Who looked tab.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › core_access_events
 - **constraints**: chk_access_events_kind (check)
-- **tests that mention it**: `core/test_database.py`, `core/tests_sealing.py`, `experiments/tests/test_access.py` and 3 more
+- **tests that mention it**: `core/test_database.py`, `core/tests_data_access.py`, `core/tests_sealing.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

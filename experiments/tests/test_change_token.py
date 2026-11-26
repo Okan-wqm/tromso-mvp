@@ -61,8 +61,9 @@ class TokenCase(TestCase):
             return read.change_token(user, '')
 
     def hidden_write(self):
-        """A water sample on X's tank, written through the service as anyone writes one (logged)."""
-        water_services.record(self.lead, point=self.sealed_point, measured_at=timezone.now() - timedelta(minutes=5),
+        """A water sample on X's tank, written through the service as anyone writes one (logged; by the platform admin,
+        who holds the right to record water)."""
+        water_services.record(self.boss, point=self.sealed_point, measured_at=timezone.now() - timedelta(minutes=5),
                               source='manual', values={'ph': Decimal('7.0')})
 
     def poll(self, user, *more):

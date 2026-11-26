@@ -12,11 +12,13 @@ Who may download it: whoever reads the experiment's data (its team, a grantee of
 experiments.sealing.parts_of); every download goes to the read log (core.sealing.log_access, EXPORT), the team's too."""
 import csv
 import io
-from django.db.models import Q
 from django.utils import timezone
 
 from core.dates import company_zone
-from farm.models import FeedingRecord, LiceCount, StockMovement, WaterMeasurement
+from farm.feeding import read as feeding_read
+from farm.health import read as health_read
+from farm.stock import read as stock_read
+from farm.water import read as water_read
 from farm.water.parameters import COLUMNS as WATER_COLUMNS
 
 from . import read
@@ -58,24 +60,19 @@ def rows(experiment):
                 found.append((day, clock, cell.group.name, f'R{cell.replicate.number}', cell.unit.code, record, source,
                               variable, _number(value)))
 
-    for row in (FeedingRecord.objects.filter(unit__in=units, date__range=(first, last), target=target)
-                .select_related('feed')):
+    for row in feeding_read.records(units, first, last, target):
         for cell in places(row.unit_id, row.date):
             add(cell, row.date, _clock(row.time), 'feeding', row.feed.code or row.feed.name,
                 [('amount_kg', row.amount_kg), ('meals', row.meals)])
-    for line in (StockMovement.objects.filter(unit__in=units, operation__is_deleted=False,
-                                              operation__date__range=(first, last))
-                 .select_related('operation', 'batch')):
+    for line in stock_read.lines_of(units, first, last):
         for cell in places(line.unit_id, line.operation.date):
             add(cell, line.operation.date, '', 'stock', f'{line.operation.kind} {line.kind} {line.batch.code}',
                 [(name, getattr(line, name)) for name in STOCK_VALUES])
-    for count in LiceCount.objects.filter(unit__in=units, date__range=(first, last)):
+    for count in health_read.lice_counts(units, first, last):
         for cell in places(count.unit_id, count.date):
             add(cell, count.date, '', 'lice', '', [(name, getattr(count, name)) for name in LICE_VALUES])
     systems = {cell.unit.system_id for cell in cells if cell.unit.system_id}
-    samples = WaterMeasurement.objects.filter(Q(point__unit__in=units) | Q(point__system__in=systems)).select_related(
-        'point')
-    for sample in samples:
+    for sample in water_read.live_samples_at(units, systems):
         moment = timezone.localtime(sample.measured_at, zone)
         day = moment.date()
         if not first <= day <= last:

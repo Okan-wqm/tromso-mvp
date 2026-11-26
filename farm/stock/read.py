@@ -665,3 +665,10 @@ def harvests_on(unit, first, last):
     harvests a unit's water history marks (Tank › Water)."""
     return (StockOperation.objects.filter(movements__unit=unit, movements__kind=MovementKind.HARVEST, date__gte=first,
                                           date__lte=last).distinct().order_by('date'))
+
+
+def lines_of(unit_ids, first, last):
+    """The live stock lines of these units whose operation is dated from `first` to `last` (both included), with their
+    operation and batch: the ledger's rows as recorded (an experiment's raw data, experiments/rawdata.py)."""
+    return live_lines().filter(unit__in=unit_ids, operation__date__range=(first, last)).select_related('operation',
+                                                                                                        'batch')

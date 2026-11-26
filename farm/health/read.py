@@ -211,3 +211,9 @@ def treatments_on(unit, first, last):
     first: the treatments a unit's water history marks (Tank › Water)."""
     return (Treatment.objects.filter(units=unit, start_date__lte=last)
             .filter(Q(end_date__isnull=True) | Q(end_date__gte=first)).order_by('start_date'))
+
+
+def lice_counts(unit_ids, first, last):
+    """The live sea-lice counts of these units from `first` to `last` (both included), as recorded (an experiment's raw
+    data, experiments/rawdata.py), read through the sealed manager."""
+    return LiceCount.objects.filter(unit__in=unit_ids, date__range=(first, last))

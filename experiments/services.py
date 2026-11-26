@@ -1010,6 +1010,8 @@ def share(user, experiment, grantee, parts, until, reason, group=None):
 
 def revoke(user, row):
     """The lead ends a share now (the row stays, with who ended it and when). Logged once on the experiment."""
+    if not user.has_perm('experiments.change_experiment'):       # the right first, before the row is read
+        raise PermissionDenied
     experiment = row.experiment
     _lead_only(user, experiment)
     with transaction.atomic():

@@ -18,6 +18,7 @@ every void: the forms call these functions and the views show what they refuse o
 A failure raises ValidationError, a dict of field to message: 'measured_at', 'point', a parameter's
 code, 'reason' or NON_FIELD_ERRORS; for a round, a row's errors are under ('row', index). Nothing is
 written."""
+import logging
 import uuid
 from decimal import ROUND_HALF_UP
 
@@ -37,6 +38,8 @@ from farm.stock.services import AlreadyRecorded, lock_fish
 
 from . import messages, parameters
 from .read import POINT_RELATED, Context, oxygen_basis, ph_on_nbs, scale_origin
+
+logger = logging.getLogger(__name__)
 
 # What the activity log shows of a sample: where it was taken, its source, its values and its notes (and its
 # time, which the entry carries).
@@ -193,25 +196,38 @@ def label(sample):
            f'{local_time(sample.measured_at, sample.point):%Y-%m-%d %H:%M}'
 
 
-def _log_create(user, sample):
+def _log_create(user, sample, late=''):
     with audit.source_language():
         changes = {str(_('Measured at')): [None, local_time(sample.measured_at, sample.point).isoformat()]}
         changes.update({label_: [None, value] for label_, value in audit.snapshot(sample, LOGGED).items()
                         if value is not None})
-        # A late result (the owner's decision on review 5 of derived-fresh): its NH₃ critical or a warning, its point's
-        # evidence newer: kept in the log with the sample, never an alarm (read.late_result_of).
-        from .read import late_result_of
-        late = late_result_of(sample)
         if late:
             changes[str(_('Late result'))] = [None, late]
         audit.record(user, AuditLog.Action.CREATE, sample, changes, label=label(sample))
 
 
+def _late_words(samples):
+    """{sample id: its late result's words} (the owner's decision on review 5 of derived-fresh: a late NH₃ critical or
+    warning is kept in the log with its sample, never an alarm; read.late_results_of): ONE read for all the samples of a
+    write, never one a sample (review 6, M4). It never blocks the write: a read that fails is logged loudly and the
+    samples are recorded without the words."""
+    from .read import late_results_of
+    try:
+        with transaction.atomic():
+            return late_results_of(samples)
+    except Exception:
+        logger.exception('The late results of %d water samples could not be worked out; they are recorded without.',
+                         len(samples))
+        return {}
+
+
 def _write(user, samples, keys):
-    """Writes the samples, each logged, and each one's form key (None: none) in the one table (core.models.EntryKey)."""
+    """Writes the samples, each logged (with its late result's words, one read for all), and each one's form key (None:
+    none) in the one table (core.models.EntryKey)."""
     WaterMeasurement.objects.bulk_create(samples)
+    late = _late_words(samples)
     for sample, key in zip(samples, keys):
-        _log_create(user, sample)
+        _log_create(user, sample, late.get(sample.pk, ''))
         if key is not None:
             EntryKey.note(key, sample)
     return samples

@@ -425,8 +425,6 @@ def last_at_point(reading):
         'time': local_time(reading.at, reading.point).strftime('%d.%m.%Y %H:%M')}
 
 
-
-
 def lacking_newer(reading):
     """What a worked-out value says of a point's sample newer than its evidence value that gives none (farm/water/judge.py
     `said`; reviews 4 and 5 of the branch): it never takes a worked-out value's place, it is said, with why:
@@ -442,15 +440,13 @@ def lacking_newer(reading):
 INPUT_WORDS = {'tan_mg_l': _('TAN'), 'ph': _('pH'), 'temperature_c': _('temperature'), 'salinity_ppt': _('salinity')}
 
 
-def ended_by(code, end, point, why=''):
+def ended_by(code, end, point):
     """What a worked-out value no longer fresh because an input ended says (read.Context._say_ended; review 4 of the
     branch, M5): "Stale since 26.11.2026 10:12: its pH ended." """
     from ..models.water_point import local_time
     said = _('Stale since %(time)s: its %(input)s ended') % {
         'time': local_time(end, point).strftime('%d.%m.%Y %H:%M'), 'input': INPUT_WORDS.get(code, code)}
-    return f'{said}: {why}.' if why else f'{said}.'
-
-
+    return f'{said}.'
 
 
 def late_result(late, evidence):

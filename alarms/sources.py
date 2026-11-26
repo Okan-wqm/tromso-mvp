@@ -235,15 +235,11 @@ def clear_evidence(reading, severity, rules, last_bad_at, now, own_held=False, u
     if decider is None:
         return False
     if reading.parameter.inputs:
-        # A worked-out value: THE judge says whether it may end a level (farm/water/judge.py `clears`: evidence fresh now,
-        # measured strictly after the last bad value; a tie never clears).
-        sample = decider.sample.sample
-        record = water_judge.Record(
-            key=decider, point=None, tier=0, measured_at=seen_at(decider, now),
-            created_at=sample.created_at if sample is not None else decider.at, id=str(sample.pk) if sample else '',
-            value=decider.value is not None, refused=bool(decider.refused or reading.refused),
-            fresh_at_own_time=decider.fresh_until > decider.at, fresh_now=reading.status != Status.STALE)
-        return water_judge.clears(record, last_bad_at) and judged_clear(reading, rules) not in HOLDS[severity]
+        # A worked-out value: THE judge says whether its decider may end a level (farm/water/judge.py `clears`: evidence,
+        # fresh now by ITS OWN freshness, measured strictly after the last bad value; a tie never clears), its Record
+        # built by the one builder (read.record_of; review 6, M1, M2). A refused reading shown says nothing either.
+        return (not reading.refused and water_judge.clears(water_read.record_of(decider, now), last_bad_at)
+                and judged_clear(reading, rules) not in HOLDS[severity])
     return (reading.status != Status.STALE and not reading.refused
             and (last_bad_at is None or seen_at(decider, now) > last_bad_at)
             and judged_clear(reading, rules) not in HOLDS[severity])

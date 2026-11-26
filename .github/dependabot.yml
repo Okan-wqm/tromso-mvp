@@ -66,9 +66,10 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
-  # The images the Dockerfiles build from: the test runner's (docker/testrunner.Dockerfile: Python, Rust) and the ingest's.
+  # The images the Dockerfiles build from: the test runner's and the web image's (docker/testrunner.Dockerfile: Python,
+  # Rust, Node), the ingest's, and the production database's and backup agent's (deploy/db/Dockerfile: TimescaleDB).
   - package-ecosystem: docker
-    directories: ["/docker", "/sensors-ingest"]
+    directories: ["/docker", "/sensors-ingest", "/deploy/db"]
     schedule:
       interval: weekly
       day: monday
@@ -84,3 +85,18 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "rust"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  # The images the compose files pull, each pinned by digest: the production stack's (deploy/compose.yml: nginx,
+  # Mosquitto, cloudflared) and the development stack's (docker-compose.yml: TimescaleDB, Mosquitto, Node-RED). A
+  # TimescaleDB bump must move every pin together (sensors.tests.test_timescale fails otherwise); the patch cadence is
+  # docs/ops/upgrade.md's.
+  - package-ecosystem: docker-compose
+    directories: ["/", "/deploy"]
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      compose-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

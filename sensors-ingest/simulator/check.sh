@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 export MSYS_NO_PATHCONV=1
 win() { cygpath -w "$1" 2>/dev/null || echo "$1"; }
-MOSQ=eclipse-mosquitto:2.0.20@sha256:21421af7b32bf9ce508e9090c8eb13bb81f410ca778dc205506180a6f862d0eb
+MOSQ=eclipse-mosquitto:2.0.23@sha256:6a332cc7a8dbe011cbc076180cbb76b37c6f0f55809682ea08e7980ef0112ad9
 NODERED=nodered/node-red:4.0.9@sha256:0b295b3a14c512548567ca99db631bc37b23bfc79fd009ee8248a610fafdb4b5
 RUN=simcheck-$(head -c 6 /dev/urandom | od -An -tx1 | tr -d " \n")
 NET=$RUN-net

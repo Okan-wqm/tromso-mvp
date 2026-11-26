@@ -18,11 +18,16 @@ from sensors.models import Contract, Reading
 from . import one, rows
 
 START = datetime(2026, 10, 1, tzinfo=tz.utc)
+# A continuous aggregate's jobs: TimescaleDB 2.32.1 lists them under the aggregate's own view name.
+AGGREGATE_JOBS = ("FROM timescaledb_information.jobs j JOIN timescaledb_information.continuous_aggregates c "
+                  "ON j.hypertable_name = c.view_name ")
+# The one TimescaleDB release everything runs on, pinned by digest in the same image line everywhere a database starts.
+PINNED = 'timescale/timescaledb:2.32.1-pg17@sha256:2f5e6969faa5cd7f4b075d65f124e30dc50d456b7b807e5c1acd9d51ba7df51c'
 
 
 def insert(rows_):
-    """(channel_no, ts, value, n, quality, run_sum, run_min, run_max) rows, as the ingest writes them: ONE ROW PER
-    STATEMENT (a multi-row statement loses rows once one conflicts in a compressed chunk, CompressedChunkInsertTests)."""
+    """(channel_no, ts, value, n, quality, run_sum, run_min, run_max) rows, as the ingest writes them: one row per
+    statement (CompressedChunkInsertTests)."""
     with connection.cursor() as cursor:
         for row in rows_:
             cursor.execute(
@@ -106,7 +111,20 @@ class HypertableTests(TestCase):
     def test_the_licence_of_the_build_is_timescales_community_licence(self):
         # Compression, continuous aggregates and policies are TSL features: the -oss build lacks them.
         self.assertEqual(one('SHOW timescaledb.license'), 'timescale')
-        self.assertEqual(one("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'"), '2.17.2')
+        self.assertEqual(one("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'"), '2.32.1')
+        # one image everywhere a database starts: development, the tests, CI, production, the ingest's own scripts
+        from pathlib import Path
+
+        from django.conf import settings
+        base = Path(settings.BASE_DIR)
+        for path in ('docker-compose.yml', 'scripts/test.sh', '.github/workflows/ci.yml', 'deploy/db/Dockerfile',
+                     'sensors-ingest/tests/run.sh', 'sensors-ingest/e2e/run.sh', 'sensors-ingest/bench/run.sh',
+                     'sensors-ingest/bench/multisource.sh', 'sensors-ingest/simulator/farm-check.sh',
+                     'sensors-ingest/simulator/farm-config.sh'):
+            with self.subTest(path=path):
+                text = (base / path).read_text(encoding='utf-8')
+                self.assertIn(PINNED, text)
+                self.assertNotRegex(text.replace(PINNED, ''), r'timescale/timescaledb:[0-9]')
 
     def test_the_orm_writes_and_reads_a_reading_by_its_composite_key(self):
         moment = START + timedelta(minutes=5)
@@ -167,10 +185,12 @@ class RollupCatalogueTests(TestCase):
         self.assertIn(f'& {quality.BAD_MASK}) = 0', definition)
 
     def jobs(self, view):
-        return {name: json.loads(config) for name, config in rows(
-            "SELECT j.proc_name, j.config FROM timescaledb_information.jobs j "
-            "JOIN timescaledb_information.continuous_aggregates c ON c.materialization_hypertable_name = j.hypertable_name "
-            "WHERE c.view_name = %s", [view])}
+        found = {name: json.loads(config) for name, config in rows(
+            f"SELECT j.proc_name, j.config {AGGREGATE_JOBS}WHERE c.view_name = %s", [view])}
+        self.assertIn('policy_refresh_continuous_aggregate', found,
+                      rows('SELECT job_id, proc_name, hypertable_schema, hypertable_name, config::text '
+                           'FROM timescaledb_information.jobs ORDER BY job_id'))
+        return found
 
     def test_the_policies(self):
         hour = self.jobs('sensors_rollup_1h')
@@ -180,9 +200,7 @@ class RollupCatalogueTests(TestCase):
         self.assertEqual((refresh['start_offset'], refresh['end_offset']), ('75 days', '01:00:00'))
         self.assertEqual(hour['policy_compression']['compress_after'], '90 days')
         self.assertNotIn('policy_retention', hour)
-        self.assertEqual(one("SELECT j.schedule_interval FROM timescaledb_information.jobs j "
-                             "JOIN timescaledb_information.continuous_aggregates c "
-                             "ON c.materialization_hypertable_name = j.hypertable_name "
+        self.assertEqual(one(f"SELECT j.schedule_interval {AGGREGATE_JOBS}"
                              "WHERE j.proc_name = 'policy_refresh_continuous_aggregate' "
                              "AND c.view_name = 'sensors_rollup_1h'"), timedelta(hours=1))
 
@@ -226,12 +244,12 @@ class RollupValueTests(TestCase):
 
 
 class CompressedChunkInsertTests(TestCase):
-    """TimescaleDB 2.17.2: in ONE multi-row INSERT ... ON CONFLICT DO NOTHING, once a row conflicts inside a compressed
-    chunk every later row of the statement is dropped without an error (found by the ingest, CONTRACT-REQUESTS 13). This
-    test pins the behaviour, so an upgrade that fixes it shows here; every Django writer of sensors_reading (the tests'
-    helpers, bench_sensors) writes one row per statement or refuses a range that already holds rows."""
+    """In ONE multi-row INSERT ... ON CONFLICT DO NOTHING, a row conflicting inside a compressed chunk is skipped and the
+    rest of the statement is stored (TimescaleDB 2.32.1; 2.17.2 silently dropped the rest, found by the ingest,
+    CONTRACT-REQUESTS 13, which is why every writer of sensors_reading writes one row per statement). This test pins the
+    behaviour, so a release that changes it shows here."""
 
-    def test_a_conflict_in_a_compressed_chunk_drops_the_rest_of_the_statement(self):
+    def test_a_conflict_in_a_compressed_chunk_keeps_the_rest_of_the_statement(self):
         old = datetime(2026, 9, 1, 12, tzinfo=tz.utc)
         insert([(31, old, 1.0, 1, 0, None, None, None)])
         chunk = one("SELECT chunk_schema || '.' || chunk_name FROM timescaledb_information.chunks "
@@ -241,9 +259,8 @@ class CompressedChunkInsertTests(TestCase):
         with connection.cursor() as cursor:
             cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (31, %s, 9.0), (31, %s, 2.0) '
                            'ON CONFLICT DO NOTHING', [old, recent])
-        self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent]), 0)
-        insert([(31, recent, 2.0, 1, 0, None, None, None)])                   # one per statement: stored
-        self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent]), 1)
+        self.assertEqual(rows('SELECT value FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [old]), [(1.0,)])
+        self.assertEqual(rows('SELECT value FROM sensors_reading WHERE channel_no = 31 AND ts = %s', [recent]), [(2.0,)])
 
 
 class RollupRefreshTests(TransactionTestCase):
@@ -257,10 +274,11 @@ class RollupRefreshTests(TransactionTestCase):
 
     def run_job(self, name, view=None):
         """Runs a job now, as the scheduler would: a refresh policy of `view`, or the job of procedure `name`."""
-        sql = ("SELECT j.job_id FROM timescaledb_information.jobs j JOIN timescaledb_information.continuous_aggregates c "
-               "ON c.materialization_hypertable_name = j.hypertable_name WHERE j.proc_name = %s AND c.view_name = %s"
+        sql = (f"SELECT j.job_id {AGGREGATE_JOBS}WHERE j.proc_name = %s AND c.view_name = %s"
                if view else "SELECT job_id FROM timescaledb_information.jobs WHERE proc_name = %s")
         job = one(sql, [name, view] if view else [name])
+        self.assertIsNotNone(job, rows('SELECT job_id, proc_name, hypertable_schema, hypertable_name '
+                                       'FROM timescaledb_information.jobs ORDER BY job_id'))
         with connection.cursor() as cursor:
             cursor.execute('CALL run_job(%s)', [job])
 
@@ -290,10 +308,22 @@ class RollupRefreshTests(TransactionTestCase):
         self.assertEqual(self.hour(21), [(3, 9.0, 1.0, 5.0, 3.0)])
         one("SELECT count(*) FROM drop_chunks('sensors_reading', older_than => %s)", [early + timedelta(days=30)])
         self.assertEqual(one('SELECT count(*) FROM sensors_reading WHERE channel_no = 21'), 0)
-        # Dropping raw chunks invalidates their region (TimescaleDB 2.17): a refresh over it would empty the rollup. No
+        # Dropping raw chunks invalidates their region: a refresh over it would empty the rollup (the test below). No
         # job reaches it: the policy looks 75 days back, the late job no further than the late limit and a day.
         self.run_job('policy_refresh_continuous_aggregate', 'sensors_rollup_1h')
         with connection.cursor() as cursor:                      # the drop as if it happened two years on
             cursor.execute('UPDATE sensors_contract SET late_limit_days = 1, retention_days = 3')
         self.run_job('sensors_refresh_late')
         self.assertEqual(rows('SELECT n, sum_v FROM sensors_rollup_1h WHERE channel_no = 21'), [(3, 9.0)])
+
+    def test_a_refresh_over_a_dropped_raw_region_empties_the_rollup_there(self):
+        # Why no job may reach back into dropped raw data (README, Sensors), held on the release everything runs on.
+        early = one("SELECT date_trunc('hour', now()) - INTERVAL '400 days'")
+        insert([(23, early, 1.0, 1, 0, None, None, None)])
+        self.refresh('sensors_rollup_1h')
+        self.assertEqual(len(self.hour(23)), 1)
+        one("SELECT count(*) FROM drop_chunks('sensors_reading', older_than => %s)", [early + timedelta(days=30)])
+        with connection.cursor() as cursor:
+            cursor.execute("CALL refresh_continuous_aggregate('sensors_rollup_1h', %s, %s)",
+                           [early - timedelta(days=1), early + timedelta(days=1)])
+        self.assertEqual(self.hour(23), [])

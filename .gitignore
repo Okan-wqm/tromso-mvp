@@ -21,3 +21,6 @@ node_modules/
 .sensors/
 # The TypeScript test build (`npm test`)
 .build/
+# A farm's server (deploy/, docs/ops/): its secrets and its own settings never enter the repository
+/deploy/secrets/
+/deploy/farm.env

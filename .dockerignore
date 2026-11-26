@@ -1,6 +1,36 @@
-# The images built from this checkout (docker/testrunner.Dockerfile) need only these.
+# The images built from this checkout (docker/testrunner.Dockerfile: the test runner and the production web image) need
+# only these. core/tests_deploy.py holds this list to the web stage's COPY lines.
 *
 !chemcore/
 !docker/
 !scripts/testrunner/
+!manage.py
+!config/
+!core/
+!farm/
+!knowledge/
+!messaging/
+!inventory/
+!reports/
+!tasks/
+!hr/
+!experiments/
+!monitoring/
+!sensors/
+!alarms/
+!templates/
+!static/
+!locale/
+!frontend/
+!package.json
+!package-lock.json
+!tsconfig.json
+!vite.config.mjs
+!scripts/islands.mjs
+!deploy/web/
+!deploy/db/sql/grants.sql
 chemcore/target/
+**/__pycache__/
+**/*.pyc
+**/*.mo
+static/js/

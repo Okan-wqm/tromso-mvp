@@ -21,13 +21,34 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
+def _secret(name, default=''):
+    """A secret from the environment: the variable `name`, or the first line of the file `name`_FILE names (a Docker
+    secret, deploy/compose.yml), so that no secret has to stand in a production container's environment. Both set, or
+    a file that cannot be read or holds nothing on its first line, stops the server here rather than run it on a guess."""
+    from django.core.exceptions import ImproperlyConfigured
+    path = os.environ.get(f'{name}_FILE')
+    if not path:
+        return os.environ.get(name) or default
+    if os.environ.get(name):
+        raise ImproperlyConfigured(f'Both {name} and {name}_FILE are set: keep one.')
+    try:
+        lines = Path(path).read_text(encoding='utf-8').splitlines()
+    except OSError as error:
+        raise ImproperlyConfigured(f'{name}_FILE: {path} cannot be read ({error.strerror}).') from None
+    if not lines or not lines[0].strip():
+        raise ImproperlyConfigured(f'{name}_FILE: {path} holds nothing on its first line.')
+    return lines[0].strip()
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
-# Local development fallback only; set DJANGO_SECRET_KEY anywhere else.
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-development-only')
+# Local development fallback only; set DJANGO_SECRET_KEY (or DJANGO_SECRET_KEY_FILE) anywhere else. With DEBUG off the
+# deploy check refuses it (security.W009), and the production server runs that check before it starts.
+SECRET_KEY = _secret('DJANGO_SECRET_KEY', 'django-insecure-local-development-only')
 # The key of the activity log's digests of private values (core.audit.digest_key): its own, so that it and the secret
 # key are rotated apart; empty means the secret key. Set it before core/0011 converts real data: that conversion is
-# one-way and keeps the key it ran under (it refuses the fallback above when DEBUG is off).
-AUDIT_DIGEST_KEY = os.environ.get('DJANGO_AUDIT_DIGEST_KEY', '')
+# one-way and keeps the key it ran under (it refuses the fallback above when DEBUG is off). With DEBUG off the deploy
+# check requires it, apart from the secret key (core.E009).
+AUDIT_DIGEST_KEY = _secret('DJANGO_AUDIT_DIGEST_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
@@ -156,7 +177,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'balik'),
         'USER': os.environ.get('DB_USER', 'balik'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'balik'),
+        'PASSWORD': _secret('DB_PASSWORD', 'balik'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5433'),
         # Seconds a connection stays open for the next request (0, Django's default: one per request), for a server with
@@ -231,6 +252,18 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# Where `collectstatic` puts the files, with their manifest (the web image does it when it is built; the release step
+# copies them to the volume the reverse proxy serves, deploy/web/release.sh).
+STATIC_ROOT = Path(os.environ.get('DJANGO_STATIC_ROOT', BASE_DIR / 'staticfiles'))
+# With DEBUG off every static file is served under a name that carries a hash of its content (css/tw.3f2a9c41b7e0.css),
+# so the proxy lets a browser keep it for a year (deploy/proxy) and a changed file is a new name; the compiled modules
+# reach theirs through the import map (core/templatetags/assets.py). A development server keeps the plain names, each
+# versioned by its file's modification time.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage' if DEBUG
+                    else 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'},
+}
 
 
 # Uploaded files (a library document's PDF), kept by Django's default storage under MEDIA_ROOT. There is
@@ -276,7 +309,7 @@ if os.environ.get('EMAIL_HOST') or MAIL_MUST_SEND:
                 'host': os.environ.get('EMAIL_HOST') or None,
                 'port': int(os.environ['EMAIL_PORT']) if os.environ.get('EMAIL_PORT') else None,
                 'username': os.environ.get('EMAIL_HOST_USER') or None,
-                'password': os.environ.get('EMAIL_HOST_PASSWORD') or None,
+                'password': _secret('EMAIL_HOST_PASSWORD') or None,
                 'use_tls': _mail_encryption == 'starttls',
                 'use_ssl': _mail_encryption == 'ssl',
                 'timeout': MAIL_SEND_SECONDS,
@@ -318,6 +351,12 @@ LOGGING = {
                 # service's log (docker compose logs alarms)
                 'alarms.worker': {'handlers': ['stderr'], 'level': 'INFO', 'propagate': False}},
 }
+if not DEBUG:
+    # Django's own handler prints only with DEBUG on, and its mail to ADMINS goes nowhere (none is set): without these a
+    # production server's 500 and the security log (a refused host, a bad signature) would leave no line anywhere. To
+    # stderr, which the container runtime keeps (deploy/compose.yml rotates it).
+    LOGGING['loggers']['django'] = {'handlers': ['stderr'], 'level': 'WARNING', 'propagate': False}
+    LOGGING['root'] = {'handlers': ['stderr'], 'level': 'WARNING'}
 
 # Under one, no link would ever work, no reset mail ever be sent and no mail have the time to leave: said here, not
 # found out by a person.
@@ -326,6 +365,35 @@ for _name, _value in (('ACCOUNT_LINK_HOURS', PASSWORD_RESET_TIMEOUT), ('EMAIL_TI
     if _value < 1:
         from django.core.exceptions import ImproperlyConfigured
         raise ImproperlyConfigured(f'{_name} must be 1 or more.')
+
+
+# A production server (DEBUG off) stands behind the TLS proxy of deploy/compose.yml (docs/ops/): the proxy ends HTTPS,
+# overwrites X-Forwarded-Proto on every request it passes on, and is the only way in (the web container publishes no
+# port). So, with DEBUG off and whatever the environment says:
+#   - a request is https when the proxy says so, and a plain-http one is sent to https;
+#   - the session and CSRF cookies travel over https only;
+#   - browsers are told to use https only (HSTS) for DJANGO_HSTS_SECONDS: an hour unless set, raised to a year once
+#     https is proven (docs/ops/install.md); 0 is refused by the deploy check (security.W004). Subdomains are included unless DJANGO_HSTS_INCLUDE_SUBDOMAINS=0. `preload` is a
+#     decision for the owner of the whole domain, not this server's: off unless DJANGO_HSTS_PRELOAD=1, and its warning
+#     (security.W021) silenced while it is off;
+#   - the origins a form may be posted from (CSRF) are DJANGO_CSRF_TRUSTED_ORIGINS (comma separated) or, unset, the
+#     public address; each must be https (core.E008).
+# The production server runs `check --deploy --fail-level WARNING` before it starts (deploy/web/gunicorn.conf.py), so
+# an unsafe value stops it: a missing or development key, `*` among the hosts (core.E007), no own digest key (core.E009),
+# an http public address (core.E004). The policy above (SECURE_CSP) is the same in both.
+_production = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if _production else None
+SECURE_SSL_REDIRECT = _production
+SESSION_COOKIE_SECURE = _production
+CSRF_COOKIE_SECURE = _production
+SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '3600')) if _production else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('DJANGO_HSTS_INCLUDE_SUBDOMAINS', '1') == '1'
+SECURE_HSTS_PRELOAD = os.environ.get('DJANGO_HSTS_PRELOAD', '0') == '1'
+SILENCED_SYSTEM_CHECKS = [] if SECURE_HSTS_PRELOAD else ['security.W021']
+CSRF_TRUSTED_ORIGINS = [origin.strip().rstrip('/') for origin in
+                        os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()]
+if not CSRF_TRUSTED_ORIGINS and _production and PUBLIC_BASE_URL:
+    CSRF_TRUSTED_ORIGINS = [PUBLIC_BASE_URL]
 
 
 # Auth

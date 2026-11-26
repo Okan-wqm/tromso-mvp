@@ -7,7 +7,6 @@ from decimal import Decimal, InvalidOperation
 
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _, ngettext
 
 from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
@@ -243,10 +242,10 @@ class ProtocolChoice(forms.ModelChoiceField):
 
 
 def batches_in_stock():
-    """The live batches with fish now, the ones a protocol can be assigned to."""
-    present = (StockMovement.objects.filter(operation__is_deleted=False).values('batch_id')
-               .annotate(fish=Sum('count_delta')).filter(fish__gt=0).values('batch_id'))
-    return Batch.objects.filter(pk__in=present).select_related('species').order_by('-input_date', '-code')
+    """The live batches with fish now (farm.stock.read.present), the ones a protocol can be assigned to."""
+    from ..stock import read
+    return (Batch.objects.filter(pk__in=read.present('batch_id').values('batch_id')).select_related('species')
+            .order_by('-input_date', '-code'))
 
 
 def within_window(day, stored=None, unit=None):

@@ -29,12 +29,17 @@ from ..models.site import zone_of
 from ..resources.feed import FeedResource
 from ..stock import services as stock_services
 from ..water import services as water_services
-from .helpers import correction_window, point_of, rows_data
+from .helpers import correction_window, may_record, point_of, rows_data
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 
 
 class GuardTestCase(HarvestInsideTestCase):
+    def setUp(self):
+        super().setUp()
+        # the records the guard is asked about, written and voided through the services, which ask who may (L-6)
+        may_record(self.user)
+
     def asked(self, call, *args, **kwargs):
         """The change a write is refused for, until it is acknowledged."""
         with self.assertRaises(WithdrawalChanged) as caught:

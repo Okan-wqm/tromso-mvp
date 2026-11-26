@@ -21,7 +21,7 @@ DROP FUNCTION IF EXISTS core_access_events_append_only();
 
 
 class Migration(migrations.Migration):
-    dependencies = [('core', '0014_rev')]
+    dependencies = [('core', '0015_platform_settings_kept')]
 
     operations = [
         migrations.CreateModel(

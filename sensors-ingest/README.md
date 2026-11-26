@@ -4,7 +4,9 @@ The MQTT ingest of the Sensors subsystem (plan: sensors/PLAN.md decisions 1-12; 
 listens to the broker only (no edge software), decodes each device's messages with its payload format, stores device
 time, calibrates, reduces (deadband plus heartbeat with run statistics) and writes to TimescaleDB. Django owns every
 table, view and page; this service reads the view `sensors_ingest_config` and writes the readings and the runtime
-tables as the role `sensors_ingest`.
+tables as the role `sensors_ingest`. It refuses to write as anything else: on every connection it asks what it is
+(`db::refused_role`), and a superuser or an owner of the schema's tables is refused with the reason in the log, so a DSN
+that names the wrong role never writes (the data-layering audit, L-14).
 
 ## The guarantees, and where each is tested
 

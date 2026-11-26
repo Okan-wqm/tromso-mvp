@@ -19,7 +19,7 @@ from django.utils import timezone
 from core.models import AuditLog
 from farm.models import Equipment, EquipmentType, ProductionDepartment, Site, System, Tank
 from farm.models.site import zone_of
-from farm.tests.helpers import leave_without_site, point_of, role
+from farm.tests.helpers import leave_without_site, may_record, point_of, role
 from farm.tests.test_stock import make_unit
 from farm.tests.test_tanks import unit_data
 from farm.water import read as water_read, sources
@@ -558,7 +558,7 @@ class LockTests(TransactionTestCase):
     serialized_rollback = True
 
     def setUp(self):
-        self.user = get_user_model().objects.create_user('locker', 'locker@example.com', 'x')
+        self.user = may_record(get_user_model().objects.create_user('locker', 'locker@example.com', 'x'), 'add_binding')
         self.site = Site.objects.create(name='Bergen', code='BG')
         hall = ProductionDepartment.objects.create(site=self.site, name='Hall A', code='HA')
         self.mid1, self.mid2 = point_of(make_unit('T-01', hall)), point_of(make_unit('T-02', hall))

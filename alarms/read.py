@@ -63,7 +63,18 @@ def connected():
 
 def may_acknowledge(user, alarm):
     """Who may say they saw an alarm: who holds Alarms: Edit, or a person one of its notifications went to."""
-    return user.has_perm(ACKNOWLEDGE) or Notification.objects.filter(alarm=alarm, recipient=user).exists()
+    return alarm is not None and alarm.pk in acknowledgeable(user, [alarm])
+
+
+def acknowledgeable(user, alarms):
+    """{alarm id} of `alarms` that `user` may acknowledge (the one rule, `may_acknowledge`), in one query at most
+    however many: a page of alarm events asks it once (the landing review, m-9)."""
+    alarms = [alarm for alarm in alarms if alarm is not None]
+    if not alarms:
+        return set()
+    if user.has_perm(ACKNOWLEDGE):
+        return {alarm.pk for alarm in alarms}
+    return set(Notification.objects.filter(alarm__in=alarms, recipient=user).values_list('alarm_id', flat=True))
 
 
 def _in_force(now):

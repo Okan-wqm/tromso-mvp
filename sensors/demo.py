@@ -119,15 +119,19 @@ def setup(at=None):
 
 def remove():
     """Deletes what `setup` made (its connection with the devices, channels, calibrations and bindings under it, the
-    format and the credential); returns how many devices went."""
+    format and the credential), each row logged as deleted by the system first (the data-layering audit, L-15: a
+    configuration row never leaves without a trace, even a demo's); returns how many devices went."""
+    from core import audit
     with transaction.atomic():
         devices = Device.all_objects.filter(connection__client_id=CLIENT_ID)
         count = devices.count()
         channels = Channel.all_objects.filter(device__in=devices)
-        Binding.all_objects.filter(channel__in=channels).delete()
-        channels.delete()
-        devices.delete()
-        Connection.all_objects.filter(client_id=CLIENT_ID).delete()
-        PayloadFormat.all_objects.filter(name=FORMAT_NAME, devices__isnull=True).delete()
-        Credential.all_objects.filter(username=USERNAME, devices__isnull=True).delete()
+        for rows in (Binding.all_objects.filter(channel__in=channels), channels, devices,
+                     Connection.all_objects.filter(client_id=CLIENT_ID),
+                     PayloadFormat.all_objects.filter(name=FORMAT_NAME, devices__isnull=True),
+                     Credential.all_objects.filter(username=USERNAME, devices__isnull=True)):
+            with audit.source_language():
+                for row in rows:
+                    audit.record_delete(None, row)
+            rows.delete()
     return count

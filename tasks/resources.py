@@ -1,6 +1,7 @@
 """The two tabs of Operations › Tasks, declared on core.crud: the tasks (a list with three views and a drawer,
-create, edit, delete) and the recurring tasks. Their list pages make the recurring tasks' planned tasks first
-(tasks.services.materialise_due), then read."""
+create, edit, delete) and the recurring tasks. Their list pages only read: the recurring tasks' planned tasks are made
+by the task job (tasks.services.materialise_due, `manage.py generate_tasks`), and a page says when it is behind
+(tasks.read.unplanned)."""
 import uuid
 from datetime import timedelta
 from urllib.parse import urlencode
@@ -8,7 +9,7 @@ from urllib.parse import urlencode
 from django.urls import reverse
 from django.utils import formats
 from django.utils.html import strip_tags
-from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
+from django.utils.translation import gettext, gettext_lazy as _, ngettext, ngettext_lazy
 
 from core import formpanels, listprops as L
 from core.crud import Resource, RowList
@@ -119,7 +120,6 @@ class TaskResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        services.materialise_due()
         params = {key: request.GET.get(key, '').strip() for key in (*FILTERS, 'task')}
         chosen = params['view'] if params['view'] in read.VIEWS else read.TODAY
         live = places.live()
@@ -186,6 +186,7 @@ class TaskResource(Resource):
             'hidden_for_search': [(key, params[key]) for key in FILTERS if key != 'q' and params[key]],
             'row_query': query(task=''),
             'series_url': reverse('tasks:taskseries_list') if request.user.has_perm('tasks.view_taskseries') else '',
+            'unplanned': len(read.unplanned()),
         }
         drawer = None
         try:
@@ -258,7 +259,6 @@ class TaskSeriesResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        services.materialise_due()
         state = request.GET.get('state', '')
         if state == 'active':
             objects = objects.filter(is_active=True)
@@ -270,7 +270,7 @@ class TaskSeriesResource(Resource):
         for series in objects:
             today = site_today(series.place_site)
             series.next_on = series.next_date(today - timedelta(days=1)) if series.is_active else None
-        return objects, {'state': state, 'tasks_url': reverse('tasks:task_list')}
+        return objects, {'state': state, 'tasks_url': reverse('tasks:task_list'), 'unplanned': len(read.unplanned())}
 
     # The new look (core/listprops.py): the classic list's words (tasks/series_list.html), its rows as the island's.
     search_placeholder = _('Search recurring tasks')
@@ -314,7 +314,15 @@ class TaskSeriesResource(Resource):
             'A recurring task plans its tasks up to two weeks ahead; they are on the <a href="%(url)s">Tasks</a> page. '
             'Changing or pausing it plans the tasks from today on that nobody has touched again; the others stay as they '
             'are.') % {'url': context['tasks_url']})
-        return {'tabs': task_tabs(view.request, current=None), 'notices': [L.notice('plan', 'neutral', notice)],
+        notices = [L.notice('plan', 'neutral', notice)]
+        if context.get('unplanned'):
+            # the task job behind (tasks.read.unplanned), as the classic page's tasks/_unplanned.html says it
+            notices.insert(0, L.notice('unplanned', 'warning', ngettext(
+                '%(count)s recurring task is not planned up to today: its tasks for today are missing here until the '
+                'task job (manage.py generate_tasks) runs.',
+                '%(count)s recurring tasks are not planned up to today: their tasks for today are missing here until '
+                'the task job (manage.py generate_tasks) runs.', context['unplanned']) % {'count': context['unplanned']}))
+        return {'tabs': task_tabs(view.request, current=None), 'notices': notices,
                 'columns': [L.column('title', _('Recurring task')), L.column('repeats', _('Repeats')),
                             L.column('place', _('Location')), L.column('assignees', _('Assignees')),
                             L.column('next', _('Next')), L.column('status', _('Status'))],

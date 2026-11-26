@@ -33,12 +33,30 @@ def strict_warnings():
         warnings.filterwarnings('default', message, category, module)
 
 
+def _drop_rights_read(sender, instance, action, **kwargs):
+    if action.startswith('post_'):
+        for cached in ('_perm_cache', '_user_perm_cache', '_group_perm_cache'):
+            instance.__dict__.pop(cached, None)
+
+
+def fresh_rights():
+    """A test person's rights are what their roles and rights are now: Django keeps a user object's rights once it has
+    read them, so a test that gives a role after a first check (a fixture recorded something, then a test adds a role)
+    would go on with the old ones; a page request reads the person again, but a service called with that object does
+    not. Since the services ask who may themselves (the data-layering audit, L-6), a role given in a test counts at
+    once: the object it was given on forgets what it had read. Connected for every many-to-many change (a worker may
+    run this before the apps are loaded, so no model is named here): only a user object holds these caches."""
+    from django.db.models.signals import m2m_changed
+    m2m_changed.connect(_drop_rights_read, dispatch_uid='fresh-rights')
+
+
 def strict_warnings_in_worker(*args):
     """A parallel worker started by spawn or forkserver gets the filters too (a forked one inherits them), and the run's
     clock when the run was given one (core.testing.run_clock: a forked worker inherits the parent's, started once); it
     reads as the system, as the run does (core.sealing)."""
     strict_warnings()
     sealing.enter_process_system('tests')
+    fresh_rights()
     if os.environ.get('TEST_CLOCK') and not isinstance(timezone.now, mock.NonCallableMock):
         run_clock()
 
@@ -86,6 +104,7 @@ class FastPasswordRunner(DiscoverRunner):
         super().setup_test_environment(**kwargs)
         strict_warnings()
         sealing.enter_process_system('tests')
+        fresh_rights()
         # TEST_CLOCK: the whole run's clock starts at that moment (core.testing.run_clock; README, Tests).
         self._clock = run_clock()
         # The account e-mails' jobs run in the request, not on the worker thread (core.accountmail.background): a

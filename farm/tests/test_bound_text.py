@@ -13,7 +13,7 @@ from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal as D
 from types import SimpleNamespace
 
 from django.contrib.auth import get_user_model
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from django.utils import timezone, translation
 
@@ -326,9 +326,11 @@ def cell_of(html, label):
     raise AssertionError(f'no row {label!r}')
 
 
-class FigureTests(SimpleTestCase):
+class FigureTests(TestCase):
     """The owner's decision of 2026-11-22 ("show as many decimals as it takes to show it is past"): a value judged past a bound
     shows the decimals that prove it wherever it is shown, not only in a sentence (`reading_figure`, `proof_of`)."""
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
 
     def figure(self, code, exact, **bounds):
         return reading_figure(judged(worked_out(code, exact), row_of(**bounds)))

@@ -36,7 +36,7 @@ from ..handling import check
 from ..health import withdrawal
 from ..models import Feed, SamplingPoint, Species, System, Tank, Treatment, WaterMeasurement
 from ..stock import services as stock_services
-from .helpers import going_on, point_of, role
+from .helpers import going_on, may_record, point_of, role
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_withdrawal_gate import edit_data
 
@@ -249,6 +249,7 @@ class RegistryCoverageTests(LoopTestCase):
     def test_every_column_the_readers_read_is_registered_or_said_not_to_be_an_input(self):
         feed = Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
         from ..feeding import services as feeding_services
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         going_on(feeding_services.record_feeding, self.user, unit=self.t1, day=self.day(2), feed=feed,
                  amount_kg=Decimal('2'))
         seen = check.assess('harvest', self.t1, self.day(1), self.batch).fingerprint      # under a withdrawal

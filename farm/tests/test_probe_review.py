@@ -10,7 +10,7 @@ from ..feeding import services as feeding_services
 from ..handling import check
 from ..models import Feed
 from ..stock import services as stock_services
-from .helpers import going_on
+from .helpers import going_on, may_record
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 
 
@@ -19,6 +19,7 @@ class ProbeTests(HarvestInsideTestCase):
         self.harvest(2)
         feed = Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
         try:
+            may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
             feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(4), feed=feed,
                                             amount_kg=Decimal('2'))
             saved = True
@@ -34,6 +35,7 @@ class ProbeTests(HarvestInsideTestCase):
         stock_services.record_harvest(self.user, unit=self.t1, batch=self.batch, day=self.day(3), count=500,
                                       measured_weight_kg=Decimal('600'), facility=self.facility, handling_ack=seen)
         feed = Feed.objects.create(name='Medisinfor', code='MED-1', feed_type='medicated')
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         going_on(feeding_services.record_feeding, self.user, unit=self.t1, day=self.day(5), feed=feed,
                  amount_kg=Decimal('2'))                  # the guard asks: gone on past it, as the person would
         out = io.StringIO()

@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
 
-from ..health import services
+from ..health import read as health_read, services
 from ..health.withdrawal import rules_text
 from ..models import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Site, Species, Supplier, Tank, Treatment
 from ..models.health import SAME_SPECIES_MESSAGE
@@ -267,9 +267,8 @@ class TreatmentForm(ServiceErrors, forms.ModelForm):
             self.initial['units'] = [unit.pk]
         self.fields['medicine'].queryset = Medicine.objects.filter(status=Medicine.Status.ACTIVE).prefetch_related(
             'withdrawals__species')
-        site_ids = {each.production_department.site_id for each in units}
-        self.fields['health_event'].queryset = (HealthEvent.objects.filter(site_id__in=site_ids, closed_on__isnull=True)
-                                                .select_related('site'))
+        # the open events that concern the treated units (farm.health.read.concerning, the one rule)
+        self.fields['health_event'].queryset = health_read.concerning(units.values('pk')).select_related('site')
         self.fields['method'].choices = [('', _('Select a method'))] + list(Treatment.Method.choices)
         self.fields['reason'].choices = [('', _('Select a reason'))] + list(Treatment.Reason.choices)
         self.fields['dose_unit'].choices = [('', '—')] + list(Treatment.DoseUnit.choices)

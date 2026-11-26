@@ -11,7 +11,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0015_access_event'),
+        ('core', '0016_access_event'),
     ]
 
     operations = [

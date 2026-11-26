@@ -6,7 +6,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 from unittest import mock
 
-from django.test import SimpleTestCase
+from django.test import TestCase
 from django.utils import timezone, translation
 
 from farm.templatetags.water import limit_text
@@ -17,7 +17,10 @@ from monitoring.cards import render
 from .text import lower
 
 
-class LowerTests(SimpleTestCase):
+class LowerTests(TestCase):
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
+
     def test_turkish_capitals_lower_as_turkish_writes_them_and_other_languages_as_python_does(self):
         with translation.override('tr'):
             self.assertEqual(lower('İtlaf'), 'itlaf')

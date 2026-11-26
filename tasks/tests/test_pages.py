@@ -16,7 +16,7 @@ from core import access, database, navigation, softdelete
 from core.audit import english, private
 from core.models import AuditLog, EntryKey, Profile
 from core.widgets import NONE
-from farm.tests.helpers import stock_fish
+from farm.tests.helpers import may_record, stock_fish
 
 from .. import places, read, services
 from ..models import PLACES, Status, Task, TaskChecklistItem, TaskNote
@@ -71,7 +71,7 @@ class CreateReadEditDeleteTests(TasksTestCase):
                 self.assertTrue(AuditLog.objects.filter(entity_id=str(task.pk), action='delete').exists())
 
     def test_every_optional_field_can_be_cleared_on_edit(self):
-        batch = stock_fish(self.boss, self.t1)
+        batch = stock_fish(self.stocker, self.t1)
         task = self.make_task(description='Use the long brush', due_time=time(8, 0), batch=batch)
         response = self.client.post(edit_url(task), form_data(
             site=str(self.bergen.pk), location=places.token(self.t1), due_date=self.today.isoformat(),
@@ -81,7 +81,7 @@ class CreateReadEditDeleteTests(TasksTestCase):
         self.assertEqual((task.description, task.due_time, task.batch), ('', None, None))
 
     def test_what_is_stored_is_what_was_entered(self):
-        batch = stock_fish(self.boss, self.t1)
+        batch = stock_fish(self.stocker, self.t1)
         self.post_new(self.t1, title='Weigh a sample', description='30 fish', category='health', priority='high',
                       due_time='14:30', batch=str(batch.pk))
         task = Task.objects.get(title='Weigh a sample')
@@ -196,9 +196,10 @@ class ListsOfferedTests(TasksTestCase):
         self.assertEqual(Task.objects.get().unit, self.t9)
 
     def test_the_batch_list_offers_the_batches_with_fish_tied_to_their_places(self):
-        batch = stock_fish(self.boss, self.t1)
-        empty = stock_fish(self.boss, self.t2)
+        batch = stock_fish(self.stocker, self.t1)
+        empty = stock_fish(self.stocker, self.t2)
         from farm.stock import services as stock
+        may_record(self.boss, 'add_stockoperation')  # the stock service asks (L-6)
         stock.record_mortality(self.boss, unit=self.t2, batch=empty, day=stock.local_today(self.t2), count=1000,
                                cause='disease')
         html = self.client.get(NEW).content.decode()
@@ -216,9 +217,10 @@ class ListsOfferedTests(TasksTestCase):
         self.assertEqual(Task.objects.get().batch, batch)
 
     def test_a_task_keeps_its_batch_after_the_fish_left(self):
-        batch = stock_fish(self.boss, self.t1)
+        batch = stock_fish(self.stocker, self.t1)
         task = self.make_task(batch=batch)
         from farm.stock import services as stock
+        may_record(self.boss, 'add_stockoperation')  # the stock service asks (L-6)
         stock.record_mortality(self.boss, unit=self.t1, batch=batch, day=stock.local_today(self.t1), count=1000,
                                cause='disease')
         response = self.client.post(edit_url(task), form_data(

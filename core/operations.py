@@ -139,3 +139,56 @@ $f$"""
     @property
     def migration_name_fragment(self):
         return f'track_{self.table}_{self.scope}'
+
+
+class KeepRows(Operation):
+    """Makes the database refuse every DELETE of `table`'s rows (a BEFORE DELETE trigger, `trg_<table>_kept`): reference
+    rows that a migration seeds and the application only reads and changes, never makes or removes (the platform
+    settings, the scheduling settings, the water's freshness rules). With it a reader never meets a lost row it would
+    have to make again or stand in for (the data-layering audit, M-1): a read stays a read. `what` names the rows in the
+    refusal. A soft delete is refused by each model's own check (`chk_<table>_kept`); a TRUNCATE (a test's flush, a
+    restore) is not a row DELETE and is not refused. The alarm severity rules have the same, written by hand before this
+    (alarms 0006)."""
+    reversible = True
+    reduces_to_sql = True
+
+    def __init__(self, table, what):
+        if not NAME.match(table) or len(f'trg_{table}_kept') > LONGEST:
+            raise ValueError(f'KeepRows: {table!r} must be a plain lower-case name of at most {LONGEST - 9} characters.')
+        if "'" in what or '%' in what:
+            raise ValueError("KeepRows: `what` may hold no ' and no %.")
+        self.table, self.what = table, what
+
+    def deconstruct(self):
+        return self.__class__.__name__, [self.table, self.what], {}
+
+    def state_forwards(self, app_label, state):
+        pass
+
+    def sql_forwards(self):
+        return [
+            f"CREATE FUNCTION {self.table}_kept() RETURNS trigger AS $f$ BEGIN RAISE EXCEPTION "
+            f"'{self.what} are changed, never deleted: the application reads them and never makes them again.' "
+            f"USING ERRCODE = 'restrict_violation'; END; $f$ LANGUAGE plpgsql",
+            f'CREATE TRIGGER trg_{self.table}_kept BEFORE DELETE ON {self.table} FOR EACH ROW '
+            f'EXECUTE FUNCTION {self.table}_kept()',
+        ]
+
+    def sql_backwards(self):
+        return [f'DROP TRIGGER IF EXISTS trg_{self.table}_kept ON {self.table}',
+                f'DROP FUNCTION IF EXISTS {self.table}_kept()']
+
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+        for statement in self.sql_forwards():
+            schema_editor.execute(statement, params=None)
+
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+        for statement in self.sql_backwards():
+            schema_editor.execute(statement, params=None)
+
+    def describe(self):
+        return f'Refuse every DELETE of {self.table}'
+
+    @property
+    def migration_name_fragment(self):
+        return f'keep_{self.table}'

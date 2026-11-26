@@ -13,6 +13,7 @@ from core.crud import tab_fields
 from ..feeding import assignments
 from ..forms.feeding_protocol import ASSIGNMENT_TABS
 from ..models import ProtocolAssignment
+from .helpers import may_record
 from .test_protocols import ProtocolTestCase
 
 
@@ -20,6 +21,7 @@ class AssignmentRowsTests(ProtocolTestCase):
     def setUp(self):
         super().setUp()
         self.protocol = self.make_protocol()
+        may_record(self.user, 'add_protocolassignment')     # the assignments' save asks who may (L-6)
 
     def make(self, units=(), batch=None, first=None, last=None, protocol=None, notes=''):
         return assignments.rows(protocol or self.protocol, list(units), batch, first or self.today, last, notes)

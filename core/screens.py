@@ -7,7 +7,7 @@ from .views import activity_log, set_language
 SCREENS = {
     'PlatformSettings': Screen(
         create=no('the migration makes the one row'),
-        delete=no('there is always exactly one row'),
+        delete=no('there is always exactly one row (the database refuses a delete)'),
         note="The platform owner's rules, read by core.platform only.",
     ),
     'AuditLog': Screen(

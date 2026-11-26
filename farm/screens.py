@@ -79,7 +79,7 @@ SCREENS = {
                       'document': "an opening balance's source document: stored on its OpeningBalance"},
     ),
     'WaterFreshness': Screen(create=no('migration 0037 makes one row per water parameter'),
-                             delete=no('there is always one row per water parameter (a lost one is made again)')),
+                             delete=no('there is always one row per water parameter (the database refuses a delete)')),
     'StockOperation': Screen(
         create=STOCK_WRITE,
         edit=no(LEDGER),

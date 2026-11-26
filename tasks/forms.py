@@ -8,14 +8,16 @@ place now, narrowed by the Location select (a chain: site → location → batch
 users who can read Tasks (tasks.read.readers). The server checks what the browser only guides."""
 from django import forms
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
 from core.crud import RowFormSet, TabbedForm, tab_fields
 from core.widgets import DayInput, DependentSelect, NONE
-from farm.models import Batch, Site, StockMovement, Tank
+from farm.models import Batch, Site, Tank
 from farm.models.site import zone_of
+
+from farm.stock import read as stock_read
 
 from . import places, read
 from .models import (
@@ -124,8 +126,7 @@ class BatchChoice(forms.ModelChoiceField):
 def stocked_batches():
     """{batch id: the tokens of the places it has fish at now}: its units, their production departments,
     systems and sites (from the stock ledger's live lines)."""
-    rows = (StockMovement.objects.filter(operation__is_deleted=False).values('batch_id', 'unit_id')
-            .annotate(fish=Sum('count_delta')).filter(fish__gt=0))
+    rows = stock_read.present('batch_id', 'unit_id')
     units = Tank.objects.select_related('production_department__site', 'system').in_bulk(
         {row['unit_id'] for row in rows})
     found = {}

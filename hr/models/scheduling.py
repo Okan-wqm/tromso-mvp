@@ -177,6 +177,8 @@ class SchedulingSettings(AuditedModel):
             models.CheckConstraint(condition=Q(forgotten_after_hours__gte=MIN_FORGOTTEN_HOURS,
                                                forgotten_after_hours__lte=MAX_FORGOTTEN_HOURS),
                                    name='chk_scheduling_forgotten_after', violation_error_message=FORGOTTEN_RANGE),
+            # Changed, never deleted: a DELETE is refused by the database too (hr 0014, KeepRows).
+            models.CheckConstraint(condition=Q(is_deleted=False), name='chk_scheduling_settings_kept'),
         ]
 
     def __str__(self):
@@ -190,5 +192,6 @@ class SchedulingSettings(AuditedModel):
 
     @classmethod
     def get(cls):
-        """The one row (made by the migration; made again here if a restore left none)."""
-        return cls.objects.first() or cls.objects.create()
+        """The one row, made by the migration (hr 0003) and kept by the database (hr 0014: never deleted). A read only:
+        a database without it is broken, and says so here (DoesNotExist) rather than run on defaults."""
+        return cls.objects.get()

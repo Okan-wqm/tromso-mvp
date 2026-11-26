@@ -16,7 +16,7 @@ from farm.tests.test_stock import make_unit
 from .. import read, services
 from ..models import Experiment, ReplicateUnit
 from . import D
-from farm.tests.helpers import role
+from farm.tests.helpers import may_record, role
 
 from .test_pages import RESEARCHER, PageTestCase, person
 from .test_start import StartTestCase
@@ -34,6 +34,7 @@ class RanTrialCase(StartTestCase):
         self.user.groups.add(role('Researcher', *RESEARCHER),
                              role('Farm reader', 'view_feedingrecord', 'view_treatment', 'view_licecount',
                                   'view_watermeasurement', 'view_stockoperation'))
+        may_record(self.user)                     # the fixture's feedings and weighings: the services ask (L-6)
         self.start()
         for tank in self.tanks[:4]:
             for ago in range(19, 6, -1):

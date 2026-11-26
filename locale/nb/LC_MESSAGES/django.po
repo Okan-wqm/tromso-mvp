@@ -635,6 +635,26 @@ msgstr[0] "%(count)s produksjonsavdeling tilhører ingen lokalitet."
 msgstr[1] "%(count)s produksjonsavdelinger tilhører ingen lokalitet."
 
 #, python-format
+msgid ""
+"%(count)s recurring task is not planned up to today: its tasks for today are missing here until "
+"the task job (manage.py generate_tasks) runs."
+msgid_plural ""
+"%(count)s recurring tasks are not planned up to today: their tasks for today are missing here "
+"until the task job (manage.py generate_tasks) runs."
+msgstr[0] ""
+"%(count)s gjentakende oppgave er ikke planlagt fram til i dag: dagens oppgaver for den mangler "
+"her til oppgavejobben (manage.py generate_tasks) kjører."
+msgstr[1] ""
+"%(count)s gjentakende oppgaver er ikke planlagt fram til i dag: dagens oppgaver for dem mangler "
+"her til oppgavejobben (manage.py generate_tasks) kjører."
+
+#, python-format
+msgid "%(count)s recurring task not planned up to today"
+msgid_plural "%(count)s recurring tasks not planned up to today"
+msgstr[0] "%(count)s gjentakende oppgave ikke planlagt fram til i dag"
+msgstr[1] "%(count)s gjentakende oppgaver ikke planlagt fram til i dag"
+
+#, python-format
 msgid "%(count)s sampling point"
 msgid_plural "%(count)s sampling points"
 msgstr[0] "%(count)s prøvepunkt"
@@ -9060,6 +9080,9 @@ msgstr "Lokaliteten avgjør hvilke systemer som kan velges."
 
 msgid "Its tasks are made from this day on, up to two weeks ahead."
 msgstr "Oppgavene lages fra denne dagen, opptil to uker fram."
+
+msgid "Its tasks for today are missing from the counts until the task job runs."
+msgstr "Oppgavene for i dag mangler i tallene til oppgavejobben har kjørt."
 
 #, python-format
 msgid "Its units have stock records on %(site)s: restore that site and choose it."

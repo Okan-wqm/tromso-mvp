@@ -36,7 +36,6 @@ from django.core.exceptions import ValidationError
 from django.core.management.base import CommandError
 from django.db import connection, transaction
 from django.db.migrations.executor import MigrationExecutor
-from django.db.models import Sum
 from django.http import QueryDict
 from django.test import RequestFactory
 from django.utils import translation
@@ -45,7 +44,7 @@ from core import audit
 from core.management.devtool import DevCommand
 from farm.handling import check
 from farm.health.withdrawal import WithdrawalChanged
-from farm.models import Batch, Site, StockMovement, Tank
+from farm.models import Batch, Site, Tank
 from farm.models.handling import HandlingKind
 from farm.models.stock import TransferReason
 from farm.resources import TankResource
@@ -206,8 +205,7 @@ class Command(DevCommand):
         cleaner_species = set(Batch.objects.filter(species__cleaner_fish_type__gt='').values_list('pk', flat=True))
         plan = Plan(sources, like, keep, [(batches[code], unit, name) for code, unit, name in moves])
         moved = {batches[code].pk: (unit, name) for code, unit, name in moves}
-        present = (StockMovement.objects.filter(unit__in=sources, operation__is_deleted=False)
-                   .values('unit_id', 'batch_id').annotate(fish=Sum('count_delta')).filter(fish__gt=0))
+        present = read.present('unit_id', 'batch_id', unit__in=sources)
         by_pk = stored(Batch.all_objects.all()).in_bulk({row['batch_id'] for row in present})
         going = []                                  # the cleaner fish's legs, after every salmon leg
         for row in sorted(present, key=lambda row: (row['unit_id'], by_pk[row['batch_id']].code)):
@@ -237,8 +235,7 @@ class Command(DevCommand):
                 plan.new_units.append((code, name))
                 continue
             held = set(read.fish_of_batch(batch.pk)) & {unit.pk}
-            others = (StockMovement.objects.filter(unit=unit, operation__is_deleted=False).exclude(batch=batch)
-                      .exclude(batch_id__in=cleaner_species).values('batch_id').annotate(fish=Sum('count_delta')).filter(fish__gt=0))
+            others = read.present('batch_id', unit=unit).exclude(batch_id__in=[batch.pk, *cleaner_species])
             if others.exists() or unit.production_department.site_id != site.pk or unit.kind != Tank.Kind.CAGE:
                 raise CommandError(f'{code} exists and is not an empty cage of {site.code} for {batch.code}'
                                    f'{" (it holds it already)" if held else ""}: nothing done.')

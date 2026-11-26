@@ -34,7 +34,7 @@ from django.utils import timezone
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _, ngettext
 
-from . import audit, sealing
+from . import atomic, audit, sealing
 from .models import AuditedModel, AuditLog, violated_constraint
 
 # LOCK ORDER. The one order every write takes its locks on the farm's structure in: the fish first (batches, then
@@ -226,6 +226,7 @@ def execute(plan, user):
     The plan was read before, unlocked (it is the confirmation's too), so the records it takes along or detaches are
     locked now and taken only as they still are (cross review F2): one moved to another parent meanwhile stays where
     it went, with what hangs under it, and one deleted on its own meanwhile keeps its own moment."""
+    atomic.required('core.softdelete.execute')
     moment = timezone.now()
     rows = lock_along(plan)
     gone = {(type(plan.obj), plan.obj.pk)}

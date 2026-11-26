@@ -22,6 +22,7 @@ from .. import outbox, services
 from ..models import Alarm, DeliveryAttempt, OutboxEntry
 from .doubles import RecordingTransport
 from .test_review_fixes import Case
+from farm.tests.helpers import may_record
 
 RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
 FAILING = {'push': 'alarms.tests.doubles.FailingTransport'}
@@ -79,7 +80,8 @@ class StaleWordTests(RecheckCase):
         self.sample(5.5)
         self.loop()
         alarm = self.critical()
-        snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
+        snoozer = may_record(get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x'),
+                             'add_alarmshelve')
         row = services.shelve(alarm, snoozer, 10, 'probe cleaned', at=self.at(1))
         with override_settings(ALARM_TRANSPORTS={}):
             self.loop(minutes=12)                                       # the snooze ended, the alarm open: told again
@@ -128,7 +130,8 @@ class MutantTests(RecheckCase):
 
 class SnoozeKindTests(RecheckCase):
     def test_sensors_failed_is_never_snoozed_an_unevaluated_unit_is(self):
-        snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
+        snoozer = may_record(get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x'),
+                             'add_alarmshelve')
         blind = services.open_alarm(source='system', farm_wide=True, parameter='sensors_failed', severity='critical', at=self.now,
                                     summary='The sensors cannot be read')
         with self.assertRaisesMessage(ValidationError, 'never snoozed'):

@@ -25,6 +25,7 @@ from .. import floods, outbox, read, services
 from ..models import Alarm, DeliveryAttempt, OutboxEntry, SeverityPolicy
 from .doubles import RecordingTransport
 from .test_review_fixes import Case
+from farm.tests.helpers import may_record
 
 FAILING = {'push': 'alarms.tests.doubles.FailingTransport'}
 RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
@@ -156,7 +157,8 @@ class SnoozedNotUndeliverableTests(Case):
         for minute in range(4):
             self.loop(minutes=minute)
         alarm = self.critical()
-        snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
+        snoozer = may_record(get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x'),
+                             'add_alarmshelve')
         services.shelve(alarm, snoozer, 60, 'probe cleaned', at=self.at(4))
         for minute in range(4, 20):
             self.loop(minutes=minute)
@@ -172,7 +174,8 @@ class KindTests(Case):
         self.assertNotEqual(floods.key(long), floods.key(other))
 
     def test_alarms_about_the_farm_are_snoozed_those_about_the_alarm_systems_own_health_never(self):
-        snoozer = get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x')
+        snoozer = may_record(get_user_model().objects.create_user('snoozer', 'snoozer@example.com', 'x'),
+                             'add_alarmshelve')
         for parameter in ('no_fresh_oxygen', 'unit_unevaluated', 'value_unevaluated'):
             with self.subTest(parameter=parameter):
                 alarm = services.open_alarm(source='system', farm_wide=True, parameter=parameter, severity='critical', at=self.now,

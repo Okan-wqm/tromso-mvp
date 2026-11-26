@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
@@ -112,11 +112,8 @@ def _water_around(request, alarm):
 def alarm_acknowledge(request, pk):
     """The console's acknowledgement (app 'console', no device): who holds Alarms: Edit, or a person it was sent to."""
     alarm = get_object_or_404(Alarm, pk=pk)
-    if not read.may_acknowledge(request.user, alarm):
-        raise PermissionDenied
-    notification = alarm.notifications.filter(recipient=request.user).order_by('-level').first()
     try:
-        services.acknowledge(alarm, request.user, app='console', notification=notification)
+        services.acknowledge(alarm, request.user, app='console')
     except ValidationError as error:
         messages.error(request, ' '.join(error.messages))
     else:

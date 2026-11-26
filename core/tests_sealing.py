@@ -182,7 +182,8 @@ SYSTEM_CALLS = {
     'farm/health/withdrawal.py:guarded_ceiling': 'the withdrawal guard’s ceiling over every unit',
     'inventory/read.py:_feeding': 'the store’s book: feed drawn per site and day is a stock figure, every feeding '
                                   'counts',
-    'inventory/read.py:overview': 'the store’s book, its overview',
+    'inventory/read.py:feeding_days': 'the store’s feeding per site, feed and day (its book and overview): a stock '
+                                      'figure, every feeding counts',
     'inventory/read.py:undelivered': 'the store’s book, the feed not yet delivered',
     'inventory/views.py:_feeding_days': 'the store’s feeding per site, feed and day, the same figure as the book',
     'reports/due.py:due': 'the regulatory due list: a duty is owed whoever looks (a sealed tank’s notifiable '

@@ -8,6 +8,7 @@ from django.db import IntegrityError, transaction
 
 from core.codes import next_code
 from farm.models import Feed, FeedingProtocol, ProtocolBand, ProtocolRate
+from farm.tests.helpers import may_record
 from farm.tests.test_stock import StockTestCase, make_unit
 
 from ..models import (
@@ -25,6 +26,8 @@ class ExperimentTestCase(StockTestCase):
     audience = 'open'
     def setUp(self):
         super().setUp()
+        # the fixtures' experiments are written through the services, which ask who may (the data-layering audit, L-6)
+        may_record(self.user, 'add_experiment', 'change_experiment')
         self.tanks = [self.t1, self.t2] + [make_unit(f'T-{number:02d}', self.hall) for number in range(3, 9)]
         self.feed = Feed.objects.create(name='Grower 4', code='GR-4', feed_type='grower', pellet_size_mm=D(4))
 

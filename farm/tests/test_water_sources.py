@@ -17,7 +17,7 @@ from datetime import timedelta
 from decimal import Decimal
 from unittest import mock
 
-from django.test import SimpleTestCase
+from django.test import TestCase
 from django.urls import reverse
 
 from ..water import calculation, read, sources
@@ -219,7 +219,10 @@ class DerivedTests(SourcesCase):
         self.assertEqual((reading.value, reading.status), (D('6.00'), Status.WARNING))
 
 
-class FreshnessTests(SimpleTestCase):
+class FreshnessTests(TestCase):
+    # A TestCase: the water's freshness rules are the rows the migrations seed, read without a stand-in (the data-layering
+    # audit, M-1), and a TestCase runs before any TransactionTestCase empties its worker's database.
+
     def test_fresh_for_seconds_overrides_the_parameters_hours(self):
         from datetime import datetime, timezone
         now = datetime(2026, 11, 4, 12, tzinfo=timezone.utc)

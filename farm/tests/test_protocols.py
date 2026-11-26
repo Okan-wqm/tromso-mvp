@@ -37,7 +37,7 @@ from ..stock.dates import end_of, local_today
 from ..stock.fold import Line, Op
 from ..water import services as water_services, sources
 from ..water.read import Found, Observation, Series
-from .helpers import WINDOW_WAY_OUT, correction_window, make_facility, point_of, role
+from .helpers import WINDOW_WAY_OUT, correction_window, make_facility, may_record, point_of, role
 from .test_feeding import FeedingTestCase
 from .test_stock import make_unit
 from farm import withdrawal_gate
@@ -288,6 +288,7 @@ class ProtocolTestCase(FeedingTestCase):
     def setUp(self):
         super().setUp()
         self.user.groups.add(role('Protocol keeper', *PROTOCOL_KEEPER))
+        self.user = type(self.user).objects.get(pk=self.user.pk)      # its rights read again (Django keeps them once read)
 
     def make_protocol(self, name='Salmon grow-out', bands=((0, 100, None), (100, None, '1.20')), columns=('12', '14'),
                       sfr=(('1.10', '1.30'), ('0.90', '1.00')), status='active', fcr='1.00', species=None):
@@ -306,6 +307,7 @@ class ProtocolTestCase(FeedingTestCase):
                                                  valid_from=self.day(days_ago), valid_until=until)
 
     def water(self, value, unit=None, hours=2, system=None):
+        may_record(self.user, 'add_watermeasurement')  # the water service asks (L-6)
         return water_services.record(self.user, point=point_of(system or unit or self.t1),
                                      measured_at=timezone.now() - timedelta(hours=hours), source='manual',
                                      values={'temperature_c': D(value)})

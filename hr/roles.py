@@ -38,12 +38,17 @@ def permission(name):
 
 
 def create():
-    """Makes each preset that does not exist yet. Returns [(name, created)]."""
+    """Makes each preset that does not exist yet, each logged as the roles tab logs a new role (its name and its
+    permissions as the matrix reads them; by the system: an operator's command, the data-layering audit L-3). Returns
+    [(name, created)]."""
+    from core import audit
+    from core.resources import RoleResource
     done = []
     with transaction.atomic():
         for preset in PRESETS:
             group, created = Group.objects.get_or_create(name=preset.name)
             if created:
                 group.permissions.set([permission(name) for name in preset.permissions])
+                audit.record_create(None, group, RoleResource.recorded(group), entity_type=RoleResource.entity_type())
             done.append((preset.name, created))
     return done

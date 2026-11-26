@@ -27,7 +27,6 @@ from core.testing import BAD_HOURS, FrozenClock
 
 from ..handling import check as handling_check, withdrawal as registry
 from ..handling.withdrawal import WithdrawalBlock
-from ..harvest import views as harvest_views
 from ..health import diseases, lice, notices, services, withdrawal
 from ..health import read
 from ..health.read import LiceWeek, lice_weeks
@@ -40,7 +39,7 @@ from ..stock import integrity, services as stock_services
 from ..stock.dates import local_today
 from ..feeding import services as feeding_services
 from .. import withdrawal_gate as gate
-from .helpers import going_on, make_facility, make_species, point_of, role, rows_data
+from .helpers import going_on, make_facility, make_species, may_record, point_of, role, rows_data
 from .test_stock import StockTestCase, make_unit
 from farm import withdrawal_gate
 
@@ -501,6 +500,7 @@ class WithdrawalTests(HealthTestCase):
 
     def test_medicated_feed_without_an_in_feed_treatment_has_an_unknown_end(self):
         feed = Feed.objects.create(name='Medisinfôr', code='MED-1', feed_type='medicated')
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         record = feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(2), feed=feed,
                                                  amount_kg=Decimal('2'))
         [held] = self.held()
@@ -579,13 +579,13 @@ class BulkRegistryTests(HealthTestCase):
                 self.assertEqual(found[unit.pk], handling_check.in_force(unit, day or local_today(unit)))
 
     def test_the_row_badges_of_production_units_are_the_units_with_a_block_in_force(self):
-        self.assertEqual(set(harvest_views.withdrawals(self.units)), {self.t1.pk, self.t2.pk, self.s1.pk})
-        self.assertEqual(harvest_views.withdrawals([self.t1])[self.t1.pk][0].batch, self.batch)
-        self.assertEqual(harvest_views.withdrawals([]), {})
+        self.assertEqual(set(handling_check.in_force_now(self.units)), {self.t1.pk, self.t2.pk, self.s1.pk})
+        self.assertEqual(handling_check.in_force_now([self.t1])[self.t1.pk][0].batch, self.batch)
+        self.assertEqual(handling_check.in_force_now([]), {})
         kept = list(registry._providers)
         registry._providers.clear()
         try:
-            self.assertEqual(harvest_views.withdrawals(self.units), {})
+            self.assertEqual(handling_check.in_force_now(self.units), {})
             self.assertIsNone(handling_check.in_force_of(self.units))
         finally:
             registry._providers.extend(kept)
@@ -638,6 +638,16 @@ class BulkHealthReadTests(HealthTestCase):
         site = unit.production_department.site
         events = HealthEvent.objects.filter(site=site, closed_on__isnull=True).prefetch_related('units')
         return [event for event in events if not event.units.all() or unit in event.units.all()]
+
+    def test_one_rule_says_which_events_concern_a_unit(self):
+        """The data-layering audit, L-9: read.concerning (the query the mortality, cull and treatment choices read) and
+        read.open_events (the drawer) give the same events for each unit as the per-unit rule did."""
+        for unit in self.units:
+            with self.subTest(unit=unit.code):
+                expected = {event.pk for event in self.old_events(unit)}
+                self.assertEqual({event.pk for event in read.concerning([unit.pk])}, expected)
+                self.assertEqual({event.pk for event in read.open_events([unit])[unit.pk]}, expected)
+        self.assertNotIn(self.named.pk, {event.pk for event in read.concerning([self.t1.pk])})
 
     def old_latest(self, unit_ids):
         found = {}
@@ -1612,6 +1622,7 @@ class TreatmentHandlingTests(HealthTestCase):
 
     def fed(self, days_ago, hour):
         feed = Feed.objects.get_or_create(name='Grower 3 mm', code='GROWER-3', feed_type='grower')[0]
+        may_record(self.user, 'add_feedingrecord')  # the feeding service asks (L-6)
         return feeding_services.record_feeding(self.user, unit=self.t1, day=self.day(days_ago), feed=feed,
                                                amount_kg=Decimal('2'), time=time(hour))
 

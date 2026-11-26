@@ -167,7 +167,8 @@ class NeedsTests(MonitoringCase):
         CardTemplateAssignment.objects.filter(unit=None, system=None, system_type=None, species=None,
                                               kind=None).update(template=mine)
         units = read.units_for(read.Params())
-        with mock.patch.object(read.harvest_views, 'withdrawals', return_value={}),                 CaptureQueriesContext(connection) as log:          # (the withdrawal registry reads treatments itself)
+        with mock.patch.object(read.check, 'in_force_now', return_value={}), \
+                CaptureQueriesContext(connection) as log:          # (the withdrawal registry reads treatments itself)
             found = read.cards(units, user or self.reader, Choice())
         return found, ' '.join(query['sql'] for query in log)
 

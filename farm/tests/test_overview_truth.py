@@ -12,7 +12,7 @@ from django.urls import reverse
 from ..models import HealthEvent, Site, StockOperation
 from ..stock import services
 from ..stock.dates import site_today
-from .helpers import role
+from .helpers import may_record, role
 from .test_production_overview import OverviewTestCase, card_of, section
 
 READER = ('view_stockoperation', 'view_watermeasurement', 'view_report')
@@ -75,6 +75,7 @@ class ReportsTruthTests(OverviewTestCase):
         self.assertNotIn('No report is due.', home)
 
     def test_a_site_that_is_set_up_and_owes_nothing_says_no_report_is_due(self):
+        may_record(self.user, 'delete_stockoperation')  # the stock service asks (L-6)
         services.void(self.user, StockOperation.objects.get(), 'Not stocked after all')    # no fish: nothing to set up
         self.client.force_login(self.reader)
         html = self.page()

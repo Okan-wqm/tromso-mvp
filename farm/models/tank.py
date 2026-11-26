@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models, transaction
-from django.db.models import Case, F, Q, Sum, Value, When
+from django.db.models import Case, F, Q, Value, When
 from django.db.models.functions import Coalesce, Round
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
@@ -469,16 +469,14 @@ class Tank(CodedMixin, AuditedModel):
     # ---- stock ------------------------------------------------------------------------------------
     def has_stock(self):
         """Whether fish are in the unit now: the sum of its live stock lines (Operations › Production
-        units). The stock service keeps every batch's share of a unit at 0 or more on every day, so a
-        positive sum means at least one batch is in it. Every rule that depends on fish asks this one
-        method: the statuses that need fish or none, a unit with fish cannot be deleted, and its size
+        units), as the stock reader says it (farm.stock.read.holds_fish, the one definition of fish
+        present now). Every rule of a unit that depends on fish asks this one method: the statuses that
+        need fish or none, a unit with fish cannot be deleted, and its size
         cannot change while they are in it."""
         if self._state.adding:
             return False
-        from .stock import StockMovement
-        total = StockMovement.objects.filter(unit=self, operation__is_deleted=False).aggregate(
-            fish=Sum('count_delta'))['fish']
-        return (total or 0) > 0
+        from ..stock.read import holds_fish
+        return holds_fish(self.pk)
 
     def has_history(self):
         """Whether the stock ledger has live lines in the unit, now or in the past: its figures belong to its site

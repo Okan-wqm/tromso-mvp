@@ -8,11 +8,13 @@ from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import audit
+from core import access, audit
 from core.models import AuditLog
 from farm.models import FeedingProtocol, ProtocolBand, ProtocolRate
 from farm.models.feeding_protocol import ProtocolStatus
 
+# Who may (asked by each act itself, whoever calls: the data-layering audit, L-6): the protocol pages' rights.
+CHANGE, ADD = 'farm.change_feedingprotocol', 'farm.add_feedingprotocol'
 TABLE = gettext_lazy('Feeding table')
 # The general fields a copy takes over (FeedingProtocol), and how the log names a copy's table.
 COPIED = ('species', 'expected_fcr', 'notes')
@@ -49,6 +51,7 @@ def _write(protocol, columns, rows, column_name):
 def save_table(user, protocol, columns, rows, version, column_name):
     """Replaces the protocol's table with `rows` (the cleaned bands of the grid, each with a cell per temperature of
     `columns`, read by `column_name`). Refused when the protocol is assigned, or changed since `version`."""
+    access.require(user, CHANGE)
     with transaction.atomic():
         protocol = FeedingProtocol.objects.select_for_update().get(pk=protocol.pk)
         if protocol.is_assigned():
@@ -87,6 +90,7 @@ def copy_name(name):
 def duplicate(user, protocol, snapshot):
     """A draft copy of the protocol and its table, to change and assign from a date; logged as created, with its
     fields (`snapshot`: the tab's) and its table."""
+    access.require(user, ADD)
     with transaction.atomic():
         source = FeedingProtocol.objects.get(pk=protocol.pk)
         copy = FeedingProtocol(name=copy_name(source.name), status=ProtocolStatus.DRAFT, created_by=user,

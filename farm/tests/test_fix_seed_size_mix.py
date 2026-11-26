@@ -22,7 +22,7 @@ from ..models import (
 )
 from ..models.feeding import FeedTarget
 from ..stock import integrity, read, services
-from .helpers import make_species
+from .helpers import make_species, may_record
 from .test_feeding import FeedingTestCase
 
 D = Decimal
@@ -72,6 +72,7 @@ class SeedCagesTestCase(FeedingTestCase):
         self.assertEqual(integrity.problems(), [])
 
     def command(self, *extra, **options):
+        may_record(self.user, 'add_tank')        # the command makes cages as this person: their points' service asks (L-6)
         out = io.StringIO()
         call_command('fix_seed_size_mix', '--force', '--user', self.user.username, '--keep', self.grow.code,
                      '--move', f'{self.post.code}:TG-M03:Cage 3', '--move', f'{self.smolt.code}:TG-M04:Cage 4',
@@ -277,6 +278,7 @@ class UnmigratedDryRunTests(TransactionTestCase):
         today = services.local_today(m01)
 
         def stock(unit, weight):
+            may_record(user, 'add_stockoperation')  # the stock service asks (L-6)
             return services.record_input(user, species=salmon, day=today, input_stage='smolt', origin='own_hatchery',
                                          lines=[(unit, 100, D(weight))], notes=f'{fix_seed_size_mix.MARK} [seed]',
                                          size_mix_ack=True).movements.get().batch

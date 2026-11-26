@@ -5,7 +5,8 @@ from tasks import services
 
 class Command(BaseCommand):
     help = ("Makes the planned tasks of every active recurring task up to TASK_HORIZON_DAYS ahead (and missed ones "
-            "back to TASK_BACKFILL_DAYS); for a cron job. The Tasks pages do the same before they read.")
+            "back to TASK_BACKFILL_DAYS): the task job, run every hour by the server's jobs. The pages only read; "
+            "they say when recurring tasks are not planned up to today.")
 
     def handle(self, *args, **options):
         made = services.materialise_due()

@@ -24,7 +24,7 @@ from ..models.feeding import FeedTarget
 from ..models.stock import CLEANER_CULL_REASONS, PRODUCTION_CULL_REASONS, CullReason
 from ..stock import integrity, read as stock_read, services as stock_services
 from ..stock.fold import Line, Op
-from .helpers import make_facility, make_species, role
+from .helpers import make_facility, make_species, may_record, role
 from .test_feeding import FeedingTestCase, make_unit
 from .test_harvest import HARVEST_KEEPER
 from farm import withdrawal_gate
@@ -456,6 +456,7 @@ class FeedingDialogTests(CleanerFishTestCase):
 
 class HealthRecordsOfTheFishTests(CleanerFishTestCase):
     def count(self, unit, **fields):
+        may_record(self.user, 'add_licecount')  # the lice count service asks (L-6)
         return health_services.record_lice_count(self.user, unit=unit, day=self.day(1), fish_counted=20,
                                                  adult_females=2, mobile=3, attached=4, **fields)
 
@@ -511,6 +512,7 @@ class WaterLimitsOfEveryFishTests(CleanerFishTestCase):
         from .helpers import point_of
         WaterLimit.objects.create(species=self.salmon, parameter='temperature_c', water_type='any',
                                   warning_high=Decimal(18))
+        may_record(self.user, 'add_watermeasurement')  # the water service asks (L-6)
         water_services.record(self.user, point=point_of(self.cage), measured_at=timezone.now() - timedelta(hours=1),
                               source='manual', values={'temperature_c': Decimal('16')})
         water = water_read.unit_water([self.cage])[self.cage.pk]

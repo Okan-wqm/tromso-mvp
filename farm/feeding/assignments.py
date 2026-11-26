@@ -11,11 +11,14 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.translation import gettext as _
 
-from core import audit
+from core import access, audit
 from farm.models import ProtocolAssignment, Tank
 from farm.stock.dates import local_today
 
 # The fields the activity log shows of an assignment (and the assignment's form, on its one tab).
+# Who may assign a protocol (Feeding protocols › Assignments: Create), asked by `save` itself (the data-layering audit,
+# L-6). An experiment writes its diet's rows under its own right, through `write` inside its checked call.
+ASSIGN = 'farm.add_protocolassignment'
 FIELDS = ('protocol', 'unit', 'batch', 'valid_from', 'valid_until', 'notes')
 
 
@@ -55,8 +58,16 @@ def recorded(row):
 
 
 def save(user, made):
-    """Writes the rows of `rows()` together, each logged as created by `user`. An IntegrityError (a row written
-    for the same fish meanwhile: the constraints) leaves nothing written and is the caller's to report."""
+    """Writes the rows of `rows()` together for `user`, who may assign protocols (ASSIGN), each logged as created by
+    them. An IntegrityError (a row written for the same fish meanwhile: the constraints) leaves nothing written and is
+    the caller's to report."""
+    access.require(user, ASSIGN)
+    return write(user, made)
+
+
+def write(user, made):
+    """`save`'s write without its question, for a caller that asked its own (an experiment's start or replacement, under
+    the experiment's right): the rows together, each logged as created by `user`."""
     with transaction.atomic():
         for row in made:
             row.created_by = row.updated_by = user
@@ -69,7 +80,8 @@ def end(user, row, last_day):
     """Ends a row on `last_day` (both included): the row is locked, its last day set, its version counted and the change logged
     as the assignment's edit logs it (before and after). The farm's rule for a row that has started is kept: its past days
     keep their protocol, so the last day is yesterday at the earliest; a day before the row's first day, or after its
-    own last day, is refused. Returns the row."""
+    own last day, is refused. Returns the row. A step of an experiment's release, inside its checked call (the
+    assignment page has no end of its own: an edit there is crud's)."""
     with transaction.atomic():
         row = ProtocolAssignment.all_objects.select_for_update().get(pk=row.pk)
         if row.is_deleted:

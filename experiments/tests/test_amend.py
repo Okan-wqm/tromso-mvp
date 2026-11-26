@@ -13,6 +13,7 @@ from core.models import AuditLog, Profile
 from farm.feeding import assignments
 from farm.models import FeedingProtocol, ProtocolAssignment
 from farm.stock import services as stock_services
+from farm.tests.helpers import may_record
 from farm.tests.test_protocols import ProtocolTestCase
 
 from .. import read, services
@@ -367,6 +368,7 @@ class ReleaseRaceTests(TransactionTestCase):
         from farm.tests.helpers import make_species
         from farm.tests.test_stock import make_unit
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'x')
+        may_record(self.user, 'add_experiment', 'change_experiment')  # the services ask who may (L-6)
         site = Site.objects.create(name='Bergen', code='BG')
         hall = ProductionDepartment.objects.create(site=site, name='Hall A', code='HA')
         self.tanks = [make_unit(f'T-0{n}', hall) for n in (1, 2)]
@@ -421,6 +423,7 @@ class CopyRaceTests(TransactionTestCase):
         from farm.models import Site
         from farm.tests.helpers import make_species
         self.user = get_user_model().objects.create_user('ali', 'ali@example.com', 'x')
+        may_record(self.user, 'add_experiment', 'change_experiment')  # the services ask who may (L-6)
         self.trial = Experiment.objects.create(code='E-2026-001', name='One', site=Site.objects.create(name='Bergen',
                                                                                                       code='BG'),
                                                species=make_species(), duration_days=56)

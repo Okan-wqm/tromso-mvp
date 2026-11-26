@@ -412,6 +412,8 @@ class PlatformSettings(AuditedModel):
                 condition=models.Q(unknown_withdrawal_days__gte=UNKNOWN_WITHDRAWAL_DAYS[0],
                                    unknown_withdrawal_days__lte=UNKNOWN_WITHDRAWAL_DAYS[1]),
                 name='chk_platform_settings_unknown_withdrawal'),
+            # Changed, never deleted: a DELETE is refused by the database too (core 0015, KeepRows).
+            models.CheckConstraint(condition=models.Q(is_deleted=False), name='chk_platform_settings_kept'),
         ]
 
     def __str__(self):
@@ -424,8 +426,9 @@ class PlatformSettings(AuditedModel):
 
     @classmethod
     def get(cls):
-        """The one row (made by the migration; made again here if a restore left none)."""
-        return cls.objects.first() or cls.objects.create()
+        """The one row, made by the migration (core 0009) and kept by the database (core 0015: never deleted). A read
+        only: a database without it is broken, and says so here (DoesNotExist) rather than run on defaults."""
+        return cls.objects.get()
 
 
 class EntryKey(models.Model):

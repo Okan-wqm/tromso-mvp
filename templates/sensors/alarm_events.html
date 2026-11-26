@@ -22,7 +22,7 @@
         <td>{{ event.opened_at|site_clock:event.binding.clock|date:"DATETIME_FORMAT" }}</td>
         <td>{% if event.closed_at %}{{ event.closed_at|site_clock:event.binding.clock|date:"DATETIME_FORMAT" }}{% else %}<span class="badge badge-maintenance">{% trans "Open" %}</span>{% endif %}</td>
         <td class="num">{{ event.peak|measured:event.rule.quantity_code }}</td>
-        <td>{% with ack=event.alarm.acknowledgements.all.0 %}{% if ack %}{{ ack.user|default:"—" }} · {{ ack.acknowledged_at|site_clock:event.binding.clock|date:"DATETIME_FORMAT" }}{% elif can_acknowledge %}<form method="post" action="{% url 'sensors:alarm_event_acknowledge' event.pk %}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Acknowledge" %}</button></form>{% else %}—{% endif %}{% endwith %}</td>
+        <td>{% with ack=event.alarm.acknowledgements.all.0 %}{% if ack %}{{ ack.user|default:"—" }} · {{ ack.acknowledged_at|site_clock:event.binding.clock|date:"DATETIME_FORMAT" }}{% elif event.pk in acknowledgeable %}<form method="post" action="{% url 'sensors:alarm_event_acknowledge' event.pk %}">{% csrf_token %}<button type="submit" class="button button-ghost">{% trans "Acknowledge" %}</button></form>{% else %}—{% endif %}{% endwith %}</td>
       </tr>
       {% endfor %}
     </tbody>

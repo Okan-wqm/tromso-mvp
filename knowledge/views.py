@@ -2,16 +2,15 @@
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_GET, require_POST
 
-from core import audit
-from core.crud import DetailView, done, render_page
+from core.crud import Crossed, DetailView, done, render_page
 
+from . import services
 from .models import Document, EntryStatus, KnowledgeEntry
 from .models.document import TEXT_PAGES
 from .resources import DocumentResource, KnowledgeEntryResource
@@ -54,29 +53,20 @@ def document_text(request, pk):
 @require_POST
 def review_entry(request, pk):
     """Marks a knowledge entry reviewed by the person, now (status=reviewed), or takes it back to draft
-    (status=draft). It is refused when the entry changed since the person read it (`version`): a review covers
-    the words the reviewer saw. Logged like an edit."""
+    (status=draft), through knowledge.services.review: refused when the entry changed since the person read it."""
     _allowed(request, KnowledgeEntryResource, 'change')
     status = request.POST.get('status')
     if status not in EntryStatus.values:
         return HttpResponseBadRequest()
-    resource = KnowledgeEntryResource
     url = reverse('knowledge:knowledgeentry_detail', args=[pk])
-    with transaction.atomic():
-        entry = get_object_or_404(KnowledgeEntry.objects.select_for_update(), pk=pk)
-        if request.POST.get('version') != str(entry.version):
-            messages.error(request, _('Someone changed this entry while you were reading it. Read it again before '
-                                      'you review it.'))
-            return done(request, url, stay=True)
-        before = resource.recorded(entry)
-        if status == EntryStatus.REVIEWED:
-            entry.review(request.user)
-        else:
-            entry.return_to_draft()
-        entry.version += 1
-        entry.updated_by = request.user
-        entry.save()
-        audit.record_update(request.user, entry, before, resource.recorded(entry), entity_type=resource.entity_type())
+    try:
+        services.review(request.user, pk, status, request.POST.get('version'))
+    except KnowledgeEntry.DoesNotExist:
+        raise Http404 from None
+    except Crossed:
+        messages.error(request, _('Someone changed this entry while you were reading it. Read it again before '
+                                  'you review it.'))
+        return done(request, url, stay=True)
     if status == EntryStatus.REVIEWED:
         messages.success(request, _('Marked as reviewed by you.'))
     else:

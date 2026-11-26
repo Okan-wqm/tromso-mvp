@@ -11,6 +11,7 @@ from django.test import override_settings
 from django.utils import timezone
 
 from core.models import AuditLog
+from farm.tests.helpers import may_record
 from sensors import alarms as sensor_alarms
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
@@ -311,6 +312,7 @@ class AcknowledgementTests(AlarmsCase):
         self.assertEqual(entry.user, self.operator)
 
     def test_once_per_person(self):
+        may_record(self.manager, 'change_alarm')         # Alarms: Edit: the service asks who may (L-5)
         services.acknowledge(self.alarm, self.operator)
         with self.assertRaisesMessage(ValidationError, 'already acknowledged'):
             services.acknowledge(self.alarm, self.operator)
@@ -318,6 +320,7 @@ class AcknowledgementTests(AlarmsCase):
         self.assertEqual(Acknowledgement.objects.count(), 2)
 
     def test_a_notification_answered_is_the_persons_own(self):
+        may_record(self.manager, 'change_alarm')         # may acknowledge, but not with another person's notification
         with self.assertRaisesMessage(ValidationError, 'not yours'):
             services.acknowledge(self.alarm, self.manager, notification=Notification.objects.get())
 

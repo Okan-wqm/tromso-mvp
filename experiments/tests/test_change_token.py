@@ -217,7 +217,7 @@ class StampTests(TokenCase):
 
 class ReadTimeRuleTests(TokenCase):
     """The activity log's read-time rule (core.audit.sealed_out) on its own, without the stamp: an entry written before
-    entries were stamped (core/0016) has none, and the rule alone must hide it."""
+    entries were stamped (core/0017) has none, and the rule alone must hide it."""
 
     def unstamped(self, record):
         with mock.patch.object(audit, 'stamp'):
@@ -290,7 +290,7 @@ class SealDepthTests(TokenCase):
         self.assertEqual(sealing.works_of(Acknowledgement, [ack.pk]), {str(ack.pk): set()})
 
     def test_an_unstamped_entry_about_a_sealed_sensor_event_is_left_out(self):
-        """L4: an entry with no stamp (before core/0016, or raw SQL) about a sensor event on X's channel is hidden by
+        """L4: an entry with no stamp (before core/0017, or raw SQL) about a sensor event on X's channel is hidden by
         the read-time rule alone, which reaches the channel's binding."""
         event, _alarm, _ack = self.sensor_records(self.sealed_channel, self.sealed_point)
         with mock.patch.object(audit, 'stamp'):

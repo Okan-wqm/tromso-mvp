@@ -322,6 +322,7 @@
       },
       "tests": [
         "core/tests_data_access.py",
+        "experiments/tests/test_review.py",
         "sensors/tests/test_fresh_rule.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
@@ -912,6 +913,7 @@
         "left_out": false
       },
       "tests": [
+        "experiments/tests/test_review.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_snooze.py"
@@ -15837,6 +15839,7 @@
         "hr/tests/test_team_today.py",
         "experiments/tests/test_amend.py",
         "experiments/tests/test_places.py",
+        "experiments/tests/test_review.py",
         "experiments/tests/test_start.py",
         "experiments/tests/world.py",
         "monitoring/tests/test_templates_db.py",
@@ -24463,6 +24466,7 @@
         "reports/tests/test_compute.py",
         "experiments/tests/test_confidential.py",
         "experiments/tests/test_oversee.py",
+        "experiments/tests/test_review.py",
         "experiments/tests/test_university.py",
         "experiments/tests/world.py",
         "monitoring/tests/test_pages.py"

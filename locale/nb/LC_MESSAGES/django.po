@@ -232,11 +232,13 @@ msgstr[1] "%(count)d tellinger"
 
 #, python-format
 msgid ""
-"%(count)d critical alarm(s) reached nobody: no recipient rule names a person who may see them. A "
-"person who holds Oversee sees them on Alarms: tell the people who keep those fish."
+"%(count)d critical alarm(s) reached nobody at their level: no recipient rule names a person who "
+"may see them, or their notifications cannot leave. A person who holds Oversee sees them on "
+"Alarms: tell the people who keep those fish."
 msgstr ""
-"%(count)d kritisk(e) alarm(er) nådde ingen: ingen mottakerregel navngir en person som kan se dem."
-" En person med Tilsyn ser dem under Alarmer: si fra til dem som steller disse fiskene."
+"%(count)d kritisk(e) alarm(er) nådde ingen på sitt nivå: ingen mottakerregel navngir en person "
+"som kan se dem, eller varslene deres kan ikke sendes. En person med Tilsyn ser dem under Alarmer:"
+" si fra til dem som steller disse fiskene."
 
 #, python-format
 msgid ""
@@ -10351,6 +10353,13 @@ msgstr "Ingen alarm er slumret."
 
 msgid "No alarm is open."
 msgstr "Ingen alarm er åpen."
+
+msgid ""
+"No alarm recipient rule is active: nobody is told of any alarm. Make the recipient rules (Company"
+" › Alarms)."
+msgstr ""
+"Ingen mottakerregel for alarmer er aktiv: ingen blir varslet om noen alarm. Lag mottakerreglene "
+"(Selskap › Alarmer)."
 
 msgid "No alarm yet."
 msgstr "Ingen alarmer ennå."

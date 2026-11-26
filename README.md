@@ -1412,7 +1412,7 @@ assignments are stored; every ration, estimate and deviation is computed on read
 open), with its feed (the pellet is the feed's), its meals a day (1–48) and optionally its expected FCR, and per band
 the SFR, % of the body weight a day (0–15; 0 is "do not feed at this temperature"), at each temperature column
 (`feeding_protocol_rates`, −3 to 40 °C). The protocol's own expected FCR (0.50–3.00) is the fallback of a band without
-one, always shown with its source. The bands meet without gaps (checked when the table is saved) and never overlap
+one. The bands meet without gaps (checked when the table is saved) and never overlap
 (an exclusion constraint, `btree_gist`, created by migration 0015); every cell is filled (the grid is saved whole).
 The dialog has a General tab (name, unique among live protocols in any case; species; status; expected FCR; uneaten
 feed; expected mortality; notes), the **Feeding table** tab, a grid of the bands by the temperature columns: the columns are typed as
@@ -1433,18 +1433,24 @@ production plan alike; nothing else in the code turns feed into weight.
   (`uneaten_pct`, 0–50 %, empty: none), which a band may override like the FCR: growth = feed given × (1 − uneaten) ÷ FCR.
   The **economic FCR**, on the feed given, is FCR ÷ (1 − uneaten): computed and shown (the fixed table, the growth plan),
   never entered.
-- **The FCR and the uneaten share are read between the bands, without a jump** (`growth.interpolate`, the one place):
-  each band's value sits at the middle of the band (a band without an upper weight: at its lower weight), is linear
-  between two neighbouring middles and constant before the first and after the last. The SFR keeps its own rule: the
-  fish's own band, interpolated over the temperature only (a band carries the pellet and the meals, which change in
-  steps). Open for the owner: SFR over weight too, and the lower edge instead of the middle as the anchor.
+- **Between two bands each quantity follows the protocol's own rule** (`fcr_between`, `uneaten_between`, `sfr_between`
+  on the General tab; database checks), for the FCR, the uneaten share and the SFR (owner decisions 13 and 14):
+  **Smooth between bands** (a new protocol's): each band's value sits at the middle of the band (a band without an upper
+  weight: at its lower weight), is linear between two neighbouring middles and constant before the first and after the
+  last, so nothing jumps at a band's edge (`growth.interpolate`, the one place; the SFR is read both ways, between two
+  temperature columns and between two bands, never outside the first and last column). **Step at the band edge**: the
+  fish's own band's value, as every table was read before. The feed (its pellet) and the meals a day are always the
+  band's own. Open for the owner: the lower edge instead of the middle as the anchor.
+- **The values used are shown**: under the stored table, "Values used over the fish's weight" lists, at every band's lower
+  weight and at the weight where the band's entered values sit (marked "entered for the band"), the FCR, the uneaten share
+  and the SFR at each temperature column, with the rule of each. They are made by `ration.Table.used`, which calls the
+  very functions the ration and the growth read: there is no second copy of the rule, in Python, SQL or the browser.
 - **An expected mortality** in % a month (`mortality_pct_month`, 0–30, on the protocol and per band, empty: none) is read
   by the production plan only: it lowers the fish, so the biomass and the feed, never the average weight. A month is
   30 days, compounded daily.
-- The three are fixed once the protocol is assigned, like its table (Q3). A protocol that existed when the interpolation
-  landed keeps each band's own FCR for the days before that (`interpolated_from`, written once by migration 0053 and
-  never edited), so nothing it gave for a past day changed; a protocol made since, a copy too, is read between the bands
-  on every day.
+- All of these are fixed once the protocol is assigned, like its table (Q3): a change is made on a copy (Duplicate),
+  and the page says so. **The protocols that existed before the rules keep a step for all three** (migration 0053
+  writes it), so nothing an existing protocol gives changed on any day; a protocol made since is smooth.
 
 **An assignment** (table `protocol_assignments`) is one row per target: a unit (the protocol feeds whatever is in
 it), a whole batch (it follows the batch into every unit it is moved to, through transfers and splits) or a batch in
@@ -2630,13 +2636,13 @@ last fed and a medicine withdrawal; **Plan harvest** starts a planned harvest of
 longer in stock follow. **The estimated weight now** is the feeding protocols' estimate (Operations › Feeding);
 **the plan ahead** walks it forward a day at a time (`farm/harvest/forecast.py`, on `growth.curve`): each day the
 fish alive are given that day's ration (the protocol in force, the band at the weight reached, its SFR at the
-temperature) and grow by the growth rule (the feed less the uneaten share, ÷ the FCR, both read between the bands); the
+temperature) and grow by the growth rule (the feed less the uneaten share, ÷ the FCR; the three by the protocol's between-band rules); the
 band's expected mortality takes its share of the fish at the day's end; a fasting day before a planned harvest or
 transport gives no feed and no growth; no protocol, a weight outside the bands or no temperature stops it with the
 reason, never a default, and so does the platform owner's horizon (Platform settings, "A production plan looks ahead",
 730 days until they set another). The temperature ahead is the site's water temperature of the day's month when the
 site has its twelve (Setup › Sites, tab Plan temperatures: all twelve or none, a database check), else the unit's
-latest temperature held; the row says which. The row says the day the target is reached, the feed to it and the economic
+latest temperature held; the row says which, and a temperature held that is not fresh says how old it is. The row says the day the target is reached, the feed to it and the economic
 FCR of those days (feed given ÷ growth). Past days are never planned: the estimate grows on recorded feedings only.
 Nothing is stored.
 

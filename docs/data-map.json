@@ -9891,15 +9891,52 @@
           "why": ""
         },
         {
-          "name": "interpolated_from",
-          "field": "interpolated_from",
-          "type": "date",
-          "null": true,
-          "choices": [],
+          "name": "fcr_between",
+          "field": "fcr_between",
+          "type": "varchar(6)",
+          "null": false,
+          "choices": [
+            "smooth",
+            "step"
+          ],
           "link": null,
-          "on_form": [],
-          "how": "system",
-          "why": "not editable: set by the code"
+          "on_form": [
+            "ProtocolForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "uneaten_between",
+          "field": "uneaten_between",
+          "type": "varchar(6)",
+          "null": false,
+          "choices": [
+            "smooth",
+            "step"
+          ],
+          "link": null,
+          "on_form": [
+            "ProtocolForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "sfr_between",
+          "field": "sfr_between",
+          "type": "varchar(6)",
+          "null": false,
+          "choices": [
+            "smooth",
+            "step"
+          ],
+          "link": null,
+          "on_form": [
+            "ProtocolForm › General"
+          ],
+          "how": "form",
+          "why": ""
         },
         {
           "name": "notes",
@@ -9944,6 +9981,24 @@
         },
         {
           "name": "chk_feeding_protocols_mortality",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_feeding_protocols_fcr_between",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_feeding_protocols_uneaten_between",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_feeding_protocols_sfr_between",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -10027,6 +10082,9 @@
             "expected_fcr": "General",
             "uneaten_pct": "General",
             "mortality_pct_month": "General",
+            "fcr_between": "General",
+            "uneaten_between": "General",
+            "sfr_between": "General",
             "notes": "General",
             "version": ""
           }

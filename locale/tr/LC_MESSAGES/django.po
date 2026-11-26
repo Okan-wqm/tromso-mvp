@@ -6565,15 +6565,17 @@ msgid "EU-listed, category A"
 msgstr "AB listesinde, A kategorisi"
 
 msgid ""
-"Each band’s FCR and uneaten share sit at the middle of the band (a band without an upper weight: "
-"at its lower weight). For fish between two middles both are read in between, so neither jumps at "
-"a band’s edge; the SFR is read from the fish’s own band at the water temperature. The economic "
-"FCR is the FCR on the feed given: the FCR divided by the share eaten."
+"Each band’s FCR, uneaten share and SFR sit at the middle of the band (a band without an upper "
+"weight: at its lower weight). With the rule “Smooth between bands” the value of fish between two "
+"middles is read in between, so it does not jump at a band’s edge; with “Step at the band edge” it"
+" is the fish’s own band’s. The rule is chosen per quantity on the General tab. The economic FCR "
+"is the FCR on the feed given: the FCR divided by the share eaten."
 msgstr ""
-"Her bandın FCR’si ve yenmeyen payı bandın ortasında durur (üst ağırlığı olmayan bantta: alt "
-"ağırlığında). İki orta nokta arasındaki balık için ikisi de arada okunur, böylece hiçbiri bant "
-"sınırında sıçramaz; SFR balığın kendi bandından su sıcaklığına göre okunur. Ekonomik FCR, verilen"
-" yem üzerinden FCR’dir: FCR bölü yenen pay."
+"Her bandın FCR’si, yenmeyen payı ve SFR’si bandın ortasında durur (üst ağırlığı olmayan bantta: "
+"alt ağırlığında). “Bantlar arasında yumuşak” kuralıyla iki orta nokta arasındaki balığın değeri "
+"arada okunur, böylece bant sınırında sıçramaz; “Bant sınırında basamak” kuralıyla balığın kendi "
+"bandının değeridir. Kural her büyüklük için Genel sekmesinde seçilir. Ekonomik FCR, verilen yem "
+"üzerinden FCR’dir: FCR bölü yenen pay."
 
 msgid "Each day"
 msgstr "Her gün"
@@ -7114,11 +7116,11 @@ msgstr ""
 "FCR ve yem rakamları onsuz yeniden hesaplanır. Bir yemlemeyi düzeltmek için iptal edip yeniden "
 "kaydedin."
 
+msgid "FCR between bands"
+msgstr "Bantlar arasında FCR"
+
 msgid "FCR in force"
 msgstr "Geçerli FCR"
-
-msgid "FCR read between the bands from"
-msgstr "FCR’nin bantlar arasında okunmaya başladığı gün"
 
 msgid "FCR realised · expected"
 msgstr "FCR gerçekleşen · beklenen"
@@ -7130,6 +7132,10 @@ msgstr ""
 "FCR stoklamadan son tartıma kadar, yalnızca tartılmış biyokütle üzerinden hesaplanır. Ölü "
 "balıklar son tartılan ortalamayla düşülür, o günden sonraki büyümeleri hesaba katılmaz: çok ölüm "
 "olduğunda bFCR biraz yüksek çıkar."
+
+#, python-format
+msgid "FCR: %(fcr)s · uneaten feed: %(uneaten)s · SFR: %(sfr)s"
+msgstr "FCR: %(fcr)s · yenmeyen yem: %(uneaten)s · SFR: %(sfr)s"
 
 msgid "Facilities"
 msgstr "Tesis özellikleri"
@@ -7613,6 +7619,9 @@ msgstr ""
 msgid "Fish weighed"
 msgstr "Tartılan balık"
 
+msgid "Fish weight"
+msgstr "Balık ağırlığı"
+
 msgid "Fish with no limit"
 msgstr "Sınırı olmayan balıklar"
 
@@ -7743,6 +7752,17 @@ msgid ""
 "For example: the slaughter did not take place, or the notice was filed elsewhere. It is kept with"
 " your name and the day."
 msgstr "Örneğin: kesim yapılmadı veya bildirim başka yerde yapıldı. Adınız ve günle birlikte saklanır."
+
+msgid ""
+"For fish between two weight bands. Smooth: each band’s value sits at the middle of the band and "
+"is read in between, with no jump at a band’s edge. Step: the fish’s own band’s value, changing at"
+" the edge. The Feeding table tab shows the values this gives. The same choice for the uneaten "
+"feed and for the SFR."
+msgstr ""
+"İki ağırlık bandı arasındaki balıklar için. Yumuşak: her bandın değeri bandın ortasında durur ve "
+"arada okunur, bant sınırında sıçrama olmaz. Basamak: balığın kendi bandının değeri, sınırda "
+"değişir. Yemleme tablosu sekmesi bunun verdiği değerleri gösterir. Aynı seçim yenmeyen yem ve SFR"
+" için de yapılır."
 
 msgid "For the calcite and aragonite saturation, in water of 5 to 44 ‰."
 msgstr "Kalsit ve aragonit doygunluğu için, 5 ile 44 ‰ arasındaki suda."
@@ -11564,16 +11584,17 @@ msgid ""
 "meet without gaps and only the last may have no upper weight. Fish outside the bands, or in water"
 " outside the first and last temperature column, get no ration. In each cell the SFR, the %% of "
 "the body weight fed a day; 0 means no feeding at that temperature. An empty FCR, uneaten share or"
-" mortality is the protocol’s. The FCR and the uneaten share of fish between two bands are read in"
-" between them; the SFR is its band’s. The table is saved as a whole."
+" mortality is the protocol’s. How fish between two bands are read (smooth, or a step at the edge)"
+" is chosen on the General tab; the values it gives are shown under the saved table. The table is "
+"saved as a whole."
 msgstr ""
 "Her ağırlık bandı için bir satır: alt ağırlığından üst ağırlığına kadar (üst ağırlık dahil "
 "değil); bantlar boşluksuz birleşir ve yalnızca sonuncusu üst ağırlıksız olabilir. Bantların "
 "dışındaki ya da ilk ve son sıcaklık sütununun dışındaki sudaki balıklara rasyon verilmez. Her "
 "hücrede SFR, yani günde verilen yemin vücut ağırlığına oranı (%%) bulunur; 0, o sıcaklıkta "
 "yemleme yok demektir. Boş bırakılan FCR, yenmeyen pay ya da ölüm oranı protokolünkidir. İki bant "
-"arasındaki balığın FCR’si ve yenmeyen payı arada okunur; SFR bandının kendisininkidir. Tablo "
-"bütün olarak kaydedilir."
+"arasındaki balığın nasıl okunacağı (yumuşak ya da sınırda basamak) Genel sekmesinde seçilir; "
+"verdiği değerler kaydedilen tablonun altında gösterilir. Tablo bütün olarak kaydedilir."
 
 msgid "One rule per severity is made by the platform; it is changed, never added or deleted."
 msgstr ""
@@ -13384,6 +13405,9 @@ msgstr "SFR (günlük %)"
 msgid "SFR at %(temperature)s"
 msgstr "%(temperature)s sıcaklıkta SFR"
 
+msgid "SFR between bands"
+msgstr "Bantlar arasında SFR"
+
 msgid "Safe"
 msgstr "Güvenli"
 
@@ -14294,6 +14318,9 @@ msgstr "Küçük boy"
 msgid "Smolt"
 msgstr "Smolt"
 
+msgid "Smooth between bands"
+msgstr "Bantlar arasında yumuşak"
+
 msgid "Snooze"
 msgstr "Ertele"
 
@@ -14603,6 +14630,9 @@ msgstr "Çelik"
 
 msgid "Step"
 msgstr "Adım"
+
+msgid "Step at the band edge"
+msgstr "Bant sınırında basamak"
 
 msgid "Still loading? Open the full page"
 msgstr "Hâlâ yükleniyor mu? Tam sayfayı açın"
@@ -15047,20 +15077,21 @@ msgstr "Her kesim haftası için ertesi ayın 7’si"
 msgid "The English name, e.g. Atlantic salmon."
 msgstr "İngilizce adı, örn. Atlantic salmon."
 
+msgid ""
+"The FCR, the uneaten share and the SFR of fish between two weight bands follow the protocol’s own"
+" rule for each (smooth, or a step at the band’s edge: its Feeding table tab shows the values). A "
+"month of mortality is 30 days; the fish that die are taken to weigh the average."
+msgstr ""
+"İki ağırlık bandı arasındaki balığın FCR’si, yenmeyen payı ve SFR’si, protokolün her biri için "
+"kendi kuralına uyar (yumuşak ya da bant sınırında basamak: değerleri Yemleme tablosu sekmesi "
+"gösterir). Ölüm oranında bir ay 30 gündür; ölen balıkların ortalama ağırlıkta olduğu kabul "
+"edilir."
+
 msgid "The MQTT client id the ingest service connects with; unique among connections."
 msgstr "Veri alım servisinin bağlandığı MQTT istemci kimliği; bağlantılar arasında benzersizdir."
 
 msgid "The MT number, when the medicine has one."
 msgstr "İlacın varsa ruhsat (MT) numarası."
-
-msgid ""
-"The SFR is read from the fish’s own weight band at the temperature; the FCR and the uneaten share"
-" are read between the bands, without a jump. A month of mortality is 30 days; the fish that die "
-"are taken to weigh the average."
-msgstr ""
-"SFR, balığın kendi ağırlık bandından sıcaklığa göre okunur; FCR ve yenmeyen pay bantlar arasında,"
-" sıçrama olmadan okunur. Ölüm oranında bir ay 30 gündür; ölen balıkların ortalama ağırlıkta "
-"olduğu kabul edilir."
 
 msgid "The abstract or summary, as the document gives it."
 msgstr "Belgenin verdiği haliyle özet."
@@ -17900,6 +17931,9 @@ msgstr "Yenmeyen yem"
 msgid "Uneaten feed (%)"
 msgstr "Yenmeyen yem (%)"
 
+msgid "Uneaten feed between bands"
+msgstr "Bantlar arasında yenmeyen yem"
+
 msgid "Unique"
 msgstr "Benzersiz"
 
@@ -18008,14 +18042,6 @@ msgstr ""
 msgid "Until"
 msgstr "Bitiş"
 
-#, python-format
-msgid ""
-"Until %(date)s this protocol’s FCR was read per band, with a step at each band’s edge: the days "
-"before keep that. From that day it is read between the bands."
-msgstr ""
-"%(date)s tarihine kadar bu protokolün FCR’si bant bant, her bant sınırında bir basamakla "
-"okunuyordu: önceki günler öyle kalır. O günden itibaren bantlar arasında okunur."
-
 msgid "Up to (g)"
 msgstr "Üst sınır (g)"
 
@@ -18119,6 +18145,9 @@ msgstr "Özel yapılan değerler"
 
 msgid "Values the chart is drawn from"
 msgstr "Grafiğin çizildiği değerler"
+
+msgid "Values used over the fish’s weight"
+msgstr "Balık ağırlığına göre kullanılan değerler"
 
 msgid "Version"
 msgstr "Sürüm"
@@ -18539,6 +18568,15 @@ msgid ""
 msgstr ""
 "Stok kaydının bu balıklar için düştüğü: partinin birimdeki ortalaması, son balıklar kayıtta "
 "kalanın tamamı"
+
+msgid ""
+"What the stored table gives fish of each weight, worked out by the rule the rations and the "
+"production plan use: at each band’s lower weight and at the weight where the band’s entered "
+"values sit."
+msgstr ""
+"Kaydedilen tablonun her ağırlıktaki balığa verdiği değerler; rasyonların ve üretim planının "
+"kullandığı kuralla hesaplanır: her bandın alt ağırlığında ve bandın girilen değerlerinin durduğu "
+"ağırlıkta."
 
 msgid "What the trial tests, before it starts. Needed to start it."
 msgstr "Denemenin başlamadan önce neyi sınadığı. Başlatmak için gereklidir."
@@ -19904,6 +19942,9 @@ msgstr "sona erdi"
 msgid "entered as %(value)s mg/L PO₄"
 msgstr "%(value)s mg/L PO₄ olarak girildi"
 
+msgid "entered for the band"
+msgstr "bant için girilen"
+
 msgid "equals"
 msgstr "eşittir"
 
@@ -20996,6 +21037,9 @@ msgstr "görevler"
 
 msgid "the 7th of the next month"
 msgstr "sonraki ayın 7’si"
+
+msgid "the band’s lower weight"
+msgstr "bandın alt ağırlığı"
 
 msgid "the board’s default"
 msgstr "panonun varsayılanı"

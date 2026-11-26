@@ -1053,7 +1053,7 @@ A feeding table for one species: weight bands with their feed, meals and expecte
 - **read**: feeding protocols tab (`/operations/feeding/protocols/`)
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeding_protocols
 - **forms**: `ProtocolForm`
-- **constraints**: uq_feeding_protocols_name_live (unique: name); chk_feeding_protocols_status (check); chk_feeding_protocols_expected_fcr (check); chk_feeding_protocols_uneaten (check); chk_feeding_protocols_mortality (check)
+- **constraints**: uq_feeding_protocols_name_live (unique: name); chk_feeding_protocols_status (check); chk_feeding_protocols_expected_fcr (check); chk_feeding_protocols_uneaten (check); chk_feeding_protocols_mortality (check); chk_feeding_protocols_fcr_between (check); chk_feeding_protocols_uneaten_between (check); chk_feeding_protocols_sfr_between (check)
 - **tests that mention it**: `core/test_world.py`, `core/tests_formpanels.py`, `core/tests_workspaces.py` and 11 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
@@ -1073,7 +1073,9 @@ A feeding table for one species: weight bands with their feed, meals and expecte
 | expected_fcr | numeric(4, 2) |  |  | ProtocolForm › General |
 | uneaten_pct | numeric(3, 1) | yes |  | ProtocolForm › General |
 | mortality_pct_month | numeric(4, 2) | yes |  | ProtocolForm › General |
-| interpolated_from | date | yes |  | system: not editable: set by the code |
+| fcr_between | varchar(6) |  |  | ProtocolForm › General |
+| uneaten_between | varchar(6) |  |  | ProtocolForm › General |
+| sfr_between | varchar(6) |  |  | ProtocolForm › General |
 | notes | varchar(2000) |  |  | ProtocolForm › General |
 
 <a id="farmfeedingrecord"></a>

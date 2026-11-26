@@ -6547,14 +6547,16 @@ msgid "EU-listed, category A"
 msgstr "EU-listeført, kategori A"
 
 msgid ""
-"Each band’s FCR and uneaten share sit at the middle of the band (a band without an upper weight: "
-"at its lower weight). For fish between two middles both are read in between, so neither jumps at "
-"a band’s edge; the SFR is read from the fish’s own band at the water temperature. The economic "
-"FCR is the FCR on the feed given: the FCR divided by the share eaten."
+"Each band’s FCR, uneaten share and SFR sit at the middle of the band (a band without an upper "
+"weight: at its lower weight). With the rule “Smooth between bands” the value of fish between two "
+"middles is read in between, so it does not jump at a band’s edge; with “Step at the band edge” it"
+" is the fish’s own band’s. The rule is chosen per quantity on the General tab. The economic FCR "
+"is the FCR on the feed given: the FCR divided by the share eaten."
 msgstr ""
-"FCR og uspist andel for hvert bånd ligger midt i båndet (et bånd uten øvre vekt: ved den nedre "
-"vekten). For fisk mellom to midtpunkter leses begge imellom dem, så ingen av dem hopper ved en "
-"båndgrense; SFR leses fra fiskens eget bånd ved vanntemperaturen. Økonomisk FCR er FCR på utfôret"
+"FCR, uspist andel og SFR for hvert bånd ligger midt i båndet (et bånd uten øvre vekt: ved den "
+"nedre vekten). Med regelen «Jevnt mellom båndene» leses verdien for fisk mellom to midtpunkter "
+"imellom dem, så den ikke hopper ved en båndgrense; med «Trinn ved båndgrensen» er den fiskens "
+"eget bånds verdi. Regelen velges per størrelse på fanen Generelt. Økonomisk FCR er FCR på utfôret"
 " mengde: FCR delt på andelen som spises."
 
 msgid "Each day"
@@ -7092,11 +7094,11 @@ msgstr ""
 "Fôrfaktor og fôrtallene regnes ut på nytt uten den. For å rette en fôring, annuller den og "
 "registrer den på nytt."
 
+msgid "FCR between bands"
+msgstr "FCR mellom båndene"
+
 msgid "FCR in force"
 msgstr "Gjeldende FCR"
-
-msgid "FCR read between the bands from"
-msgstr "FCR leses mellom båndene fra"
 
 msgid "FCR realised · expected"
 msgstr "FCR oppnådd · forventet"
@@ -7107,6 +7109,10 @@ msgid ""
 msgstr ""
 "Fôrfaktoren går fra utsett til siste veiing, bare på veid biomasse. Dødfisk går ut med siste "
 "veide snittvekt, så tilveksten deres siden regnes ikke med: bFCR blir litt høy når mange dør."
+
+#, python-format
+msgid "FCR: %(fcr)s · uneaten feed: %(uneaten)s · SFR: %(sfr)s"
+msgstr "FCR: %(fcr)s · uspist fôr: %(uneaten)s · SFR: %(sfr)s"
 
 msgid "Facilities"
 msgstr "Fasiliteter"
@@ -7587,6 +7593,9 @@ msgstr ""
 msgid "Fish weighed"
 msgstr "Fisk veid"
 
+msgid "Fish weight"
+msgstr "Fiskevekt"
+
 msgid "Fish with no limit"
 msgstr "Fisk uten grense"
 
@@ -7715,6 +7724,16 @@ msgid ""
 msgstr ""
 "For eksempel: slaktingen ble ikke gjennomført, eller varselet ble sendt et annet sted. Det lagres"
 " med navnet ditt og dagen."
+
+msgid ""
+"For fish between two weight bands. Smooth: each band’s value sits at the middle of the band and "
+"is read in between, with no jump at a band’s edge. Step: the fish’s own band’s value, changing at"
+" the edge. The Feeding table tab shows the values this gives. The same choice for the uneaten "
+"feed and for the SFR."
+msgstr ""
+"For fisk mellom to vektbånd. Jevnt: verdien for hvert bånd ligger midt i båndet og leses imellom,"
+" uten hopp ved en båndgrense. Trinn: verdien til fiskens eget bånd, som skifter ved grensen. "
+"Fanen Fôringstabell viser verdiene dette gir. Samme valg for uspist fôr og for SFR."
 
 msgid "For the calcite and aragonite saturation, in water of 5 to 44 ‰."
 msgstr "For kalsitt- og aragonittmetningen, i vann på 5 til 44 ‰."
@@ -11533,15 +11552,17 @@ msgid ""
 "meet without gaps and only the last may have no upper weight. Fish outside the bands, or in water"
 " outside the first and last temperature column, get no ration. In each cell the SFR, the %% of "
 "the body weight fed a day; 0 means no feeding at that temperature. An empty FCR, uneaten share or"
-" mortality is the protocol’s. The FCR and the uneaten share of fish between two bands are read in"
-" between them; the SFR is its band’s. The table is saved as a whole."
+" mortality is the protocol’s. How fish between two bands are read (smooth, or a step at the edge)"
+" is chosen on the General tab; the values it gives are shown under the saved table. The table is "
+"saved as a whole."
 msgstr ""
 "Én rad per vektbånd, fra den nedre vekten opp til, men ikke med, den øvre; båndene møtes uten "
 "hull, og bare det siste kan være uten øvre vekt. Fisk utenfor båndene, eller i vann utenfor "
 "første og siste temperaturkolonne, får ingen rasjon. I hver celle står SFR, %% av kroppsvekten "
 "som fôres per dag; 0 betyr ingen fôring ved den temperaturen. Tom FCR, uspist andel eller "
-"dødelighet er protokollens. FCR og uspist andel for fisk mellom to bånd leses imellom dem; SFR er"
-" båndets egen. Tabellen lagres som en helhet."
+"dødelighet er protokollens. Hvordan fisk mellom to bånd leses (jevnt, eller et trinn ved grensen)"
+" velges på fanen Generelt; verdiene det gir vises under den lagrede tabellen. Tabellen lagres som"
+" en helhet."
 
 msgid "One rule per severity is made by the platform; it is changed, never added or deleted."
 msgstr "Plattformen lager én regel per alvorlighetsgrad; den endres, legges aldri til eller slettes."
@@ -13348,6 +13369,9 @@ msgstr "SFR (% per dag)"
 msgid "SFR at %(temperature)s"
 msgstr "SFR ved %(temperature)s"
 
+msgid "SFR between bands"
+msgstr "SFR mellom båndene"
+
 msgid "Safe"
 msgstr "Trygt"
 
@@ -14258,6 +14282,9 @@ msgstr "Små fisk"
 msgid "Smolt"
 msgstr "Smolt"
 
+msgid "Smooth between bands"
+msgstr "Jevnt mellom båndene"
+
 msgid "Snooze"
 msgstr "Slumre"
 
@@ -14565,6 +14592,9 @@ msgstr "Stål"
 
 msgid "Step"
 msgstr "Trinn"
+
+msgid "Step at the band edge"
+msgstr "Trinn ved båndgrensen"
 
 msgid "Still loading? Open the full page"
 msgstr "Laster fortsatt? Åpne hele siden"
@@ -15008,19 +15038,20 @@ msgstr "Den 7. i påfølgende måned, for hver slaktevekt"
 msgid "The English name, e.g. Atlantic salmon."
 msgstr "Det engelske navnet, f.eks. Atlantic salmon."
 
+msgid ""
+"The FCR, the uneaten share and the SFR of fish between two weight bands follow the protocol’s own"
+" rule for each (smooth, or a step at the band’s edge: its Feeding table tab shows the values). A "
+"month of mortality is 30 days; the fish that die are taken to weigh the average."
+msgstr ""
+"FCR, uspist andel og SFR for fisk mellom to vektbånd følger protokollens egen regel for hver av "
+"dem (jevnt, eller et trinn ved båndgrensen: fanen Fôringstabell viser verdiene). En måned med "
+"dødelighet er 30 dager; fisken som dør regnes å veie snittet."
+
 msgid "The MQTT client id the ingest service connects with; unique among connections."
 msgstr "MQTT-klient-ID-en innhentingstjenesten kobler til med; unik blant tilkoblingene."
 
 msgid "The MT number, when the medicine has one."
 msgstr "MT-nummeret, når legemiddelet har et."
-
-msgid ""
-"The SFR is read from the fish’s own weight band at the temperature; the FCR and the uneaten share"
-" are read between the bands, without a jump. A month of mortality is 30 days; the fish that die "
-"are taken to weigh the average."
-msgstr ""
-"SFR leses fra fiskens eget vektbånd ved temperaturen; FCR og uspist andel leses mellom båndene, "
-"uten hopp. En måned med dødelighet er 30 dager; fisken som dør regnes å veie snittet."
 
 msgid "The abstract or summary, as the document gives it."
 msgstr "Sammendraget slik dokumentet gir det."
@@ -17852,6 +17883,9 @@ msgstr "Uspist fôr"
 msgid "Uneaten feed (%)"
 msgstr "Uspist fôr (%)"
 
+msgid "Uneaten feed between bands"
+msgstr "Uspist fôr mellom båndene"
+
 msgid "Unique"
 msgstr "Unik"
 
@@ -17960,14 +17994,6 @@ msgstr ""
 msgid "Until"
 msgstr "Til og med"
 
-#, python-format
-msgid ""
-"Until %(date)s this protocol’s FCR was read per band, with a step at each band’s edge: the days "
-"before keep that. From that day it is read between the bands."
-msgstr ""
-"Fram til %(date)s ble denne protokollens FCR lest per bånd, med et trinn ved hver båndgrense: "
-"dagene før beholder det. Fra den dagen leses den mellom båndene."
-
 msgid "Up to (g)"
 msgstr "Opp til (g)"
 
@@ -18071,6 +18097,9 @@ msgstr "Verdier gjort private"
 
 msgid "Values the chart is drawn from"
 msgstr "Verdiene diagrammet er tegnet fra"
+
+msgid "Values used over the fish’s weight"
+msgstr "Verdier brukt over fiskens vekt"
 
 msgid "Version"
 msgstr "Versjon"
@@ -18488,6 +18517,15 @@ msgid ""
 msgstr ""
 "Det beholdningen tok ut for denne fisken: fiskegruppens snitt i enheten, den siste fisken resten "
 "av beholdningen"
+
+msgid ""
+"What the stored table gives fish of each weight, worked out by the rule the rations and the "
+"production plan use: at each band’s lower weight and at the weight where the band’s entered "
+"values sit."
+msgstr ""
+"Det den lagrede tabellen gir fisk av hver vekt, regnet ut med regelen rasjonene og "
+"produksjonsplanen bruker: ved hvert bånds nedre vekt og ved vekten der båndets oppgitte verdier "
+"ligger."
 
 msgid "What the trial tests, before it starts. Needed to start it."
 msgstr "Hva forsøket tester, før det starter. Trengs for å starte det."
@@ -19855,6 +19893,9 @@ msgstr "avsluttet"
 msgid "entered as %(value)s mg/L PO₄"
 msgstr "angitt som %(value)s mg/L PO₄"
 
+msgid "entered for the band"
+msgstr "oppgitt for båndet"
+
 msgid "equals"
 msgstr "er lik"
 
@@ -20945,6 +20986,9 @@ msgstr "oppgaver"
 
 msgid "the 7th of the next month"
 msgstr "den 7. i neste måned"
+
+msgid "the band’s lower weight"
+msgstr "båndets nedre vekt"
 
 msgid "the board’s default"
 msgstr "panelets standard"

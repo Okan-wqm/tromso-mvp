@@ -127,11 +127,13 @@ class TabsCallTheServiceTests(PeopleTestCase):
 
 
 # ---- M-6: one rule for the day and the site of a person's moment ------------------------------------------------------
-class AnotherClockTests(PeopleTestCase):
+class AnotherClockTests(FrozenClock, PeopleTestCase):
     """The company is on Oslo's clock (settings.COMPANY_TIME_ZONE); departments A and B are on a site in Auckland
     (UTC+13 in March). Ann is in A up to 2 March and in B from 3 March. 01:00 on 3 March in Auckland is 12:00 UTC on
     2 March, still 2 March on the company's clock: the placement of the company's day (A) governs the stretch, so it is
-    A's lead's to enter and to list, shown on A's site's clock as 3 March 01:00 (hr.read.governing)."""
+    A's lead's to enter and to list, shown on A's site's clock as 3 March 01:00 (hr.read.governing). The clock stands
+    at 20:00 UTC on 2 March: the form offers a lead the people of their team today."""
+    NOW = datetime(2026, 3, 2, 20, tzinfo=UTC)
 
     def setUp(self):
         super().setUp()

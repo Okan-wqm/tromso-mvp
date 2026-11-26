@@ -250,7 +250,7 @@ class SiteCreateTests(SiteTestCase):
         self.make_site(name='Other', code='MPS-001')
         with mock.patch.object(TabbedForm, '_check_conditional_constraints'):
             response = self.client.post(reverse('farm:site_create'), site_data())
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['form'].errors['code'], ['Another site already uses this code.'])
         self.assertEqual(Site.objects.count(), 1)
 

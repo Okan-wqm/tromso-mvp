@@ -85,7 +85,7 @@ class OwnPointEvidenceTests(WaterTestCase):
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
         reading = self.unit_water().get(NH3)
         self.assertEqual((reading.point, reading.judged, reading.worse.point), (self.mid1, 'critical', self.outlet))
-        self.assertIn('last value at Outlet 0.8924 critical on ', reading.note)
+        self.assertIn('Last value at Outlet 0.8924 critical on ', reading.note)
         self.assertIn('no recent data: measure there', reading.note)
         self.sample(self.outlet, hours=1, **GOOD)
         self.passes(601, 602, 660, 720, 1200)
@@ -112,8 +112,9 @@ class OwnPointEvidenceTests(WaterTestCase):
         reading = self.unit_water().get(NH3)
         self.assertEqual((reading.judged, reading.worse.point, str(reading.worse.value)), ('critical', self.outlet,
                                                                                            '0.8924'))
-        self.assertIn('last worked-out value at Outlet 0.8924 critical on ', reading.note)
-        self.assertIn('lacks what it is worked out from: measure there again', reading.note)
+        self.assertIn('Last value at Outlet 0.8924 critical on ', reading.note)
+        self.assertIn('at Outlet gives no value (Needs the pH and the temperature of the same sample): measure there '
+                      'again', reading.note)
 
     def test_a_late_lab_critical_raises_after_a_tan_only_outlet_sample_beside_a_newer_ok_middle(self):
         """Review 3, H1, case 1: the middle OK 2 h ago, the outlet's quick TAN without a pH 1 h ago (the place's newest
@@ -125,8 +126,9 @@ class OwnPointEvidenceTests(WaterTestCase):
         self.passes(0, 1, 60)
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
         reading = self.unit_water().get(NH3)
-        self.assertEqual((reading.point, reading.judged), (self.outlet, 'critical'))
-        self.assertIn('last worked-out value at Outlet 0.8924 critical on ', reading.note)
+        self.assertEqual((reading.point, reading.judged, reading.worse.point), (self.mid1, 'critical', self.outlet))
+        self.assertIn('Last value at Outlet 0.8924 critical on ', reading.note)
+        self.assertIn('at Outlet gives no value', reading.note)
 
     def test_an_open_critical_stays_said_after_a_tan_only_sample_at_its_point(self):
         """Review 3, H1, case 2: the outlet critical and raised; the middle OK; then a TAN without a pH at the outlet,
@@ -138,8 +140,9 @@ class OwnPointEvidenceTests(WaterTestCase):
         self.passes(0, 1, 60, 120, 600)
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
         reading = self.unit_water().get(NH3)
-        self.assertEqual((reading.point, reading.value, reading.judged), (self.outlet, None, 'critical'))
-        self.assertIn('last worked-out value at Outlet 0.8924 critical on ', reading.note)
+        self.assertEqual((reading.point, reading.judged, reading.worse.point), (self.mid1, 'critical', self.outlet))
+        self.assertIn('Last value at Outlet 0.8924 critical on ', reading.note)
+        self.assertIn('at Outlet gives no value', reading.note)
 
     def test_more_samples_without_a_temperature_than_any_count_never_drop_the_hold(self):
         """Review 3, M3: the outlet critical; then 25 samples at the outlet with a TAN and a pH but no temperature (no
@@ -172,5 +175,69 @@ class SinglePointEvidenceTests(WaterTestCase):
         self.passes(0, 1, 60, 120, 600)
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
         reading = self.unit_water().get(NH3)
-        self.assertEqual((reading.value, reading.judged), (None, 'critical'))
-        self.assertIn('last worked-out value at Middle 0.8924 critical on ', reading.note)
+        self.assertEqual((str(reading.value), reading.judged, reading.status), ('0.8924', 'critical', 'stale'))
+        self.assertIn('at Middle gives no value', reading.note)
+
+    def tie(self, lab_first):
+        """One bottle at T-01's middle 30 h ago: the lab's full result (critical) and the field kit's TAN alone, at the
+        same minute, keyed in either order."""
+        from farm.water import services as water_services
+        from decimal import Decimal
+        at = self.ago(hours=30)
+        lab = {code: Decimal(value) for code, value in BAD.items()}
+        kit = {'tan_mg_l': Decimal('0.500')}
+        for source, values in (('lab', lab), ('manual', kit)) if lab_first else (('manual', kit), ('lab', lab)):
+            water_services.record(self.user, point=self.mid1, measured_at=at, source=source, values=values)
+
+    def test_a_same_minute_tie_lab_first_raises_and_is_shown(self):
+        """Review 4, H1: the lab's critical and the kit's TAN alone at the same minute, the lab keyed first: the critical
+        is the point's newest worked-out value, it raises, and the page shows it."""
+        self.tie(lab_first=True)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((str(reading.value), reading.judged), ('0.8924', 'critical'))
+        self.assertIn('at Middle gives no value', reading.note)
+
+    def test_a_same_minute_tie_kit_first_raises_and_is_shown(self):
+        self.tie(lab_first=False)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((str(reading.value), reading.judged), ('0.8924', 'critical'))
+        self.assertIn('at Middle gives no value', reading.note)
+
+
+class SystemTierTests(WaterTestCase):
+    """Review 4, H2: a unit whose water is sampled at its system's loop only (RAS), the same rule at the system tier:
+    the loop's newest worked-out value is its candidate; a newer quick TAN without a pH there never takes the slot."""
+
+    def setUp(self):
+        super().setUp()
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+
+    passes = DerivedStaleAlarmTests.passes
+    outcome = DerivedStaleAlarmTests.outcome
+
+    def test_a_late_lab_critical_at_the_loop_raises_behind_a_quick_tan(self):
+        """The loop's quick TAN 1 h ago, then the lab's loop result of 10 h ago keyed in, critical: it raises for T-01,
+        and T-01's NH₃ shows it with the quick TAN's note."""
+        self.sample(self.loop, hours=1, tan_mg_l='0.500')
+        self.sample(self.loop, hours=10, source='lab', **BAD)
+        self.passes(0, 1, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((str(reading.value), reading.judged, reading.point), ('0.8924', 'critical', self.loop))
+        self.assertIn(f'at {self.loop.name} gives no value', reading.note)
+
+    def test_an_open_critical_at_the_loop_stays_open_and_shown_after_a_quick_tan(self):
+        self.sample(self.loop, hours=40, **BAD)
+        self.passes(-2380, -2379, -2320)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        self.sample(self.loop, hours=1, tan_mg_l='0.500')
+        self.passes(0, 1, 60, 120, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((str(reading.value), reading.judged), ('0.8924', 'critical'))
+        self.assertIn(f'at {self.loop.name} gives no value', reading.note)

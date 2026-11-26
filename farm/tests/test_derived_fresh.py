@@ -448,3 +448,109 @@ class SensorTemperatureTests(WaterTestCase):
         nh3 = read.Context([self.mid1], self.now - read.WINDOW).readings(observation)[NH3]
         self.assertEqual(nh3.inputs_until[PH], conversion_ends)
         self.assertEqual(nh3.fresh_until, conversion_ends)
+
+    # ---- review 4 -------------------------------------------------------------------------------------------------
+    def test_a_voided_basis_temperature_never_reaches_an_nh3(self):
+        """Review 4, H3: the middle's temperature keyed 5.0 °C by mistake, an outlet sample (TAN, pH, oxygen, no
+        temperature) written meanwhile stores it as its oxygen's basis, the 5.0 °C sample voided. No probe: the NH₃
+        takes the sample's own temperature or the probe, never a basis, so it has none."""
+        from ..water import services
+        wrong = self.sample(hours=2, temperature_c='5.0')
+        sample = self.sample(hours=1, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0', oxygen_mg_l='9.00')
+        sample.refresh_from_db()
+        self.assertEqual(sample.oxygen_basis_temperature_c, D('5.0'))
+        services.void(self.user, wrong, 'typed 5 for 15')
+        nh3 = self.unit_water().get(NH3)
+        self.assertIsNone(nh3.value)
+        self.assertEqual(nh3.note, 'Needs the pH and the temperature of the same sample.')
+
+    def test_with_and_without_an_oxygen_the_nh3_takes_the_same_temperature(self):
+        """Review 4, H3: two samples at the same point and minute, one with an oxygen (its basis the probe's) and one
+        without: the same NH₃ temperature, the probe's at their time."""
+        self.send(12.0, 50, 0)
+        context = read.Context([self.mid1], self.now - read.WINDOW)
+        context.know(read._places([self.mid1]), self.now)
+        with_oxygen = read.Observation(self.mid1, self.ago(hours=3), read.Origin.MANUAL,
+                                       {TAN: D('1.000'), PH: D('7.50'), SALINITY: D('0.0'), 'oxygen_mg_l': D('9.00')},
+                                       basis={TEMPERATURE: read.Basis(D('15.0'), 'manual', None, self.ago(hours=4))})
+        without = read.Observation(self.mid1, self.ago(hours=3), read.Origin.MANUAL,
+                                   {TAN: D('1.000'), PH: D('7.50'), SALINITY: D('0.0')})
+        first, second = context.readings(with_oxygen)[NH3], context.readings(without)[NH3]
+        self.assertEqual(first.exact, second.exact)
+        self.assertEqual(first.inputs_until[TEMPERATURE], second.inputs_until[TEMPERATURE])
+
+    def test_no_probe_and_a_manual_basis_elsewhere_gives_no_nh3(self):
+        """Review 4, H3: a temperature typed in one sample, a later sample with an oxygen and no temperature (its basis
+        that one), no probe: no NH₃, never another sample's temperature."""
+        self.sample(hours=2, temperature_c='12.0')
+        sample = self.sample(hours=1, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0', oxygen_mg_l='9.00')
+        sample.refresh_from_db()
+        self.assertEqual(sample.oxygen_basis_temperature_c, D('12.0'))
+        self.assertIsNone(self.unit_water().get(NH3).value)
+
+    def test_a_probe_temperature_ends_at_its_channels_freshness_when_the_band_fails(self):
+        """Review 4, M1 and M3: a sample without a temperature takes the probe's; the band check alone fails. The input
+        ends at once, never 24 h later, the NH₃ says the sensors could not be read, and so does the place."""
+        from ..water import sources
+
+        class BandFails:
+            def latest(self, targets, now):
+                return {}
+
+            def bound(self, targets, code, since, until):
+                return set()
+
+            def value_at(self, targets, code, moment):
+                return {}
+
+            def steady_until(self, code, band, tolerance, asks):
+                raise RuntimeError('the band check timed out')
+
+        failing = BandFails()
+        sources.register(failing)
+        self.addCleanup(sources.unregister, failing)
+        self.send(12.0, 50, 0)
+        self.sample(hours=3, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0')
+        water = self.unit_water()
+        nh3 = water.get(NH3)
+        self.assertIsNotNone(nh3.value)
+        self.assertFalse(nh3.fresh(self.now))
+        self.assertLessEqual(nh3.inputs_until[TEMPERATURE], self.ago(hours=3) + timedelta(minutes=30))
+        self.assertIn('the live sensor values could not be read', nh3.note)
+        self.assertTrue(water.sensors_failed)
+
+    def test_the_history_of_an_outlet_alone_takes_the_units_probe(self):
+        """Review 4, M2: the history page of the outlet alone (no middle sample on it) works out the outlet sample's NH₃
+        with the unit's probe, as the latest read does."""
+        outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+        self.send(12.0, 50, 0)
+        sample = self.sample(outlet, hours=3, tan_mg_l='1.000', ph='7.50', salinity_ppt='0.0')
+        row = read.history([sample])[0]
+        self.assertIsNotNone(row.readings[NH3].value)
+        self.assertEqual(row.readings[NH3].exact, read.latest([outlet])[outlet.pk].get(NH3).exact)
+
+    def test_the_band_check_reads_only_new_rows_on_the_next_read(self):
+        """Review 4, M4: the band check keeps what it has confirmed; the next read reads only the rows after it, not the
+        whole history again (rows read, not statements)."""
+        from sensors import provider
+        self.send(12.0, 30, 0)
+        self.sample(hours=20, **FULL)
+        before = provider.ROWS_READ[0]
+        self.unit_water()
+        first = provider.ROWS_READ[0] - before
+        self.assertGreater(first, 100)                                # 20 h of a value every 10 min
+        before = provider.ROWS_READ[0]
+        self.unit_water()
+        self.assertLessEqual(provider.ROWS_READ[0] - before, 2)
+
+    def test_why_an_nh3_ended_is_said(self):
+        """Review 4, M5: an NH₃ of a sample 30 min old whose probe moved 1.5 °C away 15 min ago is stale, and says which
+        input ended it and why."""
+        with connection.cursor() as cursor:
+            cursor.execute('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, 12.0), (%s, %s, 13.5), '
+                           '(%s, %s, 13.5)', [self.channel.channel_no, self.ago(hours=0.5), self.channel.channel_no,
+                                              self.ago(hours=0.25), self.channel.channel_no, self.now])
+        self.sample(hours=0.5, **FULL)
+        nh3 = self.unit_water().get(NH3)
+        self.assertEqual(nh3.status, Status.STALE)
+        self.assertIn('its temperature ended: the probe read 13.5 °C, beyond the 1.0 °C band', nh3.note)

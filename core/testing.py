@@ -11,10 +11,22 @@ Nor must a test read the hour it runs at. The server's day (UTC) and the company
 differ for an hour or two before every UTC midnight, and a site on a third zone differs for longer: a test that says
 "today" on one clock while the code reads another passes all day and fails in those hours. `BAD_HOURS` are moments
 inside them; core/tests_day_boundary.py runs the tests that count days again at each (`at_bad_hours`), and
-`TEST_CLOCK` starts a whole run's clock at any moment (`run_clock`: scripts/test.sh passes it on), to look for more."""
+`TEST_CLOCK` starts a whole run's clock at any moment (`run_clock`: scripts/test.sh passes it on), to look for more.
+
+Nor must a test time the machine it runs on. A wall-clock bound ("this took under half a second") passes on a quiet
+machine and fails on a loaded one, and says nothing of why the code is quick: what keeps a round, a page or a lookup
+cheap is what it reads, and that the database counts exactly: `reads` gives the rows a block read of each table, by
+PostgreSQL's own counters, and the rows each of its statements handed back: the same on any machine.
+core/tests_wall_clock.py refuses a test that asserts on a time it measured."""
 import os
+import re
+import threading
+from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone as dt_timezone
 from unittest import mock
+
+from django.db import DEFAULT_DB_ALIAS, connections
 
 CLOCK = 'django.utils.timezone.now'
 
@@ -88,3 +100,141 @@ def run_clock(text=None):
     clock = mock.patch(CLOCK, side_effect=lambda: start + (datetime.now(dt_timezone.utc) - began))
     clock.start()
     return clock
+
+
+# ---- What a block reads ----------------------------------------------------------------------------------------------
+# Transaction control: run as it is, never counted around (after a failed statement only a rollback may run).
+CONTROL = re.compile(r'\s*(savepoint|rollback|release|begin|commit|start transaction)\b', re.IGNORECASE)
+
+
+class Unmeasured(AssertionError):
+    """A statement `reads` could not measure touches the table asked about: the answer would be a silent zero."""
+
+
+@dataclass(frozen=True)
+class Statement:
+    sql: str
+    returned: int | None     # the rows it handed back to Python (None: a server-side cursor's, not known when it runs)
+    read: dict               # {table: rows it read}, the tables it read none of left out
+
+
+def _counters(connection):
+    """{table: rows read} by this connection in this transaction, from PostgreSQL's own counters (the
+    pg_stat_xact_user_tables figures, by function): the rows sequential scans read of the table, and the entries its
+    indexes handed out (an index scan, an index-only scan, a bitmap). Exact integers, never a plan's rounded average."""
+    with connection.wrap_database_errors, connection.connection.cursor() as cursor:
+        cursor.execute(r"""
+            SELECT c.relname, pg_stat_get_xact_tuples_returned(c.oid)
+                   + COALESCE((SELECT sum(pg_stat_get_xact_tuples_returned(i.indexrelid)) FROM pg_index i
+                               WHERE i.indrelid = c.oid), 0)
+            FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE c.relkind IN ('r', 'p', 'm') AND n.nspname <> 'information_schema' AND n.nspname NOT LIKE 'pg\_%'
+        """)
+        return {name: int(count) for name, count in cursor.fetchall()}
+
+
+def _difference(after, before):
+    return {name: count - before.get(name, 0) for name, count in after.items() if count != before.get(name, 0)}
+
+
+def _names(sql, relation):
+    return re.search(rf'(?<![\w$]){re.escape(relation)}(?![\w$])', sql) is not None
+
+
+class Reads(list):
+    """The statements a `reads` block ran on its connection (each a Statement, in order), the rows the whole block read
+    of each table (`counted`, every statement of the connection included, however it was written: a UNION, an
+    executemany, a cursor's later fetches), and the statements it saw run on another thread's connection
+    (`elsewhere`), which no counter of this connection sees."""
+
+    def __init__(self):
+        super().__init__()
+        self.counted = {}
+        self.elsewhere = []
+
+    def _measured(self, relation):
+        missed = [sql for sql in self.elsewhere if _names(sql, relation)]
+        if missed:
+            raise Unmeasured(f'{len(missed)} statement(s) naming {relation} ran on another thread, where this block '
+                             f'counts nothing: {missed[0][:300]}')
+
+    def read(self, relation):
+        """The rows the block read of `relation` (sequentially, or as its indexes' entries)."""
+        self._measured(relation)
+        return self.counted.get(relation, 0)
+
+    def most_returned(self, relation=None):
+        """The most rows one statement handed back (of those that read `relation`, if given); 0 when none did."""
+        if relation is not None:
+            self._measured(relation)
+        found = [statement for statement in self if relation is None or relation in statement.read]
+        # A server-side cursor reads its rows when they are fetched, after its statement: asked of its text.
+        unknown = [statement.sql for statement in self if statement.returned is None
+                   and (relation is None or relation in statement.read or _names(statement.sql, relation))]
+        if unknown:
+            raise Unmeasured(f'{len(unknown)} statement(s) reading {relation or "anything"} handed their rows back '
+                             f'through a server-side cursor, after they ran: {unknown[0][:300]}')
+        return max((statement.returned for statement in found), default=0)
+
+    def reads(self):
+        """{table: rows read} of the tables the block read at all, for a test's message and its measurement line."""
+        return dict(sorted(self.counted.items()))
+
+    def described(self, relation, more_than=100):
+        """The statements that read more than `more_than` rows of `relation`, most first, with what they read: for a
+        bound's message, so a failure names the statement to look at."""
+        heavy = sorted((statement for statement in self if statement.read.get(relation, 0) > more_than),
+                       key=lambda statement: -statement.read[relation])
+        return '\n'.join(f'{statement.read[relation]:,} rows: {statement.sql[:400]}' for statement in heavy) or (
+            f'no single statement read more than {more_than} rows of {relation}: the block\'s own reads, or a cursor')
+
+
+@contextmanager
+def reads(using=DEFAULT_DB_ALIAS):
+    """What the block reads of each table, counted by PostgreSQL (`_counters`) around the block and around each statement
+    it runs on the database `using`, and the rows each statement hands back. Nothing is run twice and nothing is left
+    out on this connection; a statement on another thread's connection is kept in `elsewhere`, and asking about a
+    table one of them names raises Unmeasured. Inside a transaction only (a TestCase's test): the counters are the
+    transaction's."""
+    from django.db.backends.utils import CursorWrapper
+
+    connection = connections[using]
+    if not connection.in_atomic_block:
+        raise RuntimeError('reads() counts what the transaction read: run it inside one (a TestCase).')
+    found, mine = Reads(), threading.get_ident()
+
+    def count(execute, sql, params, many, context):
+        if CONTROL.match(sql):          # a savepoint and its rollback read nothing (and may follow a failed statement)
+            return execute(sql, params, many, context)
+        before = _counters(connection)
+        result = execute(sql, params, many, context)
+        raw = context['cursor'].cursor
+        returned = None if getattr(raw, 'name', None) else (raw.rowcount if raw.description is not None else 0)
+        found.append(Statement(sql, returned, _difference(_counters(connection), before)))
+        return result
+
+    def watched(method):
+        def run(self, sql, *args, **kwargs):
+            if threading.get_ident() != mine:
+                found.elsewhere.append(str(sql))
+            return method(self, sql, *args, **kwargs)
+        return run
+
+    # A parallel plan's workers read in processes of their own, whose counters are not this transaction's: the block
+    # runs without them (its own setting, given back after), so every row a statement reads is counted here.
+    with connection.wrap_database_errors, connection.connection.cursor() as cursor:
+        cursor.execute("SELECT current_setting('max_parallel_workers_per_gather'), "
+                       "set_config('max_parallel_workers_per_gather', '0', true)")
+        (workers, _set), = cursor.fetchall()
+    began = _counters(connection)
+    try:
+        with connection.execute_wrapper(count), \
+                mock.patch.object(CursorWrapper, 'execute', watched(CursorWrapper.execute)), \
+                mock.patch.object(CursorWrapper, 'executemany', watched(CursorWrapper.executemany)):
+            yield found
+        found.counted = _difference(_counters(connection), began)
+    finally:
+        from psycopg.pq import TransactionStatus
+        if connection.connection.info.transaction_status != TransactionStatus.INERROR:   # (a failed one ends anyway)
+            with connection.wrap_database_errors, connection.connection.cursor() as cursor:
+                cursor.execute("SELECT set_config('max_parallel_workers_per_gather', %s, true)", [workers])

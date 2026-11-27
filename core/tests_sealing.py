@@ -216,6 +216,10 @@ RAW_SQL = {
     'core/database.py:Table.structure': 'the catalogue of a table (columns, constraints, indexes)',
     'core/database.py:hypertables': 'the names of the hypertables',
     'core/erasure.py:_attempt': 'the erasure of a person’s data by the platform admin’s command, as the system',
+    'core/testing.py:_counters': 'the tests only: the statistics counters of the current transaction (rows read per '
+                                 'table), no row of any table',
+    'core/testing.py:reads': 'the tests only: the planner setting for parallel workers, off for the block and given '
+                             'back, no row',
     'core/rev.py:drop_hypertable_triggers': 'the revision counters’ triggers taken off the hypertables: schema '
                                              'statements, no row',
     'core/rev.py:ensure': 'the revision counters of core_rev: a scope, a key and a number, no row of a record',

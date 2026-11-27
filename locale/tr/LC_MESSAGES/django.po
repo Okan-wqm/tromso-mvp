@@ -6776,8 +6776,8 @@ msgid ""
 "Earlier result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
 "%(newer_time)s."
 msgstr ""
-"Önceki sonuç: %(point)s noktasında %(time)s tarihli %(status)s %(value)s, %(newer_time)s tarihli "
-"%(newer)s ile geçersiz kaldı."
+"Önceki sonuç: %(point)s noktasında %(time)s tarihli %(status)s %(value)s, yerini %(newer_time)s "
+"tarihli %(newer)s aldı."
 
 #, python-format
 msgid "Earliest suitable harvest date: %(date)s."
@@ -15163,6 +15163,15 @@ msgstr "Serinin toplamı"
 
 msgid "Sunday"
 msgstr "Pazar"
+
+#, python-format
+msgid ""
+"Superseded result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
+"%(newer_time)s; whether it was entered late could not be checked."
+msgstr ""
+"Yerini başka bir değerin aldığı sonuç: %(point)s noktasında %(time)s tarihli %(status)s "
+"%(value)s, yerini %(newer_time)s tarihli %(newer)s aldı; geç girilip girilmediği kontrol "
+"edilemedi."
 
 msgid "Supplier"
 msgstr "Tedarikçi"

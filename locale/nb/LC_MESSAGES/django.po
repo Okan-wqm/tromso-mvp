@@ -15127,6 +15127,14 @@ msgstr "Sum av serien"
 msgid "Sunday"
 msgstr "Søndag"
 
+#, python-format
+msgid ""
+"Superseded result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
+"%(newer_time)s; whether it was entered late could not be checked."
+msgstr ""
+"Erstattet resultat: %(status)s %(value)s ved %(point)s %(time)s, erstattet av %(newer)s "
+"%(newer_time)s; om det ble lagt inn for sent, kunne ikke kontrolleres."
+
 msgid "Supplier"
 msgstr "Leverandør"
 

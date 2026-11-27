@@ -1780,9 +1780,12 @@ The judge's rule for each point (`judge.point_verdict`):
   critical 0.8924 at Middle, still counted until 27.11.2026 21:00; the analyser reads 0.0011 on 27.11.2026 10:00."
   Once it no longer counts, the word is the coordinator's decision on review 9: "Late result" only for a sample
   ENTERED after a newer value at its point already existed (a stored one, or a reading of the point's analyser newer
-  than its minute and older than its entry: `read.entered_late` asks the analyser's history once a point); a sample
-  entered on time and overtaken later by the analyser is an "Earlier result: critical … superseded by …". One rule
-  (`PointVerdict.said_as`) for the page, its history row and the log. Where it is said:
+  than its minute and older than its entry: `read.entered_late` asks the analyser's history once a point, and only
+  for an alert behind the analyser that no longer counts, `PointVerdict.asks_history`); a sample entered on time and
+  overtaken later by the analyser is an "Earlier result: critical … superseded by …"; where that history could not be
+  read it is a "Superseded result: …; whether it was entered late could not be checked", never taken for on time. One
+  rule (`PointVerdict.said_as`, its word) and one table of sentences (`messages.RESULT_SAID`, `result_said`) for the
+  page, its history row and the log. Where it is said:
   - **On the point:** "Late result: critical 0.8924 at Middle on …, superseded by 0.0110 on …". The read judges the
     newest 50 late results of a point and says the five worst one by one. It counts the critical or warning ones it
     judged and did not say ("And 1 more late critical or warning result: see the history"). The late results past the
@@ -1790,9 +1793,11 @@ The judge's rule for each point (`judge.point_verdict`):
     cut is silent.
   - **In the activity log:** kept with the sample's entry, in English at rest. The entered samples are judged against
     their point's evidence directly, the analyser's fresh value included (`read.late_results_of`, `live_worked_at`), so
-    no cap applies and the entry order changes nothing. The analyser's value is worked out as the page works it (its
-    TAN with the pH and temperature fresh in its own tier, else its system's), so the log and the page see the same
-    value.
+    no cap applies and the entry order changes nothing. The analyser's value is worked out as the unit's page works it:
+    a unit's own-water point (its middle, an outlet, a depth) inside its unit's standing place, built on the one tier
+    resolver `read.tiers` (the place's newest fresh TAN with the pH and temperature fresh in its own tier, else its
+    system's), filed where its sensor is bound; any other point on its own. So the log says of a sample what the unit's
+    page says.
   - **On its history row:** the same way, whatever else the page holds.
 - **The late check at entry never blocks the write.** It is one read for all the samples of a write, in a savepoint.
   If it fails, each point is read on its own, so one unreadable point does not strip the others' words. The samples of

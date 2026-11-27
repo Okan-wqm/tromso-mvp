@@ -4898,7 +4898,10 @@ from which device, how late) is logged. The server side is built; the push trans
   as the late ones' ids read again from the notifications (that was planned as two scans of the whole history a round,
   found by `core.testing.reads` on 27.11.2026), and a sending round's flood check finds the attempts of its window by
   their time (`alarm_attempts_sent_at_idx`, alarms 0024; before it, every sending round read all
-  the attempts). **A critical is never given up until someone has seen it** (the review, F1; N7 of the
+  the attempts). The open alarms are read the same way: from their own queue (`alarm_open`, alarms 0025, kept by
+  database triggers on `alarms` and `alarm_clearances`, whoever writes), so the pass's notify step, the pages' floods,
+  the open list and the overview read what is open, never every alarm, clearance and acknowledgement ever recorded.
+  **A critical is never given up until someone has seen it** (the review, F1; N7 of the
   last recheck): a critical alarm's notification is tried again until it is sent or its alarm is acknowledged, the wait
   doubling from the severity's retry time up to its escalation time; clearing does not end it (a critical that came and
   went while the push service failed is told once it answers, "Critical, now cleared"). Once its alarm is acknowledged

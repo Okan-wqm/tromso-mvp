@@ -1,7 +1,8 @@
 """How the alarms are sealed (core.sealing): an alarm at a sealed cell's sampling point, opened inside the cell, or the
 mirror of a sensor alarm event on a sealed channel, does not exist for someone the cell's owner has not granted; its
-clearance, notifications, their delivery attempts and outbox entries, escalations, acknowledgements and snoozes
-(and their ends) go with it, and so does the subject whose open alarm it is. An alarm of the alarm system itself (a device's clock) lies on no cell."""
+clearance, its row among the open ones, notifications, their delivery attempts and outbox entries, escalations,
+acknowledgements and snoozes (and their ends) go with it, and so does the subject whose open alarm it is. An alarm of the
+alarm system itself (a device's clock) lies on no cell."""
 from core.sealing import declare
 
 
@@ -13,7 +14,7 @@ def declare_all():
     # once served a sealed tank and now serves an open one raises alarms about the open one, which everyone keeping
     # its fish must get.
     declare(m.Alarm, part='water', unit=('unit', 'point__unit'), system=('system', 'point__system'), day='opened_at')
-    for model in (m.AlarmClearance, m.Escalation, m.Acknowledgement, m.Notification, m.AlarmShelve):
+    for model in (m.AlarmClearance, m.OpenAlarm, m.Escalation, m.Acknowledgement, m.Notification, m.AlarmShelve):
         declare(model, part='water', via=('alarm',))
     for model in (m.DeliveryAttempt, m.OutboxEntry):
         declare(model, part='water', via=('notification',))

@@ -20600,6 +20600,12 @@ msgstr "bare hvis den holder stamfisk av disse artene på land"
 msgid "open"
 msgstr "åpen"
 
+msgid "open alarm"
+msgstr "åpen alarm"
+
+msgid "open alarms"
+msgstr "åpne alarmer"
+
 msgid "open question"
 msgstr "åpent spørsmål"
 

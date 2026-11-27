@@ -113,6 +113,31 @@ class Alarm(models.Model):
         return self.summary
 
 
+class OpenAlarm(models.Model):
+    """An alarm that has not cleared: the open alarms' own queue, one row each, kept by the database (alarms 0025: a
+    trigger adds the alarms written, one removes those whose clearance is written, whoever writes), so what reads the
+    open alarms reads what is open, however long the history (`OPEN`). Mutable, like the outbox: not history (the
+    alarms and their clearances are)."""
+
+    alarm = models.OneToOneField('Alarm', primary_key=True, on_delete=models.CASCADE, related_name='open_entry',
+                                 verbose_name=_('Alarm'))
+
+    objects = SealedManager()      # sealed with its alarm (alarms/sealing.py)
+
+    class Meta:
+        db_table = 'alarm_open'
+        verbose_name = _('open alarm')
+        verbose_name_plural = _('open alarms')
+
+    def __str__(self):
+        return str(self.alarm_id)
+
+
+# An alarm is open while it has no clearance: asked of its row in alarm_open (OpenAlarm), never as "every alarm without
+# a clearance", which reads every alarm and every clearance ever recorded.
+OPEN = Q(open_entry__isnull=False)
+
+
 class AlarmClearance(models.Model):
     """When an alarm stopped holding: the sensor rule's event closed, or a fresh water value is back inside the limits
     (a value that only goes stale never clears it). An alarm is open while it has none."""

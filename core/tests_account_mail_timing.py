@@ -23,11 +23,12 @@ WAIT = 30                 # seconds a wait for the worker may take on a loaded m
 
 
 class GatedBackend(BaseEmailBackend):
-    """A mail server that takes no mail until the test opens its `gate`."""
+    """A mail server that takes no mail until the test opens its `gate`; `asked`: the threads that talked to it."""
     gate = threading.Event()
-    sent = []
+    sent, asked = [], []
 
     def send_messages(self, messages):
+        type(self).asked.append(threading.current_thread().name)
         if not type(self).gate.wait(timeout=WAIT):
             raise RuntimeError('the test never opened the mail server')
         type(self).sent.extend(messages)
@@ -58,7 +59,7 @@ class ForgotPasswordTimingTests(TransactionTestCase):
 
     def test_a_known_address_is_answered_as_an_unknown_one(self):
         GatedBackend.gate.clear()
-        GatedBackend.sent.clear()
+        GatedBackend.sent.clear(), GatedBackend.asked.clear()
         self.addCleanup(GatedBackend.gate.set)
         self.took, looked_at, real = [], [], accountmail.reset_now
 
@@ -77,6 +78,7 @@ class ForgotPasswordTimingTests(TransactionTestCase):
         sys.stderr.write(f'\n[forgot password] answered in ms: unknown {self.took[1:6]}, known {self.took[6:]}\n')
         self.assertEqual(known, unknown)                      # the same statements whoever the address belongs to
         self.assertEqual(looked_at, ['account-mail'] * 11)    # the address looked at on the worker's thread only
+        self.assertEqual(set(GatedBackend.asked), {'account-mail'})   # and the mail server talked to there only
         # and the five mails do go out, afterwards
         self.assertEqual([sent.to for sent in GatedBackend.sent], [['ali@example.com']] * 5)
         self.assertEqual(AccountMail.objects.filter(sent_at=None).count(), 0)

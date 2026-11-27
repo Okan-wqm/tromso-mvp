@@ -335,9 +335,10 @@ class BudgetTests(Fixtures, FeedingTestCase):
     and with a target, so each row reads every part (the withdrawal, the purge in degree-days, the last feeding, the
     forecast)."""
 
-    CEILING = 70          # measured 55 at 3 and at 9 units (2026-11-22); 66 since the degree-days read the closed probe days
-                          # (2026-11-27: the last closing of each clock and the probe days, per water read, never the
-                          # sensors' readings); raised with the branch's review (REVIEW-1 round 2), never without one
+    CEILING = 65          # measured 55 at 3 and at 9 units (2026-11-22); 63 since the degree-days read the closed probe days
+                          # (2026-11-27: the last closing of each clock and the probe days per water read, one water read
+                          # whatever day each batch came, never the sensors' readings); raised with the branch's review
+                          # (REVIEW-2 approved the raise after N-3), never without one
 
     def setUp(self):
         super().setUp()

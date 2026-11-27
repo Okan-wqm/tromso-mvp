@@ -75,7 +75,8 @@ class ProjectionCapTests(SourcesCase):
             self.stock(self.t2, count=500, days_ago=50)
         self.assume('10.0')
         self.temperature(self.t2, 42, '3')
-        self.treat(self.medicine(degree_days=150), 40, 40, units=[self.t2])
+        with correction_window(400):
+            self.treat(self.medicine(degree_days=150), 40, 40, units=[self.t2])
         [held] = self.held(unit=self.t2)
         self.assertEqual((held.accrual.projected_at, held.until), (D(3), self.day(-11)))
 

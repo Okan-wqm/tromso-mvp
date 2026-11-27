@@ -570,11 +570,11 @@ class BudgetTests(LotsTestCase):
         self.assertEqual(self.measure(24), RECORDED_WITH_POINTS)
 
 
-# The queries of each reader, whatever the number of units or batches (measured at 6 and at 24 units). One more each
-# since 2026-11-26: the degree-days' rules, the platform's settings read once per water read (outside a request, where
-# the row is not memoised); these units have no sampling point, so no probe day is read.
-RECORDED = {'of_units': 11, 'in_force_of': 12, 'of_treatments': 15, 'blockers': 19, 'snapshot': 17,
+# The queries of each reader, whatever the number of units or batches (measured at 6 and at 24 units). These units have
+# no sampling point, so the degree-days read nothing of the water.
+RECORDED = {'of_units': 10, 'in_force_of': 11, 'of_treatments': 14, 'blockers': 18, 'snapshot': 16,
             'harvests_inside': 1}
-# The same with every unit's sampling points: the closings of the clocks and the closed probe days, two more.
-RECORDED_WITH_POINTS = {name: count + 2 for name, count in RECORDED.items() if name != 'harvests_inside'} | {
+# The same with every unit's sampling points (measured 2026-11-27, review N-14): the units' own-water points, the
+# closings of the clocks and the closed probe days, three more each, whatever the number of units.
+RECORDED_WITH_POINTS = {name: count + 3 for name, count in RECORDED.items() if name != 'harvests_inside'} | {
     'harvests_inside': RECORDED['harvests_inside']}

@@ -24,6 +24,7 @@ decision: warn, never block)."""
 import hashlib
 from dataclasses import dataclass, field, replace
 from datetime import timedelta
+from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
@@ -41,6 +42,7 @@ from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
 from farm.stock.dates import check_date, earliest, earliest_today, shown_date, sites_of
 from farm.stock.services import AlreadyRecorded, lock_fish, locked, voided
+from farm.water.degree_days import MISSING
 
 # The fields the activity log shows for a new treatment and a new lice count.
 TREATMENT_FIELDS = ['units', 'method', 'medicine', 'reason', 'start_date', 'end_date', 'dose_value', 'dose_unit',
@@ -433,16 +435,30 @@ def set_floors(moved, origin, reason):
 
 def past_moved(was, now):
     """'' when the end of a withdrawal moved earlier only because days that were projected (not over, or not closed
-    yet) are now counted: a projection met the water, and the fish go when the days say (the coordinator's decision
-    N-5 of REVIEW-2). Else what moved in the past: the days counted before that count higher now ("2026-11-25: 3.00
-    -> 10.00 °C"), or that the course no longer reaches the fish. `was` and `now`: the withdrawal before and after."""
+    yet) are now counted from the water: a projection met the water, and the fish go when the days say (the
+    coordinator's decision N-5 of REVIEW-2). Else what moved, said for the floor: the days counted before that count
+    higher now ("2026-11-25: 3.00 -> 10.00 °C"); a day that was projected and is now counted at an ASSUMPTION (closed
+    with no probe day that counts and nothing else measured: the species' assumed temperature, capped or not, or 0 °C)
+    above the projection it replaced, which is not the water (REVIEW-3, R3-3); or that the course no longer reaches the
+    fish. `was` and `now`: the withdrawal before and after."""
     if now is None:
         return 'The course no longer reaches these fish.'
     before = was.accrual.values if was.accrual is not None else {}
     after = now.accrual.values if now.accrual is not None else {}
+    hows = now.accrual.hows if now.accrual is not None else {}
+    projected = was.accrual.projected_at if was.accrual is not None else None
     raised = [f'{day.isoformat()}: {value} -> {after[day]} °C' for day, value in sorted(before.items())
               if day in after and after[day] > value]
-    return 'Days already counted count higher now: ' + '; '.join(raised) + '.' if raised else ''
+    assumed = [f'{day.isoformat()}: {after[day]} °C' for day in sorted(after)
+               if day not in before and hows.get(day) in MISSING and projected is not None
+               and after[day] > max(projected, Decimal(0))]
+    said = []
+    if raised:
+        said.append('Days already counted count higher now: ' + '; '.join(raised) + '.')
+    if assumed:
+        said.append(f'Days closed with no probe day that counts are counted at an assumption above the projection '
+                    f'({projected:.2f} °C) they replaced: ' + '; '.join(assumed) + '.')
+    return ' '.join(said)
 
 
 def unattended(write, origin, reason):

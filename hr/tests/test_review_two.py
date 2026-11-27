@@ -85,8 +85,10 @@ class BatchPlanBudgetTests(PlanPerDayTests):
                     mock.patch.object(scope, 'cells_reached', wraps=scope.cells_reached) as asked:
                 response = self.paint(*self.cells(people), shift='off')
             self.assertEqual((response.status_code, asked.call_count), (302, 1))
+            cells = {(person.pk, day) for person, day in self.cells(people)}
+            scope.cells_reached(self.planner, cells)            # the person's rights read once (Django keeps them)
             with CaptureQueriesContext(connection) as seen:
-                scope.cells_reached(self.planner, {(person.pk, day) for person, day in self.cells(people)})
+                scope.cells_reached(self.planner, cells)
             return len(seen.captured_queries)
         self.assertEqual(reach_queries(2), reach_queries(12))
 

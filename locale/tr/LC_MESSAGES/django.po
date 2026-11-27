@@ -13346,6 +13346,14 @@ msgstr "Geri yüklendi"
 msgid "Result"
 msgstr "Sonuç"
 
+#, python-format
+msgid ""
+"Result of %(time)s: %(status)s %(value)s at %(point)s, still counted until %(until)s; the "
+"analyser reads %(newer)s on %(newer_time)s."
+msgstr ""
+"%(time)s sonucu: %(point)s noktasında %(status)s %(value)s, %(until)s tarihine kadar hâlâ hesaba "
+"katılıyor; analizör %(newer_time)s tarihinde %(newer)s okuyor."
+
 msgid "Results"
 msgstr "Sonuçlar"
 

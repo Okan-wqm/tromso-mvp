@@ -13308,6 +13308,14 @@ msgstr "Gjenopprettet"
 msgid "Result"
 msgstr "Resultat"
 
+#, python-format
+msgid ""
+"Result of %(time)s: %(status)s %(value)s at %(point)s, still counted until %(until)s; the "
+"analyser reads %(newer)s on %(newer_time)s."
+msgstr ""
+"Resultat fra %(time)s: %(status)s %(value)s ved %(point)s, telles fortsatt med til %(until)s; "
+"analysatoren viser %(newer)s %(newer_time)s."
+
 msgid "Results"
 msgstr "Resultater"
 

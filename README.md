@@ -1768,8 +1768,14 @@ The judge's rule for each point (`judge.point_verdict`):
   - behind a live value: it is the point's newest stored evidence or of its minute or newer, or entered after that
     evidence. So a lab critical keyed in behind an analyser's fresh OK is late, superseded by the analyser's value. A
     kit sample superseded on time by a newer stored one is not said again.
-  A live value is never late. A late result is no candidate and never an alarm (the owner's decision), and it is always
-  said, the worst first, then the newest, across the place's points:
+  A live value is never late. A late result never raises an alarm of its own (the owner's decision), and it is always
+  said, the worst first, then the newest, across the place's points.
+- **A value that still counts is never called superseded** (the coordinator's decision on review 8). Behind a live value
+  only, a result that is still fresh is still the point's newest stored value, and the worst fresh value still takes
+  it (review 3, N1: a fresh manual critical is never hidden by a newer sensor OK; a test names that rule). The judge
+  says it as still counted (`PointVerdict.still_counted`, `PlaceVerdict.counted`): "Result of 27.11.2026 09:00:
+  critical 0.8924 at Middle, still counted until 27.11.2026 21:00; the analyser reads 0.0011 on 27.11.2026 10:00."
+  Once it is no longer fresh it no longer counts, and it is said as a late result. Where it is said:
   - **On the point:** "Late result: critical 0.8924 at Middle on …, superseded by 0.0110 on …". The read judges the
     newest 50 late results of a point and says the five worst one by one. It counts the critical or warning ones it
     judged and did not say ("And 1 more late critical or warning result: see the history"). The late results past the

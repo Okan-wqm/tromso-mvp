@@ -289,8 +289,8 @@ def test_modules():
     found = {}
     for config in project_apps():
         for path in sorted(Path(config.path).rglob('*.py')):
-            parts = path.relative_to(config.path).parts
-            if 'migrations' in parts or not (path.name.startswith('test') or 'tests' in parts[:-1]):
+            from core.testing import is_test_module
+            if 'migrations' in path.relative_to(config.path).parts or not is_test_module(path.relative_to(root)):
                 continue
             found[path.relative_to(root).as_posix()] = frozenset(re.findall(r'\w+', path.read_text(encoding='utf-8')))
     return found

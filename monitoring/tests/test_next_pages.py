@@ -68,6 +68,16 @@ def _stocked(html):
     return re.sub(r'<article [^>]*data-state="empty".*?</article>\n?', '', html, flags=re.S)
 
 
+# What the new look adds to a Big card's chart: its frame is a stop of the keyboard with an id of its own (on a phone the
+# picture scrolls sideways in it: templates/monitoring/widgets/_chart.html); the classic card's never scrolls.
+CHART_STOP = re.compile(r'(<figure class="monitor-chart [^"]*") id="[^"]*chart-[^"]*" tabindex="0"')
+
+
+def _fitted(html):
+    """The new look's markup of fitted cards without what only the new look adds to every Big card (CHART_STOP)."""
+    return CHART_STOP.sub(r'\1', html)
+
+
 class NextPagesTests(FrozenClock, TestCase):
     NOW = MOMENT
 
@@ -197,7 +207,7 @@ class NextPagesTests(FrozenClock, TestCase):
         above; the classic card is the golden one, test_golden); a fitted card (Small, Big, the pane's, a wall's) is the
         same markup in both looks, byte for byte, the new look's sheet drawing it as the design does
         (static/css/monitor-next.css), but for what the design's Big card of an empty unit says that the classic one
-        does not (the test below)."""
+        does not (the test below) and the chart's frame, a stop of the keyboard in the new look (CHART_STOP)."""
         for name, query in self.screens.items():
             new, classic = self.fragment(query), self.fragment(query, look='')
             cards = classic.count('<article class="monitor-card ')
@@ -206,12 +216,13 @@ class NextPagesTests(FrozenClock, TestCase):
             if name in FLOWING:
                 self.assertEqual(new.count(' is-next"'), cards, name)
             elif name in BIG_SCREENS:
-                self.assertEqual(_stocked(new), _stocked(classic), name)
+                self.assertEqual(_fitted(_stocked(new)), _stocked(classic), name)
+                self.assertEqual(len(CHART_STOP.findall(new)), len(re.findall(r'<svg class="monitor-chart-svg', new)), name)
                 self.assertGreaterEqual(cards - _stocked(classic).count('<article class="monitor-card '), 2, name)
             else:
-                self.assertEqual(new, classic, name)
+                self.assertEqual(_fitted(new), classic, name)
         focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
-        self.assertEqual(self.ask(PANE, focus).content, self.ask(PANE, focus, look='').content)
+        self.assertEqual(_fitted(self.ask(PANE, focus).content.decode()), self.ask(PANE, focus, look='').content.decode())
 
     def test_an_empty_units_big_card_says_the_unit_in_the_new_look(self):
         """The design's Big card of a unit with no fish says the unit itself, as the overview's Small card of an empty
@@ -276,9 +287,10 @@ class NextPagesTests(FrozenClock, TestCase):
 
     def test_a_fitted_cards_markup_is_the_same_on_a_board_that_mixes_them(self):
         """The mixed board (core/test_world.py mixed_board): Small cards, two Big ones and one drawn with a farm's own
-        full-height template, in the farm's one order; every card the same markup in both looks (none of them empty)."""
+        full-height template, in the farm's one order; every card the same markup in both looks (none of them empty), but
+        the Big cards' chart frames, a stop of the keyboard in the new look (CHART_STOP)."""
         new, classic = self.fragment(self.screens['mixed']), self.fragment(self.screens['mixed'], look='')
-        self.assertEqual(new, classic)
+        self.assertEqual(_fitted(new), classic)
         articles = {self.norm(key[len('card:'):]): article for key, article in _articles(new).items()}
         for code, article in articles.items():
             with self.subTest(card=code):

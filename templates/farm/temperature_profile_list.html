@@ -16,7 +16,7 @@
     <option value="">{{ fw.all_statuses }}</option>
     {% for value, label in statuses %}<option value="{{ value }}"{% if chosen_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
   </select>
-  <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
+  <noscript><button type="submit" class="ui-btn">{% trans "Filter" %}</button></noscript>
 </form>
 {% endblock %}
 {% block notice %}{% farm_words as fw %}<p class="panel-help">{{ fw.a_profile_gives }}</p>{% endblock %}

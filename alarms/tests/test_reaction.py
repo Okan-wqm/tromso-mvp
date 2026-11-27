@@ -111,7 +111,6 @@ class ReactionTests(TransactionTestCase):
             until(lambda: unit.pk in critical_units(), TARGET, f'the critical alarm of {unit.code}')
             took.append(time.monotonic() - committed)
         self.report('manual sample to open alarm', took)
-        self.assertLess(max(took), TARGET, self.said(process))
 
     def test_a_sensor_value_as_the_ingest_commits_it_opens_its_alarm_within_10_s(self):
         farm = Farm(1)

@@ -104,34 +104,29 @@ def server_clock_reads_in(tree):
     return found
 
 
-def server_clock_reads():
-    found = []
-    for app in APPS:
-        for path in Path(settings.BASE_DIR, app).rglob('*.py'):
-            relative = path.relative_to(settings.BASE_DIR).as_posix()
-            if '/migrations/' in relative or '/tests' in relative or path.name.startswith('test'):
-                continue
-            for line, what, name in server_clock_reads_in(ast.parse(path.read_text(encoding='utf-8'))):
-                if (relative, name) not in ALLOWED:
-                    found.append(f'{relative}:{line} {what}')
-    return found
-
-
 def is_test(relative, name):
     return '/tests' in relative or name.startswith('test')
 
 
-def server_day_reads_in_tests():
-    found = []
+def modules(tests):
+    """(relative path, parsed module) of every Python file of APPS: the tests' when `tests`, else the code's (the
+    migrations left out). The one walk of the project's files that the guards of the clock share."""
     for app in APPS:
-        for path in Path(settings.BASE_DIR, app).rglob('*.py'):
+        for path in sorted(Path(settings.BASE_DIR, app).rglob('*.py')):
             relative = path.relative_to(settings.BASE_DIR).as_posix()
-            if not is_test(relative, path.name):
-                continue
-            for line, what, _name in server_clock_reads_in(ast.parse(path.read_text(encoding='utf-8'))):
-                if what in TEST_DAY_READS and (relative, what) not in ALLOWED_IN_TESTS:
-                    found.append(f'{relative}:{line} {what}')
-    return found
+            if is_test(relative, path.name) == tests and (tests or '/migrations/' not in relative):
+                yield relative, ast.parse(path.read_text(encoding='utf-8'))
+
+
+def server_clock_reads():
+    return [f'{relative}:{line} {what}' for relative, tree in modules(tests=False)
+            for line, what, name in server_clock_reads_in(tree) if (relative, name) not in ALLOWED]
+
+
+def server_day_reads_in_tests():
+    return [f'{relative}:{line} {what}' for relative, tree in modules(tests=True)
+            for line, what, _name in server_clock_reads_in(tree)
+            if what in TEST_DAY_READS and (relative, what) not in ALLOWED_IN_TESTS]
 
 
 # What the guard must see (the third cross-review's bypass probe, farm/zz_bypass.py): each line one way to read UTC's day.
@@ -172,17 +167,9 @@ class CompanyClockGuardTests(SimpleTestCase):
 def fold_checks_outside_core_dates():
     """Each place that works out by itself whether a wall time is skipped or repeated on a clock (`.replace(fold=...)`):
     core.dates.on_clock is the one check."""
-    found = []
-    for app in APPS:
-        for path in Path(settings.BASE_DIR, app).rglob('*.py'):
-            relative = path.relative_to(settings.BASE_DIR).as_posix()
-            if relative == 'core/dates.py' or '/migrations/' in relative or '/tests' in relative or \
-                    path.name.startswith('test'):
-                continue
-            for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
-                if isinstance(node, ast.Call) and any(keyword.arg == 'fold' for keyword in node.keywords):
-                    found.append(f'{relative}:{node.lineno}')
-    return found
+    return [f'{relative}:{node.lineno}' for relative, tree in modules(tests=False) if relative != 'core/dates.py'
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and any(keyword.arg == 'fold' for keyword in node.keywords)]
 
 
 class OneClockCheckTests(SimpleTestCase):

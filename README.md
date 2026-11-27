@@ -6931,7 +6931,7 @@ runs the server:
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
 | `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors; `prune.sh` removes the test runner's old image tags |
 | `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
-| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests) |
+| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on; `reads`, the rows a block read of each table by PostgreSQL's counters and what each statement handed back, so a test of what is cheap counts rows instead of timing the machine (Tests) |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
 | `deploy/`, `docs/ops/`, `.github/workflows/go-live-stack.yml` | The go-live package: the production stack (`compose.yml`, the proxy, the broker's TLS listener, the database image with its roles, the backup agent, `web/` the server's start, jobs and release step), the scripts (secrets, certificates, role checks, password rotation), the access templates (Cloudflare, WireGuard), the stack's proof (`ci/`); the runbooks and the go-live checklist (Starting a production server) |
 
@@ -7156,10 +7156,44 @@ thread, an event, a lock or the worker at rest. Each waits for that condition it
 (`WAIT`, 60 s), and fails saying what it waited for: `rested`, `reached`, `ended`, `until`. None sleeps a time that
 "should be enough" and goes on (a second "until both are at the row", a join of 20 s whose outcome nobody read: the
 whole suite of 13.11.2026 failed on that one, under load), and none measures seconds of the clock where it means
-work: 200 lookups "in a moment" are measured against the same 200 done at once on the same machine, the mail's time
-limit against how far the conversation with the test's mail server got. What must not happen is asked the other way
-round, with a short time (`drain(0.5)` is false while a mail is at the mail server). The platform's own patience
-with a mail server is set longer than any wait of a test there, so nothing is cut off behind a test's back.
+work (below): 200 lookups are counted in the connections they open (one, all of them waiting while the worker is
+held), the mail's time limit in how far the conversation with the test's mail server got. What must not happen is
+asked the other way round, with a short time (`drain(0.5)` is false while a mail is at the mail server). The
+platform's own patience with a mail server is set longer than any wait of a test there, so nothing is cut off behind a
+test's back.
+
+**Nor on how fast the machine is.** A wall-clock bound ("a round takes under half a second") passes on a quiet machine
+and fails on a loaded one: the outbox's "a round reads the queue, never the whole history" took 0.585 s for a bound of
+0.5 on a shared CI runner (nightly run 45865365125 on 7a299319), and had failed so once before. What keeps a round, a
+page or a lookup cheap is what it reads, and the database counts that exactly. `core.testing.reads()` takes
+PostgreSQL's own counters of the transaction (`pg_stat_get_xact_tuples_returned`: the rows sequential scans read of a
+table, and the entries its indexes handed out) around the block and around each statement, and gives the rows the
+block read of each table (`read('alarm_notifications')`, exact integers, every statement of the connection included
+however it is written) and the most rows one statement handed back (`most_returned()`, from its cursor). What it cannot
+see it refuses (`Unmeasured`) rather than answer zero: a statement another thread ran that names the table asked about,
+the rows of a server-side cursor. The outbox's tests ask it so: `backlog()` and a whole sending round beside 100,000
+notifications of history read under a hundred rows of each history table, where a scan reads them all; a round with
+20,000 cleared warnings waiting gives up one chunk and no statement of it hands Python more than a chunk; 20,000
+waiting without a transport are counted in the database, never fetched. A deadline is driven by a clock the test
+holds (`outbox.send_due(clock=...)`: the round's deadline falls after the second send of 0.2 s; the worker's watchdog
+on its own clock ends a hung pass at the first look at `hang_exit` and at no look before), a bounded wait is read off
+the call that waits (the send's thread joined once, for its timeout; the sender's thread joined once, for
+`send_timeout` and a tick), and that a thing did not wait is asked of the thing: the push service still hanging after
+the round, the sender's thread still alive after the worker stopped, every "Forgot your password?" answer in while the
+mail server is still shut, with the same statements for an address that has an account as for one that has none.
+
+`core/tests_wall_clock.py` reads every test module (functions and methods, classes nested to any depth) and refuses a
+check on a measured value: a reading of `time.monotonic`, `perf_counter`, `time`, `process_time`, `thread_time` or
+`clock_gettime` (and each `_ns`) or `timeit.default_timer`, however imported and through any name bound to one of those
+functions (`clock = time.monotonic`); the difference of two moments of the calendar clock (`datetime.now()`,
+`utcnow()`, `timezone.now()`); and whatever the same function computes from one (a name, a list or dict it is put in,
+a part of a tuple, a helper of the same module that returns one). A check is an `assert...` or `fail...` call (its
+arguments by position or keyword), an `assert` statement, or an `if` whose body fails or raises. A wait with a ceiling
+(`until`) and a measurement written out pass. It does not follow a value into another module, nor a clock handed in as
+an argument. What must stay on the wall clock is listed there with why, exactly as written: a killed worker process
+said unchecked within `stale_after`, a standby process taking over within seconds (real processes, which no clock of
+the test reaches), and the monitoring load check, run only when asked. The owner's 10 s from a value to its open alarm
+is the ceiling of the wait for it (`until(..., TARGET, ...)`), asked once.
 
 **Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
 its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that

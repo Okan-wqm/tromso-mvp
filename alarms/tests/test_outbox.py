@@ -5,7 +5,6 @@ once, written sent once), never sends one two senders hold at once, and fails an
 raises. With the worker: its sender thread writes the outbox's figures on the worker's row, and a transport that hangs
 never delays an alarm."""
 import threading
-import time
 from datetime import timedelta
 from unittest import mock
 
@@ -256,9 +255,7 @@ class SenderThreadTests(TransactionTestCase):
         until(lambda: Notification.objects.exists(), TARGET, 'the first alarm queued')
         until(HangingTransport.entered.is_set, TARGET, 'the sender stuck in a send')
         farm.sample(farm.points[1], 5.5)                    # the push service still hangs
-        committed = time.monotonic()
         until(lambda: farm.units[1].pk in critical_units(), TARGET, 'the second alarm while the sender hangs')
-        took = time.monotonic() - committed
         self.assertFalse(DeliveryAttempt.objects.exists())             # the first send has not come back
         HangingTransport.release.set()
         until(lambda: DeliveryAttempt.objects.filter(outcome='sent').count() == Notification.objects.count(), TARGET,
@@ -267,7 +264,6 @@ class SenderThreadTests(TransactionTestCase):
         thread.join(60)
         self.assertFalse(thread.is_alive())
         self.assertEqual(AlarmWorkerStatus.objects.get().state, 'stopped')
-        self.assertLess(took, TARGET)
         self.assertEqual(Alarm.objects.filter(severity='critical', source='water_limit').count(), 2)
 
 

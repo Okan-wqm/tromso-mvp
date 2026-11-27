@@ -4436,12 +4436,12 @@ built by reading the source platform's HR service and listing what was wrong wit
 - **One writer, one rule** (the architecture audit of 26.11.2026, H-5 and M-6). `hr.services` is the only writer of the
   people, their placements, plans, leave requests and attendance: the tabs of those records hand every save to it
   (`Resource.service_writes`, One format for every tab), so a rule is written once and a page, a command and a later caller
-  run the same one; the forms only read what was typed. The five models say so (`service_written = True`), and rule S of
-  `core/tests_data_access.py` reads every production module, of every app, and fails when anything but `hr/services.py`
-  builds or writes one of them by name, or when a tab's hook calls no service (One format for every tab › One writer).
-  The demonstration's seed calls the services as its own people, and the admin's restore refuses these records (a stretch
-  or a plan brought back there would skip the lead's reach, the employment and the plan's rules): it is entered again
-  on its page. Each question has one answer:
+  run the same one; the forms only read what was typed. The five models say so (`service_written = True`), and it is held
+  twice (One format for every tab › One writer): the models refuse at run time a write made outside `hr/services.py`'s
+  writing context (`core.writers`), and rule S of `core/tests_data_access.py` reads the code for a second writer by name.
+  The demonstration's seed calls the services as its own people, and the admin offers no Restore of these records (a
+  stretch or a plan brought back there would skip the lead's reach, the employment and the plan's rules): one voided or
+  removed is entered again on its page. Each question has one answer:
   - which placement governs a person's moment (`hr.read.governing`, with `governed` its SQL form): the placement of the
     moment's day on the company's clock. It gives the site and its clock (the day and the time shown, the employment
     rule) AND says whose the moment is (reach and realm are read on that same company's day, `company_day`), so the
@@ -4560,13 +4560,17 @@ always block; a rest shorter than the minimum warns or blocks by the setting; mo
 row than the maximum and work on a holiday warn. They run on every save: a blocking finding is an error on the form and a
 warning is told after the save and written into the audit row. `hr.services.plan_shifts` sets a shift, planned off or nothing on
 a batch of cells, all or none (the verb each cell needs, the person in the user's team on that day, never one's own days, the
-rules for each person); the page's batch route is `/hr/schedule/plan/` (POST): a cell whose person the viewer does not reach
-on its day is a 404 and writes nothing (`hr.scope.can_reach` asked cell by cell, the rule the service plans by, so next
-week's newcomer is planned from the grid and no span of days is built from what was sent), and one's own cell is refused
-with the reason. A cell's dialog saves through `hr.services.plan_day` (the same rules, with the lead's note), which is
+rules for each person); the page's batch route is `/hr/schedule/plan/` (POST). The service asks the reach of all the cells
+at once (`hr.scope.cells_reached`, from the intervals of the placements the viewer manages, in a fixed number of queries
+whatever the cells; never a span of days), so next week's newcomer is planned from the grid; a cell of a person the
+viewer does not reach at all is a 404 and writes nothing, one of their person on another lead's day is refused with the
+reason, as is one's own cell. One paint plans at most the platform owner's number of days (Platform settings › Shift
+schedule, 500 until they set another: `core.platform.plan_batch_cells`); more is refused with the reason. A cell's dialog saves through `hr.services.plan_day` (the same rules, with the lead's note), which is
 told the cell as the dialog knows it (empty for a new plan, the plan being edited): a plan saved there meanwhile by
 another lead or a batch is not overwritten ("This person already has a plan for this day."); the batch sets whatever is
-in a cell, as it always did. A cell's delete is `plan_shifts` clearing it. A planned day is read on the clock, and with
+in a cell, as it always did. A cell's delete is `hr.services.clear_day`: it clears the plan the person confirmed, at
+the version they confirmed, and refuses with the reason when the cell was cleared, replanned or changed meanwhile. A
+planned day is read on the clock, and with
 the holidays, of the site the person is placed on that day (`hr.read.planned_shifts`), in the save and in the grid.
 
 ### Time & shifts › Leave requests (`/hr/leave/`) and Leave types
@@ -5106,6 +5110,9 @@ The rules the platform owner (the customer the platform is given to) sets for th
   messages name the days it says. The regulatory reports re-read a filed report for changes only inside it.
   (Not this window: the fast's 31-day look-back for the last feeding, longer than the longest handling rule, and the
   31 days one page of feeding records covers.)
+- **Days planned in one go on the shift schedule**, 1 to 5000, 500 until the owner sets another (the review of the HR
+  branch, N-5): how many cells one paint of the week's grid may plan (`core.platform.plan_batch_cells`, asked by
+  `hr.services.plan_shifts`); more is refused with the reason. It bounds what one request may ask of the server.
 - **A second person approves a withdrawal warning acknowledgement** (F-164): `core.platform.second_approval_required(
   'withdrawal')` is asked by the one hook (`farm/handling/check.py` `second_person_must_approve`); an unknown kind is an
   error, never a quiet no. The second person's approval flow is not built yet, so the setting FAILS CLOSED (cross review
@@ -6403,13 +6410,29 @@ it, and answers 422 on Create and on Edit alike, on every tab; a form that is no
 PermissionDenied is a 403.
 
 A model says who writes it: `service_written = True` (`core.models.AuditedModel`; HR's people, placements, plans, leave
-requests and attendance) means its app's `services.py` and nothing else. **Rule S** of `core/tests_data_access.py` holds
-it, project-wide: the models every `services.py` writes are found from the code; a declared model's tabs hand every write
-to the service (each hook is read and must call into `services`); no other production module (a view, a command, the
-admin, another app) builds or writes it by name; and the delete plan's restore refuses it. What is not yet one writer is
-a ratchet that may only shrink: the four tabs crud still saves beside a service that writes their model too (Regulatory
-reports, Tasks, Experiments, Card templates: `SECOND_WRITER_TABS`, each with what the two writers are) and the rows other
-modules build for their service to write (`BUILT_ELSEWHERE`); they are closed on `wip/one-writer-guard`.
+requests and attendance) means its app's `services.py` and nothing else. It is held twice:
+
+- **At run time, by the model** (`core/writers.py`). Its `save` and `delete`, and its managers' `update`, `delete`,
+  `bulk_create` and `bulk_update` (a related manager's too), raise `NotTheWriter` unless they run inside the writing
+  context of the model's app, which the app's `services.py` enters around each function that writes (`@writer`). So a
+  view, a command, crud's own save, a form's `save()` or a row held in a variable cannot write such a record, however it
+  is spelled; the whole suite, which drives every page and command, is the witness. Nothing else in the production code
+  enters the context (a test reads the code for it); the test world, which lays out rows as stored, enters it with its
+  reason; a write a test module makes itself is the test laying out its rows. Not held: `Model._base_manager` (Django's
+  own plain manager) and raw SQL, which rule S and rule W read the code for.
+- **In the code, by name** (**Rule S** of `core/tests_data_access.py`, project-wide). The models every `services.py`
+  writes are found from the code. A declared model's tabs hand every write to the service: each hook is read and must
+  call one of the service's writers (a function `core/tests_service_rights.py` holds as one, never a question) and never
+  save the form. No other production module builds or writes a declared model by name: the scan sees the model's name
+  (an alias too) or its app's `models` module (`models.Posting`), any manager (`objects`, `all_objects`,
+  `_base_manager`, `_default_manager`), `QuerySet(Model)`, and the `save()` of a model form of it held in a name. It
+  does not see a row held in a variable or a related manager; the model refuses those at run time.
+
+What is not yet one writer is a ratchet that may only shrink: the four tabs crud still saves beside a service that writes
+their model too (Regulatory reports, Tasks, Experiments, Card templates: `SECOND_WRITER_TABS`, each with what the two
+writers are) and the rows other modules build for their service to write (`BUILT_ELSEWHERE`); they are closed by the
+follow-up listed in the plan. The admin offers no Restore of a declared model (`core.admin.register_audited`), and the
+delete plan's restore refuses one a parent's restore would bring along.
 
 ### The delete plan
 
@@ -6451,7 +6474,11 @@ writes only their deletion's columns, counting the version up in the database (`
 `detach`): an edit saved meanwhile is kept and its editor's outdated version refused (F-065, F-079, F-190). The delete
 locks the records it takes along and takes each only as it still is: one moved to another parent meanwhile stays
 there with what hangs under it, one deleted on its own meanwhile keeps its own moment (cross review F2). Deletes
-made before this stamped each record with its own moment: restoring one of those brings back the record alone.
+made before this stamped each record with its own moment: restoring one of those brings back the record alone. A
+record its service alone writes (`service_written`: HR's people, placements, plans, leave requests and attendance) has no
+Restore action: brought back by the admin it would skip the service's rules, so a voided or removed one is entered again
+on its page (the data map says so for each), and `core.softdelete.restore` refuses one a parent's restore would bring
+along.
 
 ### Shared form parts
 

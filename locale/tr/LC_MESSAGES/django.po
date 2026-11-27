@@ -4319,6 +4319,10 @@ msgstr ""
 "En çok %(minutes)s dakika. Ertelendiği sürece bu alarm kimseye bildirilmez ve üst kademeye "
 "iletilmez; yine açılır, saklanır ve kapanır."
 
+#, python-format
+msgid "At most %(most)s days can be planned at once: select fewer and repeat."
+msgstr "Bir seferde en fazla %(most)s gün planlanabilir: daha azını seçip tekrarlayın."
+
 msgid "At most 720 hours (30 days)."
 msgstr "En fazla 720 saat (30 gün)."
 
@@ -6086,6 +6090,9 @@ msgid ""
 "Days of cover: what is on hand at the site divided by the kilos fed a day there over the last 7 "
 "days."
 msgstr "Yeterlilik: sahadaki eldeki stok, son 7 günde orada günde verilen kiloya bölünür."
+
+msgid "Days planned in one go on the shift schedule"
+msgstr "Vardiya planında bir seferde planlanan gün sayısı"
 
 msgid "Days that are not working days, for every site or for one."
 msgstr "Çalışma günü olmayan günler, tüm sahalar ya da bir saha için."
@@ -8614,6 +8621,15 @@ msgstr ""
 " onaylanmış bir iznin son gününden sonra ne kadar süre daha kısaltılabileceği ya da iptal "
 "edilebileceği. Daha eski kayıtlar olduğu gibi kalır. 1 ile 3650 arası; siz başka bir değer verene"
 " kadar 31."
+
+msgid ""
+"How many days of the shift schedule may be planned in one go (a paint over the week’s grid: "
+"people times days). More than this is refused, and the person paints fewer and repeats. 1 to "
+"5000; 500 until you set another."
+msgstr ""
+"Vardiya planında bir seferde kaç günün planlanabileceği (haftanın tablosunda bir boyama: kişi "
+"sayısı çarpı gün). Bundan fazlası reddedilir; kişi daha azını boyayıp tekrarlar. 1 ile 5000 "
+"arası; siz başka bir değer verene kadar 500."
 
 msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
 msgstr ""

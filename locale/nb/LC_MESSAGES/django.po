@@ -4312,6 +4312,10 @@ msgstr ""
 "Høyst %(minutes)s minutter. Mens den slumrer, varsles ingen om denne alarmen, og den eskaleres "
 "ikke; den utløses, lagres og avsluttes fortsatt."
 
+#, python-format
+msgid "At most %(most)s days can be planned at once: select fewer and repeat."
+msgstr "Høyst %(most)s dager kan planlegges om gangen: velg færre og gjenta."
+
 msgid "At most 720 hours (30 days)."
 msgstr "Høyst 720 timer (30 dager)."
 
@@ -6068,6 +6072,9 @@ msgid ""
 "Days of cover: what is on hand at the site divided by the kilos fed a day there over the last 7 "
 "days."
 msgstr "Dager dekning: beholdningen på lokaliteten delt på kiloene fôret der per dag de siste 7 dagene."
+
+msgid "Days planned in one go on the shift schedule"
+msgstr "Dager planlagt på én gang i vaktplanen"
 
 msgid "Days that are not working days, for every site or for one."
 msgstr "Dager som ikke er arbeidsdager, for alle lokaliteter eller for én."
@@ -8582,6 +8589,15 @@ msgstr ""
 "kan være når den annulleres, og hvor lenge etter siste dag en godkjent permisjon fortsatt kan "
 "forkortes eller kanselleres. Eldre registreringer blir stående som de er. 1 til 3650; 31 til dere"
 " setter noe annet."
+
+msgid ""
+"How many days of the shift schedule may be planned in one go (a paint over the week’s grid: "
+"people times days). More than this is refused, and the person paints fewer and repeats. 1 to "
+"5000; 500 until you set another."
+msgstr ""
+"Hvor mange dager i vaktplanen som kan planlegges på én gang (en maling over ukens rutenett: "
+"personer ganger dager). Flere enn dette avvises, og personen maler færre og gjentar. 1 til 5000; "
+"500 til dere setter noe annet."
 
 msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
 msgstr "Hvor mange hjerteslag en verdi forblir fersk uten en ny; deretter viser stedet ingen nye data."

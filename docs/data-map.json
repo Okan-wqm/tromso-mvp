@@ -4311,6 +4311,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "plan_batch_cells",
+          "field": "plan_batch_cells",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Shift schedule"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -4342,6 +4355,12 @@
         },
         {
           "name": "chk_platform_settings_unknown_withdrawal",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_plan_batch",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -4407,6 +4426,7 @@
             "second_approval_withdrawal": "Records",
             "unknown_withdrawal_days": "Records",
             "clock_tolerance_seconds": "Clocks",
+            "plan_batch_cells": "Shift schedule",
             "version": ""
           }
         }
@@ -25654,8 +25674,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -26029,8 +26049,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -26735,8 +26755,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -27752,8 +27772,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -28481,8 +28501,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",

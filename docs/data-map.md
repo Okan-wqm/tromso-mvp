@@ -514,7 +514,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **how it works**: The platform owner's rules, read by core.platform only.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Administration › platform_settings
 - **forms**: `PlatformSettingsForm`
-- **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check); chk_platform_settings_kept (check)
+- **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check); chk_platform_settings_plan_batch (check); chk_platform_settings_kept (check)
 - **tests that mention it**: `core/tests_kept_rows.py`, `core/tests_platform.py`, `core/tests_rev.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
@@ -533,6 +533,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 | second_approval_withdrawal | boolean |  |  | PlatformSettingsForm › Records |
 | unknown_withdrawal_days | smallint |  |  | PlatformSettingsForm › Records |
 | clock_tolerance_seconds | integer |  |  | PlatformSettingsForm › Clocks |
+| plan_batch_cells | smallint |  |  | PlatformSettingsForm › Shift schedule |
 
 <a id="coreprofile"></a>
 ### core.Profile (`profiles`)
@@ -2337,7 +2338,7 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 - **delete**: attendance records tab (`/hr/time/attendance/<uuid:pk>/delete/`)
 - **read**: attendance records tab (`/hr/time/attendance/`); hr.views.today (`/production/team/`, `/hr/`)
 - **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page. The Attendance page's entries, corrections and voids are hr.services.enter_presence, correct_presence and void_presence.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › attendance_records (never shown: note)
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › attendance_records (never shown: note)
 - **forms**: `AttendanceRecordForm`
 - **constraints**: chk_attendance_records_order (check); chk_attendance_records_via (check); chk_attendance_records_note (check); excl_attendance_employee_span (exclusion: employee, clock_in, clock_out)
 - **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 16 more
@@ -2369,7 +2370,7 @@ The people of the company for HR: number, name (or the account that names them),
 - **delete**: none, by design: a person leaves with a last day (left_on); the record and its history stay readable
 - **read**: employees tab (`/hr/team/`, `/hr/team/<uuid:pk>/view/`)
 - **how it works**: Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move. The form saves through hr.services.add_employee and change_employee; a last day is hr.services.leave_company.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › employees
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
 - **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 29 more
@@ -2432,7 +2433,7 @@ A person’s request to be away from a first to a last day, and how it was decid
 - **delete**: none, by design: a wrong request is cancelled, not deleted
 - **read**: leave requests tab (`/hr/leave/`, `/hr/leave/<uuid:pk>/view/`)
 - **how it works**: One approval step: Edit also approves, rejects and cancels; nobody decides their own request. Filed and changed through hr.services.file_leave and change_leave.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_requests (never shown: decision_note, reason)
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › leave_requests (never shown: decision_note, reason)
 - **forms**: `LeaveRequestForm`
 - **constraints**: chk_leave_requests_days (check); chk_leave_requests_status (check); chk_leave_requests_decided (check); chk_leave_requests_pending_undecided (check); excl_leave_requests_employee_days (exclusion: employee, first_day, last_day)
 - **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 19 more
@@ -2532,7 +2533,7 @@ Where each person works from a day: one department, production or office, and th
 - **delete**: none, by design: a person leaves with a last day (left_on); the record and its history stay readable
 - **read**: hr.views.organisation_chart (`/hr/organization/`, `/production/team/organization/`)
 - **how it works**: One placement covers any day (exclusion constraint); a move closes the open one the day before.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › postings
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › postings
 - **constraints**: chk_postings_one_department (check); chk_postings_period (check); excl_postings_employee_period (exclusion: employee, valid_from, valid_until)
 - **tests that mention it**: `core/tests_data_access.py`, `core/tests_writers.py`, `farm/tests/test_systems.py` and 13 more
 
@@ -2599,7 +2600,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete**: plans tab (`/hr/schedule/<uuid:pk>/delete/`); hr.views.plan (`/production/team/schedule/plan/`, `/hr/schedule/plan/`)
 - **read**: plans tab (`/hr/schedule/`)
 - **how it works**: A cell is planned on its own dialog (hr.services.plan_day) or in a batch (hr.services.plan_shifts): all cells or none, by the same rules.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
 - **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 23 more

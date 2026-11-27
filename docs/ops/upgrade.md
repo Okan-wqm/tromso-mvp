@@ -42,9 +42,13 @@ readings arrive (Sensors). Write the release and the date in the farm's record.
   which: fix `farm.env` or the secret), or `check_pending_constraints` (rows that a new CHECK constraint would refuse,
   named by migration and constraint: correct them with the old release running, or as the release notes say). Then
   `dc up -d` again. Nothing has changed in the database.
-- **`migrate` fails half-way**: PostgreSQL runs each migration in a transaction, so the failed one left nothing; the
-  ones before it are applied. Do not start the old code on the new schema. Either fix forward (a corrected release),
-  or go back:
+- **`migrate` fails half-way**: a migration runs in a transaction unless it says `atomic = False`, and then the
+  failed one left nothing; the ones before it are applied. A migration that is not atomic runs each of its steps on
+  its own, and a step that failed may have left what it made: `sensors/migrations/0003_rollups.py` is one (its
+  continuous aggregate and its policies, each its own step). An index built CONCURRENTLY that failed is left invalid,
+  and the next run of the same migration stops at "already exists": `dc run --rm manage python manage.py check
+  --database default` names each invalid index (core.W006) with the `DROP INDEX CONCURRENTLY IF EXISTS ...` that
+  removes it. Do not start the old code on the new schema. Either fix forward (a corrected release), or go back:
   1. `dc down` (volumes stay);
   2. `git checkout <old tag>`, build the old images (or set the old `WEB_IMAGE` tags);
   3. restore the dump taken in step 1 into an empty database ([backup-and-restore.md](backup-and-restore.md),

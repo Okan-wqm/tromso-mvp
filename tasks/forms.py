@@ -12,7 +12,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
-from core.crud import RowFormSet, TabbedForm, tab_fields
+from core.crud import BoundedModelForm, RowFormSet, TabbedForm, tab_fields
 from core.widgets import DayInput, DependentSelect, NONE
 from farm.models import Batch, Site, Tank
 from farm.models.site import zone_of
@@ -207,7 +207,7 @@ class NoteForm(forms.Form):
 
 
 # ---- checklists ------------------------------------------------------------------------------------------
-class ChecklistLineForm(forms.ModelForm):
+class ChecklistLineForm(BoundedModelForm):
     class Meta:
         fields = ['text']
         widgets = {'text': forms.TextInput(attrs={'placeholder': _('e.g. Check the oxygen in every tank')})}
@@ -283,7 +283,6 @@ class TaskSeriesForm(PlaceForm):
         widgets = {
             'title': forms.TextInput(attrs={'placeholder': _('e.g. Morning oxygen round')}),
             'description': forms.Textarea(attrs={'rows': 3}),
-            'interval': forms.NumberInput(attrs={'min': 1, 'max': 52}),
             'due_time': TIME,
             'starts_on': DATE,
             'ends_on': DATE,

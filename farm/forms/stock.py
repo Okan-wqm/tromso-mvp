@@ -12,7 +12,7 @@ from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils import formats
 from django.utils.translation import gettext_lazy as _, ngettext, pgettext_lazy
 
-from core.crud import DRAFT
+from core.crud import DRAFT, BoundedModelForm
 from core.widgets import DayInput
 
 from ..handling import check
@@ -374,7 +374,7 @@ class SupplierChoice(forms.ModelChoiceField):
         return f'{supplier} · {supplier.get_status_display()}'
 
 
-class BatchInputForm(Acknowledged, ServiceErrors, forms.ModelForm):
+class BatchInputForm(Acknowledged, ServiceErrors, BoundedModelForm):
     """A new batch: who the fish are and where they come from, how many arrive at what average weight;
     the units they go into are rows below it (InputLineFormSet), whose fish must add up to the fish
     arriving (the source never checked, STK-05)."""
@@ -505,7 +505,7 @@ class OpeningBalanceForm(BatchInputForm):
             token=data['token'])
 
 
-class BatchDetailsForm(ServiceErrors, forms.ModelForm):
+class BatchDetailsForm(ServiceErrors, BoundedModelForm):
     """The year class and whether the fish are farmed or wild-caught of a batch stocked without them
     (farm/stock/services.py `correct_batch`)."""
 

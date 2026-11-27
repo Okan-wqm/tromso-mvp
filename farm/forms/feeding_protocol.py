@@ -9,7 +9,7 @@ from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.utils.translation import gettext_lazy as _, ngettext
 
-from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
+from core.crud import DRAFT, BoundedModelForm, CodedFormMixin, TabbedForm, tab_fields
 from core.widgets import DayInput
 
 from ..feeding import assignments
@@ -112,7 +112,7 @@ class ProtocolTableForm(forms.Form):
         return parse_temperatures(self.cleaned_data['temperatures'])
 
 
-class BandRowForm(forms.ModelForm):
+class BandRowForm(BoundedModelForm):
     """A band of the table: its weights, feed, meals, expected FCR and one SFR per temperature column."""
 
     class Meta:

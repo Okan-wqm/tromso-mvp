@@ -131,7 +131,43 @@ class Fieldset:
     help: str = ''
 
 
-class TabbedForm(forms.ModelForm):
+def bounded_inputs(form):
+    """Gives each number input of a model form the bounds its model field holds (its MinValueValidator and
+    MaxValueValidator: the same figures as the database's check), so the browser says them as the save does. Only the
+    fields the form takes from the model (a field the form declares itself says its own bounds) and only a number
+    input (a localised decimal typed as text has none). Applied once, by BoundedModelForm."""
+    from django.core.exceptions import FieldDoesNotExist
+    from django.core.validators import MaxValueValidator, MinValueValidator
+    from django.db import connection
+    declared = type(form).declared_fields
+    for name, field in form.fields.items():
+        if name in declared or getattr(field.widget, 'input_type', None) != 'number':
+            continue
+        try:
+            column = form._meta.model._meta.get_field(name)
+        except FieldDoesNotExist:
+            continue
+        # the column type's own range (an integer's 2147483647) is no bound the model sets: not said
+        storable = connection.ops.integer_field_ranges.get(column.get_internal_type(), ())
+        for validator in column.validators:
+            if not isinstance(validator, (MinValueValidator, MaxValueValidator)) or callable(validator.limit_value) \
+                    or validator.limit_value in storable:
+                continue                        # another rule, the type's range, or a bound worked out at each check
+            # a whole number as it is, a decimal as its text (an attribute, and a form payload, carry no Decimal)
+            limit = validator.limit_value if isinstance(validator.limit_value, int) else str(validator.limit_value)
+            field.widget.attrs['min' if isinstance(validator, MinValueValidator) else 'max'] = limit
+
+
+class BoundedModelForm(forms.ModelForm):
+    """The model form every form of the project derives from (core/tests_forms_bounded.py holds it): its number
+    inputs say the bounds their model fields hold (`bounded_inputs`), so no form sets them by hand."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        bounded_inputs(self)
+
+
+class TabbedForm(BoundedModelForm):
     """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`, where a
     tab can group some of its fields under a heading (Fieldset) and say a word about itself (`tab_help`).
     `fixed_after_creation` names the fields chosen once: they are shown but cannot be changed on an

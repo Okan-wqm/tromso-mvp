@@ -157,30 +157,11 @@ PLATFORM_TABS = [
 ]
 
 
-def bounded_inputs(form):
-    """Gives each number input of a model form the bounds its model field holds (its MinValueValidator and
-    MaxValueValidator: the same figures as the database's check), so the browser says them as the save does. The
-    one place a form's number inputs take their bounds from the model."""
-    from django.core.validators import MaxValueValidator, MinValueValidator
-    for name, field in form.fields.items():
-        if not isinstance(field, forms.IntegerField) or not hasattr(form._meta.model, name):
-            continue
-        for validator in form._meta.model._meta.get_field(name).validators:
-            if isinstance(validator, MinValueValidator):
-                field.widget.attrs['min'] = validator.limit_value
-            elif isinstance(validator, MaxValueValidator):
-                field.widget.attrs['max'] = validator.limit_value
-
-
 class PlatformSettingsForm(TabbedForm):
     """The platform owner's settings (core.models.PlatformSettings); the bounds are the database's, and every number
-    input says them (`bounded_inputs`)."""
+    input says them (core.crud.BoundedModelForm)."""
 
     tabs = PLATFORM_TABS
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        bounded_inputs(self)
 
     class Meta:
         model = PlatformSettings

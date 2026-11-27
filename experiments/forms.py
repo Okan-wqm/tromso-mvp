@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.codes import next_code
-from core.crud import DRAFT, RowFormSet, TabbedForm, tab_fields
+from core.crud import DRAFT, BoundedModelForm, RowFormSet, TabbedForm, tab_fields
 from core.people import person_name, who_can
 from farm.forms.stock import AcknowledgeInput
 from farm.models import FeedingProtocol, Site, Species, System, Tank
@@ -50,7 +50,7 @@ class ExperimentForm(TabbedForm):
         widgets = {
             'hypothesis': forms.Textarea(attrs={'rows': 4}),
             'starts_on': DATE,
-            'duration_days': forms.NumberInput(attrs={'min': 1, 'inputmode': 'numeric'}),
+            'duration_days': forms.NumberInput(attrs={'inputmode': 'numeric'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
             'approval_valid_until': DATE,
             'care_instructions': forms.Textarea(attrs={'rows': 3}),
@@ -118,7 +118,7 @@ class PersonChoice(forms.ModelChoiceField):
         return person_name(user)
 
 
-class MemberForm(forms.ModelForm):
+class MemberForm(BoundedModelForm):
     """One person of the team and their part. A person who can read Experiments is offered (someone who cannot could
     never see the experiment they were put in), and one kept from before stays in the list."""
 
@@ -221,8 +221,8 @@ class GroupRowForm(forms.Form):
     id = forms.UUIDField(widget=forms.HiddenInput, required=False)
     name = forms.CharField(label=_('Group'), max_length=60)
     role = forms.ChoiceField(label=_('Role'), choices=GroupRole.choices)
-    replicates = forms.IntegerField(label=_('Replicates'), min_value=1, max_value=99,
-                                    widget=forms.NumberInput(attrs={'min': 1, 'max': 99, 'inputmode': 'numeric'}))
+    replicates = forms.IntegerField(label=_('Replicates'), min_value=1, max_value=99,      # the input says them
+                                    widget=forms.NumberInput(attrs={'inputmode': 'numeric'}))
 
     def __init__(self, *args, columns=(), protocols=None, **kwargs):
         super().__init__(*args, **kwargs)

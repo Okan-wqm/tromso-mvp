@@ -418,12 +418,13 @@ class PermissionTests(PageTestCase):
             'create post': ('post', reverse('experiments:experiment_create')),
             'edit post': ('post', reverse('experiments:experiment_edit', args=[self.trial.pk])),
             'team post': ('post', reverse('experiments:experiment_team', args=[self.trial.pk])),
-            'delete post': ('post', reverse('experiments:experiment_delete', args=[self.trial.pk])),
+            'delete post': ('confirmed', reverse('experiments:experiment_delete', args=[self.trial.pk])),
         }
 
     def statuses(self, user):
         self.client.force_login(user) if user else self.client.logout()
-        return {name: getattr(self.client, method)(url).status_code for name, (method, url) in self.urls.items()}
+        return {name: (delete_confirmed(self.client, url) if method == 'confirmed' else
+                       getattr(self.client, method)(url)).status_code for name, (method, url) in self.urls.items()}
 
     def test_what_each_role_may_do_on_each_page(self):
         read = {'list': 200, 'detail': 200}

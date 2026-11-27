@@ -11,7 +11,10 @@
    says its fish there; at its end, the link to the tank's water history (its icon: the full-height card has it in its
    head). A card of an empty unit says the unit itself in four cells (monitoring/_empty_cells.html): what is shown when
    there are no fish to show; a full-height card says it so in the new look only (the design's Big card of an empty
-   unit: the one place a fitted card's markup differs between the looks; the classic Big card is as it was).
+   unit, and the boxes the design draws on it with the template's own widgets: the chart's place saying there is no
+   fish, what to dose, the other sampling points, the stock (monitoring/cards/render.py shown); with the other points'
+   ages and the chart's keyboard stop, what a fitted card's markup has in the new look only; the classic Big card is as
+   it was).
    GOING INTO A TANK (owner decision 7): on a card that is the overview's (fitted, not a full-height one; `row.open`,
    monitoring/views.py _openers) the unit's code is the link that opens its Big card in the pane beside the cards
    (`?focus=`; frontend/windows.ts docks it without a page load), and closes it again on the card that is open, which
@@ -40,7 +43,7 @@
     {% if not chosen.fill and "water" in card.sections and not row.preview %}{% include "monitoring/_water_link.html" with icon_only=True %}{% endif %}
   </div>
   {% if not stock %}{% if not chosen.fill or UI_NEXT %}{% include "monitoring/_empty_cells.html" %}{% endif %}{% endif %}
-  <div class="card-grid {{ fit.1 }}">{% for view in card.widgets %}<div class="w w-{{ view.type }} {{ view.place }}">{% if view.hidden %}{% if view.hidden == "feeding" %}{% include "monitoring/_card_hidden.html" with section=_("Feeding") fit=True %}{% elif view.hidden == "water" %}{% include "monitoring/_card_hidden.html" with section=_("Water") fit=True %}{% elif view.hidden == "health" %}{% include "monitoring/_card_hidden.html" with section=_("Health") fit=True %}{% else %}{% include "monitoring/_card_hidden.html" with section=_("Tasks") fit=True %}{% endif %}{% elif view.failed %}<p class="monitor-hidden tw:m-0 tw:truncate tw:self-center tw:text-u-s tw:text-ink-2">{% trans "no data" %}</p>{% else %}{% include view.renderer %}{% endif %}</div>{% endfor %}</div>
+  {% shown_widgets card UI_NEXT as widgets %}<div class="card-grid {{ fit.1 }}">{% for view in widgets %}<div class="w w-{{ view.type }} {{ view.place }}">{% if view.hidden %}{% if view.hidden == "feeding" %}{% include "monitoring/_card_hidden.html" with section=_("Feeding") fit=True %}{% elif view.hidden == "water" %}{% include "monitoring/_card_hidden.html" with section=_("Water") fit=True %}{% elif view.hidden == "health" %}{% include "monitoring/_card_hidden.html" with section=_("Health") fit=True %}{% else %}{% include "monitoring/_card_hidden.html" with section=_("Tasks") fit=True %}{% endif %}{% elif view.failed %}<p class="monitor-hidden tw:m-0 tw:truncate tw:self-center tw:text-u-s tw:text-ink-2">{% trans "no data" %}</p>{% else %}{% include view.renderer %}{% endif %}</div>{% endfor %}</div>
   {% if chosen.fill %}<p class="monitor-card-basis tw:m-0 tw:truncate tw:text-ink-3" data-basis><span class="tw:text-u-s">{% trans "State from" %}: {% for name in state.basis %}{% if name == "stock" %}{% trans "Fish" %}{% elif name == "feeding" %}{% trans "Feeding" %}{% elif name == "water" %}{% trans "Water" %}{% else %}{% trans "Health" %}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %} · {% trans "Template" %}: {{ chosen.name }} · {{ chosen.because }}</span></p>{% endif %}
 </article>
 {% endwith %}

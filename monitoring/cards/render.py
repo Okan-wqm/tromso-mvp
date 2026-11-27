@@ -102,13 +102,18 @@ def _titled(spec, widget, rows, measure):
 def build(card):
     """The card's widgets to draw, in reading order; on the card of a unit with no fish, only the ones that belong
     there (the experiments' chips, the Deffeyes chart button)."""
+    return _views(card, lambda spec: card.stock is not None or spec.on_empty)
+
+
+def _views(card, drawn):
+    """The WidgetViews of the card's template whose spec `drawn` keeps, in reading order (y, then x)."""
     views = []
     widgets = sorted(card.template.layout['widgets'], key=lambda widget: (widget['y'], widget['x']))
     rows = max((widget['y'] + widget['h'] for widget in widgets), default=0)
     measure = getattr(card.template, 'measure', None)
     for widget in widgets:
         spec = catalogue.WIDGETS[widget['type']]
-        if card.stock is None and not spec.on_empty:
+        if not drawn(spec):
             continue
         hidden = _hidden(spec, card.sections)
         if hidden and not spec.says_hidden:
@@ -119,6 +124,20 @@ def build(card):
             any(source in card.failed for source in spec.sources), f'w-{card.unit.pk}-{widget["id"]}',
             _titled(spec, widget, rows, measure)))
     return tuple(views)
+
+
+# What the design's Big card of a unit with no fish still draws, with the template's own widgets (the new look's only:
+# templates/monitoring/_card_fit.html, `shown`): the chart's place, saying there is no fish (no chart is drawn: `chart`),
+# what to dose, the other sampling points (their water, as the card read it) and the stock (no fish).
+EMPTY_NEXT = frozenset({'chart', 'dosing', 'points', 'stock'})
+
+
+def shown(card, next_look):
+    """The widgets a fitted card draws: its template's (`build`), and in the new look, on a full-height card of a unit
+    with no fish, EMPTY_NEXT's as well, in reading order. The classic look's are `build`'s, unchanged."""
+    if not next_look or card.stock is not None or not card.template.fill:
+        return card.widgets
+    return _views(card, lambda spec: spec.on_empty or spec.type in EMPTY_NEXT)
 
 
 # ---- one value -------------------------------------------------------------------------------------------------
@@ -672,6 +691,11 @@ def chart(card):
     this water share, card.chart_extent). Drawn from the LATEST values received (owner decision 1): old inputs are
     said on the picture and under it, never silently. Phase 1: no dosing target is active."""
     made = card.chart
+    if card.stock is None:
+        # (the design's Big card of an empty unit, the new look's only: shown) the chart is the water against the limits
+        # of the fish in it, and there are none: nothing is drawn, and the place says why
+        return DrawnChart(refused=gettext('there is no fish in this unit'), title=gettext('The chart cannot be drawn'),
+                          lines=(gettext('No chart: there is no fish in this unit.'),))
     if made is None:
         return DrawnChart(refused=gettext('no data'), title=gettext('The chart cannot be drawn'))
     if not isinstance(made, calculation.UnitChart):
@@ -760,6 +784,8 @@ class WaterRow:
 
 # More rows than this stand in two columns: a row is never lower than a line of the card's small text.
 WATER_ROWS = 14
+# At most this many values of a full-height card's water are the design's tiles in the new look (two lines of four).
+WATER_TILES = 8
 
 
 def water_rows(card):
@@ -776,6 +802,25 @@ def water_rows(card):
         return ()
     per = (len(rows) + 1) // 2 if len(rows) > WATER_ROWS else len(rows)
     return tuple(tuple(rows[start:start + per]) for start in range(0, len(rows), per))
+
+
+def tiled(card, view, columns):
+    """Whether a full-height card's water (`columns`: water_rows') is drawn as the design's tiles: ONE column of at most
+    WATER_TILES values, on a full-height card whose template gives the water a place that holds two lines of four
+    tiles (the water's catalogue tile_units, measured as the validator measures a place: validate.fitted_place); else
+    a row a value. The server's one answer, said on the rows' frame (`data-tiles`, in both looks: the classic sheet
+    reads nothing of it), which the new look's sheet draws (static/css/monitor-next.css); never a count made in a
+    sheet."""
+    template = card.template
+    if not template.fill or len(columns) != 1 or len(columns[0]) > WATER_TILES:
+        return False
+    from .validate import fitted_place
+    widget = next((each for each in template.layout['widgets'] if each['id'] == view.id), None)
+    need = catalogue.WIDGETS['water_table'].tile_units
+    if widget is None or need is None:
+        return False
+    wide, high = fitted_place(widget, template.rows, template.measure)
+    return wide >= need[0] and high >= need[1]
 
 
 # What a card says of each of the unit's other sampling points.

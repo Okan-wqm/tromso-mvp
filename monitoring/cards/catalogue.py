@@ -74,6 +74,8 @@ class WidgetSpec:
     looks: tuple = (FLOW,)      # where it can be drawn: on a card that flows, on a fitted card, or both
     fit_units: tuple = None     # (width, height) in card units its fitted look needs at the least to print what it
                                 # prints uncut: under it the validator warns (advice: the preview is the proof)
+    tile_units: tuple = None    # (width, height) in card units a full-height card's place must have for the new look to
+                                # draw the widget's values as the design's tiles (two lines of four, render.tiled)
 
     @property
     def renderer(self):
@@ -95,7 +97,7 @@ WIDGETS = {spec.type: spec for spec in (
          'options': [{'value': 'middle', 'label': 'The middle point'}, {'value': 'all', 'label': 'Every active point'}]},
         {'name': 'parameters', 'label': 'Parameters', 'type': 'select', 'defaultValue': 'key',
          'options': [{'value': 'key', 'label': 'The key values'}, {'value': 'all', 'label': 'Every value measured'}]}),
-          looks=(FLOW, FIT), fit_units=(20.0, 3.0)),
+          looks=(FLOW, FIT), fit_units=(20.0, 3.0), tile_units=(40.0, 11.0)),
     _spec('fish', _('Fish'), (4, 3), (12, 8), (12, 5), ('stock',), options=_schema(
         {'name': 'figures', 'label': 'Figures', 'type': 'select', 'defaultValue': 'brief',
          'options': [{'value': 'brief', 'label': 'The key figures'}, {'value': 'full', 'label': 'Every figure'}]})),

@@ -74,6 +74,18 @@ def water_rows(card):
 
 
 @register.simple_tag
+def tiled(card, view, columns):
+    """Whether a full-height card's water is drawn as the design's tiles (render.tiled)."""
+    return render.tiled(card, view, columns)
+
+
+@register.simple_tag
+def shown_widgets(card, next_look):
+    """The widgets a fitted card draws in this look (render.shown)."""
+    return render.shown(card, next_look)
+
+
+@register.simple_tag
 def other_points(card):
     """The unit's other sampling points with their oxygen, temperature and pH (render.other_points)."""
     return render.other_points(card)

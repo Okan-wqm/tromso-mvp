@@ -10407,6 +10407,9 @@ msgstr "Ingen kanaler ennå: legg dem til på Kanaler-siden."
 msgid "No chart"
 msgstr "Ingen diagram"
 
+msgid "No chart: there is no fish in this unit."
+msgstr "Ingen diagram: det er ingen fisk i denne enheten."
+
 msgid "No check"
 msgstr "Ingen kontroll"
 
@@ -10504,6 +10507,9 @@ msgstr "Ingen fil"
 
 msgid "No file."
 msgstr "Ingen fil."
+
+msgid "No fish"
+msgstr "Ingen fisk"
 
 #, python-format
 msgid ""
@@ -21089,6 +21095,9 @@ msgstr "visningen valgt på denne skjermen"
 
 msgid "the whole site"
 msgstr "hele lokaliteten"
+
+msgid "there is no fish in this unit"
+msgstr "det er ingen fisk i denne enheten"
 
 msgid "this card’s own scale"
 msgstr "skalaen gjelder dette kortet"

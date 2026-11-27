@@ -10441,6 +10441,9 @@ msgstr "Henüz kanal yok: Kanallar sayfasından ekleyin."
 msgid "No chart"
 msgstr "Grafik yok"
 
+msgid "No chart: there is no fish in this unit."
+msgstr "Grafik yok: bu birimde balık yok."
+
 msgid "No check"
 msgstr "Denetim yok"
 
@@ -10536,6 +10539,9 @@ msgstr "Dosya yok"
 
 msgid "No file."
 msgstr "Dosya yok."
+
+msgid "No fish"
+msgstr "Balık yok"
 
 #, python-format
 msgid ""
@@ -21137,6 +21143,9 @@ msgstr "bu ekranda seçilen görünüm"
 
 msgid "the whole site"
 msgstr "tüm saha"
+
+msgid "there is no fish in this unit"
+msgstr "bu birimde balık yok"
 
 msgid "this card’s own scale"
 msgstr "ölçek bu karta özgü"

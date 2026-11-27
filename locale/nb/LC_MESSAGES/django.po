@@ -16805,9 +16805,6 @@ msgstr "Sensorregelen slår ikke lenger til"
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "Sensorene ved %(place)s: først de som er der nå, så de som var der før."
 
-msgid "The share was revoked."
-msgstr "Delingen ble trukket tilbake."
-
 #, python-format
 msgid ""
 "The share of the feed given that the fish do not eat, 0 to 50 %%; a band may have its own. Empty:"
@@ -16827,6 +16824,9 @@ msgstr ""
 "Andelen av fisken som forventes å dø på en måned (30 dager), 0 til 30 %%; et bånd kan ha sin "
 "egen. Tom: ingen. Leses bare av produksjonsplanen: den senker antall fisk, biomassen og fôret "
 "framover, aldri snittvekten."
+
+msgid "The share was revoked."
+msgstr "Delingen ble trukket tilbake."
 
 #, python-format
 msgid ""

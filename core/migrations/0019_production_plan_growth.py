@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0015_platform_settings_kept'),
+        ('core', '0018_audit_log_order'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

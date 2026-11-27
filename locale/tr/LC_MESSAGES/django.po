@@ -16843,9 +16843,6 @@ msgstr "Sensör kuralı artık geçerli değil"
 msgid "The sensors at %(place)s: those there now first, then those there before."
 msgstr "%(place)s yerindeki sensörler: önce şu an orada olanlar, sonra daha önce orada olanlar."
 
-msgid "The share was revoked."
-msgstr "Paylaşım geri alındı."
-
 #, python-format
 msgid ""
 "The share of the feed given that the fish do not eat, 0 to 50 %%; a band may have its own. Empty:"
@@ -16865,6 +16862,9 @@ msgstr ""
 "Bir ayda (30 gün) ölmesi beklenen balıkların payı, %%0 ile %%30 arası; bir bandın kendi değeri "
 "olabilir. Boş: yok. Yalnızca üretim planı okur: ilerideki balık sayısını, biyokütleyi ve yemi "
 "düşürür, ortalama ağırlığı asla düşürmez."
+
+msgid "The share was revoked."
+msgstr "Paylaşım geri alındı."
 
 #, python-format
 msgid ""

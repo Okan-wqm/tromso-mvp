@@ -121,11 +121,12 @@ def _ahead(policy, unit, batch, start, weight_g, fish, target_g, horizon_days, t
         if planned is not None:
             basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=planned)
         elif past:
-            if then is None:
+            # the temperature measured by then (None: no reading of a later day is ever asked instead)
+            basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=then)
+            if basis.missing == ration.NO_TEMPERATURE:
                 return growth.Stop(_('No temperature had been measured here by %(date)s, and no temperature profile '
                                      'applies: the plan as it stood then has none to read.') % {
                     'date': formats.date_format(start, 'DATE_FORMAT')})
-            basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=then)
         else:
             basis = policy.basis(unit.pk, batch.pk, day, weight)
         if basis.protocol is not None and basis.protocol not in protocols:

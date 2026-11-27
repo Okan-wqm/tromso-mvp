@@ -333,9 +333,10 @@ class BudgetTests(Fixtures, FeedingTestCase):
 
     # measured 55 at 3 and at 9 units (2026-11-22), a small margin; never raised without a review. Main's own page was
     # 60 on 2026-11-27; the production plan adds two reads on the path with temperature profiles (their rows, their
-    # points) and saves one (the fasts, read once by the walk's policy): measured 62 here, the same at 3 and at 9 units
+    # points) and saves one (the fasts, read once by the walk's policy); with a protocol in force too, so every
+    # row walks its plan ahead (the tables, their bands and cells): measured 66 here, the same at 3 and at 9 units
     # (review 1, M2: the ceiling is the measurement on the path it was raised for).
-    CEILING = 62
+    CEILING = 66
 
     def setUp(self):
         super().setUp()

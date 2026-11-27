@@ -38,6 +38,7 @@ from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
 
 from core import audit
+from core.dates import read_day
 from farm.handling import fasting
 from farm.models import (
     Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank,
@@ -166,10 +167,10 @@ def as_recorded(model, unit_ids, batch_ids, moment):
     for row in rows:
         values = earlier.get(str(row.pk), {})
         if labels['valid_from'] in values and values[labels['valid_from']]:
-            row.valid_from = date.fromisoformat(values[labels['valid_from']])
+            row.valid_from = read_day(values[labels['valid_from']]) or row.valid_from
         if labels['valid_until'] in values:
             said = values[labels['valid_until']]
-            row.valid_until = date.fromisoformat(said) if said else None
+            row.valid_until = read_day(said) if said else None
         table = by_name.get(values.get(labels[model.SUBJECT]))
         if table is not None:
             setattr(row, model.SUBJECT, table)

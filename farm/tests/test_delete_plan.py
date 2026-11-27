@@ -11,6 +11,7 @@ from core.softdelete import execute, plan_delete, restore
 
 from ..models import ProductionDepartment, Site, System
 from .helpers import role
+from core.testing import delete_confirmed
 
 DEPARTMENT_SITE_LINK = ProductionDepartment._meta.get_field('site').remote_field
 
@@ -70,7 +71,7 @@ class SetNullTests(DeletePlanTestCase):
         self.assertEqual(entry.changes, {'Production department': ['Hall A (HA)', None]})
 
     def test_a_record_nothing_points_at_deletes_plainly(self):
-        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall_b.pk]))
+        delete_confirmed(self.client, reverse('farm:productiondepartment_delete', args=[self.hall_b.pk]))
         self.assertEqual(self.log(), [('delete', 'production department', 'Hall B (HB)')])
 
 

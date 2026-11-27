@@ -24,6 +24,7 @@ from sensors.management.commands.sensor_broker_sync import acl_text, plain
 from sensors.models import Calibration, Channel, Connection, Credential, Device, PayloadFormat
 
 from . import SensorsCase, make_channel, make_device
+from core.testing import delete_confirmed
 
 ALL = ('view', 'add', 'change', 'delete')
 MODELS = ('connection', 'payloadformat', 'device', 'channel', 'credential')
@@ -100,7 +101,7 @@ class ConnectionPageTests(PagesCase):
         plan = plan_delete(connection)
         self.assertEqual(plan.blockers, [])
         self.assertEqual({type(record) for record in plan.cascade}, {Device, Channel})
-        self.client.post(url('connection', 'delete', connection.pk))
+        delete_confirmed(self.client, url('connection', 'delete', connection.pk))
         for record in (connection, device, channel):
             self.assertTrue(type(record).all_objects.get(pk=record.pk).is_deleted)
         restore(type(connection).all_objects.get(pk=connection.pk), self.keeper)   # with what its delete took along
@@ -243,7 +244,7 @@ class ChannelPageTests(PagesCase):
         channel.refresh_from_db()
         self.assertEqual(channel.fresh_s, 1800)
         self.stale_refused('channel', channel, 'name', 'Mine', 'Theirs')
-        self.client.post(url('channel', 'delete', channel.pk))
+        delete_confirmed(self.client, url('channel', 'delete', channel.pk))
         self.assertTrue(Channel.all_objects.get(pk=channel.pk).is_deleted)
 
     def test_blank_reduction_fields_take_the_quantitys_defaults(self):

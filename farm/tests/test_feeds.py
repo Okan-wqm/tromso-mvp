@@ -18,6 +18,7 @@ from ..resources import FeedResource
 from .helpers import role, rows_data
 from .test_suppliers import supplier_data
 from farm import withdrawal_gate
+from core.testing import delete_confirmed
 
 FEED_MANAGER = ('view_feed', 'add_feed', 'change_feed', 'delete_feed', 'view_auditlog')
 TEXTS = ('name', 'code', 'feed_type', 'buoyancy', 'status', 'currency', 'notes')
@@ -124,7 +125,7 @@ class FeedRoundTripTests(FeedTestCase):
             Decimal('0.90'), Decimal('24.00'), Decimal('21.50'), Decimal('16.00')))
 
         # Delete: hidden, not erased
-        self.client.post(reverse('farm:feed_delete', args=[feed.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[feed.pk]))
         self.assertFalse(Feed.objects.exists())
         self.assertEqual(stored(Feed.all_objects.get(), 'is_deleted', 'deleted_by'), (True, self.user))
         self.assertEqual(list(self.client.get(reverse('farm:feed_list')).context['objects']), [])
@@ -338,11 +339,11 @@ class FeedManufacturerTests(FeedTestCase):
         page = self.client.get(reverse('farm:supplier_delete', args=[self.mill.pk]))
         self.assertContains(page, 'This supplier cannot be deleted yet.')
         self.assertContains(page, '1 feed still belongs to it.')
-        self.client.post(reverse('farm:supplier_delete', args=[self.mill.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[self.mill.pk]))
         self.assertEqual(stored(self.mill, 'is_deleted'), (False,))
         # Another manufacturer for the feed (or deleting the feed) lets the supplier go.
         self.edit(feed, manufacturer=str(self.other_mill.pk))
-        self.client.post(reverse('farm:supplier_delete', args=[self.mill.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[self.mill.pk]))
         self.assertEqual(stored(self.mill, 'is_deleted'), (True,))
 
     def test_restoring_a_feed_needs_its_manufacturer_back_still_making_feed(self):
@@ -495,7 +496,7 @@ class FeedSuitabilityTests(FeedTestCase):
         page = self.client.get(reverse('farm:species_delete', args=[self.trout.pk]))
         self.assertContains(page, 'Feeds linked to it')
         self.assertContains(page, 'Nutra Olympic 3 mm (NUTRA-3)')
-        self.client.post(reverse('farm:species_delete', args=[self.trout.pk]))
+        delete_confirmed(self.client, reverse('farm:species_delete', args=[self.trout.pk]))
         self.assertEqual(self.rows(), [('SAL', 'smolt', None, None, '')])
         self.assertEqual(FeedSuitability.all_objects.filter(feed=self.feed).count(), 2)
         # Saving the list replaces the rows it shows and keeps the deleted species' row for its restore.
@@ -511,7 +512,7 @@ class FeedSuitabilityTests(FeedTestCase):
         plan = plan_delete(self.feed)
         self.assertTrue(plan.can_delete)
         self.assertEqual((plan.cascade, plan.detach, plan.unlinked), ([], [], []))
-        self.client.post(reverse('farm:feed_delete', args=[self.feed.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[self.feed.pk]))
         self.assertEqual(FeedSuitability.objects.filter(feed_id=self.feed.pk).count(), 1)
         self.assertEqual(list(self.salmon.feeds.filter(is_deleted=False)), [])
 
@@ -591,7 +592,7 @@ class FeedDeleteAndRestoreTests(FeedTestCase):
         feed = self.make()
         page = self.client.get(reverse('farm:feed_delete', args=[feed.pk]))
         self.assertContains(page, 'Delete “Nutra Olympic 3 mm (NUTRA-3)”?')
-        self.client.post(reverse('farm:feed_delete', args=[feed.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[feed.pk]))
         self.assertEqual(list(AuditLog.objects.values_list('action', 'entity_type', 'entity_label')),
                          [('delete', 'feed', 'Nutra Olympic 3 mm (NUTRA-3)')])
 
@@ -633,7 +634,7 @@ class FeedAuditTests(FeedTestCase):
         feed = Feed.objects.get()
         self.edit(feed, manufacturer=str(self.mill.pk), feed_type='medicated', buoyancy='sinking', protein_pct='45.50',
                   price_per_kg='14.00', currency='NOK', status='discontinued')
-        self.client.post(reverse('farm:feed_delete', args=[feed.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[feed.pk]))
         created, edited, deleted = AuditLog.objects.order_by('created_at')
         self.assertEqual((created.action, created.entity_type, created.entity_label),
                          ('create', 'feed', 'Nutra Olympic 3 mm (NUTRA-3)'))
@@ -689,7 +690,7 @@ class FeedPermissionTests(FeedTestCase):
         self.assertEqual(self.create(code='NEW').status_code, 403)
         self.edit(feed, name='Changed')
         self.assertEqual(stored(feed, 'name'), ('Changed',))
-        self.client.post(reverse('farm:feed_delete', args=[feed.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[feed.pk]))
         self.assertTrue(Feed.all_objects.get(pk=feed.pk).is_deleted)
 
     def test_no_view_permission_no_tab_and_no_menu_entry(self):

@@ -21,6 +21,7 @@ from .helpers import user
 from .helpers_people import PeopleTestCase, employee, place
 from .test_leave import LeaveTestCase
 from .test_one_path import EVERY_VERB, PlanPerDayTests
+from core.testing import delete_confirmed
 
 UTC = utc.utc
 DECLARED = (AttendanceRecord, Employee, Posting, ShiftAssignment, services.LeaveRequest)
@@ -177,7 +178,7 @@ class ClearConfirmedTests(PeopleTestCase):
             return delete(cls, request, record)
         self.client.force_login(self.planner)
         with mock.patch.object(ShiftAssignmentResource, 'delete_record', classmethod(raced)):
-            response = self.client.post(reverse('hr:production_shiftassignment_delete', args=[row.pk]))
+            response = delete_confirmed(self.client, reverse('hr:production_shiftassignment_delete', args=[row.pk]))
         row.refresh_from_db()           # the other lead's change went with the refused delete (one transaction)
         self.assertFalse(row.is_deleted)
         self.assertFalse(AuditLog.objects.filter(entity_id=str(row.pk), action='delete').exists())

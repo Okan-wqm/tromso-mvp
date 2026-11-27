@@ -11,6 +11,7 @@ from core.models import AuditLog
 
 from ..models import Site, SiteContact
 from .helpers import SITE_MANAGER, contacts_data, role, site_data
+from core.testing import delete_confirmed
 
 
 class SiteTestCase(TestCase):
@@ -65,7 +66,7 @@ class SiteRoundTripTests(SiteTestCase):
         self.assertEqual((site.organisation_number, site.production_form, site.reports_from), ('', '', None))
 
         # Delete
-        self.client.post(reverse('farm:site_delete', args=[site.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[site.pk]))
         self.assertFalse(Site.objects.exists())
         self.assertEqual(list(self.client.get(reverse('farm:site_list')).context['objects']), [])
         self.assertTrue(Site.all_objects.get(pk=site.pk).is_deleted)
@@ -122,7 +123,7 @@ class SiteAuditTests(SiteTestCase):
                          site_data(name='Bergen', code='bh', area_m2='250', status='maintenance', version='1'))
         self.client.post(reverse('farm:site_contacts', args=[site.pk]),
                          contacts_data([{'name': 'Kari', 'role': 'Vet', 'is_primary': True}], record=site))
-        self.client.post(reverse('farm:site_delete', args=[site.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[site.pk]))
 
         created, edited, contacts, deleted = self.log()
         self.assertEqual(created[:2], ('create', 'ali'))
@@ -180,12 +181,13 @@ class SitePermissionTests(TestCase):
         self.user.groups.add(role('Editor', 'view_site', 'change_site'))
         self.assertEqual(self.client.get(reverse('farm:site_edit', args=[self.site.pk])).status_code, 200)
         self.assertEqual(self.client.get(reverse('farm:site_create')).status_code, 403)
-        self.assertEqual(self.client.post(reverse('farm:site_delete', args=[self.site.pk])).status_code, 403)
+        self.assertEqual(delete_confirmed(self.client,
+                                          reverse('farm:site_delete', args=[self.site.pk])).status_code, 403)
 
     def test_platform_admin_can_do_everything(self):
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'eski-sifre-123')
         self.client.force_login(admin)
-        self.client.post(reverse('farm:site_delete', args=[self.site.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.site.pk]))
         self.assertFalse(Site.objects.exists())
 
 
@@ -200,7 +202,7 @@ class SiteModalTests(SiteTestCase):
         site = Site.objects.get()
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response['X-Modal-Load'], reverse('farm:site_edit', args=[site.pk]))
-        response = self.client.post(reverse('farm:site_delete', args=[site.pk]), headers={'X-Modal': '1'})
+        response = delete_confirmed(self.client, reverse('farm:site_delete', args=[site.pk]), headers={'X-Modal': '1'})
         self.assertEqual(response['X-Modal-Redirect'], reverse('farm:site_list'))
 
     def test_errors_come_back_into_the_dialog(self):
@@ -469,7 +471,7 @@ class SiteDeleteTests(SiteTestCase):
     def test_delete_asks_first_then_soft_deletes(self):
         site = self.make_site()
         self.assertContains(self.client.get(reverse('farm:site_delete', args=[site.pk])), 'Delete “Site A (SA)”?')
-        response = self.client.post(reverse('farm:site_delete', args=[site.pk]))
+        response = delete_confirmed(self.client, reverse('farm:site_delete', args=[site.pk]))
         self.assertRedirects(response, reverse('farm:site_list'))
         site = Site.all_objects.get(pk=site.pk)
         self.assertTrue(site.is_deleted)

@@ -8,7 +8,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from core.models import AuditLog
-from core.testing import FrozenClock
+from core.testing import delete_confirmed, FrozenClock
 from farm.models import ProductionDepartment, Site
 
 from .. import leave, read, services
@@ -71,7 +71,7 @@ class LeaveTypeTests(LeaveTestCase):
             'name': 'Parental', 'code': 'PAR', 'annual_days': '', 'status': 'inactive', 'version': '1'})
         kind.refresh_from_db()
         self.assertEqual((kind.annual_days, kind.needs_approval, kind.status, kind.version), (None, False, 'inactive', 2))
-        self.client.post(reverse('hr:leavetype_delete', args=[kind.pk]))
+        delete_confirmed(self.client, reverse('hr:leavetype_delete', args=[kind.pk]))
         self.assertTrue(LeaveType.all_objects.get(pk=kind.pk).is_deleted)
 
     def test_the_database_constraints(self):

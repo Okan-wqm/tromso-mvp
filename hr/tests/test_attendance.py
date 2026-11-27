@@ -17,6 +17,7 @@ from ..models import (AttendanceRecord, Employee, LeaveRequest, LeaveType, Posti
                       ShiftAssignment)
 from .helpers import fields_of, user
 from .helpers_people import PeopleTestCase, employee, place
+from core.testing import delete_confirmed
 
 UTC = utc.utc
 DAY = date(2026, 3, 2)
@@ -218,7 +219,7 @@ class EnteredPresenceTests(PeopleTestCase):
         self.assertNotIn('Corrected', str(list(AuditLog.objects.values_list('changes', flat=True))))
         self.assertNotIn('Phone was dead', str(list(AuditLog.objects.values_list('changes', flat=True))))
         # Void = delete
-        self.client.post(reverse('hr:production_attendancerecord_delete', args=[record.pk]))
+        delete_confirmed(self.client, reverse('hr:production_attendancerecord_delete', args=[record.pk]))
         self.assertTrue(AttendanceRecord.all_objects.get().is_deleted)
 
     def test_a_reason_is_required_and_the_out_must_follow_the_in(self):

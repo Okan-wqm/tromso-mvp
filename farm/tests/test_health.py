@@ -23,7 +23,7 @@ from django.utils import translation
 from core import access, database, navigation, softdelete
 from core.models import AuditLog, Profile
 from core.softdelete import plan_delete
-from core.testing import BAD_HOURS, FrozenClock
+from core.testing import delete_confirmed, BAD_HOURS, FrozenClock
 
 from ..handling import check as handling_check, withdrawal as registry
 from ..handling.withdrawal import WithdrawalBlock
@@ -1075,7 +1075,7 @@ class MedicinePageTests(HealthTestCase):
              medicine.status, medicine.notes, medicine.version),
             ('Aqui-S vet.', '', 'anaesthetic', '', None, '', None, False, 'inactive', '', 2))
         self.assertEqual(medicine.withdrawals.get().days, 7)                # editing the medicine leaves its rows
-        self.client.post(reverse('farm:medicine_delete', args=[medicine.pk]))
+        delete_confirmed(self.client, reverse('farm:medicine_delete', args=[medicine.pk]))
         self.assertTrue(Medicine.all_objects.get(pk=medicine.pk).is_deleted)
         self.assertEqual(list(AuditLog.objects.filter(entity_type='medicine').values_list('action', flat=True)),
                          ['delete', 'update', 'create'])

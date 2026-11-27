@@ -21,6 +21,7 @@ from ..forms import BoardUnitForm, MonitorBoardForm
 from ..models import MonitorBoard, MonitorBoardUnit
 from . import MonitoringCase
 from ..cards.builtin import DETAILED, SIMPLE
+from core.testing import delete_confirmed
 
 KEEPER = ('view_monitorboard', 'add_monitorboard', 'change_monitorboard', 'delete_monitorboard', 'view_tank',
           'view_stockoperation')
@@ -96,7 +97,7 @@ class RoundTripTests(BoardCase):
         self.assertEqual(board.seconds, 15)                         # empty: the system's interval
         # delete: a soft delete with a clean plan, logged
         self.assertEqual(plan_delete(board).blockers, [])
-        self.client.post(reverse('monitoring:monitorboard_delete', args=[board.pk]))
+        delete_confirmed(self.client, reverse('monitoring:monitorboard_delete', args=[board.pk]))
         self.assertFalse(MonitorBoard.objects.filter(pk=board.pk).exists())
         self.assertTrue(MonitorBoard.all_objects.get(pk=board.pk).is_deleted)
         self.assertTrue(AuditLog.objects.filter(entity_id=str(board.pk), action='delete').exists())
@@ -263,7 +264,7 @@ class CardsListTests(BoardCase):
     def test_a_deleted_board_comes_back_with_its_cards(self):
         board = self.board('Wall')
         self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}])
-        self.client.post(reverse('monitoring:monitorboard_delete', args=[board.pk]))
+        delete_confirmed(self.client, reverse('monitoring:monitorboard_delete', args=[board.pk]))
         self.assertEqual(MonitorBoardUnit.objects.filter(board=board).count(), 1)      # a soft delete never cascades
         softdelete.restore(MonitorBoard.all_objects.get(pk=board.pk), self.keeper)
         restored = MonitorBoard.objects.prefetch_related('rows').get(pk=board.pk)
@@ -323,7 +324,8 @@ class RulesTests(BoardCase):
         self.assertEqual(self.client.get(LIST).status_code, 403)
         self.assertEqual(self.client.post(CREATE, {'name': 'x'}).status_code, 403)
         self.assertEqual(self.client.get(self.edit(board)).status_code, 403)
-        self.assertEqual(self.client.post(reverse('monitoring:monitorboard_delete', args=[board.pk])).status_code, 403)
+        self.assertEqual(delete_confirmed(self.client,
+                                          reverse('monitoring:monitorboard_delete', args=[board.pk])).status_code, 403)
         page = self.client.get(reverse('monitoring:monitor'), {'board': board.pk})
         self.assertEqual(page.status_code, 200)                           # any reader may choose a board
         self.assertContains(page, 'Wall')
@@ -413,7 +415,7 @@ class OnThePageTests(BoardCase):
         self.assertEqual(empty.context['shown'], 0)
         self.save_units(board, [{'unit': str(self.t1.pk), 'template': ''}])
         self.assertEqual(self.client.get(reverse('monitoring:monitor'), {'board': str(board.pk), 'full': '1'}).context['shown'], 1)
-        self.client.post(reverse('monitoring:monitorboard_delete', args=[board.pk]))
+        delete_confirmed(self.client, reverse('monitoring:monitorboard_delete', args=[board.pk]))
         gone = self.client.get(url, {'board': str(board.pk)}).content.decode()
         self.assertNotIn('data-key="card:', gone)                          # the poll of a deleted board draws no card
 

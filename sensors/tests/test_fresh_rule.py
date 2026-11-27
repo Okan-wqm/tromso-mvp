@@ -35,6 +35,7 @@ from sensors import alarms, bindings, quantities
 from sensors.models import AlarmEvent, AlarmRule, Channel, ChannelState
 
 from . import SensorsCase, make_channel
+from core.testing import delete_confirmed
 
 KEEPER = ('view_alarmrule', 'change_alarmrule', 'view_channel')
 MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
@@ -400,7 +401,8 @@ class PageTests(FreshRuleCase):
         self.assertContains(page, 'Default')
         self.assertNotContains(page, reverse('sensors:alarmrule_delete', args=[self.rule.pk]))
         self.assertEqual(self.client.get(reverse('sensors:alarmrule_delete', args=[self.rule.pk])).status_code, 403)
-        self.assertEqual(self.client.post(reverse('sensors:alarmrule_delete', args=[self.rule.pk])).status_code, 403)
+        self.assertEqual(delete_confirmed(self.client,
+                                          reverse('sensors:alarmrule_delete', args=[self.rule.pk])).status_code, 403)
         self.assertTrue(AlarmRule.objects.filter(pk=self.rule.pk).exists())
 
     def test_its_severity_is_the_farms_and_what_it_is_cannot_be_changed(self):
@@ -470,7 +472,7 @@ class PageTests(FreshRuleCase):
         page = self.client.get(reverse('sensors:alarmrule_edit', args=[rule.pk]))
         self.assertNotContains(page, 'name="off_reason"')
         self.assertContains(page, 'name="for_s"')
-        self.client.post(reverse('sensors:alarmrule_delete', args=[rule.pk]))
+        delete_confirmed(self.client, reverse('sensors:alarmrule_delete', args=[rule.pk]))
         self.assertFalse(AlarmRule.objects.filter(pk=rule.pk).exists())
 
 

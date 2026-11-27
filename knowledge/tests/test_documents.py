@@ -19,6 +19,7 @@ from farm.tests.helpers import make_species, role
 
 from ..models import Document, DocumentPage, KnowledgeEntry, TextStatus
 from .helpers import KnowledgeTestCase, document_data, make_pdf, upload
+from core.testing import delete_confirmed
 
 FIELDS = ('title', 'authors', 'year', 'venue', 'volume', 'issue', 'page_range', 'doi', 'url', 'abstract', 'language',
           'topics')
@@ -125,7 +126,7 @@ class DocumentRoundTripTests(DocumentTestCase):
         self.assertNotEqual(document.file.name, old_file)
 
         # Delete: hidden, not erased; its file and pages stay for a restore
-        self.client.post(reverse('knowledge:document_delete', args=[document.pk]))
+        delete_confirmed(self.client, reverse('knowledge:document_delete', args=[document.pk]))
         self.assertFalse(Document.objects.exists())
         self.assertEqual(stored(document, 'is_deleted', 'deleted_by'), (True, self.user))
         self.assertEqual(self.media_files(), [document.file.name])
@@ -267,7 +268,7 @@ class FileServingTests(DocumentTestCase):
     def test_no_file_for_a_deleted_document_or_one_without_a_file(self):
         bare = self.make(title='A book')
         self.assertEqual(self.client.get(reverse('knowledge:document_file', args=[bare.pk])).status_code, 404)
-        self.client.post(reverse('knowledge:document_delete', args=[self.document.pk]))
+        delete_confirmed(self.client, reverse('knowledge:document_delete', args=[self.document.pk]))
         self.assertEqual(self.client.get(self.url).status_code, 404)
         self.assertEqual(self.client.post(self.url).status_code, 405)
 
@@ -308,7 +309,7 @@ class DocumentRuleTests(DocumentTestCase):
         self.assertEqual(errors['doi'], ['Another document in the library has this DOI.'])
         self.assertEqual(self.errors(self.create(title='Bad', doi='11.1000/abc'))['doi'],
                          ['A DOI starts with 10. and has no spaces, e.g. 10.1016/j.aquaculture.2019.01.001.'])
-        self.client.post(reverse('knowledge:document_delete', args=[first.pk]))
+        delete_confirmed(self.client, reverse('knowledge:document_delete', args=[first.pk]))
         self.create(title='Again', doi='10.1000/abc')
         self.assertEqual(Document.objects.get().title, 'Again')
 
@@ -360,13 +361,13 @@ class DeletePlanTests(DocumentTestCase):
         self.assertContains(confirm, 'cannot be deleted yet')
         self.assertContains(confirm, '1 knowledge entry still belongs to it.')
         self.assertContains(confirm, 'disabled')
-        self.client.post(reverse('knowledge:document_delete', args=[document.pk]))
+        delete_confirmed(self.client, reverse('knowledge:document_delete', args=[document.pk]))
         self.assertTrue(Document.objects.filter(pk=document.pk).exists())
 
         # Once the entry is deleted the document can go; restoring the entry then waits for the document
-        self.client.post(reverse('knowledge:knowledgeentry_delete', args=[entry.pk]))
+        delete_confirmed(self.client, reverse('knowledge:knowledgeentry_delete', args=[entry.pk]))
         self.assertTrue(plan_delete(document).can_delete)
-        self.client.post(reverse('knowledge:document_delete', args=[document.pk]))
+        delete_confirmed(self.client, reverse('knowledge:document_delete', args=[document.pk]))
         self.assertFalse(Document.objects.exists())
 
     def test_a_restore_brings_the_document_back_with_its_file_and_an_entry_waits_for_its_document(self):

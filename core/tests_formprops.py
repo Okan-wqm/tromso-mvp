@@ -17,6 +17,7 @@ from core.models import AuditLog
 
 from .pagesays import unsaid
 from .test_world import record_of
+from core.testing import delete_confirmed
 
 MANIFEST = str(Path(__file__).resolve().parent / 'testdata' / 'islands-company-manifest.json')
 CREATE, LIST = reverse('alarms:parameterdeadband_create'), reverse('alarms:parameterdeadband_list')
@@ -112,7 +113,7 @@ class RecordFormNextTests(TestCase):
         props = props_of(new, 'confirm-delete')
         self.assertTrue(props['canDelete'])
         self.assertEqual(unsaid(old, props, new_html=new), [])
-        self.assertEqual(self.client.post(url).status_code, 302)
+        self.assertEqual(delete_confirmed(self.client, url).status_code, 302)
         self.assertFalse(ParameterDeadband.objects.filter(pk=record.pk).exists())    # gone from every list (soft or hard)
 
 

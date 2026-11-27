@@ -21,6 +21,7 @@ from farm.tests.helpers import may_record, stock_fish
 from .. import places, read, services
 from ..models import PLACES, Status, Task, TaskChecklistItem, TaskNote
 from . import TasksTestCase, form_data
+from core.testing import delete_confirmed
 
 LIST = reverse('tasks:task_list')
 NEW = reverse('tasks:task_create')
@@ -65,7 +66,7 @@ class CreateReadEditDeleteTests(TasksTestCase):
                 self.assertEqual(set(task.assignees.all()), {self.ali, self.kari})
                 # delete: a soft delete, gone from the list, logged
                 self.assertContains(self.client.get(reverse('tasks:task_delete', args=[task.pk])), 'Moved job')
-                self.client.post(reverse('tasks:task_delete', args=[task.pk]))
+                delete_confirmed(self.client, reverse('tasks:task_delete', args=[task.pk]))
                 self.assertFalse(Task.objects.filter(pk=task.pk).exists())
                 self.assertTrue(Task.all_objects.get(pk=task.pk).is_deleted)
                 self.assertTrue(AuditLog.objects.filter(entity_id=str(task.pk), action='delete').exists())
@@ -245,7 +246,7 @@ class DeletedPlaceTests(TasksTestCase):
         self.assertEqual(plan.kept_groups()[0]['label'], 'Tasks')
         self.assertEqual(plan.kept_groups()[0]['count'], 1)
         self.assertContains(confirm, 'They stay in the task lists, which show this as deleted')
-        self.client.post(reverse('farm:tank_delete', args=[self.t2.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[self.t2.pk]))
         task.refresh_from_db()
         self.assertFalse(task.is_deleted)
         self.assertTrue(task.unit.is_deleted)

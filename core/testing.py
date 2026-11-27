@@ -128,3 +128,25 @@ def platform_settings_data(**overrides):
             else:
                 del data[name]
     return data
+
+
+def delete_confirmed(client, url, data=None, **extra):
+    """Posts a tab's delete as its confirmation page does: with the version the confirmation shows of the record as it
+    is now (core.crud.DeleteView refuses a delete without it, and one of a record changed since). When the
+    confirmation does not open (a record the person may not reach, a route that is no tab's), the post goes as it is,
+    so the refusal the test expects is the view's own. `data` and `extra` are the post's."""
+    data = dict(data or {})
+    if 'version' not in data:
+        page = client.get(url, **extra)
+        version = None
+        if page.status_code == 200 and page.context is not None:
+            try:
+                version = page.context['version']
+            except KeyError:
+                try:
+                    version = page.context['props'].get('version')
+                except KeyError:
+                    version = None
+        if version is not None:
+            data['version'] = version
+    return client.post(url, data, **extra)

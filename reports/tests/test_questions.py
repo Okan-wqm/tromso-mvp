@@ -12,6 +12,7 @@ from farm.tests.helpers import role
 
 from ..models import OpenQuestion
 from .helpers import ReportTestCase
+from core.testing import delete_confirmed
 
 PERMISSIONS = ('view_openquestion', 'add_openquestion', 'change_openquestion', 'delete_openquestion', 'view_auditlog')
 
@@ -54,7 +55,7 @@ class QuestionTests(ReportTestCase):
         self.assertEqual(entry.changes['Answer'], [None, 'Still Altinn, they said by mail on 5 November.'])
         self.assertEqual(self.client.get(reverse('reports:openquestion_list'), {'status': 'open'}).context[
             'chosen_status'], 'open')
-        self.client.post(reverse('reports:openquestion_delete', args=[question.pk]))
+        delete_confirmed(self.client, reverse('reports:openquestion_delete', args=[question.pk]))
         self.assertTrue(OpenQuestion.all_objects.get(pk=question.pk).is_deleted)
         self.assertFalse(OpenQuestion.objects.filter(code='Q20').exists())
         self.assertEqual(plan_delete(OpenQuestion.all_objects.get(pk=question.pk)).blockers, [])

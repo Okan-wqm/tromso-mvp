@@ -13,6 +13,7 @@ from core.models import AuditedModel, AuditLog
 
 from ..models import ProductionDepartment, Site, Species, System
 from .helpers import role
+from core.testing import delete_confirmed
 
 
 class RestoreTestCase(TestCase):
@@ -53,8 +54,8 @@ class RestoreTests(RestoreTestCase):
         child = System.objects.create(site=self.site, name='Loop', code='LP', parent=self.system)
         earlier = System.objects.create(site=self.site, name='Old loop', code='OL', parent=self.system)
         self.client.force_login(self.admin_user)
-        self.client.post(reverse('farm:system_delete', args=[earlier.pk]))
-        self.client.post(reverse('farm:system_delete', args=[self.system.pk]))
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[earlier.pk]))
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[self.system.pk]))
         self.assertEqual(System.objects.count(), 0)
         softdelete.restore(System.all_objects.get(pk=self.system.pk), self.admin_user)
         self.assertEqual(set(System.objects.all()), {System.objects.get(pk=self.system.pk), System.objects.get(pk=child.pk)})
@@ -65,7 +66,7 @@ class RestoreTests(RestoreTestCase):
     def test_a_site_comes_back_with_its_production_departments(self):
         department = ProductionDepartment.objects.create(site=self.site, name='Hall', code='HA')
         self.client.force_login(self.admin_user)
-        self.client.post(reverse('farm:site_delete', args=[self.site.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.site.pk]))
         softdelete.restore(Site.all_objects.get(), self.admin_user)
         self.assertEqual(ProductionDepartment.objects.get(), department)
         self.assertEqual(System.objects.get(), self.system)
@@ -111,7 +112,8 @@ class AdminTests(RestoreTestCase):
         self.assertNotContains(page, reverse('admin:farm_system_add'))
         change = reverse('admin:farm_system_change', args=[self.system.pk])
         self.assertEqual(self.client.post(change, {'name': 'Hacked'}).status_code, 403)
-        self.assertEqual(self.client.post(reverse('admin:farm_system_delete', args=[self.system.pk])).status_code, 403)
+        self.assertEqual(delete_confirmed(self.client,
+                                          reverse('admin:farm_system_delete', args=[self.system.pk])).status_code, 403)
         self.assertEqual(System.all_objects.get().name, 'RAS')
 
     def restore_via_admin(self, *records):
@@ -193,13 +195,23 @@ class ConfirmedVersionTests(RestoreTestCase):
         self.assertContains(self.client.get(url, {'ui': 'classic'}), 'name="version" value="1"')
         self.assertEqual(self.client.get(url, {'ui': 'next'}).context['props']['version'], 1)
 
+    def test_a_delete_that_confirms_no_version_is_refused(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.post(reverse('farm:system_delete', args=[self.system.pk]))
+        self.assertContains(response, 'This delete was not confirmed', status_code=400)
+        self.assertFalse(System.all_objects.get(pk=self.system.pk).is_deleted)
+        self.assertEqual(delete_confirmed(self.client,
+                                          reverse('farm:system_delete', args=[self.system.pk])).status_code,
+                         302)
+        self.assertTrue(System.all_objects.get(pk=self.system.pk).is_deleted)
+
     def test_a_record_changed_since_its_confirmation_is_not_deleted(self):
         self.client.force_login(self.admin_user)
         System.objects.filter(pk=self.system.pk).update(name='RAS renamed', version=2)      # someone else's edit
-        response = self.client.post(reverse('farm:system_delete', args=[self.system.pk]), {'version': '1'})
+        response = delete_confirmed(self.client, reverse('farm:system_delete', args=[self.system.pk]), {'version': '1'})
         self.assertEqual(response.status_code, 302)
         self.assertFalse(System.all_objects.get(pk=self.system.pk).is_deleted)
         said = [str(message) for message in response.wsgi_request._messages]
         self.assertTrue(any('Someone else changed this' in text for text in said), said)
-        self.client.post(reverse('farm:system_delete', args=[self.system.pk]), {'version': '2'})
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[self.system.pk]), {'version': '2'})
         self.assertTrue(System.all_objects.get(pk=self.system.pk).is_deleted)

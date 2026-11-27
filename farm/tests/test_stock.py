@@ -29,6 +29,7 @@ from .helpers import (
     OPENING_WAY_OUT, WINDOW_WAY_OUT, correction_window, make_facility, make_species, role, stock_fish,
 )
 from farm import withdrawal_gate
+from core.testing import delete_confirmed
 
 Status = Tank.Status
 
@@ -551,8 +552,8 @@ class DeletePlanTests(StockTestCase):
         batch = self.stock()
         page = self.client.get(reverse('farm:tank_delete', args=[self.t1.pk]))
         self.assertContains(page, 'It holds fish: move or harvest them first.')
-        self.client.post(reverse('farm:tank_delete', args=[self.t1.pk]))
-        self.client.post(reverse('farm:species_delete', args=[self.salmon.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[self.t1.pk]))
+        delete_confirmed(self.client, reverse('farm:species_delete', args=[self.salmon.pk]))
         self.assertContains(self.client.get(reverse('farm:species_delete', args=[self.salmon.pk])),
                             '1 batch still belongs to it.')
         self.assertTrue(Tank.objects.filter(pk=self.t1.pk).exists())
@@ -560,14 +561,14 @@ class DeletePlanTests(StockTestCase):
         self.assertEqual(batch.delete_blockers(), ['It has stock operations: void them first.'])
         # Emptied, the unit can go; its history stays with it.
         self.mortality(batch, 2000)
-        self.client.post(reverse('farm:tank_delete', args=[self.t1.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[self.t1.pk]))
         self.assertTrue(Tank.all_objects.get(pk=self.t1.pk).is_deleted)
         self.assertEqual(StockMovement.objects.filter(unit=self.t1).count(), 2)
 
     def test_a_void_that_would_put_fish_back_into_a_deleted_unit_is_refused(self):
         batch = self.stock()
         died = self.mortality(batch, 2000)
-        self.client.post(reverse('farm:tank_delete', args=[self.t1.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[self.t1.pk]))
         self.assertEqual(self.refused(services.void, self.user, died, 'oops'),
                          {'__all__': ['T-01 is deleted and would hold fish again: restore it first.']})
 
@@ -776,7 +777,7 @@ class SupplierLinkTests(StockTestCase):
                                                        'ticked.'):
             self.supplier.full_clean()
         self.user.user_permissions.add(*Permission.objects.filter(codename__in=['view_supplier', 'delete_supplier']))
-        self.client.post(reverse('farm:supplier_delete', args=[self.supplier.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[self.supplier.pk]))
         self.assertTrue(Supplier.objects.filter(pk=self.supplier.pk).exists())     # PROTECT: its fish are traced
         self.assertEqual(batch.supplier, self.supplier)
 

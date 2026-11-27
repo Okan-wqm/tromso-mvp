@@ -15,6 +15,7 @@ from . import access, navigation, platform
 from .testing import platform_settings_data
 from .middleware import PlatformSettingsMiddleware
 from .models import AuditLog, PlatformSettings
+from core.testing import delete_confirmed
 
 
 class RowTests(TestCase):
@@ -155,4 +156,5 @@ class PageTests(TestCase):
     def test_nobody_adds_or_deletes_it(self):
         self.client.force_login(self.owner)
         self.assertEqual(self.client.get('/administration/platform-settings/new/').status_code, 404)
-        self.assertEqual(self.client.post(f'/administration/platform-settings/{self.row.pk}/delete/').status_code, 404)
+        self.assertEqual(delete_confirmed(self.client,
+                                          f'/administration/platform-settings/{self.row.pk}/delete/').status_code, 404)

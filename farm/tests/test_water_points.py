@@ -628,22 +628,19 @@ class ReadTests(PointTestCase):
         System.objects.filter(pk=self.ras.pk).update(parent=parent)
         self.ras.refresh_from_db()
         parent_loop = point_of(parent)
-        sources = lambda unit, nested: [(source.via, source.owner.code, source.point.name)
-                                        for source in read.water_sources([unit], nested=nested)[unit.pk]]
-        self.assertEqual(sources(self.t1, True), [('unit', 'T-01', 'Middle'), ('system', 'R1', 'Loop'),
-                                                  ('system', 'PR', 'Loop')])
-        self.assertEqual(sources(self.t1, False), [('unit', 'T-01', 'Middle'), ('system', 'R1', 'Loop')])
-        every = [(source.via, source.owner.code, source.point.name)
-                 for source in read.water_sources([self.t1], nested=False, every_point=True)[self.t1.pk]]
-        self.assertEqual(every, [('unit', 'T-01', 'Middle'), ('unit', 'T-01', 'Bottom drain'),
-                                 ('unit', 'T-01', 'Side outlet'), ('system', 'R1', 'Loop')])
+        sources = lambda unit, nested: [(tier.via, tier.owner.code, tuple(point.name for point in tier.points))
+                                        for tier in read.tiers([unit], nested=nested)[unit.pk]]
+        own = ('unit', 'T-01', ('Middle', 'Side outlet', 'Bottom drain'))
+        self.assertEqual(sources(self.t1, True), [own, ('system', 'R1', ('Loop',)), ('system', 'PR', ('Loop',))])
+        self.assertEqual(sources(self.t1, False), [own, ('system', 'R1', ('Loop',))])
         # A9.1: every point of the unit's own water, the middle first; never its inlet (the supply stream)
         self.assertEqual(sources(self.pond, True), [])                      # in no system, no point of its own
         SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=False)
-        self.assertEqual(sources(self.t1, False), [('system', 'R1', 'Loop')])      # an inactive point is not a source
+        self.assertEqual(sources(self.t1, False), [('unit', 'T-01', ('Side outlet', 'Bottom drain')),
+                                                   ('system', 'R1', ('Loop',))])      # an inactive point is not a source
         Tank.objects.filter(pk=self.t1.pk).update(system=None)
         self.t1.refresh_from_db()
-        self.assertEqual(sources(self.t1, True), [])
+        self.assertEqual(sources(self.t1, True), [('unit', 'T-01', ('Side outlet', 'Bottom drain'))])   # its own alone
         del parent_loop
 
     def test_the_feeding_temperature_follows_that_order(self):

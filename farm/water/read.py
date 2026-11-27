@@ -14,10 +14,11 @@ The functions, by what they answer:
   what a wall of monitoring cards shows; `own_water(unit ids)`, the units' own-water points, which `anchors` and
   `latest` work from, read once and handed on;
 - `assumed_salinity(water_types)`: the salinity assumed where none was measured (the one rule: 0 in fresh water);
-- `water_sources(units, nested=...)`: {unit id: [Source]}, where a unit's temperature is read from: its middle
-  point, then the loop point of its system (with `nested`, of the systems that system is nested in too, nearest
-  first). The feeding temperature (farm/feeding/temperature.py) and the withdrawal's daily mean
-  (farm/health/withdrawal.py) both start here, and `Series` is the lookup they share;
+- `tiers(units, nested=...)`: {unit id: [Tier]}, owner rule A9's tiers of a unit, the one resolver of where its water
+  is read: its own-water points, then its system's loop point or the system's own sensors (with `nested`, the loops of
+  the systems that system is nested in too, nearest first). The water page (`_places`), the feeding temperature
+  (farm/feeding/temperature.py), the degree-days (farm/water/degree_days.py) and the closing of probe days all start
+  here, and `Series` is the lookup they share;
 - `samples_of(...)`: the live samples of live points in a time window, newest first, for the history of a point,
   of an owner (all its points) or of a site; `history(samples)`: those samples with their readings, judged;
 - `limits_now(point)`: the limits that would judge a value at the point today; `limits_of(places)`: the same for
@@ -29,7 +30,7 @@ The functions, by what they answer:
   reading: the newest sample with either gives both, one entered and the other worked out.
 - A unit's water is its middle point's: its own values first; only when it has no fresh value of a parameter of its
   own does its system's fresh value stand in (owner rule A9: the system's sensor or a sample of its loop). Its
-  temperature for the rations and the withdrawal is read the same way, by `water_sources`.
+  temperature for the rations and the withdrawal is read the same way, by `tiers`.
 - Un-ionised ammonia needs the pH and the temperature of the TAN sample itself; the salinity is the
   sample's, else the point's latest within WINDOW before it, else its owner's middle point's, else 0 where
   every unit it concerns is in fresh water; otherwise it is not worked out and the reason is shown. Its ionic
@@ -181,19 +182,6 @@ def middle_points(owners):
     return {point.owner.pk: point for point in points}
 
 
-@dataclass(frozen=True)
-class Source:
-    """One place a unit's water is read from: a point of the unit itself (`via` UNIT) or the loop point of a
-    system it is in (`via` SYSTEM)."""
-    point: SamplingPoint
-    via: str
-
-    @property
-    def owner(self):
-        """The unit, or the system whose loop it is."""
-        return self.point.owner
-
-
 def system_chain(unit, systems):
     """The unit's system and the systems it is nested in, nearest first (`systems`: id -> System)."""
     found, seen = [], set()
@@ -202,34 +190,6 @@ def system_chain(unit, systems):
         seen.add(node.pk)
         found.append(node)
         node = systems.get(node.parent_id)
-    return found
-
-
-def water_sources(units, *, nested, every_point=False):
-    """{unit id: [Source]}: the places the water of each unit is read from, in the order they count: the unit's
-    own middle point (with `every_point`, every active point of the unit's own water, OWN_WATER_KINDS, the middle first: the unit's own points of
-    owner rule A9.1, as `latest` reads a unit), then the loop point of its system and, when `nested`, of the systems
-    that system is nested in, nearest first. A point is a source while it is active and its owner live; an owner with no
-    middle point gives none. The feeding temperature reads `nested` and `every_point` (a ration may be sized on a parent
-    loop's water); the degree-days read `every_point` but not `nested` (a day without a temperature of its own and its
-    system's counts at the species' assumed temperature, capped, or as 0 °C, and says so: farm/water/degree_days.py)."""
-    units = list(units)
-    systems = System.objects.in_bulk() if any(unit.system_id for unit in units) else {}
-    chains = {unit.pk: system_chain(unit, systems) if nested else
-              [systems[unit.system_id]] if unit.system_id in systems else [] for unit in units}
-    loops = {system.pk: system for chain in chains.values() for system in chain}
-    middles = middle_points([*units, *loops.values()])
-    others = defaultdict(list)
-    if every_point and units:
-        for point in (SamplingPoint.objects.filter(unit__in=[unit.pk for unit in units], is_active=True)
-                      .filter(kind__in=OWN_WATER_KINDS).with_owners()):
-            others[point.unit_id].append(point)
-    found = {}
-    for unit in units:
-        sources = [Source(middles[unit.pk], UNIT)] if unit.pk in middles else []
-        sources += [Source(point, UNIT) for point in sorted(others[unit.pk], key=lambda each: each.name)]
-        sources += [Source(middles[system.pk], SYSTEM) for system in chains[unit.pk] if system.pk in middles]
-        found[unit.pk] = sources
     return found
 
 
@@ -464,31 +424,48 @@ class Tier:
     keys: tuple
 
 
-def tiers(units, *, nested):
-    """{unit id: [Tier]}: owner rule A9's tiers of each unit, nearest first, for every reader of a unit's water over
-    time: the unit's own-water points (`water_sources` with every point; never the inlet), then its system (its loop
-    point, or the system's own sensors when it has no loop point, as the water page reads them), then, when `nested`,
-    the loop points of the systems that one is nested in. The ration's temperature (farm/feeding/temperature.py) and
-    the degree-days' day (farm/water/degree_days.py) both take their places from here: which tier wins and how is
-    theirs (the newest fresh value; the lowest of a day), where a unit's water is read is not."""
+def tiers(units, *, nested, own=None, sites=True):
+    """{unit id: [Tier]}: owner rule A9's tiers of each unit, nearest first: THE resolver of where a unit's water is
+    read, for every reader of it (the water page's `_places`, the ration's temperature in farm/feeding/temperature.py,
+    the degree-days' day in farm/water/degree_days.py and the closing of probe days in farm/water/services.py). The
+    unit's own-water points (`own_water`: the middle point first, never the inlet), then its system (its loop point, or
+    the system's own sensors when it has no loop point, as the water page reads them), then, when `nested`, the loop
+    points of the systems that one is nested in. Which tier wins and how is each reader's (the newest fresh value; the
+    lowest of a day); where a unit's water is read is not.
+
+    `own`: the units' `own_water` when the caller has read it (not read again). `sites`: a system without a loop point
+    is read with its site (its clock, one query); without, it is a System holding its id only. One query for the loops
+    of the systems, and for `nested` one for the systems."""
     units = list(units)
-    found_sources = water_sources(units, nested=nested, every_point=True)
-    looped = {source.owner.pk for found in found_sources.values() for source in found if source.via == SYSTEM}
-    bare = {unit.system_id for unit in units if unit.system_id and unit.system_id not in looped}
-    systems = System.objects.select_related('site').in_bulk(bare) if bare else {}
+    if own is None or not {unit.pk for unit in units} <= set(own):
+        own = own_water([unit.pk for unit in units])
+    if nested and any(unit.system_id for unit in units):
+        known = System.objects.select_related('site').in_bulk()
+        chains = {unit.pk: system_chain(unit, known) for unit in units}
+    else:
+        chains = {unit.pk: [System(pk=unit.system_id)] if unit.system_id else [] for unit in units}
+    loops = middle_points({system.pk: system for chain in chains.values() for system in chain}.values())
+    bare = {unit.system_id for unit in units if unit.system_id and unit.system_id not in loops}
+    systems = {}
+    if bare:
+        systems = ({pk: system for pk, system in known.items() if pk in bare} if nested and sites
+                   else System.objects.select_related('site').in_bulk(bare) if sites
+                   else {pk: System(pk=pk) for pk in bare})
     found = {}
     for unit in units:
-        own = [source.point for source in found_sources[unit.pk] if source.via == UNIT]
+        points = own.get(unit.pk, [])
         made = []
-        if own:
-            made.append(Tier(UNIT, unit, tuple(own), tuple(target for point in own for target in sensor_targets(point)),
-                             tuple(point.pk for point in own)))
-        if unit.system_id in systems:
-            system = systems[unit.system_id]
+        if points:
+            made.append(Tier(UNIT, unit, tuple(points),
+                             tuple(target for point in points for target in sensor_targets(point)),
+                             tuple(point.pk for point in points)))
+        chain = chains[unit.pk]
+        if chain and chain[0].pk in systems:
+            system = systems[chain[0].pk]
             made.append(Tier(SYSTEM, system, (), (((sources.SYSTEM, system.pk), Origin.SYSTEM_SENSOR),),
                              (SYSTEM_KEY(system.pk),)))
-        made += [Tier(SYSTEM, source.owner, (source.point,), tuple(sensor_targets(source.point)), (source.point.pk,))
-                 for source in found_sources[unit.pk] if source.via == SYSTEM]
+        made += [Tier(SYSTEM, loops[system.pk].owner, (loops[system.pk],), tuple(sensor_targets(loops[system.pk])),
+                      (loops[system.pk].pk,)) for system in chain if system.pk in loops]
         found[unit.pk] = made
     return found
 
@@ -1493,16 +1470,6 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
     return chosen, candidates
 
 
-def _loops_of(points):
-    """{point id: the loop point of its unit's system} for the unit points given (the points that stand for their unit)
-    whose unit is in a system: the system's tier of the unit (owner rule A9). No query when there are none."""
-    systems = {point.pk: point.unit.system_id for point in points if point.unit_id and point.unit.system_id}
-    if not systems:
-        return {}
-    loops = middle_points([System(pk=system_id) for system_id in set(systems.values())])
-    return {point_id: loops[system_id] for point_id, system_id in systems.items() if system_id in loops}
-
-
 @dataclass
 class Places:
     """Where one point's water is read from (owner rule A9): its own points, then its system's, and the live targets on
@@ -1556,44 +1523,47 @@ def anchors(units, own=None):
 def _places(points, own=None, units=()):
     """{point id: Places} of the points given: one query for the other points of their units (none when the caller hands
     in their `own_water`), one for their loops. A point stands for its unit (`for_unit`) when it is the unit's middle
-    point, or, for a unit without one, the unit's anchor (`anchors`): it then reads the unit's own-water points and its
-    system's."""
+    point, or, for a unit without one, the unit's anchor (`anchors`): it then reads the unit's tiers (`tiers`, the one
+    resolver of owner rule A9), its own-water points and its system's."""
     unit_ids = {point.unit_id for point in points if point.unit_id}
     if own is None or not unit_ids <= set(own):         # a unit the caller did not read: read them all here
         own = own_water(unit_ids)
-    others = defaultdict(list, {unit_id: list(own[unit_id]) for unit_id in unit_ids if own[unit_id]})
-    standing = {}
-    for unit_id, found in others.items():
-        found.sort(key=_own_water_order)
-        standing[unit_id] = found[0].pk
+    standing = {unit_id: own[unit_id][0].pk for unit_id in unit_ids if own[unit_id]}
     unit_points = [point for point in points if point.unit_id and standing.get(point.unit_id) == point.pk]
-    loops = _loops_of(unit_points)
+    unit_tiers = tiers([point.unit for point in unit_points], nested=False, own=own, sites=False) if unit_points else {}
     found = {}
     for point in points:
         if point not in unit_points:
             found[point.pk] = Places([point], _observed(point))
             continue
-        own = [point, *(each for each in others[point.unit_id] if each.pk != point.pk)]
-        places = Places(own, [target for each in own for target in _observed(each)], for_unit=True)
-        loop = loops.get(point.pk)
-        if loop is not None:
-            places.system, places.system_targets = [loop], _observed(loop, Origin.SYSTEM_SENSOR)
-        elif point.unit.system_id:                  # a system without a loop point: its sensors still stand in
-            places.system_targets = [((sources.SYSTEM, point.unit.system_id), Origin.SYSTEM_SENSOR, point)]
-        found[point.pk] = places
+        found[point.pk] = _places_of_tiers(unit_tiers[point.unit_id], point)
     # A unit with no point of its own (`units`): nothing of its own, its system's tier as a unit point's (A9), keyed by
     # the unit, the system's sensors observed at the unit where the system has no loop point.
     units = list(units)
-    unit_loops = middle_points([System(pk=system_id) for system_id in {unit.system_id for unit in units}
-                                if system_id]) if units else {}
-    for unit in units:
-        places = found[unit.pk] = Places([], [], for_unit=True)
-        loop = unit_loops.get(unit.system_id)
-        if loop is not None:
-            places.system, places.system_targets = [loop], _observed(loop, Origin.SYSTEM_SENSOR)
-        elif unit.system_id:
-            places.system_targets = [((sources.SYSTEM, unit.system_id), Origin.SYSTEM_SENSOR, unit)]
+    if units:
+        bare_tiers = tiers(units, nested=False, own={unit.pk: [] for unit in units}, sites=False)
+        for unit in units:
+            found[unit.pk] = _places_of_tiers(bare_tiers[unit.pk], unit)
     return found
+
+
+def _places_of_tiers(unit_tiers, standing):
+    """A unit's Places from its tiers (`tiers`): its own points and their targets, then its system's tier: the loop point
+    with the sensors on it and on the system (observed as system sensors), or the system's own sensors observed at
+    `standing` (the unit's point, or the unit itself) when it has no loop point."""
+    places = Places([], [], for_unit=True)
+    for tier in unit_tiers:
+        if tier.via == UNIT:
+            places.own = list(tier.points)
+            places.own_targets = [target for each in tier.points for target in _observed(each)]
+        elif tier.points:
+            places.system = [tier.points[0]]
+            places.system_targets = _observed(tier.points[0], Origin.SYSTEM_SENSOR)
+            break
+        else:
+            places.system_targets = [((sources.SYSTEM, tier.owner.pk), Origin.SYSTEM_SENSOR, standing)]
+            break
+    return places
 
 
 def latest(points, now=None, at=None, own=None, units=()):

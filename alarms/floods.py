@@ -30,7 +30,7 @@ from datetime import datetime
 
 from sensors.models.alarm import Severity
 
-from .models import Alarm, AlarmClearance, DeliveryAttempt, Outcome, Source
+from .models import OPEN, Alarm, DeliveryAttempt, Outcome, Source
 from .sources import STEP_FAILED, slot_of
 
 
@@ -133,8 +133,7 @@ def open_floods(rules):
     """The floods among the open alarms, largest first: runs of at least the flood count of one kind, each opened
     within the flood window of the one before."""
     by_kind = defaultdict(list)
-    for alarm in (Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
-                  .select_related('sensor_event', 'site').order_by('opened_at', 'id')):
+    for alarm in Alarm.objects.filter(OPEN).select_related('sensor_event', 'site').order_by('opened_at', 'id'):
         by_kind[key(alarm)].append(alarm)
     found = []
     for alarms in by_kind.values():

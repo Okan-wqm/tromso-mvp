@@ -327,7 +327,8 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_clock.py",
         "alarms/tests/test_cross_review.py",
-        "alarms/tests/test_defects.py"
+        "alarms/tests/test_defects.py",
+        "alarms/tests/test_open_alarms.py"
       ]
     },
     {
@@ -1151,6 +1152,68 @@
         "alarms/tests/test_review_size.py",
         "alarms/tests/test_review_transports.py",
         "alarms/tests/test_snooze.py"
+      ]
+    },
+    {
+      "app": "alarms",
+      "model": "OpenAlarm",
+      "table": "alarm_open",
+      "description": "An alarm that has not cleared: the open alarms' own queue, one row each, kept by the database (alarms 0025: a trigger adds the alarms written, one removes those whose clearance is written, whoever writes), so what reads the open alarms reads what is open, however long the history (`OPEN`).",
+      "columns": [
+        {
+          "name": "alarm_id",
+          "field": "alarm",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "alarms",
+            "model": "alarms.Alarm",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "made by a database trigger when its alarm is written (alarms 0025)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a row is the alarm itself, never changed"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "removed by a database trigger when its alarm's clearance is written"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "the open alarms' own queue (alarms.models OPEN); the alarms are on the Alarms page"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_open_alarms.py"
       ]
     },
     {
@@ -3167,6 +3230,7 @@
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_deadman.py",
         "alarms/tests/test_floods.py",
+        "alarms/tests/test_open_alarms.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_pages.py",
         "alarms/tests/test_reaction.py",

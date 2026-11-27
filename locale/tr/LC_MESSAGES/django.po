@@ -20648,6 +20648,12 @@ msgstr "yalnızca bu türlerin damızlığını karada tutuyorsa"
 msgid "open"
 msgstr "süresiz"
 
+msgid "open alarm"
+msgstr "açık alarm"
+
+msgid "open alarms"
+msgstr "açık alarmlar"
+
 msgid "open question"
 msgstr "açık soru"
 

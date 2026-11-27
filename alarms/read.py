@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from django.db.models import Count, Exists, Max, OuterRef, Q, Subquery
 from django.utils import timezone
 
-from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, Channel, DeliveryAttempt, Escalation,
+from .models import (OPEN, Acknowledgement, Alarm, AlarmClearance, AlarmShelve, Channel, DeliveryAttempt, Escalation,
                      Notification, OutboxEntry, Outcome, RecipientRule)
 from .rules import current as current_rules
 from .transports import connected_channels
@@ -142,7 +142,7 @@ def listing(state='open', now=None):
         top_level=Max('escalations__level'),
         snoozed_until=Subquery(AlarmShelve.objects.filter(_in_force(now), alarm=OuterRef('pk')).values('until')[:1]))
     if state == 'open':
-        alarms = alarms.filter(is_cleared=False)
+        alarms = alarms.filter(OPEN)
     return alarms.order_by('is_cleared', '-opened_at', '-id')
 
 
@@ -224,8 +224,7 @@ def open_alarms():
     """[(site id or None, severity, unit id of its point or None)] of the open alarms (not cleared: listing('open')'s rule,
     without its annotations). A water alarm's point is the unit's own middle point (alarms/sources.py), so its unit is
     the unit it is about."""
-    return list(Alarm.objects.filter(~Exists(AlarmClearance.objects.filter(alarm=OuterRef('pk'))))
-                .values_list('site_id', 'severity', 'point__unit_id'))
+    return list(Alarm.objects.filter(OPEN).values_list('site_id', 'severity', 'point__unit_id'))
 
 
 def _each(what, units, read):

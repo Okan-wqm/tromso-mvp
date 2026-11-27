@@ -27,6 +27,11 @@ SCREENS = {
         edit=no('a row is the notification itself, never changed'),
         delete=no("removed by the outbox once the notification is sent, covered by a flood message or given up"),
         read=no("the outbox's own queue (alarms/outbox.py); the notifications are on their alarm's page")),
+    'OpenAlarm': Screen(
+        create=no('made by a database trigger when its alarm is written (alarms 0025)'),
+        edit=no('a row is the alarm itself, never changed'),
+        delete=no("removed by a database trigger when its alarm's clearance is written"),
+        read=no("the open alarms' own queue (alarms.models OPEN); the alarms are on the Alarms page")),
     'SeverityPolicy': Screen(create=no('migration 0002 makes one row per severity'),
                              delete=no('there is always one row per severity')),
     'Alarm': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),

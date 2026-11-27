@@ -17,14 +17,14 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from django.db import connection, transaction
-from django.db.models import Max
+from django.db.models import Exists, Max, OuterRef
 from django.utils import timezone
 
 from farm.water import freshness
 from sensors import alarms as sensor_alarms
 
 from . import read, routing, rules as alarm_rules, services, sources
-from .models import Acknowledgement, Alarm, AlarmClearance, Escalation, Notification, NotificationKind, Severity, Source
+from .models import OPEN, Acknowledgement, Alarm, Escalation, Notification, NotificationKind, Severity, Source
 
 logger = logging.getLogger(__name__)
 LOCK = 4_261_607_201          # the alarm loop's advisory lock key (any constant no other code takes)
@@ -149,6 +149,20 @@ def _step(name, summary, work):
         summary.failed_steps.append(name)
 
 
+def notify(now, summary, rules):
+    """The pass's notify step: the open, unacknowledged alarms routed to their people and reminded (`_route`,
+    `_remind`), the snoozed ones held. It reads the open alarms (alarms.models OPEN) and the acknowledgements of those,
+    each by its key, never every alarm, clearance and acknowledgement ever recorded (review 1, F1)."""
+    waiting = list(Alarm.objects.filter(OPEN).exclude(Exists(Acknowledgement.objects.filter(alarm=OuterRef('pk'))))
+                   .select_related('point').order_by('opened_at', 'id'))
+    ids = [alarm.pk for alarm in waiting]
+    snoozed = read.snoozes(ids, now)               # raised and kept, never notified nor escalated while snoozed
+    ended = read.ended(ids, now)
+    told = [alarm for alarm in _unsuppressed(waiting) if alarm.pk not in snoozed]
+    _route(told, now, summary, rules, {alarm_id: row.ends_at() for alarm_id, row in ended.items()})
+    _remind(told, now, summary, ended)
+
+
 def run_once(now=None, outside=None, unchecked=None):
     """One pass at `now`; returns its Summary. `outside`: {name: whether it failed} of the alarm system's steps that run
     outside the pass (the worker's sender, 'send'): supervised with the pass's own, and a failed one is in the
@@ -163,16 +177,6 @@ def run_once(now=None, outside=None, unchecked=None):
         summary.opened += found[0]
         summary.cleared += found[1]
 
-    def notify():
-        waiting = list(Alarm.objects.exclude(pk__in=AlarmClearance.objects.values('alarm'))
-                       .exclude(pk__in=Acknowledgement.objects.values('alarm')).select_related('point')
-                       .order_by('opened_at', 'id'))
-        ids = [alarm.pk for alarm in waiting]
-        snoozed = read.snoozes(ids, now)               # raised and kept, never notified nor escalated while snoozed
-        ended = read.ended(ids, now)
-        told = [alarm for alarm in _unsuppressed(waiting) if alarm.pk not in snoozed]
-        _route(told, now, summary, rules, {alarm_id: row.ends_at() for alarm_id, row in ended.items()})
-        _remind(told, now, summary, ended)
 
     # The silent oxygen probes and where the oxygen is known all the same: read once, for the sensor rules and the
     # alarm system's warnings of this pass (sensors.alarms.OxygenPass).
@@ -181,7 +185,7 @@ def run_once(now=None, outside=None, unchecked=None):
              ('sensor events', lambda: count(sources.sensor_events())),
              ('water', lambda: count(sources.water(now, rules, oxygen))),
              ('device clocks', lambda: count(sources.device_clocks(now, rules))),
-             ('notify', notify)]
+             ('notify', lambda: notify(now, summary, rules))]
     for name, work in steps:
         _step(name, summary, work)
     # Last, after the steps whose failure it alarms: a failed step's alarm is on the page at once, and notified on the

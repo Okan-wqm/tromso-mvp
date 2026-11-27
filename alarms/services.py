@@ -13,6 +13,7 @@ from core import access, audit
 from core.models import AuditLog
 from sensors.models.alarm import Severity
 
+from . import place
 from .health import OWN_HEALTH
 from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, AlarmSubjectState,
                      AlarmWorkerStatus, DeliveryAttempt, Escalation, Notification, NotificationKind, Outcome,
@@ -33,12 +34,18 @@ def _log(entries):
 
 
 # ---- alarms -----------------------------------------------------------------------------------------------------------
-def open_alarms(specs):
+def open_alarms(specs, keys=None):
     """New alarms, one per spec ({at, severity, summary, site, production_department, source, and sensor_event, or point
-    and parameter, or parameter}), each logged (a critical one critical): two statements for all of them."""
+    and parameter, or parameter}), each logged (a critical one critical): two statements for all of them. Each is given
+    its place (alarms/place.py), from its point, its sensor event or its subject's key (`keys`, where known)."""
+    keys = list(keys or [''] * len(specs))
+    undeclared = [spec['summary'] for spec, key in zip(specs, keys) if not place.declared(spec, key)]
+    if undeclared:
+        raise ValueError(f'An alarm that names no place must be declared farm-wide: {undeclared}')
     alarms = Alarm.objects.bulk_create([
-        Alarm(opened_at=spec['at'], summary=_fit(Alarm, 'summary', spec['summary']),
-              **{key: value for key, value in spec.items() if key not in ('at', 'summary')}) for spec in specs])
+        Alarm(opened_at=spec['at'], summary=_fit(Alarm, 'summary', spec['summary']), unit_id=unit, system_id=system,
+              **{key: value for key, value in spec.items() if key not in ('at', 'summary', 'place', 'farm_wide')})
+        for spec, (unit, system) in zip(specs, place.places(specs, keys))])
     with audit.source_language():
         _log([audit.created(None, alarm, {str(_('Severity')): audit.message(alarm.get_severity_display()),
                                           str(_('What')): alarm.summary, str(_('Opened at')): alarm.opened_at.isoformat()},
@@ -84,7 +91,7 @@ def raise_many(subjects):
     if not subjects:
         return {}
     with transaction.atomic():
-        alarms = open_alarms([spec for _key, spec in subjects])
+        alarms = open_alarms([spec for _key, spec in subjects], [key for key, _spec in subjects])
         pairs = [(key, alarm) for (key, _spec), alarm in zip(subjects, alarms)]
         _set_open(pairs)
         return dict(pairs)

@@ -973,7 +973,8 @@ fails said as "cannot be read".
 
 **Polling.** The grid is `data-poll` with `data-poll-merge="data-key"` (every 15 s, `settings.MONITOR_POLL_SECONDS`). The
 fragment `cards/?...&after=<token>` computes the **change token** first (`core.audit.revision()`: the newest audit entry and
-how many lie in the five minutes up to it, two indexed queries, read before any data; the minute, the language, what the person
+how many lie in the five minutes up to it, two indexed queries, read before any data, without the entries about work
+hidden from the person (Research › Experiments, confidentiality); the minute, the language, what the person
 may read, the board and the canonical address), answers **204** with the same `X-Poll-Next` while it is equal, else 200 with the
 cards and the next address; the minute re-draws the figures that run on the clock at most once a minute. A writer that does not
 write its audit entry would leave a card up to a minute old: the token test enumerates the writers. The fragment is rendered
@@ -3575,6 +3576,152 @@ student Read, Create and Edit, a technician and an advisor Read. Rights per expe
 experiments they are in the team of) come with the permissions plan, which reads the team. The admin lists experiments,
 deleted ones too, and restores an experiment with the parts its delete took along.
 
+**Confidentiality** (`core/sealing.py`, `experiments/sealing.py`; plan and decisions in
+`F:\dev\balik-notes\plan\exp-access\`, owner amendments C1 to C4). An experiment's lead alone decides who reads it
+(**Sharing**, a button on its read page that only the lead sees):
+
+- **Sealed** (the default, and every experiment that existed before): its team, the people or roles its lead shares a
+  part with, and the platform admin for support. Each read by someone outside the team is in the read log
+  (`core_access_events`: a view, or `support` for the platform admin) and the lead reads it on the **Who looked** tab.
+- **Private**: its team and its shares only, not the platform admin either (amendment C4).
+- **Open**: everyone who reads experiments, as before.
+
+**When sealing starts** (the coordinator's decision of 2026-11-25 on the landing review, W3): a draft seals nothing,
+however its tanks are placed; the sealed cells are a started experiment's (`experiment_cells`, migration 0007). A
+record of a tank before its experiment starts stays the farm's own. Starting a sealed or private experiment whose day 0
+has already passed, or making a started open experiment sealed or private, seals the records of the days already
+passed, so a person who holds Oversee does it (`experiments.services._may_seal_past`); anyone else is refused. The platform admin's account is not an overseer, whatever its roles (it is a support account), and is told so.
+
+A **share** gives a person or a role one or more of five parts until a day (at most two years), with a reason; the
+results bring the data, the design and the systems with them, the data the design and the systems, the water the
+systems. Revoked or ended shares
+stay as history; each share and revoke is one activity-log entry on the experiment. A member of the team has a window
+(from, until) and a role. The team is the lead's alone to change (who is in it, who leads); an experiment whose lead
+left is taken over by the platform admin with `manage.py experiments_take_lead`, with a reason, logged. The lead may
+share with any active account that has a role.
+
+**An outside researcher** (a visiting scientist, a partner's student) is an ordinary account; there are no guest
+accounts (owner decision of 23.11.2026). The platform admin creates the account (Administration › Users) and gives it
+a narrow role: `manage.py experiments_roles` makes **Research collaborator** (Experiments: read, nothing else; `--language
+nb` or `tr` names it in that language), which shows the Research menu and no farm page. The experiment's lead then adds
+the person to its team, or shares a part with them, on the experiment's own pages, and they read that experiment and its
+own pages; any other sealed experiment, and every farm page, stays closed to them. Taken off the team (or the share
+revoked) they read nothing of it from their next page on (`experiments/tests/test_collaborator.py`).
+
+For anyone else a sealed or private experiment **does not exist**: its pages answer as an unknown id (404), and its
+cells (a tank or a system it books, for the days it books them: the view `experiment_cells`) and every record on them
+dated inside them are absent from every page, list, count, choice, export, chart, the activity log, the delete plan
+("N restricted records", never named, and a delete that reaches one is refused to them), alarms and their notifications
+(an alarm on a sealed cell reaches only who may see it), and the database viewer. A tank or system itself is hidden
+only while today is inside one of its cells, so a booking for next month hides nothing today. The rule is applied in one
+place: every manager of a sealed model narrows its rows for the person looking, with what they are granted read inside
+the same SQL statement (no query of its own). Every model that reaches a unit, a system or another sealed record
+declares its seal in its app's `sealing.py`; a new one that does not fails the system check (`core.E101`, `core.E102`).
+A few named reads see everything (`sealing.system(reason)`: the stock fold, the booking check, the delete plan, the
+oversee card, the preflight report) and every place that reads with SQL of its own is named with why
+(`core/tests_sealing.py`). Management commands but `runserver` read as the system; a read with nobody looking fails.
+
+**Oversee** (a column of the role matrix, offered by Experiments): the fish of every confidential experiment's tanks as
+farm facts (stock, mortality, feeding, water, health, lice, withdrawal, tasks, alarms), a private experiment's too
+(the fish's welfare comes first; the Sharing page says so), never its design, results, documents or team; such a tank shows a card (**Research trial**, its lead, its approval and its days) instead of the experiment's
+chip, and each card read is logged as `oversee`. Migration 0005 gives it to every role that records stock, feeding,
+health, treatments or lice; the platform admin gives and takes it away, and the matrix says which duties it touches.
+The **approval** (FOTS reference and last day) is on the experiment's Approval tab, editable after the start, with an
+optional **on-call phone** the lead types, shown only on the Oversee card (HR keeps no contact detail), and its **care
+and biosecurity instructions** (owner 2026-11-24: welfare and people's safety come before confidentiality): what
+everyone who works its tanks must do, shown in full beside its tanks (Production units, the drawer, the meal board, the
+monitoring card; a "Care instructions" chip and the text in the new look) to the team and to every holder of Oversee,
+never the design or the pathogen (migration 0006 lets the lead change it after the start). An alarm on a
+sealed cell goes to the people of the rules who may see it; when none may, to the experiment's lead and the Oversee
+holders. Regulatory reports and their due list, the medicine withdrawal's reader, the stock fold and the store's feed
+book count every unit whoever asks; what a page prints of them is read as the person (a unit or batch they may not see
+is "a restricted unit"). Every read of a sealed experiment by someone outside its team (its pages, the list, the
+activity log, the database viewer, the admin, the Oversee card) is in the read log (the Oversee cards of a wall in one
+statement, one row per experiment); the monitoring screens' change token moves only with what the person may read,
+at the cost it had before: each activity-log entry is stamped when it is written with the works its record lies in
+(`core.audit.stamp`, `core.sealing.works_of`: the seal read from the row to the works, its parents and children
+included; `*` when the row is gone), and the token leaves out the entries stamped with a work hidden from the person,
+read from one statement a request (`core.sealing.reach`: per part the experiments hidden from them, Oversee, and a
+digest of what they read, added to the token so a grant, a share's end or an audience change moves it). The seal
+itself is never read on a poll. Each of the seal's rules has one owner: the audience rule (who reads an experiment only as team or grantee: for the platform admin the private ones, for anyone else all but open) is `experiments.sealing.barred_audiences`, read by the seal's statement, the token, the viewer and the read log; Oversee is `holders` (SQL) and `holds_oversee` (Python); the channels that can leave are `alarms.transports.connected_channels`; a subject key's unit is made and read in `alarms/place.py` (`water_key`, `unit_subject`; `unit_of_key`, `water_key_parts`); a moment's day on a cell's clock is `core.sealing.day_on` / `_cell_day`. `core/tests_sealing.py` (`RULE_OWNERS`) fails when another place states one of them (a comparison with an audience, in words or as a literal; a key or name that begins `unit:`; a `localtime(...).date()` in the experiments or the alarms; a read of `ALARM_TRANSPORTS`); the view `experiment_cells` states the audience rule in SQL, and a test holds it to the owner. The activity log's pages and the database viewer's audit_log decide from the seals
+at read time and also leave out an entry stamped with a work hidden from the person: an entry's text is written once
+and may name what its record reached then (a transfer from an open tank into a sealed one names both units). A person who reads no confidential work gets the token as before. The delete plan says that records the person may not see are
+reached, never how many. The seal's own reads (its parents and children, the stamp, the log's read-time rule) take a
+model's rows as stored (`core.sealing.unsealed`), never through a manager that may itself be sealed; the log has one
+order, newest first and then by id, whatever a statement's plan. The seal reads the person when the SQL is compiled, so a queryset built at import is never
+bound to anyone (`core.sealing.Viewing`; `core/tests_boot.py` starts the server as a server). It is decided from the
+person's Reach, read once a request (forgotten after a write that changes a grant, a team, an audience or a role): a
+person from whom no work is hidden reads with no seal in the statement, a holder of Oversee reads the farm facts with
+none, and anyone else's statement carries the hidden experiments' ids written in (`core.sealing.Sealed`, `HiddenWork`).
+
+**Raw data** (owner 2026-11-24): the platform keeps the fish's welfare, collects clean data and keeps it confidential;
+the analysis is the experiment owner's. The Data tab's **Download the raw data (CSV)** gives whoever reads the
+experiment's data (its team, a grantee of the data or the results) every value recorded on its tanks on their days:
+feeding fed to its fish, stock lines, sea-lice counts and the water of the tanks' own sampling points and their systems',
+one row per value (date dd.mm.yyyy, time, group, replicate, tank, record, source, variable, value), voided records out
+(`experiments/rawdata.py`). Every download is in the read log, the team's too; anyone else who may open the experiment
+is refused, and the refusal is logged.
+
+A booking held by an experiment the person may not read is said with its days only ("booked by another experiment
+from D to D"), never which one; the platform admin so still sees that a tank or system of a private experiment is
+booked and when. **Honest limits**, said on the Sharing page too: someone with direct access to the database or the
+server reads the stored rows; the sensor readings table is not in the database viewer and is reached only through a
+channel the seal let through. Accepted, not hidden: experiment numbers count on without gaps for everyone (a gap would
+say nothing a sequence does not), a duplicate name or code is refused in the same words whoever holds it, and the
+ingest's channel states and the revision counters (`core_rev`) hold ids, no text. A database viewer export asks why, and the reason is in the read log.
+`manage.py experiments_sealing_preflight` says what the owner must know before it goes live.
+
+**Alarms on confidential work** (landing reviews, 2026-11-25/26): an alarm, and a sensor rule's event, is sealed by its
+own place and day only: the unit or system it is about, kept on it when it opens (`alarms/place.py`: a unit subject's
+key, its point, its sensor channel's binding then, or a place its producer states), never by its sensor channel's
+history. An alarm that names no place must be declared farm-wide by its producer, or it is refused. At every level
+where no rule names a person who may see a sealed alarm, its keepers are told (the experiment's lead and the Oversee
+holders of the cells of its opening day, read on each cell's site's clock; on a level whose rule names those on shift,
+the keepers on shift first), each on one channel that can leave: the level's first connected rule channel, else the
+first connected channel. A critical alarm nobody was told of at its current level raises the alarm system's own
+critical alarm ("one or more critical alarms reached nobody", no count), which names none of them and goes to the rules' people
+and every Oversee holder, each on the rule's channel and on every connected channel besides (the alarm that says
+notifications cannot leave is never sent only on the channel that cannot). Once a transport is connected only a notification on a connected
+channel counts as telling; while none is, the alarm system raises its own standing "no notification channel is
+connected" instead, and the net counts only who was queued. While no recipient rule is active at all, it raises "no
+alarm recipient rule is active" (the coordinator's decisions of 2026-11-26, reviews 3 and 4). Which channels are
+connected is read from the configuration (`alarms.transports.configured`), the transport imported and never built to
+answer; a setting that is no dictionary, a key that is no channel and a path that does not import are channels not
+connected, logged once (a failed import is tried again on the next pass), and `check --deploy` refuses the first two
+by name (alarms.E004, E005). The recipient rules' page warns, in every look, of each active rule that names people
+without Oversee: a fact of the configuration, said whether or not a confidential experiment runs. This watch has no
+switch: it runs on every pass, in the tests as on a farm. On the pilot (rules made, no transport connected yet) the
+standing "no notification channel is connected" is open by design and nothing else of the watch is. A test that
+counts the alarms of a world with no rule or no transport counts them without the watch's own
+(`alarms.tests.farm_alarms`); the alarm tests (`alarms.tests.AlarmsCase`) run with a recording transport and assert
+the watch opens nothing where a rule exists. A cell's days are its site's: the seal reads a moment's day on the
+cell's site's clock (`core.sealing._cell_day` and `day_on`). The attention counts are kept per what a person reads.
+
+**Known limitations** (recorded, not fixed):
+- A voided or deleted stock line of an open tank counts as a shown child of its batch and operation (review 2, N7): a
+  stocking first booked into an open tank, voided and rebooked into a sealed one leaves its batch visible to outsiders,
+  as the open tank's own history.
+- What a request has read of the person is read again after a rollback of the block it was read in, but not after a
+  rollback of an outermost transaction followed by a new one in the same request (review 2, N8): Django has no hook on a
+  transaction's start. No view does that today.
+- A write made by a database trigger or outside the platform is not seen by the request that is running (review S3).
+- alarms 0023 places an alarm whose summary names a unit code several units of its site have had nowhere, and counts it
+  in its log entry (review 3, S7): it fails open for those old, closed alarms.
+- The alarm "N critical alarm(s) reached nobody" is seen by everyone its rules reach: an outsider who sees it and no such
+  alarm on their own list learns that a hidden critical alarm is open (review 3, S8): safety over secrecy.
+- A sensor rule and its channel stay sealed by the channel's history (any binding ever on a cell), while their events
+  and alarms are sealed by their own place: after a probe moves from a sealed tank to an open one, the open tank's people
+  get its alarms but cannot open the rule that raises them (review 3, S9).
+- Changing a site's time zone while a confidential experiment runs there moves every sealed day of its cells at once:
+  rows at the old and new edges change visibility (review 4, L4).
+- alarms 0023 places only open silent-probe warnings: a closed one stays unplaced and readable by everyone, naming its
+  tank (review 4, L5; no deployed database had alarms).
+- A sensor event with no binding (older rows) mirrors as a farm-wide alarm naming its channel; an alarm opened the day
+  before its tank's cell starts stays unsealed for its whole life, by its opening day; a subject's state row with no
+  open alarm is not sealed (only the platform admin's database viewer shows it); `from core.sealing import system as
+  s` would escape the call-site guard; the activity log's exclusion has not been measured on production-size data
+  (review 3, S10).
+
 ## Regulatory reports (Production › Reports, `/reports/`)
 
 The reports the farm owes Mattilsynet and Fiskeridirektoratet, made from the records and filed by people. Its own app
@@ -4985,8 +5132,9 @@ The rules the platform owner (the customer the platform is given to) sets for th
 
 ## Roles and users
 
-There are no built-in roles. The platform admin (a Django superuser) can open everything and is the
-only one who manages roles and users; everyone else gets exactly what their roles allow.
+There are no built-in roles. The platform admin (a Django superuser) can open everything (but a private experiment,
+whose lead keeps it from them: Research › Experiments, Confidentiality) and is the only one who manages roles and
+users; everyone else gets exactly what their roles allow. The Oversee column (Experiments) is under that section too.
 
 - **Access areas** (`config/access.py`, read by `core/access.py`): the parts of the console a role
   can be given, one line each, with the actions each offers: Sites, Production departments,
@@ -5043,7 +5191,7 @@ only one who manages roles and users; everyone else gets exactly what their role
   Email is unique and may be left out: the person is created, the admin is told that no invitation was sent,
   the row says "Not invited: no email address", and the person cannot sign in until an address is added and
   the invitation sent from the row (nobody hands out a password here). An inactive person is not invited.
-  Guests and students are users like everyone else. People are deactivated, not deleted, and nobody can
+  Outside researchers and students are users like everyone else (Research › Experiments, Confidentiality). People are deactivated, not deleted, and nobody can
   deactivate their own account. Platform admin status is not edited here (only with `createsuperuser`).
 
 ## Security in the pages
@@ -5165,7 +5313,10 @@ is not in the access matrix, so no role can be given it.
   shown and marked, and can be hidden or shown alone. A header sorts, a filter box matches text
   inside a value (equals, for numbers, ids and booleans), the search box looks in every column, 100
   rows a page. **Export CSV** gives the current filter, streamed and capped at 50,000 rows; text a
-  spreadsheet would run as a formula (starting with `=`, `+`, `-`, `@`) gets a leading apostrophe.
+  spreadsheet would run as a formula (starting with `=`, `+`, `-`, `@`) gets a leading apostrophe. An export asks why
+  (owner decision C2.2); the reason, the table and who exported it are in the read log (`core_access_events`). The
+  rows, their counts and their links are read through the seal: a private experiment's records are not shown to the
+  platform admin either (Research › Experiments, Confidentiality).
 - **Structure**: columns (SQL type, nullable, default, key, the model's field), constraints, indexes
   and the relationships in both directions, read from the database and matched with the Django
   model. A generated column (a unit's volume) shows its expression where a default would be, and is
@@ -6882,6 +7033,9 @@ under the wrong kind, fails.
 | `check_inventory` | inventory | product | Every rule of the store from scratch; changes nothing | An operator |
 | `check_reports` | reports | product | Every report against its frozen content and its key; changes nothing | An operator |
 | `check_experiments` | experiments | product | Every started experiment against the rules the database cannot hold; changes nothing | An operator |
+| `experiments_roles` | experiments | product | Creates the Research collaborator role (Experiments: read, nothing else) when no role has its name, in the language given; never overwrites a role | The platform admin |
+| `experiments_sealing_preflight` | experiments | product | Before confidentiality goes live: the audiences, experiments without a lead, whole systems held without a booking, ended approvals, shares to inactive accounts, bookings without a tank; `--announcement` prints the text for the people; changes nothing | The owner |
+| `experiments_take_lead` | experiments | product | The platform admin takes over an experiment with no live lead: the account named leads it, with a reason, logged on the experiment; refused while it has a lead | The platform admin |
 | `check_hr` | hr | product | What disagrees in the HR records; changes nothing | An operator |
 | `compile_catalogs` | core | build | Builds the `.mo` files from the `.po` files (Babel) | Landing, CI, the tests |
 | `update_catalogs` | core | build | Updates `locale/*/django.po` from the code and the templates | A developer after changing text; CI checks it changed nothing |

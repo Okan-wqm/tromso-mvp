@@ -1,0 +1,894 @@
+"""The independent security review of the confidentiality branch (F:\\dev\\balik-notes\\exp-access\\REVIEW.md), each
+finding as a test: what the review found must stay closed.
+
+F2 the database viewer's every table, a private experiment included; F3 the team is the lead's; F4 the unresolved old
+courses as the person may see them; F5 the store's feed book the same for everyone; F6 a sealed tank's notifiable
+disease still owed; F7 Oversee keeps the fish of a private experiment, never its science; F8 every read of the platform
+admin logged, the change token, a results share, the search, the alarms and their fallback, the delete plan's words;
+the lead's on-call number on the Oversee card."""
+import re
+import uuid
+from datetime import timedelta
+from io import StringIO
+
+from django.core.exceptions import ValidationError
+from django.core.management import CommandError, call_command
+from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
+
+from core import audit, database, sealing
+from core.models import AccessEvent, AuditLog
+from core.softdelete import plan_delete
+from farm import withdrawal_gate
+from farm.models import FeedingRecord, HealthEvent, Site, Tank, Treatment
+
+from farm.tests.helpers import role, rows_data
+
+from .. import read, sealing as provider, services
+from ..models import Experiment, ExperimentShare, Factor, Member
+from . import world
+from .test_pages import RESEARCHER
+
+
+class ReviewCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        world.build_open(cls)
+        world.build_sealed(cls)
+        cls.keeper = world.person('keeper', *world.area_perms(exclude_apps=('reports',)), 'experiments.oversee_experiment')
+
+    def seen(self, user, model, **lookup):
+        with sealing.as_viewer(user):
+            return set(model.objects.filter(**lookup).values_list('pk', flat=True))
+
+    def private(self):
+        Experiment.objects.filter(pk=self.experiment.pk).update(audience='private')
+
+    def events(self, **lookup):
+        return AccessEvent.objects.filter(entity_type='experiment', entity_id=str(self.experiment.pk), **lookup)
+
+
+class DatabaseViewerTests(ReviewCase):
+    def test_no_table_shows_a_private_experiment_to_the_platform_admin(self):
+        self.private()
+        AuditLog.objects.create(user=self.lead, user_name='lead', action='update', entity_type='experiment',
+                                entity_id=str(self.experiment.pk), entity_label='XQZ diet trial', changes={})
+        self.client.force_login(self.boss)
+        for _label, tables in database.sections():
+            for table in tables:
+                with self.subTest(table=table.name):
+                    response = self.client.get(reverse('core:database_table', args=[table.name]))
+                    self.assertEqual(response.status_code, 200)
+                    page = world.page_text(response)
+                    self.assertNotIn('XQZ', page)
+                    self.assertNotIn(str(self.experiment.pk), page)
+
+
+class TeamTests(ReviewCase):
+    def post(self, user, rows):
+        self.client.force_login(user)
+        return self.client.post(reverse('experiments:experiment_team', args=[self.experiment.pk]),
+                                rows_data('team', rows, record=self.experiment))
+
+    def test_only_the_lead_changes_the_team(self):
+        Member.objects.create(experiment=self.experiment, user=self.researcher, role='researcher')
+        rows = [{'user': self.researcher.pk, 'role': 'lead'}]
+        self.assertEqual(self.post(self.researcher, rows).status_code, 403)
+        self.assertEqual(Member.objects.get(experiment=self.experiment, role='lead').user, self.lead)
+        self.assertEqual(self.post(self.lead, [{'user': self.lead.pk, 'role': 'lead'}]).status_code, 302)
+
+    def test_the_platform_admin_takes_over_a_leadless_experiment_logged(self):
+        with self.assertRaises(CommandError):                       # it has a lead
+            call_command('experiments_take_lead', self.experiment.code, '--as', 'root', '--reason', 'Lead left',
+                         stdout=StringIO())
+        Member.objects.filter(experiment=self.experiment).delete()
+        with self.assertRaises(CommandError):                       # not the platform admin
+            call_command('experiments_take_lead', self.experiment.code, '--as', 'researcher', '--reason', 'x',
+                         stdout=StringIO())
+        call_command('experiments_take_lead', self.experiment.code, '--as', 'root', '--reason', 'Lead left',
+                     stdout=StringIO())
+        self.assertEqual(Member.objects.get(experiment=self.experiment, role='lead').user, self.boss)
+        entry = AuditLog.objects.filter(entity_id=str(self.experiment.pk)).latest('created_at')
+        self.assertIn('taken over: Lead left', entry.changes['Team'][1])
+
+
+class WithdrawalTests(ReviewCase):
+    def test_the_unresolved_old_courses_are_the_persons_to_see(self):
+        from unittest import mock
+        from farm.health import withdrawal
+        with withdrawal_gate.opened('test fixture: an old course without a rule'):
+            Treatment.objects.filter(pk=self.treatment.pk).update(start_date=self.today - timedelta(days=4),
+                                                                    end_date=self.today - timedelta(days=3))
+        days = mock.patch.object(withdrawal, 'unknown_withdrawal_days', return_value=1)
+        days.start()
+        self.addCleanup(days.stop)
+        with sealing.system('the test'):
+            everything = {batch.pk for batch, _held in withdrawal.unresolved()}
+        self.assertIn(self.sealed_batch.pk, everything)
+        with sealing.as_viewer(self.researcher):
+            shown = [withdrawal.unresolved_text(batch, held) for batch, held in withdrawal.unresolved()]
+        self.assertNotIn('XQZ', ' '.join(shown))
+
+
+class StoreTests(ReviewCase):
+    def test_the_feed_book_is_the_same_for_everyone(self):
+        from inventory import read as store
+        books = {}
+        for user in (self.boss, self.lead, self.researcher, self.hr):
+            with sealing.as_viewer(user):
+                books[user.username] = store._feeding([self.feed.pk])
+        self.assertEqual(sum(books['root'][self.feed.pk].values()), 4)          # the open 2.5 kg and X's 1.5 kg
+        self.assertTrue(all(book == books['root'] for book in books.values()))
+
+
+class DueListTests(ReviewCase):
+    def test_a_sealed_tanks_notifiable_disease_is_owed_whoever_looks(self):
+        from farm.health import diseases
+        from reports import due
+        Site.objects.filter(pk=self.site.pk).update(reports_from=self.today - timedelta(days=30))
+        HealthEvent.objects.filter(pk=self.event.pk).update(diagnosis=diseases.NOTIFIABLE[0], confirmation='suspected')
+        with sealing.as_viewer(self.researcher):
+            rows = due.due().rows
+        self.assertIn(self.event.pk, {row.event.pk for row in rows if row.event is not None})
+
+
+class OverseeTests(ReviewCase):
+    def test_oversee_keeps_the_fish_of_a_private_experiment_never_its_science(self):
+        self.private()
+        self.assertTrue({tank.pk for tank in self.sealed_tanks} <= self.seen(self.keeper, Tank))
+        self.assertIn(self.feeding.pk, self.seen(self.keeper, FeedingRecord))
+        self.assertEqual(self.seen(self.keeper, Factor), set())
+        self.assertEqual(self.seen(self.keeper, Experiment), set())
+
+    def test_the_sharing_page_says_the_exception(self):
+        self.client.force_login(self.lead)
+        response = self.client.get(reverse('experiments:experiment_sharing', args=[self.experiment.pk]))
+        self.assertContains(response, 'the people whose role holds Oversee')
+
+    def test_the_card_has_the_leads_on_call_number_and_is_logged_against_the_experiment(self):
+        Experiment.objects.filter(pk=self.experiment.pk).update(on_call_phone='+47 400 00 000')
+        with sealing.as_viewer(self.keeper):
+            chip = read.chips(self.sealed_tanks, self.keeper)[self.sealed_tanks[0].pk][0]
+        self.assertIn('+47 400 00 000', chip.title)
+        self.assertTrue(self.events(kind='oversee', user_name='keeper').exists())
+
+
+class SupportReadTests(ReviewCase):
+    def test_every_read_of_the_platform_admin_is_logged(self):
+        AuditLog.objects.create(user=self.lead, user_name='lead', action='update', entity_type='experiment',
+                                entity_id=str(self.experiment.pk), entity_label='XQZ diet trial', changes={})
+        self.client.force_login(self.boss)
+        for url in (reverse('experiments:experiment_list'), reverse('core:activity_log'),
+                    reverse('core:database_table', args=['experiments']),
+                    reverse('admin:experiments_experiment_changelist'),
+                    reverse('admin:experiments_experiment_change', args=[self.experiment.pk])):
+            with self.subTest(url=url):
+                before = self.events(kind='support').count()
+                self.assertEqual(self.client.get(url).status_code, 200)
+                self.assertGreater(self.events(kind='support').count(), before)
+
+
+class TokenTests(ReviewCase):
+    def test_a_write_the_person_may_not_see_never_moves_their_token(self):
+        with sealing.as_viewer(self.researcher):
+            before = audit.revision()
+        with sealing.as_viewer(self.lead):
+            lead_before = audit.revision()
+        audit.record(self.lead, AuditLog.Action.UPDATE, self.experiment, {'Notes': ['a', 'b']})
+        with sealing.as_viewer(self.researcher):
+            self.assertEqual(audit.revision(), before)
+        with sealing.as_viewer(self.lead):
+            self.assertNotEqual(audit.revision(), lead_before)
+
+
+class ShareTests(ReviewCase):
+    def give(self, part):
+        return ExperimentShare.objects.create(experiment=self.experiment, user=self.researcher, part=part,
+                                              reason='Review', valid_until=timezone.now() + timedelta(days=5))
+
+    def test_a_results_share_reads_the_figures_the_team_reads(self):
+        self.give('results')
+        with sealing.as_viewer(self.lead):
+            team = repr(read.overview(self.experiment, self.today))
+        with sealing.as_viewer(self.researcher):
+            grantee = repr(read.overview(self.experiment, self.today))
+        self.assertEqual(team, grantee)
+
+    def test_the_search_finds_by_the_hypothesis_only_who_may_read_the_design(self):
+        self.give('water')
+        self.client.force_login(self.researcher)
+        url = reverse('experiments:experiment_list')
+        self.assertContains(self.client.get(url, {'q': 'XQZ diet'}), 'XQZ diet trial')
+        self.assertNotIn('XQZ diet trial', world.page_text(self.client.get(url, {'q': 'more protein'})))
+        self.give('design')
+        self.assertContains(self.client.get(url, {'q': 'more protein'}), 'XQZ diet trial')
+
+    def test_the_list_counts_the_groups_and_replicates_only_for_who_reads_the_design(self):
+        """L7: the list's counts are read through the design's sealed managers, never a join past them."""
+        self.give('water')
+        url = reverse('experiments:experiment_list')
+        counts = {}
+        for user in (self.researcher, self.lead):
+            self.client.force_login(user)
+            rows = {row.pk: row for row in self.client.get(url).context['objects']}
+            counts[user.username] = (rows[self.experiment.pk].group_count, rows[self.experiment.pk].replicate_count)
+        self.assertEqual(counts, {'researcher': (0, 0), 'lead': (1, 2)})
+
+
+class ManyToManyAndKeyTests(ReviewCase):
+    """L8: a treatment's units (a table Django makes) and the form keys (core.models.EntryKey, which name a record by
+    its model's label) are hidden with the record they are about, from the platform admin too when it is private."""
+
+    def test_a_private_treatments_units_and_a_hidden_records_form_key_are_left_out(self):
+        from core.models import EntryKey
+        self.private()
+        EntryKey.note(uuid.uuid4(), self.treatment)
+        through = Treatment.units.through
+        with sealing.as_viewer(self.boss):
+            units = set(sealing.narrow(through._base_manager.all()).values_list('treatment_id', flat=True))
+            keys = set(sealing.narrow(EntryKey._base_manager.all()).values_list('entity_id', flat=True))
+        self.assertNotIn(self.treatment.pk, units)
+        self.assertNotIn(str(self.treatment.pk), keys)
+        with sealing.as_viewer(self.lead):
+            self.assertIn(self.treatment.pk, set(sealing.narrow(through._base_manager.all())
+                                                 .values_list('treatment_id', flat=True)))
+
+
+class AlarmTests(ReviewCase):
+    def rule(self, **fields):
+        from alarms.models import RecipientRule
+        return RecipientRule.objects.create(level=0, created_by=self.boss, **fields)
+
+    def recipients(self, alarm=None):
+        from alarms import routing
+        alarm = alarm or self.alarm
+        return {user.username: rule for user, rule in routing.Router(timezone.now(), [alarm]).recipients(alarm, 0)}
+
+    def unit_alarms(self):
+        """A unit's value that could not be evaluated, and a unit read at its system with no point (alarms 0022): no
+        point, no sensor event, the unit only in the subject's key."""
+        from alarms import services
+        tank, now = self.sealed_tanks[0], timezone.now()
+        return services.raise_many([
+            (f'system:unit:{tank.pk}:unit_unevaluated', {
+                'at': now, 'severity': 'critical', 'summary': f'{tank.code}: the water could not be evaluated',
+                'source': 'system', 'parameter': 'unit_unevaluated'}),
+            (f'water:unit:{tank.pk}:oxygen:critical', {
+                'at': now, 'severity': 'critical', 'summary': f'{tank.code}, from its system: O2 3.1 (critical)',
+                'source': 'water_limit', 'parameter': 'oxygen_mg_l'})]).values()
+
+    def sensor_alarm(self):
+        """A sensor rule's alarm on X's oxygen channel, bound to X's tank's point (it has no point of its own)."""
+        from alarms import sources
+        from sensors.models import AlarmEvent, AlarmRule
+        rule = AlarmRule.objects.create(channel=self.sealed_channel, kind='no_data', severity='critical')
+        event = AlarmEvent.objects.create(rule=rule, channel_no=self.sealed_channel.channel_no, binding=self.binding,
+                                          opened_at=timezone.now())
+        return sources.mirror(event)
+
+    def test_an_alarm_about_a_unit_with_no_point_is_sealed_with_its_unit(self):
+        """Review L2, M1: a unit's own alarm with no point lies on the unit (alarms/place.py), so it does not exist
+        for whoever may not see the unit, and its people are the unit's."""
+        from alarms.models import Alarm
+        made = {alarm.pk for alarm in self.unit_alarms()}
+        self.assertEqual(self.seen(self.researcher, Alarm, pk__in=made), set())
+        self.assertEqual(self.seen(self.lead, Alarm, pk__in=made), made)
+        self.rule(user=self.researcher)
+        for alarm in Alarm.objects.filter(pk__in=made):
+            self.assertEqual(set(self.recipients(alarm)), {'lead', 'keeper'})
+
+    def test_a_sensor_alarm_on_a_sealed_cell_reaches_the_keepers(self):
+        """Review W4: a sensor rule's alarm has no point; its place is its channel's binding when it opened, so with
+        nobody on the rules who may see it the keepers of the fish are told."""
+        alarm = self.sensor_alarm()
+        self.assertEqual(alarm.unit_id, self.sealed_tanks[0].pk)
+        self.rule(user=self.researcher)
+        found = self.recipients(alarm)
+        self.assertEqual(set(found), {'lead', 'keeper'})
+
+    def test_the_attention_snapshot_is_never_served_across_what_people_read(self):
+        """Review L3, T2: the snapshot the strip and the overviews count is kept for a while (the cache ON here); a
+        copy made for the lead is never served to an outsider, nor an outsider's to the lead, whoever comes first."""
+        from django.core.cache import cache
+        from django.test.utils import override_settings
+        from alarms import read as alarms_read
+        sealed = self.sealed_tanks[0].pk
+
+        def units(user):
+            with sealing.as_viewer(user):
+                alarms, _rungs = alarms_read.snapshot()
+            return {unit for _site, _severity, unit in alarms}
+        with override_settings(ATTENTION_CACHE_SECONDS=15):
+            for first, then in ((self.lead, self.researcher), (self.researcher, self.lead)):
+                cache.clear()
+                self.addCleanup(cache.clear)
+                with self.subTest(first=first.username):
+                    self.assertEqual(sealed in units(first), first == self.lead)
+                    self.assertEqual(sealed in units(then), then == self.lead)
+
+    def test_a_default_rules_event_on_a_sealed_binding_is_sealed(self):
+        """Review 2, N1: an event of a rule of every channel of a quantity (no channel to be sealed through) is sealed by
+        the place its channel was bound to: not in the Sensors list, the tile's count, nor open to acknowledge."""
+        from sensors import views as sensor_views
+        from sensors.models import AlarmEvent, AlarmRule
+        rule = AlarmRule.objects.create(quantity='oxygen_mg_l', kind='no_data', severity='critical')
+        event = AlarmEvent.objects.create(rule=rule, channel_no=self.sealed_channel.channel_no, binding=self.binding,
+                                          opened_at=timezone.now())
+        self.assertEqual(self.seen(self.researcher, AlarmEvent, pk=event.pk), set())
+        self.assertEqual(self.seen(self.lead, AlarmEvent, pk=event.pk), {event.pk})
+        tech = world.person('tech', 'sensors.view_alarmevent', 'sensors.change_alarmevent')
+        with sealing.as_viewer(tech):
+            tiles = {tile['key']: tile for tile in sensor_views.state_tiles(tech, timezone.now())}
+        self.assertEqual((tiles['alarms']['count'], tiles['alarms']['critical']), (0, 0))
+        self.client.force_login(tech)
+        self.assertNotIn('XQZ', world.page_text(self.client.get(reverse('sensors:alarm_events'))))
+        acknowledge = self.client.post(reverse('sensors:alarm_event_acknowledge', args=[event.pk]))
+        self.assertEqual(acknowledge.status_code, 404)
+
+    def test_a_probe_moved_from_a_sealed_tank_alarms_the_open_tank_to_its_people(self):
+        """Review 2, N3 (the coordinator's decision): an alarm is sealed by its own place only. A probe that served X's
+        tank and now serves an open one raises alarms about the open one, which its rules' people get, never nobody."""
+        from alarms import sources
+        from farm.tests.helpers import point_of
+        from sensors.models import AlarmEvent, AlarmRule, Binding
+        now = timezone.now()
+        Binding.objects.filter(pk=self.binding.pk).update(valid_to=now - timedelta(hours=1))
+        moved = Binding.objects.create(channel=self.sealed_channel, point=point_of(self.open_tank),
+                                       valid_from=now - timedelta(hours=1))
+        rule = AlarmRule.objects.create(channel=self.sealed_channel, kind='no_data', severity='critical')
+        event = AlarmEvent.objects.create(rule=rule, channel_no=self.sealed_channel.channel_no, binding=moved,
+                                          opened_at=now)
+        alarm = sources.mirror(event)
+        self.assertEqual(alarm.unit_id, self.open_tank.pk)
+        watch = world.person('watch', 'alarms.view_alarm')
+        self.rule(user=watch)
+        self.assertEqual(set(self.recipients(alarm)), {'watch'})
+
+    def test_the_silent_probe_warning_carries_its_bindings_place(self):
+        """Review 2, N2: the silent oxygen probe's warning names the probe's place; it is opened with that place, so
+        it is sealed with X's tank."""
+        from alarms import services, sources
+        from alarms.models import Alarm
+
+        class Pass:
+            def probes(this):
+                return {'place': [self.binding]}
+
+            def known(this):
+                return {'place'}
+        (subject,) = [found for found in sources._probe_subjects(Pass(), False, timezone.now()) if found.holds]
+        (alarm,) = services.raise_many([(subject.key, subject.spec())]).values()
+        self.assertEqual(alarm.unit_id, self.sealed_tanks[0].pk)
+        self.assertEqual(self.seen(self.researcher, Alarm, pk=alarm.pk), set())
+
+    def test_an_alarm_that_names_no_place_is_refused_unless_farm_wide(self):
+        """Review 2, N2, the class: a producer that says neither its place nor that it is farm-wide is refused, when it
+        builds its subject and when the service opens it."""
+        from alarms import services, sources
+        now = timezone.now()
+        with self.assertRaises(ValueError):
+            sources.system_subject('somewhere', True, 'warning', 'T-05: something', now)
+        with self.assertRaises(ValueError):
+            services.open_alarms([{'at': now, 'severity': 'warning', 'summary': 'T-05: something', 'source': 'system',
+                                   'parameter': 'somewhere'}])
+        with self.assertRaises(ValueError):                 # review 3, S10: a stated place of nothing is no place
+            sources.system_subject('somewhere', True, 'warning', 'T-05: something', now, place=(None, None))
+        with self.assertRaises(ValueError):
+            services.open_alarms([{'at': now, 'severity': 'warning', 'summary': 'T-05: something', 'source': 'system',
+                                   'parameter': 'somewhere', 'place': (None, None)}])
+        made = services.open_alarms([{'at': now, 'severity': 'warning', 'summary': 'A step failed', 'source': 'system',
+                                      'parameter': 'step', 'farm_wide': True}])
+        self.assertEqual((made[0].unit_id, made[0].system_id), (None, None))
+
+    @override_settings(ALARM_TRANSPORTS={'push': 'alarms.tests.doubles.RecordingTransport'})
+    def test_a_critical_alarm_told_to_nobody_is_said_to_the_overseers(self):
+        """Review 2, N3, the safety net: a critical alarm told to nobody counts in the alarm system's own alarm, which
+        names none of them and goes to every holder of Oversee besides the rules."""
+        from alarms import routing, services, sources
+        self.rule(user=self.researcher, min_severity='critical')
+        self.assertEqual(sources._unreached(), 0)               # the world's critical alarm was told to its lead
+        services.open_alarms([{'at': timezone.now(), 'severity': 'critical', 'summary': 'XQZ-1 oxygen 3.1 below 6.0',
+                               'source': 'water_limit', 'point': self.sealed_point, 'parameter': 'oxygen_mg_l'}])
+        self.assertEqual(sources._unreached(), 1)               # a sealed critical alarm, told to nobody
+        (alarm,) = services.raise_many([('system:alarms_unreached', {
+            'at': timezone.now(), 'severity': 'critical', 'summary': '1 critical alarm(s) reached nobody',
+            'source': 'system', 'parameter': routing.UNREACHED, 'farm_wide': True})]).values()
+        self.assertIn('keeper', set(self.recipients(alarm)))
+
+    def test_the_keepers_are_those_of_the_alarms_opening_day(self):
+        """Review 2, N4: the cells of the day an alarm opened, the day its seal reads."""
+        from datetime import datetime, time
+        from farm.models.site import zone_of
+        from .. import sealing as provider
+        tank, began, zone = self.sealed_tanks[0], self.experiment.starts_on, zone_of(self.experiment.site)
+        inside = datetime.combine(began, time(0, 30), zone)          # its first day's first half hour, its clock
+        before = datetime.combine(began, time(0, 30), zone) - timedelta(hours=1)
+        found = provider.keepers_of([(tank.pk, None, inside), (tank.pk, None, before)])
+        self.assertIn(self.lead.pk, {user.pk for user in found[(tank.pk, None, inside)]})
+        self.assertNotIn(self.lead.pk, {user.pk for user in found[(tank.pk, None, before)]})
+
+    def test_routing_reads_each_persons_reach_once_however_many_sealed_alarms(self):
+        """Review 2, N6: who may see which sealed alarm is read once per person a pass, not once per person and alarm."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from alarms import routing, services
+        self.rule(user=self.researcher)
+        self.rule(user=self.lead)
+        more = services.open_alarms([{'at': timezone.now(), 'severity': 'critical', 'summary': f'XQZ-1 oxygen {number}',
+                                      'source': 'water_limit', 'point': self.sealed_point, 'parameter': 'oxygen_mg_l'}
+                                     for number in range(4)])
+
+        def cost(alarms):
+            router = routing.Router(timezone.now(), alarms)
+            with CaptureQueriesContext(connection) as captured:
+                for alarm in alarms:
+                    self.assertEqual({user.username for user, _rule in router.recipients(alarm, 0)}, {'lead'})
+            return len(captured)
+        self.assertEqual(cost([self.alarm]), cost([self.alarm, *more]))
+
+    def test_a_router_routes_only_the_alarms_it_was_made_for(self):
+        """Review L1: a router reads which of its alarms are sealed when it is made; one asked about another alarm
+        refuses, never routes it as unsealed."""
+        from alarms import routing
+        router = routing.Router(timezone.now(), [])
+        with self.assertRaises(ValueError):
+            router.recipients(self.alarm, 0)
+
+    def test_a_snooze_reminder_reaches_only_who_may_see_the_alarm(self):
+        """Review L1: the reminder at a snooze's end (alarms.engine._remind) goes through the same seal."""
+        from alarms import engine
+        from alarms.models import AlarmShelve, Notification, NotificationKind
+        self.rule(user=self.researcher)
+        self.rule(user=self.lead)
+        now = timezone.now()
+        shelve = AlarmShelve.objects.create(alarm=self.alarm, user=self.lead, shelved_at=now - timedelta(hours=2),
+                                            until=now - timedelta(minutes=1), reason='Diver in the tank')
+        engine._remind([self.alarm], now, engine.Summary(), {self.alarm.pk: shelve})
+        told = set(Notification.objects.filter(alarm=self.alarm, kind=NotificationKind.RESUMED)
+                   .values_list('recipient__username', flat=True))
+        self.assertEqual(told, {'lead'})
+
+    def test_a_sealed_cells_alarm_reaches_only_who_may_see_it(self):
+        self.rule(user=self.researcher)
+        self.rule(user=self.lead)
+        self.assertEqual(set(self.recipients()), {'lead'})
+
+    def test_with_nobody_on_the_rules_who_may_see_it_the_keepers_are_told(self):
+        self.rule(user=self.researcher)
+        found = self.recipients()
+        self.assertEqual(set(found), {'lead', 'keeper'})
+        self.assertTrue(all(rule is None for rule in found.values()))
+
+
+RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
+
+
+class SafetyNetTests(ReviewCase):
+    """Review 3: sealing never weakens an alarm's escalation, and the alarm system says when a critical alarm reached
+    nobody at its level, through the real pass (alarms.engine.run_once, its supervision step)."""
+
+    def rule(self, **fields):
+        from alarms.models import RecipientRule
+        return RecipientRule.objects.create(level=fields.pop('level', 0), created_by=self.boss, **fields)
+
+    def told(self, level, alarm=None):
+        from alarms.models import Notification
+        return set(Notification.objects.filter(alarm=alarm or self.alarm, level=level)
+                   .values_list('recipient__username', flat=True))
+
+    def own_alarm(self, parameter):
+        from alarms.models import AlarmClearance
+        from alarms.models import Alarm
+        return Alarm.objects.filter(parameter=parameter).exclude(
+            pk__in=AlarmClearance.objects.values('alarm')).first()
+
+    @override_settings(ALARM_TRANSPORTS=RECORDING)
+    def test_an_escalation_to_a_level_nobody_may_see_wakes_the_keepers(self):
+        """S1: level 0 names the lead (told), level 1 a night watch without Oversee. At level 1 nobody named may see
+        the sealed alarm: the keepers of its fish are woken there, and the safety net stays quiet."""
+        from alarms import engine
+        watch = world.person('watch', 'alarms.view_alarm')
+        self.rule(user=self.lead)
+        self.rule(user=watch, level=1)
+        now = timezone.now()
+        engine.run_once(now)
+        engine.run_once(now + timedelta(hours=2))                       # past the critical's escalation time
+        self.assertIn('keeper', self.told(1))
+        self.assertNotIn('watch', self.told(1))
+        self.assertIsNone(self.own_alarm('alarms_unreached'))
+
+    @override_settings(ALARM_TRANSPORTS=RECORDING)
+    def test_the_net_counts_an_alarm_nobody_was_told_of_at_its_current_level(self):
+        """S1: told at level 0 is not enough once the alarm has escalated: with nobody at level 1 who may see it and
+        no keeper either (the lead's place ended, nobody holds Oversee), the pass raises the alarm system's own."""
+        from alarms import engine
+        from alarms.models import Escalation
+        from django.contrib.auth.models import Permission
+        Permission.objects.get(codename='oversee_experiment').group_set.clear()
+        Permission.objects.get(codename='oversee_experiment').user_set.clear()
+        Member.objects.filter(experiment=self.experiment).update(valid_until=timezone.now() - timedelta(days=1))
+        from alarms import sources
+        self.rule(user=self.researcher, level=1)
+        self.rule(user=self.staff)
+        before = sources._unreached()
+        Escalation.objects.create(alarm=self.alarm, level=1, escalated_at=timezone.now())
+        self.assertEqual(sources._unreached(), before + 1)      # told at level 0 only: unreached at level 1
+        engine.run_once(timezone.now())
+        self.assertIsNotNone(self.own_alarm('alarms_unreached'))
+
+    @override_settings(ALARM_TRANSPORTS={})
+    def test_with_nothing_connected_the_system_says_so_and_the_net_counts_who_was_queued(self):
+        """Review 4, R3: no transport connected at all is one standing alarm of its own; the net then counts only a
+        critical alarm nobody who may see it was queued for at its level, so it still shows the sealing's failure."""
+        from alarms import engine
+        self.rule(user=self.lead)
+        engine.run_once(timezone.now())
+        self.assertIn('lead', self.told(0))
+        self.assertIsNotNone(self.own_alarm('alarm_channels_none'))
+        self.assertIsNone(self.own_alarm('alarms_unreached'))
+        self.assertIsNone(self.own_alarm('alarm_rules_none'))
+
+    def test_the_alarm_that_notifications_cannot_leave_goes_out_on_every_connected_channel(self):
+        """Review 5, N1: an Oversee holder a rule names (most are: the fish-care roles hold Oversee) gets the alarm
+        system's own alarms on the rule's channel and on every connected channel besides, never on the rule's channel
+        alone: that one may be the channel that cannot leave. An ordinary alarm keeps to the rule's channel."""
+        from alarms import routing, services
+        self.rule(user=self.keeper)                                       # push; the keeper holds Oversee
+        self.rule(user=self.researcher)                                   # push; no Oversee
+        raised = services.raise_many([(f'system:{parameter}', {
+            'at': timezone.now(), 'severity': 'critical', 'summary': parameter, 'source': 'system',
+            'parameter': parameter, 'farm_wide': True}) for parameter in routing.TO_OVERSEERS])
+        other = services.raise_many([('system:sensors_failed', {
+            'at': timezone.now(), 'severity': 'critical', 'summary': 'sensors', 'source': 'system',
+            'parameter': 'sensors_failed', 'farm_wide': True})])
+        router = routing.Router(timezone.now(), [*raised.values(), *other.values()])
+        for connected, wanted in ((['sms'], {'push', 'sms'}), (['push', 'sms'], {'push', 'sms'}), ([], {'push'})):
+            router.connected = connected
+            for own in raised.values():
+                with self.subTest(connected=connected, alarm=own.parameter):
+                    found = {}
+                    for user, channel, rule in router.deliveries(own, 0):
+                        found.setdefault(user.username, set()).add(channel)
+                    self.assertEqual(found['keeper'], wanted)            # named by a rule: still every channel
+                    self.assertEqual(found['researcher'], wanted)        # a rule's person without Oversee too
+        router.connected = ['sms']
+        (plain,) = other.values()
+        self.assertEqual({channel for _user, channel, _rule in router.deliveries(plain, 0)}, {'push'})
+
+    def test_the_routing_tests_use_every_channel_there_is(self):
+        """The tests above route on 'sms', a channel that does not exist yet (push is the only one): the day a second
+        channel joins alarms.models.Channel this fails, to have them use the real one (review 5, N1)."""
+        from alarms.models import Channel
+        self.assertEqual(Channel.values, ['push'])
+
+    def test_a_transport_that_failed_to_import_is_tried_again_the_next_pass(self):
+        """Review 5, N8: a failed import is not kept for the life of the worker: the next time the channels are asked
+        it is tried again, and the error is logged once, not every pass."""
+        from unittest import mock
+        from alarms import transports
+        from alarms.tests.doubles import RecordingTransport
+        path = 'alarms.tests.comes_later.Transport'
+        self.addCleanup(transports._imported.discard, path)
+        with override_settings(ALARM_TRANSPORTS={'push': path}):
+            with mock.patch.object(transports, 'import_string', side_effect=ImportError('not installed yet')):
+                with self.assertLogs('alarms.transports', 'ERROR') as logged:
+                    self.assertEqual(transports.connected_channels(), [])
+                    self.assertEqual(transports.connected_channels(), [])
+                self.assertEqual(len(logged.records), 1)
+            with mock.patch.object(transports, 'import_string', return_value=RecordingTransport):
+                self.assertEqual(transports.connected_channels(), ['push'])
+
+    def test_a_setting_of_the_wrong_shape_connects_nothing_and_never_fails_a_pass(self):
+        """Review 5, N8: ALARM_TRANSPORTS that is no dictionary, a key that is no channel and a path that is no text
+        are channels not connected, each logged; the pass runs and says nothing is connected."""
+        from alarms import engine, transports
+        wrong = ['alarms.tests.doubles.RecordingTransport']
+        for setting in ('alarms.tests.doubles.RecordingTransport', {'Push': 'alarms.tests.doubles.RecordingTransport'},
+                        {'push': 7}, wrong):
+            with self.subTest(setting=setting), override_settings(ALARM_TRANSPORTS=setting):
+                transports._said.clear()
+                with self.assertLogs('alarms.transports', 'ERROR'):
+                    self.assertEqual(transports.connected_channels(), [])
+                self.assertIsNone(transports.transport_for('push'))
+        self.rule(user=self.lead)
+        with override_settings(ALARM_TRANSPORTS=wrong):                 # said above: silent now
+            summary = engine.run_once(timezone.now())
+        self.assertEqual(summary.failed_steps, [])
+        self.assertIsNotNone(self.own_alarm('alarm_channels_none'))
+
+    def test_a_transport_that_does_not_import_is_not_connected_and_never_fails_a_pass(self):
+        """Review 4, R4: a mistyped transport path is a channel not connected (logged); the pass's notify and
+        supervision run as ever, and the alarm system says nothing is connected."""
+        from alarms import engine, transports
+        with override_settings(ALARM_TRANSPORTS={'push': 'alarms.tests.no_such_module.Transport'}):
+            with self.assertLogs('alarms.transports', 'ERROR'):                 # said once, the import kept
+                self.assertEqual(transports.connected_channels(), [])
+            self.rule(user=self.lead)
+            summary = engine.run_once(timezone.now())
+        self.assertEqual(summary.failed_steps, [])
+        self.assertIsNotNone(self.own_alarm('alarm_channels_none'))
+
+    def test_a_keeper_is_told_on_one_channel_that_can_leave(self):
+        """Review 4, R2, R6: a keeper gets one channel at a level: the level's first connected rule channel, else the
+        first connected one; the alarm system's own alarms for the overseers go on every connected channel."""
+        from alarms import routing, services
+        self.rule(user=self.researcher)                                   # push, and nobody on it may see the alarm
+        (own,) = services.raise_many([('system:alarms_unreached', {
+            'at': timezone.now(), 'severity': 'critical', 'summary': 'One or more critical alarms reached nobody',
+            'source': 'system', 'parameter': routing.UNREACHED, 'farm_wide': True})]).values()
+        router = routing.Router(timezone.now(), [self.alarm, own])
+        for connected, wanted in ((['sms'], {'sms'}), (['sms', 'push'], {'push'}), ([], {'push'})):
+            with self.subTest(connected=connected):
+                router.connected = connected
+                kept = [channel for user, channel, rule in router.deliveries(self.alarm, 0) if rule is None]
+                self.assertEqual(set(kept), wanted)
+                self.assertEqual(len(kept), len({(user.pk) for user, _c, rule in router.deliveries(self.alarm, 0)
+                                                 if rule is None}))
+        router.connected = ['push', 'sms']
+        overseers = {channel for user, channel, rule in router.deliveries(own, 0) if rule is None}
+        self.assertEqual(overseers, {'push', 'sms'})
+
+    def test_on_an_on_shift_level_the_keepers_on_shift_come_first(self):
+        """Review 4, R6: the level names those on shift: its keepers on shift are told, all of them when none is."""
+        from unittest import mock
+        from alarms import routing
+        self.rule(user=self.researcher, on_shift_only=True)
+        with mock.patch('hr.read.on_shift', return_value={self.researcher.pk, self.keeper.pk}):
+            found = {user.username for user, _rule in routing.Router(timezone.now(), [self.alarm]).recipients(
+                self.alarm, 0)}
+        self.assertEqual(found, {'keeper'})
+        with mock.patch('hr.read.on_shift', return_value={self.researcher.pk}):
+            found = {user.username for user, _rule in routing.Router(timezone.now(), [self.alarm]).recipients(
+                self.alarm, 0)}
+        self.assertEqual(found, {'keeper', 'lead'})
+
+    def test_the_rules_page_warns_of_a_rule_that_names_people_without_oversee(self):
+        """Review 4, R6: the admin is told which rule sends confidential alarms to the keepers instead. Review 5, N4:
+        said of the configuration alone, so with no confidential experiment anywhere too (it never tells that one
+        runs); N7: in every look of the page, from the one template both draw."""
+        from django.template.loader import render_to_string
+        from alarms import read as alarms_read
+        from alarms.resources import RecipientRuleResource
+        named = self.rule(user=self.researcher)
+        self.rule(user=self.keeper)                                       # holds Oversee: no warning of this one
+        self.client.force_login(self.boss)
+        address = reverse(RecipientRuleResource.url_name('list'))
+        for audience in ('sealed', 'open'):                               # open: no sealed cell is left
+            Experiment.objects.filter(pk=self.experiment.pk).update(audience=audience)
+            for look in ('', '?ui=next'):
+                with self.subTest(audience=audience, look=look):
+                    page = self.client.get(address + look)
+                    self.assertContains(page, 'names people who do not hold Oversee', count=1)
+        self.assertEqual(alarms_read.rules_naming_outsiders(), [named])
+        drawn = render_to_string(RecipientRuleResource.list_above_next,
+                                 {'connected': {'push': True}, 'outsiders': [named]})
+        self.assertIn('names people who do not hold Oversee', drawn)
+
+    @override_settings(ALARM_TRANSPORTS=RECORDING)
+    def test_a_farm_with_no_rule_says_so_and_tells_the_overseers(self):
+        """S2: with no active recipient rule the pass raises 'no recipient rule' and the safety net, both farm-wide,
+        both told to every holder of Oversee."""
+        from alarms import engine
+        engine.run_once(timezone.now())
+        engine.run_once(timezone.now() + timedelta(seconds=30))
+        for parameter in ('alarm_rules_none', 'alarms_unreached'):
+            with self.subTest(parameter=parameter):
+                alarm = self.own_alarm(parameter)
+                self.assertIsNotNone(alarm)
+                self.assertIn('keeper', self.told(0, alarm))
+        self.rule(user=self.lead)
+        engine.run_once(timezone.now() + timedelta(minutes=10))
+        engine.run_once(timezone.now() + timedelta(hours=3))           # past the off-delay
+        self.assertIsNone(self.own_alarm('alarm_rules_none'))
+
+    def test_keepers_are_read_once_a_pass_however_many_sealed_alarms(self):
+        """S5: with nobody on the rules who may see them, N sealed alarms' keepers cost what one alarm's does."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from alarms import routing, services
+        from alarms.models import Alarm
+        self.rule(user=self.researcher)
+        more = services.open_alarms([{'at': timezone.now(), 'severity': 'critical', 'summary': f'XQZ-1 oxygen {number}',
+                                      'source': 'water_limit', 'point': self.sealed_point, 'parameter': 'oxygen_mg_l',
+                                      'site': self.site, 'production_department': self.hall}
+                                     for number in range(4)])
+
+        def cost(ids):
+            # Read back as the engine reads them (alarms.engine.run_once's notify), never instances with their site
+            # cached (review 4, R1).
+            with CaptureQueriesContext(connection) as captured:
+                alarms = list(Alarm.objects.filter(pk__in=ids).select_related('point'))
+                router = routing.Router(timezone.now(), alarms)
+                for alarm in alarms:
+                    self.assertIn('keeper', {user.username for user, _rule in router.recipients(alarm, 0)})
+            return len(captured)
+        self.assertEqual(cost([self.alarm.pk]), cost([self.alarm.pk, *[alarm.pk for alarm in more]]))
+
+
+class DeletePlanTests(ReviewCase):
+    def test_the_plan_never_says_how_many_records_the_person_may_not_see(self):
+        with sealing.as_viewer(self.staff):
+            plan = plan_delete(self.hall)
+        self.assertFalse(plan.can_delete)
+        restricted = [str(blocker) for blocker in plan.blockers if 'may not see' in str(blocker)]
+        self.assertEqual(len(restricted), 1)
+        self.assertFalse(any(character.isdigit() for character in restricted[0]))
+
+
+class ResearcherRoleTests(ReviewCase):
+    def test_a_member_with_change_rights_is_not_the_lead(self):
+        member = world.person('member', *[f'experiments.{code}' for code in RESEARCHER if 'experiment' in code])
+        member.groups.add(role('Extra', 'view_experiment'))
+        Member.objects.create(experiment=self.experiment, user=member, role='researcher')
+        self.client.force_login(member)
+        response = self.client.post(reverse('experiments:experiment_team', args=[self.experiment.pk]),
+                                    rows_data('team', [{'user': member.pk, 'role': 'lead'}], record=self.experiment))
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(services.is_lead(self.lead, self.experiment))
+
+
+class VoidedParentTests(ReviewCase):
+    def test_a_voided_open_harvest_keeps_its_record_for_whoever_has_work_hidden(self):
+        """W1: a child sealed with its parent (`via`) is hidden when the parent is hidden, not when it is voided: the
+        record of a voided harvest on an open tank stays readable to a person from whom X is hidden."""
+        from decimal import Decimal
+        from farm.handling import check
+        from farm.models import HarvestRecord
+        from farm.stock import services as stock_services
+        day = self.today - timedelta(days=1)
+        with withdrawal_gate.opened('test: an open harvest written and voided'):
+            harvest = stock_services.record_harvest(
+                self.boss, unit=self.open_tank, batch=self.open_batch, day=day, count=10,
+                measured_weight_kg=Decimal('0.6'), facility=self.facility,
+                handling_ack=check.assess('harvest', self.open_tank, day, self.open_batch).fingerprint)
+            stock_services.void(self.boss, harvest, 'Typed on the wrong day', ack=True)
+        self.assertTrue(type(harvest).all_objects.get(pk=harvest.pk).is_deleted)
+        with sealing.as_viewer(self.researcher):
+            self.assertTrue(HarvestRecord.all_objects.filter(operation=harvest.pk).exists())
+
+
+class SealingStartsWithTheStartTests(ReviewCase):
+    """W3, the coordinator's decision of 2026-11-25: a draft seals nothing; sealing starts when the experiment starts;
+    days already passed are sealed only by a person who holds Oversee."""
+
+    def test_a_draft_placed_on_a_tank_hides_nothing_of_it(self):
+        from ..models import ExperimentGroup, Replicate, ReplicateUnit
+        from core.codes import next_code
+        draft = Experiment.objects.create(code=next_code(Experiment, f'E-{self.today.year}-'),
+                                          name='Draft on the open tank', site=self.site,
+                                          species=self.salmon, duration_days=30,
+                                          starts_on=self.today - timedelta(days=10))
+        group = ExperimentGroup.objects.create(experiment=draft, name='Only group')
+        replicate = Replicate.objects.create(group=group, number=1)
+        ReplicateUnit.objects.create(replicate=replicate, unit=self.open_tank, from_on=self.today - timedelta(days=10),
+                                     until_on=self.today + timedelta(days=20))
+        self.assertEqual(draft.status, 'draft')
+        self.assertEqual(self.seen(self.researcher, Tank, pk=self.open_tank.pk), {self.open_tank.pk})
+        self.assertEqual(len(self.seen(self.researcher, FeedingRecord, unit=self.open_tank)), 1)
+
+    def test_sealing_days_already_passed_needs_oversee(self):
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Permission
+        Experiment.objects.filter(pk=self.experiment.pk).update(audience='open')
+        self.assertLess(self.experiment.starts_on, self.today)
+        with self.assertRaises(ValidationError):
+            services.set_audience(self.lead, self.experiment, 'sealed')
+        self.lead.user_permissions.add(Permission.objects.get(content_type__app_label='experiments',
+                                                              codename='oversee_experiment'))
+        lead = get_user_model().objects.get(pk=self.lead.pk)            # the rights read afresh
+        self.assertEqual(services.set_audience(lead, self.experiment, 'sealed').audience, 'sealed')
+
+    def test_the_platform_admins_account_does_not_seal_days_already_passed(self):
+        """Review 5, N6: the platform admin is a support account, never an overseer, even with Oversee through a role:
+        refused, in words that say why (its role says it holds Oversee), and a person who holds Oversee does it."""
+        from django.contrib.auth import get_user_model
+        Experiment.objects.filter(pk=self.experiment.pk).update(audience='open')
+        Member.objects.filter(experiment=self.experiment, role='lead').update(user=self.boss)
+        self.boss.groups.add(role('Fish care', 'oversee_experiment'))
+        boss = get_user_model().objects.get(pk=self.boss.pk)
+        with self.assertRaises(ValidationError) as refused:
+            services.set_audience(boss, self.experiment, 'sealed')
+        self.assertIn('platform admin’s account is not an overseer', str(refused.exception))
+        self.assertEqual(Experiment._base_manager.get(pk=self.experiment.pk).audience, 'open')
+
+
+class SiteClockTests(ReviewCase):
+    """Review 3, S4: a cell's days are its site's, so the seal reads a moment's day on that site's clock: a sample taken
+    in the first half hour of the cell's first day in Tokyo is sealed, one in the first half hour after its last day
+    is not, though on the company's clock (Oslo) both fall a day earlier."""
+
+    def test_a_sites_own_clock_draws_the_cells_edges(self):
+        from datetime import date, datetime
+        from decimal import Decimal
+        from zoneinfo import ZoneInfo
+        from core.codes import next_code
+        from farm.models import ProductionDepartment, WaterMeasurement
+        from farm.tests.helpers import point_of
+        from farm.tests.test_stock import make_unit
+        from ..models import ExperimentGroup, Replicate, ReplicateUnit
+        tokyo = Site.objects.create(name='Tokyo', code='TY', timezone='Asia/Tokyo')
+        hall = ProductionDepartment.objects.create(site=tokyo, name='Hall T', code='HT')
+        tank = make_unit('TY-01', hall)
+        first, last = date(2026, 11, 10), date(2026, 11, 12)
+        trial = Experiment.objects.create(code=next_code(Experiment, 'E-2026-'), name='Tokyo trial', site=tokyo,
+                                          species=self.salmon, duration_days=2, starts_on=first,
+                                          hypothesis='Tokyo', primary_endpoint='bfcr')
+        group = ExperimentGroup.objects.create(experiment=trial, name='Only')
+        replicate = Replicate.objects.create(group=group, number=1)
+        ReplicateUnit.objects.create(replicate=replicate, unit=tank, from_on=first, until_on=last)
+        with withdrawal_gate.opened('test: the trial started past the service'):
+            Experiment.objects.filter(pk=trial.pk).update(status='running', allocation_method='manual',
+                                                          allocation_note='By hand')
+        Member.objects.create(experiment=trial, user=self.lead, role='lead')
+        point, zone = point_of(tank), ZoneInfo('Asia/Tokyo')
+
+        def sample(day, hour, minute):
+            with withdrawal_gate.opened('test: water written straight in the database'):
+                return WaterMeasurement.objects.create(point=point, source='manual', ph=Decimal('7.2'),
+                                                       measured_at=datetime(day.year, day.month, day.day, hour, minute,
+                                                                            tzinfo=zone)).pk
+        before = sample(date(2026, 11, 9), 23, 30)
+        opening = sample(first, 0, 30)
+        closing = sample(last, 23, 30)
+        after = sample(date(2026, 11, 13), 0, 30)
+        self.assertEqual(self.seen(self.researcher, WaterMeasurement, point=point), {before, after})
+        self.assertEqual(self.seen(self.lead, WaterMeasurement, point=point), {before, opening, closing, after})
+
+
+class OneRuleTests(ReviewCase):
+    """Architecture audit 2026-11-26, M-13: the audience rule and Oversee each have one owner (experiments/sealing.py),
+    and every reader of them agrees: the seal's statement, the change token and the viewer for the audience; SQL and
+    Python for Oversee. core/tests_sealing.py's RULE_OWNERS holds that nobody states them again."""
+
+    def test_the_seal_the_token_and_the_viewer_read_one_audience_rule(self):
+        outsider = world.person('outsider', 'experiments.view_experiment')
+        for audience in Experiment.Audience.values:
+            Experiment.objects.filter(pk=self.experiment.pk).update(audience=audience)
+            experiment = Experiment._base_manager.get(pk=self.experiment.pk)
+            for user in (outsider, self.boss):
+                with self.subTest(audience=audience, user=user.username):
+                    with sealing.as_viewer(user):
+                        statement = Experiment._base_manager.filter(
+                            pk__in=provider.hidden_work('design')).filter(pk=experiment.pk).exists()
+                    token = str(experiment.pk) in provider.reach(user).hidden.get('design', ())
+                    viewer = not provider.in_team(experiment, provider.load(user))
+                    rule = audience in provider.barred_audiences(user.is_superuser)
+                    self.assertEqual((statement, token, viewer), (rule, rule, rule))
+                    self.assertEqual(rule, audience != 'open' if not user.is_superuser else audience == 'private')
+
+    def test_oversee_reads_the_same_in_sql_and_in_python(self):
+        holder = world.person('holder', 'experiments.oversee_experiment')
+        gone = world.person('gone', 'experiments.oversee_experiment', is_active=False)
+        plain = world.person('plain', 'experiments.view_experiment')
+        # The platform admin's account with Oversee through a role, and one without (review 4, L6; review 5, N5):
+        # neither is an overseer, in SQL as in Python.
+        admin = type(self.boss).objects.create_superuser('admin-with-oversee', 'awo@example.com', 'x')
+        admin.groups.add(role('Fish care', 'oversee_experiment'))
+        held = set(provider.holders().values_list('pk', flat=True))
+        for user in (holder, gone, plain, self.boss, admin, self.keeper):
+            with self.subTest(user=user.username):
+                fresh = type(user)._base_manager.get(pk=user.pk)
+                self.assertEqual(user.pk in held, provider.holds_oversee(fresh))
+        self.assertEqual((holder.pk in held, self.keeper.pk in held, self.boss.pk in held, admin.pk in held),
+                         (True, True, False, False))
+
+    def test_the_cells_view_seals_by_the_one_audience_rule(self):
+        """Review 5, N3: the view experiment_cells states the audience rule in SQL (a migration cannot read Python):
+        a started experiment has cells exactly when its audience is one of barred_audiences(False)."""
+        from ..models import SealedCell
+        for audience in Experiment.Audience.values:
+            with self.subTest(audience=audience):
+                Experiment.objects.filter(pk=self.experiment.pk).update(audience=audience)
+                with sealing.system('test: the cells of one experiment, as stored'):
+                    cells = SealedCell.objects.filter(work=self.experiment.pk).exists()
+                self.assertEqual(cells, audience in provider.barred_audiences(False))
+
+    def test_no_page_is_searched_raw_for_a_sealed_name(self):
+        """A sealed name ("XQZ", "SQZ", "DQZ") is looked for in a page only through world.page_text: a CSRF token or a
+        nonce spells three letters by chance (runs 45787013960, 45794140443)."""
+        import pathlib
+        raw = re.compile(r'assertNotContains\([^\n]*[XSD]QZ|assertNotIn\(b?[\'"][XSD]QZ[^\n]*\.content')
+        found = [f'{path.name}:{number}' for path in sorted(pathlib.Path(__file__).parent.glob('test_*.py'))
+                 for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1) if raw.search(line)]
+        self.assertEqual(found, [])

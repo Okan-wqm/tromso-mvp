@@ -1,3 +1,4 @@
 {% comment %} The chips of a unit from the placement registry (farm/placements.py): where it stands in work the farm does not own,
-   e.g. a trial's replicate. `chips` is a list of placements.Placement; none: nothing. {% endcomment %}
-{% for chip in chips %}{% if chip.url %}<a class="badge badge-experimental" href="{{ chip.url }}" title="{{ chip.title }}">{{ chip.label }}</a>{% else %}<span class="badge badge-experimental" title="{{ chip.title }}">{{ chip.label }}</span>{% endif %} {% endfor %}
+   e.g. a trial's replicate, and in full what everyone who works the unit must read (its `notice`: a trial's care and
+   biosecurity instructions). `chips` is a list of placements.Placement; none: nothing. {% endcomment %}{% load i18n %}
+{% for chip in chips %}{% if chip.url %}<a class="badge badge-experimental" href="{{ chip.url }}" title="{{ chip.title }}">{{ chip.label }}</a>{% else %}<span class="badge badge-experimental" title="{{ chip.title }}">{{ chip.label }}</span>{% endif %} {% if chip.notice %}<span class="notice-cell"><strong>{% trans "Care instructions" %}:</strong> {{ chip.notice }}</span> {% endif %}{% endfor %}

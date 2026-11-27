@@ -25,6 +25,7 @@ class Placement:
     label: str                   # the chip's text, e.g. "E-2026-001 · Control · R2"
     title: str = ''              # what it says on hover
     url: str = ''                # where the chip leads ('' for none)
+    notice: str = ''             # what everyone who works the unit must read, shown in full beside the chip, never on hover
 
 
 def register(provider):

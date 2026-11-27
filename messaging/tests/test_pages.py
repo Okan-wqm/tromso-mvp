@@ -311,7 +311,7 @@ class DatabaseViewerTests(PageTestCase):
             response = self.client.get(reverse('core:database_table', args=['messages']), query)
             self.assertNotContains(response, 'The secret recipe')
             self.assertEqual(len(response.context['grid'].rows), rows, query)
-        export = self.client.get(reverse('core:database_export', args=['messages']))
+        export = self.client.get(reverse('core:database_export', args=['messages']), {'reason': 'Checking the messages'})
         self.assertNotIn('secret', b''.join(export.streaming_content).decode())
         for table in ('conversations', 'conversation_participants', 'assistants'):
             self.assertEqual(self.client.get(reverse('core:database_table', args=[table])).status_code, 200)

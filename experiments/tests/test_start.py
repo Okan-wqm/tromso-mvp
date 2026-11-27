@@ -272,6 +272,7 @@ class StartPageTests(PageTestCase):
         super().setUp()
         self.create(starts_on=self.today.isoformat())
         self.trial = Experiment.objects.get()
+        Experiment.objects.filter(pk=self.trial.pk).update(audience='open')   # the roles here; sealed: test_access
         self.url = reverse('experiments:experiment_start', args=[self.trial.pk])
         self.edit = reverse('experiments:experiment_edit', args=[self.trial.pk])
 

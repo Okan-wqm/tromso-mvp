@@ -22,6 +22,7 @@ from typing import NamedTuple
 
 from django.db.models import F, IntegerField, Max, Min, Q, Sum, Value
 
+from core import sealing
 from farm.models import Batch, Site, StockMovement, StockOperation, Tank
 from farm.models.feeding import FeedTarget
 from farm.models.stock import MovementKind
@@ -45,10 +46,13 @@ def ledger(batch_ids, include_op=None):
     voided (the timeline before its void, farm/stock/services.py)."""
     live = Q(operation__is_deleted=False) | Q(operation_id=include_op) if include_op else Q(operation__is_deleted=False)
     opening = Value(None, output_field=IntegerField()) if not OPENING_BALANCES.get() else F('operation__opening_balance')
-    rows = list(StockMovement.objects.filter(live, batch_id__in=batch_ids).annotate(opening=opening).values_list(
-        'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
-        'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type',
-        'opening', 'batch__input_date'))
+    # Every line of the batches, as the system: a fold over part of a batch's lines is a wrong figure; what a person sees
+    # of it is narrowed where it is shown (the units they may see, core.sealing).
+    with sealing.system('the stock fold'):
+        rows = list(StockMovement.objects.filter(live, batch_id__in=batch_ids).annotate(opening=opening).values_list(
+            'id', 'operation_id', 'operation__kind', 'operation__date', 'unit_id', 'batch_id', 'kind', 'count_delta',
+            'avg_weight_g', 'pair', 'measured_weight_kg', 'reason', 'batch__species__cleaner_fish_type',
+            'opening', 'batch__input_date'))
     first = {}
     for row in rows:
         first[row[1]] = min(first.get(row[1], row[0]), row[0])
@@ -158,8 +162,11 @@ def spans():
     ledger in ONE grouped query. What `in_units`, `between` and `reach` are asked of, so that a reader of the medicine
     withdrawal finds the fish a hold can have reached without a query per unit or per batch, and without loading the
     ledger of a batch no hold can have reached."""
-    rows = (live_lines().order_by().values('unit_id', 'batch_id')
-            .annotate(first=Min('operation__date'), last=Max('operation__date'), fish=Sum('count_delta')))
+    # Who was where, for every unit, as the system: a reader of the withdrawal that missed a stay in a sealed tank
+    # would miss fish a hold reached (core.sealing). It is the reader's, never printed.
+    with sealing.system('the stock fold'):
+        rows = list(live_lines().order_by().values('unit_id', 'batch_id')
+                    .annotate(first=Min('operation__date'), last=Max('operation__date'), fish=Sum('count_delta')))
     return {(row['unit_id'], row['batch_id']): (row['first'], None if row['fish'] > 0 else row['last'])
             for row in rows}
 
@@ -678,3 +685,10 @@ def harvests_on(unit, first, last):
     harvests a unit's water history marks (Tank › Water)."""
     return (StockOperation.objects.filter(movements__unit=unit, movements__kind=MovementKind.HARVEST, date__gte=first,
                                           date__lte=last).distinct().order_by('date'))
+
+
+def lines_of(unit_ids, first, last):
+    """The live stock lines of these units whose operation is dated from `first` to `last` (both included), with their
+    operation and batch: the ledger's rows as recorded (an experiment's raw data, experiments/rawdata.py)."""
+    return live_lines().filter(unit__in=unit_ids, operation__date__range=(first, last)).select_related('operation',
+                                                                                                        'batch')

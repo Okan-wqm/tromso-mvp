@@ -744,3 +744,10 @@ def fed_in(unit, start, end):
     found = [(fed_moment(record), record) for record in FeedingRecord.objects.filter(unit=unit, date__gte=first, date__lte=last)
              .select_related('unit__production_department__site', 'feed')]
     return sorted(((at, record) for at, record in found if start <= at < end), key=lambda pair: pair[0])
+
+
+def records(unit_ids, first, last, target=None):
+    """The live feeding records of these units from `first` to `last` (both included), fed to `target` when given, with
+    their feed: the rows as recorded (an experiment's raw data, experiments/rawdata.py), read through the sealed manager."""
+    rows = FeedingRecord.objects.filter(unit__in=unit_ids, date__range=(first, last)).select_related('feed')
+    return rows if target is None else rows.filter(target=target)

@@ -16,6 +16,9 @@ class RecipientRuleResource(Resource):
     name, plural = _('alarm recipient rule'), _('alarm recipient rules')
     url_prefix = 'alarms/recipients'
     list_template = 'alarms/recipientrule_list.html'
+    # The page's safety notices (nothing is sent; a rule that names people without Oversee), one template for every
+    # look: the classic list draws it in its `notice` block, the new look above its list (landing review 5, N7).
+    list_above_next = 'alarms/_recipient_notices.html'
     icon = 'send'
     page_size = PAGE_SIZE
 
@@ -25,7 +28,7 @@ class RecipientRuleResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        return objects, {'connected': read.connected()}
+        return objects, {'connected': read.connected(), 'outsiders': read.rules_naming_outsiders()}
 
 
 class SeverityPolicyResource(Resource):

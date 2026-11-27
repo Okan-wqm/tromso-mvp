@@ -25,6 +25,9 @@ VIEWER = Viewer(
         # Sensor readings: billions of rows; the grid's pager would count them on every page. Their charts are the
         # Sensors panel's (README, Sensors).
         'sensors_reading',
+        # The sealed cells: a database view the seal reads (experiments migration 0004), made of the placements and the
+        # system bookings, which have tables of their own here.
+        'experiment_cells',
     ),
     # Columns never read from the database: their cells show a placeholder, they cannot be sorted or
     # filtered (that would reveal them), and the CSV export leaves them out. Every column that holds

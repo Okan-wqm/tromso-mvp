@@ -54,6 +54,16 @@ class DeployCheckTests(SimpleTestCase):
         self.assertEqual(self.found({'push': f'{DOUBLES}.RecordingTransport'}), [])
         self.assertEqual(self.found({'push': f'{DOUBLES}.NoSuchTransport'}), ['alarms.E001'])
         self.assertEqual(self.found({'push': f'{DOUBLES}.NotATransport'}), ['alarms.E002'])
+
+    def test_the_setting_is_a_dictionary_of_channels(self):
+        """Review 5, N8: a setting of another shape and a key that is no channel are refused by name, never a crash
+        of the check and never silently unused."""
+        self.assertEqual(self.found([f'{DOUBLES}.RecordingTransport']), ['alarms.E004'])
+        self.assertEqual(self.found(f'{DOUBLES}.RecordingTransport'), ['alarms.E004'])
+        self.assertEqual(self.found({'Push': f'{DOUBLES}.RecordingTransport'}), ['alarms.E005'])
+        self.assertEqual(self.found({'sms': f'{DOUBLES}.RecordingTransport', 'push': f'{DOUBLES}.RecordingTransport'}),
+                         ['alarms.E005'])
+        self.assertEqual(self.found(None), [])
         self.assertEqual(self.found({'push': f'{DOUBLES}.UndeclaredTransport'}), ['alarms.E003'])
         for bad in ('4000', 0, True, 4000.0):
             with self.subTest(bad=bad), override_settings(ALARM_TRANSPORTS={'push': f'{DOUBLES}.RecordingTransport'}):
@@ -81,7 +91,7 @@ class ByteLimitTests(Case):
     def queued(self, summary, language, seconds=0):
         Profile.objects.update_or_create(user=self.operator, defaults={'language': language})
         at = self.at(seconds=seconds)
-        alarm = services.open_alarm(source='system', parameter='sensors_failed', severity='critical', at=at,
+        alarm = services.open_alarm(source='system', farm_wide=True, parameter='sensors_failed', severity='critical', at=at,
                                     site=self.bergen, summary=summary)
         (made,) = services.queue_many([Notification(alarm=alarm, recipient=self.operator, channel='push', level=0,
                                                     queued_at=at)])

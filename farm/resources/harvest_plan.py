@@ -67,8 +67,9 @@ class HandlingPlanItemResource(FromAddress, Resource):
     @classmethod
     def filter_list(cls, request, objects):
         """The items the filters choose, each with what the list shows of it (computed, nothing stored)."""
-        sites = Site.objects.filter(production_departments__tanks__plan_items__isnull=False).distinct()
-        units = Tank.objects.filter(plan_items__isnull=False).distinct().order_by('code')
+        items = HandlingPlanItem.objects.all()                            # those the person may see (core.sealing)
+        sites = Site.objects.filter(pk__in=items.values('unit__production_department__site'))
+        units = Tank.objects.filter(pk__in=items.values('unit')).order_by('code')
         chosen = {key: request.GET.get(key, '') for key in ('kind', 'status', 'site', 'unit', 'from', 'to')}
         if chosen['kind'] in PlanKind.values:
             objects = objects.filter(kind=chosen['kind'])

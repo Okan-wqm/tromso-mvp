@@ -23,6 +23,7 @@ from sensors.tests import make_channel, make_connection, make_device, make_forma
 
 from .. import engine, read, rules as alarm_rules, sources
 from ..models import Alarm, Severity
+from . import farm_alarms
 
 PH = 'ph'
 SUMMARY = 'S-01: pH (NBS scale) cannot be evaluated: '
@@ -75,7 +76,7 @@ class RefusedSensorPhCase(SeaTestCase):
         """The open alarms but the alarm system's oxygen one: the fixture's unit holds fish and has no oxygen probe, so
         its oxygen with no fresh value is critical (owner decision of 2026-11-23; monitoring/tests/test_silent_oxygen.py
         holds it); these tests are about the pH."""
-        return Alarm.objects.filter(clearance__isnull=True).exclude(source=SYSTEM, parameter=OXYGEN)
+        return farm_alarms().filter(clearance__isnull=True).exclude(source=SYSTEM, parameter=OXYGEN)
 
     def stopped(self):
         """The open "No fresh value" warnings of the sensor rules: {channel number: summary}."""

@@ -16,6 +16,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 
+from core import sealing
 from farm.feeding import read as feeding_read
 from farm.models import Feed, FeedingRecord, Site
 from farm.stock.dates import site_earliest, site_today
@@ -59,6 +60,7 @@ def _lines(items=None, exclude_op=None):
 SITE = 'unit__production_department__site_id'
 
 
+@sealing.reads_as_system('the store')    # feed drawn from the store is a stock figure: every feeding counts (review F5)
 def feeding_days(*, feed_ids=None, site=None, item=None, first=None, last=None):
     """The feed given per site, feed and day (farm.feeding.read.given), by the site of the unit's department: rows
     {'feed_id', SITE, 'date', 'kg'}, the newest day first. What the store draws on a feed; the Stock tab's book and the
@@ -68,10 +70,12 @@ def feeding_days(*, feed_ids=None, site=None, item=None, first=None, last=None):
                            (first, 'date__gte'), (last, 'date__lte')):
         if wanted is not None and wanted != '':
             rows = rows.filter(**{lookup: wanted})
-    return (rows.order_by().values('feed_id', SITE, 'date').annotate(kg=feeding_read.given())
-            .order_by('-date', SITE, 'feed_id'))
+    # Read here, inside the system's reading (a queryset handed back would be read later, as the person).
+    return list(rows.order_by().values('feed_id', SITE, 'date').annotate(kg=feeding_read.given())
+                .order_by('-date', SITE, 'feed_id'))
 
 
+@sealing.reads_as_system('the store')    # feed drawn from the store is a stock figure: every feeding counts (review F5)
 def _feeding(feed_ids):
     """{feed id: {(site id, day): kg}} of the live feeding records, by the site of the unit's department."""
     found = defaultdict(dict)
@@ -94,6 +98,7 @@ def folds(items=None):
             for item in items}
 
 
+@sealing.reads_as_system('the store')    # feed drawn from the store is a stock figure: every feeding counts (review F5)
 def undelivered():
     """{feed: fold.Folded} of the feeds that were fed (a live feeding record on a site) and have no item in the store:
     an item is made at a feed's first delivery or reorder level (services.item_for), so a feed never delivered had no

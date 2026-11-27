@@ -2,10 +2,13 @@
 path of a Transport class}). None is connected today (the mobile app that receives the push comes later): the setting is
 empty, the outbox waits, and the pages say that nothing is sent. A transport plugs in by being named there; nothing else
 changes. The tests use a double (alarms/tests/doubles.py) that records what it would send."""
+import logging
 from dataclasses import dataclass
 
 from django.conf import settings
 from django.utils.module_loading import import_string
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -58,7 +61,69 @@ class Transport:
         raise NotImplementedError
 
 
+_imported = set()          # the paths that have imported (an import that worked is kept by Python itself)
+_said = set()              # what was logged already: a fault of the configuration is said once, not every pass
+
+
+def _say(key, message, *values, error=False):
+    """Logs a fault of the transports' configuration once per process and fault (`key`)."""
+    if key not in _said:
+        _said.add(key)
+        (logger.exception if error else logger.error)(message, *values)
+
+
+def _importable(path):
+    """Whether the transport class at `path` imports. One that did is remembered; one that did not is tried again the
+    next time it is asked (the next pass: a package installed, a file restored), its error logged once per error, never
+    raised (landing review 5, N8)."""
+    if path in _imported:
+        return True
+    try:
+        import_string(path)
+    except Exception as error:                                # a mistyped path, a missing package
+        _say(('import', path, f'{type(error).__name__}: {error}'),
+             'The alarm transport %s cannot be imported: its channel counts as not connected.', path, error=True)
+        return False
+    _imported.add(path)
+    return True
+
+
+def configured():
+    """{channel: dotted path} of settings.ALARM_TRANSPORTS, for the channels there are (alarms.models.Channel). A
+    setting that is not a dictionary names no transport, and a key that is no channel (a typing mistake: 'Push', a
+    channel not built yet) or a path that is not text is left out: each said once in the log, and refused by name by
+    `manage.py check --deploy` (alarms/checks.py). Reading it never fails."""
+    from .models import Channel
+    setting = getattr(settings, 'ALARM_TRANSPORTS', None) or {}
+    if not isinstance(setting, dict):
+        _say(('shape', type(setting).__name__), 'settings.ALARM_TRANSPORTS is a %s, not a {channel: path} dictionary: '
+             'no channel counts as connected.', type(setting).__name__)
+        return {}
+    unknown = sorted(repr(key) for key in setting if key not in Channel.values)
+    if unknown:
+        _say(('unknown', *unknown), 'settings.ALARM_TRANSPORTS names %s, not a notification channel (%s): left out.',
+             ', '.join(unknown), ', '.join(Channel.values))
+    found = {}
+    for channel in Channel.values:
+        path = setting.get(channel)
+        if path and not isinstance(path, str):
+            _say(('path', channel, repr(path)), 'settings.ALARM_TRANSPORTS[%r] is not a dotted path: the channel '
+                 'counts as not connected.', channel)
+        elif path:
+            found[channel] = path
+    return found
+
+
+def connected_channels():
+    """THE channels a notification can leave on now (landing review 4, R4, L8): those settings.ALARM_TRANSPORTS names a
+    transport for (`configured`) that imports. Never builds a transport to answer (a constructor may open a
+    connection); a setting of the wrong shape, a key that is no channel and a path that does not import are channels
+    not connected, logged: asking never fails, so it cannot roll back a pass's notify or supervision. The routing, the
+    safety net, the sender and the pages all ask here."""
+    return [channel for channel, path in configured().items() if _importable(path)]
+
+
 def transport_for(channel):
     """The transport of `channel`, or None when none is connected."""
-    path = getattr(settings, 'ALARM_TRANSPORTS', {}).get(channel)
+    path = configured().get(channel)
     return import_string(path)() if path else None

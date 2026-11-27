@@ -1,7 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, OuterRef, Q, Subquery
+from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
 from core.models import AuditedModel, CodedMixin, TreeMixin, in_tree_order
@@ -125,7 +126,10 @@ class System(CodedMixin, TreeMixin, AuditedModel):
     def in_tree_order(cls, wanted=None):
         """The live systems, site by site, each followed by the systems nested under it, with the number
         of live units in each (`units`)."""
+        Tank = cls._meta.get_field('tanks').related_model
         records = (cls.objects.select_related('site', 'production_department', 'parent')
-                   .annotate(units=Count('tanks', filter=Q(tanks__is_deleted=False)))
+                   # the units the person may see (core.sealing), never a count through a join
+                   .annotate(units=Coalesce(Subquery(Tank.objects.filter(system=OuterRef('pk')).order_by()
+                                                     .values('system').annotate(n=Count('pk')).values('n')), 0))
                    .order_by('site__name', 'name'))
         return in_tree_order(records, wanted)

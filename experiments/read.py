@@ -24,9 +24,11 @@ from decimal import Decimal
 
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import number_format
+from django.utils.formats import date_format, number_format
 from django.utils.translation import gettext as _
 
+from core import sealing
+from core.people import person_name
 from farm import placements as farm_placements
 from farm.feeding import read as feeding_read
 from farm.feeding.fold import LOST
@@ -36,7 +38,8 @@ from farm.models.stock import MovementKind
 from farm.stock import read as stock_read
 from farm.stock.dates import local_today, site_today
 
-from .models import ExperimentGroup, FactorKind, GroupLevel, Replicate, ReplicateUnit, Status
+from . import sealing as experiments_sealing
+from .models import ExperimentGroup, FactorKind, GroupLevel, Member, Replicate, ReplicateSystem, ReplicateUnit, Status
 
 
 @dataclass(frozen=True)
@@ -61,17 +64,36 @@ def cells(experiment):
                  placement.until_on, placement.pk) for placement in placements]
 
 
-def booked(unit_ids, first, last, exclude=None):
-    """{unit id: the Experiment that holds it} for the tanks held on some day from `first` to `last` (both included)
-    by an experiment other than `exclude`; one experiment a tank (the exclusion constraint allows no more)."""
+def booked(unit_ids, first, last, exclude=None, model=None, key='unit_id'):
+    """{unit id: (first day, last day)} of the booking that holds each tank on some day from `first` to `last` (both
+    included) for an experiment other than `exclude`; one booking a tank (the exclusion constraint allows no more).
+    Read as the system: a booking by an experiment the person may not read still holds the tank, and is said with its
+    days only, never with the experiment (the same answer whoever holds it). `model`, `key`: the system bookings."""
+    model = model or ReplicateUnit
     found = {}
-    rows = (ReplicateUnit.objects.filter(unit_id__in=list(unit_ids), from_on__lte=last, until_on__gte=first)
-            .select_related('replicate__group__experiment'))
-    if exclude is not None:
-        rows = rows.exclude(replicate__group__experiment=exclude)
-    for placement in rows.order_by('from_on'):
-        found.setdefault(placement.unit_id, placement.replicate.group.experiment)
+    with sealing.system('the booking check'):
+        rows = model.objects.filter(**{f'{key}__in': list(ids_of(unit_ids))}, from_on__lte=last, until_on__gte=first)
+        if exclude is not None:
+            rows = rows.exclude(replicate__group__experiment=exclude)
+        for row_key, from_on, until_on in rows.order_by('from_on').values_list(key, 'from_on', 'until_on'):
+            found.setdefault(row_key, (from_on, until_on))
     return found
+
+
+def booked_systems(system_ids, first, last, exclude=None):
+    """{system id: (first day, last day)}: `booked` for whole systems."""
+    return booked(system_ids, first, last, exclude, model=ReplicateSystem, key='system_id')
+
+
+def ids_of(items):
+    return [getattr(item, 'pk', item) for item in items]
+
+
+def booked_text(code, days):
+    """The one sentence a booking by another experiment is said with: the tank or system and the days, never which
+    experiment (it may be one the person may not read)."""
+    return _('%(code)s is booked by another experiment from %(first)s to %(last)s.') % {
+        'code': code, 'first': days[0].isoformat(), 'last': days[1].isoformat()}
 
 
 def error_df(experiment):
@@ -473,19 +495,73 @@ def _ration_off_diet(placed, protocols, presence, mine, units, today):
 # ---- the chip beside a unit on the farm's pages ------------------------------------------------------------------------
 def chips(units, user):
     """{unit id: [farm.placements.Placement]}: the experiment, group and replicate each unit is booked to on its site's today
-    (drafts reserve their tanks, so they show too), for a person who may read experiments; one read of `placements` for
-    each distinct day, so the farm's pages do not grow with their units."""
-    if not user.has_perm('experiments.view_experiment'):
-        return {}
+    (drafts reserve their tanks, so they show too), for a person who may read experiments and the experiment's places
+    (core.sealing: its team, a grantee of its systems, anyone for an open one); one read of `placements` for each
+    distinct day, so the farm's pages do not grow with their units.
+
+    A person who holds Oversee sees, on a tank of an experiment they may not read, the card instead (plan 3, owner
+    decision C2.5): "Research trial", its lead, its approval and its days, and in full its care and biosecurity
+    instructions (owner 2026-11-24: whoever works the tank reads them); never its number, name, group, replicate or
+    team, and no link. Each such card read is in the read log (`oversee`)."""
     by_day = {}
     for unit in units:
         by_day.setdefault(local_today(unit), []).append(unit.pk)
     found = {}
-    for day, unit_ids in by_day.items():
-        for unit_id, cell in placements(unit_ids, day).items():
-            experiment = cell.group.experiment
-            found[unit_id] = [farm_placements.Placement(
-                label=f'{experiment.code} · {cell.group.name} · R{cell.replicate.number}',
-                title=f'{experiment.name} ({experiment.get_status_display()})',
-                url=reverse('experiments:experiment_detail', args=[experiment.pk]))]
+    if user.has_perm('experiments.view_experiment'):
+        for day, unit_ids in by_day.items():
+            for unit_id, cell in placements(unit_ids, day).items():
+                experiment = cell.group.experiment
+                # The group and the replicate are the design: a person who reads the experiment's places but not its
+                # design (a grantee of its water) sees its number alone (review F9).
+                design = 'design' in experiments_sealing.parts_of(experiment)
+                label = experiment.code
+                if design:
+                    label = f'{experiment.code} · {cell.group.name} · R{cell.replicate.number}'
+                found[unit_id] = [farm_placements.Placement(
+                    label=label,
+                    title=f'{experiment.name} ({experiment.get_status_display()})',
+                    url=reverse('experiments:experiment_detail', args=[experiment.pk]),
+                    notice=experiment.care_instructions)]
+    if experiments_sealing.holds_oversee(user):
+        for day, unit_ids in by_day.items():
+            for unit_id, card in cards([pk for pk in unit_ids if pk not in found], day).items():
+                found[unit_id] = [card]
+    return found
+
+
+def cards(unit_ids, day):
+    """{unit id: Placement} the card of the experiment each tank is booked to on `day`, read as the system (the card says
+    only what a person overseeing the tank must know), each card logged as an `oversee` read."""
+    if not unit_ids:
+        return {}
+    found = {}
+    with sealing.system('the oversee card'):
+        rows = (ReplicateUnit.objects.filter(unit_id__in=list(unit_ids), from_on__lte=day, until_on__gte=day,
+                                             replicate__is_deleted=False, replicate__group__is_deleted=False,
+                                             replicate__group__experiment__is_deleted=False)
+                .select_related('replicate__group__experiment'))
+        rows = list(rows)
+        # The leads of all the experiments at once (a wall of cards costs the same whatever its tanks).
+        leads = {}
+        for member in (Member.objects.filter(experiment__in={row.replicate.group.experiment_id for row in rows},
+                                             role='lead').select_related('user').order_by('experiment_id', 'pk')):
+            leads.setdefault(member.experiment_id, member.user)
+        lines = {}
+        for row in rows:
+            experiment = row.replicate.group.experiment
+            lines[row.unit_id] = (experiment, leads.get(experiment.pk), row.from_on, row.until_on)
+    for unit_id, (experiment, lead, first, last) in lines.items():
+        parts = [_('Lead: %(name)s') % {'name': person_name(lead)}] if lead else []
+        if experiment.approval_ref:
+            parts.append(_('Approval %(ref)s') % {'ref': experiment.approval_ref} + (
+                ' ' + _('valid until %(day)s') % {'day': date_format(experiment.approval_valid_until)}
+                if experiment.approval_valid_until else ''))
+        if experiment.on_call_phone:
+            parts.append(_('on call %(phone)s') % {'phone': experiment.on_call_phone})
+        parts.append(_('%(first)s to %(last)s') % {'first': date_format(first), 'last': date_format(last)})
+        found[unit_id] = farm_placements.Placement(label=_('Research trial'), title=' · '.join(parts), url='',
+                                                   notice=experiment.care_instructions)
+    # Logged against each experiment shown, once, so its lead reads it on Who looked (review F8): one statement.
+    sealing.log_accesses('oversee', 'experiment', [experiment.pk for experiment, *_rest in lines.values()],
+                         part='systems', route='experiments.read.cards')
     return found

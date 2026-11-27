@@ -115,9 +115,18 @@ AREAS = [
     # deleted. Who may do what to which experiment (its team) comes with the permissions plan. An experiment's read page
     # shows the figures of its own tanks read from the farm's records, without the farm areas' Read: kept on purpose (a
     # trial needs its own tanks' figures; owner decision F-168, 2026-11-10) and said under the area in the role matrix.
-    Area(_('Experiments'), 'experiments.Experiment',
+    # Oversee (core.sealing, experiments.sealing): the farm facts of every sealed experiment's tanks (their stock,
+    # feeding, water, health, lice, tasks and alarms) as for any tank, never the experiment's design, results or team;
+    # the experiment shows as a card (a research trial, its lead and phone, its approval, its days). Given by default to
+    # the roles that care for the fish (experiments migration 0005); the platform admin gives and withholds it (owner
+    # amendment C1), and the matrix says which duties it touches.
+    Area(_('Experiments'), 'experiments.Experiment', actions=('view', 'add', 'change', 'delete', 'oversee'),
          note=_('Read also shows the farm figures of an experiment’s own tanks (batches, fish, biomass, survival, feed '
-                'conversion) to a person without Read on the farm areas they come from.')),
+                'conversion) to a person without Read on the farm areas they come from.'),
+         duties=_('Oversee shows the fish of every confidential experiment’s tanks as farm facts (stock, mortality, '
+                  'feeding, water, health, lice, medicine withdrawal, tasks and night alarms), never the experiment’s '
+                  'design, results or team. A person without it does not see those tanks at all: give it to whoever '
+                  'must keep those fish alive or report on them.')),
     # Sensors: the configuration of where live values come from. Edit on Channels also saves a channel's calibrations.
     Area(_('Connections'), 'sensors.Connection'),
     Area(_('Payload formats'), 'sensors.PayloadFormat'),

@@ -28,6 +28,7 @@ EXCLUDED = {
 # {dotted function: why}: no write for a person.
 NOT_A_WRITER = {
     'farm.stock.services.voided': "the one void's shared step, called by the area's void inside its own checked call",
+    'experiments.services.is_lead': 'a question (is this person the experiment\u2019s lead), no write',
     'tasks.services.is_for': 'a question (is the task for this person), no write',
     'tasks.services.may_work_on': 'a question (may this person work on the task), no write',
     'tasks.services.withdraw': "replan's step, inside replan's checked call",

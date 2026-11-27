@@ -6,7 +6,7 @@ from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin
+from core.models import CODE, CODE_MESSAGE, AuditedModel, CodedMixin, SealedManager
 from farm.models.water import NBS, PH_SCALE_CHOICES
 from farm.water.parameters import PH
 
@@ -204,6 +204,8 @@ class Calibration(models.Model):
     created_at = models.DateTimeField(_('Created at'), auto_now_add=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+', verbose_name=_('Created by'))
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'sensors_calibration'

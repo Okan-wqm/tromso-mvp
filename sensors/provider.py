@@ -150,7 +150,7 @@ class SensorSource:
                     channel = binding.channel
                     spans.append((index, channel.channel_no, low, high, binding.valid_from, start,
                                   min(int(hold), channel.fresh_s)))
-                    channels[(index, channel.channel_no)] = (binding.role, channel)
+                    channels[(index, channel.channel_no)] = (channel, min(int(hold), channel.fresh_s))
         if not spans:
             return {}
         with connection.cursor() as cursor:
@@ -160,12 +160,18 @@ class SensorSource:
                 'count(DISTINCT r.hour) FILTER (WHERE r.good AND r.inside), count(*) FILTER (WHERE r.good AND r.inside) '
                 'FROM unnest(%s::integer[], %s::integer[], %s::timestamptz[], %s::timestamptz[], %s::timestamptz[], '
                 '%s::timestamptz[], %s::integer[]) AS w(i, channel_no, low, high, bound_from, day_start, hold_s) '
-                f'CROSS JOIN LATERAL (SELECT value, (quality & {BAD_MASK}) = 0 AS good, ts >= w.low AS inside, '
+                # a row stands for the water until the next stored row of any quality, at most the hold; with a next
+                # row of a run (n > 1, the deadband's messages since this row), at the lower bound of the two: the
+                # water was as low as the run's lowest in between (REVIEW-2, N-7). The row after the span is read for
+                # its run alone.
+                'CROSS JOIN LATERAL (SELECT CASE WHEN lead(n) OVER w2 > 1 THEN least(value, lead(run_min) OVER w2) '
+                f'ELSE value END AS value, (quality & {BAD_MASK}) = 0 AS good, ts >= w.low AND ts < w.high AS inside, '
                 'floor(extract(epoch FROM ts - w.day_start) / 3600) AS hour, '
-                'extract(epoch FROM least(lead(ts) OVER (ORDER BY ts), '
+                'extract(epoch FROM least(lead(ts) OVER w2, '
                 "ts + w.hold_s * interval '1 second', w.high) - greatest(ts, w.low))::float8 AS held "
                 'FROM sensors_reading WHERE channel_no = w.channel_no '
-                "AND ts >= greatest(w.low - w.hold_s * interval '1 second', w.bound_from) AND ts < w.high) r "
+                "AND ts >= greatest(w.low - w.hold_s * interval '1 second', w.bound_from) "
+                "AND ts < w.high + w.hold_s * interval '1 second' WINDOW w2 AS (ORDER BY ts)) r "
                 'GROUP BY w.i, w.channel_no',
                 [list(column) for column in zip(*spans)])
             rows = cursor.fetchall()
@@ -180,10 +186,10 @@ class SensorSource:
             slot[2] = max(slot[2], int(hours))
             slot[3] += int(readings)
         for (index, channel_no), (weighted, seconds, hours, readings) in merged.items():
-            role, channel = channels[(index, channel_no)]
+            channel, held = channels[(index, channel_no)]
             found.setdefault(index, []).append(sources.Covered(
-                channel_no, role, weighted / seconds, seconds, hours, readings,
-                channel.range_min is not None and channel.range_max is not None))
+                channel_no, weighted / seconds, seconds, hours, readings,
+                channel.range_min is not None and channel.range_max is not None, held))
         return found
 
 

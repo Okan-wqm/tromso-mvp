@@ -16,8 +16,8 @@ A provider is an object with three methods, and a fourth it may have:
     covered(asks, code, hold) -> {index: [Covered]}   (optional)
         for each ask (target, start, end), by its index in `asks`, each channel's time-weighted mean of its good
         readings over that span, the seconds they cover (a reading holds until the channel's next stored row, good or
-        not, at most `hold` seconds), the hours of the span with a good reading, the number of good readings and
-        whether the channel has a range set: what a probe's day is closed from (farm/water/services.py; the
+        not, at most `hold` seconds, at the lower bound of a deadband run up to the next row), the hours of the span
+        with a good reading, the number of good readings, whether the channel has a range set and the hold it used: what a probe's day is closed from (farm/water/services.py; the
         degree-days read the closed days, farm/water/degree_days.py). A provider without it adds nothing.
     bound(targets, code, since, until) -> {target}
         the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
@@ -64,14 +64,15 @@ class SensorValue:
 class Covered:
     """One channel's good readings of one parameter over a span (`covered`): their time-weighted mean in the
     parameter's unit, the seconds of the span they covered, the hours of the span (counted from its start) that hold
-    one, how many there were, and whether the channel has a range set."""
+    one, how many there were, whether the channel has a range set, and the seconds one reading stood for at most (the
+    hold asked, never longer than the channel's freshness)."""
     channel_no: int
-    role: str
     mean: float
     seconds: float
     hours: int
     readings: int
     ranged: bool
+    hold: int
 
 
 @dataclass(frozen=True)

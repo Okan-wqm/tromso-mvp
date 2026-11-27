@@ -26,6 +26,7 @@ from ..models import Alarm, DeliveryAttempt, OutboxEntry, SeverityPolicy
 from .doubles import RecordingTransport
 from . import NOTHING_CONNECTED
 from .test_review_fixes import Case
+from core.testing import reads
 from farm.tests.helpers import may_record
 
 FAILING = {'push': 'alarms.tests.doubles.FailingTransport'}
@@ -138,17 +139,17 @@ class LoadTests(Case):
     @NOTHING_CONNECTED
     def test_twenty_thousand_waiting_without_a_transport_cost_a_round_and_the_supervision_little(self):
         self.fill(20_000)
-        started = time.monotonic()
-        found = outbox.send_due(self.now + timedelta(minutes=1))
-        round_took = time.monotonic() - started
-        started = time.monotonic()
-        stuck = outbox.stuck(outbox.alarm_rules.current(), self.now + timedelta(hours=1))
-        stuck_took = time.monotonic() - started
-        sys.stderr.write(f'\n[alarm outbox] 20,000 waiting, no transport: a round {round_took * 1000:.0f} ms, the '
-                         f'supervision {stuck_took * 1000:.0f} ms\n')
+        with reads() as round_:
+            found = outbox.send_due(self.now + timedelta(minutes=1))
+        with reads() as supervision:
+            stuck = outbox.stuck(outbox.alarm_rules.current(), self.now + timedelta(hours=1))
+        sys.stderr.write(f'\n[alarm outbox] 20,000 waiting, no transport: the most rows one statement handed back, a '
+                         f'round {round_.most_returned()}, the supervision {supervision.most_returned()}\n')
         self.assertEqual((found.waiting, found.backlog, stuck), (20_000, 20_000, []))
-        self.assertLess(round_took, 1.0)
-        self.assertLess(stuck_took, 1.0)
+        # The waiting are counted in the database, never handed to Python: of the statements that read the
+        # notifications, the round's hand back their count (one row), the supervision's nothing (none has failed).
+        self.assertLessEqual(round_.most_returned('alarm_notifications'), 1)
+        self.assertEqual(supervision.most_returned('alarm_notifications'), 0)
 
 
 @override_settings(ALARM_TRANSPORTS=FAILING)

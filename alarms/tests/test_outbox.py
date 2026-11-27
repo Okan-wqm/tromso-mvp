@@ -32,16 +32,19 @@ RAISING = {'push': 'alarms.tests.test_outbox.RaisingTransport'}
 
 
 class HangingTransport(Transport):
-    """A push service that does not answer until the test lets it."""
+    """A push service that does not answer until the test lets it (`answered`: the notifications it has answered, or
+    given up waiting on)."""
 
     channel = 'push'
     max_bytes = 4000
     release = threading.Event()
     entered = threading.Event()
+    answered = []
 
     def send(self, notification):
         type(self).entered.set()
         type(self).release.wait(60)
+        type(self).answered.append(notification.pk)
         return Sent('late')
 
 
@@ -182,10 +185,13 @@ class BadTransportTests(OutboxCase):
         HangingTransport.release.clear()
         self.addCleanup(HangingTransport.release.set)
         (notification,) = self.queued()
-        started = time.monotonic()
-        with self.assertLogs('alarms.outbox', level='ERROR'):
+        with self.assertLogs('alarms.outbox', level='ERROR'), mock.patch.object(
+                threading.Thread, 'join', autospec=True, side_effect=threading.Thread.join) as join:
             found = self.send(timeout=0.3)
-        self.assertLess(time.monotonic() - started, 5)
+        self.assertNotIn(notification.pk, HangingTransport.answered)   # the round ended while the push service hung
+        # and waited for it no longer than the timeout: one join of the send's thread, of 0.3 s
+        self.assertEqual([call.args[1:] for call in join.call_args_list
+                          if call.args[0].name == f'alarm-send-{notification.pk}'], [(0.3,)])
         self.assertEqual(found.failed, 1)
         self.assertEqual(DeliveryAttempt.objects.get().detail, 'no answer in 0.3 s')
 

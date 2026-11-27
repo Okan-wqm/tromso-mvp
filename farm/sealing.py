@@ -42,3 +42,10 @@ def declare_all():
     declare(m.HealthEvent.units.through, via=('healthevent',))
     declare(m.LiceCount, unit='unit', day='date')
     declare(m.WaterMeasurement, part='water', unit='point__unit', system='point__system', day='measured_at')
+
+    # The degree-days' facts: a probe's closed day as its water samples are (on its point's unit or system, or the
+    # system whose own sensors it is), and a floor with its course and batch.
+    declare(m.ProbeDay, part='water', unit='point__unit', system=('point__system', 'system'), day='day')
+    declare(m.ProbeDayClosing, mode=EXEMPT, reason='A day closed on one clock for every place: a date and a time zone, '
+                                                   'no unit, system or fish.')
+    declare(m.WithdrawalFloor, via=('treatment', 'batch'))

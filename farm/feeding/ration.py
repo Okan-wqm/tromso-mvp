@@ -21,7 +21,7 @@ walk (farm/feeding/fold.py) asks it at every feeding, so the projected growth an
   value (its own, else the protocol's: owner decision a) sits at the band's anchor weight and is read between two
   anchors without a jump, constant before the first and after the last (farm/feeding/growth.py, `interpolate`: the
   one place). `step`: the fish's own band's value, with a step at the band's edge (what every protocol did before,
-  and what the protocols that existed then keep: migration farm 0053).
+  and what the protocols that existed then keep: migration farm 0054).
 - The expected mortality (% a month, for the plan ahead only): the band's, else the protocol's, else none.
 The feed (its pellet) and the meals a day are the band's own: they change in steps. The SFR is read between two
 temperature columns because a step makes the ration jump by 15–20 % when a reading crosses a column by 0.1 °C, and

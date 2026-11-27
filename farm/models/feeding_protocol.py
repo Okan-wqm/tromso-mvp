@@ -109,7 +109,7 @@ class FeedingProtocol(Assignable, AuditedModel):
     mortality_pct_month = models.DecimalField(_('Expected mortality (%/month)'), max_digits=4, decimal_places=2,
                                               null=True, blank=True, validators=MORTALITY)
     # How each quantity is read for fish between two bands (owner decision 14, 2026-11-26): smooth, or a step at the
-    # band's edge. The protocols that existed before the rule have `step` (migration 0053): they behave as they did.
+    # band's edge. The protocols that existed before the rule have `step` (migration 0054): they behave as they did.
     fcr_between = _between(_('FCR between bands'))
     uneaten_between = _between(_('Uneaten feed between bands'))
     sfr_between = _between(_('SFR between bands'))

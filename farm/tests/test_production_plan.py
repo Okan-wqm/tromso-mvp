@@ -244,6 +244,7 @@ class GrowthPlanTests(PlanTestCase):
         row = PlatformSettings.get()
         saved = self.client.post(reverse('core:platformsettings_edit', args=[row.pk]), {
             'correction_window_days': 31, 'clock_tolerance_seconds': 300, 'unknown_withdrawal_days': 180,
+            'sensor_day_hours': 20, 'sensor_hold_seconds': 3600, 'assumption_cap_days': 7, 'probe_sample_tolerance_c': '1.0',
             'plan_horizon_days': 21, 'version': row.version})
         self.assertEqual(saved.status_code, 302)
         self.assertEqual(len(self.file()), 1 + 1 + 21)
@@ -258,6 +259,7 @@ class GrowthPlanTests(PlanTestCase):
         self.assertContains(self.client.get(self.growth_url()), 'Target 5,000 g: Not reached within 21 days at this rate.')
         refused = self.client.post(reverse('core:platformsettings_edit', args=[row.pk]), {
             'correction_window_days': 31, 'clock_tolerance_seconds': 300, 'unknown_withdrawal_days': 180,
+            'sensor_day_hours': 20, 'sensor_hold_seconds': 3600, 'assumption_cap_days': 7, 'probe_sample_tolerance_c': '1.0',
             'plan_horizon_days': 6, 'version': PlatformSettings.get().version})
         self.assertIn('plan_horizon_days', refused.context['form'].errors)
 

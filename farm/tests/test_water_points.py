@@ -628,22 +628,19 @@ class ReadTests(PointTestCase):
         System.objects.filter(pk=self.ras.pk).update(parent=parent)
         self.ras.refresh_from_db()
         parent_loop = point_of(parent)
-        sources = lambda unit, nested: [(source.via, source.owner.code, source.point.name)
-                                        for source in read.water_sources([unit], nested=nested)[unit.pk]]
-        self.assertEqual(sources(self.t1, True), [('unit', 'T-01', 'Middle'), ('system', 'R1', 'Loop'),
-                                                  ('system', 'PR', 'Loop')])
-        self.assertEqual(sources(self.t1, False), [('unit', 'T-01', 'Middle'), ('system', 'R1', 'Loop')])
-        every = [(source.via, source.owner.code, source.point.name)
-                 for source in read.water_sources([self.t1], nested=False, every_point=True)[self.t1.pk]]
-        self.assertEqual(every, [('unit', 'T-01', 'Middle'), ('unit', 'T-01', 'Bottom drain'),
-                                 ('unit', 'T-01', 'Side outlet'), ('system', 'R1', 'Loop')])
+        sources = lambda unit, nested: [(tier.via, tier.owner.code, tuple(point.name for point in tier.points))
+                                        for tier in read.tiers([unit], nested=nested)[unit.pk]]
+        own = ('unit', 'T-01', ('Middle', 'Side outlet', 'Bottom drain'))
+        self.assertEqual(sources(self.t1, True), [own, ('system', 'R1', ('Loop',)), ('system', 'PR', ('Loop',))])
+        self.assertEqual(sources(self.t1, False), [own, ('system', 'R1', ('Loop',))])
         # A9.1: every point of the unit's own water, the middle first; never its inlet (the supply stream)
         self.assertEqual(sources(self.pond, True), [])                      # in no system, no point of its own
         SamplingPoint.objects.filter(pk=self.mid1.pk).update(is_active=False)
-        self.assertEqual(sources(self.t1, False), [('system', 'R1', 'Loop')])      # an inactive point is not a source
+        self.assertEqual(sources(self.t1, False), [('unit', 'T-01', ('Side outlet', 'Bottom drain')),
+                                                   ('system', 'R1', ('Loop',))])      # an inactive point is not a source
         Tank.objects.filter(pk=self.t1.pk).update(system=None)
         self.t1.refresh_from_db()
-        self.assertEqual(sources(self.t1, True), [])
+        self.assertEqual(sources(self.t1, True), [('unit', 'T-01', ('Side outlet', 'Bottom drain'))])   # its own alone
         del parent_loop
 
     def test_the_feeding_temperature_follows_that_order(self):
@@ -670,8 +667,8 @@ class ReadTests(PointTestCase):
         self.sample(point=self.t1, hours=0, temperature_c='8')
         self.sample(point=self.loop, hours=0, temperature_c='11')
         temperatures = Temperatures([self.t1, self.t2], today - timedelta(days=1), today)
-        self.assertEqual(temperatures.of(self.t1.pk, today), D(8))                # the unit's own, not the inlet's
-        self.assertEqual(temperatures.of(self.t2.pk, today), D(11))               # else its system's loop
+        self.assertEqual(temperatures.of(self.t1.pk, today).value, D(8))          # the unit's own, not the inlet's
+        self.assertEqual(temperatures.of(self.t2.pk, today).value, D(11))         # else its system's loop
         self.assertIsNone(temperatures.of(self.t2.pk, today - timedelta(days=1)))
 
     def test_the_calculator_takes_the_values_of_a_unit_or_a_loop_from_its_middle_point(self):
@@ -694,12 +691,15 @@ class ReadTests(PointTestCase):
         self.assertEqual(set(bare), {'altitude_m'})
 
     def test_there_is_one_implementation_of_the_units_water(self):
-        """The feeding temperature and the withdrawal ask farm/water/read.py's `water_sources`, and no module outside
-        the water module reads the samples: the places a unit's water is read from are defined once."""
+        """The feeding temperature and the withdrawal ask farm/water/read.py's `tiers` (the one resolver of a unit's
+        places, over `water_sources`), and no module outside the water module reads the samples: the places a unit's
+        water is read from are defined once."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[1]
         for module in ('feeding/temperature.py', 'water/degree_days.py'):
-            self.assertIn('water_sources(', (root / module).read_text(encoding='utf-8'), module)
+            source = (root / module).read_text(encoding='utf-8')
+            self.assertIn('tiers(', source, module)
+            self.assertNotIn('water_sources(', source, module)          # no second resolver beside it
         readers = sorted(path.relative_to(root).as_posix() for path in root.rglob('*.py')
                          if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)
                          and 'WaterMeasurement' in path.read_text(encoding='utf-8'))

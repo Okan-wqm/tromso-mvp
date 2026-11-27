@@ -233,7 +233,10 @@ NOT_INPUT_TABLES = {
                  'units and loops only',
     'platform_settings': 'the correction window says how far back a guard READS (the first day a record can still be '
                          'dated on, S-03 review F-3); how long an unknown end holds (unknown_withdrawal_days, rule 8) '
-                         'IS an input: registered by its field in farm/apps.py and changed only through the guard',
+                         'and the rules of the degree-days (the hours and the hold of a probe day, the days that cap an '
+                         'assumed temperature) ARE inputs: registered by their fields in farm/apps.py and changed only '
+                         'through the guard; the tolerance a probe and the samples may differ by is said, never '
+                         'counted',
     'feeds': None,                           # registered (feed_type); its other columns are names
     'species': None,                         # registered (withdrawal_temperature_c); others are names
     'tanks': None, 'systems': None, 'water_sampling_points': None,
@@ -241,8 +244,11 @@ NOT_INPUT_TABLES = {
 # The code that works a withdrawal out from the rows it reads. A column a query only loads with its row (a unit's
 # measures, a feed's energy) is read when this code names its field; a column a query filters, joins or orders by is read
 # whatever names it.
+# The sensors' provider is one of them (the independent review of 2026-11-26, H-1): a column of the sensors a withdrawal
+# reader came to read, even one only loaded with its row, would be seen here. None is: the degree-days read the closed
+# probe days (farm.models.ProbeDay, registered whole), which only the closing service makes from the readings.
 READERS = ('farm.health.withdrawal', 'farm.water.degree_days', 'farm.water.read', 'farm.stock.read', 'farm.feeding.read',
-           'farm.handling.withdrawal')
+           'farm.handling.withdrawal', 'sensors.provider')
 
 
 class RegistryCoverageTests(LoopTestCase):
@@ -259,9 +265,27 @@ class RegistryCoverageTests(LoopTestCase):
         seen = check.assess('transport', self.t1, self.day(1), self.batch, operation='delivery').fingerprint
         stock_services.record_delivery(self.user, unit=self.t1, batch=self.batch, day=self.day(1), count=10,
                                        destination='Nordic Smolt AS', handling_ack=seen)
+        # A temperature probe on the loop, read all day yesterday, and the day closed: the readers read the closed day.
+        from datetime import datetime, time
+        from sensors import bindings
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        from ..models import ProbeDay
+        from ..models.site import zone_of
+        from ..water import services as water_services
+        may_record(self.user, 'add_binding')
+        probe = make_channel(make_device(make_connection(), make_format(), self.bergen), heartbeat_s=1200)
+        zone = zone_of(self.bergen)
+        bindings.move(self.user, probe, system=self.loop, at=datetime.combine(self.day(3), time.min, tzinfo=zone))
+        with connection.cursor() as cursor:
+            cursor.executemany('INSERT INTO sensors_reading (channel_no, ts, value) VALUES (%s, %s, %s)', [
+                (probe.channel_no, datetime.combine(self.day(1), time(hour), tzinfo=zone), 2.0) for hour in range(24)])
+        water_services.close_probe_days()
+        self.assertTrue(ProbeDay.objects.filter(counts=True).exists())
         with CaptureQueriesContext(connection) as queries:
             withdrawal.snapshot({self.batch.pk}, self.today)
             withdrawal.harvests_inside()
+        # the closed probe day is what the readers read of the probe (review N-14)
+        self.assertTrue(any('"probe_days"' in query['sql'] for query in queries.captured_queries))
         tables = {model._meta.db_table: model for model in apps.get_models(include_auto_created=True)}
         registered = {(model._meta.db_table, model._meta.get_field(name).column)
                       for model, fields in gate.REGISTRY.items() for name in (fields or ())}

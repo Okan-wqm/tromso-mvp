@@ -2,11 +2,11 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    """Every weighing line says how it was measured, and only a weighing does: held once 0053 has given the lines that
+    """Every weighing line says how it was measured, and only a weighing does: held once 0054 has given the lines that
     were there their source."""
 
     dependencies = [
-        ('farm', '0053_weight_source_and_step_rules'),
+        ('farm', '0054_weight_source_and_step_rules'),
     ]
 
     operations = [

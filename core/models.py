@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
@@ -360,6 +361,11 @@ WINDOW_DAYS = (1, 3650)           # a day back at least; ten years at most, whic
 CLOCK_TOLERANCE = (0, 3600)          # seconds: at most the sensors' ingest contract's hour
 UNKNOWN_WITHDRAWAL_DAYS = (1, 3650)  # a day at least; ten years at most, as the correction window
 PLAN_HORIZON_DAYS = (7, 3650)        # a week at least; ten years at most (the longest grow-outs are under four)
+# The degree-days' rules (farm/water/degree_days.py), food-safety parameters: changed only through the withdrawal guard.
+SENSOR_DAY_HOURS = (12, 24)          # the hours of a day with a good reading before a probe's day counts
+SENSOR_HOLD_SECONDS = (60, 3600)     # how long one reading stands for the water without a next one: an hour at most
+ASSUMPTION_CAP_DAYS = (1, 30)        # the measured days before a gap that cap an assumed temperature
+PROBE_SAMPLE_TOLERANCE = (0, 10)     # °C a probe's day and the day's samples may differ before it is said
 
 
 class PlatformSettings(AuditedModel):
@@ -379,6 +385,12 @@ class PlatformSettings(AuditedModel):
       goes through the withdrawal guard, which asks when it would free fish held today.
     - How many days ahead a production plan looks (farm/harvest/forecast.py): a target not reached within them is said
       as not reached, 730 until the owner sets another.
+    - The degree-days' rules (farm/water/degree_days.py; the coordinator's decisions of 26.11.2026, food-safety
+      parameters, each changed only through the withdrawal guard): how many hours of a day must hold a good reading
+      before a probe's day counts (20), how long one reading stands for the water without a next one (3600 s, never
+      more), and how many measured days before a gap cap the species' assumed temperature (7). A closed probe day
+      keeps the hours and the hold it was closed with. And how far a probe's day and the day's water samples may
+      differ before the withdrawal's text says so (1.0 °C; said only, the lower always counts).
     The alarms' rules (delays, escalation, deadbands) are the alarms app's own reference data, per severity and per
     parameter (alarms.SeverityPolicy, alarms.ParameterDeadband)."""
 
@@ -396,6 +408,18 @@ class PlatformSettings(AuditedModel):
     clock_tolerance_seconds = models.PositiveIntegerField(
         _('Clock tolerance (seconds)'), default=300,
         validators=[MinValueValidator(CLOCK_TOLERANCE[0]), MaxValueValidator(CLOCK_TOLERANCE[1])])
+    sensor_day_hours = models.PositiveSmallIntegerField(
+        _('A probe day needs readings in (hours)'), default=20,
+        validators=[MinValueValidator(SENSOR_DAY_HOURS[0]), MaxValueValidator(SENSOR_DAY_HOURS[1])])
+    sensor_hold_seconds = models.PositiveIntegerField(
+        _('A probe reading stands for (seconds)'), default=3600,
+        validators=[MinValueValidator(SENSOR_HOLD_SECONDS[0]), MaxValueValidator(SENSOR_HOLD_SECONDS[1])])
+    assumption_cap_days = models.PositiveSmallIntegerField(
+        _('Days before a gap that cap an assumed temperature'), default=7,
+        validators=[MinValueValidator(ASSUMPTION_CAP_DAYS[0]), MaxValueValidator(ASSUMPTION_CAP_DAYS[1])])
+    probe_sample_tolerance_c = models.DecimalField(
+        _('Probe and samples may differ by (°C)'), max_digits=3, decimal_places=1, default=Decimal('1.0'),
+        validators=[MinValueValidator(PROBE_SAMPLE_TOLERANCE[0]), MaxValueValidator(PROBE_SAMPLE_TOLERANCE[1])])
 
     plan_horizon_days = models.PositiveSmallIntegerField(
         _('A production plan looks ahead (days)'), default=730,
@@ -423,6 +447,21 @@ class PlatformSettings(AuditedModel):
                 condition=models.Q(plan_horizon_days__gte=PLAN_HORIZON_DAYS[0],
                                    plan_horizon_days__lte=PLAN_HORIZON_DAYS[1]),
                 name='chk_platform_settings_plan_horizon'),
+            models.CheckConstraint(
+                condition=models.Q(sensor_day_hours__gte=SENSOR_DAY_HOURS[0], sensor_day_hours__lte=SENSOR_DAY_HOURS[1]),
+                name='chk_platform_settings_sensor_day_hours'),
+            models.CheckConstraint(
+                condition=models.Q(sensor_hold_seconds__gte=SENSOR_HOLD_SECONDS[0],
+                                   sensor_hold_seconds__lte=SENSOR_HOLD_SECONDS[1]),
+                name='chk_platform_settings_sensor_hold'),
+            models.CheckConstraint(
+                condition=models.Q(assumption_cap_days__gte=ASSUMPTION_CAP_DAYS[0],
+                                   assumption_cap_days__lte=ASSUMPTION_CAP_DAYS[1]),
+                name='chk_platform_settings_cap_days'),
+            models.CheckConstraint(
+                condition=models.Q(probe_sample_tolerance_c__gte=PROBE_SAMPLE_TOLERANCE[0],
+                                   probe_sample_tolerance_c__lte=PROBE_SAMPLE_TOLERANCE[1]),
+                name='chk_platform_settings_probe_tolerance'),
             # Changed, never deleted: a DELETE is refused by the database too (core 0015, KeepRows).
             models.CheckConstraint(condition=models.Q(is_deleted=False), name='chk_platform_settings_kept'),
         ]

@@ -1,4 +1,4 @@
-"""What the growth plan's schema (0052) needs of the rows that were there before it:
+"""What the growth plan's schema (0053) needs of the rows that were there before it:
 
 - the weight source a weighing takes when it names none, "Manual sample" (code `manual`), and that source on every
   weighing line already in the ledger (they were all samples weighed by hand: there was no other way to enter one);
@@ -36,7 +36,7 @@ def remove(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('farm', '0052_production_plan_growth'),
+        ('farm', '0053_production_plan_growth'),
     ]
 
     operations = [migrations.RunPython(write, remove)]

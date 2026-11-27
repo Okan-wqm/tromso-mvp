@@ -1,4 +1,4 @@
-"""Migrations farm/0052–0054 (the production plan's growth) on a database that already has feeding protocols and
+"""Migrations farm/0053–0055 (the production plan's growth) on a database that already has feeding protocols and
 weighings: every protocol keeps the step at its bands' edges it always had (the rule is written on it), every
 weighing line is given the manual source before the database asks for one, and the migrations go back."""
 from datetime import date
@@ -8,8 +8,8 @@ from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 
-BEFORE = [('farm', '0051_water_freshness_kept')]
-AFTER = [('farm', '0054_weighing_names_its_source')]
+BEFORE = [('farm', '0052_probe_days_and_floors')]
+AFTER = [('farm', '0055_weighing_names_its_source')]
 D = Decimal
 
 

@@ -236,9 +236,11 @@ def hr_functions():
     """(module, function node) of every function of the HR production code."""
     import ast
     from pathlib import Path
+
+    from core.testing import is_test_module
     hr = Path(__file__).resolve().parent.parent
     for path in sorted(hr.rglob('*.py')):
-        if 'tests' in path.parts or 'migrations' in path.parts:
+        if 'migrations' in path.parts or is_test_module(path.relative_to(hr.parent)):
             continue
         for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
             if isinstance(node, ast.FunctionDef):

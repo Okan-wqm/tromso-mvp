@@ -17,6 +17,7 @@ from farm.models import ProductionDepartment, Site
 
 from .. import leave, read, services
 from ..models import AttendanceRecord, Employee, Holiday, LeaveType, Posting, Shift, ShiftAssignment
+from ..placed import placements
 from .helpers import user
 from .helpers_people import PeopleTestCase, employee, place
 from .test_leave import LeaveTestCase
@@ -56,13 +57,14 @@ class GoverningReadsTests(PeopleTestCase):
 
     def test_which_placement_covers_a_day_is_asked_of_one_helper(self):
         """N-4: the muster's sites, the crew's department, the week's clock and leave come from hr.placed's helpers."""
-        from .. import placed
         self.assertFalse(hasattr(read, 'sites_of'))
         self.assertFalse(hasattr(leave, 'holidays_for'))
-        for module, name in ((read, 'placed_on'), (read, 'placements'), (read, 'site_of_day'), (leave, 'site_of_day'),
-                             (leave, 'placements')):
-            with self.subTest(module=module.__name__, name=name):
-                self.assertIs(getattr(module, name), getattr(placed, name))
+        import inspect
+        for module in (read, leave):                    # they use hr.placed's helpers and define none of their own
+            own = {name for name, function in inspect.getmembers(module, inspect.isfunction)
+                   if function.__module__ == module.__name__}
+            with self.subTest(module=module.__name__):
+                self.assertFalse(own & {'placed_on', 'placements', 'site_of_day', 'site_of_posting'})
         place(employee('E-71', 'Muster'), self.dept_a)
         AttendanceRecord.objects.create(employee=self.in_a, clock_in=datetime(2026, 3, 2, 8, tzinfo=UTC), via='self')
         AttendanceRecord.objects.create(employee=self.in_fin, clock_in=datetime(2026, 3, 2, 8, tzinfo=UTC), via='self')
@@ -182,7 +184,7 @@ class ClearConfirmedTests(PeopleTestCase):
         row.refresh_from_db()           # the other lead's change went with the refused delete (one transaction)
         self.assertFalse(row.is_deleted)
         self.assertFalse(AuditLog.objects.filter(entity_id=str(row.pk), action='delete').exists())
-        self.assertIn('Someone planned one of these days at the same time. Look at the week again.',
+        self.assertIn('This plan was changed while you were looking at it: check it and delete it again.',
                       [str(message) for message in get_messages(response.wsgi_request)])
 
 
@@ -201,7 +203,7 @@ class LeaveAcrossAMoveTests(LeaveTestCase):
         self.one = LeaveType.objects.create(name='One day', code='ONE', annual_days=Decimal('1'))
 
     def test_each_day_is_charged_by_its_own_sites_holidays(self):
-        placed = read.placements([self.in_a.pk], date(2026, 3, 9), date(2026, 3, 10))[self.in_a.pk]
+        placed = placements([self.in_a.pk], date(2026, 3, 9), date(2026, 3, 10))[self.in_a.pk]
         self.assertEqual(leave.leave_days(date(2026, 3, 9), date(2026, 3, 10), placed), Decimal(1))
         request = services.file_leave(self.ann_user, self.in_a, self.one, date(2026, 3, 9), date(2026, 3, 10))
         self.assertEqual(request.status, 'pending')                       # one day of the one allowed
@@ -225,7 +227,7 @@ class ConfirmedPlanVersionTests(PeopleTestCase):
         response = self.client.post(url, {'version': '1'})
         row.refresh_from_db()
         self.assertEqual((row.is_deleted, row.shift), (False, late))
-        self.assertTrue(any('Someone else changed this' in str(message)
+        self.assertTrue(any('This plan was changed while you were looking at it' in str(message)
                             for message in get_messages(response.wsgi_request)))
 
 
@@ -259,14 +261,63 @@ class CellsReachedMatrixTests(PeopleTestCase):
         for viewer in viewers:
             cells = {(person.pk, day) for person in people for day in days}
             expected = {(person.pk, day) for person in people for day in days
-                        if Employee.objects.filter(pk=person.pk).exists() and scope.can_reach(viewer, person, day)}
+                        if scope.can_reach(viewer, person, day)}
             with self.subTest(viewer=viewer.username):
                 self.assertEqual(scope.cells_reached(viewer, cells), expected)
 
 
-class OnePlaceForTheRefusalTests(PeopleTestCase):
-    def test_the_dialog_and_the_batch_refuse_a_day_by_one_rule(self):
-        """F-10: one function says "reached that day / the user's person today / not theirs at all"."""
+class OneRefusalOfADayTests(PeopleTestCase):
+    """R4-6 (review 4): the dialog, the batch plan, leave and attendance refuse a day by one rule (services.reached):
+    the user's person today, on a day that is another lead's, is told the sentence; a person who is not theirs at all
+    is NotReached (a 403, the batch page's 404). Mo is in B through March and the lead's (A) from April."""
+
+    def test_every_writer_refuses_a_day_the_same_way(self):
+        from django.core.exceptions import ValidationError
+
         from .. import services
-        self.assertFalse(hasattr(services, '_reached'))
-        self.assertTrue(callable(services.reached))
+        lead = user('boss', *EVERY_VERB, group='Lead role')
+        ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=lead)
+        mo = employee('E-90', 'Mo')
+        place(mo, self.dept_b, date(2026, 1, 1), date(2026, 3, 31))
+        place(mo, self.dept_a, date(2026, 4, 1))
+        early = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
+        kind = LeaveType.objects.create(name='Annual', code='AN')
+        day = date(2026, 3, 10)
+        writes = {
+            'plan_day': lambda person: services.plan_day(lead, person, day, early, ''),
+            'plan_shifts': lambda person: services.plan_shifts(lead, [(person, day)], early),
+            'file_leave': lambda person: services.file_leave(lead, person, kind, day, day),
+            'enter_presence': lambda person: services.enter_presence(
+                lead, person, datetime(2026, 3, 10, 8, tzinfo=UTC), datetime(2026, 3, 10, 9, tzinfo=UTC), 'Phone'),
+        }
+        for name, write in writes.items():
+            with self.subTest(write=name):
+                with self.assertRaises(ValidationError):
+                    write(mo)                       # the lead's person today, B's on that day
+                with self.assertRaises(services.NotReached):
+                    write(self.in_b)                # never the lead's
+        self.assertEqual((ShiftAssignment.objects.count(), AttendanceRecord.objects.count()), (0, 0))
+
+
+class VoidConfirmedTests(PeopleTestCase):
+    """R4-3 (review 4): Attendance's void is of the stretch as confirmed: one corrected between crud's read and the
+    service's lock is not voided, with the reason (services.as_confirmed, as the plan's delete)."""
+
+    def test_a_stretch_corrected_after_its_void_was_confirmed_is_not_voided(self):
+        from ..resources.attendance import AttendanceRecordResource
+        lead = user('boss', *EVERY_VERB, group='Lead role')
+        ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=lead)
+        record = AttendanceRecord.objects.create(employee=self.in_a, clock_in=datetime(2026, 3, 2, 6, tzinfo=UTC),
+                                                 clock_out=datetime(2026, 3, 2, 14, tzinfo=UTC), via='entered', note='x')
+        delete = AttendanceRecordResource.delete_record.__func__
+
+        def raced(cls, request, confirmed):
+            AttendanceRecord.objects.filter(pk=record.pk).update(note='corrected', version=2)   # another lead's
+            return delete(cls, request, confirmed)
+        self.client.force_login(lead)
+        with mock.patch.object(AttendanceRecordResource, 'delete_record', classmethod(raced)):
+            response = delete_confirmed(self.client, reverse('hr:production_attendancerecord_delete', args=[record.pk]))
+        record.refresh_from_db()
+        self.assertFalse(record.is_deleted)
+        self.assertIn('This attendance record was changed while you were looking at it: check it and delete it again.',
+                      [str(message) for message in get_messages(response.wsgi_request)])

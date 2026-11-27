@@ -205,6 +205,14 @@ class ConfirmedVersionTests(RestoreTestCase):
                          302)
         self.assertTrue(System.all_objects.get(pk=self.system.pk).is_deleted)
 
+    def test_a_record_without_a_version_has_nothing_to_confirm_and_deletes(self):
+        """Review 4, R4-2: only a versioned record (an AuditedModel) must post its version; a role is erased outright."""
+        from django.contrib.auth.models import Group
+        role = Group.objects.create(name='Short-lived role')
+        self.client.force_login(self.admin_user)
+        self.assertEqual(self.client.post(reverse('core:group_delete', args=[role.pk])).status_code, 302)
+        self.assertFalse(Group.objects.filter(pk=role.pk).exists())
+
     def test_a_record_changed_since_its_confirmation_is_not_deleted(self):
         self.client.force_login(self.admin_user)
         System.objects.filter(pk=self.system.pk).update(name='RAS renamed', version=2)      # someone else's edit
@@ -212,6 +220,6 @@ class ConfirmedVersionTests(RestoreTestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(System.all_objects.get(pk=self.system.pk).is_deleted)
         said = [str(message) for message in response.wsgi_request._messages]
-        self.assertTrue(any('Someone else changed this' in text for text in said), said)
+        self.assertTrue(any('This system was changed while you were looking at it' in text for text in said), said)
         delete_confirmed(self.client, reverse('farm:system_delete', args=[self.system.pk]), {'version': '2'})
         self.assertTrue(System.all_objects.get(pk=self.system.pk).is_deleted)

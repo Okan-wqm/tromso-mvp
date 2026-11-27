@@ -153,6 +153,16 @@ class PageTests(TestCase):
                 self.assertTrue(response.context['form'].errors['correction_window_days'])
         self.assertEqual(PlatformSettings.get().correction_window_days, 31)
 
+    def test_every_number_says_the_bounds_the_database_holds(self):
+        """Review 4, R4-7: each number input carries its model field's bounds, one rule for all of them."""
+        from .forms import PlatformSettingsForm
+        form = PlatformSettingsForm(instance=self.row)
+        self.assertEqual({name: (form.fields[name].widget.attrs.get('min'), form.fields[name].widget.attrs.get('max'))
+                          for name in ('correction_window_days', 'unknown_withdrawal_days', 'clock_tolerance_seconds',
+                                       'plan_batch_cells')},
+                         {'correction_window_days': (1, 3650), 'unknown_withdrawal_days': (1, 3650),
+                          'clock_tolerance_seconds': (0, 3600), 'plan_batch_cells': (1, 5000)})
+
     def test_nobody_adds_or_deletes_it(self):
         self.client.force_login(self.owner)
         self.assertEqual(self.client.get('/administration/platform-settings/new/').status_code, 404)

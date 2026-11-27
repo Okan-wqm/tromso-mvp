@@ -41476,6 +41476,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py",

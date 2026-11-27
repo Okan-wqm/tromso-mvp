@@ -3827,7 +3827,7 @@ Messages the ingest service could not store, kept as evidence and counted.
 - **how it works**: The message is evidence: only its resolution is set, by a person (logged).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_dead_letter (never shown: payload)
 - **constraints**: uq_sensors_dead_letter_message (unique: connection_id, topic, reason, payload_sha256); chk_sensors_dead_letter_reason (check); chk_sensors_dead_letter_hash (check); chk_sensors_dead_letter_payload (check); chk_sensors_dead_letter_len (check); chk_sensors_dead_letter_count (check); chk_sensors_dead_letter_times (check); chk_sensors_dead_letter_resolved (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `sensors/tests/test_contract.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

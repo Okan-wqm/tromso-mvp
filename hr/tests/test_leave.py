@@ -13,6 +13,7 @@ from farm.models import ProductionDepartment, Site
 
 from .. import leave, read, services
 from ..models import Employee, Holiday, LeaveRequest, LeaveType, SchedulingSettings, Shift, ShiftAssignment
+from ..placed import placements
 from .helpers import PRIVATE, fields_of, user
 from .helpers_people import PeopleTestCase, TOP, employee, place
 
@@ -91,7 +92,7 @@ class LeaveTypeTests(LeaveTestCase):
 class LeaveDaysTests(LeaveTestCase):
     def placed(self):
         """Ann's placements: department A on the Bergen site."""
-        return read.placements([self.in_a.pk], FRIDAY, date(2026, 3, 13))[self.in_a.pk]
+        return placements([self.in_a.pk], FRIDAY, date(2026, 3, 13))[self.in_a.pk]
 
     def test_a_request_is_charged_for_working_weekdays_without_holidays(self):
         site = self.site

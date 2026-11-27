@@ -221,6 +221,11 @@ SECOND_WRITER_TABS = {
                           'second creator',
     'CardTemplateResource': 'crud creates and edits a template; monitoring.services.copy_template creates its copy: a '
                             'second creator',
+    # found when the scan learnt to follow a row or a queryset held in a name (the review of the HR branch, R4-1)
+    'HandlingPlanItemResource': "crud creates and edits a handling plan's item; farm.stock.services closes it with the "
+                                'handling it plans (locked and saved there)',
+    'KnowledgeEntryResource': "crud creates and edits an entry; knowledge.services marks it reviewed (locked and saved "
+                              'there)',
 }
 # {(module, model): (count, reason)}: an undeclared service-written model built or written by name outside its service.
 BUILT_ELSEWHERE = {
@@ -232,6 +237,9 @@ BUILT_ELSEWHERE = {
     ('farm/forms/health.py', 'Treatment'): (1, "the treatment form's empty instance; the save is the service's"),
     ('farm/forms/health.py', 'LiceCount'): (1, "the lice count form's empty instance; the save is the service's"),
     ('farm/water/rederive.py', 'WaterMeasurement'): (1, 'the pH re-derivation behind the gate (WRITES_ALLOWED)'),
+    ('sensors/management/commands/sensors_housekeeping.py', 'DeadLetter'): (
+        1, "the housekeeping command deletes the dead letters older than their keeping time; sensors.services marks "
+           'one handled'),
 }
 
 
@@ -272,98 +280,25 @@ def _service_forms():
             and getattr(form._meta.model, 'service_written', False)}
 
 
-def models_written(module, tree, models=None, service_forms=None):
-    """Counter of the models a module builds or writes by name, and those it logs (`audit.entity_type_of(Model)`,
-    counted 0: a write through a variable is seen by its log entry): {model: n}. What it sees, by the model's name
-    imported (an alias too) or through its app's models module (`models.Posting`, `import hr.models as m`):
-    `Model(...)`; `Model.<manager>....<write>()` through any manager (`objects`, `all_objects`, `_base_manager`,
-    `_default_manager`); `QuerySet(Model)....<write>()`; and `<name>.save()` of a name bound in the same function to a
-    model form of a declared model (`form = ShiftAssignmentForm(...)`; crud's own save is core/crud.py's). What it
-    does not see: a row held in a variable (`row.save()`), a related manager (`person.postings.create()`), a write
-    through `getattr` or `apps.get_model(...)`. Writes past every manager on a model it cannot name are
-    `low_level_writes`, which no production module may make."""
-    models = models or _models()
-    service_forms = _service_forms() if service_forms is None else service_forms
-    forms_by_name = {(form.__module__, form.__name__): model for form, model in service_forms.items()}
-    imported = _imported(module, tree)
-    found = Counter()
-
-    def of_app(source, model):
-        return source.split('.')[0] == model.__module__.split('.')[0] and 'models' in source.split('.')
-
-    def model_named(name):
-        source, original = imported.get(name, ('', ''))
-        return next((model for model in models.get(original, ()) if of_app(source, model)), None)
-
-    def model_through(chain):
-        """The model a chain names through a module (`models.Posting`, `m.Posting`, `hr.models.Posting`,
-        `posting.Posting` after `from hr.models import posting`) and its index in the chain; (None, 0) otherwise."""
-        if len(chain) < 2 or chain[0] not in imported:
-            return None, 0
-        source, original = imported[chain[0]]
-        where = (f'{source}.{original}' if original else source).split('.')
-        for index, name in enumerate(chain[1:], start=1):
-            if 'models' in where and models.get(name):
-                model = next((model for model in models[name] if of_app('.'.join(where), model)), None)
-                if model is not None:
-                    return model, index
-            where.append(name)
-        return None, 0
-
-    def form_named(name):
-        source, original = imported.get(name, ('', ''))
-        return next((model for (form_module, form_name), model in forms_by_name.items()
-                     if form_name == original and (form_module == source or form_module.startswith(source + '.'))),
-                    None)
-
-    for function in (node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))):
-        bound = {}                       # name: the declared model of the model form it holds, in this function
-        for node in ast.walk(function):
-            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) \
-                    and form_named(node.value.func.id):
-                bound.update({target.id: form_named(node.value.func.id) for target in node.targets
-                              if isinstance(target, ast.Name)})
-        for node in ast.walk(function):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'save' \
-                    and isinstance(node.func.value, ast.Name) and node.func.value.id in bound:
-                found[bound[node.func.value.id]] += 1
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        if isinstance(func, ast.Attribute) and func.attr == 'entity_type_of' and node.args:
-            argument = node.args[0]
-            model = model_named(argument.id) if isinstance(argument, ast.Name) else \
-                model_through(_chain(argument))[0] if isinstance(argument, ast.Attribute) else None
-            if model is not None:
-                found[model] += 0
-        elif isinstance(func, ast.Name) and model_named(func.id):
-            found[model_named(func.id)] += 1
-        elif isinstance(func, ast.Attribute) and func.attr not in SERVICE_WRITES:
-            model, index = model_through(_chain(func))
-            if model is not None and index == len(_chain(func)) - 1:
-                found[model] += 1                                        # models.Posting(...)
-        elif isinstance(func, ast.Attribute) and func.attr in SERVICE_WRITES:
-            chain = _chain(func.value)
-            through, index = model_through(chain)
-            passed = _passed_model(func.value)
-            if len(chain) > 1 and chain[1] in ROW_MANAGERS and model_named(chain[0]):
-                found[model_named(chain[0])] += 1
-            elif through is not None and len(chain) > index + 1 and chain[index + 1] in ROW_MANAGERS:
-                found[through] += 1
-            elif isinstance(passed, ast.Name) and model_named(passed.id):
-                # `QuerySet(Model)`, `QuerySet(model=Model)`, `sealing.unsealed(Model)` ... `.update()`: the rows as
-                # stored, past every manager (core/tests_sealing.py reads the same spellings for a sealed model)
-                found[model_named(passed.id)] += 1
-    return found
-
-
+MANAGER_NAMES = ('objects', 'all_objects', '_base_manager', '_default_manager')
 ROWS_AS_STORED = ('QuerySet', 'unsealed')         # calls that give a model's rows past every manager
-# {module: (count, reason)}: writes past every manager on a model the scan cannot name. Lower, never raise.
+# {module: (count, reason)}: writes whose model the scan cannot name (`low_level_writes`). Lower, never raise.
 LOW_LEVEL_ALLOWED = {
+    'core/crud.py': (1, "a tab's row list saved as one list: the rows of whatever model its formset edits "
+                        '(RowList.save), a list a service-written model never has (Resource.left_to_crud)'),
+    'core/models.py': (2, "the delete plan's own columns of the record itself (AuditedModel._write: mark_deleted, "
+                          'detach; every link into a declared model is PROTECT, so none is taken along), and the form '
+                          "key's row (EntryKey.note)"),
+    'experiments/services.py': (2, "an experiment's design rows renamed out of the way and touched (_park, _touch), "
+                                   'given by model inside save_design'),
+    'farm/equipment_types.py': (2, "the equipment types' catalogue on the historical model (a migration's RunPython)"),
     'farm/health/withdrawal.py': (2, "the what-if of a moved or restored record: the record's own row put as it would "
                                      'be, through its plain manager, inside a savepoint that is always rolled back '
                                      '(weighing a write, weighing a restore); never a write that stays'),
+    'hr/management/commands/seed_hr_demo.py': (1, "the demonstration's accounts (get_user_model(): no record any "
+                                                  'service writes)'),
+    'reports/services.py': (2, "a closure or a duty done taken away (_take_away, given by model) and a correction's "
+                               'row lists copied to its draft (start_correction)'),
 }
 
 
@@ -380,39 +315,144 @@ def _passed_model(receiver):
     return None
 
 
-def low_level_writes(tree):
-    """[(line, spelling)] of the writes a module makes past every manager on a model the scan cannot name, which could be
-    of any model, a declared one too: a write method on `<anything>._base_manager` / `._default_manager` whose model is
-    not a name (`type(row)._base_manager`, `row._meta.model._default_manager`), on `QuerySet(...)` or
-    `sealing.unsealed(...)` of a model held in a variable, and `save_base(...)` (a save past every check a model's
-    `save` holds). None may stand in the production code (rule S)."""
-    found = []
-    for node in ast.walk(tree):
-        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)):
-            continue
-        if node.func.attr == 'save_base':
-            found.append((node.lineno, 'save_base'))
-            continue
-        if node.func.attr not in SERVICE_WRITES:
-            continue
-        chain = _chain(node.func.value)
-        passed = _passed_model(node.func.value)
-        if passed is not None and not isinstance(passed, ast.Name):
-            found.append((node.lineno, '.'.join(chain) + '.' + node.func.attr))
-        elif passed is not None and isinstance(passed, ast.Name) and passed.id[:1].islower():
-            found.append((node.lineno, '.'.join(chain) + '.' + node.func.attr))
-        elif any(name in ('_base_manager', '_default_manager') for name in chain) and passed is None:
-            manager = next(index for index, name in enumerate(chain) if name in ('_base_manager', '_default_manager'))
-            if manager == 0 or not chain[manager - 1][:1].isupper() or _chain_starts_with_call(node.func.value):
-                found.append((node.lineno, '.'.join(chain) + '.' + node.func.attr))
-    return found
+def _scan_writes(module, tree, models=None, service_forms=None):
+    """(Counter {model: n} of the models a module builds or writes and can name, [(line, spelling)] of the writes whose
+    model it cannot name). One pass, one resolution: a model is named when the module imports it (an alias too) or
+    reaches it through a module it imports (`models.Posting`, `m.Posting`, `hr.models.Posting`, `posting.Posting`).
+
+    Named and counted: `Model(...)`; a write through any manager of a named model (`objects`, `all_objects`,
+    `_base_manager`, `_default_manager`); through `QuerySet(Model)`, `QuerySet(model=Model)` or `unsealed(Model)`;
+    through a queryset or manager held in a name in the same function (`rows = Posting.objects.filter(...)`,
+    `rows.update(...)`); the `save()` of a model form of a declared model held in a name; and what it logs
+    (`audit.entity_type_of(Model)`, counted 0).
+    Not named, low-level: a write through any manager, `QuerySet(...)` or `unsealed(...)` whose model is not one of
+    those names (`type(row).objects`, `row.__class__.all_objects`, `self.model.objects`, `Model = type(row);
+    Model._base_manager`, `QuerySet(model)`), a queryset held in a name from such a source, and `save_base(...)`.
+    Not seen at all: a row held in a variable and saved (`row.save()`, `row.delete()`), a related manager
+    (`person.postings.create()`), a model reached through `getattr` or `apps.get_model(...)`, raw SQL (rule W)."""
+    models = models or _models()
+    service_forms = _service_forms() if service_forms is None else service_forms
+    forms_by_name = {(form.__module__, form.__name__): model for form, model in service_forms.items()}
+    imported = _imported(module, tree)
+    found, low = Counter(), []
+
+    def of_app(source, model):
+        return source.split('.')[0] == model.__module__.split('.')[0] and 'models' in source.split('.')
+
+    dotted = module[:-3].replace('/', '.')
+    defined = {node.name for node in tree.body if isinstance(node, ast.ClassDef)}
+
+    def model_named(name):
+        if name in defined:              # a model of this very module (a models module's own classes)
+            return next((model for model in models.get(name, ()) if model.__module__ == dotted), None)
+        source, original = imported.get(name, ('', ''))
+        return next((model for model in models.get(original, ()) if of_app(source, model)), None)
+
+    def model_through(chain):
+        """The model a chain names through a module it imports, and its index in the chain; (None, 0) otherwise."""
+        if len(chain) < 2 or chain[0] not in imported:
+            return None, 0
+        source, original = imported[chain[0]]
+        where = (f'{source}.{original}' if original else source).split('.')
+        for index, name in enumerate(chain[1:], start=1):
+            if 'models' in where and models.get(name):
+                model = next((model for model in models[name] if of_app('.'.join(where), model)), None)
+                if model is not None:
+                    return model, index
+            where.append(name)
+        return None, 0
+
+    def owner(chain, at):
+        """The model `chain[:at]` names (the part before a manager), or None."""
+        if at == 1:
+            return model_named(chain[0])
+        model, index = model_through(chain[:at])
+        return model if model is not None and index == at - 1 else None
+
+    def form_named(name):
+        source, original = imported.get(name, ('', ''))
+        return next((model for (form_module, form_name), model in forms_by_name.items()
+                     if form_name == original and (form_module == source or form_module.startswith(source + '.'))),
+                    None)
+
+    def rows_of(expression, held):
+        """What an expression's rows are of: ('model', Model) when named, ('unnamed', None) when they are a model's rows
+        the scan cannot name, None when the expression is no model's rows."""
+        passed = _passed_model(expression)
+        if passed is not None:
+            model = model_named(passed.id) if isinstance(passed, ast.Name) else \
+                model_through(_chain(passed))[0] if isinstance(passed, ast.Attribute) else None
+            return ('model', model) if model is not None else ('unnamed', None)
+        chain = _chain(expression)
+        manager = next((index for index, name in enumerate(chain) if name in MANAGER_NAMES), None)
+        if manager is not None:
+            if manager == 0:
+                return ('unnamed', None)
+            model = owner(chain, manager)
+            return ('model', model) if model is not None else ('unnamed', None)
+        if chain[:1] and chain[0] in held:
+            return held[chain[0]]
+        return None
+
+    functions = [node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    seen = set()
+    for scope_node in [*functions, tree]:
+        held, bound = {}, {}           # names holding a model's rows; names holding a declared model's form
+        nodes = list(ast.walk(scope_node))
+        for node in nodes:
+            if isinstance(node, ast.Assign):
+                rows = rows_of(node.value, held) if isinstance(node.value, (ast.Call, ast.Attribute, ast.Name)) else None
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        if rows is not None:
+                            held[target.id] = rows
+                        if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) \
+                                and form_named(node.value.func.id):
+                            bound[target.id] = form_named(node.value.func.id)
+        for node in nodes:
+            if not isinstance(node, ast.Call) or id(node) in seen:
+                continue
+            seen.add(id(node))
+            func = node.func
+            if isinstance(func, ast.Attribute) and func.attr == 'save_base':
+                low.append((node.lineno, 'save_base'))
+            elif isinstance(func, ast.Attribute) and func.attr == 'save' and isinstance(func.value, ast.Name) \
+                    and func.value.id in bound:
+                found[bound[func.value.id]] += 1
+            elif isinstance(func, ast.Attribute) and func.attr == 'entity_type_of' and node.args:
+                argument = node.args[0]
+                model = model_named(argument.id) if isinstance(argument, ast.Name) else \
+                    model_through(_chain(argument))[0] if isinstance(argument, ast.Attribute) else None
+                if model is not None:
+                    found[model] += 0
+            elif isinstance(func, ast.Name) and model_named(func.id):
+                found[model_named(func.id)] += 1
+            elif isinstance(func, ast.Attribute) and func.attr not in SERVICE_WRITES:
+                model, index = model_through(_chain(func))
+                if model is not None and index == len(_chain(func)) - 1:
+                    found[model] += 1                                    # models.Posting(...)
+            elif isinstance(func, ast.Attribute) and func.attr in SERVICE_WRITES:
+                rows = rows_of(func.value, held)
+                if rows is None:
+                    continue
+                kind, model = rows
+                if kind == 'model':
+                    found[model] += 1
+                else:
+                    low.append((node.lineno, '.'.join(_chain(func.value)) + '.' + func.attr))
+    return found, sorted(set(low))
 
 
-def _chain_starts_with_call(node):
-    """Whether a receiver chain starts with a call or a subscript (`type(row)._base_manager`), not a name."""
-    while isinstance(node, (ast.Attribute, ast.Call)):
-        node = node.value if isinstance(node, ast.Attribute) else node.func
-    return not isinstance(node, ast.Name)
+def models_written(module, tree, models=None, service_forms=None):
+    """Counter of the models a module builds or writes, by name ({model: n}): `_scan_writes`' first part."""
+    return _scan_writes(module, tree, models, service_forms)[0]
+
+
+def low_level_writes(module, tree, models=None):
+    """[(line, spelling)] of the writes whose model the scan cannot name, which could be of any model, a declared one
+    too (`_scan_writes`' second part). None may stand in the production code but those LOW_LEVEL_ALLOWED lists
+    (rule S)."""
+    return _scan_writes(module, tree, models, service_forms={})[1]
 
 
 def service_written():
@@ -946,23 +986,36 @@ class OneWriterTests(SimpleTestCase):
             with self.subTest(source=source):
                 self.assertEqual({found.__name__ for found in models_written('hr/views.py', ast.parse(source))},
                                  {model})
+        from hr.models import Posting
+        held = chr(10).join(['from hr.models import Posting', 'def f():', '    rows = Posting.objects.filter(pk=1)',
+                             '    rows.update(title="x")', '    one = Posting.objects.get(pk=1)', '    one.save()'])
+        self.assertEqual(models_written('hr/views.py', ast.parse(held)).most_common(), [(Posting, 2)])
         for source in ('type(row)._base_manager.filter(pk=1).update(shift=None)',
                        'row._meta.model._default_manager.filter(pk=1).delete()',
                        'sealing.unsealed(model).filter(pk=1).update(title="x")',
                        'QuerySet(model).update(title="x")',
-                       'row.save_base(raw=True)'):
+                       'row.save_base(raw=True)',
+                       # review 4, R4-1: decided by whether the model is named, never by the case of a letter
+                       'def f(row):' + chr(10) + '    Model = type(row)' + chr(10)
+                       + '    Model._base_manager.filter(pk=row.pk).update(shift=None)',
+                       'def f(row):' + chr(10) + '    Model = type(row)' + chr(10) + '    QuerySet(Model).update(x=1)',
+                       'type(row).objects.filter(pk=1).update(x=1)',
+                       'row.__class__.all_objects.filter(pk=1).delete()',
+                       'self.model.objects.filter(pk=1).update(x=1)',
+                       'def f(row):' + chr(10) + '    rows = type(row).objects.filter(pk=1)' + chr(10)
+                       + '    rows.update(x=1)'):
             with self.subTest(source=source):
-                self.assertEqual(len(low_level_writes(ast.parse(source))), 1)
+                self.assertEqual(len(low_level_writes('hr/views.py', ast.parse(source))), 1)
 
-    def test_no_production_module_writes_past_every_manager(self):
-        """A write through `_base_manager`, `_default_manager`, `QuerySet(...)`, `sealing.unsealed(...)` or `save_base`
-        on a model the scan cannot name could be of any model, a declared one too: none in the production code."""
+    def test_no_production_module_writes_a_model_it_cannot_name_but_those_listed(self):
+        """A write whose model the scan cannot name (`low_level_writes`) could be of any model, a declared one too:
+        each module that makes one is listed with its count and reason (a ratchet)."""
         from core.tests_data_access import LOW_LEVEL_ALLOWED, low_level_writes
-        found = {path: len(low_level_writes(tree)) for path, tree in production_modules()}
+        found = {path: len(low_level_writes(path, tree)) for path, tree in production_modules()}
         self.assertEqual({path: count for path, count in found.items() if count},
                          {path: count for path, (count, _why) in LOW_LEVEL_ALLOWED.items()},
-                         'A write past every manager on a model the scan cannot name: name the model, or list it with '
-                         'its reason (a count, lowered by a fix, never raised).')
+                         'A write whose model the scan cannot name: name the model, or list it with its reason (a '
+                         'count, lowered by a fix, never raised).')
 
     def test_a_test_module_is_known_by_its_path_inside_the_project(self):
         """F-5: one predicate, on the path relative to the project (a checkout under a folder named tests is not all

@@ -383,8 +383,7 @@ def calls_a_service(tab, hook, seen=()):
     import textwrap
 
     from .tests_service_rights import NOT_A_WRITER
-    package = tab.__module__.split('.')[0]
-    services = importlib.import_module(f'{package}.services')
+    services = importlib.import_module(f'{tab.model._meta.app_label}.services')
     tree = ast.parse(textwrap.dedent(inspect.getsource(getattr(tab, hook))))
     calls = [_chain(node.func) for node in ast.walk(tree) if isinstance(node, ast.Call)]
     if any(chain[-1:] == ['save'] and chain[:1] == ['form'] for chain in calls):

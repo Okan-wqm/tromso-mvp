@@ -89,19 +89,23 @@ class LeaveTypeTests(LeaveTestCase):
 
 
 class LeaveDaysTests(LeaveTestCase):
+    def placed(self):
+        """Ann's placements: department A on the Bergen site."""
+        return read.placements([self.in_a.pk], FRIDAY, date(2026, 3, 13))[self.in_a.pk]
+
     def test_a_request_is_charged_for_working_weekdays_without_holidays(self):
         site = self.site
-        self.assertEqual(leave.leave_days(FRIDAY, date(2026, 3, 13), site), Decimal(6))         # Fri, Mon-Fri
+        self.assertEqual(leave.leave_days(FRIDAY, date(2026, 3, 13), self.placed()), Decimal(6))   # Fri, Mon-Fri
         Holiday.objects.create(day=TUESDAY, name='Every site')
         Holiday.objects.create(day=date(2026, 3, 11), name='Here', site=site)
         Holiday.objects.create(day=date(2026, 3, 12), name='Elsewhere', site=Site.objects.create(name='X', code='XX'))
-        self.assertEqual(leave.leave_days(FRIDAY, date(2026, 3, 13), site), Decimal(4))
-        self.assertEqual(leave.leave_days(FRIDAY, date(2026, 3, 13), None), Decimal(5))         # no site: company days only
+        self.assertEqual(leave.leave_days(FRIDAY, date(2026, 3, 13), self.placed()), Decimal(4))
+        self.assertEqual(leave.leave_days(FRIDAY, date(2026, 3, 13), []), Decimal(5))   # placed nowhere: every site's only
 
     def test_the_working_weekdays_are_a_setting(self):
         SchedulingSettings.get()
         SchedulingSettings.objects.update(working_weekdays=[0, 1, 2, 3, 4, 5])                  # Mon-Sat
-        self.assertEqual(leave.leave_days(FRIDAY, date(2026, 3, 9), self.site), Decimal(3))      # Fri, Sat, Mon
+        self.assertEqual(leave.leave_days(FRIDAY, date(2026, 3, 9), self.placed()), Decimal(3))  # Fri, Sat, Mon
 
     def test_a_request_over_new_year_is_split_by_year(self):
         self.assertEqual(leave.charged_by_year(date(2026, 12, 30), date(2027, 1, 5), None),

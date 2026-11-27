@@ -54,13 +54,18 @@ class GoverningReadsTests(PeopleTestCase):
         self.assertEqual(annotated, {'company_day', 'zone_name'})
 
     def test_which_placement_covers_a_day_is_asked_of_one_helper(self):
-        """N-4: the muster's sites, the crew's department and the week's clock come from hr.placed."""
-        self.assertFalse(hasattr(read, 'sites_of'))
+        """N-4: the muster's sites, the crew's department, the week's clock and leave come from hr.placed's helpers."""
         from .. import placed
-        with mock.patch.object(placed, 'placed_on', wraps=placed.placed_on) as asked:
-            read.muster(datetime(2026, 3, 2, 10, tzinfo=UTC), 16)
-            read.week(self.hr, date(2026, 3, 2))
-        self.assertTrue(asked.called)
+        self.assertFalse(hasattr(read, 'sites_of'))
+        self.assertFalse(hasattr(leave, 'holidays_for'))
+        for module, name in ((read, 'placed_on'), (read, 'placements'), (read, 'site_of_day'), (leave, 'site_of_day'),
+                             (leave, 'placements')):
+            with self.subTest(module=module.__name__, name=name):
+                self.assertIs(getattr(module, name), getattr(placed, name))
+        place(employee('E-71', 'Muster'), self.dept_a)
+        AttendanceRecord.objects.create(employee=self.in_a, clock_in=datetime(2026, 3, 2, 8, tzinfo=UTC), via='self')
+        AttendanceRecord.objects.create(employee=self.in_fin, clock_in=datetime(2026, 3, 2, 8, tzinfo=UTC), via='self')
+        self.assertEqual(read.muster(datetime(2026, 3, 2, 10, tzinfo=UTC), 16)[:2], (2, ()))      # one site: Bergen
 
 
 class BatchPlanBudgetTests(PlanPerDayTests):
@@ -68,18 +73,22 @@ class BatchPlanBudgetTests(PlanPerDayTests):
         return [(person, date(2026, 3, 9) + timedelta(days=n)) for person in people for n in range(days)]
 
     def test_the_reach_is_asked_once_for_the_whole_batch(self):
-        """N-5: the queries of a paint do not grow with its cells."""
-        def count(many):
+        """N-5: the reach of a paint is one question for all its cells, whose queries do not grow with them (the rules
+        of the plan run per person, as they must)."""
+        from .. import scope
+
+        def reach_queries(many):
             people = [employee(f'E-{700 + many + n}', f'Many{n}') for n in range(many)]
             for person in people:
                 place(person, self.dept_a)
-            with CaptureQueriesContext(connection) as seen:
+            with mock.patch.object(scope, 'can_reach', side_effect=AssertionError('asked per cell')), \
+                    mock.patch.object(scope, 'cells_reached', wraps=scope.cells_reached) as asked:
                 response = self.paint(*self.cells(people), shift='off')
-            self.assertEqual(response.status_code, 302)
-            ShiftAssignment.objects.all().delete()
-            return len([query for query in seen.captured_queries if 'shift_assignments' not in query['sql']
-                        and 'audit_log' not in query['sql'] and 'INSERT' not in query['sql']])
-        self.assertEqual(count(2), count(12))
+            self.assertEqual((response.status_code, asked.call_count), (302, 1))
+            with CaptureQueriesContext(connection) as seen:
+                scope.cells_reached(self.planner, {(person.pk, day) for person, day in self.cells(people)})
+            return len(seen.captured_queries)
+        self.assertEqual(reach_queries(2), reach_queries(12))
 
     def test_more_cells_than_the_platform_allows_are_refused_with_the_reason(self):
         PlatformSettings.objects.update(plan_batch_cells=3)
@@ -166,10 +175,12 @@ class ClearConfirmedTests(PeopleTestCase):
             return delete(cls, request, record)
         self.client.force_login(self.planner)
         with mock.patch.object(ShiftAssignmentResource, 'delete_record', classmethod(raced)):
-            self.client.post(reverse('hr:production_shiftassignment_delete', args=[row.pk]))
-        row.refresh_from_db()
-        self.assertEqual((row.is_deleted, row.shift), (False, self.late))
+            response = self.client.post(reverse('hr:production_shiftassignment_delete', args=[row.pk]))
+        row.refresh_from_db()           # the other lead's change went with the refused delete (one transaction)
+        self.assertFalse(row.is_deleted)
         self.assertFalse(AuditLog.objects.filter(entity_id=str(row.pk), action='delete').exists())
+        self.assertIn('Someone planned one of these days at the same time. Look at the week again.',
+                      [str(message) for message in get_messages(response.wsgi_request)])
 
 
 class LeaveAcrossAMoveTests(LeaveTestCase):

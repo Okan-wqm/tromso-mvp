@@ -3,8 +3,10 @@ stretch (hr.scope.reaches_stretch) and its SQL form (hr.scope.stretches): each p
 clocks, moves and moments, so a page that lists and a service that writes cannot answer one question two ways (the
 architecture audit of 26.11.2026, M-6)."""
 from datetime import date, datetime, time, timedelta, timezone as utc
+from zoneinfo import ZoneInfo
 
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.utils import timezone
 
 from farm.models import ProductionDepartment, Site
 
@@ -44,7 +46,8 @@ class GoverningTests(Clocks):
         for record in read.governed(AttendanceRecord.objects.select_related('employee')):
             rule = read.governing(record.employee, record.clock_in)
             with self.subTest(person=record.employee.last_name, moment=record.clock_in):
-                self.assertEqual((record.zone_name, record.governing_day), (rule.zone.key, rule.day))
+                shown = timezone.localdate(record.clock_in, ZoneInfo(record.zone_name))
+                self.assertEqual((record.zone_name, record.company_day, shown), (rule.zone.key, rule.company_day, rule.day))
 
     def test_the_rule_reads_the_placement_of_the_companys_day(self):
         # 12:00 UTC on 2 March: 13:00 on the 2nd in Oslo, so A's placement, and 01:00 on the 3rd on A's clock

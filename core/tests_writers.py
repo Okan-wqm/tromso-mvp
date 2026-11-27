@@ -78,7 +78,16 @@ class WritingContextTests(TestCase):
         import ast
 
         from .tests_data_access import production_modules
-        found = sorted({path for path, tree in production_modules() for node in ast.walk(tree)
-                        if isinstance(node, ast.Call) and getattr(node.func, 'attr', getattr(node.func, 'id', ''))
-                        in ('writing', 'writer') and path != 'core/writers.py'})
+        from .tests_data_access import _chain, _imported
+
+        def enters(path, tree):
+            imported = _imported(path, tree)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    chain = _chain(node.func)
+                    if chain[-1:] and chain[-1] in ('writing', 'writer') and (
+                            chain[:1] == ['writers'] or imported.get(chain[0], ('', ''))[0] in ('core.writers', 'core')):
+                        return True
+            return False
+        found = sorted(path for path, tree in production_modules() if path != 'core/writers.py' and enters(path, tree))
         self.assertEqual(found, ['hr/services.py'])

@@ -6651,6 +6651,14 @@ msgstr ""
 "eller _."
 
 #, python-format
+msgid ""
+"Earlier result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
+"%(newer_time)s."
+msgstr ""
+"Tidligere resultat: %(status)s %(value)s ved %(point)s %(time)s, erstattet av %(newer)s "
+"%(newer_time)s."
+
+#, python-format
 msgid "Earliest suitable harvest date: %(date)s."
 msgstr "Tidligste egnede høstedato: %(date)s."
 

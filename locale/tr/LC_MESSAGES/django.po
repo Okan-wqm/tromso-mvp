@@ -6670,6 +6670,14 @@ msgid "Each widget needs a short name: a lower-case letter, then up to 15 letter
 msgstr "Her bileşenin kısa bir adı olmalı: küçük bir harf, ardından en fazla 15 harf, rakam, - veya _."
 
 #, python-format
+msgid ""
+"Earlier result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on "
+"%(newer_time)s."
+msgstr ""
+"Önceki sonuç: %(point)s noktasında %(time)s tarihli %(status)s %(value)s, %(newer_time)s tarihli "
+"%(newer)s ile geçersiz kaldı."
+
+#, python-format
 msgid "Earliest suitable harvest date: %(date)s."
 msgstr "En erken uygun hasat tarihi: %(date)s."
 

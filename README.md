@@ -1765,9 +1765,10 @@ The judge's rule for each point (`judge.point_verdict`):
   analyser bound to the point included (the coordinator's decision on review 8, N1), that was not already superseded
   when it was entered:
   - behind a stored evidence value: entered after it;
-  - behind a live value: it is the point's newest stored evidence or of its minute or newer, or entered after that
-    evidence. So a lab critical keyed in behind an analyser's fresh OK is late, superseded by the analyser's value. A
-    kit sample superseded on time by a newer stored one is not said again.
+  - behind a live value: it is the point's newest stored evidence or of its minute or newer (a value the core refused
+    on its basis too: the read counts it there), or entered after that evidence. So a lab critical keyed in behind an
+    analyser's fresh OK is superseded by the analyser's value. A kit sample superseded on time by a newer stored one is
+    not said again.
   A live value is never late. A late result never raises an alarm of its own (the owner's decision), and it is always
   said, the worst first, then the newest, across the place's points.
 - **A value that still counts is never called superseded** (the coordinator's decision on review 8). Behind a live value
@@ -1775,7 +1776,11 @@ The judge's rule for each point (`judge.point_verdict`):
   it (review 3, N1: a fresh manual critical is never hidden by a newer sensor OK; a test names that rule). The judge
   says it as still counted (`PointVerdict.still_counted`, `PlaceVerdict.counted`): "Result of 27.11.2026 09:00:
   critical 0.8924 at Middle, still counted until 27.11.2026 21:00; the analyser reads 0.0011 on 27.11.2026 10:00."
-  Once it is no longer fresh it no longer counts, and it is said as a late result. Where it is said:
+  Once it no longer counts, the word is the coordinator's decision on review 9: "Late result" only for a sample
+  ENTERED after a newer value at its point already existed (a stored one, or a reading of the point's analyser newer
+  than its minute and older than its entry: `read.entered_late` asks the analyser's history once a point); a sample
+  entered on time and overtaken later by the analyser is an "Earlier result: critical … superseded by …". One rule
+  (`PointVerdict.said_as`) for the page, its history row and the log. Where it is said:
   - **On the point:** "Late result: critical 0.8924 at Middle on …, superseded by 0.0110 on …". The read judges the
     newest 50 late results of a point and says the five worst one by one. It counts the critical or warning ones it
     judged and did not say ("And 1 more late critical or warning result: see the history"). The late results past the
@@ -1783,7 +1788,9 @@ The judge's rule for each point (`judge.point_verdict`):
     cut is silent.
   - **In the activity log:** kept with the sample's entry, in English at rest. The entered samples are judged against
     their point's evidence directly, the analyser's fresh value included (`read.late_results_of`, `live_worked_at`), so
-    no cap applies and the entry order changes nothing.
+    no cap applies and the entry order changes nothing. The analyser's value is worked out as the page works it (its
+    TAN with the pH and temperature fresh in its own tier, else its system's), so the log and the page see the same
+    value.
   - **On its history row:** the same way, whatever else the page holds.
 - **The late check at entry never blocks the write.** It is one read for all the samples of a write, in a savepoint.
   If it fails, each point is read on its own, so one unreadable point does not strip the others' words. The samples of
@@ -1830,7 +1837,7 @@ from its start, each fresh now or not on its own axis, at the same minute or not
   held, what is only said, the attention, the refused record and the value-less ones said.
 - **`settled`.** On every prefix where it says "settled", it gives the full verdict.
 - **The rules one by one**, each in an example.
-- **`farm/tests/test_judge_mutants.py` is a fixed list of named regressions, not mutation testing.** It holds 59
+- **`farm/tests/test_judge_mutants.py` is a fixed list of named regressions, not mutation testing.** It holds
   one-line changes of the judge: the reviewers' mutants and this branch's rules. Each is built in memory and run
   against the test classes that guard its rule, and at least one test must FAIL: a test that only crashes is no kill.
   A line of the judge that changes is an edit of that list in the same commit.

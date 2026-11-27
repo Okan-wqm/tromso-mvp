@@ -45,13 +45,12 @@
     </section>
     {% endfor %}
     {% if plan.restricted %}<p class="affected-note">{% trans "Some records you may not see are affected too." %}</p>{% endif %}
-    <p>{% trans "It disappears from every list but is not erased: the record stays in the database, the activity log keeps its history, and it can be restored from the admin." %}</p>
-  {% else %}
-  <p>{% trans "This removes it permanently. The activity log keeps a record that it was deleted." %}</p>
   {% endif %}
+  <p>{{ outcome }}</p>
 
   <form method="post" action="{{ request.path }}">
     {% csrf_token %}
+    {% if version is not None %}<input type="hidden" name="version" value="{{ version }}">{% endif %}
     <div class="form-actions">
       <a class="button button-ghost" href="{{ list_url }}" data-modal-close>{% trans "Cancel" %}</a>
       <button type="submit" class="button button-inline button-danger"{% if plan and not plan.can_delete %} disabled{% endif %}>{% blocktrans trimmed %}Delete {{ name }}{% endblocktrans %}</button>

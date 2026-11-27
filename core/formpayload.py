@@ -304,6 +304,21 @@ def unshown_visible_fields(form):
     return [bound.name for bound in form if not bound.is_hidden and bound.name not in shown]
 
 
+def delete_outcome(obj, plan):
+    """What deleting does, said on the delete confirmation in both looks (the one place it is chosen): erased outright,
+    or soft deleted and restored from the admin, or, for a record its service alone writes (`service_written`), soft
+    deleted with no restore: one removed by mistake is entered again on its page (the data map says the same)."""
+    from django.utils.translation import gettext as _
+    if plan is None:
+        return _('This removes it permanently. The activity log keeps a record that it was deleted.')
+    if getattr(obj, 'service_written', False):
+        return _('It disappears from every list but is not erased: the record stays in the database and the activity '
+                 'log keeps its history. It is not restored from the admin: one deleted by mistake is entered again on '
+                 'its page.')
+    return _('It disappears from every list but is not erased: the record stays in the database, the activity log keeps '
+             'its history, and it can be restored from the admin.')
+
+
 def delete_payload(obj, plan, name, *, action, cancel):
     """The delete confirmation (crud/confirm_delete.html) as the native dialog draws it: the question, what is in the way,
     what goes with the record, what loses its link, what is kept and what stays linked, and what deleting does. Every
@@ -319,9 +334,11 @@ def delete_payload(obj, plan, name, *, action, cancel):
              'heading': _('Delete %(name)s') % {'name': name},
              'submit': _('Delete %(name)s') % {'name': name},
              'cancelLabel': _('Cancel'),
-             'blocked': None, 'groups': [], 'canDelete': plan is None or plan.can_delete}
+             'blocked': None, 'groups': [], 'canDelete': plan is None or plan.can_delete,
+             'outcome': delete_outcome(obj, plan),
+             # the record as the person confirms it: a delete of one changed since is refused (core.crud.DeleteView)
+             'version': getattr(obj, 'version', None)}
     if plan is None:
-        found['outcome'] = _('This removes it permanently. The activity log keeps a record that it was deleted.')
         return found
     if plan.blockers:
         found['blocked'] = {'title': _('This %(name)s cannot be deleted yet.') % {'name': name},
@@ -343,6 +360,4 @@ def delete_payload(obj, plan, name, *, action, cancel):
                                 'title': _('%(label)s linked to it') % {'label': group['label']},
                                 'note': _('They keep the link, but it does not count while this is deleted; restoring '
                                           'it brings the link back.')})
-    found['outcome'] = _('It disappears from every list but is not erased: the record stays in the database, the '
-                         'activity log keeps its history, and it can be restored from the admin.')
     return found

@@ -8,14 +8,17 @@ interface Group { kind: string; count: number; records: string[]; title: string;
 export interface ConfirmDeleteProps {
   action: string; cancel: string; cancelLabel: string; csrfToken: string; question: string; heading: string; submit: string;
   blocked: { title: string; reasons: string[] } | null; groups: Group[]; canDelete: boolean; outcome: string;
+  // the record's version as confirmed: a delete of a record changed since is refused by the server
+  version?: number | null;
 }
 
-export function ConfirmDelete({ action, cancel, cancelLabel, csrfToken, question, submit, blocked, groups, canDelete, outcome }: ConfirmDeleteProps) {
+export function ConfirmDelete({ action, cancel, cancelLabel, csrfToken, question, submit, blocked, groups, canDelete, outcome, version }: ConfirmDeleteProps) {
   return (
     <ServerForm action={action} csrfToken={csrfToken} label={submit} noValidate actions={<>
       <LinkButton href={cancel}>{cancelLabel}</LinkButton>
       <Button variant="danger" type="submit" isDisabled={!canDelete}>{submit}</Button>
     </>}>
+      {version !== null && version !== undefined ? <input type="hidden" name="version" value={String(version)} /> : null}
       <p className="ui-confirm-question">{question}</p>
       {blocked ? (
         <Notice tone="critical" title={blocked.title}>

@@ -46,7 +46,7 @@ from django.urls import path, reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
-from . import audit, formpanels, formprops, listprops, navigation, softdelete
+from . import audit, formpanels, formpayload, formprops, listprops, navigation, softdelete
 from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
 from .ui import is_next
@@ -1070,7 +1070,21 @@ class DeleteView(ResourceView):
             return render_page(request, 'crud/confirm_delete_next.html', self.context(
                 object=obj, props=formprops.confirm_delete_props(request, obj, plan, name=self.resource.name,
                                                                  action=request.path, cancel=self.url('list'))))
-        return render_page(request, 'crud/confirm_delete.html', self.context(object=obj, plan=plan))
+        return render_page(request, 'crud/confirm_delete.html', self.context(
+            object=obj, plan=plan, outcome=formpayload.delete_outcome(obj, plan), version=getattr(obj, 'version', None)))
+
+    def changed_since(self, request, obj):
+        """Whether `obj` (as read now) is not the record the person confirmed: the confirmation posts the version it
+        showed (`version`), and a record changed since is not deleted, said as an edit that crossed another is. A post
+        without one (an older page, a test's plain post) is taken as confirmed now."""
+        confirmed = request.POST.get('version', '')
+        if confirmed == '' or not hasattr(obj, 'version') or confirmed == str(obj.version):
+            return False
+        # Translators: %(name)s is the kind of record in lower case (e.g. site).
+        messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
+                                  'The form now shows their version; make your changes again.')
+                       % {'name': self.resource.name})
+        return True
 
     def post(self, request, pk):
         r = self.resource
@@ -1079,7 +1093,9 @@ class DeleteView(ResourceView):
             try:
                 with transaction.atomic():
                     obj = self.get_object(pk)
-                    r.delete_record(request, obj)
+                    if self.changed_since(request, obj):
+                        return done(request, self.url('delete', pk))
+                    r.delete_record(request, obj)        # obj is the confirmed version: the service compares with it
             except ValidationError as error:
                 messages.error(request, ' '.join(error.messages))
                 return done(request, self.url('list'))
@@ -1095,6 +1111,8 @@ class DeleteView(ResourceView):
             obj = self.locked_object(pk)
             if not r.allowed(request, obj, 'delete'):
                 raise PermissionDenied
+            if self.changed_since(request, obj):
+                return done(request, self.url('delete', pk))
             if isinstance(obj, AuditedModel):
                 plan = plan_delete(obj)
                 if not plan.can_delete:

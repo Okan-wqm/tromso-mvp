@@ -125,23 +125,37 @@ def _queued(channels=None):
     return rows if channels is None else rows.filter(channel__in=channels)
 
 
-def _late_warnings():
-    """The queue's non-critical alarm notifications whose alarm cleared before they were ever tried (a critical one is
-    still sent, saying it cleared: `text`)."""
-    return _queued().filter(Exists(AlarmClearance.objects.filter(alarm=OuterRef('alarm'))),
-                            kind=NotificationKind.ALARM).exclude(
-        Exists(DeliveryAttempt.objects.filter(notification=OuterRef('pk')))).exclude(alarm__severity=Severity.CRITICAL)
+def _cleared():
+    return Exists(AlarmClearance.objects.filter(alarm=OuterRef('alarm')))
 
 
-def _stale_words():
-    """The queue's words about a snooze whose alarm has cleared since: "snoozed" or "still open" is no longer true (N4)."""
-    return _queued().filter(Exists(AlarmClearance.objects.filter(alarm=OuterRef('alarm')))).exclude(
-        kind=NotificationKind.ALARM)
+# What makes a queued notification late, asked of each row of the queue (its alarm, its clearance, its attempts, each
+# by its key), never as the ids of the late ones read again from the notifications: a `pk IN` of a second read under a
+# NOT and an OR was planned as a scan of the whole history, twice a round (core.testing.plans, QueueTests).
+def _late_warning():
+    """A non-critical alarm notification whose alarm cleared before it was ever tried (a critical one is still sent,
+    saying it cleared: `text`)."""
+    return (Q(_cleared(), kind=NotificationKind.ALARM)
+            & ~Q(Exists(DeliveryAttempt.objects.filter(notification=OuterRef('pk'))))
+            & ~Q(alarm__severity=Severity.CRITICAL))
+
+
+def _stale_word():
+    """Words about a snooze whose alarm has cleared since: "snoozed" or "still open" is no longer true (N4)."""
+    return Q(_cleared()) & ~Q(kind=NotificationKind.ALARM)
 
 
 def _late():
-    """Both: given up, said why, a chunk a round after the round's sending."""
-    return _queued().filter(Q(pk__in=_late_warnings().values('pk')) | Q(pk__in=_stale_words().values('pk')))
+    """Either: given up, said why, a chunk a round after the round's sending."""
+    return _late_warning() | _stale_word()
+
+
+def _late_warnings():
+    return _queued().filter(_late_warning())
+
+
+def _stale_words():
+    return _queued().filter(_stale_word())
 
 
 def _open_critical(row):
@@ -165,7 +179,7 @@ def backlog(channels=None):
     oldest queued: the criticals of open, unacknowledged alarms first, then the other criticals (cleared or acknowledged),
     then the rest by severity (N3: a fresh open critical is never behind a backlog of cleared ones). Each carries
     `failures`, `last_failed_at`, `cleared`, `cleared_at` and `acknowledged`."""
-    rows = _annotated(_queued(channels).exclude(pk__in=_late().values('pk')))
+    rows = _annotated(_queued(channels).exclude(_late()))
     return sorted(rows, key=lambda row: (0 if _open_critical(row) else 1 if row.alarm.severity == Severity.CRITICAL else 2,
                                          -RANK[row.alarm.severity], row.queued_at, row.pk))
 
@@ -407,7 +421,7 @@ def send_due(now=None, timeout=None, stop=None, round_seconds=None, clock=time.m
     services.drop_delivered()
     channels = connected_channels()
     unsent = _queued()
-    elsewhere = unsent.exclude(channel__in=channels).exclude(pk__in=_late().values('pk')).aggregate(
+    elsewhere = unsent.exclude(channel__in=channels).exclude(_late()).aggregate(
         count=Count('pk'), oldest=Min('queued_at'))
     queue = backlog(channels)
     seen = [row.pk for row in queue if row.alarm.severity == Severity.CRITICAL]

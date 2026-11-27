@@ -361,6 +361,12 @@ msgid "%(count)d more critical alarms of one kind since %(since)s, %(open)d open
 msgstr "%(count)d kritiske alarmer til av samme slag siden %(since)s, %(open)d åpne nå: %(alarms)s"
 
 #, python-format
+msgid "%(count)d older late result was not read: see the history."
+msgid_plural "%(count)d older late results were not read: see the history."
+msgstr[0] "%(count)d eldre sent resultat ble ikke lest: se historikken."
+msgstr[1] "%(count)d eldre sene resultater ble ikke lest: se historikken."
+
+#, python-format
 msgid "%(count)d on site"
 msgid_plural "%(count)d on site"
 msgstr[0] "%(count)d på stedet"
@@ -3910,8 +3916,10 @@ msgid "Anchor value"
 msgstr "Ankerverdi"
 
 #, python-format
-msgid "And %(count)d more late results: see the history."
-msgstr "Og %(count)d sene resultater til: se historikken."
+msgid "And %(count)d more late critical or warning result: see the history."
+msgid_plural "And %(count)d more late critical or warning results: see the history."
+msgstr[0] "Og %(count)d sent kritisk resultat eller varselresultat til: se historikken."
+msgstr[1] "Og %(count)d sene kritiske resultater eller varselresultater til: se historikken."
 
 msgid "Another card template already has this name."
 msgstr "En annen kortmal har allerede dette navnet."

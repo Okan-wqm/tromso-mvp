@@ -1761,21 +1761,31 @@ The judge's rule for each point (`judge.point_verdict`):
 - **A refused sample newer than the evidence** is "cannot be evaluated" at every point of the tier the value is read
   from, the loop's for a unit read at its loop. It stays so (`PointWater.refused_newer`, the alarm system's warning,
   V-A) until an evidence value is newer than it.
-- **A late result** is a stored value measured before the minute of the point's stored evidence but entered after it
-  (a live value takes no part in what is late). It is no candidate and never an alarm (the owner's decision), and it
-  is always said:
+- **A late result** is a stored value measured before the minute of the point's evidence, a fresh live value of an
+  analyser bound to the point included (the coordinator's decision on review 8, N1), that was not already superseded
+  when it was entered:
+  - behind a stored evidence value: entered after it;
+  - behind a live value: it is the point's newest stored evidence or of its minute or newer, or entered after that
+    evidence. So a lab critical keyed in behind an analyser's fresh OK is late, superseded by the analyser's value. A
+    kit sample superseded on time by a newer stored one is not said again.
+  A live value is never late. A late result is no candidate and never an alarm (the owner's decision), and it is always
+  said, the worst first, then the newest, across the place's points:
   - **On the point:** "Late result: critical 0.8924 at Middle on …, superseded by 0.0110 on …". The read judges the
-    newest 50 late results of a point and says the five worst one by one, the rest as "And N more late results: see
-    the history". No cut is silent.
+    newest 50 late results of a point and says the five worst one by one. It counts the critical or warning ones it
+    judged and did not say ("And 1 more late critical or warning result: see the history"). The late results past the
+    50 are never judged, so they are said as not read ("9 older late results were not read: see the history"). No
+    cut is silent.
   - **In the activity log:** kept with the sample's entry, in English at rest. The entered samples are judged against
-    their point's evidence directly (`read.late_results_of`), so no cap applies and the entry order changes nothing.
+    their point's evidence directly, the analyser's fresh value included (`read.late_results_of`, `live_worked_at`), so
+    no cap applies and the entry order changes nothing.
   - **On its history row:** the same way, whatever else the page holds.
 - **The late check at entry never blocks the write.** It is one read for all the samples of a write, in a savepoint.
   If it fails, each point is read on its own, so one unreadable point does not strip the others' words. The samples of
   a point that fails are recorded with "Late result: could not be checked" in their entry (tested with an error and
-  with a database error).
+  with a database error). Only a sample that can give a value is marked (`read.gives_value`, the one predicate).
 - **The ceiling, fail-closed.** After `judge.CEILING` (512) candidates of a point without one evidence value, the
-  shell stops looking back. That is past two weeks of hourly samples. The point is then "cannot be evaluated: none of
+  shell stops looking back: its doubling rounds (2, 4, … 256) end with a round cut to the 2 left, so it reads exactly
+  512 (a test counts them at that value). That is past three weeks of hourly samples. The point is then "cannot be evaluated: none of
   its newest 512 samples gives an evaluable value". What was fetched is still judged, and it is never taken for the
   whole: an OK from elsewhere becomes "cannot be evaluated".
 
@@ -1812,7 +1822,7 @@ from its start, each fresh now or not on its own axis, at the same minute or not
   held, what is only said, the attention, the refused record and the value-less ones said.
 - **`settled`.** On every prefix where it says "settled", it gives the full verdict.
 - **The rules one by one**, each in an example.
-- **`farm/tests/test_judge_mutants.py` is a fixed list of named regressions, not mutation testing.** It holds 47
+- **`farm/tests/test_judge_mutants.py` is a fixed list of named regressions, not mutation testing.** It holds 59
   one-line changes of the judge: the reviewers' mutants and this branch's rules. Each is built in memory and run
   against the test classes that guard its rule, and at least one test must FAIL: a test that only crashes is no kill.
   A line of the judge that changes is an edit of that list in the same commit.
@@ -1828,11 +1838,11 @@ combinations. A branch that lets a sample without one of them give a value chang
 - **No chemistry for the rest.** A sample that cannot give a value never costs a call of the chemistry core. One
   query fetches each point's newest such sample (what is said of it).
 - **Late results.** One query fetches the newest `LATE_READ` (50) a point and counts the rest, never a sample already
-  fetched.
+  fetched. At entry the point's analysers are read once for all the samples of a write (`live_worked_at`).
 - **Cost.** A wall's queries do not grow with its units (`monitoring/tests/test_budget.py`). The rows stay bounded at
   depth, and the tests that count them assert the verdict too (`farm/tests/test_derived_fresh.py`): sixty samples
   without their inputs cost one row; sixty refused ones read the window once in log₂ rounds and the unit says
-  "cannot be evaluated"; sixty late ones read fifty and count ten.
+  "cannot be evaluated"; sixty late ones read fifty and say the nine past them as not read.
 - **The window still ends every look-back.** A held critical lasts up to 30 days (`read.WINDOW`; accepted by the
   coordinator as the safe side).
 

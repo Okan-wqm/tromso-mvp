@@ -366,6 +366,12 @@ msgstr ""
 "%(alarms)s"
 
 #, python-format
+msgid "%(count)d older late result was not read: see the history."
+msgid_plural "%(count)d older late results were not read: see the history."
+msgstr[0] "%(count)d eski geç sonuç okunmadı: geçmişe bakın."
+msgstr[1] "%(count)d eski geç sonuç okunmadı: geçmişe bakın."
+
+#, python-format
 msgid "%(count)d on site"
 msgid_plural "%(count)d on site"
 msgstr[0] "Sahada %(count)d kişi"
@@ -3922,8 +3928,10 @@ msgid "Anchor value"
 msgstr "Referans değeri"
 
 #, python-format
-msgid "And %(count)d more late results: see the history."
-msgstr "Ve %(count)d geç sonuç daha: geçmişe bakın."
+msgid "And %(count)d more late critical or warning result: see the history."
+msgid_plural "And %(count)d more late critical or warning results: see the history."
+msgstr[0] "Ve %(count)d kritik veya uyarı düzeyinde geç sonuç daha: geçmişe bakın."
+msgstr[1] "Ve %(count)d kritik veya uyarı düzeyinde geç sonuç daha: geçmişe bakın."
 
 msgid "Another card template already has this name."
 msgstr "Bu ad başka bir kart şablonunda zaten var."

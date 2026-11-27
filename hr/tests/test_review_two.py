@@ -204,3 +204,68 @@ class LeaveAcrossAMoveTests(LeaveTestCase):
         self.assertEqual(leave.leave_days(date(2026, 3, 9), date(2026, 3, 10), placed), Decimal(1))
         request = services.file_leave(self.ann_user, self.in_a, self.one, date(2026, 3, 9), date(2026, 3, 10))
         self.assertEqual(request.status, 'pending')                       # one day of the one allowed
+
+
+# ---- the third review (F:/dev/balik-notes/hr-one-path/REVIEW-3.md) ------------------------------------------------
+class ConfirmedPlanVersionTests(PeopleTestCase):
+    """F-3: the dialog's Delete clears the plan at the version the person confirmed: one changed between the
+    confirmation and the click is left, with the reason."""
+
+    def test_a_plan_changed_between_the_confirmation_and_the_click_is_not_cleared(self):
+        planner = user('planner', *EVERY_VERB, group='Planner role')
+        ProductionDepartment.objects.filter(pk=self.dept_a.pk).update(manager=planner)
+        early = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
+        late = Shift.objects.create(name='Late', code='LATE', starts_at=time(14), ends_at=time(22))
+        row = ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 2), shift=early)
+        self.client.force_login(planner)
+        url = reverse('hr:production_shiftassignment_delete', args=[row.pk])
+        self.assertContains(self.client.get(url), 'name="version" value="1"')
+        ShiftAssignment.objects.filter(pk=row.pk).update(shift=late, version=2)          # another lead, in between
+        response = self.client.post(url, {'version': '1'})
+        row.refresh_from_db()
+        self.assertEqual((row.is_deleted, row.shift), (False, late))
+        self.assertTrue(any('Someone else changed this' in str(message)
+                            for message in get_messages(response.wsgi_request)))
+
+
+class CellsReachedMatrixTests(PeopleTestCase):
+    """F-9: the reach of many cells (scope.cells_reached, intervals in Python) is the reach of each (scope.can_reach,
+    SQL), for every kind of viewer and person, on every day around their moves."""
+
+    def test_the_two_forms_agree(self):
+        from .. import scope
+        from ..models import OfficeDepartment
+        sub = OfficeDepartment.objects.create(site=self.site, name='Payroll', code='PAY', parent=self.finance)
+        boss = user('officeboss', 'view_employee', group='Office boss role')
+        OfficeDepartment.objects.filter(pk=self.admin_dept.pk).update(manager=boss)
+        moved, left, gone = employee('E-81', 'Moved'), employee('E-82', 'Left'), employee('E-83', 'Gone')
+        place(moved, self.dept_a, date(2026, 1, 1), date(2026, 3, 2))
+        place(moved, sub, date(2026, 3, 3))
+        place(left, self.dept_b, date(2026, 1, 1), date(2026, 3, 3))
+        Employee.objects.filter(pk=left.pk).update(left_on=date(2026, 3, 3))
+        place(gone, self.dept_a)
+        gone.soft_delete(self.hr)
+        closed = ProductionDepartment.objects.create(site=self.site, name='Closed', code='CLO', manager=self.lead_a)
+        shut = employee('E-84', 'Shut')
+        place(shut, closed)
+        closed.soft_delete(self.hr)
+        own = user('owner', 'view_employee', group='Own role')
+        Employee.objects.filter(pk=self.in_b.pk).update(user=own, first_name='', last_name='')
+        viewers = [self.lead_a, self.lead_b, boss, own, self.hr,
+                   user('allprod', 'view_employee', 'all_production_employee', group='All production role')]
+        people = list(Employee.all_objects.all())
+        days = [date(2026, 3, 1) + timedelta(days=n) for n in range(4)]
+        for viewer in viewers:
+            cells = {(person.pk, day) for person in people for day in days}
+            expected = {(person.pk, day) for person in people for day in days
+                        if Employee.objects.filter(pk=person.pk).exists() and scope.can_reach(viewer, person, day)}
+            with self.subTest(viewer=viewer.username):
+                self.assertEqual(scope.cells_reached(viewer, cells), expected)
+
+
+class OnePlaceForTheRefusalTests(PeopleTestCase):
+    def test_the_dialog_and_the_batch_refuse_a_day_by_one_rule(self):
+        """F-10: one function says "reached that day / the user's person today / not theirs at all"."""
+        from .. import services
+        self.assertFalse(hasattr(services, '_reached'))
+        self.assertTrue(callable(services.reached))

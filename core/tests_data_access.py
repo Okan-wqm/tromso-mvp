@@ -874,6 +874,47 @@ class OneWriterTests(SimpleTestCase):
                 self.assertEqual(len(found), 1, found)
                 self.assertTrue(found <= {'Posting', 'Employee'})
 
+    def test_the_scan_sees_the_low_level_spellings(self):
+        """The review of the HR branch, F-1: the spellings that pass every manager, by name or not."""
+        from core.tests_data_access import low_level_writes
+        for source, model in (
+                ('from hr.models import Posting' + chr(10) + 'QuerySet(model=Posting).update(title="x")', 'Posting'),
+                ('from hr.models import Posting' + chr(10) + 'sealing.unsealed(Posting).update(title="x")', 'Posting'),
+                ('import hr.models' + chr(10) + 'hr.models.Posting.objects.create(title="x")', 'Posting'),
+                ('from hr.models import posting' + chr(10) + 'posting.Posting.objects.create(title="x")', 'Posting')):
+            with self.subTest(source=source):
+                self.assertEqual({found.__name__ for found in models_written('hr/views.py', ast.parse(source))},
+                                 {model})
+        for source in ('type(row)._base_manager.filter(pk=1).update(shift=None)',
+                       'row._meta.model._default_manager.filter(pk=1).delete()',
+                       'sealing.unsealed(model).filter(pk=1).update(title="x")',
+                       'QuerySet(model).update(title="x")',
+                       'row.save_base(raw=True)'):
+            with self.subTest(source=source):
+                self.assertEqual(len(low_level_writes(ast.parse(source))), 1)
+
+    def test_no_production_module_writes_past_every_manager(self):
+        """A write through `_base_manager`, `_default_manager`, `QuerySet(...)`, `sealing.unsealed(...)` or `save_base`
+        on a model the scan cannot name could be of any model, a declared one too: none in the production code."""
+        from core.tests_data_access import low_level_writes
+        found = {path: low_level_writes(tree) for path, tree in production_modules()}
+        self.assertEqual({path: lines for path, lines in found.items() if lines}, {})
+
+    def test_a_test_module_is_known_by_its_path_inside_the_project(self):
+        """F-5: one predicate, on the path relative to the project (a checkout under a folder named tests is not all
+        tests)."""
+        from pathlib import Path
+
+        from django.test import override_settings
+
+        from core.testing import is_test_module
+        with override_settings(BASE_DIR=Path('/srv/tests/app')):
+            self.assertFalse(is_test_module('/srv/tests/app/hr/views.py'))
+            for path in ('/srv/tests/app/hr/tests/helpers.py', '/srv/tests/app/core/tests_platform.py',
+                         '/srv/tests/app/core/test_world.py', '/srv/tests/app/farm/tests.py', 'hr/tests/test_x.py'):
+                self.assertTrue(is_test_module(path), path)
+            self.assertFalse(is_test_module('hr/testing_tools.py'))
+
     def test_a_form_of_a_declared_model_is_saved_by_crud_only(self):
         """N-2 d: `form.save()` of a model form whose model declares service_written, outside core/crud.py."""
         source = chr(10).join(['from hr.forms.roster import ShiftAssignmentForm', 'def view(request):',

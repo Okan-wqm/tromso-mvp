@@ -163,3 +163,42 @@ class DeleteConfirmationPromiseTests(RestoreTestCase):
             self.assertContains(self.client.get(url), 'restored from the admin')
         for name in ('site', 'productiondepartment', 'system', 'species'):
             self.assertEqual(self.client.get(reverse(f'admin:farm_{name}_changelist')).status_code, 200)
+
+    def test_a_record_its_service_alone_writes_is_not_promised_a_restore(self):
+        """The review of the HR branch, F-2: the admin offers no restore of a planned day, so the confirmation, in both
+        looks, says it is entered again on its page instead."""
+        from datetime import date, time
+
+        from hr.models import Employee, Shift, ShiftAssignment
+        person = Employee.objects.create(employee_number='E-1', last_name='Alfa', joined_on=date(2026, 1, 1))
+        shift = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
+        plan = ShiftAssignment.objects.create(employee=person, day=date(2026, 3, 2), shift=shift)
+        self.client.force_login(self.admin_user)
+        url = reverse('hr:shiftassignment_delete', args=[plan.pk])
+        for look in ('classic', 'next'):
+            with self.subTest(look=look):
+                page = self.client.get(url, {'ui': look})
+                self.assertNotContains(page, 'restored from the admin')
+                self.assertContains(page, 'entered again on its page')
+
+
+class ConfirmedVersionTests(RestoreTestCase):
+    """The review of the HR branch, F-3: a delete is of the record as the person confirmed it. The confirmation carries
+    its version, as an edit does, and a record changed since is not deleted: said, as an edit is."""
+
+    def test_the_confirmation_carries_the_version_in_both_looks(self):
+        self.client.force_login(self.admin_user)
+        url = reverse('farm:system_delete', args=[self.system.pk])
+        self.assertContains(self.client.get(url, {'ui': 'classic'}), 'name="version" value="1"')
+        self.assertEqual(self.client.get(url, {'ui': 'next'}).context['props']['version'], 1)
+
+    def test_a_record_changed_since_its_confirmation_is_not_deleted(self):
+        self.client.force_login(self.admin_user)
+        System.objects.filter(pk=self.system.pk).update(name='RAS renamed', version=2)      # someone else's edit
+        response = self.client.post(reverse('farm:system_delete', args=[self.system.pk]), {'version': '1'})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(System.all_objects.get(pk=self.system.pk).is_deleted)
+        said = [str(message) for message in response.wsgi_request._messages]
+        self.assertTrue(any('Someone else changed this' in text for text in said), said)
+        self.client.post(reverse('farm:system_delete', args=[self.system.pk]), {'version': '2'})
+        self.assertTrue(System.all_objects.get(pk=self.system.pk).is_deleted)

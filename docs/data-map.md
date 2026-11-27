@@ -2373,7 +2373,7 @@ The people of the company for HR: number, name (or the account that names them),
 - **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 29 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 30 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2603,7 +2603,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 23 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 24 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2633,7 +2633,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 27 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 28 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

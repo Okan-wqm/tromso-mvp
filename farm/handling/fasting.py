@@ -248,16 +248,19 @@ class Start:
         return self.accrual.assumed if self.accrual is not None else None
 
 
-def start_of_fast(unit, day, requirement, water=None, batch_id=None):
+def start_of_fast(unit, day, requirement, water=None, batch_id=None, since=None):
     """The Start of the fast for a handling on `day`: the later of the hours' start and the degree-days' start (module
-    docstring). `water` (BatchWater with `batch_id`) is needed when the requirement asks for degree-days."""
+    docstring). `water` (BatchWater with `batch_id`) is needed when the requirement asks for degree-days. `since`: the
+    earliest day the fast can start on when the caller knows it (the day after the last feeding: a fast does not start
+    before the fish were last fed); else the batch's first day on the farm."""
     candidates, accrual = [], None
     if requirement.hours:
         candidates.append(start_of(day, unit) - timedelta(hours=requirement.hours))
     if requirement.degree_days:
-        # Back to the batch's first day on the farm, never further: reached, or the fast starts on that day.
-        since = (day - DAY - water.began(batch_id)).days + 1
-        accrual = water.walk(batch_id, day - DAY, backward=True, needed=requirement.degree_days, days=max(since, 0))
+        # Back to `since` (the batch's first day on the farm), never further: reached, or the fast starts on that day.
+        first = max(since or water.began(batch_id), water.began(batch_id))
+        walked = (day - DAY - first).days + 1
+        accrual = water.walk(batch_id, day - DAY, backward=True, needed=requirement.degree_days, days=max(walked, 0))
         if not accrual.unknown and (accrual.reached or accrual.last) is not None:
             candidates.append(start_of(accrual.reached or accrual.last, unit))
     return Start(min(candidates, default=None), accrual)

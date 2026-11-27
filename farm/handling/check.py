@@ -506,9 +506,10 @@ def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=NOT_READ):
     since = {unit_id: None if None in found else min(found) for unit_id, found in bounds.items()}
     fed = last_fed_of([(unit, days[unit.pk], handled_ids[(unit.pk, days[unit.pk])], since[unit.pk])
                        for unit in asking])
-    # The water `earliest` reads for a purge in degree-days: the batch's, from its first day on the farm (the fast is
-    # counted forward from the feeding, and its start backward to that day at most).
-    watered = {(unit.pk, batch.pk): (batch.pk, days[unit.pk], None)
+    # The water `earliest` reads for a purge in degree-days: the batch's, from the day after the unit's last feeding (the
+    # fast is counted forward from it, and its start backward to it at most): the batches fed on one day are read
+    # together, whatever day each came (REVIEW-2, N-3).
+    watered = {(unit.pk, batch.pk): (batch.pk, days[unit.pk], fed[unit.pk].record.date + DAY)
                for unit, batch in pairs
                if asks(batch) and fed.get(unit.pk) is not None and requirements[batch.species_id].degree_days}
     waters = BatchWater.of_each(watered.values())
@@ -541,7 +542,7 @@ def _earliest_from(unit, batch, today, kind, blocks, requirement, fed, water):
         return Earliest(batch, latest.until, WITHDRAWAL, latest.until, latest.approximate,
                         degrees_unknown=degrees_unknown, kind=kind)
     if purge_day is not None:
-        start = fasting.start_of_fast(unit, purge_day, requirement, water, batch.pk)
+        start = fasting.start_of_fast(unit, purge_day, requirement, water, batch.pk, since=fed.record.date + DAY)
         stop_by = start.starts_at.date() - DAY if start.starts_at is not None else None
         return Earliest(batch, purge_day, PURGING, latest.until if latest else None,
                         latest.approximate if latest else False, stop_by=stop_by, degrees_unknown=degrees_unknown,

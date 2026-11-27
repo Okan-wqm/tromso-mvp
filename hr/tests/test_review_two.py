@@ -13,7 +13,6 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from core.models import AuditLog, PlatformSettings
-from core.testing import FrozenClock
 from farm.models import ProductionDepartment, Site
 
 from .. import leave, read, services
@@ -173,7 +172,7 @@ class ClearConfirmedTests(PeopleTestCase):
         self.assertFalse(AuditLog.objects.filter(entity_id=str(row.pk), action='delete').exists())
 
 
-class LeaveAcrossAMoveTests(FrozenClock, LeaveTestCase):
+class LeaveAcrossAMoveTests(LeaveTestCase):
     """N-8: Ann moves on Tuesday 10 March from A (Bergen) to a department on another site whose holiday it is that day.
     A request for Monday and Tuesday is charged one day: each day by the holidays of its own site."""
     NOW = datetime(2026, 3, 1, 12, tzinfo=UTC)

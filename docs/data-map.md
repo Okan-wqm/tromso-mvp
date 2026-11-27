@@ -3206,7 +3206,7 @@ The monitoring card templates: a name, the widgets of the card as a layout and t
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Monitoring › monitor_card_templates
 - **forms**: `CardTemplateForm`
 - **constraints**: uq_monitor_card_templates_name_live (unique: name); chk_monitor_card_templates_name (check); chk_monitor_card_templates_schema (check); chk_monitor_card_templates_object (check); chk_monitor_card_templates_widgets (check); chk_monitor_card_templates_count (check); chk_monitor_card_templates_bytes (check); chk_monitor_card_templates_stamp (check); chk_monitor_card_templates_expanded (check); chk_monitor_card_templates_builtin (check); chk_monitor_card_templates_measure (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `monitoring/tests/test_copy_service.py`, `monitoring/tests/test_designer.py` and 7 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `monitoring/tests/test_copy_service.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

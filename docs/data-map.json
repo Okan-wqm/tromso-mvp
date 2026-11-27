@@ -34951,6 +34951,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "monitoring/tests/test_copy_service.py",
         "monitoring/tests/test_designer.py",

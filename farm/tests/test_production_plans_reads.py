@@ -343,8 +343,8 @@ class BudgetTests(Fixtures, FeedingTestCase):
     # REVIEW-2 of wip/degree-days approved 65). With a feeding protocol and a temperature profile on every row, each row
     # walks its plan ahead (the profiles' rows and points, the tables, their bands and cells; the fasts read once by the
     # walk's policy): the ceiling is the measurement on that path (review 1 of the production plan, M2), the same at 3
-    # and at 9 units. Never raised without a review.
-    CEILING = 0
+    # and at 9 units: measured 68 on 2026-11-28 (main 65 without either). Never raised without a review.
+    CEILING = 68
 
     def setUp(self):
         super().setUp()

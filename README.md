@@ -5595,9 +5595,12 @@ steps are in the scratchpad plan `chemcore/PLAN.md`; the state of each step is b
   then the core's digest moves (`gen_expected.sh`) and `FORMULA_VERSION` is decided with it.
   Now: `gas_exchange` (a gas sensor's reading in air brought to equilibrium with a water, and back; see its module
   note). An independent science review (2026-11-27: sound with corrections) gave H₂S's solubility from Douabul &
-  Riley (1979), refused outside 2 to 30 °C, the fugacity of CO₂ (Weiss 1974), a saturation for each gas and the
-  diffusivities in the depth test; all applied, every expected value of its tests printed by the reviewer's own
-  implementation (`chemcore/experimental/reference/`, never run by the server). What keeps it out of the core: the B
+  Riley (1979), the fugacity of CO₂ (Weiss 1974), a saturation for each gas and the diffusivities in the depth test;
+  a second (2026-11-28) confirmed them and led to the rest: H₂S's solubility measured from 2 to 30 °C, extrapolated
+  from the water's freezing point to 2 °C and said so with every H₂S result (`h2s_validity`), refused below freezing
+  and above 30 °C, the CO₂ side of a contact given wherever H₂S's is not; a reading below 0 kept signed (the display
+  will say "< LOD" and flag a zero fault). All applied, every expected value of its tests printed by the reviewers'
+  own implementations (`chemcore/experimental/reference/`, never run by the server). What keeps it out of the core: the B
   digits of Douabul & Riley's fit, restored by the review and confirmed against their 42 measurements, are still to be
   read in the paper; the depth test's diffusivity factor is PROVISIONAL; H₂S's fugacity is taken as its pressure.
 - The handshake: `chemcore/EXPECTED` names the build the server accepts (version, formula version, a digest of the

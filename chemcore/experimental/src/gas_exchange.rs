@@ -11,15 +11,24 @@
 //! (`dried_gas_factor` when it is dried before the sensor).
 //!
 //! Every function refuses an input or a result that is not a finite number (`NonFinite`: never a NaN as a number), a
-//! pressure at or below 0 and a negative flow of air (`Domain`). A reading below 0 is not refused and gives a
-//! concentration below 0: whether a sensor's offset at no gas is refused, held at 0 or shown is not decided yet
-//! (tests/gas_exchange_properties.rs holds it as it is).
+//! pressure at or below 0 and a negative flow of air (`Domain`). A reading below 0 (a sensor's zero offset and noise)
+//! is kept signed and gives a concentration below 0, never refused and never held at 0 (decided after the second
+//! science review, 2026-11-28): refusing loses the point and hides a drifting zero, clamping biases every average
+//! upward. What to show is the display's: "< LOD" below the sensor's limit of detection, and a zero-fault (re-zero)
+//! flag below −2 to −3 times its zero noise; the raw signed value is stored. Nothing of that is built yet.
+//!
+//! Where H₂S's solubility holds (`h2s_validity`, the one rule): measured from 2 to 30 °C and a salinity of 0 to 40;
+//! extrapolated from the water's freezing point up to 2 °C (decided after the second review: good to about 1 %, its
+//! pure-water part within 0.6 % of IUPAC's low-temperature equation at 0 and −1.9 °C); refused below freezing and
+//! above 30 °C (`OutOfRange`). Every H₂S result says which (`Ranged`). CO₂'s side never waits on H₂S's: a contact
+//! outside H₂S's range still gives its CO₂ (`Contact::h2s_ratio` is then None).
 //!
 //! The air takes a little CO₂ with it, the pH of the water it leaves rises, and a little H₂S becomes HS⁻:
 //! `mixed_contact` says by how much the reading falls short for a ratio of air to water, and `ph_rise_bound` the most
 //! the pH can rise without a pH or an alkalinity being known. That holds for a water holding more CO₂ than the entering
 //! air would leave in it, as a fish tank's does (5 to 20 mg/L against 0.5 to 1.3 from outdoor air). A water holding
-//! less (a high pH, a low alkalinity) takes CO₂ from the air instead: its pH falls and both readings lie above the truth.
+//! less (a high pH, a low alkalinity) takes CO₂ from the air instead: its pH falls and both readings lie above the
+//! truth.
 //!
 //! The carbonate and sulfide equilibria are a water's own (`chemistry::Equilibria`, whatever formula made it). Formula
 //! 4 against formula 1 (review F1; 12 °C, 35 ‰, 2 meq/L, pH 7.2): the H₂S reading ratio moves by under 1 ‰ (0.87 ‰ at
@@ -34,7 +43,7 @@
 //! in the paper (`K0_H2S_B`); the diffusivity factor of `saturation_from_depths` is PROVISIONAL; the fugacity of H₂S is
 //! taken as its partial pressure (no cross virial coefficient read; expected under 1 %).
 use chemcore_core::chemistry::{Equilibria, KELVIN, MG_CO2_PER_MMOL, k0_co2, solve, vapour_pressure_atm};
-use chemcore_core::num::{ChemError, R, div, exp, finite, ln, log10, pow};
+use chemcore_core::num::{ChemError, R, div, exp, finite, ln, log10, pow, sqrt};
 
 /// The gas constant, L atm / (mol K): 8.314462618 J/(mol K) (CODATA 2018) over 101.325 J per L atm.
 pub const GAS_CONSTANT: f64 = 0.082057366;
@@ -50,7 +59,8 @@ pub const K0_H2S_A: [f64; 3] = [-41.0563, 66.4005, 15.1060];
 /// 2026-11-27), reproduce all 42 within 0.44 % (tests/gas_exchange.rs). To confirm in the original paper: until then
 /// this module stays out of the core.
 pub const K0_H2S_B: [f64; 3] = [-0.060583, 0.0379753, -0.0060234];
-/// The temperatures (°C) Douabul & Riley's equation holds for: their measurements run from 275.25 to 302.97 K.
+/// The temperatures (°C) of Douabul & Riley's measurements, 275.25 to 302.97 K: `Validity::Measured` between, and
+/// extrapolated from the water's freezing point up to the first (`h2s_validity`).
 pub const K0_H2S_TEMP_C: (f64, f64) = (2.0, 30.0);
 /// The salinities (g/kg) it holds for: their distilled water and sea water of 9.972 to 40.028 (their largest, kept
 /// so that every measurement is inside).
@@ -73,23 +83,73 @@ fn gas_pressure(pressure: f64) -> R {
     }
 }
 
-/// The solubility of H₂S per litre, mol/(L atm), at a fugacity of 1 atm: Douabul & Riley (1979), `K0_H2S_A` and
-/// `K0_H2S_B` (B to be confirmed in the paper). Refused outside 2 to 30 °C or a salinity of 0 to 40.028
-/// (`OutOfRange`): never extrapolated; and when not a finite number.
-pub fn k0_h2s(temp_c: f64, salinity: f64) -> R {
+/// How far an H₂S result stands on Douabul & Riley's measurements.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Validity {
+    /// Inside their measurements: 2 to 30 °C, a salinity of 0 to 40.
+    Measured,
+    /// Their equation taken below 2 °C, down to the water's freezing point (said with the value).
+    Extrapolated,
+}
+
+impl Validity {
+    /// A stable code.
+    pub fn code(self) -> &'static str {
+        match self {
+            Validity::Measured => "measured",
+            Validity::Extrapolated => "extrapolated",
+        }
+    }
+}
+
+/// An H₂S result and how far it stands on the measurements behind it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Ranged {
+    pub value: f64,
+    pub validity: Validity,
+}
+
+/// The freezing point of sea water at one atmosphere, °C: −0.0575 S + 1.710523e-3 S^1.5 − 2.154996e-4 S², UNESCO
+/// (1983), Tech. Pap. Mar. Sci. 44 (Fofonoff & Millard), as the second science review gives it. 0 for fresh water,
+/// −1.92 °C at 35 ‰. A salinity below 0 is refused (`Domain`).
+pub fn freezing_point(salinity: f64) -> R {
+    let s = finite(salinity)?;
+    if s < 0.0 {
+        return Err(ChemError::Domain);
+    }
+    finite(-0.0575 * s + 1.710523e-3 * s * sqrt(s)? - 2.154996e-4 * s * s)
+}
+
+/// Where Douabul & Riley's H₂S solubility holds for a water (THE rule; every H₂S result carries it): `Measured` from
+/// 2 to 30 °C, `Extrapolated` from the water's freezing point (`freezing_point`) up to 2 °C; refused (`OutOfRange`)
+/// below freezing, above 30 °C or outside a salinity of 0 to 40.028 (their largest), `NonFinite` for what is not a
+/// number.
+pub fn h2s_validity(temp_c: f64, salinity: f64) -> Result<Validity, ChemError> {
     let (temp_c, salinity) = (finite(temp_c)?, finite(salinity)?);
-    if !(K0_H2S_TEMP_C.0..=K0_H2S_TEMP_C.1).contains(&temp_c)
-        || !(K0_H2S_SALINITY.0..=K0_H2S_SALINITY.1).contains(&salinity)
-    {
+    if !(K0_H2S_SALINITY.0..=K0_H2S_SALINITY.1).contains(&salinity) || temp_c > K0_H2S_TEMP_C.1 {
         return Err(ChemError::OutOfRange);
     }
+    if temp_c >= K0_H2S_TEMP_C.0 {
+        Ok(Validity::Measured)
+    } else if temp_c >= freezing_point(salinity)? {
+        Ok(Validity::Extrapolated)
+    } else {
+        Err(ChemError::OutOfRange)
+    }
+}
+
+/// The solubility of H₂S per litre, mol/(L atm), at a fugacity of 1 atm: Douabul & Riley (1979), `K0_H2S_A` and
+/// `K0_H2S_B` (B to be confirmed in the paper), with its validity (`h2s_validity`: refused where that refuses).
+pub fn k0_h2s(temp_c: f64, salinity: f64) -> Result<Ranged, ChemError> {
+    let validity = h2s_validity(temp_c, salinity)?;
     let x = (temp_c + KELVIN) / 100.0;
     let [a1, a2, a3] = K0_H2S_A;
     let [b1, b2, b3] = K0_H2S_B;
-    finite(exp(a1
+    let value = finite(exp(a1
         + div(a2, x)?
         + a3 * ln(x)?
-        + salinity * (b1 + b2 * x + b3 * x * x))?)
+        + salinity * (b1 + b2 * x + b3 * x * x))?)?;
+    Ok(Ranged { value, validity })
 }
 
 /// A gas's concentration in air over its concentration in the water it is in equilibrium with (both per litre,
@@ -119,10 +179,12 @@ pub fn co2_per_partial_pressure(temp_c: f64, salinity: f64, pressure: f64) -> R 
 
 /// The un-ionised H₂S (µg/L as H₂S) of the water an air is in equilibrium with, from that air's H₂S (ppb, nmol/mol,
 /// as a sensor calibrated with dry gas reads the moist air itself) at a pressure (atm, where the gas last met the
-/// water): ppb × pressure × K0 × M. The temperature and the salinity are the water's. No pH: HS⁻ does not cross. The
-/// fugacity of H₂S is taken as its partial pressure (module note).
-pub fn h2s_from_gas(h2s_ppb: f64, temp_c: f64, salinity: f64, pressure: f64) -> R {
-    finite(finite(h2s_ppb)? * 1e-9 * gas_pressure(pressure)? * k0_h2s(temp_c, salinity)? * G_H2S_PER_MOL * 1e6)
+/// water): ppb × pressure × K0 × M, with K0's validity (`h2s_validity`). The temperature and the salinity are the
+/// water's. No pH: HS⁻ does not cross. The fugacity of H₂S is taken as its partial pressure (module note).
+pub fn h2s_from_gas(h2s_ppb: f64, temp_c: f64, salinity: f64, pressure: f64) -> Result<Ranged, ChemError> {
+    let k0 = k0_h2s(temp_c, salinity)?;
+    let value = finite(finite(h2s_ppb)? * 1e-9 * gas_pressure(pressure)? * k0.value * G_H2S_PER_MOL * 1e6)?;
+    Ok(Ranged { value, ..k0 })
 }
 
 /// The dissolved CO₂ (mg/L) of the water an air is in equilibrium with, from that air's CO₂ (ppm, µmol/mol, read in
@@ -148,7 +210,9 @@ pub fn dried_gas_factor(temp_c: f64, pressure: f64) -> R {
 }
 
 /// The total sulfide (in the unit of `free_h2s`, as H₂S) of a water whose un-ionised H₂S is `free_h2s`, at its pH
-/// (NBS): free / the H₂S share. The one step of this module that needs a pH: 0.1 of a pH moves it by about 15 %.
+/// (NBS): free / the H₂S share. The one step of this module that needs a pH: 0.1 of a pH moves it by
+/// 10^(0.1 (1 − share)) − 1, nothing where the share is near 1 (a low pH), about 15 % where it is 0.3, up to 26 % at a
+/// high pH.
 pub fn total_sulfide(free_h2s: f64, eq: &Equilibria, ph: f64) -> R {
     finite(div(finite(free_h2s)?, eq.h2s_share(finite(ph)?)?)?)
 }
@@ -162,9 +226,10 @@ pub struct Contact {
     pub co2_gas: f64,
     /// The CO₂ that `co2_from_gas` gives from the leaving air, over the entering water's CO₂.
     pub co2_ratio: f64,
-    /// The H₂S that `h2s_from_gas` gives from the leaving air, over the entering water's un-ionised H₂S: below 1 by
-    /// the H₂S that became HS⁻ as the pH rose, by the H₂S the air took, and by the air's saturation.
-    pub h2s_ratio: f64,
+    /// The H₂S that `h2s_from_gas` gives from the leaving air, over the entering water's un-ionised H₂S, with its
+    /// validity: below 1 by the H₂S that became HS⁻ as the pH rose, by the H₂S the air took, and by the air's
+    /// saturation. None where H₂S's solubility does not hold (`h2s_validity`); the CO₂ above is given all the same.
+    pub h2s_ratio: Option<Ranged>,
 }
 
 /// The steady state of a fully mixed vessel through which a water (its equilibria, its alkalinity in meq/L and its pH,
@@ -180,10 +245,11 @@ pub struct Contact {
 /// The balance of the DIC per litre of water: DIC in − DIC = air per water × CO₂'s saturation × (CO₂ of the vessel's
 /// water × its gas over water − the entering air's CO₂), the alkalinity unchanged; the total sulfide likewise with
 /// H₂S's saturation, its H₂S share at the vessel's pH. CO₂'s gas over water takes its fugacity
-/// (`co2_per_partial_pressure`), so a reading of air in equilibrium is the water's own. None when no DIC between nothing and the
-/// entering water's balances or no pH gives the alkalinity at an end of that search (a water that cannot be). Refused
-/// where `k0_h2s` is (below 2 °C, above 30 °C). The worst case of a contact: a counter-current column or a closed
-/// headspace falls short by less.
+/// (`co2_per_partial_pressure`), so a reading of air in equilibrium is the water's own. None when no DIC between
+/// nothing and the entering water's balances or no pH gives the alkalinity at an end of that search (a water that
+/// cannot be). The CO₂ side needs nothing of H₂S's: where H₂S's solubility does not hold (below the water's freezing
+/// point, above 30 °C, a salinity above 40) only `h2s_ratio` is None. The worst case of a contact: a counter-current
+/// column or a closed headspace falls short by less.
 #[allow(clippy::too_many_arguments)]
 pub fn mixed_contact(
     eq: &Equilibria,
@@ -217,7 +283,11 @@ pub fn mixed_contact(
     }
     let rt = GAS_CONSTANT * (eq.temp_c + KELVIN);
     let co2_over = gas_over_water(co2_per_partial_pressure(eq.temp_c, eq.salinity, pressure)?, eq.temp_c)?;
-    let h2s_over = gas_over_water(k0_h2s(eq.temp_c, eq.salinity)?, eq.temp_c)?;
+    let h2s_k0 = match k0_h2s(eq.temp_c, eq.salinity) {
+        Ok(k0) => Some(k0),
+        Err(ChemError::OutOfRange) => None,
+        Err(other) => return Err(other),
+    };
     let dic_in = eq.dic(alkalinity, ph)?;
     let co2_in = eq.co2(dic_in, ph)?;
     // the entering air's CO₂, mmol per litre of air
@@ -240,17 +310,27 @@ pub fn mixed_contact(
         return Ok(None);
     };
     let leaving = air + saturation_co2 * (co2_over * eq.co2(dic, ph_here)? - air);
-    let share = eq.h2s_share(ph_here)?;
-    // the vessel's total sulfide for an entering un-ionised H₂S of 1
-    let sulfide = div(
-        div(1.0, eq.h2s_share(ph)?)?,
-        1.0 + air_per_water * saturation_h2s * h2s_over * share,
-    )?;
+    let h2s_ratio = match h2s_k0 {
+        Some(k0) => {
+            let h2s_over = gas_over_water(k0.value, eq.temp_c)?;
+            let share = eq.h2s_share(ph_here)?;
+            // the vessel's total sulfide for an entering un-ionised H₂S of 1
+            let sulfide = div(
+                div(1.0, eq.h2s_share(ph)?)?,
+                1.0 + air_per_water * saturation_h2s * h2s_over * share,
+            )?;
+            Some(Ranged {
+                value: finite(saturation_h2s * sulfide * share)?,
+                ..k0
+            })
+        }
+        None => None,
+    };
     Ok(Some(Contact {
         ph: ph_here,
         co2_gas: div(leaving * rt, 1000.0 * pressure)?,
         co2_ratio: div(div(leaving, co2_over)?, co2_in)?,
-        h2s_ratio: saturation_h2s * sulfide * share,
+        h2s_ratio,
     }))
 }
 
@@ -272,18 +352,37 @@ pub fn ph_rise_bound(temp_c: f64, salinity: f64, air_per_water: f64, pressure: f
 /// How far bubbles have come to equilibrium at the full depth of a vessel, for CO₂ and for H₂S (0 to 1 each), from the
 /// CO₂ read with the air let in at half the depth over the CO₂ read with it let in at the full depth (each less the
 /// entering air's CO₂; the same flows of air and water). With x = 1/ratio − 1 the CO₂ is 1 − x² short of nothing and
-/// the H₂S 1 − x^(2 k), k = (K0 H₂S / K0 CO₂) (D H₂S / D CO₂)^n: a bubble fills with each gas at a rate in proportion
-/// to its solubility times its liquid-film coefficient (science review, 2(e)). PROVISIONAL (`H2S_OVER_CO2_DIFFUSIVITY`,
-/// `FILM_EXPONENT`), and the model leaves out H₂S's ionisation in the film (a faster H₂S), the bubble's formation and
-/// the surface (not in proportion to the depth) and the hydrostatic pressure. What holds whatever those turn out to
-/// be: k is over 2 (2.16 to 3.12 from 2 to 30 °C and 0 to 40 ‰ over the factor's stated range; a property test), so
-/// the H₂S saturation is never below the CO₂'s, and taking CO₂'s for H₂S is the conservative choice. A ratio outside 0.5 to 1 is refused (`Domain`): no bubble reads less at the full depth.
-pub fn saturation_from_depths(ratio: f64, temp_c: f64, salinity: f64) -> Result<(f64, f64), ChemError> {
+/// the H₂S 1 − x^(2 k), k = (K0 H₂S / K0 CO₂) (D H₂S / D CO₂)^n, CO₂'s per partial pressure at `pressure` (atm) as
+/// everywhere in this module (`co2_per_partial_pressure`; second review, F3): a bubble fills with each gas at a rate in
+/// proportion to its solubility times its liquid-film coefficient (science review, 2(e)). PROVISIONAL
+/// (`H2S_OVER_CO2_DIFFUSIVITY`, `FILM_EXPONENT`), and the model leaves out H₂S's ionisation in the film (a faster H₂S),
+/// the bubble's formation and the surface (not in proportion to the depth) and the hydrostatic pressure. What holds
+/// whatever those turn out to be: the H₂S saturation is never below the CO₂'s, for which k ≥ 1 suffices (1 − x^(2k) ≥
+/// 1 − x² for x in [0, 1]); k is 2.17 to 3.13 from 2 to 30 °C and 0 to 40 ‰ over the factor's stated range (a
+/// property test). So taking CO₂'s for H₂S is the conservative choice. The CO₂ saturation needs no constant: where
+/// H₂S's solubility does not hold the H₂S one is None. A ratio outside 0.5 to 1 is refused (`Domain`): no bubble reads
+/// less at the full depth.
+pub fn saturation_from_depths(
+    ratio: f64,
+    temp_c: f64,
+    salinity: f64,
+    pressure: f64,
+) -> Result<(f64, Option<Ranged>), ChemError> {
     if !(0.5..=1.0).contains(&finite(ratio)?) {
         return Err(ChemError::Domain);
     }
     let short = div(1.0, ratio)? - 1.0;
-    let solubility = div(k0_h2s(temp_c, salinity)?, k0_co2(temp_c, salinity)?)?;
-    let faster = solubility * pow(H2S_OVER_CO2_DIFFUSIVITY, FILM_EXPONENT)?;
-    Ok((1.0 - short * short, 1.0 - pow(short, 2.0 * faster)?))
+    let per_atm = co2_per_partial_pressure(temp_c, salinity, pressure)?;
+    let h2s = match k0_h2s(temp_c, salinity) {
+        Ok(k0) => {
+            let faster = div(k0.value, per_atm)? * pow(H2S_OVER_CO2_DIFFUSIVITY, FILM_EXPONENT)?;
+            Some(Ranged {
+                value: 1.0 - pow(short, 2.0 * faster)?,
+                ..k0
+            })
+        }
+        Err(ChemError::OutOfRange) => None,
+        Err(other) => return Err(other),
+    };
+    Ok((1.0 - short * short, h2s))
 }

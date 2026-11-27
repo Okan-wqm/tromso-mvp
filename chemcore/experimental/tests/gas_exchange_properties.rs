@@ -2,7 +2,7 @@
 //! hold for every water, whatever a constant turns out to be once read in its source. Plain loops, no dependency. A
 //! tolerance is the solvers' (`chemistry::solve`: a bracket under 1e-10, its midpoint returned), never a loosened
 //! physics. Each test gathers every failure and reports them together.
-use chemcore_core::chemistry::{AIR_CO2, Equilibria, KELVIN, MG_CACO3_PER_MEQ, k0_co2};
+use chemcore_core::chemistry::{AIR_CO2, Equilibria, KELVIN, MG_CACO3_PER_MEQ};
 use chemcore_core::fresh::{Ions, water_equilibria};
 use chemcore_core::num::ChemError;
 use chemcore_experimental::gas_exchange as g;
@@ -11,7 +11,8 @@ use chemcore_experimental::gas_exchange as g;
 /// pH moves by at most ln 10 times as much. 2e-10 holds every ratio and pH to that.
 const SOLVED: f64 = 2e-10;
 
-const TEMPS: [f64; 4] = [2.0, 10.0, 20.0, 30.0];
+/// 0 °C: H₂S's solubility extrapolated (fresh water at its freezing point, sea water above its).
+const TEMPS: [f64; 5] = [0.0, 2.0, 10.0, 20.0, 30.0];
 /// The fresh path, the band between (1 to 5 ‰) and the sea path.
 const SALINITIES: [f64; 7] = [0.0, 0.5, 3.0, 5.0, 20.0, 35.0, 40.0];
 const PHS: [f64; 6] = [6.0, 6.5, 7.0, 7.5, 8.0, 8.5];
@@ -91,7 +92,7 @@ impl Water<'_> {
         let (Ok(dic_in), Ok(per_atm), Ok(k0_h2s)) = (
             eq.dic(alkalinity, ph),
             g::co2_per_partial_pressure(temp_c, salinity, 1.0),
-            g::k0_h2s(temp_c, salinity),
+            g::k0_h2s(temp_c, salinity).map(|x| x.value),
         ) else {
             failures.push(format!("{}: not a water of the grid", what(0.0)));
             return 0;
@@ -126,11 +127,12 @@ impl Water<'_> {
                     failures.push(format!("{}: {property}: {contact:?}", what(air)));
                 }
             };
-            // every water
             fail(
-                contact.co2_ratio > 0.0 && contact.h2s_ratio > 0.0,
-                "a ratio at or below 0",
+                contact.h2s_ratio.map(|x| x.validity) == g::h2s_validity(temp_c, salinity).ok(),
+                "the H₂S ratio without the validity of its water",
             );
+            // every water
+            fail(contact.co2_ratio > 0.0 && h2s(&contact) > 0.0, "a ratio at or below 0");
             fail(
                 rise <= bound + SOLVED,
                 &format!("the pH rose {rise}, over the bound {bound}"),
@@ -138,7 +140,7 @@ impl Water<'_> {
             if self.saturation_co2 == 1.0 && self.saturation_h2s == 1.0 {
                 let floor = 1.0 / ((1.0 + air * co2_over) * (1.0 + air * h2s_over));
                 fail(
-                    contact.h2s_ratio >= floor - SOLVED,
+                    h2s(&contact) >= floor - SOLVED,
                     &format!("H₂S under its worst case {floor}"),
                 );
             }
@@ -152,7 +154,7 @@ impl Water<'_> {
             if air == 0.0 && self.air_co2 == 0.0 {
                 fail(
                     (contact.co2_ratio - self.saturation_co2).abs() <= SOLVED
-                        && (contact.h2s_ratio - self.saturation_h2s).abs() <= SOLVED
+                        && (h2s(&contact) - self.saturation_h2s).abs() <= SOLVED
                         && rise.abs() <= SOLVED,
                     "no air, yet not the saturations and the water's own pH",
                 );
@@ -160,13 +162,13 @@ impl Water<'_> {
             // a water the air takes CO₂ from: the readings fall short, more with more air, and the pH rises
             if above_air {
                 fail(
-                    contact.co2_ratio <= 1.0 + SOLVED && contact.h2s_ratio <= 1.0 + SOLVED,
+                    contact.co2_ratio <= 1.0 + SOLVED && h2s(&contact) <= 1.0 + SOLVED,
                     "a ratio above 1",
                 );
                 fail(rise >= -SOLVED, "the pH fell");
                 if let Some(before) = last {
                     fail(
-                        contact.co2_ratio < before.co2_ratio && contact.h2s_ratio < before.h2s_ratio,
+                        contact.co2_ratio < before.co2_ratio && h2s(&contact) < h2s(&before),
                         &format!("a ratio did not fall with more air: before {before:?}"),
                     );
                 }
@@ -175,6 +177,11 @@ impl Water<'_> {
         }
         checked
     }
+}
+
+/// The H₂S reading ratio of a contact, NaN where it has none.
+fn h2s(contact: &g::Contact) -> f64 {
+    contact.h2s_ratio.map_or(f64::NAN, |x| x.value)
 }
 
 #[test]
@@ -199,7 +206,7 @@ fn a_water_below_the_air_takes_co2_from_it() {
     let eq = water_equilibria(4, 2.0, 0.0, Some(0.5 * MG_CACO3_PER_MEQ), Ions::default());
     let got = eq.and_then(|eq| g::mixed_contact(&eq, 0.5, 8.5, 0.5, AIR_CO2, 1.0, 1.0, 1.0));
     assert!(
-        got.is_ok_and(|x| x.is_some_and(|x| x.ph < 8.5 && x.co2_ratio > 1.0 && x.h2s_ratio > 1.0)),
+        got.is_ok_and(|x| x.is_some_and(|x| x.ph < 8.5 && x.co2_ratio > 1.0 && h2s(&x) > 1.0)),
         "{got:?}"
     );
 }
@@ -213,18 +220,19 @@ const PRESSURES: [f64; 5] = [0.5, 0.8, 1.0, 1.2, 2.0];
 fn the_conversions_are_linear() {
     let (mut failures, mut checked) = (Vec::new(), 0_usize);
     let near = |a: f64, b: f64| (a - b).abs() <= 1e-14 * b.abs();
-    for temp_c in [2.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0] {
+    for temp_c in [0.0, 2.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0] {
         for salinity in [0.0, 5.0, 20.0, 35.0, 40.0] {
-            let h2s_unit = g::h2s_from_gas(1.0, temp_c, salinity, 1.0).unwrap_or(f64::NAN);
+            let h2s_unit = g::h2s_from_gas(1.0, temp_c, salinity, 1.0).map_or(f64::NAN, |x| x.value);
             let co2_unit = g::co2_from_gas(1.0, temp_c, salinity, 1.0).unwrap_or(f64::NAN)
                 / g::co2_fugacity_coefficient(temp_c, 1.0).unwrap_or(f64::NAN);
             for reading in READINGS {
                 for pressure in PRESSURES {
                     checked += 1;
-                    let h2s = g::h2s_from_gas(reading, temp_c, salinity, pressure).unwrap_or(f64::NAN);
+                    let h2s = g::h2s_from_gas(reading, temp_c, salinity, pressure).map_or(f64::NAN, |x| x.value);
                     let co2 = g::co2_from_gas(reading, temp_c, salinity, pressure).unwrap_or(f64::NAN);
                     let fugacity = g::co2_fugacity_coefficient(temp_c, pressure).unwrap_or(f64::NAN);
-                    let twice_h2s = g::h2s_from_gas(2.0 * reading, temp_c, salinity, pressure).unwrap_or(f64::NAN);
+                    let twice_h2s =
+                        g::h2s_from_gas(2.0 * reading, temp_c, salinity, pressure).map_or(f64::NAN, |x| x.value);
                     let twice_co2 = g::co2_from_gas(2.0 * reading, temp_c, salinity, pressure).unwrap_or(f64::NAN);
                     if !(near(h2s, reading * pressure * h2s_unit)
                         && near(co2, reading * pressure * fugacity * co2_unit)
@@ -237,7 +245,7 @@ fn the_conversions_are_linear() {
                     }
                 }
             }
-            if g::h2s_from_gas(0.0, temp_c, salinity, 1.0) != Ok(0.0)
+            if g::h2s_from_gas(0.0, temp_c, salinity, 1.0).map(|x| x.value) != Ok(0.0)
                 || g::co2_from_gas(0.0, temp_c, salinity, 1.0) != Ok(0.0)
             {
                 failures.push(format!("{temp_c} °C S {salinity}: no gas, yet not 0"));
@@ -282,8 +290,8 @@ fn the_depth_test_saturations_are_ordered() {
     for step in 2..=30 {
         let temp_c = f64::from(step);
         for salinity in [0.0, 5.0, 10.0, 20.0, 30.0, 35.0, 40.0] {
-            let solubility =
-                g::k0_h2s(temp_c, salinity).unwrap_or(f64::NAN) / k0_co2(temp_c, salinity).unwrap_or(f64::NAN);
+            let solubility = g::k0_h2s(temp_c, salinity).map_or(f64::NAN, |x| x.value)
+                / g::co2_per_partial_pressure(temp_c, salinity, 1.0).unwrap_or(f64::NAN);
             // the stated ranges: D ratio 0.71 to 0.80, n 1/2 to 2/3
             for factor in [0.71_f64.powf(2.0 / 3.0), 0.80_f64.powf(0.5)] {
                 let exponent = solubility * factor;
@@ -297,8 +305,8 @@ fn the_depth_test_saturations_are_ordered() {
             for tenth in 0..=50 {
                 checked += 1;
                 let ratio = 0.5 + f64::from(tenth) / 100.0;
-                let got = g::saturation_from_depths(ratio, temp_c, salinity);
-                let Ok((co2, h2s)) = got else {
+                let got = g::saturation_from_depths(ratio, temp_c, salinity, 1.0);
+                let Ok((co2, Some(g::Ranged { value: h2s, .. }))) = got else {
                     failures.push(format!("{temp_c} °C S {salinity} ratio {ratio}: {got:?}"));
                     continue;
                 };
@@ -336,7 +344,7 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
     for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
         refused(
             format!("saturation_from_depths ratio {bad}"),
-            g::saturation_from_depths(bad, 12.0, 35.0).map(|x| x.0),
+            g::saturation_from_depths(bad, 12.0, 35.0, 1.0).map(|x| x.0),
         );
         let args = |i: usize, n: usize| -> Vec<f64> {
             let good = [12.0, 35.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
@@ -353,7 +361,11 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
         for i in 0..2 {
             let a = args(i, 2);
             let (x, y) = (a.first().copied().unwrap_or(1.0), a.get(1).copied().unwrap_or(1.0));
-            refused(format!("k0_h2s {a:?}"), g::k0_h2s(x, y));
+            refused(format!("k0_h2s {a:?}"), g::k0_h2s(x, y).map(|x| x.value));
+            refused(format!("h2s_validity {a:?}"), g::h2s_validity(x, y).map(|_| 0.0));
+            if i == 1 {
+                refused(format!("freezing_point {a:?}"), g::freezing_point(y));
+            }
             refused(format!("gas_over_water {a:?}"), g::gas_over_water(y, x));
             refused(
                 format!("co2_fugacity_coefficient {a:?}"),
@@ -366,7 +378,7 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
             );
             refused(
                 format!("saturation_from_depths (t, S) {a:?}"),
-                g::saturation_from_depths(0.8, x, y).map(|x| x.0),
+                g::saturation_from_depths(0.8, x, y, 1.0).map(|x| x.0),
             );
         }
         for i in 0..3 {
@@ -383,7 +395,16 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
             // (reading, temperature, salinity, pressure)
             let reading = [at(2), at(0), at(1), at(3)];
             let [r, t, s, p] = reading;
-            refused(format!("h2s_from_gas {reading:?}"), g::h2s_from_gas(r, t, s, p));
+            refused(
+                format!("h2s_from_gas {reading:?}"),
+                g::h2s_from_gas(r, t, s, p).map(|x| x.value),
+            );
+            if i == 3 {
+                refused(
+                    format!("saturation_from_depths (P) {a:?}"),
+                    g::saturation_from_depths(0.8, t, s, p).map(|x| x.0),
+                );
+            }
             refused(format!("co2_from_gas {reading:?}"), g::co2_from_gas(r, t, s, p));
             refused(
                 format!("ph_rise_bound {a:?}"),
@@ -405,12 +426,33 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
     }
     // out of domain
     for (what, got) in [
-        ("k0_h2s below 2 °C", g::k0_h2s(1.9, 0.0)),
-        ("k0_h2s above 30 °C", g::k0_h2s(30.1, 0.0)),
-        ("k0_h2s salinity below 0", g::k0_h2s(12.0, -1.0)),
-        ("k0_h2s salinity above its range", g::k0_h2s(12.0, 41.0)),
-        ("h2s_from_gas at no pressure", g::h2s_from_gas(117.0, 12.0, 35.0, 0.0)),
-        ("h2s_from_gas below 0 atm", g::h2s_from_gas(117.0, 12.0, 35.0, -1.0)),
+        (
+            "k0_h2s below fresh water's freezing point",
+            g::k0_h2s(-0.1, 0.0).map(|x| x.value),
+        ),
+        (
+            "k0_h2s below sea water's freezing point",
+            g::k0_h2s(-2.0, 35.0).map(|x| x.value),
+        ),
+        ("k0_h2s above 30 °C", g::k0_h2s(30.1, 0.0).map(|x| x.value)),
+        ("k0_h2s salinity below 0", g::k0_h2s(12.0, -1.0).map(|x| x.value)),
+        (
+            "k0_h2s salinity above its range",
+            g::k0_h2s(12.0, 41.0).map(|x| x.value),
+        ),
+        ("freezing_point salinity below 0", g::freezing_point(-1.0)),
+        (
+            "h2s_from_gas at no pressure",
+            g::h2s_from_gas(117.0, 12.0, 35.0, 0.0).map(|x| x.value),
+        ),
+        (
+            "h2s_from_gas below 0 atm",
+            g::h2s_from_gas(117.0, 12.0, 35.0, -1.0).map(|x| x.value),
+        ),
+        (
+            "saturation_from_depths at no pressure",
+            g::saturation_from_depths(0.8, 12.0, 35.0, 0.0).map(|x| x.0),
+        ),
         ("co2_from_gas at no pressure", g::co2_from_gas(3852.0, 12.0, 35.0, 0.0)),
         ("co2_from_gas below 0 atm", g::co2_from_gas(3852.0, 12.0, 35.0, -1.0)),
         ("dried_gas_factor below 0 atm", g::dried_gas_factor(12.0, -1.0)),
@@ -422,11 +464,11 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
         ("ph_rise_bound at no pressure", g::ph_rise_bound(12.0, 35.0, 0.01, 0.0)),
         (
             "saturation_from_depths below 0.5",
-            g::saturation_from_depths(0.49, 12.0, 35.0).map(|x| x.0),
+            g::saturation_from_depths(0.49, 12.0, 35.0, 1.0).map(|x| x.0),
         ),
         (
             "saturation_from_depths above 1",
-            g::saturation_from_depths(1.01, 12.0, 35.0).map(|x| x.0),
+            g::saturation_from_depths(1.01, 12.0, 35.0, 1.0).map(|x| x.0),
         ),
         (
             "mixed_contact at no pressure",
@@ -462,11 +504,12 @@ fn contact_of(eq: &Equilibria, [alkalinity, air, air_co2, pressure, s_co2, s_h2s
     g::mixed_contact(eq, alkalinity, 7.2, air, air_co2, pressure, s_co2, s_h2s).map(|x| x.map_or(f64::NAN, |x| x.ph))
 }
 
-/// Open, not decided (module note): a reading below 0 is not refused and gives a concentration below 0, and a free H₂S
-/// below 0 a total sulfide below 0. Held as it is so that a decision changes this test on purpose.
+/// Decided after the second review (module note): a reading below 0 is kept signed, never refused or held at 0, and
+/// gives a concentration below 0; a free H₂S below 0 a total sulfide below 0. The display says "< LOD" and flags a
+/// zero fault; the chemistry does not.
 #[test]
-fn a_reading_below_0_is_not_decided() {
-    assert!(g::h2s_from_gas(-1.0, 12.0, 35.0, 1.0).is_ok_and(|x| x < 0.0));
+fn a_reading_below_0_stays_signed() {
+    assert!(g::h2s_from_gas(-1.0, 12.0, 35.0, 1.0).is_ok_and(|x| x.value < 0.0));
     assert!(g::co2_from_gas(-1.0, 12.0, 35.0, 1.0).is_ok_and(|x| x < 0.0));
     let eq = water_equilibria(4, 12.0, 35.0, Some(200.0), Ions::default());
     assert!(

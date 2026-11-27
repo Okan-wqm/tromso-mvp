@@ -13,7 +13,8 @@
 //!
 //! A module leaves this crate for `chemcore-core` only when an independent science review has cleared it and every
 //! PROVISIONAL constant has been replaced by one read in its source, with the owner's approval: then the core's digest
-//! moves (`chemcore/scripts/gen_expected.sh`) and whether `FORMULA_VERSION` moves is decided with it (README, chemcore).
+//! moves (`chemcore/scripts/gen_expected.sh`) and whether `FORMULA_VERSION` moves is decided with it (README,
+//! chemcore).
 #![no_std]
 #![forbid(unsafe_code)]
 

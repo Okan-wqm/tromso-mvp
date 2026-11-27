@@ -98,6 +98,7 @@ name equilibria_v4
 name equilibria_with
 name free_to_sws
 name free_to_total
+name freezing_point
 name fresh_equilibria
 name fresh_ionic_strength
 name from_code
@@ -107,6 +108,7 @@ name h2s_assessed
 name h2s_from_gas
 name h2s_plot
 name h2s_share
+name h2s_validity
 name in_region
 name ionic_strength
 name isoline_colour
@@ -208,8 +210,10 @@ number 0.0001104259
 number 0.0001471316
 number 0.0001471361
 number 0.0001691742
+number 0.0002154996
 number 0.00048314
 number 0.00072857
+number 0.001710523
 number 0.0017276
 number 0.0028426
 number 0.0040899

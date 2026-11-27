@@ -284,6 +284,12 @@ function bigCards(tab: Page, root = '.monitor-grid'): Promise<string[]> {
           const inZone = chart.classList.contains(`in-${zone}`) && chart.classList.contains('is-critical');
           if (hatched !== inZone) wrong.push(`${code}: the ${zone} region ${hatched ? 'hatched' : 'not hatched'} with the water ${inZone ? 'in' : 'out of'} it`);
         }
+        // (its words stand apart: on a phone the picture keeps the width at which they do and scrolls: review L4)
+        const words = Array.from(chart.querySelectorAll('text, .chart-locator')).map((node) => [node.textContent?.trim().slice(0, 16) ?? '', node.getBoundingClientRect()] as const)
+          .filter(([, box]) => box.width > 0);
+        words.forEach(([one, a], index) => words.slice(index + 1).forEach(([two, b]) => {
+          if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) wrong.push(`${code}: "${one}" lies over "${two}" in the chart`);
+        }));
         const mark = chart.querySelector('.chart-water');
         if (mark && chart.classList.contains('is-old') && getComputedStyle(mark).fill !== sheet) wrong.push(`${code}: an old mark is not hollow (${getComputedStyle(mark).fill})`);
       }
@@ -291,7 +297,8 @@ function bigCards(tab: Page, root = '.monitor-grid'): Promise<string[]> {
         if (line(box, 'Top') < 1 || line(box, 'Left') < 1) wrong.push(`${code}: a box without its hairline`);
       }
       for (const value of Array.from(card.querySelectorAll<HTMLElement>('.w-points section > span[title]'))) {
-        if (value.textContent?.trim() !== 'no data' && !value.querySelector('.monitor-point-age')?.textContent?.trim()) wrong.push(`${code}: an other point's value without its age`);
+        // (a figure, in any language: a value said in words, "no data", has no age)
+        if (/\d/.test(value.textContent ?? '') && !value.querySelector('.monitor-point-age')?.textContent?.trim()) wrong.push(`${code}: an other point's value without its age`);
       }
       if (card.dataset.state === 'empty') {
         for (const part of ['.monitor-cells', '.w-chart', '.w-dosing', '.w-points', '.w-stock']) {
@@ -662,14 +669,23 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
           const seen = await tab.evaluate(() => {
             const grid = document.querySelector('.monitor-grid') as HTMLElement;
             const notices = Array.from(document.querySelectorAll<HTMLElement>('.content > .alarm-watch > p'));
-            return { scrolls: document.documentElement.scrollHeight > innerHeight + 1 || grid.scrollHeight > grid.clientHeight + 1,
+            // (the wall turns its pages inside the grid: what must hold is that every card on the screen lies whole in the
+            // grid's room, under the band, and that the page itself does not scroll)
+            const room = grid.getBoundingClientRect();
+            const band = (grid.querySelector('.monitor-band') as HTMLElement).getBoundingClientRect();
+            const cut = Array.from(grid.querySelectorAll<HTMLElement>(':scope > .monitor-card')).filter((card) => {
+              const box = card.getBoundingClientRect();
+              return box.height > 0 && box.bottom > band.bottom + 1 && box.top < room.bottom - 1 && (box.top < band.bottom - 1 || box.bottom > room.bottom + 1);
+            }).map((card) => card.querySelector('h3')?.textContent?.trim());
+            return { scrolls: document.documentElement.scrollHeight > innerHeight + 1, cut,
                      notices: notices.length, above: notices.every((notice) => notice.getBoundingClientRect().bottom <= grid.getBoundingClientRect().top + 0.5),
                      shown: Array.from(grid.querySelectorAll<HTMLElement>(':scope > .monitor-card'))
                        .filter((card) => { const box = card.getBoundingClientRect(); return box.height > 0 && box.bottom > 0 && box.top < innerHeight; }).length };
           });
           assert.ok(seen.notices >= 1, 'the alarms\u2019 notices are on the wall');
           assert.ok(seen.above, 'the notices stand above the grid');
-          assert.equal(seen.scrolls, false, 'the wall is one screen: the grid does not scroll');
+          assert.equal(seen.scrolls, false, 'the wall is one screen');
+          assert.deepEqual(seen.cut, [], 'the cards of the page shown are whole in the grid’s room');
           assert.ok(seen.shown >= 1, `${seen.shown} cards on the screen`);
           assert.deepEqual(await bigCards(tab), [], 'every Big card on the screen whole, its foot in sight');
           assert.deepEqual(await covered(tab), [], 'nothing lies over the band, a state word or the buttons of the wall');

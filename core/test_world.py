@@ -35,8 +35,8 @@ built and read.
     water_page_world(admin)           after world(), for Water chemistry's tests only: a sample on TM-01 voided
     sensors_world(admin)            after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat
-    monitoring_world(admin)           eight more units of Test Hall A, one in each state a monitoring card can be in
-                                      (OK, critical, warning, no recent data, no limit, note, empty, an old critical),
+    monitoring_world(admin)           nine more units of Test Hall A, one in each state a monitoring card can be in
+                                      (OK, critical, warning, no recent data, no limit, note, empty, an old critical, many values),
                                       and a wall board of the hall's units on a 55" TV read from 2 m (wall_board); not part of world():
                                       the monitoring pages' test builds it after it (monitoring/tests/test_next_pages.py)
     feeding_ops_world(admin)          after world(), for Feeding's pages: a protocol in force on TT-01, a meal today, a
@@ -777,6 +777,11 @@ MONITORING_UNITS = (
     # a critical oxygen that is old: the card stays critical and says the value is old (its second axis, the stale hatch)
     ('TW-08', 'Test tank old critical', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2',
                                                          'alkalinity_mg_l': '85'}),
+    # more values at its middle point than the new look's Big card sets as tiles (eight): a row a value there; its
+    # nitrite and nitrate have no limit row (no limit)
+    ('TW-09', 'Test tank many values', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2',
+                                                       'alkalinity_mg_l': '85', 'tan_mg_l': '0.4',
+                                                       'nitrite_n_mg_l': '0.05', 'nitrate_n_mg_l': '20'}),
 )
 # A unit's second sample, an hour before MOMENT: what stays fresh beside its old values.
 FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
@@ -787,11 +792,11 @@ TEST_OPERATOR_BOARD = 'Test operator board, Hall A'
 
 
 def monitoring_world(admin):
-    """Eight more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
+    """Nine more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
     and its warning limit), no recent data (its temperature 30 hours old, its oxygen fresh), no limit (a nitrite no
     limit row judges), a note (no feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours
-    old (critical, and stale).
+    old (critical, and stale), and one with more values at its middle point than the Big card's tiles hold (no limit).
     1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where

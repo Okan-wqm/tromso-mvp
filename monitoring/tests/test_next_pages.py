@@ -7,8 +7,8 @@
   and in the pane;
 - every card links its tank's water history (Tank › Water) in both looks, and the link resolves (the classic look's to
   the unit's history on Water chemistry); the cards that flow (Simple, Detailed, Operator view) are the design's card
-  in the new look (monitoring/_card_next.html), the fitted ones the same markup in both looks, and a screen's change
-  token is its look's own;
+  in the new look (monitoring/_card_next.html), the fitted ones the same markup in both looks (but an empty unit's Big
+  card, which says the unit in the new look, as the design's), and a screen's change token is its look's own;
 - the classic page loads none of the new look's sheets, the new one both;
 - the pages are kept for the browser test (frontend/test/monitoring.pages.ts, `npm run test:pages`) under
   .build/monitor-pages/ (never committed: the repository is public, and nothing here comes from a real database):
@@ -105,7 +105,8 @@ class NextPagesTests(FrozenClock, TestCase):
         said = cards_say(self.fragment(SCREENS['small']), self.norm)
         self.assertEqual({card['state'] for card in said.values()}, STATES)
         expected = {'TW-01': 'OK', 'TW-02': 'Critical', 'TW-03': 'Warning', 'TW-04': 'No recent data',
-                    'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty', 'TW-08': 'Critical'}
+                    'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty', 'TW-08': 'Critical',
+                    'TW-09': 'No limit'}
         self.assertEqual({code: said[code]['state'] for code in expected}, expected)
         self.assertEqual(len(MONITORING_UNITS), len(expected))
 

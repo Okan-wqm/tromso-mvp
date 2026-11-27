@@ -35,9 +35,11 @@ built and read.
     water_page_world(admin)           after world(), for Water chemistry's tests only: a sample on TM-01 voided
     sensors_world(admin)            after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat
-    monitoring_world(admin)           nine more units of Test Hall A, one in each state a monitoring card can be in
-                                      (OK, critical, warning, no recent data, no limit, note, empty, an old critical, many values),
-                                      and a wall board of the hall's units on a 55" TV read from 2 m (wall_board); not part of world():
+    monitoring_world(admin)           twelve more units of Test Hall A, one in each state a monitoring card can be in
+                                      (OK, critical, warning, no recent data, no limit, note, empty, an old critical, many values,
+                                      an old sample in the CO2 region),
+                                      and a wall board of the hall's units on a 55" TV read from 2 m (wall_board), a board
+                                      of Operator view cards and one that mixes Small and Big cards; not part of world():
                                       the monitoring pages' test builds it after it (monitoring/tests/test_next_pages.py)
     feeding_ops_world(admin)          after world(), for Feeding's pages: a protocol in force on TT-01, a meal today, a
                                       voided feeding
@@ -777,11 +779,27 @@ MONITORING_UNITS = (
     # a critical oxygen that is old: the card stays critical and says the value is old (its second axis, the stale hatch)
     ('TW-08', 'Test tank old critical', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '5', 'ph': '7.2',
                                                          'alkalinity_mg_l': '85'}),
-    # more values at its middle point than the new look's Big card sets as tiles (eight): a row a value there; its
+    # more values at its middle point than the new look's Big card sets as tiles (eight): a row a value there; its TAN,
     # nitrite and nitrate have no limit row (no limit)
     ('TW-09', 'Test tank many values', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2',
                                                        'alkalinity_mg_l': '85', 'tan_mg_l': '0.4',
                                                        'nitrite_n_mg_l': '0.05', 'nitrate_n_mg_l': '20'}),
+    # more values than a fitted card's water stands in one column (render.WATER_ROWS, fourteen): two columns of rows,
+    # 15 and 17 values (with the oxygen's saturation and the NH3-N and NH4-N the TAN gives), never tiles (no limit)
+    ('TW-10', 'Test tank fifteen values', True, True, 1, {
+        'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85', 'tan_mg_l': '0.4',
+        'nitrite_n_mg_l': '0.05', 'nitrate_n_mg_l': '20', 'hardness_mg_l': '60', 'co2_mg_l': '8',
+        'salinity_ppt': '0.2', 'conductivity_25_us_cm': '350', 'turbidity_ntu': '1.5'}),
+    ('TW-11', 'Test tank seventeen values', True, True, 1, {
+        'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85', 'tan_mg_l': '0.4',
+        'nitrite_n_mg_l': '0.05', 'nitrate_n_mg_l': '20', 'hardness_mg_l': '60', 'co2_mg_l': '8',
+        'salinity_ppt': '0.2', 'conductivity_25_us_cm': '350', 'turbidity_ntu': '1.5', 'tgp_pct': '100.5',
+        'phosphate_p_mg_l': '0.5'}),
+    # its last sample, 30 hours old, puts the water in the CO2 region of its Deffeyes chart (pH 6.3 at 85 mg/L
+    # alkalinity): the chart's mark is the last known position, hollow, in a region past a limit (critical: an oxygen
+    # with no fresh value)
+    ('TW-12', 'Test tank old acid water', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '6.3',
+                                                           'alkalinity_mg_l': '85'}),
 )
 # A unit's second sample, an hour before MOMENT: what stays fresh beside its old values.
 FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
@@ -789,14 +807,21 @@ FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
 
 TEST_WALL = 'Test wall, Hall A'
 TEST_OPERATOR_BOARD = 'Test operator board, Hall A'
+TEST_MIXED_BOARD = 'Test mixed board, Hall A'
+# The units whose cards are Big on the mixed board (stocked ones: their card says the same in both looks), and the one
+# drawn there with a farm's own full-height template whose water has a low place (TEST_LOW_WATER).
+MIXED_BIG = ('TW-02', 'TW-03')
+MIXED_OWN = 'TW-06'
+TEST_LOW_WATER = 'Test big, low water'
 
 
 def monitoring_world(admin):
-    """Nine more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
+    """Twelve more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
     and its warning limit), no recent data (its temperature 30 hours old, its oxygen fresh), no limit (a nitrite no
     limit row judges), a note (no feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours
-    old (critical, and stale), and one with more values at its middle point than the Big card's tiles hold (no limit).
+    old (critical, and stale), units with more values at their middle point than the Big card's tiles hold (10, 15
+    and 17: no limit), and an old sample in the CO2 region of its chart (critical).
     1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where
@@ -835,6 +860,7 @@ def monitoring_world(admin):
                          values={key: D(value) for key, value in FRESH_TOO[code].items()})
     wall_board(hall)
     operator_board(hall)
+    mixed_board(admin, hall)
 
 
 def wall_board(hall):
@@ -860,6 +886,32 @@ def water_page_world(admin):
                           source='manual', values={'temperature_c': D('11.5')}, notes='Test entered on the wrong unit')
     water.void(admin, sample, 'Test sample of another unit')
     return sample
+def mixed_board(admin, hall):
+    """A desk board of Test Hall A's units (TEST_MIXED_BOARD) whose cards are Small by default and Big for MIXED_BIG (each
+    of those rows names the Big template): a board that mixes the overview's small cards with the card of one tank, so
+    the monitoring pages and their browser test draw both side by side (a Small card keeps its one size beside a Big
+    one), and one unit drawn with a farm's own full-height template whose water's place is low (TEST_LOW_WATER)."""
+    from farm.models import Tank
+    from monitoring.cards import builtin
+    from monitoring.models import MonitorBoard, MonitorBoardUnit
+
+    from monitoring.models import CardTemplate
+    from monitoring.services import copy_template
+
+    # a farm's own full-height template (a copy of Big, through the service that copies one) whose water has three of
+    # its 21 rows, not six (the chart one more, two left empty): a place too low for two lines of tiles (a row a value)
+    own = copy_template(admin, CardTemplate.objects.get(pk=builtin.BIG))
+    layout = {**own.layout, 'widgets': [
+        {**widget, **({'h': 12} if widget['id'] == 'w5' else {'y': 14, 'h': 3} if widget['id'] == 'w6' else {})}
+        for widget in own.layout['widgets']]}
+    CardTemplate.objects.filter(pk=own.pk).update(name=TEST_LOW_WATER, layout=layout)
+    board = MonitorBoard.objects.create(name=TEST_MIXED_BOARD, default_template_id=builtin.SMALL)
+    for unit in Tank.objects.filter(production_department=hall).order_by('code'):
+        MonitorBoardUnit.objects.create(board=board, unit=unit, template_id=(
+            builtin.BIG if unit.code in MIXED_BIG else own.pk if unit.code == MIXED_OWN else None))
+    return board
+
+
 def operator_board(hall):
     """A desk board of Test Hall A's units (TEST_OPERATOR_BOARD) whose cards are the built-in Operator view (the board's
     default template): the oxygen and the temperature first and large, then the fish, the feeding and the Deffeyes

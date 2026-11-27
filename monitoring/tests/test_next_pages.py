@@ -26,7 +26,8 @@ from django.urls import reverse
 
 from core import ui
 from core.language import save_account_language
-from core.test_world import MOMENT, MONITORING_UNITS, TEST_OPERATOR_BOARD, TEST_WALL, monitoring_world, world
+from core.test_world import (MIXED_BIG, MIXED_OWN, MOMENT, MONITORING_UNITS, TEST_MIXED_BOARD, TEST_OPERATOR_BOARD,
+                              TEST_WALL, monitoring_world, world)
 from core.testing import FrozenClock
 from farm.models import Tank
 from farm.tests.helpers import point_of
@@ -39,10 +40,21 @@ PAGE, CARDS, PANE = reverse('monitoring:monitor'), reverse('monitoring:cards'), 
 # The screens the browser test lays out: {name: the page's query}
 SCREENS = {'small': {'mode': 'small', 'occupancy': 'all'}, 'simple': {'occupancy': 'all'},
            'detailed': {'mode': 'detailed', 'occupancy': 'all'}, 'big': {'mode': 'big', 'occupancy': 'all'},
-           'wall': {'mode': 'small', 'occupancy': 'all', 'wall': '1'}}
+           'wall': {'mode': 'small', 'occupancy': 'all', 'wall': '1'},
+           'wall-big': {'mode': 'big', 'occupancy': 'all', 'wall': '1'}}
 STATES = {'Critical', 'Warning', 'No recent data', 'No limit', 'Note', 'OK', 'Empty'}
 # The screens whose cards flow (their templates have no measure): the design's card in the new look.
 FLOWING = ('simple', 'detailed', 'operator')
+# The screens of Big cards: an empty unit's Big card says more in the new look (the design's), every other card is the
+# same markup in both looks.
+BIG_SCREENS = ('big', 'wall-big')
+# The units whose Big card the browser test opens in the pane too (beside TW-02): an old critical, many values, and an
+# old sample in the CO2 region of its chart.
+PANES = ('TW-08', 'TW-09', 'TW-12')
+# What the design's Big card of an empty unit says that the classic one does not: the unit, the chart's place and why it
+# is empty, what to dose, the other points, the stock (in English).
+EMPTY_BIG = ('Status', 'Volume', 'Max density', 'Max biomass', 'No chart: there is no fish in this unit.', 'Dosing advice',
+             'No dosing advice', 'Other sampling points', 'Stock', 'No fish')
 
 
 def _articles(html):
@@ -51,17 +63,9 @@ def _articles(html):
             for article in re.findall(r'<article .*?</article>', html, re.S)}
 
 
-def _without_cells(html):
-    """The markup without the cells of an empty unit (monitoring/_empty_cells.html: one div and the divs in it)."""
-    while (start := html.find('<div class="monitor-cells')) >= 0:
-        depth, end = 0, len(html)
-        for tag in re.finditer(r'<(/?)div\b[^>]*>', html[start:]):
-            depth += -1 if tag.group(1) else 1
-            if depth == 0:
-                end = start + tag.end()
-                break
-        html = html[:start] + html[end:].removeprefix('\n')
-    return html
+def _stocked(html):
+    """The markup without the cards of the units with no fish (each article whose state is empty)."""
+    return re.sub(r'<article [^>]*data-state="empty".*?</article>\n?', '', html, flags=re.S)
 
 
 class NextPagesTests(FrozenClock, TestCase):
@@ -80,7 +84,9 @@ class NextPagesTests(FrozenClock, TestCase):
         # (and the board of Operator view cards: its address names the board's id)
         from monitoring.models import MonitorBoard
         operator = MonitorBoard.objects.get(name=TEST_OPERATOR_BOARD)
-        cls.screens = {**SCREENS, 'operator': {'board': str(operator.pk), 'occupancy': 'all'}}
+        mixed = MonitorBoard.objects.get(name=TEST_MIXED_BOARD)
+        cls.screens = {**SCREENS, 'operator': {'board': str(operator.pk), 'occupancy': 'all'},
+                       'mixed': {'board': str(mixed.pk), 'occupancy': 'all'}}
 
     def setUp(self):
         self.client.force_login(self.admin)
@@ -106,7 +112,7 @@ class NextPagesTests(FrozenClock, TestCase):
         self.assertEqual({card['state'] for card in said.values()}, STATES)
         expected = {'TW-01': 'OK', 'TW-02': 'Critical', 'TW-03': 'Warning', 'TW-04': 'No recent data',
                     'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty', 'TW-08': 'Critical',
-                    'TW-09': 'No limit'}
+                    'TW-09': 'No limit', 'TW-10': 'No limit', 'TW-11': 'No limit', 'TW-12': 'Critical'}
         self.assertEqual({code: said[code]['state'] for code in expected}, expected)
         self.assertEqual(len(MONITORING_UNITS), len(expected))
 
@@ -190,8 +196,8 @@ class NextPagesTests(FrozenClock, TestCase):
         screen, and never in the classic look (monitoring/_card_next.html: what it says is the classic card's, the test
         above; the classic card is the golden one, test_golden); a fitted card (Small, Big, the pane's, a wall's) is the
         same markup in both looks, byte for byte, the new look's sheet drawing it as the design does
-        (static/css/monitor-next.css), but for the one thing the design's Big card says that the classic one does not:
-        an empty unit's full-height card says the unit (the test below)."""
+        (static/css/monitor-next.css), but for what the design's Big card of an empty unit says that the classic one
+        does not (the test below)."""
         for name, query in self.screens.items():
             new, classic = self.fragment(query), self.fragment(query, look='')
             cards = classic.count('<article class="monitor-card ')
@@ -199,8 +205,9 @@ class NextPagesTests(FrozenClock, TestCase):
             self.assertNotIn(' is-next"', classic, name)
             if name in FLOWING:
                 self.assertEqual(new.count(' is-next"'), cards, name)
-            elif name == 'big':
-                self.assertEqual(_without_cells(new), classic, name)
+            elif name in BIG_SCREENS:
+                self.assertEqual(_stocked(new), _stocked(classic), name)
+                self.assertGreaterEqual(cards - _stocked(classic).count('<article class="monitor-card '), 2, name)
             else:
                 self.assertEqual(new, classic, name)
         focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
@@ -208,24 +215,75 @@ class NextPagesTests(FrozenClock, TestCase):
 
     def test_an_empty_units_big_card_says_the_unit_in_the_new_look(self):
         """The design's Big card of a unit with no fish says the unit itself, as the overview's Small card of an empty
-        unit does (monitoring/_empty_cells.html: its status, volume, maximum density and maximum biomass), on the Big
-        screen and in the pane, in the three languages; the classic Big card is as it was (no cells), and a stocked
-        unit's Big card has none in either look (its fish and water are its card)."""
-        for language in ('en', 'nb', 'tr'):
-            for look in (ui.NEXT, ''):
-                articles = _articles(self.fragment(SCREENS['big'], look=look, language=language))
-                empty = [key for key, article in articles.items() if 'data-state="empty"' in article]
-                self.assertGreaterEqual(len(empty), 2, f'{language} {look}')
-                for key, article in articles.items():
-                    with self.subTest(language=language, look=look or 'classic', card=key):
-                        self.assertEqual('class="monitor-cells' in article, look == ui.NEXT and key in empty)
+        unit does (monitoring/_empty_cells.html: its status, volume, maximum density and maximum biomass), then the
+        boxes the design draws on it with the template's own widgets (monitoring/cards/render.py shown): the chart's
+        place saying there is no fish (no chart is drawn), what to dose, the other sampling points (their water as
+        read) and the stock (no fish); on the Big screen, its wall and in the pane, in the three languages. The classic
+        Big card is as it was (none of it), and a stocked unit's Big card has no cells in either look."""
+        for name in BIG_SCREENS:
+            for language in ('en', 'nb', 'tr'):
+                for look in (ui.NEXT, ''):
+                    articles = _articles(self.fragment(SCREENS[name], look=look, language=language))
+                    empty = [key for key, article in articles.items() if 'data-state="empty"' in article]
+                    self.assertGreaterEqual(len(empty), 2, f'{name} {language} {look}')
+                    for key, article in articles.items():
+                        with self.subTest(screen=name, language=language, look=look or 'classic', card=key):
+                            self.assertEqual('class="monitor-cells' in article, look == ui.NEXT and key in empty)
+                            for box in ('chart', 'dosing', 'points', 'stock'):
+                                self.assertEqual(f'class="w w-{box} ' in article, key not in empty or look == ui.NEXT,
+                                                 box)
+        for look, says in ((ui.NEXT, True), ('', False)):
+            said = cards_say(self.fragment(SCREENS['big'], look=look), self.norm)
+            for code in ('TW-07', 'TX-01'):
+                found = ' '.join([*said[code]['texts'], *(' '.join(pair) for pair in said[code]['pairs'])])
+                for words in EMPTY_BIG:
+                    self.assertEqual(words in found, says, f'{look or "classic"} {code}: {words}')
         focus = {**SCREENS['small'], 'focus': str(self.units['TW-07'].pk)}
         pane = self.ask(PANE, focus).content.decode()
         self.assertNotIn('class="monitor-cells', self.ask(PANE, focus, look='').content.decode())
         said = cards_say(pane, self.norm)['TW-07']
         self.assertEqual(said['state'], 'Empty')
-        for word in ('Status', 'Volume', 'Max density', 'Max biomass'):
-            self.assertIn(word, said['texts'])
+        for words in EMPTY_BIG:
+            self.assertIn(words, ' '.join(said['texts']))
+
+    def test_the_big_cards_water_says_whether_its_tiles_hold_it(self):
+        """Whether a Big card's water is drawn as the design's tiles is the server's one answer (monitoring/cards/render.py
+        tiled: one column of at most eight values, in a place of the template that holds two lines of four tiles), said
+        on the rows' frame as `data-tiles` in both looks, which the new look's sheet draws from (never a count of a
+        table's children). Five and eight values on the built-in Big card: tiles; ten (TW-09), fifteen and seventeen
+        (TW-10, TW-11: two columns of rows): none; five values on a farm's full-height template whose water's place is
+        low (the mixed board's TW-06): none. On the Big screen, its wall, the mixed board and in the pane."""
+        from monitoring.cards.render import WATER_TILES
+        self.assertEqual(WATER_TILES, 8)
+        built_in = {'TT-01': True, 'TW-01': True, 'TW-04': True, 'TW-09': False, 'TW-10': False, 'TW-11': False}
+        for name, expected in (('big', built_in), ('wall-big', built_in),
+                               ('mixed', {**{code: True for code in MIXED_BIG}, MIXED_OWN: False})):
+            for look in (ui.NEXT, ''):
+                articles = {self.norm(key[len('card:'):]): article
+                            for key, article in _articles(self.fragment(self.screens[name], look=look)).items()}
+                for code, tiles in expected.items():
+                    frames = re.findall(r'<div class="monitor-rows[^"]*"([^>]*)>', articles[code])
+                    with self.subTest(screen=name, look=look or 'classic', card=code):
+                        self.assertTrue(frames)
+                        self.assertEqual([' data-tiles' in frame for frame in frames], [tiles] * len(frames))
+                        values = len(re.findall(r'role="rowheader"', articles[code]))
+                        if code in ('TW-10', 'TW-11'):
+                            self.assertEqual((values, articles[code].count('role="table"')),
+                                             (15 if code == 'TW-10' else 17, 2))
+        for code, tiles in (('TW-02', True), ('TW-09', False)):
+            pane = self.ask(PANE, {**SCREENS['small'], 'focus': str(self.units[code].pk)}).content.decode()
+            self.assertEqual(' data-tiles' in pane, tiles, code)
+
+    def test_a_fitted_cards_markup_is_the_same_on_a_board_that_mixes_them(self):
+        """The mixed board (core/test_world.py mixed_board): Small cards, two Big ones and one drawn with a farm's own
+        full-height template, in the farm's one order; every card the same markup in both looks (none of them empty)."""
+        new, classic = self.fragment(self.screens['mixed']), self.fragment(self.screens['mixed'], look='')
+        self.assertEqual(new, classic)
+        articles = {self.norm(key[len('card:'):]): article for key, article in _articles(new).items()}
+        for code, article in articles.items():
+            with self.subTest(card=code):
+                self.assertEqual(' data-fill' in article, code in (*MIXED_BIG, MIXED_OWN))
+                self.assertIn(' is-fit ', article)
 
     def test_a_screens_change_token_is_its_looks_own(self):
         """The cards of a screen are other markup in each look, so the token a poll of one look carries never answers
@@ -277,13 +335,16 @@ class NextPagesTests(FrozenClock, TestCase):
                 index[key] = {'page': self.keep(f'page-{key}', page), 'lang': language,
                               'cards': self.keep(f'cards-{key}', self.ask(CARDS, query, language=language)),
                               'nonce': re.search(r'nonce="([^"]+)"', html).group(1)}
-            focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
-            page = self.ask(PAGE, focus, language=language)
-            index[f'pane-{language}'] = {
-                'page': self.keep(f'page-pane-{language}', page), 'lang': language,
-                'cards': self.keep(f'cards-pane-{language}', self.ask(CARDS, focus, language=language)),
-                'pane': self.keep(f'pane-pane-{language}', self.ask(PANE, focus, language=language)),
-                'nonce': re.search(r'nonce="([^"]+)"', page.content.decode()).group(1)}
+            for code in ('TW-02', *PANES):
+                # (the pane of TW-02 is "pane-<language>", the others "pane-tw08-<language>" …)
+                name = 'pane' if code == 'TW-02' else f'pane-{code.replace("-", "").lower()}'
+                focus = {**SCREENS['small'], 'focus': str(self.units[code].pk)}
+                page = self.ask(PAGE, focus, language=language)
+                index[f'{name}-{language}'] = {
+                    'page': self.keep(f'page-{name}-{language}', page), 'lang': language,
+                    'cards': self.keep(f'cards-{name}-{language}', self.ask(CARDS, focus, language=language)),
+                    'pane': self.keep(f'pane-{name}-{language}', self.ask(PANE, focus, language=language)),
+                    'nonce': re.search(r'nonce="([^"]+)"', page.content.decode()).group(1)}
             index[f'strip-{language}'] = self.keep(f'strip-{language}',
                                                    self.ask(reverse('core:ui_strip'), language=language))
         # the wall of a board that is read from 2 m on a 55" TV: the grid is told its screen and distance

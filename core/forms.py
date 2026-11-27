@@ -160,6 +160,11 @@ class PlatformSettingsForm(TabbedForm):
 
     tabs = PLATFORM_TABS
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import PLAN_BATCH_CELLS
+        self.fields['plan_batch_cells'].widget.attrs.update(min=PLAN_BATCH_CELLS[0], max=PLAN_BATCH_CELLS[1])
+
     class Meta:
         model = PlatformSettings
         fields = tab_fields(PLATFORM_TABS)

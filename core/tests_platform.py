@@ -12,6 +12,7 @@ from django.urls import reverse
 from farm.tests.helpers import role
 
 from . import access, navigation, platform
+from .testing import platform_settings_data
 from .middleware import PlatformSettingsMiddleware
 from .models import AuditLog, PlatformSettings
 
@@ -115,12 +116,8 @@ class PageTests(TestCase):
         self.row = PlatformSettings.get()
 
     def edit(self, **values):
-        data = {'correction_window_days': 31, 'clock_tolerance_seconds': 300,
-                'plan_batch_cells': 500, 'unknown_withdrawal_days': 180,
-                'version': self.row.version, **values}
-        if data.pop('second_approval_withdrawal', False):
-            data['second_approval_withdrawal'] = 'on'
-        return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]), data)
+        return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]),
+                                platform_settings_data(**values))
 
     def test_it_sits_under_company_administration_and_in_the_matrix(self):
         place = navigation.place('core.view_platformsettings')

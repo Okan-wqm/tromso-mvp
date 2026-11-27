@@ -18,6 +18,7 @@ from django.core.management import call_command
 from django.urls import reverse
 from django.utils import translation
 
+from core.testing import platform_settings_data
 from core.models import AuditLog, PlatformSettings
 
 from .. import withdrawal_gate
@@ -235,9 +236,7 @@ class DegreeDaysTests(CeilingTestCase):
     def test_the_ceiling_made_shorter_asks_nothing_of_it(self):
         self.user.groups.add(role('Platform owner', 'view_platformsettings', 'change_platformsettings'))
         row = PlatformSettings.get()
-        data = {'correction_window_days': row.correction_window_days, 'clock_tolerance_seconds': 300,
-                'plan_batch_cells': 500,
-                'unknown_withdrawal_days': 30, 'version': row.version}
+        data = platform_settings_data(unknown_withdrawal_days=30)
         self.assertEqual(self.client.post(reverse('core:platformsettings_edit', args=[row.pk]), data).status_code, 302)
         self.assertEqual(self.ends(self.tank), [(self.p.pk, None)])
         self.assertFalse(WithdrawalAcknowledgement.objects.exists())
@@ -252,10 +251,8 @@ class SettingTestCase(CeilingTestCase):
         self.row = PlatformSettings.get()
 
     def edit(self, days, **more):
-        data = {'correction_window_days': self.row.correction_window_days, 'clock_tolerance_seconds': 300,
-                'plan_batch_cells': 500,
-                'unknown_withdrawal_days': days, 'version': PlatformSettings.get().version, **more}
-        return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]), data)
+        return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]),
+                                platform_settings_data(unknown_withdrawal_days=days, **more))
 
 
 class CeilingMadeLongerTests(SettingTestCase):

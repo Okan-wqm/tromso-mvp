@@ -3687,6 +3687,7 @@
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
+        "farm/tests/test_degree_days_round3.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_escape_delivery.py",
@@ -4370,6 +4371,58 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "sensor_day_hours",
+          "field": "sensor_day_hours",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Degree-days"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "sensor_hold_seconds",
+          "field": "sensor_hold_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Degree-days"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "assumption_cap_days",
+          "field": "assumption_cap_days",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Degree-days"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "probe_sample_tolerance_c",
+          "field": "probe_sample_tolerance_c",
+          "type": "numeric(3, 1)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Degree-days"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -4401,6 +4454,30 @@
         },
         {
           "name": "chk_platform_settings_unknown_withdrawal",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_sensor_day_hours",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_sensor_hold",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_cap_days",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_probe_tolerance",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -4466,6 +4543,10 @@
             "second_approval_withdrawal": "Records",
             "unknown_withdrawal_days": "Records",
             "clock_tolerance_seconds": "Clocks",
+            "sensor_day_hours": "Degree-days",
+            "sensor_hold_seconds": "Degree-days",
+            "assumption_cap_days": "Degree-days",
+            "probe_sample_tolerance_c": "Degree-days",
             "version": ""
           }
         }
@@ -4488,6 +4569,7 @@
         "core/tests_simple_db.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
+        "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_second_approval_said_first.py",
         "farm/tests/test_withdrawal_ceiling.py",
@@ -13346,6 +13428,7 @@
       "tests": [
         "core/test_languages.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
@@ -15464,6 +15547,471 @@
     },
     {
       "app": "farm",
+      "model": "ProbeDayClosing",
+      "table": "probe_day_closings",
+      "description": "A day the daily job has closed for every place on one clock (a time zone): the probe days of that day are written, and a place without a row for it had no probe reading that day.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "timezone",
+          "field": "timezone",
+          "type": "varchar(63)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the clock, the day and the settings it was closed with"
+        },
+        {
+          "name": "day",
+          "field": "day",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the clock, the day and the settings it was closed with"
+        },
+        {
+          "name": "hours_needed",
+          "field": "hours_needed",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the clock, the day and the settings it was closed with"
+        },
+        {
+          "name": "hold_seconds",
+          "field": "hold_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the clock, the day and the settings it was closed with"
+        },
+        {
+          "name": "probe_days",
+          "field": "probe_days",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the clock, the day and the settings it was closed with"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_probe_day_closings",
+          "kind": "unique",
+          "fields": [
+            "timezone",
+            "day"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "never entered: written by the daily job with the probe days of the day"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "never changed"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "never deleted: a closed day stays closed"
+        },
+        "read": {
+          "status": "gap",
+          "paths": [],
+          "why": "no page shows the days closed yet: manage.py close_probe_days says them as it closes them"
+        }
+      },
+      "note": "A day the daily job has closed for every place on one clock.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "farm/tests/test_degree_days_round3.py",
+        "farm/tests/test_degree_days_sources.py",
+        "farm/tests/test_withdrawal_gate.py"
+      ]
+    },
+    {
+      "app": "farm",
+      "model": "ProbeDay",
+      "table": "probe_days",
+      "description": "One CLOSED day of one temperature probe at one place: a stored fact, like a water sample, that the degree-days read (farm/water/degree_days.py; the independent review of 2026-11-26, B-2).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "point_id",
+          "field": "point",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "water_sampling_points",
+            "model": "farm.SamplingPoint",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "system_id",
+          "field": "system",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "systems",
+            "model": "farm.System",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "day",
+          "field": "day",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "channel_no",
+          "field": "channel_no",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "mean_c",
+          "field": "mean_c",
+          "type": "numeric(5, 2)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "covered_seconds",
+          "field": "covered_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "hours",
+          "field": "hours",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "readings",
+          "field": "readings",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "ranged",
+          "field": "ranged",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "hours_needed",
+          "field": "hours_needed",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "hold_seconds",
+          "field": "hold_seconds",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "counts",
+          "field": "counts",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "how",
+          "field": "how",
+          "type": "varchar(12)",
+          "null": false,
+          "choices": [
+            "closed",
+            "backfilled",
+            "corrected"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "note",
+          "field": "note",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "voided_at",
+          "field": "voided_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "voided_by_id",
+          "field": "voided_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        },
+        {
+          "name": "void_reason",
+          "field": "void_reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "what the probe's good readings of the day gave when it was closed, and the hours and the hold it was closed with"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_probe_days_place",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_probe_days_how",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_probe_days_void",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_probe_days_point_live",
+          "kind": "unique",
+          "fields": [
+            "point",
+            "day",
+            "channel_no"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "uq_probe_days_system_live",
+          "kind": "unique",
+          "fields": [
+            "system",
+            "day",
+            "channel_no"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "never entered: closed by the daily job (manage.py close_probe_days) from the probe's readings, or backfilled by a person through the withdrawal guard (manage.py probe_days)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "never edited: a correction voids the row and writes a new one"
+        },
+        "delete": {
+          "status": "gap",
+          "paths": [],
+          "why": "no page corrects a probe day yet: manage.py probe_days correct does, through the withdrawal guard"
+        },
+        "read": {
+          "status": "gap",
+          "paths": [],
+          "why": "no page lists them yet: a withdrawal's text says how many days came from the sensors, and manage.py probe_days list shows a unit's"
+        }
+      },
+      "note": "One closed day of one temperature probe at one place: what the degree-days read of the sensors.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "farm/tests/test_degree_days_round3.py",
+        "farm/tests/test_degree_days_sources.py",
+        "farm/tests/test_withdrawal_gate.py",
+        "farm/tests/test_withdrawal_gate_coverage.py"
+      ]
+    },
+    {
+      "app": "farm",
       "model": "ProductionDepartment",
       "table": "production_departments",
       "description": "A production unit within a site: a hatchery hall, a nursery, a grow-out unit.",
@@ -15857,6 +16405,8 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_company_overview.py",
+        "farm/tests/test_degree_days_round3.py",
+        "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_feeding.py",
@@ -17582,6 +18132,8 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_clocks.py",
         "farm/tests/test_company_overview.py",
+        "farm/tests/test_degree_days_round3.py",
+        "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_fast_of_the_unit.py",
@@ -18738,6 +19290,7 @@
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_cleaner_size_limit.py",
+        "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_feeds.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
@@ -21169,6 +21722,8 @@
         "core/tests_sealing.py",
         "core/tests_workspaces.py",
         "farm/tests/test_calculator.py",
+        "farm/tests/test_degree_days_round3.py",
+        "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_health.py",
@@ -22255,6 +22810,8 @@
         "farm/tests/test_charts_of.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_core_refusal.py",
+        "farm/tests/test_degree_days_round3.py",
+        "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_drawer_water_history.py",
         "farm/tests/test_escape_delivery.py",
         "farm/tests/test_farm_dialogs_next.py",
@@ -24508,6 +25065,8 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_charts_of.py",
         "farm/tests/test_deffeyes.py",
+        "farm/tests/test_degree_days_round3.py",
+        "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_points.py",
@@ -25366,6 +25925,213 @@
         "farm/tests/test_withdrawal_guard.py",
         "farm/tests/test_withdrawal_lots.py",
         "farm/tests/test_withdrawal_shared_unit.py"
+      ]
+    },
+    {
+      "app": "farm",
+      "model": "WithdrawalFloor",
+      "table": "withdrawal_floors",
+      "description": "A day before which one batch's withdrawal from one treatment does NOT end, whatever the days add up to: a recorded decision, not a stored end (the withdrawal is still worked out on read, and ends at the later of the two: `until = max(worked out, floor)`, said in its text).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "treatment_id",
+          "field": "treatment",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "treatments",
+            "model": "farm.Treatment",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "the end the withdrawal had when the floor was set, why, and who lifted it and why"
+        },
+        {
+          "name": "batch_id",
+          "field": "batch",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "batches",
+            "model": "farm.Batch",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "the end the withdrawal had when the floor was set, why, and who lifted it and why"
+        },
+        {
+          "name": "not_before",
+          "field": "not_before",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the end the withdrawal had when the floor was set, why, and who lifted it and why"
+        },
+        {
+          "name": "origin",
+          "field": "origin",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "landing",
+            "closing"
+          ],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the end the withdrawal had when the floor was set, why, and who lifted it and why"
+        },
+        {
+          "name": "reason",
+          "field": "reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the end the withdrawal had when the floor was set, why, and who lifted it and why"
+        },
+        {
+          "name": "lifted_at",
+          "field": "lifted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the end the withdrawal had when the floor was set, why, and who lifted it and why"
+        },
+        {
+          "name": "lifted_by_id",
+          "field": "lifted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [],
+          "how": "computed",
+          "why": "the end the withdrawal had when the floor was set, why, and who lifted it and why"
+        },
+        {
+          "name": "lift_reason",
+          "field": "lift_reason",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "computed",
+          "why": "the end the withdrawal had when the floor was set, why, and who lifted it and why"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_withdrawal_floors_origin",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_withdrawal_floors_reason",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_withdrawal_floors_lift",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "never entered: set by the daily closing of probe days and by a landing (manage.py withdrawal_ends) for a withdrawal whose end would move earlier with nobody there to be asked"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "never edited: a floor is lifted, and set again if needed"
+        },
+        "delete": {
+          "status": "gap",
+          "paths": [],
+          "why": "no page lifts a floor yet: manage.py withdrawal_floors lifts one through the withdrawal guard; a floor whose day has passed holds nobody"
+        },
+        "read": {
+          "status": "gap",
+          "paths": [],
+          "why": "no page lists them yet: the withdrawal's own text says the floor that holds it, and manage.py withdrawal_floors lists them"
+        }
+      },
+      "note": "A day before which one batch's withdrawal from one treatment does not end, whatever the days add up to: a recorded decision, not a stored end.",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "farm/tests/test_degree_days_sources.py",
+        "farm/tests/test_withdrawal_gate.py"
       ]
     },
     {
@@ -39153,6 +39919,7 @@
         "core/tests_rev.py",
         "core/tests_sealing.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_degree_days_sources.py",
         "experiments/tests/test_change_token.py",
         "experiments/tests/test_review.py",
         "experiments/tests/world.py",
@@ -45073,9 +45840,27 @@
       "weight": 3
     },
     {
+      "table": "farm.ProbeDay",
+      "what": "read",
+      "why": "no page lists them yet: a withdrawal's text says how many days came from the sensors, and manage.py probe_days list shows a unit's",
+      "weight": 3
+    },
+    {
+      "table": "farm.ProbeDayClosing",
+      "what": "read",
+      "why": "no page shows the days closed yet: manage.py close_probe_days says them as it closes them",
+      "weight": 3
+    },
+    {
       "table": "farm.WithdrawalAcknowledgement",
       "what": "read",
       "why": "no page lists them yet: check_withdrawal reads them, and the write's critical log entry says what was acknowledged",
+      "weight": 3
+    },
+    {
+      "table": "farm.WithdrawalFloor",
+      "what": "read",
+      "why": "no page lists them yet: the withdrawal's own text says the floor that holds it, and manage.py withdrawal_floors lists them",
       "weight": 3
     },
     {
@@ -45095,6 +45880,18 @@
       "what": "edit",
       "why": "no page renames a channel once it is created",
       "weight": 3
+    },
+    {
+      "table": "farm.ProbeDay",
+      "what": "delete",
+      "why": "no page corrects a probe day yet: manage.py probe_days correct does, through the withdrawal guard",
+      "weight": 2
+    },
+    {
+      "table": "farm.WithdrawalFloor",
+      "what": "delete",
+      "why": "no page lifts a floor yet: manage.py withdrawal_floors lifts one through the withdrawal guard; a floor whose day has passed holds nobody",
+      "weight": 2
     },
     {
       "table": "messaging.Assistant",

@@ -23,6 +23,8 @@ from pathlib import Path
 from django.conf import settings
 from django.test import SimpleTestCase
 
+from .testing import is_test_module
+
 APPS = ('alarms', 'config', 'core', 'experiments', 'farm', 'hr', 'inventory', 'knowledge', 'messaging', 'monitoring',
         'reports', 'sensors', 'tasks')
 # A benchmark that writes made-up readings: no farm's day is read.
@@ -109,7 +111,7 @@ def server_clock_reads():
     for app in APPS:
         for path in Path(settings.BASE_DIR, app).rglob('*.py'):
             relative = path.relative_to(settings.BASE_DIR).as_posix()
-            if '/migrations/' in relative or '/tests' in relative or path.name.startswith('test'):
+            if '/migrations/' in relative or is_test_module(relative):
                 continue
             for line, what, name in server_clock_reads_in(ast.parse(path.read_text(encoding='utf-8'))):
                 if (relative, name) not in ALLOWED:
@@ -117,16 +119,12 @@ def server_clock_reads():
     return found
 
 
-def is_test(relative, name):
-    return '/tests' in relative or name.startswith('test')
-
-
 def server_day_reads_in_tests():
     found = []
     for app in APPS:
         for path in Path(settings.BASE_DIR, app).rglob('*.py'):
             relative = path.relative_to(settings.BASE_DIR).as_posix()
-            if not is_test(relative, path.name):
+            if not is_test_module(relative):
                 continue
             for line, what, _name in server_clock_reads_in(ast.parse(path.read_text(encoding='utf-8'))):
                 if what in TEST_DAY_READS and (relative, what) not in ALLOWED_IN_TESTS:
@@ -176,8 +174,7 @@ def fold_checks_outside_core_dates():
     for app in APPS:
         for path in Path(settings.BASE_DIR, app).rglob('*.py'):
             relative = path.relative_to(settings.BASE_DIR).as_posix()
-            if relative == 'core/dates.py' or '/migrations/' in relative or '/tests' in relative or \
-                    path.name.startswith('test'):
+            if relative == 'core/dates.py' or '/migrations/' in relative or is_test_module(relative):
                 continue
             for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
                 if isinstance(node, ast.Call) and any(keyword.arg == 'fold' for keyword in node.keywords):

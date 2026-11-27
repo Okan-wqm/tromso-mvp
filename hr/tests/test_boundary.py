@@ -9,6 +9,7 @@ from django.db import models
 from django.test import SimpleTestCase
 
 from core.crud import Resource, tab_fields
+from core.testing import is_test_module
 
 # What would be money or identity. Whole words of a column or a field name (snake_case parts), case-insensitive.
 FORBIDDEN = re.compile(r'(^|_)(salary|salaries|wage|wages|pay|payroll|payslip|rate|bank|iban|swift|account_number|'
@@ -64,7 +65,7 @@ class NoPayTests(SimpleTestCase):
     def test_hr_imports_nothing_of_payroll(self):
         root = Path(settings.BASE_DIR) / 'hr'
         for path in root.rglob('*.py'):
-            if 'tests' in path.parts or 'migrations' in path.parts:
+            if 'migrations' in path.parts or is_test_module(path.relative_to(settings.BASE_DIR)):
                 continue
             text = path.read_text(encoding='utf-8')
             self.assertIsNone(re.search(r'^\s*(from|import)\s+payroll', text, re.M), str(path))

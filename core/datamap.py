@@ -41,6 +41,7 @@ from django.utils import translation
 from . import database
 from .crud import ENTRY_KEY, Resource, constrained_fields
 from .models import AuditedModel
+from .modules import is_test_module
 
 CAPABILITIES = ('create', 'edit', 'delete', 'read')
 DOCS = Path(settings.BASE_DIR) / 'docs'
@@ -289,7 +290,6 @@ def test_modules():
     found = {}
     for config in project_apps():
         for path in sorted(Path(config.path).rglob('*.py')):
-            from core.testing import is_test_module
             if 'migrations' in path.relative_to(config.path).parts or not is_test_module(path.relative_to(root)):
                 continue
             found[path.relative_to(root).as_posix()] = frozenset(re.findall(r'\w+', path.read_text(encoding='utf-8')))

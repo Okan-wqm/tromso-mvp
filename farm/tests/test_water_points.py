@@ -29,7 +29,7 @@ from .helpers import may_record, point_of, role
 from .test_stock import make_unit
 from .test_water import WaterTestCase
 from farm import withdrawal_gate
-from core.testing import delete_confirmed
+from core.testing import delete_confirmed, is_test_module
 
 D = Decimal
 POINT_MANAGER = ('view_samplingpoint', 'add_samplingpoint', 'change_samplingpoint', 'delete_samplingpoint',
@@ -702,7 +702,8 @@ class ReadTests(PointTestCase):
             self.assertIn('tiers(', source, module)
             self.assertNotIn('water_sources(', source, module)          # no second resolver beside it
         readers = sorted(path.relative_to(root).as_posix() for path in root.rglob('*.py')
-                         if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)
+                         if not {'water', 'migrations'} & set(path.relative_to(root).parts)
+                         and not is_test_module(path.relative_to(root.parent))
                          and 'WaterMeasurement' in path.read_text(encoding='utf-8'))
         self.assertEqual(readers, ['admin.py', 'apps.py', 'forms/water.py', 'models/__init__.py', 'models/water.py',
                                    'models/water_point.py', 'screens.py', 'sealing.py'])

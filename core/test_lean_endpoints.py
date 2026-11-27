@@ -14,11 +14,13 @@ from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.urls import URLPattern, URLResolver, get_resolver, reverse
 
+from core.testing import is_test_module
+
 from farm.tests.helpers import role
 
 ROOT = Path(settings.BASE_DIR)
 CHEMISTRY_MODULES = {'chemistry', 'deffeyes', 'dosing', 'charts', 'calculation', 'native'}
-SKIPPED = {'node_modules', '.venv', 'chemcore', 'migrations', 'tests', 'static', 'staticfiles'}
+SKIPPED = {'node_modules', '.venv', 'chemcore', 'migrations', 'static', 'staticfiles'}
 
 # url name -> why it may compute on values from the request (each refuses a user without its permission: below)
 ALLOWED = {
@@ -47,7 +49,7 @@ def python_modules():
     """(dotted module name, syntax tree) of every module of the project but tests and migrations."""
     for path in sorted(ROOT.rglob('*.py')):
         parts = path.relative_to(ROOT).with_suffix('').parts
-        if set(parts) & SKIPPED or parts[-1].startswith('test'):
+        if set(parts) & SKIPPED or is_test_module(path.relative_to(ROOT)):
             continue
         yield '.'.join(parts), ast.parse(path.read_text(encoding='utf-8'))
 

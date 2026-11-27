@@ -16,28 +16,10 @@ import os
 from datetime import datetime, timezone as dt_timezone
 from unittest import mock
 
+from core.modules import is_test_module  # noqa: F401  a re-export: production imports core.modules, never this module
+
 CLOCK = 'django.utils.timezone.now'
 
-
-def is_test_module(path):
-    """Whether a file of the project is test code: a module in a `tests` folder, or named `tests.py`, `test_*.py`,
-    `tests_*.py` or `testing.py` (this module: the tests' support, which production code never imports). `path` is
-    relative to the project (settings.BASE_DIR), or absolute and then read from the project down, so where a
-    checkout is mounted (a folder named tests above it) changes nothing. The one predicate of every reader of the code
-    that tells tests from production: rule S and the layering guards (core/tests_data_access.py), the data map's tests
-    that mention a model (core.datamap), the sealing and simple-database guards, the formula doors' callers and HR's
-    own code-reading tests."""
-    from pathlib import PurePath
-
-    from django.conf import settings
-    path, base = PurePath(path), PurePath(settings.BASE_DIR)
-    if path.is_absolute():
-        try:
-            path = path.relative_to(base)
-        except ValueError:
-            return False
-    parts = path.parts
-    return 'tests' in parts[:-1] or parts[-1] in ('tests.py', 'testing.py') or parts[-1].startswith(('test_', 'tests_'))
 
 # Moments at which the UTC day is not the company's (Europe/Oslo unless the environment names another). The first is
 # the middle of the CI run that found the class (run 42921917659, 23:17 to 23:57 UTC on 10.11.2026).

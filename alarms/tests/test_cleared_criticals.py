@@ -7,13 +7,13 @@ is still given up, its attempt saying why, after the due criticals and in bounde
 cleared criticals of one kind go as the first on its own and one follow-up naming each, when it cleared and how many are
 open now."""
 import sys
-import time
 
 from django.db import connection
 from django.test import override_settings
 
 from core.models import Profile
 from core.templatetags.dates import on, zone_for
+from core.testing import reads
 
 from .. import outbox, read, services
 from ..models import DeliveryAttempt, OutboxEntry
@@ -121,28 +121,27 @@ class BoundedGiveUpTests(Case):
     def test_a_critical_queued_with_twenty_thousand_cleared_warnings_goes_out_in_the_first_round(self):
         self.fill(20_000)
         (critical,) = self.system(1, 'critical', parameter='urgent')
-        started = time.monotonic()
-        found = outbox.send_due(self.at(2))
-        took = time.monotonic() - started
-        sys.stderr.write(f'\n[alarm outbox] a critical beside 20,000 cleared warnings: out in the first round, '
-                         f'{took * 1000:.0f} ms\n')
+        with reads() as round_:
+            found = outbox.send_due(self.at(2))
+        sys.stderr.write(f'\n[alarm outbox] a critical beside 20,000 cleared warnings: out in the first round; the '
+                         f'most rows one statement handed back {round_.most_returned()}\n')
         self.assertEqual([sent.pk for sent in RecordingTransport.sent], [critical.pk])
         self.assertEqual(found.sent, 1)
-        self.assertLess(found.given_up, 20_000)
-        self.assertLess(took, 1.0)
+        # What the round does grows with what it sends and one chunk, never with the 20,000: it gives up one chunk, and
+        # none of its statements hands Python more rows than a chunk (counted by the database, not timed).
+        self.assertEqual(found.given_up, outbox.GIVE_UP_CHUNK)
+        self.assertLessEqual(round_.most_returned(), outbox.GIVE_UP_CHUNK)
 
     def test_the_backlog_drains_over_rounds_each_bounded(self):
         self.fill(20_000)
-        rounds, longest = 0, 0.0
+        with reads() as first:                                 # the round with the whole backlog waiting
+            given_up = [outbox.send_due(self.at(2, seconds=1)).given_up]
         while OutboxEntry.objects.exists():
-            rounds += 1
-            started = time.monotonic()
-            outbox.send_due(self.at(2, seconds=rounds))
-            longest = max(longest, time.monotonic() - started)
-            self.assertLess(rounds, 400)
-        sys.stderr.write(f'\n[alarm outbox] 20,000 cleared warnings given up over {rounds} rounds, the longest '
-                         f'{longest * 1000:.0f} ms\n')
-        self.assertGreater(rounds, 1)
-        self.assertLess(longest, 1.0)
+            given_up.append(outbox.send_due(self.at(2, seconds=len(given_up) + 1)).given_up)
+            self.assertLess(len(given_up), 400)
+        sys.stderr.write(f'\n[alarm outbox] 20,000 cleared warnings given up over {len(given_up)} rounds; the first '
+                         f'round\'s statements handed back at most {first.most_returned()} rows\n')
+        self.assertEqual(given_up, [outbox.GIVE_UP_CHUNK] * (20_000 // outbox.GIVE_UP_CHUNK))   # a chunk a round
+        self.assertLessEqual(first.most_returned(), outbox.GIVE_UP_CHUNK)
         self.assertEqual(DeliveryAttempt.objects.filter(detail__contains='cleared before the first attempt').count(),
                          20_000)

@@ -1631,7 +1631,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 75 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 76 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2434,7 +2434,7 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 - **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › attendance_records (never shown: note)
 - **forms**: `AttendanceRecordForm`
 - **constraints**: chk_attendance_records_order (check); chk_attendance_records_via (check); chk_attendance_records_note (check); excl_attendance_employee_span (exclusion: employee, clock_in, clock_out)
-- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 15 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2696,7 +2696,7 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 23 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 24 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2726,7 +2726,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 27 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 28 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

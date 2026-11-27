@@ -4670,8 +4670,9 @@ told the cell as the dialog knows it (empty for a new plan, the plan being edite
 another lead or a batch is not overwritten ("This person already has a plan for this day."); the batch sets whatever is
 in a cell, as it always did. A cell's delete is `hr.services.clear_day`: it clears the plan the person confirmed, at
 the version they confirmed (every tab's delete confirmation carries the record's version, and a record changed since is
-not deleted: core.crud.DeleteView), and refuses with the reason when the cell was cleared, replanned or changed between
-the click and the service's lock. A
+not deleted: core.crud.DeleteView, core.confirmed), and refuses with the reason when the cell was cleared, replanned or
+changed between the click and the service's lock. The version is asked last, under the lock, after the lead's own days
+and the reach of the day, so a lead's delete of their own plan is a 403 however it is posted. A
 planned day is read on the clock, and with
 the holidays, of the site the person is placed on that day (`hr.read.planned_shifts`), in the save and in the grid.
 
@@ -6501,8 +6502,24 @@ Team); the request carries the mount (`mount_of`), `scoped` narrows the rows to 
 A tab can also refuse a verb on a record it reaches (`Resource.allowed`: HR
 refuses editing, voiding and planning one's own attendance and plan).
 
+A delete is refused in one order on every tab (`DeleteView.post`): the scope (a record the person does not reach is a
+404), the record's own rule (`Resource.allowed`, a 403), a service's own refusals (HR: the reach of the day, under its
+lock), and last whether it is the record the confirmation showed. Both looks of the confirmation post the version they
+showed; `core.confirmed.as_confirmed` compares it with the record as read now (`unchanged`, the one comparison of an
+edit, a row list and a delete, below the views, so a service that locks in its own order asks the same): a versioned
+record posted without one confirmed nothing and is refused (400, said), one changed since is not deleted (said, back on
+the confirmation), a record without a version (a hard-deleted one) has nothing to confirm.
+
+Every model form of the project derives from `core.crud.BoundedModelForm` (`TabbedForm` too; `core/tests_forms_bounded.py`
+holds it): each number input the form takes from its model says the bounds of the field's MinValueValidator and
+MaxValueValidator (`bounded_inputs`, the same figures as the database's check), so no form sets them by hand. A field
+the form declares itself says its own (`min_value`, `max_value`); a localised decimal typed as text has none. The pH
+window scale's two ends are bounded by a check on the table, not by validators on the fields, and its form says them
+from the same constants (`monitoring.models.PH_SCALE_BOUNDS`).
+
 **One writer.** A tab whose records its area's service writes says so (`Resource.service_writes`) and hands every write to it:
-`create_record(request, form)`, `change_record(request, form, current)` and `delete_record(request, record)` call the service,
+`create_record(request, form)`, `change_record(request, form, current)` and `delete_record(request, record, seen)` (`seen`:
+the version the confirmation posted, which the service asks last, under its own lock) call the service,
 which checks its own rules, locks in its own order and writes its own audit row; crud keeps the form (fields, parsing, the
 model's own checks), the verb, the scope, the record's lock, the version and the pages. crud saves nothing beside the record
 for such a tab: a tab that sets the flag and has a many-to-many field on its form, a row list, a `change_severity` or an
@@ -6522,23 +6539,31 @@ the code for it, project-wide:
 - No other production module builds or writes a declared model. The scan names a model when the module imports it (an
   alias too), defines it, or reaches it through a module it imports (`models.Posting`, `m.Posting`,
   `hr.models.Posting`, `posting.Posting`). It counts `Model(...)`; a write through any manager of a named model
-  (`objects`, `all_objects`, `_base_manager`, `_default_manager`), through `QuerySet(Model)`, `QuerySet(model=Model)`
-  or `sealing.unsealed(Model)`; a write through a queryset, a manager or a row held in a name in the same function and
-  read from one of those (`rows = Posting.objects.filter(...)`, `rows.update(...)`; `one = Posting.objects.get(...)`,
-  `one.save()`); and the `save()` of a model form of a declared model held in a name.
+  (`objects`, `all_objects`, `_base_manager`, `_default_manager`, and Django's public `_meta.base_manager` and
+  `_meta.default_manager`), through `QuerySet(Model)`, `QuerySet(model=Model)` or `sealing.unsealed(Model)`; a write
+  through a queryset, a manager or a row read from one of those and held (`rows = Posting.objects.filter(...)`, then
+  `rows.update(...)`; `one = Posting.objects.get(...)`, then `one.save()` or `one._meta.base_manager...`), held by an
+  assignment to a name (plain, annotated `rows: T = ...`, a walrus, a pair of names given a pair of values), by a `for`
+  or a comprehension over it (each row), or by `self.<name> = ...` in any method of its class (read in all of them);
+  and the `save()` of a model form of a declared model held so.
 - No production module writes a model it cannot name, which could be a declared one: a write through a manager,
   `QuerySet(...)` or `unsealed(...)` whose model is not named as above (`type(row).objects...`,
   `row.__class__.all_objects...`, `self.model.objects...`, `Model = type(row); Model._base_manager...`,
-  `QuerySet(model)`), a queryset held in a name from such a source, and `save_base(...)`. It is decided by whether the
-  model is named, never by how a name is spelled. The ones that exist are listed each with its count and reason
+  `row._meta.base_manager...` of a row not held as above, `QuerySet(model)`), a model reached through `getattr` or
+  `apps.get_model(...)` and written through a manager (`apps.get_model('hr', 'Posting').objects.update(...)`,
+  `M = apps.get_model(...)`, then `M.objects.update(...)`), a queryset held from such a source, and `save_base(...)`. It
+  is decided by whether the model is named, never by how a name is spelled. The ones that exist are listed each with its count and reason
   (`LOW_LEVEL_ALLOWED`, a ratchet): the delete plan's own columns and the form key's row (core), a row list's rows
   (crud), an experiment's design rows (`_park`, `_touch`), the equipment types' migration, the withdrawal guard's
   what-ifs in a savepoint always rolled back, the demonstration's accounts, and two report rows given by model.
 
-What it does not see: a row read some other way and saved or deleted (a row handed in as a parameter, `row.save()`,
-`row.delete()`, `row.soft_delete(user)`), a related manager (`person.postings.create()`, `person.assignments.filter(...)
-.update(...)`), a model reached through `getattr` or `apps.get_model(...)` outside a migration, and raw SQL (rule W reads
-the code for that). Those are the code review's until the one write gate in core (the withdrawal gate's hook layer,
+What it does not see: a row or a queryset that comes from anything else and is written: one handed in as a parameter
+(`def f(rows): rows.update(...)`, `row.save()`, `row.delete()`, `row.soft_delete(user)`), what a helper returns
+(`placements(person).update(...)`; `row = first(...)`, then `row.save()`), a pair of names given one value
+(`rows, n = helper()`), a `with ... as`; a related manager (`person.postings.create()`, `person.assignments.filter(...)
+.update(...)`); a model built through `getattr` or `apps.get_model(...)` (`M = apps.get_model(...)`, then `M(...)`); and
+raw SQL (rule W reads the code for that). `core/tests_data_access.py` holds one case of each spelling named here:
+counted, flagged, or not seen. Those are the code review's until the one write gate in core (the withdrawal gate's hook layer,
 `farm/withdrawal_gate.py`, made the gate of every rule) holds the model itself at run time: the follow-up listed in the
 plan.
 
@@ -7181,7 +7206,9 @@ runs the server:
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
 | `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors; `prune.sh` removes the test runner's old image tags |
 | `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
-| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests) |
+| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests); `delete_confirmed`, a tab's delete posted as its confirmation does |
+| `core/modules.py` | `is_test_module`: the one predicate that tells test code from production, for every reader of the code (rule S, the data map, the layering, clock, date-input, escaping and lean-endpoint guards); production may import it, never `core/testing.py` |
+| `core/confirmed.py` | Whether a record is still the one the person saw (`unchanged`), its sentences (`changed_meanwhile`) and a delete's last step (`as_confirmed`), for crud and the services alike |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
 | `deploy/`, `docs/ops/`, `.github/workflows/go-live-stack.yml` | The go-live package: the production stack (`compose.yml`, the proxy, the broker's TLS listener, the database image with its roles, the backup agent, `web/` the server's start, jobs and release step), the scripts (secrets, certificates, role checks, password rotation), the access templates (Cloudflare, WireGuard), the stack's proof (`ci/`); the runbooks and the go-live checklist (Starting a production server) |
 

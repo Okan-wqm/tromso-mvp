@@ -235,7 +235,7 @@ class CellsReachedMatrixTests(PeopleTestCase):
     def test_the_two_forms_agree(self):
         from .. import scope
         from ..models import OfficeDepartment
-        sub = OfficeDepartment.objects.create(site=self.site, name='Payroll', code='PAY', parent=self.finance)
+        sub = OfficeDepartment.objects.create(site=self.site, name='Planning', code='PLN', parent=self.finance)
         boss = user('officeboss', 'view_employee', group='Office boss role')
         OfficeDepartment.objects.filter(pk=self.admin_dept.pk).update(manager=boss)
         moved, left, gone = employee('E-81', 'Moved'), employee('E-82', 'Left'), employee('E-83', 'Gone')

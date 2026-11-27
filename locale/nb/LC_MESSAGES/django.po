@@ -265,10 +265,28 @@ msgstr[0] "%(count)d dag (%(hours)d t)"
 msgstr[1] "%(count)d dager (%(hours)d t)"
 
 #, python-format
+msgid "%(count)d day from water samples"
+msgid_plural "%(count)d days from water samples"
+msgstr[0] "%(count)d dag fra vannprøver"
+msgstr[1] "%(count)d dager fra vannprøver"
+
+#, python-format
+msgid "%(count)d day measured by the sensors"
+msgid_plural "%(count)d days measured by the sensors"
+msgstr[0] "%(count)d dag målt av sensorene"
+msgstr[1] "%(count)d dager målt av sensorene"
+
+#, python-format
 msgid "%(count)d day planned."
 msgid_plural "%(count)d days planned."
 msgstr[0] "%(count)d dag planlagt."
 msgstr[1] "%(count)d dager planlagt."
+
+#, python-format
+msgid "%(count)d day projected"
+msgid_plural "%(count)d days projected"
+msgstr[0] "%(count)d dag fremskrevet"
+msgstr[1] "%(count)d dager fremskrevet"
 
 #, python-format
 msgid ""
@@ -297,6 +315,30 @@ msgstr[0] ""
 msgstr[1] ""
 "%(count)d dager uten målt vanntemperatur telles med den antatte %(temperature)s °C (artens "
 "innstilling i Referansedata)."
+
+#, python-format
+msgid ""
+"%(count)d day without a measured water temperature is counted below the species’ assumed "
+"temperature: at the coldest daily mean measured in the %(days)d days before the gap began, or the"
+" first day measured after it when that is colder."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted below the species’ assumed "
+"temperature: at the coldest daily mean measured in the %(days)d days before their gap began, or "
+"the first day measured after it when that is colder."
+msgstr[0] ""
+"%(count)d dag uten målt vanntemperatur telles under artens antatte temperatur: med det kaldeste "
+"døgnsnittet målt de %(days)d dagene før hullet begynte, eller den første dagen målt etter det når"
+" den er kaldere."
+msgstr[1] ""
+"%(count)d dager uten målt vanntemperatur telles under artens antatte temperatur: med det kaldeste"
+" døgnsnittet målt de %(days)d dagene før hullet deres begynte, eller den første dagen målt etter "
+"det når den er kaldere."
+
+#, python-format
+msgid "%(count)d day without a measurement"
+msgid_plural "%(count)d days without a measurement"
+msgstr[0] "%(count)d dag uten måling"
+msgstr[1] "%(count)d dager uten måling"
 
 #, python-format
 msgid "%(count)d delivery or return of the store names it for “%(category)s”: keep it ticked."
@@ -441,6 +483,12 @@ msgstr[1] "%(count)d rader lagret."
 #, python-format
 msgid "%(count)d s"
 msgstr "%(count)d s"
+
+#, python-format
+msgid "%(count)d sensor day not closed yet"
+msgid_plural "%(count)d sensor days not closed yet"
+msgstr[0] "%(count)d sensordag ikke lukket ennå"
+msgstr[1] "%(count)d sensordager ikke lukket ennå"
 
 #, python-format
 msgid "%(count)d treatment"
@@ -2223,6 +2271,9 @@ msgstr ""
 "pH-vinduet på et kort tegnes på skalaen for enhetens vanntype. En pH utenfor skalaen vises som en"
 " pil og tallet."
 
+msgid "A change of the rule"
+msgstr "En endring av regelen"
+
 #, python-format
 msgid "A channel has at most %(num)d calibration."
 msgid_plural "A channel has at most %(num)d calibrations."
@@ -2311,6 +2362,19 @@ msgstr ""
 
 msgid "A day in the period"
 msgstr "En dag i perioden"
+
+msgid ""
+"A day without a measured water temperature counts at the species’ assumed temperature, but never "
+"above the coldest daily mean measured in this many calendar days before its gap of days without a"
+" measurement began (counted back from the gap, each day measured or not), nor above the first day"
+" measured after the gap. 1 to 30; 7 until you set another. A change that would free fish held "
+"today or bring a recorded harvest inside a withdrawal asks first."
+msgstr ""
+"En dag uten målt vanntemperatur teller med artens antatte temperatur, men aldri over det kaldeste"
+" døgnsnittet målt i så mange kalenderdager før hullet av dager uten måling begynte (talt bakover "
+"fra hullet, hver dag målt eller ikke), og heller ikke over den første dagen målt etter hullet. 1 "
+"til 30; 7 til du setter noe annet. En endring som ville frigi fisk som holdes tilbake i dag, "
+"eller legge en registrert slakting inn i en tilbakeholdelsestid, spør først."
 
 msgid "A deadband above 0, unless every value is stored."
 msgstr "Et dødbånd over 0, med mindre hver verdi lagres."
@@ -2760,6 +2824,15 @@ msgstr "En port fra 1 til 65535."
 msgid "A price needs its currency, and a currency needs a price."
 msgstr "En pris trenger sin valuta, og en valuta trenger en pris."
 
+msgid "A probe day closed"
+msgstr "En sondedag ble lukket"
+
+msgid "A probe day needs readings in (hours)"
+msgstr "En sondedag trenger målinger i (timer)"
+
+msgid "A probe reading stands for (seconds)"
+msgstr "En sondemåling gjelder i (sekunder)"
+
 msgid "A process value is bound to a piece of equipment or a system."
 msgstr "En prosessverdi knyttes til et utstyr eller et system."
 
@@ -2791,6 +2864,9 @@ msgstr ""
 
 msgid "A randomised allocation has its seed; one placed by hand has its reason."
 msgstr "En randomisert fordeling har sitt frø; en manuell plassering har sin begrunnelse."
+
+msgid "A reading stood for (seconds)"
+msgstr "En måling gjaldt i (sekunder)"
 
 msgid "A recipe takes two reagents: choose at least two (the Reagents tab)."
 msgstr "En oppskrift bruker to kjemikalier: velg minst to (fanen Kjemikalier)."
@@ -4433,6 +4509,9 @@ msgstr "Tilbake til rapporten"
 msgid "Back to the stock"
 msgstr "Tilbake til beholdningen"
 
+msgid "Backfilled"
+msgstr "Etterfylt"
+
 msgid "Backup"
 msgstr "Reserve"
 
@@ -5513,6 +5592,9 @@ msgstr "Lukket"
 msgid "Closed by"
 msgstr "Lukket av"
 
+msgid "Closed by the daily job"
+msgstr "Lukket av den daglige jobben"
+
 msgid "Closed on"
 msgstr "Avsluttet"
 
@@ -5774,6 +5856,9 @@ msgstr "Koronautladning"
 msgid "Correct"
 msgstr "Rett"
 
+msgid "Corrected"
+msgstr "Rettet"
+
 msgid "Correction"
 msgstr "Korrigering"
 
@@ -5846,6 +5931,12 @@ msgstr "Land"
 
 msgid "Counts"
 msgstr "Tellinger"
+
+msgid "Counts as a probe day"
+msgstr "Teller som sondedag"
+
+msgid "Covered (seconds)"
+msgstr "Dekket (sekunder)"
 
 msgid "Covered by a flood message"
 msgstr "Dekket av en flommelding"
@@ -6062,6 +6153,13 @@ msgstr "Dager i året"
 msgid "Days and punches"
 msgstr "Dager og stemplinger"
 
+msgid "Days before a gap that cap an assumed temperature"
+msgstr "Dager før et hull som begrenser en antatt temperatur"
+
+#, python-format
+msgid "Days counted: %(parts)s."
+msgstr "Dager telt: %(parts)s."
+
 msgid "Days from the baseline weighing to the final weighing."
 msgstr "Dager fra grunnveiingen til sluttveiingen."
 
@@ -6165,6 +6263,9 @@ msgstr "Deformert"
 
 msgid "Deformity"
 msgstr "Deformitet"
+
+msgid "Degree-days"
+msgstr "Døgngrader"
 
 msgid "Degree-days are for the harvest only: fish that are moved or graded are not purged."
 msgstr "Døgngrader gjelder bare høsting: fisk som flyttes eller sorteres renses ikke."
@@ -8164,6 +8265,9 @@ msgstr "Gå til oversikten"
 msgid "Going on is stored with what is shown here and logged as critical."
 msgstr "Å fortsette lagres med det som vises her og logges som kritisk."
 
+msgid "Good readings"
+msgstr "Gode målinger"
+
 msgid "Grace (minutes)"
 msgstr "Toleranse (minutter)"
 
@@ -8430,6 +8534,26 @@ msgstr "Varmekapasitet"
 msgid "Height"
 msgstr "Høyde"
 
+#, python-format
+msgid ""
+"Held to %(floor)s by a floor (%(why)s, %(when)s), although the days counted give %(worked)s: the "
+"end it had is kept. The floor ends by itself on that day, or is lifted before by the platform’s "
+"administrator, who answers the withdrawal question first."
+msgstr ""
+"Holdes tilbake til %(floor)s av et gulv (%(why)s, %(when)s), selv om de talte dagene gir "
+"%(worked)s: slutten den hadde, beholdes. Gulvet opphører av seg selv den dagen, eller løftes før "
+"av plattformens administrator, som først svarer på spørsmålet om tilbakeholdelsestid."
+
+#, python-format
+msgid ""
+"Held without an end by a floor (%(why)s, %(when)s), although the days counted give %(worked)s: "
+"the end it had was unknown and is kept. The floor is lifted by the platform’s administrator, who "
+"answers the withdrawal question first."
+msgstr ""
+"Holdes tilbake uten slutt av et gulv (%(why)s, %(when)s), selv om de talte dagene gir %(worked)s:"
+" slutten den hadde, var ukjent og beholdes. Gulvet løftes av plattformens administrator, som "
+"først svarer på spørsmålet om tilbakeholdelsestid."
+
 msgid "Here now"
 msgstr "Her nå"
 
@@ -8484,11 +8608,25 @@ msgstr "Timer"
 msgid "Hours fasted"
 msgstr "Timer sultet"
 
+msgid "Hours needed"
+msgstr "Timer som kreves"
+
 msgid "Hours the rule asks for"
 msgstr "Timer regelen krever"
 
+msgid "Hours with a good reading"
+msgstr "Timer med en god måling"
+
 msgid "How"
 msgstr "Hvordan"
+
+msgid ""
+"How a day’s water temperature counts for a medicine withdrawal and a purging fast. A change goes "
+"through the withdrawal question when it would move a withdrawal."
+msgstr ""
+"Hvordan en dags vanntemperatur teller for en tilbakeholdelsestid og en sulteperiode før slakting."
+" En endring går gjennom spørsmålet om tilbakeholdelsestid når den ville flytte en "
+"tilbakeholdelsestid."
 
 msgid "How deep the top of the cage can be lowered."
 msgstr "Hvor dypt toppen av merden kan senkes."
@@ -8517,6 +8655,9 @@ msgstr ""
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Hvordan det gis; en behandling med det bruker samme metode."
 
+msgid "How it was made"
+msgstr "Hvordan den ble laget"
+
 msgid "How long after a failed attempt the notification is tried again. 1 to 3600."
 msgstr "Hvor lenge etter et mislykket forsøk varselet prøves igjen. 1 til 3600."
 
@@ -8539,6 +8680,15 @@ msgstr ""
 "den lengste av sin regel og transportregelen. For kort sulting er en advarsel, aldri en sperre: å"
 " fortsette registreres og logges som kritisk. Dette er driftens egne regler: startverdiene må "
 "kontrolleres med veterinæren din."
+
+msgid ""
+"How long one probe reading stands for the water when no next one comes: its part of the daily "
+"mean. 60 to 3600 (an hour at most); 3600 until you set another. A closed day keeps the value it "
+"was closed with."
+msgstr ""
+"Hvor lenge én sondemåling gjelder for vannet når ingen ny kommer: dens del av døgnsnittet. 60 til"
+" 3600 (høyst en time); 3600 til du setter noe annet. En lukket dag beholder verdien den ble "
+"lukket med."
 
 msgid ""
 "How long the alarms of a flood are counted together, and how long a flood message of warnings "
@@ -8608,6 +8758,17 @@ msgid ""
 msgstr ""
 "Hvor mange hjerteslag en verdi forblir fersk uten en ny; deretter viser stedet ingen nye data. 1 "
 "til 20. Tom: som den er (3 for en ny kanal)."
+
+msgid ""
+"How many of a day’s hours must each hold a good reading of a temperature probe before the probe’s"
+" daily mean counts for a medicine withdrawal or a purging fast. 12 to 24; 20 until you set "
+"another. It applies to the days closed from now on: a closed day keeps the hours it was closed "
+"with."
+msgstr ""
+"Hvor mange av døgnets timer som hver må ha en god måling fra en temperatursonde før sondens "
+"døgnsnitt teller for en tilbakeholdelsestid eller en sulteperiode. 12 til 24; 20 til du setter "
+"noe annet. Det gjelder dagene som lukkes fra nå av: en lukket dag beholder timene den ble lukket "
+"med."
 
 msgid ""
 "How many of its own units a fitted card is high (6 to 64; the Small card is 10). The card’s "
@@ -9472,6 +9633,12 @@ msgstr "Lusetellinger"
 msgid "Life stage"
 msgstr "Livsstadium"
 
+msgid "Lifted at"
+msgstr "Løftet"
+
+msgid "Lifted by"
+msgstr "Løftet av"
+
 msgid "Limit"
 msgstr "Grense"
 
@@ -9798,6 +9965,9 @@ msgstr "Måltider"
 
 msgid "Meals a day"
 msgstr "Måltider per dag"
+
+msgid "Mean (°C)"
+msgstr "Snitt (°C)"
 
 msgid "Measured"
 msgstr "Målt"
@@ -10220,6 +10390,9 @@ msgstr "Navn eller kode"
 msgid "Name the person whose observation or advice it is."
 msgstr "Oppgi hvem observasjonen eller rådet kommer fra."
 
+msgid "Name the units and a first and a last day."
+msgstr "Oppgi enhetene og en første og en siste dag."
+
 msgid "Narrow"
 msgstr "Smal"
 
@@ -10507,6 +10680,10 @@ msgid ""
 msgstr ""
 "Ingen fôring av rensefisken er registrert i måneden: registrer den (Drift › Fôring: velg "
 "rensefisken som mottaker), eller si at det ikke ble gitt noe (fanen Rapport)."
+
+#, python-format
+msgid "No feeding of these fish is recorded before %(day)s: the fast is not checked."
+msgstr "Ingen fôring av denne fisken er registrert før %(day)s: sultingen er ikke kontrollert."
 
 #, python-format
 msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
@@ -11048,6 +11225,21 @@ msgstr "Ikke et lakselusmiddel"
 msgid "Not allocated"
 msgstr "Ikke fordelt"
 
+msgid "Not before"
+msgstr "Ikke før"
+
+#, python-format
+msgid "Not before tomorrow: %(count)d sensor day is not closed yet, and the fish are held until it is."
+msgid_plural ""
+"Not before tomorrow: %(count)d sensor days are not closed yet, and the fish are held until they "
+"are."
+msgstr[0] ""
+"Ikke før i morgen: %(count)d sensordag er ikke lukket ennå, og fisken holdes tilbake til den er "
+"det."
+msgstr[1] ""
+"Ikke før i morgen: %(count)d sensordager er ikke lukket ennå, og fisken holdes tilbake til de er "
+"det."
+
 msgid "Not bound"
 msgstr "Ikke knyttet"
 
@@ -11296,6 +11488,24 @@ msgstr ""
 msgid "Nothing is shared."
 msgstr "Ingenting er delt."
 
+#, python-format
+msgid ""
+"Nothing measured for these fish caps %(count)d day counted at the assumed temperature: nothing "
+"was measured for them from %(from)s, %(days)d days before the first day counted, to the start of "
+"its gap."
+msgid_plural ""
+"Nothing measured for these fish caps %(count)d days counted at the assumed temperature: nothing "
+"was measured for them from %(from)s, %(days)d days before the first day counted, to the start of "
+"their gaps."
+msgstr[0] ""
+"Ingenting målt for denne fisken begrenser %(count)d dag som telles med den antatte temperaturen: "
+"ingenting ble målt for den fra %(from)s, %(days)d dager før den første dagen som telles, til "
+"starten av hullet."
+msgstr[1] ""
+"Ingenting målt for denne fisken begrenser %(count)d dager som telles med den antatte "
+"temperaturen: ingenting ble målt for den fra %(from)s, %(days)d dager før den første dagen som "
+"telles, til starten av hullene."
+
 msgid "Nothing needs attention"
 msgstr "Ingenting trenger oppfølging"
 
@@ -11437,6 +11647,20 @@ msgstr "Eldste venter siden"
 
 msgid "On"
 msgstr "På"
+
+#, python-format
+msgid ""
+"On %(count)d day (%(day)s) the probe’s daily mean and the water samples differed by more than "
+"%(tolerance)s °C: the lower was counted. Check the probe."
+msgid_plural ""
+"On %(count)d days (the first %(day)s) the probe’s daily mean and the water samples differed by "
+"more than %(tolerance)s °C: the lower was counted. Check the probe."
+msgstr[0] ""
+"På %(count)d dag (%(day)s) skilte sondens døgnsnitt og vannprøvene seg med mer enn %(tolerance)s "
+"°C: den laveste ble talt. Kontroller sonden."
+msgstr[1] ""
+"På %(count)d dager (den første %(day)s) skilte sondens døgnsnitt og vannprøvene seg med mer enn "
+"%(tolerance)s °C: den laveste ble talt. Kontroller sonden."
 
 msgid "On hand"
 msgstr "På lager"
@@ -11641,6 +11865,9 @@ msgstr "Bare en åpen oppgave kan startes."
 
 msgid "Only bought fish have a supplier."
 msgstr "Bare kjøpt fisk har en leverandør."
+
+msgid "Only days that are over can be backfilled."
+msgstr "Bare dager som er over, kan etterfylles."
 
 msgid "Only deleted rows"
 msgstr "Bare slettede rader"
@@ -12600,6 +12827,18 @@ msgstr "Prioritet"
 msgid "Private text"
 msgstr "Privat tekst"
 
+msgid "Probe and samples may differ by (°C)"
+msgstr "Sonde og prøver kan avvike med (°C)"
+
+msgid "Probe days backfilled"
+msgstr "Sondedager etterfylt"
+
+msgid "Probe days that count"
+msgstr "Sondedager som teller"
+
+msgid "Probe days written"
+msgstr "Sondedager skrevet"
+
 msgid "Process"
 msgstr "Prosess"
 
@@ -12886,6 +13125,9 @@ msgstr "Grunn til avlysning"
 
 msgid "Reason for cancelling, kept when the task was reopened"
 msgstr "Grunn til avlysning, beholdt da oppgaven ble åpnet igjen"
+
+msgid "Reason for lifting"
+msgstr "Grunn til løfting"
 
 msgid "Reason for placing by hand"
 msgstr "Begrunnelse for manuell plassering"
@@ -13662,6 +13904,15 @@ msgstr ""
 msgid "Say why the experiment is taken over."
 msgstr "Si hvorfor forsøket overtas."
 
+msgid "Say why the floor is lifted."
+msgstr "Si hvorfor gulvet løftes."
+
+msgid "Say why the probe day is corrected."
+msgstr "Si hvorfor sondedagen rettes."
+
+msgid "Say why the probe days are backfilled."
+msgstr "Si hvorfor sondedagene etterfylles."
+
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
@@ -14096,6 +14347,12 @@ msgstr "Tjenesteversjon"
 
 msgid "Set a new password"
 msgstr "Velg nytt passord"
+
+msgid "Set at"
+msgstr "Satt"
+
+msgid "Set by"
+msgstr "Satt av"
 
 msgid "Set day 0 on the Details tab first: a tank is booked for days."
 msgstr "Sett dag 0 under fanen Detaljer først: et kar bookes for dager."
@@ -15353,6 +15610,9 @@ msgstr "Kanalen har allerede en kalibrering fra dette tidspunktet."
 msgid "The channel and the consequence of filing late are unverified (Q6)."
 msgstr "Kanalen og konsekvensen av å sende inn for sent er ikke bekreftet (Q6)."
 
+msgid "The channel had a range"
+msgstr "Kanalen hadde et måleområde"
+
 msgid "The channel is bound elsewhere at that time: a channel is in one place at a time."
 msgstr "Kanalen er knyttet et annet sted på det tidspunktet: en kanal er på ett sted om gangen."
 
@@ -15488,6 +15748,9 @@ msgstr "Dagene før i går beholder protokollen sin: siste dag er tidligst i gå
 msgid "The days before yesterday keep what happened in them: a tank leaves yesterday at the earliest."
 msgstr "Dagene før i går beholder det som skjedde i dem: et kar går ut i går på det tidligste."
 
+msgid "The days counted give"
+msgstr "De talte dagene gir"
+
 msgid ""
 "The days it has been in the experiment stay as they are, and what it gave up to its last day "
 "stays in the figures. The replicate keeps its number. Its feeding assignment ends with it, and "
@@ -15515,17 +15778,23 @@ msgstr ""
 "begrunnelse."
 
 #, python-format
-msgid "The degree-days are not reached in %(days)d days at these temperatures."
-msgstr "Døgngradene nås ikke på %(days)d dager ved disse temperaturene."
+msgid "The degree-days are not reached since the fish came (%(days)d day) at these temperatures."
+msgid_plural "The degree-days are not reached since the fish came (%(days)d days) at these temperatures."
+msgstr[0] "Døgngradene er ikke nådd siden fisken kom (%(days)d dag) ved disse temperaturene."
+msgstr[1] "Døgngradene er ikke nådd siden fisken kom (%(days)d dager) ved disse temperaturene."
 
 msgid ""
-"The degree-days one day counts for when no water temperature was measured: a past day without "
-"one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
-" low value is the conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C."
+"The degree-days one day counts for when no water temperature was measured that day (no closed "
+"probe day and no water sample), but never above the coldest day measured around the gap; a "
+"withdrawal is projected at it when none was measured at all. A mean of 0 °C or below adds "
+"nothing. It is the farm’s own assumption: a low value is the conservative choice. Empty: such a "
+"day counts as 0 °C. 0 to 40 °C."
 msgstr ""
-"Døgngradene én dag teller for når ingen vanntemperatur er målt: en dag i fortiden uten måling, og"
-" en tilbakeholdelsestid som anslås når ingenting er målt. Det er driftens egen antakelse: en lav "
-"verdi er det forsiktige valget. Tom: en slik dag telles som 0 °C. 0 til 40 °C."
+"Døgngradene én dag teller for når ingen vanntemperatur er målt den dagen (ingen lukket sondedag "
+"og ingen vannprøve), men aldri over den kaldeste dagen målt rundt hullet; en tilbakeholdelsestid "
+"fremskrives med den når ingenting er målt. Et snitt på 0 °C eller lavere legger ikke til noe. Det"
+" er driftens egen antakelse: en lav verdi er det forsiktige valget. Tom: en slik dag telles som 0"
+" °C. 0 til 40 °C."
 
 msgid "The department this one belongs to in the organisation chart; none for a top-level one."
 msgstr "Avdelingen denne hører under i organisasjonskartet; ingen for en på øverste nivå."
@@ -17416,6 +17685,9 @@ msgstr "Dette forsøket ble slettet i mellomtiden."
 msgid "This file is not a PDF."
 msgstr "Denne filen er ikke en PDF."
 
+msgid "This floor is already lifted."
+msgstr "Dette gulvet er allerede løftet."
+
 msgid "This form was sent before for another record: open it again and send it anew."
 msgstr "Dette skjemaet er sendt før for en annen post: åpne det på nytt og send det på nytt."
 
@@ -17519,6 +17791,9 @@ msgstr "Denne planen er allerede registrert: annuller først den operasjonen."
 
 msgid "This plan was deleted."
 msgstr "Denne planen er slettet."
+
+msgid "This probe day is already voided."
+msgstr "Denne sondedagen er allerede annullert."
 
 msgid "This production department is not on any site; choose one that is."
 msgstr "Denne produksjonsavdelingen er ikke på noen lokalitet; velg en som er det."
@@ -17689,6 +17964,9 @@ msgstr "Tidspunkt for siste gode verdi"
 
 msgid "Time path"
 msgstr "Tidssti"
+
+msgid "Time zone"
+msgstr "Tidssone"
 
 msgid "Timer"
 msgstr "Tidsur"
@@ -18235,6 +18513,12 @@ msgstr "Annuller vannprøve"
 msgid "Voided"
 msgstr "Annullert"
 
+msgid "Voided at"
+msgstr "Annullert"
+
+msgid "Voided by"
+msgstr "Annullert av"
+
 msgid "Voltage"
 msgstr "Spenning"
 
@@ -18598,6 +18882,13 @@ msgstr "Det du er i ferd med å registrere som sendt inn"
 msgid "When"
 msgstr "Når"
 
+msgid ""
+"When a probe’s daily mean and the same day’s water samples differ by more than this, the "
+"withdrawal says so; the lower always counts. 0 to 10 °C; 1.0 until you set another."
+msgstr ""
+"Når en sondes døgnsnitt og samme dags vannprøver avviker med mer enn dette, sier "
+"tilbakeholdelsestiden det; den laveste teller alltid. 0 til 10 °C; 1,0 til du setter noe annet."
+
 msgid "When a recapture starts and when it ends"
 msgstr "Når en gjenfangst starter og når den slutter"
 
@@ -18844,6 +19135,9 @@ msgstr "Hvorfor den er lukket"
 
 msgid "Why it is switched off"
 msgstr "Hvorfor den er slått av"
+
+msgid "Why it was set"
+msgstr "Hvorfor det ble satt"
 
 msgid "Why the text could not be read"
 msgstr "Hvorfor teksten ikke kunne leses"
@@ -20554,6 +20848,9 @@ msgstr "uten klokkeslett"
 msgid "no value of %(values)s"
 msgstr "ingen verdi for %(values)s"
 
+msgid "no withdrawal of these fish any more"
+msgstr "ingen tilbakeholdelsestid for denne fisken lenger"
+
 msgid "none"
 msgstr "ingen"
 
@@ -20803,6 +21100,18 @@ msgstr "plattforminnstillinger"
 
 msgid "primary"
 msgstr "hovedkontakt"
+
+msgid "probe day"
+msgstr "sondedag"
+
+msgid "probe day closing"
+msgstr "lukking av sondedag"
+
+msgid "probe day closings"
+msgstr "lukkinger av sondedager"
+
+msgid "probe days"
+msgstr "sondedager"
 
 msgid "production department"
 msgstr "produksjonsavdeling"
@@ -21197,6 +21506,9 @@ msgstr "enhet, %(age)s siden"
 msgid "units"
 msgstr "enheter"
 
+msgid "unknown"
+msgstr "ukjent"
+
 msgid "unread"
 msgstr "ulest"
 
@@ -21301,6 +21613,12 @@ msgstr "kvittering for tilbakeholdelsestid"
 
 msgid "withdrawal acknowledgements"
 msgstr "kvitteringer for tilbakeholdelsestid"
+
+msgid "withdrawal floor"
+msgstr "gulv for tilbakeholdelsestid"
+
+msgid "withdrawal floors"
+msgstr "gulv for tilbakeholdelsestider"
 
 msgid "worked out from each sample, not measured"
 msgstr "beregnet fra hver prøve, ikke målt"

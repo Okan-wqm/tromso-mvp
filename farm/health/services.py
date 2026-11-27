@@ -22,11 +22,13 @@ which is the feeding itself. Too short a fast is a warning; the person goes on b
 were shown, which are stored on the treatment (HandlingAcknowledgement) and make its log entry critical (owner
 decision: warn, never block)."""
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import timedelta
+from decimal import Decimal
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import transaction
+from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
 from core import access, audit
@@ -34,11 +36,13 @@ from core.models import AuditLog, EntryKey
 from farm.feeding import read as feeding_read
 from farm.handling import check
 from farm.health import lice, read as health_read, withdrawal
-from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment
+from farm import withdrawal_gate as gate
+from farm.models import HealthEvent, LiceCount, Medicine, StockOperation, Tank, Treatment, WithdrawalFloor
 from farm.models.handling import HandlingKind
 from farm.models.health import MEDICINAL, PLANNED_DAYS, TreatmentMethod, TreatmentReason
 from farm.stock.dates import check_date, earliest, earliest_today, shown_date, sites_of
 from farm.stock.services import AlreadyRecorded, lock_fish, locked, voided
+from farm.water.degree_days import MISSING
 
 # The fields the activity log shows for a new treatment and a new lice count.
 TREATMENT_FIELDS = ['units', 'method', 'medicine', 'reason', 'start_date', 'end_date', 'dose_value', 'dose_unit',
@@ -397,3 +401,110 @@ def void_event(user, event, reason):
                 operations + treatments) % {'count': operations + treatments}})
         voided(user, event, reason, [event.site], event_label(event))
         return event
+
+
+# ---- floors: an end that does not move earlier unasked ---------------------------------------------------
+def floor_label(floor):
+    return f'{treatment_label(floor.treatment)} · {floor.batch.code}'
+
+
+def set_floors(moved, origin, reason):
+    """A WithdrawalFloor for each Moved of `moved` (farm.health.withdrawal.earlier): the end the withdrawal had (none:
+    unknown) stays the earliest day its fish go to food, whatever the days add up to now. Not a write of a person:
+    the daily closing of probe days and a landing call it for the ends that would move earlier with nobody there to
+    be asked; each is logged as critical, with what moved it (`Moved.why`). Never at a day already past on the clock
+    of the course's units (it would hold nobody: REVIEW-2, N-6). Inside the withdrawal gate. Returns the floors."""
+    found = []
+    with transaction.atomic(), gate.opened('a floor: the end a withdrawal had, kept'):
+        for each in moved:
+            if each.was is not None and each.was <= _today(list(each.treatment.units.all())):
+                continue
+            why = f'{reason} {each.why}'.strip()
+            floor = WithdrawalFloor.objects.create(treatment=each.treatment, batch_id=each.batch_id,
+                                                   not_before=each.was, origin=origin, reason=why[:500])
+            now = (str(_('no withdrawal of these fish any more')) if each.now is None
+                   else each.now.settled.isoformat() if each.now.settled else str(_('unknown')))
+            with audit.source_language():
+                audit.record(None, AuditLog.Action.CREATE, floor, {
+                    str(_('Not before')): [None, each.was.isoformat() if each.was else str(_('unknown'))],
+                    str(_('The days counted give')): [None, now],
+                    str(_('Reason')): [None, why]}, label=floor_label(floor), severity=AuditLog.Severity.CRITICAL)
+            found.append(floor)
+    return found
+
+
+def past_moved(was, now):
+    """'' when the end of a withdrawal moved earlier only because days that were projected (not over, or not closed
+    yet) are now counted from the water: a projection met the water, and the fish go when the days say (the
+    coordinator's decision N-5 of REVIEW-2). Else what moved, said for the floor: the days counted before that count
+    higher now ("2026-11-25: 3.00 -> 10.00 °C"); a day that was projected and is now counted at an ASSUMPTION (closed
+    with no probe day that counts and nothing else measured: the species' assumed temperature, capped or not, or 0 °C)
+    above the projection it replaced, which is not the water (REVIEW-3, R3-3); or that the course no longer reaches the
+    fish. `was` and `now`: the withdrawal before and after."""
+    if now is None:
+        return 'The course no longer reaches these fish.'
+    before = was.accrual.values if was.accrual is not None else {}
+    after = now.accrual.values if now.accrual is not None else {}
+    hows = now.accrual.hows if now.accrual is not None else {}
+    projected = was.accrual.projected_at if was.accrual is not None else None
+    raised = [f'{day.isoformat()}: {value} -> {after[day]} °C' for day, value in sorted(before.items())
+              if day in after and after[day] > value]
+    assumed = [f'{day.isoformat()}: {after[day]} °C' for day in sorted(after)
+               if day not in before and hows.get(day) in MISSING and projected is not None
+               and after[day] > max(projected, Decimal(0))]
+    said = []
+    if raised:
+        said.append('Days already counted count higher now: ' + '; '.join(raised) + '.')
+    if assumed:
+        said.append(f'Days closed with no probe day that counts are counted at an assumption above the projection '
+                    f'({projected:.2f} °C) they replaced: ' + '; '.join(assumed) + '.')
+    return ' '.join(said)
+
+
+def unattended(write, origin, reason):
+    """A write of a withdrawal input that nobody can be asked about (the daily closing of probe days): the withdrawals
+    in force are read, `write()` is made inside the withdrawal gate, they are read again, and every one whose end the
+    write would move EARLIER, or end, BECAUSE A DAY ALREADY COUNTED MOVED (a day closed or added at a higher value than
+    it was counted at; not a projection replaced by the day it projected: `past_moved`) keeps the end it had as a
+    floor (`set_floors`): never an earlier end without a question. An end that moves later is the safe direction: the
+    harvests it brings inside a withdrawal are listed by `check_withdrawal` as every harvest inside one is. Returns
+    (what `write()` returned, the floors)."""
+    with transaction.atomic():
+        before = withdrawal.ends_now()
+        with gate.opened('a write nobody can be asked about: an earlier end is floored'):
+            result = write()
+        moved = []
+        for each in withdrawal.earlier(withdrawal.settled_ends(before)):
+            why = past_moved(before[(each.treatment.pk, each.batch_id)], each.now)
+            if why:
+                moved.append(replace(each, why=why))
+        floors = set_floors(moved, origin, reason)
+    return result, floors
+
+
+def lift_floor(user, floor, reason, withdrawal_ack=None):
+    """Lifts a floor: the withdrawal ends where the days counted put it. Through the withdrawal guard, which asks the
+    Released question when fish held today would go to food earlier (and the second person where the setting asks);
+    logged with its reason. Refused for a floor already lifted."""
+    access.require(user, TREATMENTS['change'])
+    reason = (reason or '').strip()
+    if not reason:
+        raise ValidationError({'reason': _('Say why the floor is lifted.')})
+    with transaction.atomic():
+        stored = WithdrawalFloor.objects.select_related('treatment').get(pk=floor.pk)
+        _units, batch_ids = _treatment_fish(stored.treatment_id, stored.treatment.start_date)
+        floor = WithdrawalFloor.objects.select_for_update(of=('self',)).select_related('treatment', 'batch').get(
+            pk=floor.pk)
+        if floor.lifted_at is not None:
+            raise ValidationError({NON_FIELD_ERRORS: _('This floor is already lifted.')})
+        units = list(floor.treatment.units.select_related('production_department__site'))
+
+        def write():
+            floor.lifted_at, floor.lifted_by, floor.lift_reason = timezone.now(), user, reason
+            floor.save(update_fields=['lifted_at', 'lifted_by', 'lift_reason'])
+            with audit.source_language():
+                audit.record(user, AuditLog.Action.UPDATE, floor, {str(_('Reason for lifting')): [None, reason]},
+                             label=floor_label(floor), severity=AuditLog.Severity.CRITICAL)
+            return floor
+
+        return withdrawal.guarded(user, batch_ids | {floor.batch_id}, _today(units), write, seen=withdrawal_ack)

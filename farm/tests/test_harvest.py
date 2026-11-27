@@ -651,7 +651,7 @@ class PurgingTests(PurgingBase):
         self.assertEqual(warning.fasted_hours, Decimal('78.0'))              # 18:00 four days ago to today's start
         self.assertEqual(warning.message(),
                          f'Last fed {services.shown_date(self.day(4))} 18:00 in T-01, 30 degree-days before '
-                         f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days.')
+                         f'{services.shown_date(self.today)}: the harvest rule asks for 60 degree-days. Days counted: 3 days from water samples.')
         self.assertFalse([note for note in result.notes if 'Last fed' in note or 'asks for' in note])   # one line
         # Reached exactly: no warning; one degree-day short: a warning.
         self.purge(degrees=30)
@@ -666,7 +666,7 @@ class PurgingTests(PurgingBase):
         [warning] = self.assess().warnings
         self.assertEqual((warning.fasted_hours, warning.fasted_degree_days), (Decimal('114.0'), Decimal('40.0')))
         self.assertTrue(warning.message().endswith(
-            'the harvest rule asks for 72 h and 60 degree-days.'), warning.message())
+            'the harvest rule asks for 72 h and 60 degree-days. Days counted: 4 days from water samples.'), warning.message())
         self.assertIn('114.0 h and 40 degree-days before', warning.message())
         self.purge(hours=72, degrees=40)                          # the degrees reached, the hours too: clear
         self.assertEqual(self.assess().warnings, [])
@@ -787,7 +787,7 @@ class PurgingFastsTests(PurgingBase):
         self.assertTrue(fast.start.projected)
         self.assertEqual(fast.why(), f'Fasting before the harvest of {services.shown_date(item.date)}: from '
                                      f'{services.shown_date(self.day(1))} 00:00 (60 degree-days). Projected at the '
-                                     'mean water temperature of the last days measured.')
+                                     'mean water temperature of the last days measured. Days counted: 1 day from water samples, 5 days projected.')
         days = fasting.fasts([self.t1], self.day(3), item.date)
         self.assertEqual(sorted(day for _unit, day in days),
                          [self.day(1) + timedelta(days=n) for n in range(0, 7)])
@@ -852,15 +852,16 @@ class PurgingFastsTests(PurgingBase):
         self.purge(hours=None, degrees=20)
         self.assertEqual(self.fast(item).first_day, self.day(4))
 
-    def test_a_degree_days_rule_that_the_water_never_reaches_starts_at_the_limit_and_says_so(self):
+    def test_a_degree_days_rule_that_the_water_never_reaches_starts_the_day_the_fish_came_and_says_so(self):
         self.warm(*range(1, 70), value='0')
         item = self.plan(0)
         fast = self.fast(item)
         self.assertTrue(fast.start.unreached)
-        self.assertEqual(fast.first_day, self.today - timedelta(days=fasting.MAX_FAST_DAYS))
-        self.assertIn('The degree-days are not reached in 60 days at these temperatures.', fast.why())
-        # The 40 days before the fish were stocked had no water of theirs: counted without a measurement, as 0 °C.
-        self.assertEqual(fast.start.missing, 40)
+        # Looked for back to the day the fish came (20 days ago), never further: no water before it was theirs.
+        self.assertEqual(fast.first_day, self.day(20))
+        self.assertIn('The degree-days are not reached since the fish came (20 days) at these temperatures.',
+                      fast.why())
+        self.assertEqual(fast.start.missing, 0)
 
     def test_the_meal_board_gives_no_ration_from_that_day(self):
         self.warm(1, 2, 3, 4, 5)

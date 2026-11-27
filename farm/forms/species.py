@@ -65,9 +65,11 @@ class SpeciesForm(CodedFormMixin, TabbedForm):
                                'Atlantic salmon. Reports send this code, never your own code.'),
             'cleaner_fish_type': _('Lumpfish and wrasses are stocked with salmon to eat sea lice.'),
             'withdrawal_temperature_c': _('The degree-days one day counts for when no water temperature was '
-                                          'measured: a past day without one, and a withdrawal projected when none '
-                                          'was measured at all. It is the farm’s own assumption: a low value is the '
-                                          'conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C.'),
+                                          'measured that day (no closed probe day and no water sample), but never '
+                                          'above the coldest day measured around the gap; a withdrawal is projected at '
+                                          'it when none was measured at all. A mean of 0 °C or below adds nothing. It '
+                                          'is the farm’s own assumption: a low value is the conservative choice. '
+                                          'Empty: such a day counts as 0 °C. 0 to 40 °C.'),
             'max_weight_ratio': _('How many times heavier, on average, one batch of this species may be than another '
                                   'in the same unit, e.g. 2: fish of 100 g and of 200 g may share a unit. A stocking, '
                                   'transfer or grading beyond it asks for an acknowledgement first. Empty: no check.'),

@@ -61,6 +61,15 @@ def unknown_withdrawal_days():
     return current().unknown_withdrawal_days
 
 
+def degree_day_rules():
+    """The degree-days' rules as farm/water/degree_days.py reads them, in one read of the row: (the hours of a day that
+    must hold a good reading before a probe's day counts, the seconds one reading stands for the water, the measured
+    days before a gap that cap an assumed temperature, the °C a probe's day and the day's samples may differ before it
+    is said)."""
+    row = current()
+    return row.sensor_day_hours, row.sensor_hold_seconds, row.assumption_cap_days, row.probe_sample_tolerance_c
+
+
 def window_way_out():
     """What to do about a record older than the correction window, said with every refusal by the window (flow fault
     B-07: "Operations can be dated at most 31 days back." was a dead end): whose setting the window is and where it is

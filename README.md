@@ -4894,7 +4894,9 @@ from which device, how late) is logged. The server side is built; the push trans
   worker's sender thread goes through the outbox every tick (`alarms/outbox.py`), outside any pass, transaction or
   lock, so a transport that is slow or down never delays an alarm: critical first, then the oldest. A round reads the
   outbox's queue (`alarm_outbox`, `alarms` 0019: the notifications still to be sent, removed once sent, covered or given
-  up), never the whole history. **A critical is never given up until someone has seen it** (the review, F1; N7 of the
+  up), never the whole history: what makes a queued notification late is asked of each queued row by its keys, never
+  as the late ones' ids read again from the notifications (that was planned as two scans of the whole history a round,
+  found by `core.testing.reads` on 27.11.2026). **A critical is never given up until someone has seen it** (the review, F1; N7 of the
   last recheck): a critical alarm's notification is tried again until it is sent or its alarm is acknowledged, the wait
   doubling from the severity's retry time up to its escalation time; clearing does not end it (a critical that came and
   went while the push service failed is told once it answers, "Critical, now cleared"). Once its alarm is acknowledged

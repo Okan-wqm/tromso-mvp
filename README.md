@@ -2984,7 +2984,9 @@ corrected temperature or a backdated transfer changes it at once:
   early is the dangerous direction, and **an end never moves earlier without a question**). One definition and one
   accrual (`farm/water/degree_days.py`, `BatchWater.walk`), which the purging fast adds up too:
   - **Where a unit's water is read**: owner rule A9's tiers, from the one resolver (`farm/water/read.py` `tiers`,
-    which the water page, the ration's temperature and the closing of probe days take their places from too): the unit's OWN places (its own-water points, never the
+    which the water page, the ration's temperature, the closing of probe days and the sensors' trail and a unit's
+    chart, Tank › Water, take their places from too: the chart's samples are its nearest tier's with points, REVIEW-4,
+    R4-4): the unit's OWN places (its own-water points, never the
     inlet), and only when the day has nothing there, its SYSTEM's (the loop point, or the system's own sensors when it
     has no loop point).
   - **A day counts at the lowest of everything measured in that tier**, the closed probe days and the water samples
@@ -3052,8 +3054,11 @@ corrected temperature or a backdated transfer changes it at once:
     their gaps."). The water before the days read is searched only when a gap reaches back past them: two indexed
     queries (the samples, each place on its own clock, and the probe days) find the latest day measured at the units'
     places, then the days from there less the cap's are read; that repeats while the day found is another unit's (the
-    fish were not there), and what a search found empty is remembered for the read, so a page or a job searches the
-    same days once, whatever the number of batches (REVIEW-3, R3-2). A projection at the assumed temperature is capped the same way (N-9). **0 °C when the species has none** ("... are
+    fish were not there). The days a search found empty are remembered for the read as intervals, and a search asks
+    only the parts of its days not yet proven empty, the latest first: a page or a job searches the same days once,
+    whatever the number of batches, a search from a lower floor (another course, a batch fed on another day) asks only
+    the days below, and the memory never changes an answer (REVIEW-3, R3-2; REVIEW-4, R4-1). A projection at the
+    assumed temperature is capped the same way (N-9). **0 °C when the species has none** ("... are
     counted as 0 °C: set the species' assumed temperature in Reference data › Species.").
   - **The rules are the platform owner's settings** (Platform settings › Degree-days: the hours a probe day needs, how
     long a reading stands, the days that cap an assumption, the tolerance), registered in the withdrawal gate: a
@@ -6798,8 +6803,9 @@ midnight (if a midnight passes in between, start again at step 3). The dumps hol
 1. **Backup** (landing step 4): `pg_dump -U balik` into `Programlar\db-backups\` as usual.
 2. **Dry run, everything still running**: `bash scripts/withdrawal_ends_old.sh
    F:/dev/balik-notes/degree-days/ends-dryrun.json` from the branch's checkout. It refuses unless the local `main`
-   (what the dev server runs) is `origin/main`, an output path in a git checkout or with a backslash or a space, and a
-   migration on the compose network; then it makes a throwaway worktree of `main` (`F:\dev\balik-wt\landing-old`), copies the branch's `withdrawal_ends.py` into it (its `dump` reads only
+   (what the dev server runs) is `origin/main`, an output path with a backslash or a space or where git does not say
+   "not a git repository" (any other git answer or error), and a migration on the compose network or against the
+   compose database's host or published port (5433) on any network; then it makes a throwaway worktree of `main` (`F:\dev\balik-wt\landing-old`), copies the branch's `withdrawal_ends.py` into it (its `dump` reads only
    what the old code has), builds the old image when missing, runs the dump on the compose network and removes the
    worktree. It must finish and say how many withdrawals and fasts it wrote.
 3. **Stop the dev server and the alarm worker** (`docker stop balik-dev-web balik-ciftligi-alarms-1`: the worker runs

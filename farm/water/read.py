@@ -427,9 +427,8 @@ class Tier:
 def tiers(units, *, nested, own=None, sites=True):
     """{unit id: [Tier]}: owner rule A9's tiers of each unit, nearest first: THE resolver of where a unit's water is
     read, for every reader of it (the water page's `_places`, the ration's temperature in farm/feeding/temperature.py,
-    the degree-days' day in farm/water/degree_days.py, the closing of probe days in farm/water/services.py and the
-    sensors' trail and chart, sensors/read.py `tiers`). The
-    unit's own-water points (`own_water`: the middle point first, never the inlet), then its system (its loop point, or
+    the degree-days' day in farm/water/degree_days.py, the closing of probe days in farm/water/services.py, and the
+    sensors' trail and a unit's chart, sensors/read.py `tiers` and `places`). The unit's own-water points (`own_water`: the middle point first, never the inlet), then its system (its loop point, or
     the system's own sensors when it has no loop point, as the water page reads them), then, when `nested`, the loop
     points of the systems that one is nested in. Which tier wins and how is each reader's (the newest fresh value; the
     lowest of a day); where a unit's water is read is not.

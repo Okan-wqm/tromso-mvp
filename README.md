@@ -5594,7 +5594,12 @@ steps are in the scratchpad plan `chemcore/PLAN.md`; the state of each step is b
   science review has cleared it, every PROVISIONAL constant has been read in its source, and the owner has approved:
   then the core's digest moves (`gen_expected.sh`) and `FORMULA_VERSION` is decided with it.
   Now: `gas_exchange` (a gas sensor's reading in air brought to equilibrium with a water, and back; see its module
-  note).
+  note). An independent science review (2026-11-27: sound with corrections) gave H₂S's solubility from Douabul &
+  Riley (1979), refused outside 2 to 30 °C, the fugacity of CO₂ (Weiss 1974), a saturation for each gas and the
+  diffusivities in the depth test; all applied, every expected value of its tests printed by the reviewer's own
+  implementation (`chemcore/experimental/reference/`, never run by the server). What keeps it out of the core: the B
+  digits of Douabul & Riley's fit, restored by the review and confirmed against their 42 measurements, are still to be
+  read in the paper; the depth test's diffusivity factor is PROVISIONAL; H₂S's fugacity is taken as its pressure.
 - The handshake: `chemcore/EXPECTED` names the build the server accepts (version, formula version, a digest of the
   core's source). The system check `core.E001` (an Error) stops the server when the installed module differs.
   `chemcore/scripts/gen_expected.sh` writes the file from the built module; it is never edited by hand.

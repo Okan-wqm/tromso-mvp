@@ -4443,6 +4443,7 @@
         "left_out": false
       },
       "tests": [
+        "core/testing.py",
         "core/tests_kept_rows.py",
         "core/tests_platform.py",
         "core/tests_rev.py",
@@ -25688,7 +25689,6 @@
         "core/test_world.py",
         "core/tests_data_access.py",
         "core/tests_workspaces.py",
-        "core/tests_writers.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
@@ -26061,7 +26061,6 @@
         "core/test_world.py",
         "core/tests_data_access.py",
         "core/tests_workspaces.py",
-        "core/tests_writers.py",
         "farm/tests/test_restore.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
@@ -27783,7 +27782,6 @@
       },
       "tests": [
         "core/tests_data_access.py",
-        "core/tests_writers.py",
         "farm/tests/test_systems.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
@@ -28516,7 +28514,6 @@
         "core/test_world.py",
         "core/tests_data_access.py",
         "core/tests_workspaces.py",
-        "core/tests_writers.py",
         "farm/tests/test_restore.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -28912,7 +28909,6 @@
         "core/test_world.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
-        "core/tests_writers.py",
         "farm/tests/test_restore.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",

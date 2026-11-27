@@ -4436,9 +4436,9 @@ built by reading the source platform's HR service and listing what was wrong wit
 - **One writer, one rule** (the architecture audit of 26.11.2026, H-5 and M-6). `hr.services` is the only writer of the
   people, their placements, plans, leave requests and attendance: the tabs of those records hand every save to it
   (`Resource.service_writes`, One format for every tab), so a rule is written once and a page, a command and a later caller
-  run the same one; the forms only read what was typed. The five models say so (`service_written = True`), and it is held
-  twice (One format for every tab › One writer): the models refuse at run time a write made outside `hr/services.py`'s
-  writing context (`core.writers`), and rule S of `core/tests_data_access.py` reads the code for a second writer by name.
+  run the same one; the forms only read what was typed. The five models say so (`service_written = True`), and rule S
+  of `core/tests_data_access.py` reads the code for a second writer (One format for every tab › One writer, which says
+  what it sees and what it does not).
   The demonstration's seed calls the services as its own people, and the admin offers no Restore of these records (a
   stretch or a plan brought back there would skip the lead's reach, the employment and the plan's rules): one voided or
   removed is entered again on its page. Each question has one answer:
@@ -4569,7 +4569,9 @@ schedule, 500 until they set another: `core.platform.plan_batch_cells`); more is
 told the cell as the dialog knows it (empty for a new plan, the plan being edited): a plan saved there meanwhile by
 another lead or a batch is not overwritten ("This person already has a plan for this day."); the batch sets whatever is
 in a cell, as it always did. A cell's delete is `hr.services.clear_day`: it clears the plan the person confirmed, at
-the version they confirmed, and refuses with the reason when the cell was cleared, replanned or changed meanwhile. A
+the version they confirmed (every tab's delete confirmation carries the record's version, and a record changed since is
+not deleted: core.crud.DeleteView), and refuses with the reason when the cell was cleared, replanned or changed between
+the click and the service's lock. A
 planned day is read on the clock, and with
 the holidays, of the site the person is placed on that day (`hr.read.planned_shifts`), in the save and in the grid.
 
@@ -6410,23 +6412,26 @@ it, and answers 422 on Create and on Edit alike, on every tab; a form that is no
 PermissionDenied is a 403.
 
 A model says who writes it: `service_written = True` (`core.models.AuditedModel`; HR's people, placements, plans, leave
-requests and attendance) means its app's `services.py` and nothing else. It is held twice:
+requests and attendance) means its app's `services.py` and nothing else. **Rule S** of `core/tests_data_access.py` reads
+the code for it, project-wide:
 
-- **At run time, by the model** (`core/writers.py`). Its `save` and `delete`, and its managers' `update`, `delete`,
-  `bulk_create` and `bulk_update` (a related manager's too), raise `NotTheWriter` unless they run inside the writing
-  context of the model's app, which the app's `services.py` enters around each function that writes (`@writer`). So a
-  view, a command, crud's own save, a form's `save()` or a row held in a variable cannot write such a record, however it
-  is spelled; the whole suite, which drives every page and command, is the witness. Nothing else in the production code
-  enters the context (a test reads the code for it); the test world, which lays out rows as stored, enters it with its
-  reason; a write a test module makes itself is the test laying out its rows. Not held: `Model._base_manager` (Django's
-  own plain manager) and raw SQL, which rule S and rule W read the code for.
-- **In the code, by name** (**Rule S** of `core/tests_data_access.py`, project-wide). The models every `services.py`
-  writes are found from the code. A declared model's tabs hand every write to the service: each hook is read and must
-  call one of the service's writers (a function `core/tests_service_rights.py` holds as one, never a question) and never
-  save the form. No other production module builds or writes a declared model by name: the scan sees the model's name
-  (an alias too) or its app's `models` module (`models.Posting`), any manager (`objects`, `all_objects`,
-  `_base_manager`, `_default_manager`), `QuerySet(Model)`, and the `save()` of a model form of it held in a name. It
-  does not see a row held in a variable or a related manager; the model refuses those at run time.
+- The models every `services.py` writes are found from the code (what it logs, builds and writes through a manager).
+- A declared model's tabs hand every write to the service: each hook is read and must call one of the service's writers
+  (a function `core/tests_service_rights.py` holds as one, never a question) and never save the form; a hook is also run
+  with the service's writers replaced, and must call one (`hr/tests/test_review_two.py`).
+- No other production module builds or writes a declared model by name. The scan sees the model's name (an alias too),
+  or a module it is reached through (`models.Posting`, `m.Posting`, `hr.models.Posting`, `posting.Posting`); a write
+  through any manager (`objects`, `all_objects`, `_base_manager`, `_default_manager`), through `QuerySet(Model)` or
+  `QuerySet(model=Model)`, or through `sealing.unsealed(Model)`; and the `save()` of a model form of it held in a name.
+- No production module writes past every manager on a model it cannot name (`type(row)._base_manager...`,
+  `row._meta.model._default_manager...`, `QuerySet(model)` or `unsealed(model)` of a model in a variable,
+  `save_base(...)`): such a write could be of a declared model. The two that exist, the withdrawal guard's what-if inside
+  a savepoint always rolled back, are listed with that reason (`LOW_LEVEL_ALLOWED`, a ratchet).
+
+What it does not see: a row held in a variable and saved (`row.save()`), a related manager (`person.postings.create()`),
+a model reached through `getattr` or `apps.get_model(...)`, and raw SQL (rule W reads the code for that). Those are the
+code review's until the one write gate in core (the withdrawal gate's hook layer, `farm/withdrawal_gate.py`, made the
+gate of every rule) holds the model itself at run time: the follow-up listed in the plan.
 
 What is not yet one writer is a ratchet that may only shrink: the four tabs crud still saves beside a service that writes
 their model too (Regulatory reports, Tasks, Experiments, Card templates: `SECOND_WRITER_TABS`, each with what the two
@@ -6602,7 +6607,11 @@ shows the current tab, the charts' text size):
 A deleted record stays in the database. In `/admin/` (platform admin) every farm record type lists its
 records including deleted ones, and the "Restore" action brings them back: refused when a record it
 points at is deleted too (bring that back first) or its code was taken meanwhile, and logged. What its
-delete took along comes back with it (see the delete plan: restoring). The admin edits nothing, and users and roles
+delete took along comes back with it (see the delete plan: restoring). A record its service alone writes
+(`service_written`: HR's people, placements, plans, leave requests and attendance) is listed with no Restore action
+(`core.admin.register_audited`): brought back there it would skip the service's rules, so one deleted by mistake is
+entered again on its page, and its delete confirmation says so instead of promising a restore
+(`core.formpayload.delete_outcome`, both looks). The admin edits nothing, and users and roles
 are not in it: they are changed on their own screens, where every change is logged.
 
 ### Adding a tab

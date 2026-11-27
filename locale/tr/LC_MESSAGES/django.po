@@ -268,10 +268,28 @@ msgstr[0] "%(count)d gün (%(hours)d sa)"
 msgstr[1] "%(count)d gün (%(hours)d sa)"
 
 #, python-format
+msgid "%(count)d day from water samples"
+msgid_plural "%(count)d days from water samples"
+msgstr[0] "su numunelerinden %(count)d gün"
+msgstr[1] "su numunelerinden %(count)d gün"
+
+#, python-format
+msgid "%(count)d day measured by the sensors"
+msgid_plural "%(count)d days measured by the sensors"
+msgstr[0] "sensörlerin ölçtüğü %(count)d gün"
+msgstr[1] "sensörlerin ölçtüğü %(count)d gün"
+
+#, python-format
 msgid "%(count)d day planned."
 msgid_plural "%(count)d days planned."
 msgstr[0] "%(count)d gün planlandı."
 msgstr[1] "%(count)d gün planlandı."
+
+#, python-format
+msgid "%(count)d day projected"
+msgid_plural "%(count)d days projected"
+msgstr[0] "öngörülen %(count)d gün"
+msgstr[1] "öngörülen %(count)d gün"
 
 #, python-format
 msgid ""
@@ -300,6 +318,30 @@ msgstr[0] ""
 msgstr[1] ""
 "Ölçülmüş su sıcaklığı olmayan %(count)d gün, varsayılan %(temperature)s °C ile sayıldı (Referans "
 "verilerindeki türün ayarı)."
+
+#, python-format
+msgid ""
+"%(count)d day without a measured water temperature is counted below the species’ assumed "
+"temperature: at the coldest daily mean measured in the %(days)d days before the gap began, or the"
+" first day measured after it when that is colder."
+msgid_plural ""
+"%(count)d days without a measured water temperature are counted below the species’ assumed "
+"temperature: at the coldest daily mean measured in the %(days)d days before their gap began, or "
+"the first day measured after it when that is colder."
+msgstr[0] ""
+"Ölçülmüş su sıcaklığı olmayan %(count)d gün, türün varsayılan sıcaklığının altında sayıldı: "
+"boşluk başlamadan önceki %(days)d günde ölçülen en soğuk günlük ortalamayla ya da daha soğuksa "
+"boşluktan sonra ölçülen ilk günle."
+msgstr[1] ""
+"Ölçülmüş su sıcaklığı olmayan %(count)d gün, türün varsayılan sıcaklığının altında sayıldı: "
+"boşlukları başlamadan önceki %(days)d günde ölçülen en soğuk günlük ortalamayla ya da daha "
+"soğuksa boşluktan sonra ölçülen ilk günle."
+
+#, python-format
+msgid "%(count)d day without a measurement"
+msgid_plural "%(count)d days without a measurement"
+msgstr[0] "ölçümsüz %(count)d gün"
+msgstr[1] "ölçümsüz %(count)d gün"
 
 #, python-format
 msgid "%(count)d delivery or return of the store names it for “%(category)s”: keep it ticked."
@@ -442,6 +484,12 @@ msgstr[1] "%(count)d satır kaydedildi."
 #, python-format
 msgid "%(count)d s"
 msgstr "%(count)d sn"
+
+#, python-format
+msgid "%(count)d sensor day not closed yet"
+msgid_plural "%(count)d sensor days not closed yet"
+msgstr[0] "henüz kapatılmamış %(count)d sensör günü"
+msgstr[1] "henüz kapatılmamış %(count)d sensör günü"
 
 #, python-format
 msgid "%(count)d treatment"
@@ -2231,6 +2279,9 @@ msgstr ""
 "Bir kartın pH penceresi, biriminin su tipinin ölçeğinde çizilir. Ölçeğin dışındaki bir pH, ok ve "
 "sayı olarak gösterilir."
 
+msgid "A change of the rule"
+msgstr "Kural değişikliği"
+
 #, python-format
 msgid "A channel has at most %(num)d calibration."
 msgid_plural "A channel has at most %(num)d calibrations."
@@ -2319,6 +2370,20 @@ msgstr ""
 
 msgid "A day in the period"
 msgstr "Dönemdeki bir gün"
+
+msgid ""
+"A day without a measured water temperature counts at the species’ assumed temperature, but never "
+"above the coldest daily mean measured in this many calendar days before its gap of days without a"
+" measurement began (counted back from the gap, each day measured or not), nor above the first day"
+" measured after the gap. 1 to 30; 7 until you set another. A change that would free fish held "
+"today or bring a recorded harvest inside a withdrawal asks first."
+msgstr ""
+"Ölçülmüş su sıcaklığı olmayan bir gün türün varsayılan sıcaklığıyla sayılır, ama asla ölçümsüz "
+"günlerden oluşan boşluğu başlamadan önceki bu kadar takvim gününde (boşluktan geriye doğru "
+"sayılır, her gün ölçülmüş olsun ya da olmasın) ölçülen en soğuk günlük ortalamanın ve boşluktan "
+"sonra ölçülen ilk günün üstünde değil. 1 ila 30; siz başka bir değer verene kadar 7. Bugün "
+"bekletilen balığı serbest bırakacak ya da kayıtlı bir hasadı bekleme süresinin içine alacak bir "
+"değişiklik önce sorar."
 
 msgid "A deadband above 0, unless every value is stored."
 msgstr "Her değer saklanmıyorsa ölü bant 0’dan büyük olmalıdır."
@@ -2769,6 +2834,15 @@ msgstr "1 ile 65535 arasında bir port."
 msgid "A price needs its currency, and a currency needs a price."
 msgstr "Fiyatın bir para birimi, para biriminin de bir fiyatı olmalı."
 
+msgid "A probe day closed"
+msgstr "Bir sensör günü kapatıldı"
+
+msgid "A probe day needs readings in (hours)"
+msgstr "Bir sensör günü şu kadar saatte ölçüm ister (saat)"
+
+msgid "A probe reading stands for (seconds)"
+msgstr "Bir sensör ölçümünün geçerli olduğu süre (saniye)"
+
 msgid "A process value is bound to a piece of equipment or a system."
 msgstr "Proses değeri bir ekipman parçasına veya bir sisteme atanır."
 
@@ -2801,6 +2875,9 @@ msgstr ""
 
 msgid "A randomised allocation has its seed; one placed by hand has its reason."
 msgstr "Rastgele dağıtımın tohumu vardır; elle yerleştirmenin gerekçesi vardır."
+
+msgid "A reading stood for (seconds)"
+msgstr "Bir ölçümün geçerli sayıldığı süre (saniye)"
 
 msgid "A recipe takes two reagents: choose at least two (the Reagents tab)."
 msgstr "Bir reçete iki kimyasal ister: en az ikisini seçin (Kimyasallar sekmesi)."
@@ -4432,6 +4509,9 @@ msgstr "Rapora dön"
 msgid "Back to the stock"
 msgstr "Stoğa dön"
 
+msgid "Backfilled"
+msgstr "Geriye dönük dolduruldu"
+
 msgid "Backup"
 msgstr "Yedek"
 
@@ -5525,6 +5605,9 @@ msgstr "Kapatılma zamanı"
 msgid "Closed by"
 msgstr "Kapatan"
 
+msgid "Closed by the daily job"
+msgstr "Günlük iş tarafından kapatıldı"
+
 msgid "Closed on"
 msgstr "Kapanış tarihi"
 
@@ -5786,6 +5869,9 @@ msgstr "Korona deşarjı"
 msgid "Correct"
 msgstr "Düzelt"
 
+msgid "Corrected"
+msgstr "Düzeltildi"
+
 msgid "Correction"
 msgstr "Düzeltme"
 
@@ -5858,6 +5944,12 @@ msgstr "Ülke"
 
 msgid "Counts"
 msgstr "Sayımlar"
+
+msgid "Counts as a probe day"
+msgstr "Sensör günü olarak sayılır"
+
+msgid "Covered (seconds)"
+msgstr "Kapsanan süre (saniye)"
 
 msgid "Covered by a flood message"
 msgstr "Bir sel mesajıyla kapsandı"
@@ -6074,6 +6166,13 @@ msgstr "Yıllık gün"
 msgid "Days and punches"
 msgstr "Günler ve giriş-çıkışlar"
 
+msgid "Days before a gap that cap an assumed temperature"
+msgstr "Varsayılan sıcaklığı sınırlayan, boşluktan önceki günler"
+
+#, python-format
+msgid "Days counted: %(parts)s."
+msgstr "Sayılan günler: %(parts)s."
+
 msgid "Days from the baseline weighing to the final weighing."
 msgstr "Başlangıç tartımından son tartıma kadar geçen gün sayısı."
 
@@ -6174,6 +6273,9 @@ msgstr "Deforme"
 
 msgid "Deformity"
 msgstr "Deformite"
+
+msgid "Degree-days"
+msgstr "Gün-derece"
 
 msgid "Degree-days are for the harvest only: fish that are moved or graded are not purged."
 msgstr "Gün-derece yalnızca hasat içindir: taşınan veya boylanan balıklar arındırılmaz."
@@ -8180,6 +8282,9 @@ msgstr "Genel bakışa git"
 msgid "Going on is stored with what is shown here and logged as critical."
 msgstr "Devam etmek, burada gösterilenle birlikte saklanır ve kritik olarak günlüğe yazılır."
 
+msgid "Good readings"
+msgstr "Geçerli ölçümler"
+
 msgid "Grace (minutes)"
 msgstr "Tolerans (dakika)"
 
@@ -8450,6 +8555,26 @@ msgstr "Isıtma kapasitesi"
 msgid "Height"
 msgstr "Yükseklik"
 
+#, python-format
+msgid ""
+"Held to %(floor)s by a floor (%(why)s, %(when)s), although the days counted give %(worked)s: the "
+"end it had is kept. The floor ends by itself on that day, or is lifted before by the platform’s "
+"administrator, who answers the withdrawal question first."
+msgstr ""
+"%(floor)s tarihine kadar bir taban tarafından bekletiliyor (%(why)s, %(when)s); sayılan günler "
+"%(worked)s veriyor olsa da: sahip olduğu bitiş korunur. Taban o gün kendiliğinden sona erer ya da"
+" daha önce, bekleme süresi sorusunu yanıtlayan platform yöneticisi tarafından kaldırılır."
+
+#, python-format
+msgid ""
+"Held without an end by a floor (%(why)s, %(when)s), although the days counted give %(worked)s: "
+"the end it had was unknown and is kept. The floor is lifted by the platform’s administrator, who "
+"answers the withdrawal question first."
+msgstr ""
+"Bir taban tarafından bitişsiz bekletiliyor (%(why)s, %(when)s); sayılan günler %(worked)s veriyor"
+" olsa da: sahip olduğu bitiş bilinmiyordu ve korunur. Tabanı, bekleme süresi sorusunu yanıtlayan "
+"platform yöneticisi kaldırır."
+
 msgid "Here now"
 msgstr "Şu an burada"
 
@@ -8504,11 +8629,24 @@ msgstr "Saatler"
 msgid "Hours fasted"
 msgstr "Aç kalınan saat"
 
+msgid "Hours needed"
+msgstr "Gereken saat"
+
 msgid "Hours the rule asks for"
 msgstr "Kuralın istediği saat"
 
+msgid "Hours with a good reading"
+msgstr "Geçerli ölçümü olan saatler"
+
 msgid "How"
 msgstr "Nasıl"
+
+msgid ""
+"How a day’s water temperature counts for a medicine withdrawal and a purging fast. A change goes "
+"through the withdrawal question when it would move a withdrawal."
+msgstr ""
+"Bir günün su sıcaklığının ilaç bekleme süresi ve arındırma açlığı için nasıl sayıldığı. Bir "
+"bekleme süresini oynatacak bir değişiklik bekleme süresi sorusundan geçer."
 
 msgid "How deep the top of the cage can be lowered."
 msgstr "Kafesin üst kısmının ne kadar derine indirilebileceği."
@@ -8537,6 +8675,9 @@ msgstr ""
 msgid "How it is given; a treatment with it uses the same method."
 msgstr "Nasıl uygulandığı; onunla yapılan tedavi aynı yöntemi kullanır."
 
+msgid "How it was made"
+msgstr "Nasıl oluşturuldu"
+
 msgid "How long after a failed attempt the notification is tried again. 1 to 3600."
 msgstr "Başarısız bir denemeden ne kadar sonra bildirimin yeniden deneneceği. 1 ile 3600 arası."
 
@@ -8559,6 +8700,15 @@ msgstr ""
 " olan kuralın önüne geçer; boylama, kendi kuralı ile taşıma kuralından uzun olanı alır. Çok kısa "
 "aç bırakma bir uyarıdır, engel değil: devam etmek kaydedilir ve kritik olarak günlüğe yazılır. "
 "Bunlar çiftliğin kendi kurallarıdır: başlangıç değerleri veterinerinizle kontrol edilmelidir."
+
+msgid ""
+"How long one probe reading stands for the water when no next one comes: its part of the daily "
+"mean. 60 to 3600 (an hour at most); 3600 until you set another. A closed day keeps the value it "
+"was closed with."
+msgstr ""
+"Yeni bir ölçüm gelmediğinde bir sensör ölçümünün su için ne kadar süre geçerli sayıldığı: günlük "
+"ortalamadaki payı. 60 ila 3600 (en fazla bir saat); siz başka bir değer verene kadar 3600. "
+"Kapatılmış bir gün, kapatıldığı değeri korur."
 
 msgid ""
 "How long the alarms of a flood are counted together, and how long a flood message of warnings "
@@ -8621,6 +8771,17 @@ msgid ""
 msgstr ""
 "Yeni bir değer gelmeden bir değerin kaç kalp atışı taze kaldığı; sonra yer güncel veri yok "
 "gösterir. 1 ile 20 arası. Boş: olduğu gibi (yeni bir kanal için 3)."
+
+msgid ""
+"How many of a day’s hours must each hold a good reading of a temperature probe before the probe’s"
+" daily mean counts for a medicine withdrawal or a purging fast. 12 to 24; 20 until you set "
+"another. It applies to the days closed from now on: a closed day keeps the hours it was closed "
+"with."
+msgstr ""
+"Sensörün günlük ortalamasının bir ilaç bekleme süresi ya da arındırma açlığı için sayılmasından "
+"önce, günün kaç saatinin her birinde sıcaklık sensöründen geçerli bir ölçüm bulunması gerektiği. "
+"12 ila 24; siz başka bir değer verene kadar 20. Bundan sonra kapatılan günlere uygulanır: "
+"kapatılmış bir gün, kapatıldığı saatleri korur."
 
 msgid ""
 "How many of its own units a fitted card is high (6 to 64; the Small card is 10). The card’s "
@@ -9478,6 +9639,12 @@ msgstr "Bit sayımları"
 msgid "Life stage"
 msgstr "Yaşam evresi"
 
+msgid "Lifted at"
+msgstr "Kaldırılma zamanı"
+
+msgid "Lifted by"
+msgstr "Kaldıran"
+
 msgid "Limit"
 msgstr "Sınır"
 
@@ -9804,6 +9971,9 @@ msgstr "Öğün"
 
 msgid "Meals a day"
 msgstr "Günlük öğün"
+
+msgid "Mean (°C)"
+msgstr "Ortalama (°C)"
 
 msgid "Measured"
 msgstr "Ölçülen"
@@ -10229,6 +10399,9 @@ msgstr "Ad veya kod"
 msgid "Name the person whose observation or advice it is."
 msgstr "Gözlemin ya da önerinin kime ait olduğunu yazın."
 
+msgid "Name the units and a first and a last day."
+msgstr "Üniteleri ve bir ilk ve bir son günü belirtin."
+
 msgid "Narrow"
 msgstr "Dar"
 
@@ -10515,6 +10688,10 @@ msgid ""
 msgstr ""
 "Ay içinde temizleyici balıklar için besleme kaydedilmedi: kaydedin (İşlemler › Besleme: hedef "
 "olarak temizleyici balığı seçin) veya hiç verilmediğini belirtin (Rapor sekmesi)."
+
+#, python-format
+msgid "No feeding of these fish is recorded before %(day)s: the fast is not checked."
+msgstr "Bu balıklar için %(day)s öncesinde kayıtlı yemleme yok: açlık kontrol edilmedi."
 
 #, python-format
 msgid "No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast is not checked."
@@ -11056,6 +11233,17 @@ msgstr "Deniz biti ilacı değil"
 msgid "Not allocated"
 msgstr "Dağıtılmadı"
 
+msgid "Not before"
+msgstr "Şundan önce değil"
+
+#, python-format
+msgid "Not before tomorrow: %(count)d sensor day is not closed yet, and the fish are held until it is."
+msgid_plural ""
+"Not before tomorrow: %(count)d sensor days are not closed yet, and the fish are held until they "
+"are."
+msgstr[0] "Yarından önce değil: %(count)d sensör günü henüz kapatılmadı ve kapatılana kadar balık bekletilir."
+msgstr[1] "Yarından önce değil: %(count)d sensör günü henüz kapatılmadı ve kapatılana kadar balık bekletilir."
+
 msgid "Not bound"
 msgstr "Atanmamış"
 
@@ -11306,6 +11494,24 @@ msgstr ""
 msgid "Nothing is shared."
 msgstr "Hiçbir şey paylaşılmadı."
 
+#, python-format
+msgid ""
+"Nothing measured for these fish caps %(count)d day counted at the assumed temperature: nothing "
+"was measured for them from %(from)s, %(days)d days before the first day counted, to the start of "
+"its gap."
+msgid_plural ""
+"Nothing measured for these fish caps %(count)d days counted at the assumed temperature: nothing "
+"was measured for them from %(from)s, %(days)d days before the first day counted, to the start of "
+"their gaps."
+msgstr[0] ""
+"Bu balıklar için ölçülen hiçbir şey, varsayılan sıcaklıkla sayılan %(count)d günü sınırlamıyor: "
+"sayılan ilk günden %(days)d gün önce, %(from)s tarihinden boşluğun başına kadar onlar için hiçbir"
+" şey ölçülmedi."
+msgstr[1] ""
+"Bu balıklar için ölçülen hiçbir şey, varsayılan sıcaklıkla sayılan %(count)d günü sınırlamıyor: "
+"sayılan ilk günden %(days)d gün önce, %(from)s tarihinden boşlukların başına kadar onlar için "
+"hiçbir şey ölçülmedi."
+
 msgid "Nothing needs attention"
 msgstr "Dikkat gerektiren bir şey yok"
 
@@ -11447,6 +11653,20 @@ msgstr "En eskisi şu zamandan beri bekliyor"
 
 msgid "On"
 msgstr "Günler"
+
+#, python-format
+msgid ""
+"On %(count)d day (%(day)s) the probe’s daily mean and the water samples differed by more than "
+"%(tolerance)s °C: the lower was counted. Check the probe."
+msgid_plural ""
+"On %(count)d days (the first %(day)s) the probe’s daily mean and the water samples differed by "
+"more than %(tolerance)s °C: the lower was counted. Check the probe."
+msgstr[0] ""
+"%(count)d günde (%(day)s) sensörün günlük ortalaması ile su numuneleri arasında %(tolerance)s "
+"°C’den fazla fark vardı: düşük olan sayıldı. Sensörü kontrol edin."
+msgstr[1] ""
+"%(count)d günde (ilki %(day)s) sensörün günlük ortalaması ile su numuneleri arasında "
+"%(tolerance)s °C’den fazla fark vardı: düşük olan sayıldı. Sensörü kontrol edin."
 
 msgid "On hand"
 msgstr "Eldeki"
@@ -11653,6 +11873,9 @@ msgstr "Yalnızca açık bir görev başlatılabilir."
 
 msgid "Only bought fish have a supplier."
 msgstr "Yalnızca satın alınan balığın tedarikçisi olur."
+
+msgid "Only days that are over can be backfilled."
+msgstr "Yalnızca bitmiş günler geriye dönük doldurulabilir."
 
 msgid "Only deleted rows"
 msgstr "Yalnızca silinmiş satırlar"
@@ -12614,6 +12837,18 @@ msgstr "Öncelik"
 msgid "Private text"
 msgstr "Özel metin"
 
+msgid "Probe and samples may differ by (°C)"
+msgstr "Sensör ve numuneler arasındaki izin verilen fark (°C)"
+
+msgid "Probe days backfilled"
+msgstr "Sensör günleri geriye dönük dolduruldu"
+
+msgid "Probe days that count"
+msgstr "Sayılan sensör günleri"
+
+msgid "Probe days written"
+msgstr "Yazılan sensör günleri"
+
 msgid "Process"
 msgstr "Süreç"
 
@@ -12899,6 +13134,9 @@ msgstr "İptal nedeni"
 
 msgid "Reason for cancelling, kept when the task was reopened"
 msgstr "İptal nedeni, görev yeniden açıldığında korundu"
+
+msgid "Reason for lifting"
+msgstr "Kaldırma nedeni"
 
 msgid "Reason for placing by hand"
 msgstr "Elle yerleştirme gerekçesi"
@@ -13676,6 +13914,15 @@ msgstr ""
 msgid "Say why the experiment is taken over."
 msgstr "Deneyin neden devralındığını yazın."
 
+msgid "Say why the floor is lifted."
+msgstr "Tabanın neden kaldırıldığını yazın."
+
+msgid "Say why the probe day is corrected."
+msgstr "Sensör gününün neden düzeltildiğini yazın."
+
+msgid "Say why the probe days are backfilled."
+msgstr "Sensör günlerinin neden geriye dönük doldurulduğunu yazın."
+
 msgid ""
 "Say why the tanks are placed by hand: a placement that is not randomised is registered with its "
 "reason."
@@ -14110,6 +14357,12 @@ msgstr "Servis sürümü"
 
 msgid "Set a new password"
 msgstr "Yeni parola belirleyin"
+
+msgid "Set at"
+msgstr "Belirlenme zamanı"
+
+msgid "Set by"
+msgstr "Belirleyen"
 
 msgid "Set day 0 on the Details tab first: a tank is booked for days."
 msgstr "Önce Ayrıntılar sekmesinde 0. günü belirleyin: tank günler için ayrılır."
@@ -15372,6 +15625,9 @@ msgstr "Kanalın bu andan başlayan bir kalibrasyonu zaten var."
 msgid "The channel and the consequence of filing late are unverified (Q6)."
 msgstr "Kanal ve geç bildirimin sonucu doğrulanmadı (Q6)."
 
+msgid "The channel had a range"
+msgstr "Kanalın bir aralığı vardı"
+
 msgid "The channel is bound elsewhere at that time: a channel is in one place at a time."
 msgstr "Kanal o zaman başka bir yere atanmış: bir kanal aynı anda yalnızca bir yerde olabilir."
 
@@ -15506,6 +15762,9 @@ msgstr "Dünden önceki günler protokollerini korur: son gün en erken dün ola
 msgid "The days before yesterday keep what happened in them: a tank leaves yesterday at the earliest."
 msgstr "Dünden önceki günler içlerinde olanları korur: bir tank en erken dün ayrılır."
 
+msgid "The days counted give"
+msgstr "Sayılan günlerin verdiği"
+
 msgid ""
 "The days it has been in the experiment stay as they are, and what it gave up to its last day "
 "stays in the figures. The replicate keeps its number. Its feeding assignment ends with it, and "
@@ -15532,17 +15791,23 @@ msgstr ""
 "Önemi değiştirilebilir; kapatmak Alarm kuralları üzerinde Sil yetkisi ve bir gerekçe gerektirir."
 
 #, python-format
-msgid "The degree-days are not reached in %(days)d days at these temperatures."
-msgstr "Bu sıcaklıklarda gün-derece %(days)d günde ulaşılamıyor."
+msgid "The degree-days are not reached since the fish came (%(days)d day) at these temperatures."
+msgid_plural "The degree-days are not reached since the fish came (%(days)d days) at these temperatures."
+msgstr[0] "Bu sıcaklıklarda balık geldiğinden beri (%(days)d gün) gün-dereceye ulaşılamadı."
+msgstr[1] "Bu sıcaklıklarda balık geldiğinden beri (%(days)d gün) gün-dereceye ulaşılamadı."
 
 msgid ""
-"The degree-days one day counts for when no water temperature was measured: a past day without "
-"one, and a withdrawal projected when none was measured at all. It is the farm’s own assumption: a"
-" low value is the conservative choice. Empty: such a day counts as 0 °C. 0 to 40 °C."
+"The degree-days one day counts for when no water temperature was measured that day (no closed "
+"probe day and no water sample), but never above the coldest day measured around the gap; a "
+"withdrawal is projected at it when none was measured at all. A mean of 0 °C or below adds "
+"nothing. It is the farm’s own assumption: a low value is the conservative choice. Empty: such a "
+"day counts as 0 °C. 0 to 40 °C."
 msgstr ""
-"Su sıcaklığı ölçülmediğinde bir günün saydığı gün-derece: sıcaklığı olmayan geçmiş bir gün ve hiç"
-" ölçüm yokken öngörülen bekleme süresi. Çiftliğin kendi varsayımıdır: düşük bir değer temkinli "
-"seçimdir. Boş: böyle bir gün 0 °C sayılır. 0 ila 40 °C."
+"O gün su sıcaklığı ölçülmediğinde (kapatılmış sensör günü ve su numunesi yokken) bir günün "
+"saydığı gün-derece; ama asla boşluğun çevresinde ölçülen en soğuk günün üstünde değil. Hiç ölçüm "
+"yokken bekleme süresi bununla öngörülür. 0 °C veya altındaki bir ortalama hiçbir şey eklemez. "
+"Çiftliğin kendi varsayımıdır: düşük bir değer temkinli seçimdir. Boş: böyle bir gün 0 °C sayılır."
+" 0 ila 40 °C."
 
 msgid "The department this one belongs to in the organisation chart; none for a top-level one."
 msgstr "Bu departmanın organizasyon şemasında bağlı olduğu departman; en üst düzey için boş bırakın."
@@ -17437,6 +17702,9 @@ msgstr "Bu deney bu arada silindi."
 msgid "This file is not a PDF."
 msgstr "Bu dosya bir PDF değil."
 
+msgid "This floor is already lifted."
+msgstr "Bu taban zaten kaldırılmış."
+
 msgid "This form was sent before for another record: open it again and send it anew."
 msgstr "Bu form daha önce başka bir kayıt için gönderildi: yeniden açıp yeniden gönderin."
 
@@ -17536,6 +17804,9 @@ msgstr "Bu plan zaten kaydedildi: önce o işlemi iptal edin."
 
 msgid "This plan was deleted."
 msgstr "Bu plan silindi."
+
+msgid "This probe day is already voided."
+msgstr "Bu sensör günü zaten geçersiz kılınmış."
 
 msgid "This production department is not on any site; choose one that is."
 msgstr "Bu üretim departmanı hiçbir sahada değil; bir sahada olanı seçin."
@@ -17703,6 +17974,9 @@ msgstr "Son iyi değerin zamanı"
 
 msgid "Time path"
 msgstr "Zaman yolu"
+
+msgid "Time zone"
+msgstr "Saat dilimi"
 
 msgid "Timer"
 msgstr "Zamanlayıcı"
@@ -18249,6 +18523,12 @@ msgstr "Su numunesini iptal et"
 msgid "Voided"
 msgstr "İptal edildi"
 
+msgid "Voided at"
+msgstr "Geçersiz kılınma zamanı"
+
+msgid "Voided by"
+msgstr "Geçersiz kılan"
+
 msgid "Voltage"
 msgstr "Gerilim"
 
@@ -18613,6 +18893,13 @@ msgstr "Bildirildi olarak kaydetmek üzere olduğunuz içerik"
 msgid "When"
 msgstr "Ne zaman"
 
+msgid ""
+"When a probe’s daily mean and the same day’s water samples differ by more than this, the "
+"withdrawal says so; the lower always counts. 0 to 10 °C; 1.0 until you set another."
+msgstr ""
+"Bir sensörün günlük ortalaması ile aynı günün su numuneleri bundan fazla farklıysa bekleme süresi"
+" bunu söyler; her zaman düşük olan sayılır. 0 ila 10 °C; siz başka bir değer verene kadar 1,0."
+
 msgid "When a recapture starts and when it ends"
 msgstr "Bir yeniden yakalama başladığında ve bittiğinde"
 
@@ -18855,6 +19142,9 @@ msgstr "Neden kapatıldı"
 
 msgid "Why it is switched off"
 msgstr "Neden kapatıldı"
+
+msgid "Why it was set"
+msgstr "Neden belirlendi"
 
 msgid "Why the text could not be read"
 msgstr "Metnin neden okunamadığı"
@@ -20570,6 +20860,9 @@ msgstr "saat kaydedilmemiş"
 msgid "no value of %(values)s"
 msgstr "şu değerler yok: %(values)s"
 
+msgid "no withdrawal of these fish any more"
+msgstr "bu balıklar için artık bekleme süresi yok"
+
 msgid "none"
 msgstr "yok"
 
@@ -20819,6 +21112,18 @@ msgstr "platform ayarları"
 
 msgid "primary"
 msgstr "birincil"
+
+msgid "probe day"
+msgstr "sensör günü"
+
+msgid "probe day closing"
+msgstr "sensör günü kapanışı"
+
+msgid "probe day closings"
+msgstr "sensör günü kapanışları"
+
+msgid "probe days"
+msgstr "sensör günleri"
 
 msgid "production department"
 msgstr "üretim departmanı"
@@ -21213,6 +21518,9 @@ msgstr "birim, %(age)s önce"
 msgid "units"
 msgstr "birimler"
 
+msgid "unknown"
+msgstr "bilinmiyor"
+
 msgid "unread"
 msgstr "okunmamış"
 
@@ -21317,6 +21625,12 @@ msgstr "arınma süresi onayı"
 
 msgid "withdrawal acknowledgements"
 msgstr "arınma süresi onayları"
+
+msgid "withdrawal floor"
+msgstr "bekleme süresi tabanı"
+
+msgid "withdrawal floors"
+msgstr "bekleme süresi tabanları"
 
 msgid "worked out from each sample, not measured"
 msgstr "her numuneden hesaplandı, ölçülmedi"

@@ -151,6 +151,8 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
 PLATFORM_TABS = [
     ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal', 'unknown_withdrawal_days']),
     ('clocks', _('Clocks'), ['clock_tolerance_seconds']),
+    ('degree_days', _('Degree-days'), ['sensor_day_hours', 'sensor_hold_seconds', 'assumption_cap_days',
+                                         'probe_sample_tolerance_c']),
 ]
 
 
@@ -185,4 +187,20 @@ class PlatformSettingsForm(TabbedForm):
                                          'count as fresh (a device or tablet clock a little fast). A value further ahead, '
                                          'up to an hour, still decides its unit’s status and its alarm, but is not shown '
                                          'as the newest. 0 to 3600; 300 until you set another.'),
+            'sensor_day_hours': _('How many of a day’s hours must each hold a good reading of a temperature probe before '
+                                  'the probe’s daily mean counts for a medicine withdrawal or a purging fast. 12 to '
+                                  '24; 20 until you set another. It applies to the days closed from now on: a closed '
+                                  'day keeps the hours it was closed with.'),
+            'sensor_hold_seconds': _('How long one probe reading stands for the water when no next one comes: its part '
+                                     'of the daily mean. 60 to 3600 (an hour at most); 3600 until you set another. A '
+                                     'closed day keeps the value it was closed with.'),
+            'assumption_cap_days': _('A day without a measured water temperature counts at the species’ assumed '
+                                     'temperature, but never above the coldest daily mean measured in this many '
+                                     'calendar days before its gap of days without a measurement began (counted back '
+                                     'from the gap, each day measured or not), nor above the first day measured after '
+                                     'the gap. 1 to 30; 7 until you set another. A change that would free fish held '
+                                     'today or bring a recorded harvest inside a withdrawal asks first.'),
+            'probe_sample_tolerance_c': _('When a probe’s daily mean and the same day’s water samples differ by more '
+                                          'than this, the withdrawal says so; the lower always counts. 0 to 10 °C; 1.0 '
+                                          'until you set another.'),
         }

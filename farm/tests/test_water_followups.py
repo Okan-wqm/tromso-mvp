@@ -46,8 +46,8 @@ class DegreeDayTests(SourcesCase):
         self.sample(point=inlet, hours=0, temperature_c='5')              # the supply stream: never the unit's
         self.sample(point=self.loop, hours=0, temperature_c='4')
         temperatures = Temperatures([self.t1, self.t2], today, today)
-        self.assertEqual(temperatures.of(self.t1.pk, today), D(7))
-        self.assertEqual(temperatures.of(self.t2.pk, today), D(4))         # nothing of its own: its loop's
+        self.assertEqual(temperatures.of(self.t1.pk, today).value, D(7))
+        self.assertEqual(temperatures.of(self.t2.pk, today).value, D(4))        # nothing of its own: its loop's
 
 
 class JudgedAsTests(SourcesCase):

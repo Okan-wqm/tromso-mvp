@@ -45,8 +45,9 @@ warnings' fingerprint, so a save whose warnings changed meanwhile (a feeding rec
 another date) is asked again. Going on writes one HandlingAcknowledgement per warning (`acknowledge`) and the
 operation's activity-log entry is critical."""
 import hashlib
+from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -59,7 +60,7 @@ from farm.models.handling import AcknowledgedWarning, HandlingKind, HandlingRule
 from farm.models.stock import MovementKind, OperationKind
 from farm.stock.dates import local_today
 from farm.stock.read import Presence
-from farm.water.degree_days import BatchWater, degree_days_text, missing_sentence
+from farm.water.degree_days import BatchWater, accrual_text, degree_days_text
 
 from . import fasting, withdrawal
 from .fasting import DAY, LOOKBACK_DAYS, asks_text, both_text, hours_text, shown_moment
@@ -196,9 +197,8 @@ class HandlingWarning:
                 'fasted': both_text(
                     None if self.required_hours is None else hours_text(self.fasted_hours),
                     None if self.required_degree_days is None else degree_days_text(self.fasted_degree_days))}
-        if self.accrual is not None and self.accrual.missing:
-            text += ' ' + missing_sentence(self.accrual.missing, self.accrual.assumed)
-        return text
+        counted = accrual_text(self.accrual)
+        return f'{text} {counted}' if counted else text
 
 
 @dataclass
@@ -368,7 +368,12 @@ def _fasting(result, batches):
     if requirement is None:
         result.notes.append(_('No handling rule for %(kind)s: the fast is not checked (Reference data › Handling '
                               'rules).') % {'kind': label})
-    fed = last_fed_at(unit, day, since=day - timedelta(days=LOOKBACK_DAYS))
+    since = fasting.fed_since(requirement, day)     # as far back as the rule needs: any day for degree-days
+    fed = last_fed_at(unit, day, since=since)
+    if fed is None and since is None:
+        result.notes.append(_('No feeding of these fish is recorded before %(day)s: the fast is not checked.') % {
+            'day': _date(day)})
+        return
     if fed is None:
         result.notes.append(_('No feeding of these fish is recorded in the %(days)d days before %(day)s: the fast '
                               'is not checked.') % {'days': LOOKBACK_DAYS, 'day': _date(day)})
@@ -395,8 +400,9 @@ def _fasting(result, batches):
         return
     result.notes.append(_('The %(kind)s rule for %(species)s asks for %(asked)s.') % {
         'kind': label, 'species': species.common_name, 'asked': requirement.text()})
-    if done.accrual is not None and done.accrual.missing:
-        result.notes.append(missing_sentence(done.accrual.missing, done.accrual.assumed))
+    counted = accrual_text(done.accrual)
+    if counted:
+        result.notes.append(counted)
 
 
 # ---- the earliest suitable harvest date ---------------------------------------------------------------
@@ -492,9 +498,17 @@ def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=NOT_READ):
     asking = list({unit.pk: unit for unit, batch in pairs if asks(batch)}.values())
     handled_ids = handled_of([(unit, days[unit.pk]) for unit in asking])
     # The unit's last feeding, not the batch's (S-01).
-    fed = last_fed_of([(unit, days[unit.pk], handled_ids[(unit.pk, days[unit.pk])],
-                        days[unit.pk] - timedelta(days=LOOKBACK_DAYS)) for unit in asking])
-    # The water `earliest` reads for a purge in degree-days: the batch's, from the day after the unit's last feeding.
+    # Looked for as far back as the rule needs (`fasting.fed_since`: any day when a batch's rule asks degree-days).
+    bounds = defaultdict(list)
+    for unit, batch in pairs:
+        if asks(batch):
+            bounds[unit.pk].append(fasting.fed_since(requirements[batch.species_id], days[unit.pk]))
+    since = {unit_id: None if None in found else min(found) for unit_id, found in bounds.items()}
+    fed = last_fed_of([(unit, days[unit.pk], handled_ids[(unit.pk, days[unit.pk])], since[unit.pk])
+                       for unit in asking])
+    # The water `earliest` reads for a purge in degree-days: the batch's, from the day after the unit's last feeding (the
+    # fast is counted forward from it, and its start backward to it at most): the batches fed on one day are read
+    # together, whatever day each came (REVIEW-2, N-3).
     watered = {(unit.pk, batch.pk): (batch.pk, days[unit.pk], fed[unit.pk].record.date + DAY)
                for unit, batch in pairs
                if asks(batch) and fed.get(unit.pk) is not None and requirements[batch.species_id].degree_days}
@@ -507,7 +521,7 @@ def earliest_of(pairs, today=None, kind=WITHDRAWAL_KIND, holding=NOT_READ):
 
 def _earliest_from(unit, batch, today, kind, blocks, requirement, fed, water):
     """`earliest` of one pair from what `earliest_of` read: the blocks in force that hold the unit's fish, the rule,
-    the unit's last feeding in the LOOKBACK_DAYS before `today` (None: none, or not read because the rule asks
+    the unit's last feeding as far back as its rule looks (None: none, or not read because the rule asks
     nothing) and the batches' water (when the rule asks for degree-days)."""
     dated = [block for block in blocks if block.until is not None]
     unknown = len(dated) < len(blocks)
@@ -515,15 +529,12 @@ def _earliest_from(unit, batch, today, kind, blocks, requirement, fed, water):
     purge_day, degrees_unknown = None, False
     if requirement is not None and requirement.asks:
         if fed is not None:
-            day = today
-            for _n in range(fasting.MAX_FAST_DAYS + 1):
-                done = fasting.fasted(unit, day, fed, requirement, water, [batch.pk])
-                if done.ok:
-                    purge_day = day if day > today else None
-                    break
-                day += DAY
-            else:
-                degrees_unknown = True              # never complete within the days looked at: said as unknown
+            # The one search for the day the fast is complete (`fasting.complete_on`: the walk's own).
+            complete = fasting.complete_on(unit, fed, requirement, water, [batch.pk])
+            if complete is None:
+                degrees_unknown = True              # never reached at these temperatures: said as unknown
+            elif complete > today:
+                purge_day = complete
     if unknown:
         return Earliest(batch, None, WITHDRAWAL, latest.until if latest else None, unknown=True,
                         degrees_unknown=degrees_unknown, kind=kind)
@@ -531,7 +542,7 @@ def _earliest_from(unit, batch, today, kind, blocks, requirement, fed, water):
         return Earliest(batch, latest.until, WITHDRAWAL, latest.until, latest.approximate,
                         degrees_unknown=degrees_unknown, kind=kind)
     if purge_day is not None:
-        start = fasting.start_of_fast(unit, purge_day, requirement, water, batch.pk)
+        start = fasting.start_of_fast(unit, purge_day, requirement, water, batch.pk, since=fed.record.date + DAY)
         stop_by = start.starts_at.date() - DAY if start.starts_at is not None else None
         return Earliest(batch, purge_day, PURGING, latest.until if latest else None,
                         latest.approximate if latest else False, stop_by=stop_by, degrees_unknown=degrees_unknown,

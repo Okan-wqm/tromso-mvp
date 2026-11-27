@@ -12,7 +12,7 @@ from .feeding import FeedingRecord
 from .feeding_protocol import FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
 from .handling import HandlingAcknowledgement, HandlingRule, WithdrawalAcknowledgement
 from .harvest import HandlingPlanItem, HarvestRecord, ProductionPlan, SlaughterFacility
-from .health import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Treatment
+from .health import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Treatment, WithdrawalFloor
 from .production_department import ProductionDepartment
 from .site import Site, SiteContact
 from .species import Species
@@ -20,7 +20,7 @@ from .stock import Batch, DeliveryRecord, EscapeRecord, OpeningBalance, StockMov
 from .supplier import Supplier, SupplierContact
 from .system import System
 from .tank import Tank
-from .water import WaterFreshness, WaterLimit, WaterMeasurement
+from .water import ProbeDay, ProbeDayClosing, WaterFreshness, WaterLimit, WaterMeasurement
 from .water_point import SamplingPoint
 
 __all__ = [
@@ -29,5 +29,5 @@ __all__ = [
     'HealthEvent', 'LiceCount', 'Medicine', 'MedicineWithdrawal', 'OpeningBalance', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
     'ProtocolBand', 'ProtocolRate', 'SamplingPoint', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',
     'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment', 'WaterFreshness', 'WaterLimit',
-    'WaterMeasurement', 'WithdrawalAcknowledgement',
+    'WaterMeasurement', 'WithdrawalAcknowledgement', 'ProbeDay', 'ProbeDayClosing', 'WithdrawalFloor',
 ]

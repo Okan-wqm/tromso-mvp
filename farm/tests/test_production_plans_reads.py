@@ -8,6 +8,7 @@ two of them on different dates, Oslo's midnight on both sides. The farm has fish
 fish held apart (F-05) and moved beside the stock, a species' rule beside the default rule, feedings exactly 30 and 31
 days old, a unit emptied on the day and one filled on it, and purges in degree-days; and the page's queries must not
 grow with its rows (verification of wip/plans-perf, finding 1)."""
+import uuid
 from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 from decimal import Decimal
 from unittest import mock
@@ -16,6 +17,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
+from core.models import PlatformSettings
 from core.testing import FrozenClock
 
 from .. import withdrawal_gate
@@ -25,8 +27,9 @@ from ..handling import check, fasting
 from ..handling.fasting import DAY, LOOKBACK_DAYS
 from ..health import services as health_services
 from ..models import (
-    HandlingRule, Medicine, MedicineWithdrawal, ProductionDepartment, ProductionPlan, Site, System, Tank,
-    WaterMeasurement,
+    FeedingProtocol, HandlingRule, Medicine, MedicineWithdrawal, ProductionDepartment, ProductionPlan, ProtocolAssignment,
+    ProtocolBand, ProtocolRate, Site, System, Tank, TemperatureProfile, TemperatureProfileAssignment,
+    TemperatureProfilePoint, WaterMeasurement,
 )
 from ..models.site import zone_of
 from ..stock import read as stock_read, services as stock_services
@@ -324,20 +327,31 @@ del _name, _now, _days
 
 class BudgetTests(Fixtures, FeedingTestCase):
     """The page's queries do not grow with its rows: every unit stocked, fed, measured, held by a degree-day withdrawal
-    and with a target, so each row reads every part (the withdrawal, the purge in degree-days, the last feeding, the
-    forecast)."""
+    and with a target, fed by a feeding protocol and planned at a temperature profile (a unit's row on half the units,
+    a whole batch's on the others), so each row reads every part (the withdrawal, the purge in degree-days, the last
+    feeding, the forecast with its profile)."""
 
-    # measured 55 at 3 and at 9 units (2026-11-22), a small margin; never raised without a review. 61 from 2026-11-27:
-    # main's own page reached 60, and the production plan's temperature profiles add one read, their assignment rows
-    # (owner decision 17; the plan's horizon read is paid for by the one read of the fasts it saved). Review: the
-    # coordinator's, before landing.
-    CEILING = 61
+    # measured 55 at 3 and at 9 units (2026-11-22), a small margin; never raised without a review. Main's own page was
+    # 60 on 2026-11-27; the production plan adds two reads on the path with temperature profiles (their rows, their
+    # points) and saves one (the fasts, read once by the walk's policy): measured 62 here, the same at 3 and at 9 units
+    # (review 1, M2: the ceiling is the measurement on the path it was raised for).
+    CEILING = 62
 
     def setUp(self):
         super().setUp()
         self.user.groups.add(role('Harvest keeper', *HARVEST_KEEPER))
         self.purge(72, Decimal(30))
         self.slow = self.medicine('Slow vet.', degree_days=150)
+        self.protocol = FeedingProtocol.objects.create(name='Budget plan', species=self.salmon,
+                                                       expected_fcr=Decimal('1.00'), status='active')
+        band = ProtocolBand.objects.create(protocol=self.protocol, min_weight_g=0, max_weight_g=None, feed=self.feed,
+                                           meals_per_day=4)
+        for column, sfr in (('8', '1.00'), ('12', '2.00')):
+            ProtocolRate.objects.create(band=band, temperature_c=Decimal(column), sfr_pct=Decimal(sfr))
+        self.profile = TemperatureProfile.objects.create(name='Budget profile', species=self.salmon, status='active')
+        for weight, temperature in ((0, '9'), (1000, '11')):
+            TemperatureProfilePoint.objects.create(profile=self.profile, weight_g=weight,
+                                                   temperature_c=Decimal(temperature))
 
     def farm_of(self, count):
         units = [make_unit(f'B-{len(self.made) + n:02d}', self.hall) for n in range(count)]
@@ -345,6 +359,12 @@ class BudgetTests(Fixtures, FeedingTestCase):
         for unit in units:
             batch = self.stock(unit, count=500, weight='100', days_ago=12)
             ProductionPlan.objects.create(batch=batch, target_weight_g=Decimal(4000))
+            first = local_today(unit) - timedelta(days=12)
+            ProtocolAssignment.objects.create(protocol=self.protocol, batch=batch, valid_from=first, group_id=uuid.uuid4())
+            even = len(self.made) % 2 == 0
+            TemperatureProfileAssignment.objects.create(profile=self.profile, unit=unit if even else None,
+                                                        batch=None if even else batch, valid_from=first,
+                                                        group_id=uuid.uuid4())
             self.record(kilos='0.2', unit=unit, days_ago=2, time=time(18))
             self.warm(unit, 1, 2, 3)
         self.treat(self.slow, units, 5)
@@ -371,6 +391,62 @@ class BudgetTests(Fixtures, FeedingTestCase):
         decides = {row['earliest'].decides for row in self.client.get(reverse('farm:productionplan_list'))
                    .context['objects'] if row['share'] and row['unit'].pk in made}
         self.assertEqual(decides, {'withdrawal'})
+        # and every row's plan ran on its profile (none stopped before a day was planned)
+        listed = [row for row in self.client.get(reverse('farm:productionplan_list')).context['objects']
+                  if row['share'] and row['unit'].pk in made]
+        self.assertTrue(all(row['forecast'].profiles == (self.profile,) for row in listed))
+
+
+class GrowthPlanBudgetTests(Fixtures, FeedingTestCase):
+    """The growth plan page and its file at a 365-day horizon, from today and from a past start: their queries do not
+    grow with the batch's measured points (review 1, M2), and the days ahead read nothing (the walk of the days is
+    pure: the temperature is the profile's or the one held)."""
+
+    def setUp(self):
+        super().setUp()
+        self.user.groups.add(role('Harvest keeper', *HARVEST_KEEPER))
+        PlatformSettings.objects.update(plan_horizon_days=365)
+        self.unit = make_unit('G-01', self.hall)
+        self.fish = self.stock(self.unit, count=1000, weight='50', days_ago=30)
+        protocol = FeedingProtocol.objects.create(name='Budget plan', species=self.salmon,
+                                                  expected_fcr=Decimal('1.00'), status='active')
+        band = ProtocolBand.objects.create(protocol=protocol, min_weight_g=0, max_weight_g=None, feed=self.feed,
+                                           meals_per_day=4)
+        for column, sfr in (('8', '1.00'), ('12', '2.00')):
+            ProtocolRate.objects.create(band=band, temperature_c=Decimal(column), sfr_pct=Decimal(sfr))
+        ProtocolAssignment.objects.create(protocol=protocol, batch=self.fish, valid_from=self.day(30),
+                                          group_id=uuid.uuid4())
+        self.warm(self.unit, 29, 1)
+        self.weighed = []
+
+    def weigh(self, count):
+        for _n in range(count):
+            day = self.day(28 - 3 * len(self.weighed))
+            stock_services.record_weighing(self.user, unit=self.unit, batch=self.fish, day=day,
+                                           avg_weight_g=Decimal(50 + len(self.weighed)))
+            self.weighed.append(day)
+
+    def counts(self):
+        url = reverse('farm:production_plan', args=[self.unit.pk, self.fish.pk])
+        found = []
+        for query in ({}, {'format': 'csv'}, {'from': self.weighed[0].isoformat()},
+                      {'from': self.weighed[0].isoformat(), 'format': 'csv'}):
+            self.client.get(url, query)                              # warm what a first request loads once
+            with CaptureQueriesContext(connection) as log:
+                response = self.client.get(url, query)
+            self.assertEqual(response.status_code, 200)
+            found.append(len(log))
+        return found
+
+    def test_the_page_and_its_file_cost_the_same_at_three_and_at_nine_measured_points(self):
+        self.weigh(3)
+        small = self.counts()
+        self.weigh(6)
+        large = self.counts()
+        self.assertEqual(small, large)
+        url = reverse('farm:production_plan', args=[self.unit.pk, self.fish.pk])
+        rows = self.client.get(url, {'format': 'csv'}).content.decode().splitlines()
+        self.assertEqual(len(rows), 1 + 1 + 365)                    # the heading, the start, every day of the horizon
 
 
 class WaterOnAnotherClockTests(FrozenClock, FeedingTestCase):

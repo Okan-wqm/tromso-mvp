@@ -146,7 +146,7 @@ class LookupTests(SimpleTestCase):
                                                                         band(100, None, pk=2)))})
         self.assertEqual([smooth.basis('T1', 'B1', nov(2), D(weight)).fcr for weight in (20, 40, 50, 80)],
                          [D('0.90'), D('0.93'), D('0.95'), D('1.00')])
-        self.assertEqual((ok.uneaten_pct, ok.economic_fcr, ok.mortality_pct_month), (0, D('1.00'), None))
+        self.assertEqual((ok.uneaten_pct, ok.fcr_on_feed_given, ok.mortality_pct_month), (0, D('1.00'), None))
         self.assertEqual(ok.ration_kg(D(1170)), D('14.274'))
 
     def test_precedence_batch_in_unit_then_unit_then_whole_batch(self):

@@ -17,7 +17,7 @@ from itertools import product
 from django.test import SimpleTestCase
 
 from ..feeding import growth
-from ..feeding.growth import Stop, Terms, anchor, curve, economic_fcr, interpolate, step, survival_a_day
+from ..feeding.growth import Stop, Terms, anchor, curve, fcr_on_feed_given, interpolate, step, survival_a_day
 
 D, F = Decimal, Fraction
 START = date(2026, 11, 26)
@@ -64,11 +64,11 @@ class StepTests(SimpleTestCase):
             grown = [step(feed, fcr, uneaten).growth for fcr in FCRS]
             self.assertEqual(grown, sorted(grown, reverse=True))
 
-    def test_the_economic_fcr_is_feed_given_over_growth(self):
+    def test_the_fcr_on_feed_given_is_feed_given_over_growth(self):
         for feed, fcr, uneaten in product(FEEDS[1:], FCRS, UNEATEN):
-            self.assertEqual(economic_fcr(fcr, uneaten), feed / step(feed, fcr, uneaten).growth)
-        self.assertEqual(economic_fcr(D('1.00'), D(20)), D('1.25'))          # 1.00 ÷ 0.8
-        self.assertEqual(economic_fcr(D('1.10'), D(0)), D('1.10'))
+            self.assertEqual(fcr_on_feed_given(fcr, uneaten), feed / step(feed, fcr, uneaten).growth)
+        self.assertEqual(fcr_on_feed_given(D('1.00'), D(20)), D('1.25'))          # 1.00 ÷ 0.8
+        self.assertEqual(fcr_on_feed_given(D('1.10'), D(0)), D('1.10'))
 
 
 class InterpolationTests(SimpleTestCase):
@@ -173,7 +173,7 @@ class CurveTests(SimpleTestCase):
         self.assertEqual(found.end_g, D(50) * D('1.01') ** 10)
         self.assertEqual(found.points[0].feed_kg, D(5))                 # 10,000 fish × 0.5 g
         self.assertEqual(found.points[0].biomass_kg, D(505))
-        self.assertEqual(found.economic_fcr, D(1))
+        self.assertEqual(found.fcr_on_feed_given, D(1))
         self.assertEqual(found.feed_kg, found.growth_kg)
 
     def test_a_fifth_uneaten_by_hand(self):
@@ -191,7 +191,7 @@ class CurveTests(SimpleTestCase):
         self.assertEqual(found.feed_kg, D('18.38630912'))
         self.assertEqual(found.eaten_kg, D('14.709047296'))
         self.assertEqual(found.uneaten_kg, D('3.677261824'))
-        self.assertEqual(found.economic_fcr, D('1.25'))                 # 1.00 ÷ 0.8
+        self.assertEqual(found.fcr_on_feed_given, D('1.25'))                 # 1.00 ÷ 0.8
 
     def test_the_totals_add_up_on_every_curve(self):
         for sfr, fcr, uneaten, mortality in product(('0.4', '1', '2.5'), ('0.8', '1', '1.4'), ('0', '10', '50'),
@@ -203,7 +203,7 @@ class CurveTests(SimpleTestCase):
             self.assertAlmostEqual(found.eaten_kg + found.uneaten_kg, found.feed_kg, places=18)
             self.assertAlmostEqual(found.growth_kg * D(fcr), found.eaten_kg, places=18)
             self.assertEqual(found.points[-1].feed_to_date_kg, found.feed_kg)
-            self.assertAlmostEqual(found.economic_fcr, economic_fcr(D(fcr), D(uneaten)), places=18)
+            self.assertAlmostEqual(found.fcr_on_feed_given, fcr_on_feed_given(D(fcr), D(uneaten)), places=18)
             weights = [found.start_g, *(point.weight_g for point in found.points)]
             self.assertEqual(weights, sorted(weights))                  # the weight never falls
             for before, point in zip(weights, found.points):
@@ -236,7 +236,7 @@ class CurveTests(SimpleTestCase):
 
     def test_a_target_already_reached_is_reached_today_with_no_day_planned(self):
         found = curve(START, D(60), D(100), D(55), 730, constant())
-        self.assertEqual((found.reached, found.points, found.feed_kg, found.economic_fcr), (START, (), 0, None))
+        self.assertEqual((found.reached, found.points, found.feed_kg, found.fcr_on_feed_given), (START, (), 0, None))
 
     def test_the_horizon_is_the_last_day_it_looks_at(self):
         # 50 × 1.01^10 ≥ 55: reached on the last day of a ten-day horizon, not within nine
@@ -347,3 +347,35 @@ class BetweenBandRuleTests(SimpleTestCase):
             at_250 = next(used for used in shown if used.weight_g == 250)
             self.assertEqual((found.points[0].fcr, found.points[0].uneaten_pct), (at_250.fcr, at_250.uneaten_pct))
             self.assertEqual(found.points[0].feed_kg, D(250) * at_250.sfr[1] / 100 * 100 / 1000)
+
+
+class SpeedAndSafetyTests(SimpleTestCase):
+    """Review 1, M3 and L2: a value read between two bands asks only its two neighbouring bands, and a band without a
+    cell at the temperature makes the reading None, never a crash."""
+
+    def test_only_the_two_neighbouring_bands_are_asked(self):
+        asked = []
+
+        def value_of(index):
+            asked.append(index)
+            return D(index)
+        weights = [D(n * 10) for n in range(20)]
+        self.assertEqual(growth.interpolate_at(weights, D(55), value_of), D('5.5'))
+        self.assertEqual(sorted(asked), [5, 6])
+
+    def test_a_neighbour_without_a_cell_reads_none(self):
+        from types import SimpleNamespace
+
+        from ..feeding.ration import Band, Cell, Table
+        protocol = SimpleNamespace(expected_fcr=D(1), uneaten_pct=None, mortality_pct_month=None, fcr_between='smooth',
+                                   uneaten_between='smooth', sfr_between='smooth')
+        table = Table(protocol, (Band(0, D(0), D(100), 'F', 4, None, (Cell(D(10), D(1)), Cell(D(12), D(2)))),
+                                 Band(1, D(100), None, 'F', 4, None, (Cell(D(14), D(1)), Cell(D(16), D(2))))))
+        self.assertIsNone(table.sfr_at(D(80), D(11)))                    # the second band has no cell at 11 °C
+        self.assertEqual(table.sfr_at(D(20), D(11)).value, D('1.5'))     # below the first anchor: its own band
+
+    def test_survival_is_computed_once_per_rate(self):
+        survival_a_day.cache_clear()
+        for _day in range(730):
+            survival_a_day(D(2))
+        self.assertEqual(survival_a_day.cache_info().misses, 1)

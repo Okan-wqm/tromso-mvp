@@ -15,7 +15,7 @@ from pathlib import Path
 
 from django.test import override_settings
 from django.urls import reverse
-from django.utils import formats
+from django.utils import formats, timezone
 
 from core.island_props import props_of
 from core.models import AuditLog, PlatformSettings
@@ -24,7 +24,7 @@ from ..feeding import read as feeding_read
 from ..harvest import forecast
 from ..models import (
     FeedingProtocol, HandlingPlanItem, ProtocolAssignment, ProtocolBand, StockMovement, TemperatureProfile,
-    WeightSource,
+    TemperatureProfileAssignment, WeightSource,
 )
 from ..stock import read as stock_read, services as stock_services
 from .helpers import role, rows_data
@@ -123,6 +123,13 @@ class PlanTestCase(HarvestTestCase):
             'valid_from': self.day(days_ago).isoformat(), 'valid_until': '', 'notes': ''}, headers={'X-Modal': '1'})
         self.assertEqual(response.status_code, 204)
 
+    def recorded_back(self, days_ago):
+        """Every assignment row as made `days_ago` (a farm's rows were made when they were, not on the test's day): a
+        plan from a past start reads only the rows recorded by then (decision 12)."""
+        moment = timezone.now() - timedelta(days=days_ago)
+        ProtocolAssignment.all_objects.update(created_at=moment)
+        TemperatureProfileAssignment.all_objects.update(created_at=moment)
+
     def set_target(self, grams, batch=None):
         response = self.client.post(reverse('farm:productionplan_create'), {
             'batch': str((batch or self.batch).pk), 'target_weight_g': grams, 'notes': ''})
@@ -176,14 +183,15 @@ class GrowthPlanTests(PlanTestCase):
         self.set_target('62')
         found = self.row()['forecast']
         self.assertEqual((found.now_g, found.day, found.temperature_c), (D('60.8'), self.day(-3), D('10.0')))
-        self.assertEqual((found.curve.feed_kg, found.curve.eaten_kg, found.curve.economic_fcr),
-                         (D('18.38630912'), D('14.709047296'), D('1.25')))
+        # no fish die: the economic FCR (feed ÷ biomass gained: 622.709 kg − 608 kg = 14.709 kg) is the FCR on feed given
+        self.assertEqual((found.curve.feed_kg, found.curve.eaten_kg, found.curve.fcr_on_feed_given,
+                          found.curve.economic_fcr), (D('18.38630912'), D('14.709047296'), D('1.25'), D('1.25')))
         self.assertIn(f'date={self.day(-3).isoformat()}', self.row()['plan_harvest_url'])
         for look in ('classic', 'next'):
             page = self.client.get(reverse('farm:productionplan_list'), {'ui': look})
             said = page.content.decode() if look == 'classic' else str(props_of(page.content.decode(), 'list-page'))
             for text in (f'target on {shown(self.day(-3))}, at 10.0 °C held',
-                         '18.39 kg of feed to the target · economic FCR 1.25', 'Growth plan'):
+                         '18.39 kg of feed to the target · FCR on feed given 1.25 · economic FCR 1.25', 'Growth plan'):
                 self.assertIn(text, said, look)
             self.assertIn(self.growth_url(), said, look)
 
@@ -194,7 +202,7 @@ class GrowthPlanTests(PlanTestCase):
         today = self.today
         rows = self.file()
         self.assertEqual(rows[0], ['date', 'average_weight_g', 'fish', 'biomass_kg', 'feed_kg', 'feed_to_date_kg',
-                                   'eaten_kg', 'uneaten_kg', 'fcr', 'economic_fcr', 'uneaten_pct', 'temperature_c',
+                                   'eaten_kg', 'uneaten_kg', 'fcr', 'fcr_on_feed_given', 'uneaten_pct', 'temperature_c',
                                    'temperature_source', 'fasting'])
         # the start, then the three days worked out above (biomass = weight × 10,000 ÷ 1000; uneaten = a fifth of the feed)
         self.assertEqual(rows[1:], [
@@ -208,8 +216,9 @@ class GrowthPlanTests(PlanTestCase):
         ])
         page = self.client.get(self.growth_url())
         for text in (f'Growth plan · T-01 · {self.batch.code}', f'Target 62.0 g: reached on {shown(self.day(-3))}.',
-                     'Feed over these days: 18.39 kg given, 14.71 kg eaten, 3.68 kg uneaten; economic FCR of the period '
-                     '1.25; 10,000 fish and 623 kg at the end.',
+                     'Feed over these days: 18.39 kg given, 14.71 kg eaten, 3.68 kg uneaten; FCR on feed given of the period '
+                     '1.25, economic FCR 1.25; 10,000 fish and 623 kg at the end.',
+                     'Economic FCR, as the industry says it: the feed given divided by the biomass gained',
                      'Every day without a temperature profile at 10.0 °C, the unit’s latest measured temperature at '
                      'the start, held.',
                      'Today’s estimate', f'Stocked {shown(self.day(20))}', f'Weighed {shown(self.day(10))}',
@@ -314,7 +323,7 @@ class GrowthPlanTests(PlanTestCase):
         self.assertEqual(refused.status_code, 422)
         self.assertIsNone(ProtocolBand.objects.get(protocol=self.protocol).uneaten_pct)
         page = self.client.get(url)
-        for text in ('Uneaten feed', 'Economic FCR', 'Mortality a month', '1.25'):       # 1.00 ÷ 0.8
+        for text in ('Uneaten feed', 'FCR on feed given', 'Mortality a month', '1.25'):  # 1.00 ÷ 0.8
             self.assertContains(page, text)
         copy = self.client.post(reverse('farm:feedingprotocol_duplicate', args=[self.protocol.pk]))
         self.assertEqual(copy.status_code, 302)
@@ -335,7 +344,7 @@ class NextLookFormTests(PlanTestCase):
                      'sfr_between', 'Step at the band edge'):
             self.assertIn(text, page)
         fixed = self.client.get(reverse('farm:feedingprotocol_edit', args=[self.protocol.pk]), {'ui': 'next'})
-        for text in ('Economic FCR', 'Mortality a month', 'Each band’s FCR, uneaten share and SFR sit at the middle'):
+        for text in ('FCR on feed given', 'Mortality a month', 'Each band’s FCR, uneaten share and SFR sit at the middle'):
             self.assertIn(text, fixed.content.decode().replace('\\u2019', '’'))
 
 
@@ -512,10 +521,10 @@ class TemperatureProfileTests(PlanTestCase):
         self.assertEqual(rows[3], [self.day(-2).isoformat(), '62.4240', '4000', '249.696', '4.896', '9.696', '4.896',
                                    '0.000', '1.000', '1.000', '0.00', '12.0', 'Batch plan', ''])
         # the service's projection (decision 20) gives the same days, read only (no target yet: the whole horizon)
-        found = forecast.projection(self.t2.pk, self.batch.pk)
-        self.assertEqual([(point.weight_g, point.temperature_c, point.temperature_from) for point in
-                          found.forecast.curve.points[:2]], [(D('61.2'), D('12.0'), planned),
-                                                             (D('62.424'), D('12.0'), planned)])
+        found = forecast.projection(str(self.t2.pk), str(self.batch.pk))         # ids as text, as a call in JSON
+        self.assertEqual([(day['weight_g'], day['temperature_c'], day['temperature_source'])
+                          for day in found['days'][:2]],
+                         [(D('61.2'), D('12.0'), 'Batch plan'), (D('62.424'), D('12.0'), 'Batch plan')])
         empty = make_unit('T-09', self.hall)
         self.assertIsNone(forecast.projection(empty.pk, self.batch.pk))
         # the pages say it: the profile of the days, and the target day of the part that reaches it
@@ -602,6 +611,7 @@ class PlannedAgainstActualTests(PlanTestCase):
         self.record(kilos='5', days_ago=7)
         stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(5), avg_weight_g=D(62))
         self.assign_profile(self.profile_through_its_pages('Hall at 10', [('0', '10'), ('1000', '10')]), unit=self.t1)
+        self.recorded_back(16)                        # the rows were made back then, as on a farm
 
     def plan(self, start=None):
         unit = type(self.t1).objects.select_related('production_department__site').get(pk=self.t1.pk)
@@ -659,7 +669,7 @@ class PlannedAgainstActualTests(PlanTestCase):
         self.assertEqual(self.file(**{'from': self.day(10).isoformat()})[1][:3],
                          [self.day(10).isoformat(), '60.0000', '10000'])
         # from the stocking, 20 days ago: the protocol was in force from 15 days ago only, so the plan as it stood then
-        # stops at once and says why (the protocol in force on each day is read, never today's)
+        # stops at once and says why (the rows recorded by then are read: these were made 16 days ago)
         stocked = self.plan(self.day(20))
         self.assertEqual((stocked.chosen.day, stocked.forecast.now_g, stocked.forecast.curve.points,
                           stocked.forecast.why), (self.day(20), D(50), (), 'No protocol is assigned to these fish.'))
@@ -705,3 +715,162 @@ class PlannedAgainstActualTests(PlanTestCase):
         self.user.user_permissions.clear()
         self.assertEqual(self.client.get(self.growth_url()).status_code, 403)
         self.assertEqual(self.client.get(self.growth_url(), {'format': 'csv'}).status_code, 403)
+
+
+class ReviewOneTests(PlanTestCase):
+    """The findings of review 1 (F:/dev/balik-notes/plan/production-plan/REVIEW-1.md), each proved through the pages
+    and services: H1, M1, M5, L3, L4 and the two FCRs."""
+
+    def water_on(self, unit, days_ago, value):
+        from ..water import services as water_services
+        from .helpers import may_record, point_of
+        may_record(self.user, 'add_watermeasurement')
+        water_services.record(self.user, point=point_of(unit), measured_at=timezone.now() - timedelta(days=days_ago),
+                              source='manual', values={'temperature_c': D(value)})
+
+    def test_an_active_profile_keeps_its_points_and_a_profile_without_any_stops_the_plan_never_the_page(self):
+        # H1: the points of an active profile cannot all be removed (the write path); and a profile without points
+        # stored by any other path stops the plan with its reason naming the profile (the read never raises).
+        profile = self.profile_through_its_pages('Hall B', [('0', '10'), ('100', '12')])
+        emptied = self.client.post(reverse('farm:temperatureprofile_points', args=[profile.pk]),
+                                   rows_data('points', [], record=profile))
+        self.assertEqual(emptied.status_code, 422)
+        self.assertContains(emptied, 'An active profile has points', status_code=422)
+        self.assertEqual(profile.points.count(), 2)
+        self.assign_profile(profile, unit=self.t1)
+        profile.points.all().delete()                               # a path that is not the form: a script, a restore
+        self.set_target('62')
+        listed = self.client.get(reverse('farm:productionplan_list'))
+        self.assertEqual(listed.status_code, 200)
+        why = ('The temperature profile Hall B has no points: give its points (Operations › Feeding › Temperature '
+               'profiles).')
+        self.assertEqual(self.row()['forecast'].why, why)
+        self.assertContains(self.client.get(self.growth_url(), {'ui': 'classic'}), why)
+
+    def test_a_plan_from_a_past_start_is_the_plan_as_it_stood_that_day(self):
+        # M1: the plan from the weighing ten days ago (60 g) reads the rows recorded by the end of that day and the
+        # temperature measured by then; an assignment made since, and a reading taken since, do not enter it.
+        stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(5), avg_weight_g=D(62))
+        self.recorded_back(16)
+        start = self.day(10)
+        # no temperature measured by the start (the only sample is two hours old) and no profile: the plan says so
+        found = forecast.projection(self.t1.pk, self.batch.pk, start)
+        self.assertEqual(found['days'], [])
+        self.assertEqual(found['why'], f'No temperature had been measured here by {shown(start)}, and no temperature '
+                                       'profile applies: the plan as it stood then has none to read.')
+        # a sample taken the day before the start, at 12 °C: held for every day of that plan (the later 10 °C is not)
+        self.water_on(self.t1, 11, '12')
+        found = forecast.projection(self.t1.pk, self.batch.pk, start)
+        self.assertEqual((found['as_recorded'], found['temperature_held_c'], found['protocols']),
+                         (True, D('12.0'), ['Salmon plan']))
+        before = [(day['weight_g'], day['temperature_c']) for day in found['days'][:5]]
+        # 60 g at 1 % a day, 20 % uneaten, FCR 1.00: 60 × 1.008^5 = 62.43870843076608 g on the fifth day
+        self.assertEqual(before[4], (D('62.43870843076608'), D('12.0')))
+        # an assignment made after the start, a warmer profile on the batch in T-01 from the start on: today's plan
+        # reads it, the plan from the start does not
+        warm = self.profile_through_its_pages('Warm', [('0', '11'), ('1000', '11')])
+        self.assign_profile(warm, unit=self.t1, batch=self.batch, days_ago=10)
+        self.assertEqual(forecast.projection(self.t1.pk, self.batch.pk)['temperature_profiles'], ['Warm'])
+        again = forecast.projection(self.t1.pk, self.batch.pk, start)
+        self.assertEqual([(day['weight_g'], day['temperature_c']) for day in again['days'][:5]], before)
+        self.assertEqual(again['temperature_profiles'], [])
+        # and the page says what the plan holds, with the rule for a past start (L3)
+        page = self.client.get(self.growth_url(), {'from': start.isoformat(), 'ui': 'classic'})
+        self.assertContains(page, f'The plan as it stood on {shown(start)}: the assignments recorded by then '
+                                  '(Salmon plan) and the temperature measured by then')
+        self.assertContains(page, 'Every day of this plan, from its past start on, counts the day’s ration as given')
+        self.assertNotContains(page, 'A past day is never planned')
+
+    def test_a_row_ended_after_the_start_is_read_as_it_was_then(self):
+        # M1: the protocol's row on T-01 ended yesterday (its last day changed after the start): the plan from ten days
+        # ago still reads it open, as it was recorded then; today's plan has no protocol.
+        stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(5), avg_weight_g=D(62))
+        self.recorded_back(16)
+        self.water_on(self.t1, 11, '10')
+        from ..feeding import assignments
+        assignments.end(self.user, ProtocolAssignment.objects.get(), self.day(1))
+        self.assertEqual(forecast.projection(self.t1.pk, self.batch.pk)['why'],
+                         'No protocol is assigned to these fish.')
+        then = forecast.projection(self.t1.pk, self.batch.pk, self.day(10))
+        self.assertEqual(len(then['days']), 730)                          # the whole horizon: the row open as then
+
+    def test_the_service_takes_a_horizon_checks_its_ids_returns_plain_values_and_writes_nothing(self):
+        # M5: the stable contract of decision 20.
+        from datetime import date as day_type
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as log:
+            found = forecast.projection(str(self.t1.pk), self.batch.pk, horizon_days=3)
+        statements = {query['sql'].split()[0].upper() for query in log.captured_queries}
+        self.assertTrue(statements <= {'SELECT', 'SAVEPOINT', 'RELEASE'}, statements)
+        self.assertEqual(sorted(found), sorted([
+            'unit_id', 'unit', 'batch_id', 'batch', 'start_day', 'start_weight_g', 'start_fish', 'horizon_days',
+            'as_recorded', 'target_g', 'target_day', 'why', 'feed_kg', 'eaten_kg', 'uneaten_kg', 'fcr_on_feed_given',
+            'economic_fcr', 'protocols', 'temperature_profiles', 'temperature_held_c', 'days', 'measured']))
+        self.assertEqual(sorted(found['days'][0]), sorted([
+            'day', 'weight_g', 'fish', 'biomass_kg', 'feed_kg', 'eaten_kg', 'uneaten_kg', 'growth_kg',
+            'feed_to_date_kg', 'fcr', 'uneaten_pct', 'temperature_c', 'temperature_source', 'fasting']))
+        self.assertEqual(sorted(found['measured'][0]), sorted([
+            'day', 'kind', 'fish', 'weight_g', 'source', 'sample_count', 'sample_weight_kg', 'planned_g',
+            'difference_g']))
+        self.assertEqual((len(found['days']), found['horizon_days'], found['unit_id']), (3, 3, str(self.t1.pk)))
+
+        def plain(value):
+            if isinstance(value, dict):
+                return all(plain(each) for each in value.values())
+            if isinstance(value, list):
+                return all(plain(each) for each in value)
+            return value is None or isinstance(value, (str, bool, int, D, day_type))
+        self.assertTrue(plain(found))
+        self.assertEqual(found['measured'][1]['source'], 'Manual sample')
+        for wrong in ('T-01', 42, None, ''):
+            with self.assertRaises(forecast.ProjectionError):
+                forecast.projection(wrong, self.batch.pk)
+        with self.assertRaises(forecast.ProjectionError):
+            forecast.projection(self.t1.pk, self.batch.pk, horizon_days=-1)
+        import uuid as uuids
+        with self.assertRaises(forecast.ProjectionError):
+            forecast.projection(uuids.uuid4(), self.batch.pk)
+        self.assertIsNone(forecast.projection(self.t2.pk, self.batch.pk))   # a unit without the batch: no plan
+
+    def test_a_profiles_temperature_outside_the_table_names_the_profile(self):
+        # L4: the protocol's columns are 10 and 12 °C; a profile at 15 °C is outside them.
+        hot = self.profile_through_its_pages('Too warm', [('0', '15'), ('1000', '15')])
+        self.assign_profile(hot, unit=self.t1)
+        self.set_target('62')
+        self.assertEqual(self.row()['forecast'].why, '15.0 °C, the temperature profile Too warm’s at this weight, is '
+                                                     'outside this table (10.0–12.0 °C).')
+
+    def test_the_economic_fcr_counts_the_biomass_lost_to_mortality(self):
+        # Economic FCR (decided): feed given ÷ the biomass gained, the dead fish's weight not gained. 1,000 fish of
+        # 100 g in T-02 on a protocol with 3 % mortality a month (nothing uneaten, FCR 1.00, SFR 1 % at 10 °C):
+        # day 1: 1 kg fed to the 1,000 fish, 1 kg grown → 101 g; then 1,000 × 0.97^(1/30) = 998.98… fish are left:
+        # biomass 998.98… × 101 g = 100.897… kg: gained 0.897… kg for 1 kg fed: economic FCR 1.114…, FCR on feed
+        # given 1.00 (the growth of the fish fed).
+        dying = self.protocol_through_its_pages(name='Dying', uneaten_pct='', mortality_pct_month='3', rows=[
+            self.band(sfr_120='1')])
+        fish = self.stock(self.t2, count=1000, weight='100', days_ago=5)
+        self.assign_through_the_dialog(dying, unit=self.t2)
+        ProtocolTestCase.water(self, '10', unit=self.t2)
+        found = forecast.projection(self.t2.pk, fish.pk, horizon_days=1)
+        alive = D(1000) * (1 - D(3) / 100) ** (D(1) / 30)
+        gained = alive * 101 / 1000 - 100
+        self.assertEqual(found['fcr_on_feed_given'], D(1))
+        self.assertEqual(found['economic_fcr'], 1 / gained)
+        self.assertGreater(found['economic_fcr'], found['fcr_on_feed_given'])
+        page = self.client.get(self.growth_url(self.t2, fish), {'ui': 'classic'})
+        self.assertContains(page, 'Economic FCR, as the industry says it: the feed given divided by the biomass gained')
+
+    def test_an_assignment_locks_its_table_and_asks_again_that_it_is_active(self):
+        # L6: rows built while the profile was active are not written once it was retired meanwhile.
+        from django.core.exceptions import ValidationError
+
+        from ..feeding import assignments
+        profile = self.profile_through_its_pages('Hall C', [('0', '10'), ('100', '12')])
+        made, errors = assignments.rows(profile, [self.t2], None, self.today, None)
+        self.assertEqual(errors, [])
+        TemperatureProfile.objects.filter(pk=profile.pk).update(status='retired')
+        with self.assertRaises(ValidationError) as caught:
+            assignments.save(self.user, made)
+        self.assertEqual(caught.exception.message_dict['profile'], ['Hall C is no longer active: it was changed meanwhile.'])
+        self.assertFalse(TemperatureProfileAssignment.objects.exists())

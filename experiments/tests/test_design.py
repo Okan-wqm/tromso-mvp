@@ -404,6 +404,21 @@ class ProblemsTests(DesignTestCase):
         ProtocolBand.objects.filter(pk=band.pk).update(feed=other_feed)          # the feed alone: nothing to say
         self.assertEqual(self.codes(), [])
 
+    def test_diets_that_differ_only_in_what_the_protocol_gives_every_band_or_how_it_is_read_are_a_warning(self):
+        # Review 1, M4: the values as the ration reads them, the protocol-level fallbacks and the between-band rules too.
+        self.good()
+        for change, back in (({'uneaten_pct': D(20)}, {'uneaten_pct': None}),
+                             ({'mortality_pct_month': D(2)}, {'mortality_pct_month': None}),
+                             ({'expected_fcr': D('1.20')}, {'expected_fcr': D('1.00')}),
+                             ({'fcr_between': 'step'}, {'fcr_between': 'smooth'}),
+                             ({'uneaten_between': 'step'}, {'uneaten_between': 'smooth'}),
+                             ({'sfr_between': 'step'}, {'sfr_between': 'smooth'})):
+            with self.subTest(change=change):
+                FeedingProtocol.objects.filter(pk=self.high.pk).update(**change)
+                self.assertEqual(self.codes('warning'), ['tables_differ'])
+                FeedingProtocol.objects.filter(pk=self.high.pk).update(**back)
+                self.assertEqual(self.codes(), [])
+
     def test_the_balance_of_the_design_one_group_few_replicates_no_control_unequal_groups(self):
         self.good()
         stored = design.load(self.trial)

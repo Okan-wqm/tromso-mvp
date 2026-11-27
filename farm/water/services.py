@@ -20,25 +20,34 @@ code, 'reason' or NON_FIELD_ERRORS; for a round, a row's errors are under ('row'
 written."""
 import logging
 import uuid
-from decimal import ROUND_HALF_UP
+from collections import defaultdict
+from datetime import datetime, time, timedelta
+from decimal import ROUND_FLOOR, ROUND_HALF_UP, Decimal
+from zoneinfo import ZoneInfo
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db import transaction
+from django.db import connection, transaction
+from django.db.models import Max
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
-from core import access, audit
+from core import access, audit, platform
 from core.models import AuditLog, EntryKey
 from farm.health import withdrawal
-from farm.models import Equipment, SamplingPoint, System, Tank, WaterMeasurement
-from farm.models.water import BASIS_COLUMNS, NBS, PH_SCALE_COLUMNS, PHOSPHATE_UNIT_COLUMNS, PhosphateUnit, PhScale
+from farm.models import Equipment, ProbeDay, ProbeDayClosing, SamplingPoint, System, Tank, WaterMeasurement
+from farm.models.health import FloorOrigin
+from farm.models.water import (BASIS_COLUMNS, NBS, PH_SCALE_COLUMNS, PHOSPHATE_UNIT_COLUMNS, PhosphateUnit, PhScale,
+                               ProbeDayHow)
 from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, site_of
 from farm.stock import dates
 from farm.stock.services import AlreadyRecorded, lock_fish
 
-from . import messages, parameters
-from .read import POINT_RELATED, Context, gives_value, late_results_of, oxygen_basis, ph_on_nbs, scale_origin
+from . import messages, parameters, sources
+from .degree_days import zone_key
+from .read import (POINT_RELATED, Context, gives_value, late_results_of, middle_points, oxygen_basis, ph_on_nbs,
+                   scale_origin, tiers)
 
+DAY = timedelta(days=1)
 logger = logging.getLogger(__name__)
 
 # What the activity log shows of a sample: where it was taken, its source, its values and its notes (and its
@@ -398,3 +407,221 @@ def _fish_of(points, measured_at):
             unit_ids.update(Tank.all_objects.filter(system_id=point.system_id).values_list('pk', flat=True))
     units, batch_ids = lock_fish(unit_ids, local_time(measured_at, points[0]).date())
     return batch_ids, dates.earliest_today(units.values())
+
+
+# ---- probe days: a temperature probe's closed days (farm.models.ProbeDay) --------------------------------------
+# The one writer of the probe days the degree-days read (farm/water/degree_days.py): the daily job closes each day once
+# it is over on the place's clock; a person backfills history or corrects a day, through the withdrawal guard. The
+# sensors' readings are asked through the water's sources (farm/water/sources.py `covered`), here and nowhere else.
+TEMPERATURE = parameters.get(parameters.TEMPERATURE)
+PROBE_STEP = Decimal('0.01')
+PROBE_BOUND = Decimal('999.99')          # what the column holds: a mean beyond it is kept at it and never counts
+# The advisory lock the daily closing holds (a constant of this one use: "probe" in ASCII).
+CLOSING_LOCK = 0x70726F6265
+
+
+class SensorsUnread(Exception):
+    """The sensors could not be read: no probe day is written and no day closed (the days stay not closed)."""
+
+
+def probe_places():
+    """[(target, point or None, system or None, clock)] of every place a probe day is closed for: the places of every
+    live unit's tiers (`_places_of`, the one resolver: its own-water points, never an inlet, and its system's loop
+    point or own sensors), and every live system's loop point and own sensors; `clock`: the time zone its days are
+    counted on."""
+    found = {place[0]: place for place in _places_of(Tank.objects.select_related('production_department__site'))}
+    systems = list(System.objects.select_related('site'))
+    loops = middle_points(systems)
+    for system in systems:
+        target = (sources.SYSTEM, system.pk)
+        found.setdefault(target, (target, None, system, zone_key(system.site)))
+        loop = loops.get(system.pk)
+        if loop is not None:
+            found.setdefault((sources.POINT, loop.pk), ((sources.POINT, loop.pk), loop, None, zone_key(site_of(loop))))
+    return list(found.values())
+
+
+def _probe_rows(places, days, hours, hold, how, user=None, note=''):
+    """The ProbeDay rows (not saved) of every channel that answers for `places` on each of `days` (farm-local days on
+    each place's clock): the mean rounded down to 0.01 °C, and whether the day counts: the channel has a range, at
+    least `hours` of the day's hours hold a good reading and as many hours are covered, and the mean lies inside the
+    temperature's plausible range. SensorsUnread when a source failed: nothing is made of a partial answer."""
+    asks, keys = [], []
+    for target, point, system, clock in places:
+        zone = ZoneInfo(clock)
+        for day in days:
+            start = datetime.combine(day, time.min, tzinfo=zone)
+            asks.append((target, start, datetime.combine(day + DAY, time.min, tzinfo=zone)))
+            keys.append((point, system, day))
+    if not asks:
+        return []
+    answer = sources.covered(asks, TEMPERATURE.code, hold)
+    if answer.failed:
+        raise SensorsUnread('The sensors could not be read: no probe day was written.')
+    rows = []
+    for index, covered in sorted(answer.values.items()):
+        point, system, day = keys[index]
+        for each in sorted(covered, key=lambda found: found.channel_no):
+            if abs(each.mean) < 1000:
+                kept = Decimal(repr(each.mean)).quantize(PROBE_STEP, rounding=ROUND_FLOOR)
+            else:                                  # beyond what the column holds: kept at its bound, never counted
+                kept = PROBE_BOUND if each.mean > 0 else -PROBE_BOUND
+            counts = (each.ranged and each.hours >= hours and each.seconds >= hours * 3600
+                      and TEMPERATURE.low <= kept <= TEMPERATURE.high)
+            rows.append(ProbeDay(point=point, system=system, day=day, channel_no=each.channel_no, mean_c=kept,
+                                 covered_seconds=int(each.seconds), hours=each.hours, readings=each.readings,
+                                 ranged=each.ranged, hours_needed=hours, hold_seconds=each.hold, counts=counts, how=how,
+                                 created_by=user, note=note))
+    return rows
+
+
+def _unwritten(rows):
+    """The rows of `rows` whose place, day and channel have no live row yet (a backfilled or corrected day stands)."""
+    if not rows:
+        return []
+    taken = set(ProbeDay.objects.filter(voided_at__isnull=True, day__in={row.day for row in rows})
+                .values_list('point_id', 'system_id', 'day', 'channel_no'))
+    return [row for row in rows if (row.point_id, row.system_id, row.day, row.channel_no) not in taken]
+
+
+def close_probe_days(now=None):
+    """The daily job (manage.py close_probe_days, the server's jobs): for every clock a place is on, closes each day
+    that is over on it and not closed yet, oldest first (the first run closes yesterday alone: history is not made
+    here, `backfill_probe_days`): writes the probe days of every probe bound at a place that day and the day's
+    closing. A write nobody can be asked about (farm.health.services.unattended): a withdrawal in force whose end the
+    closed days would move EARLIER keeps the end it had as a floor. Returns (the rows written, the closings, the
+    floors). SensorsUnread: nothing is written, the days stay not closed (and so pending for the degree-days)."""
+    from farm.health import services as health_services
+    with transaction.atomic():
+        # One closing at a time (REVIEW-2, N-10): a second job waits here, then finds the days closed.
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT pg_advisory_xact_lock(%s)', [CLOSING_LOCK])
+        return _close_probe_days(now or timezone.now(), health_services)
+
+
+def _close_probe_days(now, health_services):
+    hours, hold, _cap, _tolerance = platform.degree_day_rules()
+    by_clock = defaultdict(list)
+    for place in probe_places():
+        by_clock[place[3]].append(place)
+    last = dict(ProbeDayClosing.objects.values('timezone').annotate(last=Max('day')).values_list('timezone', 'last'))
+    todo = []
+    for clock, places in sorted(by_clock.items()):
+        yesterday = now.astimezone(ZoneInfo(clock)).date() - DAY
+        day = last[clock] + DAY if clock in last else yesterday
+        while day <= yesterday:
+            todo.append((clock, day, places))
+            day += DAY
+    if not todo:
+        return [], [], []
+
+    def write():
+        written, closings = [], []
+        for clock, day, places in todo:
+            rows = _unwritten(_probe_rows(places, [day], hours, hold, ProbeDayHow.CLOSED))
+            ProbeDay.objects.bulk_create(rows)
+            closing = ProbeDayClosing.objects.create(timezone=clock, day=day, hours_needed=hours, hold_seconds=hold,
+                                                     probe_days=sum(row.counts for row in rows))
+            with audit.source_language():
+                audit.record(None, AuditLog.Action.CREATE, closing, {
+                    str(_('Day')): [None, day.isoformat()], str(_('Time zone')): [None, clock],
+                    str(_('Probe days written')): [None, len(rows)],
+                    str(_('Probe days that count')): [None, closing.probe_days]}, label=str(closing))
+            closings.append(closing)
+            written += rows
+        return written, closings
+
+    days = sorted({day for _clock, day, _places in todo})
+    reason = f'The probe days of {days[0].isoformat()} to {days[-1].isoformat()} were closed by the daily job.'
+    (written, closings), floors = health_services.unattended(write, FloorOrigin.CLOSING, reason)
+    return written, closings, floors
+
+
+def _places_of(units):
+    """The probe places of some units (`probe_places`'s shape): the places of their tiers (farm.water.read.tiers)."""
+    found = {}
+    for unit_tiers in tiers(units, nested=False).values():
+        for tier in unit_tiers:
+            points = {(sources.POINT, point.pk): point for point in tier.points}
+            for target, _origin in tier.targets:
+                point = points.get(target)
+                site = site_of(point) if point is not None else tier.owner.site
+                found[target] = (target, point, None if point is not None else tier.owner, zone_key(site))
+    return list(found.values())
+
+
+def backfill_probe_days(user, *, units, first, last, reason, withdrawal_ack=None):
+    """History, asked for by a person: the probe days of the places of `units` from `first` to `last` (days that are
+    over), worked out from the readings and the bindings AS THEY STAND NOW, with today's hours and hold, each row
+    marked backfilled with the reason; a place, day and channel that has a live row keeps it. Through the withdrawal
+    guard: a withdrawal it would end earlier, or a recorded harvest it would bring inside one, is asked about first.
+    Returns the rows written."""
+    access.require(user, RECORD)
+    reason = (reason or '').strip()
+    if not reason:
+        raise ValidationError({'reason': _('Say why the probe days are backfilled.')})
+    units = list(units or ())
+    if not units or first is None or last is None or first > last:
+        raise ValidationError({NON_FIELD_ERRORS: _('Name the units and a first and a last day.')})
+    places = _places_of(units)
+    now = timezone.now()
+    if any(last >= now.astimezone(ZoneInfo(clock)).date() for _target, _point, _system, clock in places):
+        raise ValidationError({'last': _('Only days that are over can be backfilled.')})
+    hours, hold, _cap, _tolerance = platform.degree_day_rules()
+    days = [first + offset * DAY for offset in range((last - first).days + 1)]
+
+    def write():
+        rows = _unwritten(_probe_rows(places, days, hours, hold, ProbeDayHow.BACKFILLED, user, reason))
+        ProbeDay.objects.bulk_create(rows)
+        if rows:
+            with audit.source_language():
+                audit.record(user, AuditLog.Action.CREATE, rows[0], {
+                    str(_('First day')): [None, first.isoformat()], str(_('Last day')): [None, last.isoformat()],
+                    str(_('Units')): [None, ', '.join(sorted(unit.code for unit in units))],
+                    str(_('Probe days written')): [None, len(rows)],
+                    str(_('Probe days that count')): [None, sum(row.counts for row in rows)],
+                    str(_('Reason')): [None, reason]}, label=str(_('Probe days backfilled')))
+        return rows
+
+    return withdrawal.guarded_units(user, [unit.pk for unit in units], first, write, seen=withdrawal_ack,
+                                    record_of=lambda rows: rows[0])
+
+
+def correct_probe_day(user, row, reason, withdrawal_ack=None):
+    """A closed probe day corrected: the row is voided (who, when, why) and the day is worked out again from the
+    readings and the bindings as they stand now, with today's hours and hold, as a new row marked corrected (none
+    when the channel answers nothing for the day any more). Through the withdrawal guard. Returns the new row or
+    None."""
+    access.require(user, VOID)
+    reason = (reason or '').strip()
+    if not reason:
+        raise ValidationError({'reason': _('Say why the probe day is corrected.')})
+    with transaction.atomic():
+        row = ProbeDay.objects.select_related('point__unit__production_department__site', 'point__system__site',
+                                              'system__site').get(pk=row.pk)
+        if row.voided_at is not None:
+            raise ValidationError({NON_FIELD_ERRORS: _('This probe day is already voided.')})
+        if row.point_id and row.point.unit_id:
+            unit_ids = [row.point.unit_id]
+        else:
+            system_id = row.system_id or row.point.system_id
+            unit_ids = list(Tank.all_objects.filter(system_id=system_id).values_list('pk', flat=True))
+        target = (sources.POINT, row.point_id) if row.point_id else (sources.SYSTEM, row.system_id)
+        clock = zone_key(site_of(row.point) if row.point_id else row.system.site)
+        hours, hold, _cap, _tolerance = platform.degree_day_rules()
+
+        def write():
+            row.voided_at, row.voided_by, row.void_reason = timezone.now(), user, reason
+            row.save(update_fields=['voided_at', 'voided_by', 'void_reason'])
+            made = [each for each in _probe_rows([(target, row.point, row.system, clock)], [row.day], hours, hold,
+                                                 ProbeDayHow.CORRECTED, user, reason)
+                    if each.channel_no == row.channel_no]
+            ProbeDay.objects.bulk_create(made)
+            with audit.source_language():
+                audit.record(user, AuditLog.Action.VOID, row, {
+                    str(_('Reason for voiding')): [None, reason],
+                    str(_('Mean (°C)')): [str(row.mean_c), str(made[0].mean_c) if made else None]}, label=str(row))
+            return made[0] if made else None
+
+        return withdrawal.guarded_units(user, unit_ids, row.day, write, seen=withdrawal_ack,
+                                        record_of=lambda _made: row)

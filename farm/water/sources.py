@@ -13,6 +13,12 @@ A provider is an object with three methods, and a fourth it may have:
     values_at(targets, code, moments) -> [{target: [SensorValue]}]   (optional)
         `value_at` at each of several moments, in their order, in one ask (a reader that knows the moments it will
         look up asks once, not once per moment); a provider without it is asked `value_at` per moment.
+    covered(asks, code, hold) -> {index: [Covered]}   (optional)
+        for each ask (target, start, end), by its index in `asks`, each channel's time-weighted mean of its good
+        readings over that span, the seconds they cover (a reading holds until the channel's next stored row, good or
+        not, at most `hold` seconds, at the lower bound of a deadband run up to the next row), the hours of the span
+        with a good reading, the number of good readings, whether the channel has a range set and the hold it used: what a probe's day is closed from (farm/water/services.py; the
+        degree-days read the closed days, farm/water/degree_days.py). A provider without it adds nothing.
     bound(targets, code, since, until) -> {target}
         the targets with a channel of the parameter bound there at some time in the range (one cheap ask, so a series
         never asks per moment for a place nothing was bound to).
@@ -52,6 +58,21 @@ class SensorValue:
     channel_no: int
     ph_scale: str = ''
     ph_scale_from: datetime | None = None
+
+
+@dataclass(frozen=True)
+class Covered:
+    """One channel's good readings of one parameter over a span (`covered`): their time-weighted mean in the
+    parameter's unit, the seconds of the span they covered, the hours of the span (counted from its start) that hold
+    one, how many there were, whether the channel has a range set, and the seconds one reading stood for at most (the
+    hold asked, never longer than the channel's freshness)."""
+    channel_no: int
+    mean: float
+    seconds: float
+    hours: int
+    readings: int
+    ranged: bool
+    hold: int
 
 
 @dataclass(frozen=True)
@@ -133,6 +154,30 @@ def values_at(targets, code, moments):
             for target, values in answer.items():
                 slot.setdefault(target, []).extend(values)
     return [Answer(slot, failed) for slot in merged]
+
+
+def covered(asks, code, hold):
+    """The providers' time-weighted means of one parameter over spans: `asks` is [(target, start, end)], `hold` the
+    seconds one reading stands for at most, the answer's values {index of the ask: [Covered]}, one ask of each
+    provider for all of them. A provider that raises is left out
+    and the answer says so (`failed`)."""
+    asks = list(asks)
+    if not asks or not _providers:
+        return Answer({})
+    merged, failed = {}, False
+    for provider in list(_providers):
+        if not hasattr(provider, 'covered'):
+            continue
+        try:
+            with transaction.atomic():
+                found = provider.covered(asks, code, hold)
+        except Exception:                                        # fail open, and say so
+            logger.exception('A water source (%r) failed; its values are left out.', provider)
+            failed = True
+            continue
+        for index, values in found.items():
+            merged.setdefault(index, []).extend(values)
+    return Answer(merged, failed)
 
 
 def ordered(values):

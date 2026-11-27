@@ -5,6 +5,7 @@ where a sample was taken is its sampling point (farm/models/water_point.py)."""
 from functools import reduce
 from operator import or_
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
@@ -377,3 +378,97 @@ class WaterLimit(AuditedModel):
                 errors[upper] = ORDER_MESSAGE
         if errors:
             raise ValidationError(errors)
+
+
+class ProbeDayHow(models.TextChoices):
+    CLOSED = 'closed', _('Closed by the daily job')
+    BACKFILLED = 'backfilled', _('Backfilled')
+    CORRECTED = 'corrected', _('Corrected')
+
+
+class ProbeDay(models.Model):
+    """One CLOSED day of one temperature probe at one place: a stored fact, like a water sample, that the degree-days
+    read (farm/water/degree_days.py; the independent review of 2026-11-26, B-2). The place is a sampling point or a
+    system (the system's own sensors), the day is the farm-local day on the place's site clock, and the row keeps what
+    the probe's good readings gave when the day was closed: their time-weighted mean, the seconds they covered, the
+    hours of the day that held a good reading, the number of readings, whether the channel had a range set, the hours
+    needed and the hold bound the day was closed with, and so whether it COUNTS as a probe day.
+
+    Written only by farm/water/services.py (`close_probe_days`, the daily job; `backfill_probe_days` and
+    `correct_probe_day`, guarded actions of a person), through the sensors' provider (farm/water/sources.py `covered`).
+    Never updated: a correction voids the row (who, when, why) and writes a new one. After a day is closed, late
+    readings, a moved binding, an edited or deleted channel and the readings' retention change nothing. Every write is
+    a write of a withdrawal input: inside the withdrawal guard only (farm/withdrawal_gate.py)."""
+
+    id = models.BigAutoField(primary_key=True)
+    created_at = models.DateTimeField(_('Closed at'), auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+                                   related_name='+', verbose_name=_('Closed by'))       # empty: the daily job
+    point = models.ForeignKey(SamplingPoint, null=True, blank=True, on_delete=models.DO_NOTHING, related_name='+',
+                              verbose_name=_('Sampling point'))
+    system = models.ForeignKey('farm.System', null=True, blank=True, on_delete=models.DO_NOTHING, related_name='+',
+                               verbose_name=_('System'))
+    day = models.DateField(_('Day'))
+    channel_no = models.IntegerField(_('Channel number'))
+    mean_c = models.DecimalField(_('Mean (°C)'), max_digits=5, decimal_places=2)
+    covered_seconds = models.PositiveIntegerField(_('Covered (seconds)'))
+    hours = models.PositiveSmallIntegerField(_('Hours with a good reading'))
+    readings = models.PositiveIntegerField(_('Good readings'))
+    ranged = models.BooleanField(_('The channel had a range'))
+    hours_needed = models.PositiveSmallIntegerField(_('Hours needed'))
+    hold_seconds = models.PositiveIntegerField(_('A reading stood for (seconds)'))
+    counts = models.BooleanField(_('Counts as a probe day'))
+    how = models.CharField(_('How it was made'), max_length=12, choices=ProbeDayHow.choices)
+    note = models.CharField(_('Note'), max_length=500, blank=True)
+    voided_at = models.DateTimeField(_('Voided at'), null=True, blank=True)
+    voided_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+                                  related_name='+', verbose_name=_('Voided by'))
+    void_reason = models.CharField(_('Reason for voiding'), max_length=500, blank=True)
+
+    objects = SealedManager()
+
+    class Meta:
+        db_table = 'probe_days'
+        ordering = ['day', 'id']
+        verbose_name = _('probe day')
+        verbose_name_plural = _('probe days')
+        constraints = [
+            models.CheckConstraint(condition=Q(point__isnull=False, system__isnull=True)
+                                   | Q(point__isnull=True, system__isnull=False), name='chk_probe_days_place'),
+            models.CheckConstraint(condition=Q(how__in=ProbeDayHow.values), name='chk_probe_days_how'),
+            models.CheckConstraint(condition=Q(voided_at__isnull=True, void_reason='')
+                                   | (Q(voided_at__isnull=False) & ~Q(void_reason='')), name='chk_probe_days_void'),
+            models.UniqueConstraint(fields=['point', 'day', 'channel_no'], condition=Q(voided_at__isnull=True),
+                                    name='uq_probe_days_point_live'),
+            models.UniqueConstraint(fields=['system', 'day', 'channel_no'], condition=Q(voided_at__isnull=True),
+                                    name='uq_probe_days_system_live'),
+        ]
+
+    def __str__(self):
+        return f'{self.point or self.system} · {self.day:%Y-%m-%d} · #{self.channel_no}: {self.mean_c} °C'
+
+
+class ProbeDayClosing(models.Model):
+    """A day the daily job has closed for every place on one clock (a time zone): the probe days of that day are
+    written, and a place without a row for it had no probe reading that day. The degree-days read the newest one of a
+    clock to tell a past day that is closed without a probe (counted from the samples or the assumption) from one a
+    probe is still expected for (not closed yet: projected, never assumed). Written once per clock and day by
+    farm/water/services.py `close_probe_days`, inside the withdrawal guard; never changed."""
+
+    id = models.BigAutoField(primary_key=True)
+    created_at = models.DateTimeField(_('Closed at'), auto_now_add=True)
+    timezone = models.CharField(_('Time zone'), max_length=63)
+    day = models.DateField(_('Day'))
+    hours_needed = models.PositiveSmallIntegerField(_('Hours needed'))
+    hold_seconds = models.PositiveIntegerField(_('A reading stood for (seconds)'))
+    probe_days = models.PositiveIntegerField(_('Probe days that count'))
+
+    class Meta:
+        db_table = 'probe_day_closings'
+        ordering = ['day', 'id']
+        verbose_name = _('probe day closing')
+        verbose_name_plural = _('probe day closings')
+        constraints = [models.UniqueConstraint(fields=['timezone', 'day'], name='uq_probe_day_closings')]
+
+    def __str__(self):
+        return f'{self.timezone} · {self.day:%Y-%m-%d}'

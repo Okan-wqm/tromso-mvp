@@ -39,6 +39,7 @@ NOT_A_WRITER = {
     'hr.services.can_cancel': 'a question (may this person cancel the request), no write',
     'hr.services.own_employee': "a question (this person's own employee record), no write",
     'hr.services.deciders_of': 'a question (which of these requests this person decides), no write',
+    'hr.services.reached': "a check inside the HR services' checked calls (the reach of their cells), no write",
     'messaging.services.contacts': 'a question (whom this person may write to), no write',
     'farm.handling.check.second_person_must_approve': 'a question (must a second person approve), no write',
     'farm.handling.check.require_acknowledged': "a check of the warnings the caller's form acknowledged, inside its "

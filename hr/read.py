@@ -127,8 +127,6 @@ def planned_shifts(shifts, placed):
     return found
 
 
-
-
 def governing_of(placed, moment):
     """THE rule of a person's moment, over their placements `placed` (read beforehand with their departments' sites, at
     least those that may cover the company's day): the placement of the moment's day on the company's clock (never the

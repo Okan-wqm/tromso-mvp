@@ -9,10 +9,11 @@ from core import listprops as L
 from core.crud import Mount, Resource
 from farm.stock.dates import site_today
 
-from .. import leave, read, scope, services
+from .. import leave, scope, services
 from ..forms.leave import LeaveRequestForm, LeaveTypeForm
 from ..models import LeaveRequest, LeaveType, SchedulingSettings
 from ..models.leave import LeaveStatus
+from ..placed import placements, site_of_day
 
 TABS = [('pending', _('Pending')), ('approved', _('Approved')), ('rejected', _('Rejected')), ('all', _('All'))]
 
@@ -132,7 +133,7 @@ class LeaveRequestResource(services.PersonFirst, Resource):
         sees_types = cls.sees_every_type(request.user)
         decided_here = services.deciders_of(request.user, requests)
         holidays = leave.holiday_table([item.first_day for item in requests], [item.last_day for item in requests])
-        placed = read.placements({item.employee_id for item in requests}, min(
+        placed = placements({item.employee_id for item in requests}, min(
             (item.first_day for item in requests), default=None), max((item.last_day for item in requests), default=None)
         ) if requests else {}
         weekdays = SchedulingSettings.get().working_weekdays
@@ -147,7 +148,7 @@ class LeaveRequestResource(services.PersonFirst, Resource):
                 'can_decide': services.can_decide(request.user, item, decider=item.pk in decided_here),
                 'can_cancel': services.can_cancel(
                     request.user, item, decider=item.pk in decided_here,
-                    today=site_today(read.site_of_day(placed[item.employee_id], item.first_day))),
+                    today=site_today(site_of_day(placed[item.employee_id], item.first_day))),
                 'can_shorten': item.first_day < item.last_day and services.can_correct(
                     request.user, item, decider=item.pk in decided_here),
                 'shorten_to': item.last_day - timedelta(days=1),          # the latest new last day the service takes

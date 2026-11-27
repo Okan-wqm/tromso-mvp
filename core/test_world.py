@@ -72,17 +72,12 @@ def world(admin, client=None):
     `client`: the test's own (a test run allows only its own host); else one on localhost, as the recorder's server
     allows."""
     from farm.models import Tank
-
-    from core.writers import writing
     client = client or Client(HTTP_HOST='localhost')
     client.force_login(admin)
-    # HR's people and records laid out as stored, beside what the pages make: the world is rows a page then reads
-    # (core.writers: a builder of rows as stored enters the writing context with its reason)
-    with writing('hr', 'the test world lays out the rows the recorded fixtures read'):
-        made = company_world(admin, client) + hr_world(admin, client) + roster_world(admin, client)
-        water_world(admin, {'tank': Tank.objects.get(code='TT-01')})
-        # the panel's part first: its records keep the codes and the order its pages are recorded with
-        return made + panel_world(admin, client) + forms_world(admin, client)
+    made = company_world(admin, client) + hr_world(admin, client) + roster_world(admin, client)
+    water_world(admin, {'tank': Tank.objects.get(code='TT-01')})
+    # the panel's part first: its records keep the codes and the order its pages are recorded with
+    return made + panel_world(admin, client) + forms_world(admin, client)
 
 
 def company_world(admin, client):

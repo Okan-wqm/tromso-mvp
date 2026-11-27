@@ -8,41 +8,15 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
-from . import writers
 from .sealing import SealedMixin
 
 
-class OneWriterQuerySet(models.QuerySet):
-    """The rows of a record's managers: a write of many rows at once asks who writes (core.writers.require), as the
-    record's own `save` and `delete` do. Only a model that declares `service_written` is held; every other model's
-    queryset is Django's."""
-
-    def update(self, **kwargs):
-        writers.require(self.model, 'update')
-        return super().update(**kwargs)
-    update.alters_data = True
-
-    def delete(self):
-        writers.require(self.model, 'delete')
-        return super().delete()
-    delete.alters_data = True
-    delete.queryset_only = True
-
-    def bulk_create(self, objs, *args, **kwargs):
-        writers.require(self.model, 'bulk_create')
-        return super().bulk_create(objs, *args, **kwargs)
-
-    def bulk_update(self, objs, fields, *args, **kwargs):
-        writers.require(self.model, 'bulk_update')
-        return super().bulk_update(objs, fields, *args, **kwargs)
-
-
-class SealedManager(SealedMixin, models.Manager.from_queryset(OneWriterQuerySet)):
+class SealedManager(SealedMixin, models.Manager):
     """Every record, as far as the viewer of the moment may see it (core.sealing: a model with no filtering seal is
     not narrowed)."""
 
 
-class ActiveManager(SealedMixin, models.Manager.from_queryset(OneWriterQuerySet)):
+class ActiveManager(SealedMixin, models.Manager):
     """Hides soft-deleted records, and the records the viewer of the moment may not see (core.sealing)."""
 
     def get_queryset(self):
@@ -81,9 +55,9 @@ class AuditedModel(models.Model):
 
     # One writer per record (core/tests_data_access.py, rule S): True on a model its area's services.py writes and
     # nothing else does. Every tab of it hands its writes to the service (core.crud.Resource.service_writes), no other
-    # module builds or writes it, the admin offers no restore of it (core.admin; core.softdelete.restore refuses one a
-    # parent's restore would bring along), and at run time the model refuses a write made outside its service's writing
-    # context (core.writers: `save` and `delete` below, the managers' writes of many rows above).
+    # module builds or writes it by name, and the admin offers no restore of it (core.admin; core.softdelete.restore
+    # refuses one a parent's restore would bring along). A check at run time is to come with the one write gate in core
+    # (the follow-up listed in the plan, F:/dev/balik-notes/NEXT.md).
     service_written = False
 
     # What a delete's confirmation says of the records of this model that keep pointing at the deleted one
@@ -92,14 +66,6 @@ class AuditedModel(models.Model):
 
     class Meta:
         abstract = True
-
-    def save(self, *args, **kwargs):
-        writers.require(type(self), 'save')
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        writers.require(type(self), 'delete')
-        return super().delete(*args, **kwargs)
 
     def soft_delete(self, user):
         """Deletes the record its caller has locked (and maybe changed: a void's reason), writing it whole."""

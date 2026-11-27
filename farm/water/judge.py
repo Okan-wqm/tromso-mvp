@@ -23,7 +23,8 @@ bound, so a system's analyser is the system's, never a unit's own point's):
   rule (`said_as`): while it still COUNTS (fresh now, behind a live value only: the worst fresh value still takes it,
   review 3, N1) as still counted, never superseded; else as a LATE result when it was entered after a newer value at
   its point already existed (a stored one, or a reading of the point's analyser older than its entry), else as an
-  EARLIER result, superseded. Never an alarm of its own;
+  EARLIER result, superseded, and as UNCHECKED where the analyser's history could not be read (never "on time"). Never
+  an alarm of its own;
 - a point the shell stopped looking back at before it found evidence (`complete` False: the ceiling) cannot be evaluated:
   what was fetched is judged, and is never taken for the whole (`ceiling`).
 Per place (`place_verdict`: the unit's own points and its system's, or one point read on its own):
@@ -126,17 +127,25 @@ class PointVerdict:
         return _fresh_now(late) and self.superseded(late) is not self.superseded_by
 
     def said_as(self, late, entered_late):
-        """THE one wording rule of a `late` result (the coordinator's decisions on reviews 8 and 9): COUNTED while it
+        """THE one wording rule of a `late` result (the coordinator's decisions on reviews 8 to 10): COUNTED while it
         still counts (`still_counted`); else LATE when it was entered after a newer value at its point already existed:
         a stored one (that is what made it late behind stored evidence), or, behind a live value, a reading of the
-        point's analyser newer than its minute and older than its entry (`entered_late`, the shell's look at the
-        analyser's history); else EARLIER (entered on time, overtaken by the analyser later)."""
+        point's analyser newer than its minute and older than its entry (`entered_late` True: the shell's look at the
+        analyser's history); UNCHECKED when that history could not be read (`entered_late` None: never taken for on
+        time); else EARLIER (entered on time, overtaken by the analyser later)."""
         if self.still_counted(late):
             return COUNTED
-        return LATE if self.superseded(late).stored or entered_late else EARLIER
+        if self.superseded(late).stored or entered_late:
+            return LATE
+        return UNCHECKED if entered_late is None else EARLIER
+
+    def asks_history(self, late):
+        """Whether the wording of `late` needs the shell's look at the analyser's history (`said_as`): an alert, behind a
+        live value, no longer counted. Nothing else is asked (review 10, F2)."""
+        return late.status in ALERTS and not self.superseded(late).stored and not self.still_counted(late)
 
 
-COUNTED, LATE, EARLIER = 'counted', 'late', 'earlier'
+COUNTED, LATE, EARLIER, UNCHECKED = 'counted', 'late', 'earlier', 'unchecked'
 
 
 def newest_first(records):
@@ -211,8 +220,9 @@ class PlaceVerdict:
     results judged critical or a warning, the worst first, then the newest, across its points: those that no longer
     count, each with what superseded it (`late`: ((late, evidence), …)), of which those entered on time (`earlier`, said
     as earlier results), and those still counted, each with the newer reading of their point beside it (`counted`:
-    ((value, newer), …)), all by `PointVerdict.said_as`; the system's stale alerts older than the value shown (`older`,
-    said, never held); and the points of the tier read that could not be evaluated whole (`ceiling`)."""
+    ((value, newer), …)), and the word each of them is said with (`words`: {id(record): COUNTED, LATE, EARLIER or
+    UNCHECKED}), all by `PointVerdict.said_as`; the system's stale alerts older than the value shown (`older`, said,
+    never held); and the points of the tier read that could not be evaluated whole (`ceiling`)."""
     held: Record | None
     attention: bool
     refused: Record | None
@@ -220,6 +230,7 @@ class PlaceVerdict:
     late: tuple
     earlier: tuple
     counted: tuple
+    words: dict
     older: tuple
     ceiling: tuple
 
@@ -228,8 +239,8 @@ def place_verdict(shown, points, own_points, entered_late=lambda record: False):
     """The verdict of a place. `shown`: the Record of the value the place shows, its `status` the place's judgement
     after the worst fresh value. `points`: {point: PointVerdict} of every point of the place, own and system. `own_points`:
     the place's own points (a unit's own-water points; for a point read on its own, itself). `entered_late(record)`:
-    whether a superseded record behind a live value was entered after its point's analyser had a newer reading (the
-    shell's answer, `said_as`)."""
+    whether a superseded record behind a live value was entered after its point's analyser had a newer reading, None
+    where the shell could not tell (its answer, `said_as`)."""
     shown_rank = RANK[shown.status]
     kept, older = [], []
     for point, verdict in points.items():
@@ -255,10 +266,11 @@ def place_verdict(shown, points, own_points, entered_late=lambda record: False):
     late = tuple((record, newer) for record, newer, said in pairs if said != COUNTED)
     earlier = tuple(record for record, _newer, said in pairs if said == EARLIER)
     counted = tuple((record, newer) for record, newer, said in pairs if said == COUNTED)
+    words = {id(record): said for record, _newer, said in pairs}
     attention = (from_system and held is None and shown.status == Status.OK
                  and any(points[point].lacking is not None and points[point].lacking.order > shown.order
                          for point in own_points if point in points))
-    return PlaceVerdict(held, attention, refused, said, late, earlier, counted, tuple(worst_first(older)),
+    return PlaceVerdict(held, attention, refused, said, late, earlier, counted, words, tuple(worst_first(older)),
                         tuple(point for point, verdict in tier.items() if verdict.ceiling))
 
 

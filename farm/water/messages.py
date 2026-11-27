@@ -449,46 +449,37 @@ def ended_by(code, end, point):
     return f'{said}.'
 
 
-def late_result(late, evidence):
-    """A late result (the owner's decision on review 5): a worked-out value measured before a point's evidence value
-    but entered after it, said on the point and in the activity log, never alarmed: "Late result: critical 0.8924 at
-    Outlet on 25.11.2026 10:00, superseded by 0.0110 on 25.11.2026 18:00." """
+# What a superseded result is said as, by the judge's word (farm/water/judge.py `PointVerdict.said_as`): THE one table,
+# for the page, its history row and the activity log (review 10, F3).
+RESULT_SAID = {
+    'late': _('Late result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on %(newer_time)s.'),
+    'earlier': _('Earlier result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on '
+                 '%(newer_time)s.'),
+    'unchecked': _('Superseded result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on '
+                   '%(newer_time)s; whether it was entered late could not be checked.'),
+    'counted': _('Result of %(time)s: %(status)s %(value)s at %(point)s, still counted until %(until)s; the analyser '
+                 'reads %(newer)s on %(newer_time)s.'),
+}
+
+
+def result_said(word, value, newer):
+    """A superseded result as the judge's `word` says it (RESULT_SAID): "Late result: critical 0.8924 at Outlet on
+    25.11.2026 10:00, superseded by 0.0110 on 25.11.2026 18:00." (entered after a newer value at its point existed),
+    "Earlier result: …" (entered on time, overtaken later by the analyser), "Superseded result: …; whether it was entered
+    late could not be checked." (the analyser's history could not be read), "Result of 27.11.2026 09:00: critical 0.8924
+    at Middle, still counted until 27.11.2026 21:00; the analyser reads 0.0011 on 27.11.2026 10:00." (still counted:
+    never called superseded). Said on the point and in the activity log, never an alarm."""
     from ..models.water_point import local_time
     from .evaluate import Status
     from .read import said_value
-    return _('Late result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on %(newer_time)s.') % {
-        'status': str(Status(late.judged).label).lower(), 'value': said_value(late), 'point': late.point.name,
-        'time': local_time(late.at, late.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(evidence),
-        'newer_time': local_time(evidence.at, evidence.point).strftime('%d.%m.%Y %H:%M')}
 
+    def when(moment, point):
+        return local_time(moment, point).strftime('%d.%m.%Y %H:%M')
 
-def earlier_result(earlier, newer):
-    """A result entered on time and overtaken later by its point's analyser, no longer counted (the coordinator's decision
-    on review 9, P3; judge.said_as): never called late. "Earlier result: critical 0.8924 at Middle on 25.11.2026 10:00,
-    superseded by 0.0011 on 26.11.2026 18:00." """
-    from ..models.water_point import local_time
-    from .evaluate import Status
-    from .read import said_value
-    return _('Earlier result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on '
-             '%(newer_time)s.') % {
-        'status': str(Status(earlier.judged).label).lower(), 'value': said_value(earlier), 'point': earlier.point.name,
-        'time': local_time(earlier.at, earlier.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(newer),
-        'newer_time': local_time(newer.at, newer.point).strftime('%d.%m.%Y %H:%M')}
-
-
-def still_counted(value, newer):
-    """A result entered behind a newer live reading at its point that is still fresh, so the place's status still counts
-    it (review 3, N1; the coordinator's decision on review 8): never called superseded. "Result of 27.11.2026 09:00:
-    critical 0.8924 at Middle, still counted until 27.11.2026 21:00; the analyser reads 0.0011 on 27.11.2026 10:00." """
-    from ..models.water_point import local_time
-    from .evaluate import Status
-    from .read import said_value
-    return _('Result of %(time)s: %(status)s %(value)s at %(point)s, still counted until %(until)s; the analyser reads '
-             '%(newer)s on %(newer_time)s.') % {
-        'time': local_time(value.at, value.point).strftime('%d.%m.%Y %H:%M'),
+    return RESULT_SAID[word] % {
         'status': str(Status(value.judged).label).lower(), 'value': said_value(value), 'point': value.point.name,
-        'until': local_time(value.fresh_until, value.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(newer),
-        'newer_time': local_time(newer.at, newer.point).strftime('%d.%m.%Y %H:%M')}
+        'time': when(value.at, value.point), 'until': when(value.fresh_until, value.point),
+        'newer': said_value(newer), 'newer_time': when(newer.at, newer.point)}
 
 
 def late_more(count):

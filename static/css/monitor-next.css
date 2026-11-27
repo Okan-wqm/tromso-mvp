@@ -339,6 +339,8 @@ html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .
 /* (from a desk width up: on a phone the card flows in its column and its rows scroll in their own frame) */
 @media (min-width: 1100px) {
   html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
+  /* (a board that mixes them: a Small card keeps its one size at the top of a row a Big card makes tall) */
+  html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) > .is-fit:not([data-fill]) { align-self: start; height: 11.5em; }
   html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] { display: flex; flex-direction: column; min-width: 0; }
   html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] > * { --u: max(14px, min(calc(100cqi / var(--mw)), 30px)); flex: none; }
   html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid { flex: 1 0 auto; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; align-content: start; }

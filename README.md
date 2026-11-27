@@ -5396,6 +5396,11 @@ there was then (`core_rev_ensure`). A reader ensures its keys, then stamps them,
   replica sessions only, on a table or on a chunk of the `water_measurements` hypertable: a change to its table would
   pass unseen. Quiet until core/0014 has run. It checks that each trigger is there and fires, not its definition.
   TimescaleDB refuses to disable a trigger on a hypertable or a chunk; a chunk's trigger can still be dropped.
+- `manage.py check --database default` also names (core.W006) every index PostgreSQL marks invalid, what a
+  CREATE INDEX CONCURRENTLY or REINDEX CONCURRENTLY that failed part-way leaves (written on every change, never read,
+  and the next run of the migration that makes it stops at "already exists"), with the `DROP INDEX CONCURRENTLY IF
+  EXISTS ...` that removes each (docs/ops/upgrade.md, When it fails). The migrations here build their indexes in
+  their own transaction (alarms 0024), so a failed one leaves none.
 - `manage.py core_rev_repair` (the warning's hint) makes the missing triggers again exactly as their migrations made
   them (`core.rev.operations()`), then rebuilds every revision, since changes may have passed unseen meanwhile. It does
   nothing when none is missing.

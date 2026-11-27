@@ -211,6 +211,7 @@ RAW_SQL = {
     'alarms/worker.py:Worker._lead': 'the worker’s advisory lock and backend pid, no rows',
     'alarms/worker.py:Worker._session': 'the worker’s application name, no rows',
     'core/checks.py:plain_private_values': 'a deployment check over the log’s private values, as the system',
+    'core/checks.py:invalid_indexes': 'the catalogue of the indexes PostgreSQL marks invalid: their names, no row',
     'core/codes.py:next_code': 'the next number of a code sequence: a number, no record',
     'core/database.py:Table.counts': 'the estimate of a hypertable’s rows; its rows are counted through the seal',
     'core/database.py:Table.structure': 'the catalogue of a table (columns, constraints, indexes)',

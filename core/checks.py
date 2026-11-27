@@ -285,3 +285,28 @@ def plain_private_values(app_configs, **kwargs):
         f'server that still ran the code from before core/0011).',
         hint='Stop every server running the old code, then run `manage.py private_log_values --dry-run` and '
              '`manage.py private_log_values`.', id='core.W004')]
+
+
+@register(Tags.database)
+def invalid_indexes(app_configs, **kwargs):
+    """Indexes the database keeps but cannot use: what a CREATE INDEX CONCURRENTLY or REINDEX CONCURRENTLY that failed
+    part-way leaves behind (a migration that is not atomic, an administrator's rebuild). Such an index is written on
+    every change and never read, and the next migration that makes it again stops at "already exists", so the release
+    stops with it (docs/ops/upgrade.md, When it fails). Named with the command that removes each; nothing is changed
+    here. Run with `manage.py check --database default`."""
+    from django.db import DatabaseError, connection
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT format('%I.%I', n.nspname, c.relname) FROM pg_index i "
+                           "JOIN pg_class c ON c.oid = i.indexrelid JOIN pg_namespace n ON n.oid = c.relnamespace "
+                           "WHERE NOT i.indisvalid ORDER BY 1")
+            found = [row[0] for row in cursor.fetchall()]
+    except DatabaseError:
+        return []
+    if not found:
+        return []
+    return [Warning(
+        f'{len(found)} index(es) are invalid, left by a concurrent build that failed: {", ".join(found)}. They are '
+        f'never read, and a migration that makes one again stops at "already exists".',
+        hint=' '.join(f'DROP INDEX CONCURRENTLY IF EXISTS {name};' for name in found)
+        + ' Then run the release again (docs/ops/upgrade.md, When it fails).', id='core.W006')]

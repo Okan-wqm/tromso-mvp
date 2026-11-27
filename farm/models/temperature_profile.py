@@ -113,6 +113,7 @@ class TemperatureProfileAssignment(TargetedAssignment):
     ONLY_ACTIVE = _('Only an active temperature profile can be assigned; this one is %(status)s.')
     OTHER_SPECIES = _('%(batch)s is %(species)s; the profile is for %(protocol_species)s.')
     STARTED = _('It has started: set its last day instead. The days it planned keep their profile.')
+    KEPT = _('The days before yesterday keep their profile: the last day is yesterday at the earliest.')
 
     profile = models.ForeignKey(TemperatureProfile, on_delete=models.PROTECT, related_name='assignments',
                                 verbose_name=_('Temperature profile'))

@@ -121,6 +121,7 @@ class TargetedAssignment(AuditedModel):
     ONLY_ACTIVE = ''          # "Only an active protocol can be assigned; this one is %(status)s."
     OTHER_SPECIES = ''        # "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
     STARTED = ''              # "It has started: set its last day instead. …"
+    KEPT = ''                 # "The days before yesterday keep their protocol: …" (a started row's last day)
 
     valid_from = models.DateField(_('From'))
     valid_until = models.DateField(_('Until'), null=True, blank=True)

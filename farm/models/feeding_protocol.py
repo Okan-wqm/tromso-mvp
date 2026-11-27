@@ -264,6 +264,7 @@ class ProtocolAssignment(TargetedAssignment):
     ONLY_ACTIVE = _('Only an active protocol can be assigned; this one is %(status)s.')
     OTHER_SPECIES = _('%(batch)s is %(species)s; the protocol is for %(protocol_species)s.')
     STARTED = _('It has started: set its last day instead. The days it fed keep their protocol.')
+    KEPT = _('The days before yesterday keep their protocol: the last day is yesterday at the earliest.')
 
     protocol = models.ForeignKey(FeedingProtocol, on_delete=models.PROTECT, related_name='assignments',
                                  verbose_name=_('Feeding protocol'))

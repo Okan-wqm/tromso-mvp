@@ -12,7 +12,7 @@ from core.crud import DRAFT, Resource, ResourceView, UpdateView, done, filter_by
 
 from .. import words
 from ..feeding import lists, protocols
-from ..feeding.growth import economic_fcr
+from ..feeding.growth import fcr_on_feed_given
 from ..feeding.ration import band_range
 from ..feeding.read import tables
 from ..forms.feeding_protocol import (
@@ -93,7 +93,7 @@ class FeedingProtocolResource(Resource):
                     listprops.column('meals', words.MEALS_A_DAY, numeric=True),
                     listprops.column('fcr', words.EXPECTED_FCR, numeric=True),
                     listprops.column('uneaten', words.UNEATEN_FEED, numeric=True),
-                    listprops.column('economic', words.ECONOMIC_FCR, numeric=True),
+                    listprops.column('economic', words.FCR_ON_FEED_GIVEN, numeric=True),
                     listprops.column('mortality', words.MORTALITY_A_MONTH, numeric=True),
                     *(listprops.column(f't{index}', celsius(temperature), numeric=True)
                       for index, temperature in enumerate(columns))], [
@@ -102,7 +102,7 @@ class FeedingProtocolResource(Resource):
                         'meals': listprops.cell(band.meals),
                         'fcr': listprops.cell(fcr(terms['fcr'])),
                         'uneaten': listprops.cell(percent(terms['uneaten_pct'], 1)),
-                        'economic': listprops.cell(fcr(terms['economic_fcr'])),
+                        'economic': listprops.cell(fcr(terms['fcr_on_feed_given'])),
                         'mortality': listprops.cell(percent(terms['mortality_pct_month'], 2)),
                         **{f't{index}': listprops.cell(percent(cell.sfr_pct, 2))
                            for index, cell in enumerate(band.cells)}})
@@ -191,7 +191,7 @@ def band_terms(protocol):
     table = tables([protocol.pk])[protocol.pk]
     return [{'band': band, 'fcr': table.fcr_of(band), 'fcr_own': band.fcr is not None,
              'uneaten_pct': table.uneaten_of(band),
-             'economic_fcr': economic_fcr(table.fcr_of(band), table.uneaten_of(band)),
+             'fcr_on_feed_given': fcr_on_feed_given(table.fcr_of(band), table.uneaten_of(band)),
              'mortality_pct_month': table.mortality_of(band)} for band in table.bands]
 
 

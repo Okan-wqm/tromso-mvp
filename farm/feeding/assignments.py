@@ -13,6 +13,7 @@ from django.utils.translation import gettext as _
 
 from core import access, audit
 from farm.models import Tank
+from farm.models.assignment import ProtocolStatus
 from farm.stock.dates import local_today
 
 # The fields the activity log shows of an assignment (and the assignment's form, on its one tab).
@@ -74,8 +75,17 @@ def save(user, made):
 
 def write(user, made):
     """`save`'s write without its question, for a caller that asked its own (an experiment's start or replacement, under
-    the experiment's right): the rows together, each logged as created by `user`."""
+    the experiment's right): the rows together, each logged as created by `user`. The table each row assigns is locked
+    first and asked again whether it is active (owner decision Q3, review 1 L6): a change of its table or points (which
+    takes the same lock and asks whether it is assigned) and its assignment never both commit, so an assigned table
+    is the table its rows have always read."""
     with transaction.atomic():
+        subjects = {(type(row.subject), row.subject_id) for row in made}
+        for model, pk in sorted(subjects, key=lambda pair: str(pair[1])):
+            locked = model.all_objects.select_for_update().get(pk=pk)
+            if locked.is_deleted or locked.status != ProtocolStatus.ACTIVE:
+                raise ValidationError({made[0].SUBJECT: _('%(table)s is no longer active: it was changed meanwhile.')
+                                       % {'table': locked}})
         for row in made:
             row.created_by = row.updated_by = user
             row.save()
@@ -99,8 +109,7 @@ def end(user, row, last_day):
             raise ValidationError({'valid_until': _('The row ends on %(day)s already: it is only ever shortened.') % {
                 'day': row.valid_until.isoformat()}})
         if row.valid_from <= local_today(row.unit) and last_day < local_today(row.unit) - timedelta(days=1):
-            raise ValidationError({'valid_until': _('The days before yesterday keep their protocol: the last day is '
-                                                    'yesterday at the earliest.')})
+            raise ValidationError({'valid_until': str(type(row).KEPT)})
         before = recorded(row)
         row.valid_until, row.updated_by = last_day, user
         row.version += 1

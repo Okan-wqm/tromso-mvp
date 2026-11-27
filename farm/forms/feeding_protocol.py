@@ -50,7 +50,7 @@ class ProtocolForm(CodedFormMixin, TabbedForm):
                               'by the feed eaten divided by it.'),
             'uneaten_pct': _('The share of the feed given that the fish do not eat, 0 to 50 %%; a band may have its '
                              'own. Empty: all of it is eaten. The feed given less this share is what grows the '
-                             'fish; the FCR on the feed given (the economic FCR) is worked out from the two and '
+                             'fish; the FCR on the feed given is worked out from the two and '
                              'shown, never entered.'),
             'mortality_pct_month': _('The share of the fish expected to die in a month (30 days), 0 to 30 %%; a band '
                                      'may have its own. Empty: none. Read by the production plan only: it lowers '
@@ -275,7 +275,6 @@ class AssignmentForm(AssignmentBase):
     """One protocol assignment row (farm/forms/assignment.py)."""
 
     tabs = edit_tabs('protocol')
-    kept_message = _('The days before yesterday keep their protocol: the last day is yesterday at the earliest.')
 
     class Meta(AssignmentBase.Meta):
         model = ProtocolAssignment

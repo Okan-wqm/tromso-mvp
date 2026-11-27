@@ -100,7 +100,6 @@ class ProfileAssignmentForm(AssignmentBase):
     """One profile assignment row (farm/forms/assignment.py)."""
 
     tabs = edit_tabs('profile')
-    kept_message = _('The days before yesterday keep their profile: the last day is yesterday at the earliest.')
 
     class Meta(AssignmentBase.Meta):
         model = TemperatureProfileAssignment

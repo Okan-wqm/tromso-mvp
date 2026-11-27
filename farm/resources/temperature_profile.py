@@ -4,6 +4,7 @@ not assigned; under them, the temperature the profile gives over the fish's weig
 the plan's own reading); Duplicate copies a profile into a draft. The assignment tab is farm/resources/
 assignment_tab.py's, the protocols' own."""
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.urls import path, reverse
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
@@ -51,6 +52,15 @@ class TemperaturePointList(RowList):
     @classmethod
     def describe(cls, row):
         return f'{row.weight_g.normalize():f} g {row.temperature_c.normalize():f} °C'
+
+    @classmethod
+    def save(cls, user, obj, rows, entity_type, seen=None):
+        """An active profile keeps at least one point (as an active protocol keeps its table): an empty list is refused
+        under the profile's lock (RowListView holds it), so no stored active profile gives no temperature."""
+        if not rows and obj.status == ProtocolStatus.ACTIVE:
+            raise ValidationError(gettext('An active profile has points: set it to draft or retired first to remove '
+                                          'them all.'))
+        return super().save(user, obj, rows, entity_type, seen)
 
 
 def used_props(profile):

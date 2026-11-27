@@ -148,11 +148,10 @@ class NewAssignmentBase(TabbedForm):
 class AssignmentBase(TabbedForm):
     """One assignment row. Its unit and batch are chosen once. Before its first day everything else may change; from
     then on only its last day and notes (the days it applied to keep their table), and its last day is yesterday at the
-    earliest (ending it today still applies today). A subclass sets Meta.model, Meta.fields, `tabs` and
-    `kept_message`."""
+    earliest (ending it today still applies today). A subclass sets Meta.model, Meta.fields and `tabs`; the
+    message for a last day too early is its model's KEPT."""
 
     fixed_after_creation = ('unit', 'batch')
-    kept_message = ''
 
     class Meta:
         field_classes = {'batch': BatchChoice}
@@ -180,7 +179,7 @@ class AssignmentBase(TabbedForm):
         until = self.cleaned_data.get('valid_until')
         stored = self.instance.valid_until
         if self.started and until != stored and until is not None and until < self.today - timedelta(days=1):
-            raise ValidationError(str(self.kept_message))
+            raise ValidationError(str(self._meta.model.KEPT))
         return until
 
     def clean_valid_from(self):

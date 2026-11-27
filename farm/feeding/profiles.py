@@ -67,8 +67,8 @@ def used(profile):
     """[Used] at every point of a stored profile and half way between two neighbouring points, in weight order."""
     if profile is None or profile.pk is None:
         return []
-    found = read.profiles([profile.pk]).get(profile.pk)
-    if found is None:
+    found = read.profiles([profile])[profile.pk]
+    if not found.points:
         return []
     weights = [weight for weight, _value in found.points]
     between = [(low + high) / 2 for low, high in zip(weights, weights[1:])]

@@ -206,9 +206,6 @@ PRESENT_ALLOWED = {
 SERVICE_WRITES = {'save', 'create', 'bulk_create', 'bulk_update', 'update', 'delete', 'soft_delete', 'get_or_create',
                   'update_or_create'}
 HOOKS = (('add', 'create_record'), ('change', 'change_record'), ('delete', 'delete_record'))
-# Every way to a model's rows by name: its managers, and the two that pass a sealed or soft-delete manager
-# (`_base_manager`, `_default_manager`: the spellings core/tests_sealing.py holds for the sealed models).
-ROW_MANAGERS = ('objects', 'all_objects', '_base_manager', '_default_manager')
 # {tab: the two writers}: a tab crud saves although its area's service writes the same model too. Found when the guard
 # came (the review of wip/hr-one-path, M-2); each is closed by the follow-up listed in the plan. Never add one.
 SECOND_WRITER_TABS = {
@@ -280,7 +277,11 @@ def _service_forms():
             and getattr(form._meta.model, 'service_written', False)}
 
 
+# Every way to a model's rows by name: its managers, and the two that pass a sealed or soft-delete manager
+# (`_base_manager`, `_default_manager`: the spellings core/tests_sealing.py holds for the sealed models), also as Django's
+# public spelling of them after `_meta` (`Model._meta.base_manager`, `row._meta.default_manager`).
 MANAGER_NAMES = ('objects', 'all_objects', '_base_manager', '_default_manager')
+META_MANAGERS = ('base_manager', 'default_manager')
 ROWS_AS_STORED = ('QuerySet', 'unsealed')         # calls that give a model's rows past every manager
 # {module: (count, reason)}: writes whose model the scan cannot name (`low_level_writes`). Lower, never raise.
 LOW_LEVEL_ALLOWED = {
@@ -317,19 +318,29 @@ def _passed_model(receiver):
 
 def _scan_writes(module, tree, models=None, service_forms=None):
     """(Counter {model: n} of the models a module builds or writes and can name, [(line, spelling)] of the writes whose
-    model it cannot name). One pass, one resolution: a model is named when the module imports it (an alias too) or
-    reaches it through a module it imports (`models.Posting`, `m.Posting`, `hr.models.Posting`, `posting.Posting`).
+    model it cannot name). One pass, one resolution: a model is named when the module imports it (an alias too), defines
+    it, or reaches it through a module it imports (`models.Posting`, `m.Posting`, `hr.models.Posting`,
+    `posting.Posting`).
 
     Named and counted: `Model(...)`; a write through any manager of a named model (`objects`, `all_objects`,
-    `_base_manager`, `_default_manager`); through `QuerySet(Model)`, `QuerySet(model=Model)` or `unsealed(Model)`;
-    through a queryset or manager held in a name in the same function (`rows = Posting.objects.filter(...)`,
-    `rows.update(...)`); the `save()` of a model form of a declared model held in a name; and what it logs
-    (`audit.entity_type_of(Model)`, counted 0).
+    `_base_manager`, `_default_manager`, `_meta.base_manager`, `_meta.default_manager`); through `QuerySet(Model)`,
+    `QuerySet(model=Model)` or `unsealed(Model)`; through a queryset, a manager or a row read from one of those and held
+    (`rows = Posting.objects.filter(...)`, then `rows.update(...)`; `one = Posting.objects.get(...)`, then `one.save()`
+    or `one._meta.base_manager...`), held by an assignment to a name (`=`, an annotated `rows: T = ...`, a walrus, a
+    pair of names given a pair of values `rows, n = Posting.objects..., 1`), by a `for` or a comprehension over it (each
+    row), or by `self.<name> = ...` in any method of the class (read in all its methods); the `save()` of a model form of
+    a declared model held so; and what it logs (`audit.entity_type_of(Model)`, counted 0).
     Not named, low-level: a write through any manager, `QuerySet(...)` or `unsealed(...)` whose model is not one of
     those names (`type(row).objects`, `row.__class__.all_objects`, `self.model.objects`, `Model = type(row);
-    Model._base_manager`, `QuerySet(model)`), a queryset held in a name from such a source, and `save_base(...)`.
-    Not seen at all: a row held in a variable and saved (`row.save()`, `row.delete()`), a related manager
-    (`person.postings.create()`), a model reached through `getattr` or `apps.get_model(...)`, raw SQL (rule W)."""
+    Model._base_manager`, `row._meta.base_manager` of a row not held as above, `QuerySet(model)`), a model reached
+    through `getattr` or `apps.get_model(...)` and written through a manager (`apps.get_model('hr', 'Posting').objects
+    .update(...)`, `M = apps.get_model(...)`, then `M.objects.update(...)`), a queryset held from such a source, and
+    `save_base(...)`.
+    Not seen at all: a row or a queryset that comes from anything else and is written (a parameter, `def f(rows):
+    rows.update(...)`; what a helper returns, `placements(person).update(...)`, `row = first(...)`, then
+    `row.save()`; a pair of names given one value, `rows, n = helper()`; a `with ... as`), a related manager
+    (`person.postings.create()`), a model built through `getattr` or `apps.get_model(...)` (`M = apps.get_model(...)`,
+    then `M(...)`), and raw SQL (rule W)."""
     models = models or _models()
     service_forms = _service_forms() if service_forms is None else service_forms
     forms_by_name = {(form.__module__, form.__name__): model for form, model in service_forms.items()}
@@ -384,31 +395,80 @@ def _scan_writes(module, tree, models=None, service_forms=None):
                 model_through(_chain(passed))[0] if isinstance(passed, ast.Attribute) else None
             return ('model', model) if model is not None else ('unnamed', None)
         chain = _chain(expression)
-        manager = next((index for index, name in enumerate(chain) if name in MANAGER_NAMES), None)
+        manager = next((index for index, name in enumerate(chain) if name in MANAGER_NAMES
+                        or name in META_MANAGERS and index > 1 and chain[index - 1] == '_meta'), None)
         if manager is not None:
-            if manager == 0:
+            at = manager - 1 if chain[manager] in META_MANAGERS else manager      # the owner stops before `_meta`
+            if at == 0:
                 return ('unnamed', None)
-            model = owner(chain, manager)
-            return ('model', model) if model is not None else ('unnamed', None)
-        if chain[:1] and chain[0] in held:
-            return held[chain[0]]
+            model = owner(chain, at)
+            if model is not None:
+                return ('model', model)
+            return held.get(chain[0], ('unnamed', None)) if at == 1 else ('unnamed', None)
+        return held_by(chain, held)
+
+    def key_of(node):
+        """The key a target holds under: a name, or `self.<name>`; None for anything else."""
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == 'self':
+            return f'self.{node.attr}'
         return None
 
-    functions = [node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
-    seen = set()
-    for scope_node in [*functions, tree]:
-        held, bound = {}, {}           # names holding a model's rows; names holding a declared model's form
-        nodes = list(ast.walk(scope_node))
+    def held_by(chain, held):
+        if chain[:1] and chain[0] in held:
+            return held[chain[0]]
+        if len(chain) > 1 and f'{chain[0]}.{chain[1]}' in held:
+            return held[f'{chain[0]}.{chain[1]}']
+        return None
+
+    def bind(target, value, held, bound, each=False):
+        """Holds what `value` is (its rows; a declared model's form) under `target`: a name, `self.<name>`, or a pair
+        of them given a pair of values. `each`: the target takes the value's rows one by one (a `for`)."""
+        if isinstance(target, (ast.Tuple, ast.List)):
+            if not each and isinstance(value, (ast.Tuple, ast.List)) and len(value.elts) == len(target.elts) \
+                    and not any(isinstance(item, ast.Starred) for item in (*target.elts, *value.elts)):
+                for one, given in zip(target.elts, value.elts):
+                    bind(one, given, held, bound)
+            return
+        key = key_of(target)
+        if key is None or value is None:
+            return
+        rows = rows_of(value, held) if isinstance(value, (ast.Call, ast.Attribute, ast.Name)) else None
+        if rows is not None:
+            held[key] = rows
+        if not each and isinstance(value, ast.Call) and isinstance(value.func, ast.Name) and form_named(value.func.id):
+            bound[key] = form_named(value.func.id)
+
+    def holding(nodes, held, bound):
+        """Fills `held` (keys holding a model's rows) and `bound` (keys holding a declared model's form) from `nodes`."""
         for node in nodes:
             if isinstance(node, ast.Assign):
-                rows = rows_of(node.value, held) if isinstance(node.value, (ast.Call, ast.Attribute, ast.Name)) else None
                 for target in node.targets:
-                    if isinstance(target, ast.Name):
-                        if rows is not None:
-                            held[target.id] = rows
-                        if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) \
-                                and form_named(node.value.func.id):
-                            bound[target.id] = form_named(node.value.func.id)
+                    bind(target, node.value, held, bound)
+            elif isinstance(node, (ast.AnnAssign, ast.NamedExpr)):
+                bind(node.target, node.value, held, bound)
+            elif isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension)):
+                bind(node.target, node.iter, held, bound, each=True)
+
+    functions = [node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    # `self.<name>` held in any method of a class is read in all of them (set in __init__, written in another)
+    of_class = {}
+    for klass in (node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)):
+        methods = [node for node in klass.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        held, bound = {}, {}
+        for method in methods:
+            holding(list(ast.walk(method)), held, bound)
+        shared = ({key: value for key, value in held.items() if key.startswith('self.')},
+                  {key: value for key, value in bound.items() if key.startswith('self.')})
+        for method in methods:
+            of_class[id(method)] = shared
+    seen = set()
+    for scope_node in [*functions, tree]:
+        shared_held, shared_bound = of_class.get(id(scope_node), ({}, {}))
+        held, bound = dict(shared_held), dict(shared_bound)
+        nodes = list(ast.walk(scope_node))
+        holding(nodes, held, bound)
         for node in nodes:
             if not isinstance(node, ast.Call) or id(node) in seen:
                 continue
@@ -416,9 +476,8 @@ def _scan_writes(module, tree, models=None, service_forms=None):
             func = node.func
             if isinstance(func, ast.Attribute) and func.attr == 'save_base':
                 low.append((node.lineno, 'save_base'))
-            elif isinstance(func, ast.Attribute) and func.attr == 'save' and isinstance(func.value, ast.Name) \
-                    and func.value.id in bound:
-                found[bound[func.value.id]] += 1
+            elif isinstance(func, ast.Attribute) and func.attr == 'save' and key_of(func.value) in bound:
+                found[bound[key_of(func.value)]] += 1
             elif isinstance(func, ast.Attribute) and func.attr == 'entity_type_of' and node.args:
                 argument = node.args[0]
                 model = model_named(argument.id) if isinstance(argument, ast.Name) else \
@@ -1007,6 +1066,66 @@ class OneWriterTests(SimpleTestCase):
             with self.subTest(source=source):
                 self.assertEqual(len(low_level_writes('hr/views.py', ast.parse(source))), 1)
 
+    def test_each_spelling_is_counted_flagged_or_listed_as_unseen(self):
+        """Review 5, R5-1: one case per spelling the docstring of `_scan_writes` and the README name: counted for the
+        model it names, flagged as low-level, or not seen (what the README lists for the code review)."""
+        from core.tests_data_access import low_level_writes
+        lines = chr(10).join
+        head = 'from hr.models import Posting' + chr(10)
+        counted = {
+            'base manager after _meta': head + 'Posting._meta.base_manager.filter(pk=1).update(title="x")',
+            'default manager after _meta': head + 'Posting._meta.default_manager.filter(pk=1).delete()',
+            "a held row's _meta manager": head + lines(['def f():', '    one = Posting.objects.get(pk=1)',
+                                                         '    one._meta.base_manager.filter(pk=1).update(title="x")']),
+            'annotated': head + lines(['def f():', '    rows: QuerySet = Posting.objects.filter(pk=1)',
+                                       '    rows.update(title="x")']),
+            'a pair given a pair': head + lines(['def f():', '    rows, n = Posting.objects.filter(pk=1), 1',
+                                                 '    rows.update(title="x")']),
+            'walrus': head + lines(['def f():', '    if (rows := Posting.objects.filter(pk=1)):',
+                                    '        rows.update(title="x")']),
+            'for': head + lines(['def f():', '    for one in Posting.objects.filter(pk=1):', '        one.save()']),
+            'comprehension': head + lines(['def f():', '    [one.delete() for one in Posting.objects.all()]']),
+            'self in another method': head + lines(['class Job:', '    def __init__(self):',
+                                                    '        self.rows = Posting.objects.filter(pk=1)',
+                                                    '    def run(self):', '        self.rows.update(title="x")']),
+        }
+        for case, source in counted.items():
+            with self.subTest(counted=case):
+                self.assertEqual({model.__name__: count
+                                  for model, count in models_written('hr/views.py', ast.parse(source)).items()},
+                                 {'Posting': 1})
+        flagged = {
+            "a row's _meta manager": 'row._meta.base_manager.filter(pk=1).update(title="x")',
+            "a row's _meta default manager, held": lines(['def f(row):', '    m = row._meta.default_manager',
+                                                          '    m.filter(pk=1).delete()']),
+            'apps.get_model, its manager': 'apps.get_model("hr", "Posting").objects.filter(pk=1).update(title="x")',
+            'apps.get_model held, its manager': lines(['def f():', '    M = apps.get_model("hr", "Posting")',
+                                                       '    M.objects.filter(pk=1).update(title="x")']),
+            'getattr, its manager': 'getattr(m, "Posting").objects.filter(pk=1).update(title="x")',
+            'self held from an unnamed source': lines(['class Job:', '    def __init__(self, row):',
+                                                       '        self.rows = type(row).objects.filter(pk=1)',
+                                                       '    def run(self):', '        self.rows.update(title="x")']),
+        }
+        for case, source in flagged.items():
+            with self.subTest(flagged=case):
+                self.assertEqual(len(low_level_writes('hr/views.py', ast.parse(source))), 1)
+                self.assertEqual(models_written('hr/views.py', ast.parse(source)), Counter())
+        unseen = {
+            'a queryset handed in': lines(['def f(rows):', '    rows.update(title="x")']),
+            'what a helper returns': lines(['from .placed import placements', 'def f(person):',
+                                            '    placements(person).update(title="x")']),
+            'a row a helper returns': lines(['def f():', '    row = first()', '    row.save()']),
+            'a pair given one value': head + lines(['def f():', '    rows, n = helper()', '    rows.update(title="x")']),
+            'with ... as': head + lines(['def f():', '    with held() as rows:', '        rows.update(title="x")']),
+            'a related manager': lines(['def f(person):', '    person.postings.create(title="x")']),
+            'built through apps.get_model': lines(['def f():', '    M = apps.get_model("hr", "Posting")',
+                                                   '    M(title="x").save()']),
+        }
+        for case, source in unseen.items():
+            with self.subTest(unseen=case):
+                self.assertEqual((models_written('hr/views.py', ast.parse(source)),
+                                  low_level_writes('hr/views.py', ast.parse(source))), (Counter(), []))
+
     def test_no_production_module_writes_a_model_it_cannot_name_but_those_listed(self):
         """A write whose model the scan cannot name (`low_level_writes`) could be of any model, a declared one too:
         each module that makes one is listed with its count and reason (a ratchet)."""
@@ -1018,19 +1137,30 @@ class OneWriterTests(SimpleTestCase):
                          'count, lowered by a fix, never raised).')
 
     def test_a_test_module_is_known_by_its_path_inside_the_project(self):
-        """F-5: one predicate, on the path relative to the project (a checkout under a folder named tests is not all
-        tests)."""
-        from pathlib import Path
+        """F-5, R5-2: one predicate, on the path relative to the project; an absolute path is refused, so a checkout
+        under a folder named tests is never all tests."""
+        from pathlib import PurePosixPath
 
-        from django.test import override_settings
+        from core.modules import is_test_module
+        from core.testing import is_test_module as handed_on
+        self.assertIs(handed_on, is_test_module)
+        self.assertFalse(is_test_module('hr/views.py'))
+        for path in ('hr/tests/helpers.py', 'core/tests_platform.py', 'core/test_world.py', 'farm/tests.py',
+                     'hr/tests/test_x.py', 'core/testing.py', PurePosixPath('farm/tests/test_b1.py')):
+            self.assertTrue(is_test_module(path), path)
+        self.assertFalse(is_test_module('hr/testing_tools.py'))
+        with self.assertRaises(ValueError):
+            is_test_module(PurePosixPath('/srv/tests/app/hr/views.py'))
 
-        from core.testing import is_test_module
-        with override_settings(BASE_DIR=Path('/srv/tests/app')):
-            self.assertFalse(is_test_module('/srv/tests/app/hr/views.py'))
-            for path in ('/srv/tests/app/hr/tests/helpers.py', '/srv/tests/app/core/tests_platform.py',
-                         '/srv/tests/app/core/test_world.py', '/srv/tests/app/farm/tests.py', 'hr/tests/test_x.py'):
-                self.assertTrue(is_test_module(path), path)
-            self.assertFalse(is_test_module('hr/testing_tools.py'))
+    def test_production_never_imports_the_tests_support(self):
+        """R5-2: core.testing (the clock, `unittest.mock`) is the tests'; production reads the predicate from
+        core.modules."""
+        found = sorted(path for path, tree in production_modules()
+                       if any(source == 'core.testing' or (source, original) == ('core', 'testing')
+                              for source, original in _imported(path, tree).values())
+                       or any(isinstance(node, ast.Import) and any(alias.name == 'core.testing' for alias in node.names)
+                              for node in ast.walk(tree)))
+        self.assertEqual(found, [])
 
     def test_a_form_of_a_declared_model_is_saved_by_crud_only(self):
         """N-2 d: `form.save()` of a model form whose model declares service_written, outside core/crud.py."""

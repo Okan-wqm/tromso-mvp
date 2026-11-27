@@ -277,7 +277,8 @@ html[data-wall] .monitor-grid:has(> .is-fit) .monitor-card { display: flex; flex
 
 /* ---- the dock: the pane of the unit gone into (templates/monitoring/_dock.html; frontend/windows.ts) ---------------
    The existing window, docked: no bar to drag, no frame of its own; the Big card in it is drawn at the size of its
-   place, as on a wall. On the desk page it stands above the cards at the Big template's own proportion, never under
+   place, as on a wall. On the desk page it stands above the cards (in the new look beside them from 1400 px:
+   monitor-next.css) at the Big template's own proportion, never under
    the unit at which its small text is 11 px (a narrow screen scrolls it sideways rather than shrink the type). On a
    wall it is fixed at the right of the screen under the band; frontend/wall.ts gives it the width of one full-height
    card of this screen (--dock), the cards the room beside it (--dock-space) and its top (--dock-top); a screen too

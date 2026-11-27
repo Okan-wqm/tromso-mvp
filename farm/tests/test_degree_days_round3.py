@@ -16,9 +16,12 @@ the deploy without a question, what a page costs, and what the records and the w
 - N-13: no dead choice, no unused field.
 - N-14: a day of 25 hours counts, one of 23 hours with 19 of them measured does not."""
 import inspect
+import os
+import subprocess
 from dataclasses import fields
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
+from pathlib import Path
 from unittest import mock
 
 from django.db import connection
@@ -27,11 +30,14 @@ from django.test.utils import CaptureQueriesContext
 from core.forms import PlatformSettingsForm
 from core.models import AuditLog
 from core.testing import FrozenClock
+from farm import withdrawal_gate as gate
 from sensors import bindings
 
 from ..health import services as health_services, withdrawal
-from ..models import ProbeDay, ProbeDayClosing, ProductionDepartment, Site
+from ..models import ProbeDay, ProbeDayClosing, ProductionDepartment, Site, System, Tank, WaterMeasurement
 from ..models.health import FloorOrigin
+from ..models.site import zone_of
+from ..stock.dates import shown_date
 from ..water import degree_days, read, services, sources
 from ..water.degree_days import BatchWater
 from .helpers import correction_window, point_of
@@ -94,8 +100,9 @@ class HorizonTests(SourcesCase):
         self.temperature(self.t2, 376, '3')
         accrual = self.counted()
         self.assertEqual((accrual.days[degree_days.ASSUMED], accrual.total, accrual.uncapped), (1, D('10.0'), 1))
-        self.assertIn('No water temperature was measured in the 365 days before the gap of 1 day counted at the '
-                      'assumed temperature: nothing caps it.', degree_days.accrual_text(accrual))
+        self.assertIn(f'Nothing measured for these fish caps 1 day counted at the assumed temperature: nothing was '
+                      f'measured for them from {shown_date(self.day(375))}, 365 days before the first day counted, to '
+                      'the start of its gap.', degree_days.accrual_text(accrual))
         self.assertEqual(degree_days.CAP_HORIZON_DAYS, 365)
 
 
@@ -240,3 +247,148 @@ class LongDayTests(FrozenClock, SourcesCase):
         self.assertEqual((row.hours, row.counts), (19, False))
         self.assertEqual(ProbeDayClosing.objects.get(timezone='Europe/Oslo').day, date(2026, 3, 29))
 
+
+
+# ---- REVIEW-3 -------------------------------------------------------------------------------------------------------
+class TwoChannelsTests(SourcesCase):
+    """Two temperature channels at T-01's middle point on one day (an oxygen probe's thermistor beside a temperature
+    probe): the lowest counting row counts, whatever order the rows were written or are read in (R3-1)."""
+
+    @gate.opened('test fixture: closed probe days straight in the database')
+    def rows(self, *rows):
+        for channel_no, mean, counts in rows:
+            ProbeDay.objects.create(point=point_of(self.t1), day=self.day(2), channel_no=channel_no, mean_c=D(mean),
+                                    covered_seconds=86400 if counts else 3600, hours=24 if counts else 1,
+                                    readings=24, ranged=True, hours_needed=20, hold_seconds=3600, counts=counts,
+                                    how='closed')
+
+    def test_the_lower_of_two_counts_written_first(self):
+        self.rows((101, '6', True), (102, '8', True))
+        self.assertEqual(self.measured(2).value, D(6))
+
+    def test_the_lower_of_two_counts_written_second(self):
+        self.rows((102, '8', True), (101, '6', True))
+        self.assertEqual(self.measured(2).value, D(6))
+
+    def test_a_row_that_does_not_count_never_hides_one_that_does(self):
+        self.rows((101, '2', False), (102, '7', True))
+        found = self.measured(2)
+        self.assertEqual((found.value, found.source), (D(7), degree_days.SENSOR))
+
+
+class SearchOnceTests(SourcesCase):
+    def test_the_gap_search_runs_once_a_read_however_many_batches(self):
+        # Every unit with its points and its own batch, the species assumed at 10 °C, one course in degree-days over
+        # all of them, nothing measured: the gap before the walks is searched once for the read, not once per batch
+        # (R3-2). Measured at 3, 9 and 27 batches.
+        self.assume('10.0')
+        units, counts = [], []
+        for size in (3, 9, 27):
+            made = []
+            while len(units) < size:
+                unit = make_unit(f'S-{len(units):02d}', self.hall)
+                point_of(unit)
+                self.stock(unit, count=100, days_ago=20)
+                units.append(unit)
+                made.append(unit)
+            self.treat(self.medicine(f'Med {size}', degree_days=200), 5, 5, units=made)
+            with CaptureQueriesContext(connection) as queries:
+                withdrawal.of_units(units)
+            counts.append(len(queries))
+        self.assertEqual(counts[1:], counts[:1] * 2)
+
+
+class AssumedClosingTests(SourcesCase):
+    def test_a_day_closed_without_a_counting_row_counted_above_the_projection_is_floored(self):
+        # T-02's own fish, stocked 20 days ago; the species assumed at 10 °C. A probe counted 4 °C on the days 12 to 9
+        # ago and 8 °C two days ago; nothing in between. Yesterday it read only 17 hours: its row does not count. Before
+        # the job closes yesterday it is projected at the mean of the measured days, 4.8 °C; closed, it counts at the
+        # assumption capped at 8 °C (the coldest of the 7 days before its gap). That is an assumption, not the water:
+        # the earlier end it gives is floored, and the floor says so (R3-3).
+        with correction_window(400):
+            self.stock(self.t2, count=500, days_ago=20)
+        self.assume('10.0')
+        probe = self.channel('T2')
+        self.bind(probe, point_of(self.t2), days_ago=16)
+        for days_ago in (12, 11, 10, 9):
+            self.readings(days_ago, '4', channel=probe)
+        self.readings(2, '8', channel=probe)
+        self.readings(1, '8', hours=range(17), channel=probe)
+        self.job(12)
+        self.job(2)
+        self.treat(self.medicine(degree_days=56), 13, 13, units=[self.t2])
+        [before] = self.held(unit=self.t2)
+        self.assertEqual((before.settled, before.accrual.projected_at), (self.day(-1), D('4.8')))
+        _rows, _closings, [floor] = self.job(1)
+        self.assertEqual(floor.not_before, self.day(-1))
+        self.assertIn('assumption', floor.reason)
+
+
+class FloorRequiredTests(SourcesCase):
+    def test_a_day_and_a_projection_need_the_walks_floor_and_a_walk_back_its_days(self):
+        water = self.water(self.day(5))
+        with self.assertRaises(TypeError):
+            water.day(self.batch.pk, self.day(3))
+        with self.assertRaises(TypeError):
+            water.projection(self.batch.pk)
+        with self.assertRaises(ValueError):
+            water.walk(self.batch.pk, self.day(1), backward=True, needed=D(10))
+
+
+class DeadbandBadRowTests(SourcesCase):
+    def test_a_runs_lower_bound_reaches_back_over_a_stored_bad_row(self):
+        # Every hour a row of 5 °C standing for 60 messages from 3 °C to 5 °C; a bad row stored at half past each hour
+        # ends the hold before it. The run of the messages after the bad row is carried by the next GOOD row: the held
+        # value of each row is still that run's lowest, 3 °C (R3-9).
+        start = datetime.combine(self.day(2), time.min, tzinfo=self.zone())
+        rows = [(self.probe.channel_no, start + timedelta(hours=hour), 5.0, 60, 270.0, 3.0, 5.0, 0)
+                for hour in range(25)]
+        rows += [(self.probe.channel_no, start + timedelta(hours=hour, minutes=30), 99.0, 1, None, None, None, 32)
+                 for hour in range(24)]
+        with connection.cursor() as cursor:
+            cursor.executemany('INSERT INTO sensors_reading (channel_no, ts, value, n, run_sum, run_min, run_max, '
+                               'quality) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)', rows)
+        self.job(2)
+        self.assertEqual((self.row(2).mean_c, self.row(2).covered_seconds), (D('3.00'), 12 * 3600))
+
+
+class OtherClockSearchTests(SourcesCase):
+    def test_the_search_reads_each_place_on_its_own_clock(self):
+        # T-01 (UTC) in a system on Tokyo's clock: a loop sample at 00:30 on Tokyo's day 20 days ago is that day's,
+        # though it is still the day before in UTC (R3-12).
+        tokyo = Site.objects.create(name='Tokyo', code='TK', timezone='Asia/Tokyo')
+        system = System.objects.create(site=tokyo, name='Tokyo loop', code='TL', production_department=(
+            ProductionDepartment.objects.create(site=tokyo, name='Hall T', code='HT')))
+        with gate.opened('test fixture: the unit in a loop of another clock'):
+            Tank.objects.filter(pk=self.t1.pk).update(system=system)
+        self.t1.refresh_from_db()
+        loop = point_of(system)
+        day = self.day(20)
+        with gate.opened('test fixture: a sample straight in the database'):
+            WaterMeasurement.objects.create(point=loop, source='manual', temperature_c=D(3), created_by=self.user,
+                                            measured_at=datetime.combine(day, time(0, 30), tzinfo=zone_of(tokyo)))
+        temperatures = degree_days.Temperatures([self.t1], self.day(5), self.today, D(1))
+        self.assertEqual(temperatures.last_measured(day, day + DAY), day)
+
+
+class ScriptTests(SourcesCase):
+    def run_script(self, out, **env):
+        script = Path(__file__).resolve().parents[2] / 'scripts' / 'withdrawal_ends_old.sh'
+        return subprocess.run(['bash', str(script), out], capture_output=True, text=True, env={**os.environ, **env})
+
+    def test_the_script_refuses_unsafe_paths_and_a_migration_on_the_compose_network(self):
+        for out in ('F:\\dev\\balik-notes\\ends.json', '/tmp/two words/ends.json'):
+            with self.subTest(out=out):
+                done = self.run_script(out)
+                self.assertEqual(done.returncode, 2, done.stderr)
+                self.assertIn('refused', done.stderr)
+        done = self.run_script('/tmp/ends.json', WITHDRAWAL_ENDS_MIGRATE='1',
+                               WITHDRAWAL_ENDS_DB='-e DB_HOST=balik-ciftligi-db-1')
+        self.assertEqual(done.returncode, 2, done.stderr)
+        self.assertIn('compose', done.stderr)
+
+
+class OneTierRuleTests(SourcesCase):
+    def test_the_sensors_trail_takes_a_units_tiers_from_the_one_resolver(self):
+        from sensors import read as sensors_read
+        self.assertIn('water_read.tiers(', inspect.getsource(sensors_read.tiers))

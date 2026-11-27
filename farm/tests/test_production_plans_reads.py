@@ -347,12 +347,13 @@ class BudgetTests(Fixtures, FeedingTestCase):
         self.slow = self.medicine('Slow vet.', degree_days=150)
 
     def farm_of(self, count, mixed=False):
-        """`count` units more, each with its batch: stocked 12 days ago, or with `mixed` each on a day of its own (a
-        real farm's batches came on different days: the water of each is still read with the others)."""
+        """`count` units more, each with its batch: stocked 12 days ago, or with `mixed` the batches of one call each on a
+        day of its own, 12, 13, 14 ... days ago (a real farm's batches came on different days: the water of each is
+        still read with the others)."""
         units = [make_unit(f'B-{len(self.made) + n:02d}', self.hall) for n in range(count)]
         self.made += units
-        for unit in units:
-            batch = self.stock(unit, count=500, weight='100', days_ago=12 + (len(self.made) % 9 if mixed else 0))
+        for n, unit in enumerate(units):
+            batch = self.stock(unit, count=500, weight='100', days_ago=12 + (n if mixed else 0))
             ProductionPlan.objects.create(batch=batch, target_weight_g=Decimal(4000))
             self.record(kilos='0.2', unit=unit, days_ago=2, time=time(18))
             self.warm(unit, 1, 2, 3)

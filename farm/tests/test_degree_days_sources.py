@@ -107,6 +107,10 @@ class SourcesCase(HealthTestCase):
     def water(self, first=None):
         return BatchWater({self.batch.pk}, self.today, first)
 
+    def floor(self, days_ago):
+        """How far back the cap of a walk from that day looks (degree_days.CAP_HORIZON_DAYS before it)."""
+        return self.day(days_ago) - degree_days.CAP_HORIZON_DAYS * DAY
+
     def measured(self, days_ago, batch=None):
         return self.water(self.day(days_ago)).measured((batch or self.batch).pk, self.day(days_ago))
 
@@ -235,14 +239,14 @@ class ClosedDayTests(SourcesCase):
         self.probed('4', 2)
         self.job(2)
         self.temperature(self.t1, 1, '12')
-        counted = self.water(self.day(1)).day(self.batch.pk, self.day(1))
+        counted = self.water(self.day(1)).day(self.batch.pk, self.day(1), self.floor(1))
         self.assertEqual((counted.value, counted.how), (None, degree_days.UNCLOSED))
 
     def test_today_is_never_a_probe_day(self):
         self.probed('4', 1)
         self.job(1)
         self.readings(0, '4')
-        counted = self.water(self.day(1)).day(self.batch.pk, self.today)
+        counted = self.water(self.day(1)).day(self.batch.pk, self.today, self.floor(1))
         self.assertEqual((counted.value, counted.how), (None, degree_days.PENDING))
 
     def test_a_reader_reads_no_table_of_the_sensors(self):
@@ -446,19 +450,19 @@ class CapTests(SourcesCase):
     def test_the_first_day_measured_after_the_gap_caps_it_too(self):
         self.assume('8.0')
         self.temperature(self.t1, 1, '2')
-        counted = self.water(self.day(5)).day(self.batch.pk, self.day(3))
+        counted = self.water(self.day(5)).day(self.batch.pk, self.day(3), self.floor(5))
         self.assertEqual((counted.value, counted.how), (D(2), degree_days.CAPPED))
 
     def test_the_cap_is_the_coldest_of_the_days_before_the_gap_began(self):
         self.assume('8.0')
         self.temperature(self.t1, 9, '5')
         self.temperature(self.t1, 8, '7')
-        counted = self.water(self.day(5)).day(self.batch.pk, self.day(3))
+        counted = self.water(self.day(5)).day(self.batch.pk, self.day(3), self.floor(5))
         self.assertEqual((counted.value, counted.how), (D(5), degree_days.CAPPED))
         with gate.opened('test fixture: the cap reads one day'):
             PlatformSettings.objects.update(assumption_cap_days=1)
         platform.forget()
-        counted = self.water(self.day(5)).day(self.batch.pk, self.day(3))
+        counted = self.water(self.day(5)).day(self.batch.pk, self.day(3), self.floor(5))
         self.assertEqual((counted.value, counted.how), (D(7), degree_days.CAPPED))
 
     def test_a_day_that_was_not_read_is_an_error_not_an_unmeasured_day(self):

@@ -17347,6 +17347,11 @@ msgstr ""
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 
+#. Translators: %(name)s is the kind of record in lower case (e.g. site).
+#, python-format
+msgid "This %(name)s was changed while you were looking at it: check it and delete it again."
+msgstr "Denne %(name)s ble endret mens du så på den: kontroller den og slett den på nytt."
+
 msgid "This account already belongs to another employee."
 msgstr "Denne kontoen tilhører allerede en annen ansatt."
 
@@ -17376,6 +17381,10 @@ msgstr "Denne gruppen er annullert."
 
 msgid "This day is already a holiday for this site."
 msgstr "Denne dagen er allerede en fridag for denne lokaliteten."
+
+#, python-format
+msgid "This delete was not confirmed: open the delete of this %(name)s again and confirm it there."
+msgstr "Slettingen ble ikke bekreftet: åpne slettingen av denne %(name)s igjen og bekreft den der."
 
 msgid "This department already has a department with this name."
 msgstr "Denne avdelingen har allerede en avdeling med dette navnet."

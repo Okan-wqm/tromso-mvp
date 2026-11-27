@@ -6419,23 +6419,32 @@ the code for it, project-wide:
 - A declared model's tabs hand every write to the service: each hook is read and must call one of the service's writers
   (a function `core/tests_service_rights.py` holds as one, never a question) and never save the form; a hook is also run
   with the service's writers replaced, and must call one (`hr/tests/test_review_two.py`).
-- No other production module builds or writes a declared model by name. The scan sees the model's name (an alias too),
-  or a module it is reached through (`models.Posting`, `m.Posting`, `hr.models.Posting`, `posting.Posting`); a write
-  through any manager (`objects`, `all_objects`, `_base_manager`, `_default_manager`), through `QuerySet(Model)` or
-  `QuerySet(model=Model)`, or through `sealing.unsealed(Model)`; and the `save()` of a model form of it held in a name.
-- No production module writes past every manager on a model it cannot name (`type(row)._base_manager...`,
-  `row._meta.model._default_manager...`, `QuerySet(model)` or `unsealed(model)` of a model in a variable,
-  `save_base(...)`): such a write could be of a declared model. The two that exist, the withdrawal guard's what-if inside
-  a savepoint always rolled back, are listed with that reason (`LOW_LEVEL_ALLOWED`, a ratchet).
+- No other production module builds or writes a declared model. The scan names a model when the module imports it (an
+  alias too), defines it, or reaches it through a module it imports (`models.Posting`, `m.Posting`,
+  `hr.models.Posting`, `posting.Posting`). It counts `Model(...)`; a write through any manager of a named model
+  (`objects`, `all_objects`, `_base_manager`, `_default_manager`), through `QuerySet(Model)`, `QuerySet(model=Model)`
+  or `sealing.unsealed(Model)`; a write through a queryset, a manager or a row held in a name in the same function and
+  read from one of those (`rows = Posting.objects.filter(...)`, `rows.update(...)`; `one = Posting.objects.get(...)`,
+  `one.save()`); and the `save()` of a model form of a declared model held in a name.
+- No production module writes a model it cannot name, which could be a declared one: a write through a manager,
+  `QuerySet(...)` or `unsealed(...)` whose model is not named as above (`type(row).objects...`,
+  `row.__class__.all_objects...`, `self.model.objects...`, `Model = type(row); Model._base_manager...`,
+  `QuerySet(model)`), a queryset held in a name from such a source, and `save_base(...)`. It is decided by whether the
+  model is named, never by how a name is spelled. The ones that exist are listed each with its count and reason
+  (`LOW_LEVEL_ALLOWED`, a ratchet): the delete plan's own columns and the form key's row (core), a row list's rows
+  (crud), an experiment's design rows (`_park`, `_touch`), the equipment types' migration, the withdrawal guard's
+  what-ifs in a savepoint always rolled back, the demonstration's accounts, and two report rows given by model.
 
-What it does not see: a row held in a variable and saved (`row.save()`), a related manager (`person.postings.create()`),
-a model reached through `getattr` or `apps.get_model(...)`, and raw SQL (rule W reads the code for that). Those are the
-code review's until the one write gate in core (the withdrawal gate's hook layer, `farm/withdrawal_gate.py`, made the
-gate of every rule) holds the model itself at run time: the follow-up listed in the plan.
+What it does not see: a row read some other way and saved or deleted (a row handed in as a parameter, `row.save()`,
+`row.delete()`, `row.soft_delete(user)`), a related manager (`person.postings.create()`, `person.assignments.filter(...)
+.update(...)`), a model reached through `getattr` or `apps.get_model(...)` outside a migration, and raw SQL (rule W reads
+the code for that). Those are the code review's until the one write gate in core (the withdrawal gate's hook layer,
+`farm/withdrawal_gate.py`, made the gate of every rule) holds the model itself at run time: the follow-up listed in the
+plan.
 
-What is not yet one writer is a ratchet that may only shrink: the four tabs crud still saves beside a service that writes
-their model too (Regulatory reports, Tasks, Experiments, Card templates: `SECOND_WRITER_TABS`, each with what the two
-writers are) and the rows other modules build for their service to write (`BUILT_ELSEWHERE`); they are closed by the
+What is not yet one writer is a ratchet that may only shrink: the six tabs crud still saves beside a service that writes
+their model too (Regulatory reports, Tasks, Experiments, Card templates, Handling plan items, Knowledge entries:
+`SECOND_WRITER_TABS`, each with what the two writers are) and the rows other modules build for their service to write (`BUILT_ELSEWHERE`); they are closed by the
 follow-up listed in the plan. The admin offers no Restore of a declared model (`core.admin.register_audited`), and the
 delete plan's restore refuses one a parent's restore would bring along.
 

@@ -29,7 +29,7 @@ from farm.water import read as water_read
 
 from .. import engine, read, rules as alarm_rules, sources
 from ..models import Alarm, Severity
-from . import farm_alarms
+from . import farm_alarms, ran_clean
 
 # Its oxygen with it: a unit with fish and no fresh oxygen is critical (owner decision of 2026-11-23), which these tests
 # are not about (monitoring/tests/test_silent_oxygen.py).
@@ -60,8 +60,9 @@ class RefusedWaterCase(WaterTestCase):
         self.stock(self.t2)
         self.limit(NH3, critical_high='0.025', warning_high='0.0125')
 
-    def run_pass(self, minutes=0):
-        return engine.run_once(self.now + timedelta(minutes=minutes))
+    def run_pass(self, minutes=0, failing=False):
+        summary = engine.run_once(self.now + timedelta(minutes=minutes))
+        return summary if failing else ran_clean(self, summary)
 
     def open_alarms(self, **filters):
         """The open alarms but the alarm system's oxygen one: a stocked unit of the fixture without a sample (T-01 where
@@ -319,7 +320,7 @@ class AlarmTests(RefusedWaterCase):
         with mock.patch.object(water_read, 'unit_water', side_effect=unit_water), \
                 self.assertLogs('alarms.sources', level='ERROR'):
             for minutes in (1, 2, 60):
-                self.run_pass(minutes=minutes)
+                self.run_pass(minutes=minutes, failing=True)
         self.assertTrue(read.is_open(alarm))
 
     def test_the_limit_gone_ends_it_with_that_cause(self):

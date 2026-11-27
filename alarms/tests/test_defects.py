@@ -176,7 +176,7 @@ class FailureIsolationTests(AlarmsCase):
         with mock.patch.object(sensor_alarms, 'evaluate', return_value=(0, 0)), \
                 mock.patch.object(sources, 'water', side_effect=RuntimeError('the water read failed')), \
                 self.assertLogs('alarms.engine', level='ERROR') as logged:
-            summary = self.loop()
+            summary = self.loop(failing=True)
         self.assertEqual(summary.failed_steps, ['water'])
         self.assertTrue(farm_alarms().filter(source='sensor_rule').exists())
         self.assertIn('the water read failed', '\n'.join(logged.output))

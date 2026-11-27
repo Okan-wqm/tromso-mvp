@@ -202,8 +202,8 @@ class FailedStepTests(CrossReviewCase):
         self.sample(5.5, hours=0)
         with mock.patch.object(sources, 'water', side_effect=RuntimeError('a bug')), \
                 self.assertLogs('alarms.engine', level='ERROR'):
-            self.loop()
-            self.loop(minutes=1)
+            self.loop(failing=True)
+            self.loop(minutes=1, failing=True)
         alarm = self.system().get()
         self.assertEqual((alarm.severity, alarm.parameter), ('critical', 'step_failed'))
         self.assertIn('water', alarm.summary)
@@ -224,7 +224,7 @@ class FailedStepTests(CrossReviewCase):
         self.sample(5.5, hours=0, point=self.mid2)
         with mock.patch.object(water_read, 'unit_water', side_effect=unit_water), \
                 self.assertLogs('alarms.sources', level='ERROR'):
-            summary = self.loop()
+            summary = self.loop(failing=True)
         self.assertEqual(summary.failed_steps, [])
         self.assertEqual(open_levels(point__unit=self.t1), ['critical'])
         alarm = self.system().get()
@@ -244,7 +244,7 @@ class FailedStepTests(CrossReviewCase):
         self.sample(5.5, hours=0)
         self.sample(5.5, hours=0, point=self.mid2)
         with mock.patch.object(sources, '_slots', side_effect=slots), self.assertLogs('alarms.sources', level='ERROR'):
-            self.loop()
+            self.loop(failing=True)
         self.assertEqual(open_levels(point__unit=self.t1), ['critical'])
         alarm = self.system().get()
         self.assertEqual(alarm.parameter, 'unit_unevaluated')

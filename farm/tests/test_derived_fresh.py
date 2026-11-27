@@ -350,8 +350,35 @@ class LookBackBudgetTests(WaterTestCase):
         self.assertLessEqual(sum(rows), 2 + 1 + read.LATE_READ)
         nh3 = water.get(NH3)
         self.assertEqual((nh3.judged, nh3.value is not None), (Status.OK, True))
-        # (the newest of the sixty was fetched with the evidence, to see its minute: 59 in the late query)
-        self.assertIn(f'And {59 - read.LATE_READ} more late results: see the history.', nh3.note)
+        # The newest of the sixty was fetched with the evidence, to see its minute: 59 in the late query, 50 read; the
+        # nine never read hold the critical, so they are said as not read (review 8, N6: no alert is counted unread).
+        self.assertIn(f'{59 - read.LATE_READ} older late results were not read: see the history.', nh3.note)
+        self.assertNotIn('more late critical', nh3.note)
+
+    def test_the_ceiling_is_exactly_its_value_of_candidates(self):
+        """Review 8, N4 and R8-12: at the real judge.CEILING (512, no patch) a point without evidence is read for EXACTLY
+        that many candidates, never the next doubling's 1022."""
+        import copy
+        import uuid
+
+        from ..models import WaterMeasurement
+        self.assertEqual(judge.CEILING, 512)
+        Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater', water_origin='seawater')
+        self.t1.refresh_from_db()
+        template = self.sample(hours=1, tan_mg_l='1.000', ph='7.50', temperature_c='12.0')     # needs the salinity
+        rows = []
+        for index in range(1, 530):
+            row = copy.copy(template)
+            row.pk = uuid.uuid4()
+            row.measured_at = template.measured_at - timedelta(minutes=index)
+            rows.append(row)
+        WaterMeasurement.objects.bulk_create(rows)
+        context = read.Context([self.mid1], self.now - read.WINDOW)
+        with counting() as fetched:
+            worked = context.worked_at(self.mid1)
+        self.assertEqual((len(worked.found), worked.complete), (judge.CEILING, False))
+        self.assertEqual(sum(fetched), judge.CEILING + 1)          # and the one newest sample that cannot give a value
+        self.assertTrue(context.verdict(self.mid1, NH3).ceiling)
 
     def test_the_ceiling_stops_the_look_back_and_the_point_cannot_be_evaluated(self):
         """After judge.CEILING candidates without evidence the look-back stops, fail-closed: a sea unit whose own samples
@@ -519,7 +546,33 @@ class LateResultTests(WaterTestCase):
             self.sample(hours=30 + hour, source='lab', **self.BAD)
         note = self.unit_water().get(NH3).note
         self.assertEqual(note.count('Late result: critical'), read.LATE_SAID)
-        self.assertIn(f'And {8 - read.LATE_SAID} more late results: see the history.', note)
+        self.assertIn(f'And {8 - read.LATE_SAID} more late critical or warning results: see the history.', note)
+
+    def test_one_more_late_alert_is_said_in_the_singular(self):
+        for hour in range(read.LATE_SAID + 1):
+            self.sample(hours=30 + hour, source='lab', **self.BAD)
+        note = self.unit_water().get(NH3).note
+        self.assertIn('And 1 more late critical or warning result: see the history.', note)
+
+    def test_late_ok_results_are_never_counted_as_alerts(self):
+        for hour in range(8):
+            self.sample(hours=30 + hour, source='lab', **FULL)
+        self.assertNotIn('more late', self.unit_water().get(NH3).note)
+
+    def test_late_criticals_at_one_point_come_before_late_warnings_at_another(self):
+        """Review 8, N2: five late warnings at the middle, two late criticals at the outlet: the two criticals are among
+        the five said one by one, first; two warnings are counted."""
+        outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+        self.sample(outlet, hours=1, **FULL)
+        for hour in range(5):
+            self.sample(hours=20 + hour, source='lab', **{**FULL, 'tan_mg_l': '2.600'})          # a warning
+        for hour in range(2):
+            self.sample(outlet, hours=30 + hour, source='lab', **self.BAD)
+        note = self.unit_water().get(NH3).note
+        self.assertEqual((note.count('Late result: critical'), note.count('Late result: warning')), (2, 3))
+        self.assertLess(note.rindex('Late result: critical'), note.index('Late result: warning'))
+        self.assertIn('at Outlet on ', note)
+        self.assertIn('And 2 more late critical or warning results: see the history.', note)
 
     def test_the_log_keeps_the_words_in_english_whatever_the_users_language(self):
         from django.utils import translation
@@ -552,7 +605,9 @@ class LateResultTests(WaterTestCase):
         from ..water import services
         late = self.sample(hours=30, source='lab', **self.BAD)
         other = self.sample(self.t2, hours=30, source='lab', **self.BAD)
-        samples = list(WaterMeasurement.objects.select_related(*read.POINT_RELATED).filter(pk__in=[late.pk, other.pk]))
+        tan_only = self.sample(self.t2, hours=31, source='lab', tan_mg_l='5.000')    # never checked: gives no value
+        samples = list(WaterMeasurement.objects.select_related(*read.POINT_RELATED).filter(
+            pk__in=[late.pk, other.pk, tan_only.pk]))
         real = read.late_results_of
 
         def unreadable_at_t2(group):
@@ -565,6 +620,7 @@ class LateResultTests(WaterTestCase):
             words = services._late_words(samples)
         self.assertTrue(words[late.pk].startswith(self.SAID), words)
         self.assertEqual(words[other.pk], 'could not be checked')
+        self.assertNotIn(tan_only.pk, words)                  # review 8, N5: the one predicate (read.gives_value)
 
 
 class PointOwnStatusTests(WaterTestCase):

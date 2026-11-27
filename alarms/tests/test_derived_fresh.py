@@ -9,6 +9,7 @@ from farm.tests.test_water import WaterTestCase
 
 from .. import engine
 from ..models import Alarm
+from . import ran_clean
 
 BAD = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'alkalinity_mg_l': '80', 'tan_mg_l': '5.000'}
 GOOD = {**BAD, 'ph': '7.00', 'tan_mg_l': '0.500', 'temperature_c': '10.0'}
@@ -29,7 +30,7 @@ class DerivedStaleAlarmTests(WaterTestCase):
 
     def passes(self, *minutes):
         for each in minutes:
-            engine.run_once(self.now + timedelta(minutes=each))
+            ran_clean(self, engine.run_once(self.now + timedelta(minutes=each)))
 
     def outcome(self, parameter):
         found = {}
@@ -429,6 +430,76 @@ class LiveEvidenceTests(WaterTestCase):
         self.assertEqual((reading.judged, reading.worse), ('ok', None))
 
 
+class AnalyserAtOwnPointTests(WaterTestCase):
+    """Review 8: a TAN analyser with its pH and temperature probes bound to T-01's own middle point. N1: a lab critical
+    measured before its fresh OK is a late result (said on the page and in the log, never an alarm), whatever the
+    order. N7: its fresh OK at the unit's own point is the unit's own evidence (sources.own): it ends a level."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.tests.helpers import may_record
+        from sensors import bindings
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        may_record(self.user, 'add_binding')
+        device = make_device(make_connection(), make_format(), self.bergen, code='ANALYSER')
+        self.channels = {}
+        for quantity, value in (('tan_mg_l', 0.5), ('ph', 7.0), ('temperature_c', 12.0)):
+            channel = make_channel(device, quantity, code=quantity.upper())
+            bindings.move(self.user, channel, point=self.mid1, at=self.now - timedelta(days=5))
+            self.channels[channel] = value
+
+    def passes(self, *minutes):
+        for each in minutes:
+            self.live(each)
+            ran_clean(self, engine.run_once(self.now + timedelta(minutes=each)))
+
+    outcome = DerivedStaleAlarmTests.outcome
+
+    def logged(self, sample):
+        from core.models import AuditLog
+        return AuditLog.objects.get(entity_type='water sample', action='create',
+                                    entity_id=str(sample.pk)).changes.get('Late result')
+
+    def test_a_lab_critical_behind_the_fresh_analyser_is_said_on_the_page_and_in_the_log(self):
+        self.live()
+        lab = self.sample(self.t1, hours=24, source='lab', **BAD)
+        reading = self.unit_water().get(NH3)
+        self.assertTrue(reading.sample.live)
+        self.assertEqual((reading.judged, reading.worse), ('ok', None))
+        self.assertIn('Late result: critical 0.8924 at Middle on ', reading.note)
+        self.assertIn(', superseded by ', reading.note)
+        self.assertTrue(self.logged(lab)[1].startswith('Late result: critical 0.8924 at Middle on '), self.logged(lab))
+        self.passes(1, 2, 60)
+        self.assertEqual(self.outcome(NH3), {})                        # a note, never an alarm
+
+    def test_without_the_analyser_the_lab_critical_stands(self):
+        lab = self.sample(self.t1, hours=2, source='lab', **BAD)
+        reading = self.unit_water().get(NH3)
+        self.assertEqual((reading.judged, reading.point), ('critical', self.mid1))
+        self.assertNotIn('Late result', reading.note)
+        self.assertIsNone(self.logged(lab))
+
+    def test_a_kit_sample_after_the_lab_one_keeps_both_on_the_page(self):
+        """The point's verdict holds its samples and its live value together (`_verdicts` takes the live values out of
+        the leftovers: review 8, the `live.get` mutant): the lab's late critical is said beside the analyser."""
+        self.sample(self.t1, hours=2, **GOOD)
+        self.sample(self.t1, hours=24, source='lab', **BAD)
+        self.live()
+        note = self.unit_water().get(NH3).note
+        self.assertIn('Late result: critical 0.8924 at Middle on ', note)
+
+    def test_the_analysers_fresh_ok_ends_a_level_the_units_own_sample_raised(self):
+        self.sample(self.t1, hours=2, source='lab', **BAD)
+        engine_passes = [0, 1, 60]
+        for each in engine_passes:
+            ran_clean(self, engine.run_once(self.now + timedelta(minutes=each)))
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+        self.passes(120, 121, 180, 240, 600)
+        self.assertEqual(self.outcome(NH3), {'critical': 'returned', 'warning': 'returned'})
+
+
 class SystemSensorTests(WaterTestCase):
     """Review 7, H1: a RAS with NO loop point, a TAN analyser with its pH and temperature probes bound to the SYSTEM; T-03's
     own lab NH₃ critical. The analyser's fresh OK is the system's value, never the unit's own point's: it is shown (A9),
@@ -472,7 +543,7 @@ class SystemSensorTests(WaterTestCase):
     def passes(self, *minutes):
         for each in minutes:
             self.live(each)
-            engine.run_once(self.now + timedelta(minutes=each))
+            ran_clean(self, engine.run_once(self.now + timedelta(minutes=each)))
 
     outcome = DerivedStaleAlarmTests.outcome
 
@@ -498,3 +569,5 @@ class SystemSensorTests(WaterTestCase):
         self.passes(1800, 1801, 1860, 1920, 2400)
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
 
+
+AnalyserAtOwnPointTests.live = SystemSensorTests.live

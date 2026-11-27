@@ -31,6 +31,17 @@ RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
 NOTHING_CONNECTED = override_settings(ALARM_TRANSPORTS={})
 
 
+def ran_clean(case, summary):
+    """Review 8 of derived-fresh, N3: a pass whose step crashed leaves every level as it was, so "it stays open" and
+    "nothing was raised" hold on a crash too. THE check of a test pass that expects no failure: no step failed, and no
+    unit's water was left unevaluated by an exception (sources.UNIT_UNEVALUATED). Returns the summary."""
+    from ..sources import UNIT_UNEVALUATED
+    case.assertEqual(summary.failed_steps, [], f'a step of the pass failed: {summary}')
+    case.assertFalse(Alarm.objects.filter(source='system', parameter=UNIT_UNEVALUATED).exists(),
+                     'a unit could not be evaluated: its water read raised')
+    return summary
+
+
 def farm_alarms(alarms=None):
     """The alarms (all of them, or of `alarms`) without the alarm system's own about who it reached (no recipient rule,
     no connected channel, a critical told to nobody: routing.TO_OVERSEERS). THE helper of a test that counts what its
@@ -83,14 +94,17 @@ class AlarmsCase(TestCase):
             values['role'] = self.operators
         return RecipientRule.objects.create(**values)
 
-    def loop(self, minutes=0, seconds=0):
-        """The worker at a moment: its pass, then a round through the outbox (alarms/worker.py); the pass's Summary."""
+    def loop(self, minutes=0, seconds=0, failing=False):
+        """The worker at a moment: its pass, then a round through the outbox (alarms/worker.py); the pass's Summary. A
+        pass ran clean (`ran_clean`) unless the test makes it fail on purpose (`failing`)."""
         at = self.now + timedelta(minutes=minutes, seconds=seconds)
         # A farm set up with its rules and a connected channel: the watch on who it reached opens nothing in this pass (one
         # opened before the rules were made clears after its off-delay, as any alarm does).
         watched = RecipientRule.objects.filter(is_active=True).exists() and not self.reaches_nobody
         before = set(self.watch_alarms()) if watched else set()
         summary = engine.run_once(at)
+        if not failing:
+            ran_clean(self, summary)
         outbox.send_due(at)
         if watched:
             self.assertFalse(set(self.watch_alarms()) - before,

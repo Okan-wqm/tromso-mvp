@@ -23,6 +23,7 @@ from farm.water import services as water_services
 from .. import engine
 from ..models import Alarm, AlarmSubjectState
 from ..sources import water_key
+from . import ran_clean
 
 WATER = {'ph': '9.00', 'temperature_c': '12.0', 'salinity_ppt': '0.0', 'alkalinity_mg_l': '80', 'tan_mg_l': '5.000'}
 LOW = {**WATER, 'ph': '7.00', 'tan_mg_l': '0.500'}
@@ -68,7 +69,7 @@ class WhoEndsALevelCase(WaterTestCase):
 
     def passes(self, *minutes):
         for each in minutes:
-            engine.run_once(self.now + timedelta(minutes=each))
+            ran_clean(self, engine.run_once(self.now + timedelta(minutes=each)))
 
     def levels(self):
         return Alarm.objects.filter(source='water_limit', point=self.mid2).order_by('severity')

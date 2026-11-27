@@ -6929,7 +6929,7 @@ runs the server:
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
 | `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors; `prune.sh` removes the test runner's old image tags |
 | `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
-| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on (Tests) |
+| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on; `plans`, the rows each statement of a block read and handed back, so a test of what is cheap counts rows instead of timing the machine (Tests) |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
 | `deploy/`, `docs/ops/`, `.github/workflows/go-live-stack.yml` | The go-live package: the production stack (`compose.yml`, the proxy, the broker's TLS listener, the database image with its roles, the backup agent, `web/` the server's start, jobs and release step), the scripts (secrets, certificates, role checks, password rotation), the access templates (Cloudflare, WireGuard), the stack's proof (`ci/`); the runbooks and the go-live checklist (Starting a production server) |
 
@@ -7154,10 +7154,29 @@ thread, an event, a lock or the worker at rest. Each waits for that condition it
 (`WAIT`, 60 s), and fails saying what it waited for: `rested`, `reached`, `ended`, `until`. None sleeps a time that
 "should be enough" and goes on (a second "until both are at the row", a join of 20 s whose outcome nobody read: the
 whole suite of 13.11.2026 failed on that one, under load), and none measures seconds of the clock where it means
-work: 200 lookups "in a moment" are measured against the same 200 done at once on the same machine, the mail's time
-limit against how far the conversation with the test's mail server got. What must not happen is asked the other way
-round, with a short time (`drain(0.5)` is false while a mail is at the mail server). The platform's own patience
-with a mail server is set longer than any wait of a test there, so nothing is cut off behind a test's back.
+work (below): 200 lookups are counted in the connections they open (one, all of them waiting while the worker is
+held), the mail's time limit in how far the conversation with the test's mail server got. What must not happen is
+asked the other way round, with a short time (`drain(0.5)` is false while a mail is at the mail server). The
+platform's own patience with a mail server is set longer than any wait of a test there, so nothing is cut off behind a
+test's back.
+
+**Nor on how fast the machine is.** A wall-clock bound ("a round takes under half a second") passes on a quiet machine
+and fails on a loaded one: the outbox's "a round reads the queue, never the whole history" took 0.585 s for a bound of
+0.5 on a shared CI runner (nightly run 45865365125 on 7a299319), and had failed so once before. What keeps a round, a
+page or a lookup cheap is what it reads, and the database counts that exactly: `core.testing.plans()` explains each
+statement a block runs as it runs (EXPLAIN ANALYZE in a savepoint rolled back at once, then the statement) and gives
+the rows it read of each table (`read('alarm_notifications')`) and the most rows one statement handed back
+(`most_returned()`). The outbox's tests ask it so: a round beside 100,000 notifications of history reads under a
+hundred rows of each history table, where a scan would read them all; a round with 20,000 cleared warnings waiting
+gives up one chunk and no statement of it hands Python more than a chunk; 20,000 waiting without a transport are
+counted in the database, never fetched. A deadline is driven by a clock the test holds (`outbox.send_due(clock=...)`:
+the round's deadline falls after the second send of 0.2 s, on any machine), and that a thing did not wait is asked of
+the thing: the push service still hanging after the round, the sender's thread still alive after the worker stopped,
+every "Forgot your password?" answer in while the mail server is still shut, with the same statements for an address
+that has an account as for one that has none. `core/tests_wall_clock.py` refuses a test that asserts on a time it
+measured (`time.monotonic`, `perf_counter`, `time.time` and the like, and the names made from them); what must stay on
+the wall clock is listed there with why: the owner's 10 s from a value to its alarm and a standby worker's takeover
+(real processes, which no clock of the test reaches), and the monitoring load check, run only when asked.
 
 **Nor the hour it runs at.** The server's day is UTC's, the company's is Oslo's (`COMPANY_TIME_ZONE`) and a site's is
 its own. From 23:00 to 24:00 UTC in winter (from 22:00 in summer) Oslo is a day ahead of the server, and a test that

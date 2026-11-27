@@ -150,7 +150,7 @@ def production_plan(request, unit_pk, batch_pk):
     Read with the production plans' right. The page's words and the file are farm/harvest/plan_page.py's."""
     from . import plan_page
     unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=unit_pk)
-    found = forecast.projection(unit.pk, batch_pk, read_day(request.GET.get('from', '')))
+    found = forecast.plan_of(unit, batch_pk, read_day(request.GET.get('from', '')))
     if found is None:
         raise Http404
     batch = found.batch

@@ -21,13 +21,18 @@ ONE_ROW_PER_WEIGHT_BAND_FROM = _('One row per weight band, from its lower weight
       'saved as a whole.')
 UNEATEN_FEED = _('Uneaten feed')
 ECONOMIC_FCR = _('Economic FCR')
+FCR_ON_FEED_GIVEN = _('FCR on feed given')
+THE_FCRS = _('FCR on feed given: the feed given divided by the growth of the fish fed (the FCR divided by the share '
+             'eaten). Economic FCR, as the industry says it: the feed given divided by the biomass gained, the biomass at '
+             'the end less the biomass at the start, so the weight of the fish that die is not gained; it is above the '
+             'FCR on feed given whenever fish die.')
 MORTALITY_A_MONTH = _('Mortality a month')
 BETWEEN_TWO_BANDS_THE_FCR = _('Each band’s FCR, uneaten share and SFR sit at the middle of the band (a band without an '
                               'upper weight: at its lower weight). With the rule “Smooth between bands” the value '
                               'of fish between two middles is read in between, so it does not jump at a band’s '
                               'edge; with “Step at the band edge” it is the fish’s own band’s. The rule is chosen '
-                              'per quantity on the General tab. The economic FCR is the FCR on the feed given: the '
-                              'FCR divided by the share eaten.')
+                              'per quantity on the General tab. The FCR on feed given is the FCR divided by the share '
+                              'eaten.')
 VALUES_USED_OVER_THE_WEIGHT = _('Values used over the fish’s weight')
 THE_VALUES_THE_TABLE_GIVES = _('What the stored table gives fish of each weight, worked out by the rule the rations and '
                                'the production plan use: at each band’s lower weight and at the weight where the '
@@ -243,6 +248,9 @@ THE_PLAN_AHEAD_COUNTS = _('Every day of the plan counts the day’s ration as gi
                           'estimate between weighings grows on the feedings recorded only, and a day without one '
                           'adds nothing. A weighing sets the estimate to the measured weight, and the plan ahead '
                           'starts again from it.')
+A_PAST_START_PLANS_EVERY_DAY = _('Every day of this plan, from its past start on, counts the day’s ration as given, '
+                                 'as the plan did on that day: it is compared with what was measured since, which '
+                                 'grew on the feedings recorded.')
 THE_TABLE_SHOWS_ONE_DAY_A_WEEK = _('The table shows one day a week and the last day; the file has every day.')
 THE_SFR_IS_ITS_BANDS = _('The FCR, the uneaten share and the SFR of fish between two weight bands follow the '
                          'protocol’s own rule for each (smooth, or a step at the band’s edge: its Feeding table tab '

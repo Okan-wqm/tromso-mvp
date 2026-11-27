@@ -33,9 +33,11 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db.models import Prefetch, Q, Sum
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
 
+from core import audit
 from farm.handling import fasting
 from farm.models import (
     Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank,
@@ -126,19 +128,52 @@ def tables(protocol_ids):
 def profile_assignments(units, batch_ids, first):
     """The temperature profiles' rows of these units and batches in force on `first` or later."""
     return list(TemperatureProfileAssignment.objects.filter(Q(unit_id__in=list(units)) | Q(batch_id__in=batch_ids))
-                .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first)))
+                .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first)).select_related('profile'))
 
 
-def profiles(profile_ids):
-    """{profile id: ration.Profile} of these temperature profiles, their points in weight order (one query)."""
-    found = {}
-    if not profile_ids:
-        return found
-    for point in (TemperatureProfilePoint.objects.filter(profile_id__in=profile_ids).select_related('profile')
-                  .order_by('weight_g')):
-        found.setdefault(point.profile_id, []).append(point)
-    return {pk: Profile(points[0].profile, tuple((point.weight_g, point.temperature_c) for point in points),
-                        points[0].profile.temperature_between) for pk, points in found.items()}
+def profiles(found_profiles):
+    """{profile id: ration.Profile} of these temperature profiles (TemperatureProfile rows), their points in weight
+    order (one query). Every profile asked has an entry, one without points too (it reads as a ProfileGap, never a
+    crash)."""
+    found_profiles = {profile.pk: profile for profile in found_profiles}
+    points = {pk: [] for pk in found_profiles}
+    if found_profiles:
+        for point in TemperatureProfilePoint.objects.filter(profile_id__in=list(found_profiles)).order_by('weight_g'):
+            points[point.profile_id].append((point.weight_g, point.temperature_c))
+    return {pk: Profile(profile, tuple(points[pk]), profile.temperature_between)
+            for pk, profile in found_profiles.items()}
+
+
+def as_recorded(model, unit_ids, batch_ids, moment):
+    """The assignment rows of `model` (ProtocolAssignment, TemperatureProfileAssignment) of these units and batches as
+    they were recorded at `moment` (owner decision 12, as decided after review 1: the plan from a past start is the plan
+    as it stood then): only the rows created by then, the rows deleted since among them, each with the first day, last
+    day and table it had then (the log's values from before the changes made since: core.audit.values_before). The
+    rows are not saved: they are read. A table renamed since is found by the name it had."""
+    subject = model._meta.get_field(model.SUBJECT)
+    rows = list(model.all_objects.filter(Q(unit_id__in=list(unit_ids)) | Q(batch_id__in=list(batch_ids)),
+                                         created_at__lte=moment)
+                .filter(Q(is_deleted=False) | Q(deleted_at__gt=moment)).select_related(model.SUBJECT))
+    with translation.override('en'):
+        labels = {name: str(capfirst(model._meta.get_field(name).verbose_name))
+                  for name in ('valid_from', 'valid_until', model.SUBJECT)}
+    earlier = audit.values_before(model, [row.pk for row in rows], moment)
+    names = {said for values in earlier.values() for label, said in values.items()
+             if label == labels[model.SUBJECT] and said}
+    by_name = {}
+    for table in subject.related_model.all_objects.filter(name__in=names):
+        by_name.setdefault(table.name, table)
+    for row in rows:
+        values = earlier.get(str(row.pk), {})
+        if labels['valid_from'] in values and values[labels['valid_from']]:
+            row.valid_from = date.fromisoformat(values[labels['valid_from']])
+        if labels['valid_until'] in values:
+            said = values[labels['valid_until']]
+            row.valid_until = date.fromisoformat(said) if said else None
+        table = by_name.get(values.get(labels[model.SUBJECT]))
+        if table is not None:
+            setattr(row, model.SUBJECT, table)
+    return rows
 
 
 def policy(units, batch_ids, first, now, read=(), ahead_days=0):
@@ -183,7 +218,7 @@ def policy(units, batch_ids, first, now, read=(), ahead_days=0):
     profile_rows = profile_assignments(units, batch_ids, first) if ahead_days else []
     return Policy(rows, tables({row.protocol_id for row in rows}), species, temperature,
                   fasting=lambda unit_id, day: fasts.get((unit_id, day)), cleaner=cleaner, profile_rows=profile_rows,
-                  profiles=profiles({row.profile_id for row in profile_rows}))
+                  profiles=profiles(row.profile for row in profile_rows))
 
 
 @dataclass

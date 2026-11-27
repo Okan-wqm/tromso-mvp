@@ -19,7 +19,7 @@ from core import listprops as L
 
 from .. import words
 from ..feeding.fold import PointKind
-from ..feeding.growth import economic_fcr
+from ..feeding.growth import fcr_on_feed_given
 from ..templatetags.feeding import celsius, difference, fcr, feed_kg
 from ..templatetags.stock import fish, grams, kilos
 
@@ -73,7 +73,8 @@ def _plan_row(point):
     if point.fasting:
         rate = L.cell(DASH, sub=[str(words.FASTING_DAY)])
     else:
-        rate = L.cell(fcr(point.fcr), sub=[f'{words.ECONOMIC_FCR} {fcr(economic_fcr(point.fcr, point.uneaten_pct))}'])
+        rate = L.cell(fcr(point.fcr),
+                      sub=[f'{words.FCR_ON_FEED_GIVEN} {fcr(fcr_on_feed_given(point.fcr, point.uneaten_pct))}'])
     return L.row(f'day-{point.day.isoformat()}', {
         'date': L.cell(_day(point.day)), 'weight': L.cell(grams(point.weight_g), strong=True),
         'fish': L.cell(fish(point.fish)), 'biomass': L.cell(kilos(point.biomass_kg)),
@@ -100,10 +101,10 @@ def lines(unit, batch, target_g, found):
     if target_g is None and curve.why:
         said.append(curve.why)
     if forecast.planned:
-        said.append(_('Feed over these days: %(feed)s given, %(eaten)s eaten, %(uneaten)s uneaten; economic FCR of the '
-                      'period %(fcr)s; %(fish)s fish and %(biomass)s at the end.') % {
+        said.append(_('Feed over these days: %(feed)s given, %(eaten)s eaten, %(uneaten)s uneaten; FCR on feed given of '
+                      'the period %(fcr)s, economic FCR %(efcr)s; %(fish)s fish and %(biomass)s at the end.') % {
             'feed': feed_kg(curve.feed_kg), 'eaten': feed_kg(curve.eaten_kg), 'uneaten': feed_kg(curve.uneaten_kg),
-            'fcr': fcr(curve.economic_fcr), 'fish': fish(curve.end_fish),
+            'fcr': fcr(curve.fcr_on_feed_given), 'efcr': fcr(curve.economic_fcr), 'fish': fish(curve.end_fish),
             'biomass': kilos(curve.end_g * curve.end_fish / 1000)})
         for profile in forecast.profiles:  # each read on some day ahead
             said.append(_('The temperature of a day is the temperature profile %(profile)s at the fish’s weight that '
@@ -112,7 +113,13 @@ def lines(unit, batch, target_g, found):
             said.append(_('Every day without a temperature profile at %(temperature)s, the unit’s latest measured '
                           'temperature at the start, held.') % {'temperature': celsius(forecast.temperature_c)})
             said.append(forecast.stale)             # "Based on the temperature from … (N days old)", or nothing
-    return [*(line for line in said if line), str(words.THE_PLAN_AHEAD_COUNTS), str(words.THE_SFR_IS_ITS_BANDS)]
+    if forecast.as_recorded:
+        said.append(_('The plan as it stood on %(date)s: the assignments recorded by then (%(tables)s) and the '
+                      'temperature measured by then; nothing assigned or measured since counts in it.') % {
+            'date': _day(forecast.start),
+            'tables': ', '.join(each.name for each in (*forecast.protocols, *forecast.profiles)) or '—'})
+    rules = words.A_PAST_START_PLANS_EVERY_DAY if forecast.as_recorded else words.THE_PLAN_AHEAD_COUNTS
+    return [*(line for line in said if line), str(rules), str(words.THE_FCRS), str(words.THE_SFR_IS_ITS_BANDS)]
 
 
 def props(request, context):
@@ -149,7 +156,7 @@ def props(request, context):
 
 # ---- the file -------------------------------------------------------------------------------------------
 COLUMNS = ('date', 'average_weight_g', 'fish', 'biomass_kg', 'feed_kg', 'feed_to_date_kg', 'eaten_kg', 'uneaten_kg',
-           'fcr', 'economic_fcr', 'uneaten_pct', 'temperature_c', 'temperature_source', 'fasting')
+           'fcr', 'fcr_on_feed_given', 'uneaten_pct', 'temperature_c', 'temperature_source', 'fasting')
 
 
 def _plain(value, places):
@@ -173,7 +180,7 @@ def csv_response(unit, batch, found):
             point.day.isoformat(), _plain(point.weight_g, 4), _plain(point.fish, 0), _plain(point.biomass_kg, 3),
             _plain(point.feed_kg, 3), _plain(point.feed_to_date_kg, 3), _plain(point.eaten_kg, 3),
             _plain(point.uneaten_kg, 3), _plain(point.fcr, 3),
-            _plain(economic_fcr(point.fcr, point.uneaten_pct) if fed else None, 3),
+            _plain(fcr_on_feed_given(point.fcr, point.uneaten_pct) if fed else None, 3),
             _plain(point.uneaten_pct if fed else None, 2), _plain(point.temperature_c, 1),
             ('' if not fed else point.temperature_from.name if point.temperature_from is not None else 'measured, held'),
             '' if fed else 'yes'])

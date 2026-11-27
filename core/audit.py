@@ -372,3 +372,22 @@ MIGRATION_WORDS = (
     # a private label of a task and would read as a plain value left behind (core.W004)
     gettext_noop('Erased on request'),
 )
+
+
+def values_before(model, ids, moment):
+    """{record id: {label: value}} of these records of `model`: for each label a change logged after `moment` names,
+    the value it had before the first such change, as the log keeps it (the display value of `snapshot`; a date as
+    ISO, a foreign key as its record's name). What a record looked like at `moment` is its value now, overridden by
+    these. Read as the person looking (the log's own sealing): a record hidden from them is hidden here too."""
+    found = {}
+    if not ids:
+        return found
+    entries = (AuditLog.objects.filter(entity_type=entity_type_of(model), entity_id__in=[str(pk) for pk in ids],
+                                       action=AuditLog.Action.UPDATE, created_at__gt=moment)
+               .order_by('created_at').values_list('entity_id', 'changes'))
+    for entity_id, changes in entries:
+        earlier = found.setdefault(entity_id, {})
+        for label, pair in changes.items():
+            if label not in earlier and isinstance(pair, list) and len(pair) == 2:
+                earlier[label] = pair[0]
+    return found

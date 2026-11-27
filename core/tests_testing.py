@@ -13,6 +13,7 @@ from django.utils import timezone
 from core.testing import FrozenClock, Unmeasured, reads
 
 THEN = datetime(2026, 10, 17, tzinfo=utc.utc)
+GIVEN = timezone.now            # the clock as the run gave it, the same function object a test must leave behind
 
 
 def run(case):
@@ -42,7 +43,7 @@ class FrozenClockTests(SimpleTestCase):
         result = run(Held)
         self.assertEqual((result.testsRun, result.errors, result.failures), (2, [], []))
         self.assertEqual(seen, {'class data': THEN, 'test': (THEN, THEN.date()), 'later test': THEN})
-        self.assertLess(abs(timezone.now() - datetime.now(utc.utc)), timedelta(minutes=1))
+        self.assertIs(timezone.now, GIVEN)                                 # the clock given back
 
     def test_a_started_clock_starts_at_now_runs_on_and_is_given_back(self):
         import time
@@ -64,7 +65,7 @@ class FrozenClockTests(SimpleTestCase):
         self.assertLessEqual(THEN, first)
         self.assertLess(first, second)                                   # two records are told apart by their time
         self.assertLess(second - THEN, timedelta(seconds=30))            # and the day is still NOW's
-        self.assertLess(abs(timezone.now() - datetime.now(utc.utc)), timedelta(minutes=1))
+        self.assertIs(timezone.now, GIVEN)                                 # the clock given back
 
     def test_a_failing_set_up_gives_the_real_clock_back(self):
         class Broken(FrozenClock, unittest.TestCase):
@@ -80,7 +81,7 @@ class FrozenClockTests(SimpleTestCase):
 
         result = run(Broken)
         self.assertEqual((result.testsRun, len(result.errors)), (0, 1))
-        self.assertLess(abs(timezone.now() - datetime.now(utc.utc)), timedelta(minutes=1))
+        self.assertIs(timezone.now, GIVEN)                                 # the clock given back
 
     def test_a_class_without_an_aware_now_is_refused(self):
         for moment in (None, datetime(2026, 10, 17)):
@@ -141,7 +142,7 @@ class RunClockTests(SimpleTestCase):
             self.assertIsNone(run_clock())
         with self.assertRaisesMessage(ValueError, 'give its offset'):
             run_clock('2026-11-10T23:30:00')
-        self.assertLess(abs(timezone.now() - datetime.now(utc.utc)), timedelta(minutes=1))
+        self.assertIs(timezone.now, GIVEN)                                 # the clock given back
 
     def test_the_clock_starts_at_the_moment_runs_on_and_is_given_back(self):
         import time

@@ -121,7 +121,7 @@ SENSOR_QUERIES = 2          # the live values (owner rule A1): the bindings of t
                             # values, whatever the number of units (sensors/provider.py)
 SENSOR_SAVEPOINTS = 4       # the water sources' savepoint and its release around each of its two asks (farm/water/sources.py)
 OWN_POINT_QUERIES = 2       # owner rule A9.1: the other points of the units, once for their water (farm/water/read._places)
-                            # and once for the ration's temperature (read.water_sources every_point), whatever the number
+                            # and once for the ration's temperature (the one tier resolver read.tiers), whatever the number
 OWNER_2026_11_08_QUERIES = 2  # the newest temperature before the ration's range (A11, Series carry) and the unit's other
                               # own-water points for the withdrawal's degree-days, whatever the number of units
 NEWEST_WORKED_QUERIES = 2   # the look-back of every point's worked-out NH₃ for the judge, once for the wall: its samples

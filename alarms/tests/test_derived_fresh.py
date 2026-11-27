@@ -7,6 +7,7 @@ from datetime import timedelta
 from unittest import mock
 
 from farm.tests.test_water import WaterTestCase
+from farm.water import read as read_water
 
 from .. import engine
 from ..models import Alarm
@@ -540,6 +541,23 @@ class AnalyserAtOwnPointTests(WaterTestCase):
         self.assertIn('whether it was entered late could not be checked', note)
         self.assertNotIn('Earlier result', note)
 
+    def test_one_providers_proof_is_never_hidden_by_anothers_failure(self):
+        """Review 11, N4: the history answer says a provider failed, but a reading in it proves the result late: late."""
+        from dataclasses import replace
+
+        from farm.water import read as water_read
+        real = water_read.sources.values_at
+        self.live()
+        self.sample(self.t1, hours=24, source='lab', **BAD)
+
+        def partly_failed(targets, code, moments):
+            return [replace(answer, failed=True) for answer in real(targets, code, moments)]
+
+        with mock.patch.object(water_read.sources, 'values_at', side_effect=partly_failed):
+            note = self.unit_water().get(NH3).note
+        self.assertIn('Late result: critical 0.8924 at Middle on ', note)
+        self.assertNotIn('could not be checked', note)
+
     def test_the_history_is_asked_only_where_the_words_need_it(self):
         """Review 10, F2: an OK result behind the analyser, and a critical still counted, never ask it."""
         from farm.water import read as water_read
@@ -661,6 +679,106 @@ class AnalyserAtTheOutletTests(WaterTestCase):
         self.assertTrue(self.logged(lab)[1].startswith('Late result: critical 0.8924 at Outlet on '), self.logged(lab))
 
 
+class AnalyserElsewhereInThePlaceTests(WaterTestCase):
+    """Review 11, N1: the entry works an analyser's NH₃ out inside the unit's place, so its Context holds every point
+    of that place (read.reading_places, as the pages build theirs). An analyser at the middle and a full lab sample at
+    the outlet, and an analyser on the loop and a sample at the middle: the entry and the history pages read them
+    without fault, and say nothing false ("could not be checked" is never written of a sample that was checked)."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.models import SamplingPoint
+        from farm.tests.helpers import may_record
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        self.outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+        may_record(self.user, 'add_binding')
+
+    def bind(self, point):
+        from sensors import bindings
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        device = make_device(make_connection(), make_format(), self.bergen, code='ANALYSER')
+        self.channels = {}
+        for quantity, value in (('tan_mg_l', 0.5), ('ph', 7.0), ('temperature_c', 12.0)):
+            channel = make_channel(device, quantity, code=quantity.upper())
+            bindings.move(self.user, channel, point=point, at=self.now - timedelta(days=5))
+            self.channels[channel] = value
+
+    logged = AnalyserAtOwnPointTests.logged
+
+    def history(self, query):
+        from django.urls import reverse
+        page = self.client.get(reverse('farm:water'), {**query, 'view': 'history'})
+        self.assertEqual(page.status_code, 200)
+        return page.content.decode()
+
+    def test_an_analyser_at_the_middle_and_a_lab_sample_at_the_outlet(self):
+        self.bind(self.mid1)
+        self.live()
+        lab = self.sample(self.outlet, hours=24, source='lab', **BAD)
+        self.assertIsNone(self.logged(lab))                  # nothing newer at the outlet: nothing to say, nothing false
+        self.assertNotIn('could not be checked', self.history({'point': self.outlet.pk}))
+        self.assertNotIn('could not be checked', self.history({'unit': self.t1.pk}))
+
+    def test_an_analyser_on_the_loop_and_a_lab_sample_at_the_middle(self):
+        self.bind(self.loop)
+        self.live()
+        lab = self.sample(self.t1, hours=24, source='lab', **BAD)
+        self.assertIsNone(self.logged(lab))
+        self.assertNotIn('could not be checked', self.history({'unit': self.t1.pk}))
+        self.assertNotIn('could not be checked', self.history({'point': self.mid1.pk}))
+
+
+class OutletPageTests(WaterTestCase):
+    """Review 11, N5 (decided): the outlet's own page reads its live worked-out NH₃ inside its unit's standing place,
+    the same rule as the unit's page, the log and the history."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.models import SamplingPoint
+        from farm.tests.helpers import may_record
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        self.outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+        may_record(self.user, 'add_binding')
+        self.channels = {}
+
+    def bind(self, quantity, value, point, code):
+        from sensors import bindings
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        device = make_device(make_connection(), make_format(), self.bergen, code=code)
+        channel = make_channel(device, quantity, code=f'{code}-{quantity.upper()}')
+        bindings.move(self.user, channel, point=point, at=self.now - timedelta(days=5))
+        self.channels[channel] = value
+
+    def outlet_nh3(self):
+        return read_water.latest([self.outlet])[self.outlet.pk].get(NH3)
+
+    def test_the_outlets_analyser_with_its_ph_on_the_middle(self):
+        self.bind('tan_mg_l', 0.5, self.outlet, 'A1')
+        self.bind('ph', 7.0, self.mid1, 'P1')
+        self.bind('temperature_c', 12.0, self.mid1, 'T1')
+        self.live()
+        nh3 = self.outlet_nh3()
+        self.assertTrue(nh3.sample.live)
+        self.assertIsNotNone(nh3.value)
+        self.sample(self.outlet, hours=24, source='lab', **BAD)
+        said = 'Late result: critical 0.8924 at Outlet on '
+        self.assertIn(said, self.outlet_nh3().note)
+        self.assertIn(said, self.unit_water().get(NH3).note)
+
+    def test_the_unit_works_out_its_newest_tan_elsewhere(self):
+        """Two analysers: the unit's place works out its tier's newest TAN, the middle's; the outlet's page says so."""
+        self.bind('tan_mg_l', 0.5, self.mid1, 'A1')
+        self.bind('tan_mg_l', 0.4, self.outlet, 'A2')
+        self.bind('ph', 7.0, self.mid1, 'P1')
+        self.bind('temperature_c', 12.0, self.mid1, 'T1')
+        self.live()
+        nh3 = self.outlet_nh3()
+        self.assertIsNone(nh3.value)
+        self.assertIn('Not worked out here: the unit works out its newest TAN at another point', nh3.note)
+
+
 class SystemSensorTests(WaterTestCase):
     """Review 7, H1: a RAS with NO loop point, a TAN analyser with its pH and temperature probes bound to the SYSTEM; T-03's
     own lab NH₃ critical. The analyser's fresh OK is the system's value, never the unit's own point's: it is shown (A9),
@@ -734,3 +852,5 @@ class SystemSensorTests(WaterTestCase):
 AnalyserAtOwnPointTests.live = SystemSensorTests.live
 AnalyserWithLoopProbesTests.live = SystemSensorTests.live
 AnalyserAtTheOutletTests.live = SystemSensorTests.live
+AnalyserElsewhereInThePlaceTests.live = SystemSensorTests.live
+OutletPageTests.live = SystemSensorTests.live

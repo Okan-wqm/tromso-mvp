@@ -553,7 +553,10 @@ class PlaceExamplesTests(SimpleTestCase):
         points = {'o1': judge.point_verdict([fresh, stale, live])}
         for answer, word in ((True, judge.LATE), (False, judge.EARLIER), (None, judge.UNCHECKED)):
             place = judge.place_verdict(live, points, {'o1'}, lambda record, answer=answer: answer)
-            self.assertEqual({key(each): place.words[id(each)] for each, _newer in (*place.counted, *place.late)},
+            said = (*place.counted, *place.late)
+            # The whole mapping, by assertion (review 11, N6): keyed by the said records, a word each, nothing else.
+            self.assertEqual(set(place.words), {id(each) for each, _newer in said}, answer)
+            self.assertEqual({key(each): place.words.get(id(each)) for each, _newer in said},
                              {'fresh': judge.COUNTED, 'stale': word}, answer)
 
     def test_an_earlier_result_and_a_late_one_by_the_shells_answer(self):
@@ -562,10 +565,8 @@ class PlaceExamplesTests(SimpleTestCase):
         points = {'o1': judge.point_verdict([stale, live])}
         on_time = judge.place_verdict(live, points, {'o1'})
         entered_late = judge.place_verdict(live, points, {'o1'}, lambda record: record.key == 'stale')
-        self.assertEqual(([each.key for each in on_time.earlier], [each.key for each, _newer in on_time.late]),
-                         (['stale'], ['stale']))
-        self.assertEqual(([each.key for each in entered_late.earlier], [each.key for each, _n in entered_late.late]),
-                         ([], ['stale']))
+        for place, word in ((on_time, judge.EARLIER), (entered_late, judge.LATE)):
+            self.assertEqual([(each.key, place.words.get(id(each))) for each, _newer in place.late], [('stale', word)])
 
     def test_a_late_alert_still_counted_is_never_called_superseded(self):
         """The coordinator's decision on review 8: a lab critical behind a fresh analyser value, still fresh itself, still

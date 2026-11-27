@@ -238,3 +238,25 @@ def reads(using=DEFAULT_DB_ALIAS):
         if connection.connection.info.transaction_status != TransactionStatus.INERROR:   # (a failed one ends anyway)
             with connection.wrap_database_errors, connection.connection.cursor() as cursor:
                 cursor.execute("SELECT set_config('max_parallel_workers_per_gather', %s, true)", [workers])
+
+
+def assert_reads_do_not_grow(test, grow, measure, tables, what, more_than=100):
+    """That what `measure()` (a block's Reads) reads of each of `tables` does not grow with the history: `grow()` adds
+    to the history, then measure() runs twice and the second counts (the first warms the session: the planner's first
+    looks at indexes fresh rows filled, which no vacuum has seen); again after a second grow(). The second count of each
+    table must be no more than `more_than` rows above the first, where a scan of the history adds all that grow() added.
+    A difference, so what does not depend on the history counts alike on both sides. Writes both counts to stderr."""
+    import sys
+
+    found = []
+    for _grow in range(2):
+        grow()
+        measure()
+        found.append(measure())
+    first, second = found
+    sys.stderr.write(f'\n[reads] {what}, beside the history and beside it grown: {first.reads()}, {second.reads()}\n')
+    for table in tables:
+        with test.subTest(what=what, table=table):
+            test.assertLessEqual(second.read(table) - first.read(table), more_than,
+                                 f'{what}: {first.read(table):,} rows of {table}, then {second.read(table):,}\n'
+                                 f'{second.described(table)}')

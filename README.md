@@ -7181,8 +7181,14 @@ table, and the entries its indexes handed out) around the block and around each 
 block read of each table (`read('alarm_notifications')`, exact integers, every statement of the connection included
 however it is written) and the most rows one statement handed back (`most_returned()`, from its cursor). What it cannot
 see it refuses (`Unmeasured`) rather than answer zero: a statement another thread ran that names the table asked about,
-the rows of a server-side cursor. The outbox's tests ask it so: `backlog()` and a whole sending round beside 100,000
-notifications of history read under a hundred rows of each history table, where a scan reads them all; a round with
+the rows of a server-side cursor. Parallel workers are off in the block (their reads are other processes'). That a
+read does not grow with the history is asked as a difference (`core.testing.assert_reads_do_not_grow`): the history
+grown, a look to warm the session, the measured look; grown again, warmed, measured again; the second may read at
+most a hundred rows more of each history table, where a scan reads all that was added. What does not depend on the
+history counts alike on both sides, the planner's first looks at the ends of indexes over rows no vacuum has seen
+among them. The outbox's tests ask it so: `backlog()` and a whole sending round beside 50,000 and 100,000
+notifications of history; the open alarms' readers (the pass's notify step, the floods, the open list, the overview)
+beside 50,000 and 100,000 alarms of history, each cleared and acknowledged. A round with
 20,000 cleared warnings waiting gives up one chunk and no statement of it hands Python more than a chunk; 20,000
 waiting without a transport are counted in the database, never fetched. A deadline is driven by a clock the test
 holds (`outbox.send_due(clock=...)`: the round's deadline falls after the second send of 0.2 s; the worker's watchdog

@@ -4,11 +4,10 @@ what reads the open alarms reads it, never every alarm, clearance and acknowledg
 (core.testing.reads): the pass's notify step, the pages' floods, the open list and the overview's open alarms read
 fewer than a hundred rows more of each history table, where a scan reads the 50,000 more. A difference, so what does not
 depend on the history counts alike on both sides (the open alarms' own work, the planner's look at an index's ends)."""
-import sys
 
 from django.db import connection
 
-from core.testing import reads
+from core.testing import assert_reads_do_not_grow, reads
 
 from .. import engine, floods, read, services
 from ..models import OPEN, Alarm, AlarmClearance, OpenAlarm
@@ -40,19 +39,6 @@ class OpenQueueTests(AlarmsCase):
             cursor.execute('ANALYZE alarms; ANALYZE alarm_clearances; ANALYZE alarm_acknowledgements; '
                            'ANALYZE alarm_open')
 
-    def assert_independent_of_the_history(self, measure, what):
-        found = []
-        for _step in range(2):
-            self.grow()
-            found.append(measure())
-        first, second = found
-        sys.stderr.write(f'\n[open alarms] {what}, rows read beside {STEP:,} and {2 * STEP:,} alarms of history: '
-                         f'{first.reads()}, {second.reads()}\n')
-        for table in HISTORY_TABLES:
-            with self.subTest(what=what, table=table):
-                self.assertLess(second.read(table) - first.read(table), 100,
-                                f'{first.read(table):,} then {second.read(table):,}\n{second.described(table)}')
-
     def test_the_database_keeps_the_queue_whoever_writes(self):
         made = [self.open(f'open{number}') for number in range(3)]
         services.clear(made[0], self.now, 'returned')
@@ -70,18 +56,19 @@ class OpenQueueTests(AlarmsCase):
         self.assertEqual(set(OpenAlarm.objects.values_list('alarm', flat=True)), {made[1].pk, made[2].pk})
 
     def test_the_pass_notify_step_reads_the_open_alarms_never_the_history(self):
-        steps = []
+        steps, opened = [], []
 
         def notify():
-            for number in range(3):                          # three new open criticals for each look
-                self.open(f'open{len(steps)}{number}')
+            for alarm in opened:                             # the last look's cleared: three open at every look
+                services.clear(alarm, self.now, 'returned')
+            opened[:] = [self.open(f'open{len(steps)}{number}') for number in range(3)]
             summary = engine.Summary()
             with reads() as found:
                 engine.notify(self.now, summary, current())
             self.assertFalse(summary.failed_steps)
             steps.append(found)
             return found
-        self.assert_independent_of_the_history(notify, 'the notify step')
+        assert_reads_do_not_grow(self, self.grow, notify, HISTORY_TABLES, 'the notify step')
 
     def test_the_pages_read_the_open_alarms_never_the_history(self):
         opened = {self.open(f'open{number}').pk for number in range(3)}
@@ -96,4 +83,4 @@ class OpenQueueTests(AlarmsCase):
                 if what == 'the open alarms':
                     self.assertEqual(len(got), 3)
                 return found
-            self.assert_independent_of_the_history(measure, what)
+            assert_reads_do_not_grow(self, self.grow, measure, HISTORY_TABLES, what)

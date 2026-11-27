@@ -45,6 +45,25 @@ STATES = {'Critical', 'Warning', 'No recent data', 'No limit', 'Note', 'OK', 'Em
 FLOWING = ('simple', 'detailed', 'operator')
 
 
+def _articles(html):
+    """{the card's key (data-key): its markup} of the cards of a fragment, in its order."""
+    return {re.search(r'data-key="([^"]+)"', article).group(1): article
+            for article in re.findall(r'<article .*?</article>', html, re.S)}
+
+
+def _without_cells(html):
+    """The markup without the cells of an empty unit (monitoring/_empty_cells.html: one div and the divs in it)."""
+    while (start := html.find('<div class="monitor-cells')) >= 0:
+        depth, end = 0, len(html)
+        for tag in re.finditer(r'<(/?)div\b[^>]*>', html[start:]):
+            depth += -1 if tag.group(1) else 1
+            if depth == 0:
+                end = start + tag.end()
+                break
+        html = html[:start] + html[end:].removeprefix('\n')
+    return html
+
+
 class NextPagesTests(FrozenClock, TestCase):
     NOW = MOMENT
 
@@ -169,7 +188,9 @@ class NextPagesTests(FrozenClock, TestCase):
         """A card that flows (Simple, Detailed, Operator view) is the design's card in the new look, every card of the
         screen, and never in the classic look (monitoring/_card_next.html: what it says is the classic card's, the test
         above; the classic card is the golden one, test_golden); a fitted card (Small, Big, the pane's, a wall's) is the
-        same markup in both looks, byte for byte."""
+        same markup in both looks, byte for byte, the new look's sheet drawing it as the design does
+        (static/css/monitor-next.css), but for the one thing the design's Big card says that the classic one does not:
+        an empty unit's full-height card says the unit (the test below)."""
         for name, query in self.screens.items():
             new, classic = self.fragment(query), self.fragment(query, look='')
             cards = classic.count('<article class="monitor-card ')
@@ -177,10 +198,33 @@ class NextPagesTests(FrozenClock, TestCase):
             self.assertNotIn(' is-next"', classic, name)
             if name in FLOWING:
                 self.assertEqual(new.count(' is-next"'), cards, name)
+            elif name == 'big':
+                self.assertEqual(_without_cells(new), classic, name)
             else:
                 self.assertEqual(new, classic, name)
         focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
         self.assertEqual(self.ask(PANE, focus).content, self.ask(PANE, focus, look='').content)
+
+    def test_an_empty_units_big_card_says_the_unit_in_the_new_look(self):
+        """The design's Big card of a unit with no fish says the unit itself, as the overview's Small card of an empty
+        unit does (monitoring/_empty_cells.html: its status, volume, maximum density and maximum biomass), on the Big
+        screen and in the pane, in the three languages; the classic Big card is as it was (no cells), and a stocked
+        unit's Big card has none in either look (its fish and water are its card)."""
+        for language in ('en', 'nb', 'tr'):
+            for look in (ui.NEXT, ''):
+                articles = _articles(self.fragment(SCREENS['big'], look=look, language=language))
+                empty = [key for key, article in articles.items() if 'data-state="empty"' in article]
+                self.assertGreaterEqual(len(empty), 2, f'{language} {look}')
+                for key, article in articles.items():
+                    with self.subTest(language=language, look=look or 'classic', card=key):
+                        self.assertEqual('class="monitor-cells' in article, look == ui.NEXT and key in empty)
+        focus = {**SCREENS['small'], 'focus': str(self.units['TW-07'].pk)}
+        pane = self.ask(PANE, focus).content.decode()
+        self.assertNotIn('class="monitor-cells', self.ask(PANE, focus, look='').content.decode())
+        said = cards_say(pane, self.norm)['TW-07']
+        self.assertEqual(said['state'], 'Empty')
+        for word in ('Status', 'Volume', 'Max density', 'Max biomass'):
+            self.assertIn(word, said['texts'])
 
     def test_a_screens_change_token_is_its_looks_own(self):
         """The cards of a screen are other markup in each look, so the token a poll of one look carries never answers

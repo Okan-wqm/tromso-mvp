@@ -11,7 +11,11 @@
 //     with the first poll; every card has its link to Tank › Water; every state's glyph is drawn (a mask of the icon
 //     set) and its word is there; no CSP violation, no critical or serious axe finding, every card text at 4.5:1 on
 //     what it stands on, nothing scrolls sideways;
-//   - the pane: the Big card of the unit gone into, filled by its own poll, with its own link to the water;
+//   - the Big screen in English, Norwegian and Turkish: the design's Big card (its head over a hairline, its values and
+//     its water's tiles, the chart's frame, the three boxes, an empty unit's cells), nothing of a tile cut or out of
+//     its place, its text at 4.5:1 in the six themes;
+//   - the pane: the Big card of the unit gone into, filled by its own poll, with its own link to the water, the design's
+//     Big card, standing BESIDE the cards (never above them) at 1440 and 1920 px, its Close a 44 px target;
 //   - the wall of Small cards at 1920x1080 and 3840x2160: one screen, nothing scrolls, no card text under 11 px, nothing
 //     over the band, a card's state word or the wall's buttons (the toolbar is its two buttons);
 //   - polling and the announcer in the new look: a card that gets worse is said ("TW-01 is now Critical."), a failed
@@ -229,6 +233,105 @@ function covered(tab: Page): Promise<string[]> {
   });
 }
 
+/** The Big card (a full-height fitted card: the Big screen's and the pane's) as the design draws it in the new look
+ *  ("Suderra Console", Monitoring, the Big card and "Focus · the big card beside the overview"): the head over a hairline;
+ *  its four first values hairline tiles; the Deffeyes chart in a hairline frame; the water of its middle point as the
+ *  design's tiles, four to a line, when it has eight values or fewer (two lines of tiles: what its place holds), a row a
+ *  value when it has more; what to dose, the other points and the stock hairline boxes; a unit with no fish says the
+ *  unit (status, volume, the maxima). Never cut: every cell of a tile (its name, figure, where it came from, when it
+ *  arrived and how old) is whole inside its tile, and the water inside its place. [] when the cards are so. */
+function bigCards(tab: Page, root = '.monitor-grid'): Promise<string[]> {
+  return tab.evaluate((selector) => {
+    const wrong: string[] = [];
+    const line = (element: Element | null, side: 'Top' | 'Right' | 'Bottom' | 'Left'): number =>
+      (element ? Number.parseFloat(getComputedStyle(element)[`border${side}Width`]) : 0);
+    const inside = (node: Element, frame: DOMRect): boolean => {
+      const box = node.getBoundingClientRect();
+      return box.left >= frame.left - 1 && box.right <= frame.right + 1 && box.top >= frame.top - 1 && box.bottom <= frame.bottom + 1;
+    };
+    const cards = Array.from(document.querySelectorAll<HTMLElement>(`${selector} .monitor-card.is-fit[data-fill]`));
+    if (!cards.length) wrong.push('no Big card');
+    for (const card of cards) {
+      const code = card.querySelector('h3')?.textContent?.trim() ?? '?';
+      if (line(card.querySelector(':scope > .monitor-card-head'), 'Bottom') < 1) wrong.push(`${code}: no hairline under the head`);
+      for (const tile of Array.from(card.querySelectorAll<HTMLElement>('.w-value > dl'))) {
+        if (line(tile, 'Top') < 1 || line(tile, 'Right') < 1 || line(tile, 'Bottom') < 1) wrong.push(`${code}: a value that is not a tile`);
+      }
+      const chart = card.querySelector<SVGElement>('svg.monitor-chart-svg');
+      if (chart && Number.parseFloat(getComputedStyle(chart).outlineWidth) < 1) wrong.push(`${code}: the chart has no frame`);
+      for (const box of Array.from(card.querySelectorAll<HTMLElement>(':is(.w-dosing, .w-points, .w-stock) > section'))) {
+        if (line(box, 'Top') < 1 || line(box, 'Left') < 1) wrong.push(`${code}: a box without its hairline`);
+      }
+      if (card.dataset.state === 'empty' && !card.querySelector<HTMLElement>('.monitor-cells')?.offsetParent) {
+        wrong.push(`${code}: an empty unit's card does not say the unit`);
+      }
+      const place = card.querySelector<HTMLElement>('.w-water_table');
+      for (const table of Array.from(card.querySelectorAll<HTMLElement>('.w-water_table [role="table"]'))) {
+        const rows = Array.from(table.querySelectorAll<HTMLElement>(':scope > [role="row"]')).slice(1);
+        const tiles = rows.length > 0 && getComputedStyle(rows[0] as Element).display !== 'contents';
+        if (tiles !== (rows.length <= 8)) wrong.push(`${code}: ${rows.length} values ${tiles ? 'as tiles' : 'as rows'}`);
+        if (!tiles) continue;
+        const lines = new Map<number, number>();
+        for (const row of rows) {
+          const frame = row.getBoundingClientRect();
+          lines.set(Math.round(frame.top), (lines.get(Math.round(frame.top)) ?? 0) + 1);
+          if (line(row, 'Bottom') < 1 || line(row, 'Right') < 1) wrong.push(`${code}: a water tile without its hairline`);
+          for (const cell of Array.from(row.children)) {
+            const shown = getComputedStyle(cell);
+            if (shown.display === 'none' || !cell.textContent?.trim()) continue;
+            const cut = (cell as HTMLElement).scrollWidth > (cell as HTMLElement).clientWidth + 1 && shown.overflowX !== 'visible';
+            if (cut || !inside(cell, frame)) wrong.push(`${code}: "${(cell.textContent ?? '').trim()}" is cut or out of its tile`);
+          }
+        }
+        const most = Math.max(...lines.values());
+        if (most > 4) wrong.push(`${code}: more than four water tiles to a line`);
+        if (rows.length > 1 && most < 2) wrong.push(`${code}: the water tiles stand one to a line`);
+      }
+      if (place) {
+        const frame = place.getBoundingClientRect();
+        for (const row of Array.from(place.querySelectorAll<HTMLElement>('[role="row"]'))) {
+          const box = row.getBoundingClientRect();
+          if (box.height && box.bottom > frame.bottom + 1.5) wrong.push(`${code}: "${(row.textContent ?? '').trim().slice(0, 30)}" below the water's place`);
+        }
+      }
+    }
+    return wrong;
+  }, root);
+}
+
+/** The pane beside the overview, as the design's "Focus · the big card beside the overview": on a desk wide enough for a
+ *  readable Big card and a column of Small cards, the pane stands at the right of the cards, beside them (never above
+ *  them); its Close a target of at least 44 px (the brief's). [] when it does. */
+function besideTheCards(tab: Page): Promise<string[]> {
+  return tab.evaluate(() => {
+    const wrong: string[] = [];
+    const pane = document.querySelector('#monitor-dock .monitor-window')?.getBoundingClientRect();
+    const cards = Array.from(document.querySelectorAll('.monitor-grid > .monitor-card')).map((card) => card.getBoundingClientRect());
+    if (!pane || !cards.length) return ['no pane or no cards'];
+    const right = Math.max(...cards.map((box) => box.right));
+    const top = Math.min(...cards.map((box) => box.top));
+    if (pane.left < right - 0.5) wrong.push(`the pane starts at ${pane.left}, the cards end at ${right}`);
+    if (top > pane.bottom) wrong.push(`the cards start (${top}) under the pane (${pane.bottom})`);
+    const close = document.querySelector('#monitor-dock .monitor-dock-close')?.getBoundingClientRect();
+    if (!close || close.height < 44 || close.width < 44) wrong.push(`the pane's Close is ${close?.width} x ${close?.height}`);
+    return wrong;
+  });
+}
+
+// The six themes of the console: four days, two nights (core/theme.py).
+const THEMES = ['industry', 'fjord', 'tang', 'laks', 'polarnatt', 'nordlys'] as const;
+
+/** Card text under 4.5:1 in each of the six themes (`within`, as lowContrast), theme by theme; [] when none. */
+async function lowInThemes(tab: Page, within?: string): Promise<string[]> {
+  const low: string[] = [];
+  for (const theme of THEMES) {
+    await tab.evaluate((name) => { document.documentElement.dataset.theme = name; }, theme);
+    low.push(...(await lowContrast(tab, within)).map((each) => `${theme}: ${each}`));
+  }
+  await tab.evaluate(() => { document.documentElement.dataset.theme = 'industry'; });
+  return low;
+}
+
 interface Drawn { cards: number; links: number; states: string[]; glyphs: number; bare: number; sideways: number }
 
 /** What the screen shows: its cards, their links to the water, their state words, the glyphs drawn and those not. */
@@ -274,7 +377,8 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
   try {
     for (const language of LANGUAGES) {
       for (const screen of ['small', 'simple', 'detailed', 'big', 'operator']) {
-        if (language !== 'en' && screen !== 'small' && screen !== 'simple') continue;   // every language: Small, Simple
+        // every language: Small, Simple and Big (the Big card's tiles hold the longest words: Norwegian, Turkish)
+        if (language !== 'en' && !['small', 'simple', 'big'].includes(screen)) continue;
         for (const width of [1440, 1920, 390]) {
           await t.test(`${screen} ${language} at ${width} px: the cards, their links and glyphs, CSP, axe, 4.5:1`, async () => {
             mode = 'cards';
@@ -300,6 +404,10 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
               assert.ok(Math.abs((rail[0] ?? 0) - (rail[1] ?? 0)) < 0.5, `the rail is ${rail[0]} px, not ${rail[1]}`);
             }
             assert.deepEqual(await uncut(tab), [], 'a code, a state word, a figure, the saturation, "old", the figure and bound of a reason are never cut; the cards are one size');
+            if (screen === 'big') {
+              assert.deepEqual(await bigCards(tab), [], 'the Big card of the design, nothing of it cut');
+              if (width === 1440) assert.deepEqual(await lowInThemes(tab), [], 'Big card text under 4.5:1 in a theme');
+            }
             assert.ok(seen.glyphs > 0, 'the state glyphs are drawn');
             assert.equal(seen.bare, 0, 'no glyph is a speck');
             assert.deepEqual(seen.sideways ? await sideways(tab) : [], [], `nothing scrolls sideways (${seen.sideways} px)`);
@@ -388,6 +496,9 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
         await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
         const pane = await drawn(tab, '.monitor-dock');
         assert.equal(pane.cards, 1);
+        assert.deepEqual(await besideTheCards(tab), [], 'the pane beside the overview, as the design’s');
+        assert.deepEqual(await bigCards(tab, '.monitor-dock'), [], 'the pane’s Big card is the design’s, nothing of it cut');
+        assert.deepEqual(await lowInThemes(tab), [], 'card text under 4.5:1 in a theme, the pane’s too');
         assert.equal(pane.links, 1, 'the pane\'s card links its tank\'s water');
         assert.equal(await tab.locator('.monitor-dock a.monitor-water-link[id^="pane-water-"]').count(), 1, 'its own id');
         assert.deepEqual(await lowContrast(tab), [], 'card text under 4.5:1');

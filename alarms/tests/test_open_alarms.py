@@ -38,6 +38,7 @@ class OpenQueueTests(AlarmsCase):
                            'WHERE k.alarm_id = a.id)', [self.operator.pk])
             cursor.execute('ANALYZE alarms; ANALYZE alarm_clearances; ANALYZE alarm_acknowledgements; '
                            'ANALYZE alarm_open')
+        return STEP
 
     def test_the_database_keeps_the_queue_whoever_writes(self):
         made = [self.open(f'open{number}') for number in range(3)]

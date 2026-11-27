@@ -487,7 +487,7 @@ class ValueAtTests(ReplayCase):
                     for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
         self.assertEqual(len(segments), 6)
         # What the readings query read of the readings' chunks (core.testing.reads: their rows and index entries).
-        chunks = sum(rows for table, rows in query.read.items() if table.startswith('_hyper_'))
+        chunks = sum(rows for table, rows in query.read.items() if table.split('.')[-1].startswith('_hyper_'))
         self.assertLessEqual(chunks, 2 * count * len(segments), query.read)
 
     def test_the_planner_setting_is_as_it_was_after_a_page_inside_a_callers_transaction(self):

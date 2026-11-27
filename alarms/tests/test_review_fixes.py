@@ -182,7 +182,7 @@ class QueueTests(Case):
     HISTORY_TABLES = ('alarms', 'alarm_notifications', 'alarm_delivery_attempts')
 
     def grow(self):
-        """STEP more alarms, each notified to the operator and sent 30 days before the test's moment."""
+        """STEP more alarms, each notified to the operator and sent 30 days before the test's moment. Returns STEP."""
         with connection.cursor() as cursor:
             cursor.execute("INSERT INTO alarms (source, parameter, severity, opened_at, summary) SELECT 'system', 'old', "
                            "'warning', %s::timestamptz - interval '30 days', 'old ' || n FROM generate_series(1, %s) n",
@@ -197,6 +197,7 @@ class QueueTests(Case):
                            'alarm_delivery_attempts d WHERE d.notification_id = n.id)')
             cursor.execute('ANALYZE alarms; ANALYZE alarm_notifications; ANALYZE alarm_delivery_attempts; '
                            'ANALYZE alarm_outbox')
+        return self.STEP
 
     def test_a_round_reads_the_queue_never_the_whole_history(self):
         queued = sorted(row.pk for row in self.system(3, 'critical'))

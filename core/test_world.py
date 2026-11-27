@@ -35,7 +35,7 @@ built and read.
     water_page_world(admin)           after world(), for Water chemistry's tests only: a sample on TM-01 voided
     sensors_world(admin)            after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat
-    monitoring_world(admin)           thirteen more units of Test Hall A, one in each state a monitoring card can be in
+    monitoring_world(admin)           fourteen more units of Test Hall A, one in each state a monitoring card can be in
                                       (OK, critical, warning, no recent data, no limit, note, empty, an old critical, many values,
                                       an old sample in the CO2 region),
                                       and a wall board of the hall's units on a 55" TV read from 2 m (wall_board), a board
@@ -805,6 +805,10 @@ MONITORING_UNITS = (
     # system's text colour)
     ('TW-13', 'Test tank acid water', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '6.3',
                                                       'alkalinity_mg_l': '85'}),
+    # many values past their critical limits at once (the temperature, the oxygen and its saturation, the pH, the NH3-N
+    # the TAN gives, the CO2 of a probe): every one of them is said on a Big card wherever it is drawn, never folded
+    ('TW-14', 'Test tank many alarms', True, True, 1, {'temperature_c': '20', 'oxygen_mg_l': '4.5', 'ph': '8.5',
+                                                       'alkalinity_mg_l': '85', 'tan_mg_l': '3', 'co2_mg_l': '20'}),
 )
 # A unit's second sample, an hour before MOMENT: what stays fresh beside its old values.
 FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
@@ -827,13 +831,14 @@ TEST_LOW_WATER = 'Test big, low water'
 
 
 def monitoring_world(admin):
-    """Thirteen more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
+    """Fourteen more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
     and its warning limit), no recent data (its temperature 30 hours old, its oxygen fresh), no limit (a nitrite no
     limit row judges), a note (no feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours
     old (critical, and stale), units with more values at their middle point than the Big card's tiles hold (10, 15
     and 17: no limit), an old sample in the CO2 region of its chart and a fresh one (critical), and samples at two
-    units' other sampling points (OTHER_POINTS: a fresh one and an old one).
+    units' other sampling points (OTHER_POINTS: a fresh one and an old one), and one with many values past their critical
+    limits at once (TW-14).
     1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where

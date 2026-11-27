@@ -53,6 +53,27 @@ class TilesTests(SimpleTestCase):
         self.assertEqual(tiles(card_of(measure=(61, 48)), 5), 0)
 
 
+class FoldTests(SimpleTestCase):
+    """What a Big card drawn at the size of its place folds of its reasons (render.fold): notes past FIT_NOTES; an alert
+    (critical, warning, no recent data) only past what the card holds, FIT_ALERTS, and then said in words."""
+    def state(self, key, count):
+        return N(key=key, reasons=tuple(f'reason {number}' for number in range(count)))
+
+    def test_notes_fold_past_the_first_few(self):
+        for key in ('unjudged', 'note', 'ok'):
+            folded = render.fold(self.state(key, 10))
+            self.assertEqual((folded.shown, len(folded.rest), folded.alerts), (render.FIT_NOTES, 10 - render.FIT_NOTES, False))
+        self.assertEqual(render.fold(self.state('note', render.FIT_NOTES)).rest, ())
+
+    def test_an_alert_is_never_folded_while_the_card_holds_it(self):
+        for key in ('critical', 'warning', 'blind'):
+            folded = render.fold(self.state(key, render.FIT_ALERTS))
+            self.assertEqual((folded.shown, folded.rest), (render.FIT_ALERTS, ()), key)
+            past = render.fold(self.state(key, render.FIT_ALERTS + 2))
+            self.assertEqual((len(past.rest), past.alerts), (2, True), key)
+        self.assertGreater(render.FIT_ALERTS, render.FIT_NOTES)
+
+
 class ColumnsTests(SimpleTestCase):
     def test_two_columns_of_rows_only_where_two_fit_side_by_side(self):
         """The built-in Big card's water (47 units wide) holds one column of rows: 15 and 17 values stand in it (two

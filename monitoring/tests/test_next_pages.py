@@ -50,7 +50,7 @@ FLOWING = ('simple', 'detailed', 'operator')
 BIG_SCREENS = ('big', 'wall-big')
 # The units whose Big card the browser test opens in the pane too (beside TW-02): an old critical, many values, and an
 # old sample in the CO2 region of its chart.
-PANES = ('TW-08', 'TW-09', 'TW-12', 'TW-10', 'TW-11', 'TW-01')
+PANES = ('TW-08', 'TW-09', 'TW-12', 'TW-10', 'TW-11', 'TW-01', 'TW-14')
 # What the design's Big card of an empty unit says that the classic one does not: the unit, the chart's place and why it
 # is empty, what to dose, the other points, the stock (in English).
 EMPTY_BIG = ('Status', 'Volume', 'Max density', 'Max biomass', 'No chart: there is no fish in this unit.', 'Dosing advice',
@@ -139,7 +139,7 @@ class NextPagesTests(FrozenClock, TestCase):
         expected = {'TW-01': 'OK', 'TW-02': 'Critical', 'TW-03': 'Warning', 'TW-04': 'No recent data',
                     'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty', 'TW-08': 'Critical',
                     'TW-09': 'No limit', 'TW-10': 'No limit', 'TW-11': 'No limit', 'TW-12': 'Critical',
-                    'TW-13': 'Critical'}
+                    'TW-13': 'Critical', 'TW-14': 'Critical'}
         self.assertEqual({code: said[code]['state'] for code in expected}, expected)
         self.assertEqual(len(MONITORING_UNITS), len(expected))
 
@@ -328,6 +328,26 @@ class NextPagesTests(FrozenClock, TestCase):
                 self.assertEqual(' is-next"' in article, code in MIXED_FLOW)
                 if code not in MIXED_FLOW:
                     self.assertEqual(_fitted(article), _fitted(before[code]))
+
+    def test_a_big_card_folds_only_its_notes_never_an_alert(self):
+        """Where a Big card is drawn at the size of its place (the pane, a wall), its reasons that are notes (no limit,
+        informational) fold past the first few into "+N"; a critical, warning or no-recent-data reason is never folded:
+        every one is in sight (TW-14: many criticals, none folded; TW-11: ten values no limit judges, folded). Only past
+        what the card can hold would the rest be folded, and then the card says so in words ("N more alerts, see the
+        band": monitoring/cards/render.py fold, its own test)."""
+        from monitoring.cards import render
+        for code, folds in (('TW-11', True), ('TW-14', False)):
+            pane = self.ask(PANE, {**SCREENS['small'], 'focus': str(self.units[code].pk)}).content.decode()
+            reasons = re.search(r'<ul class="monitor-reasons [^"]*"[^>]*>(.*?)</ul>', pane, re.S).group(1)
+            items = reasons.count('<li ')
+            with self.subTest(card=code):
+                if folds:
+                    self.assertEqual(reasons.count(' data-more'), items - render.FIT_NOTES)
+                    self.assertIn('class="monitor-reasons-more', pane)
+                else:
+                    self.assertGreater(items, 3)
+                    self.assertNotIn(' data-more', reasons)
+                    self.assertNotIn('class="monitor-reasons-more', pane)
 
     def test_a_reasons_short_form_is_never_said_twice_on_a_card(self):
         """A reason's short form (the value against the bound it is past) is said once on a card: a % of saturation judged

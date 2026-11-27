@@ -326,6 +326,14 @@ function bigCards(tab: Page, root = '.monitor-grid'): Promise<string[]> {
           if (!card.querySelector<HTMLElement>(part)?.offsetParent) wrong.push(`${code}: an empty unit's card without ${part}`);
         }
       }
+      // an alert (critical, warning, no recent data) is never folded away where nobody can hover: every reason of such a
+      // card in sight, or the card says in words how many more there are (and to look at the band)
+      if (['critical', 'warning', 'blind'].includes(card.dataset.state ?? '')) {
+        const hidden = Array.from(card.querySelectorAll<HTMLElement>('.monitor-reasons > li')).filter((reason) => !reason.offsetParent).length;
+        const said = card.querySelector<HTMLElement>('.monitor-reasons-more');
+        // (said in words, as alerts, never a bare "+N": .is-alert carries the words "N more alerts, see the band")
+        if (hidden && !(said?.offsetParent && said.classList.contains('is-alert') && said.textContent?.includes(String(hidden)))) wrong.push(`${code}: ${hidden} alerts folded away`);
+      }
       const basis = card.querySelector('[data-basis]');
       if (basis && !inside(basis, frame)) wrong.push(`${code}: its foot ("State from") is not inside the card`);
       // (on the desk an empty unit's card is as tall as what it says, never a screen of blank: its foot at its bottom)
@@ -741,7 +749,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
     });
 
     for (const language of LANGUAGES) {
-      for (const name of ['pane-tw08', 'pane-tw09', 'pane-tw12', 'pane-tw10', 'pane-tw11', 'pane-tw01']) {
+      for (const name of ['pane-tw08', 'pane-tw09', 'pane-tw12', 'pane-tw10', 'pane-tw11', 'pane-tw01', 'pane-tw14']) {
         await t.test(`${name} ${language}: the pane's Big card of an old, a many-valued and an old acid water`, async () => {
           mode = 'cards';
           const { tab, violations } = await open(`${name}-${language}`, 1440, 900);

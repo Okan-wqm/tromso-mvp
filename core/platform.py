@@ -5,6 +5,7 @@ read, so a rule that depends on one cannot read it its own way.
   dates.py applies it; every message that names the days reads it here), and `window_way_out()`, the sentence every
   refusal by the window ends with: whose setting it is and where it is changed;
 - `plan_horizon_days()`: how many days ahead a production plan walks a batch's growth;
+- `clock_tolerance_seconds()`: how far ahead a water value may be stamped and still count as fresh;
 - `second_approval_required(kind)`: whether an acknowledgement of that kind waits for a second person (the kinds are
   APPROVALS); the hook of the withdrawal acknowledgement calls it with 'withdrawal';
 
@@ -49,6 +50,11 @@ def forget():
 def correction_window_days():
     """How many days back a daily record may be dated, and how old a record may be voided."""
     return current().correction_window_days
+
+
+def clock_tolerance_seconds():
+    """How far ahead of the server's clock a water value may be stamped and still count as fresh (farm/water/freshness.py)."""
+    return current().clock_tolerance_seconds
 
 
 def unknown_withdrawal_days():

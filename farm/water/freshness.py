@@ -43,10 +43,10 @@ def forget(*args, **kwargs):
 
 
 def _load():
-    from core.models import PlatformSettings
+    from core import platform
     from farm.models import WaterFreshness
     return {'hours': dict(WaterFreshness.objects.values_list('parameter', 'fresh_hours')),
-            'tolerance': timedelta(seconds=PlatformSettings.get().clock_tolerance_seconds)}
+            'tolerance': timedelta(seconds=platform.clock_tolerance_seconds())}
 
 
 def _rules():

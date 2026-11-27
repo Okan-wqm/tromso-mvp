@@ -18,7 +18,6 @@ test that fails without its fix:
 - F10: a critical's retry time and flood window are bounded tighter; each failed step is its own flood kind.
 - F11: the dead man is not asked while something it vouches for does not hold (the ingest dead, notifications
   undeliverable), nor after a failed pass outside its throttle."""
-import sys
 import threading
 import time
 from datetime import timedelta
@@ -32,7 +31,7 @@ from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from core.testing import reads
+from core.testing import assert_reads_do_not_grow, reads
 from farm.tests.helpers import may_record, role
 from sensors.models import Connection, IngestStatus
 from sensors.tests import make_connection
@@ -199,21 +198,6 @@ class QueueTests(Case):
             cursor.execute('ANALYZE alarms; ANALYZE alarm_notifications; ANALYZE alarm_delivery_attempts; '
                            'ANALYZE alarm_outbox')
 
-    def assert_independent_of_the_history(self, measure, what):
-        """`measure()` (its reads) beside STEP and beside twice STEP of history: the second reads of each history table
-        fewer than a hundred rows more than the first."""
-        found = []
-        for _step in range(2):
-            self.grow()
-            found.append(measure())
-        first, second = found
-        sys.stderr.write(f'\n[alarm outbox] {what}, rows read beside {self.STEP:,} and {2 * self.STEP:,} '
-                         f'notifications of history: {first.reads()}, {second.reads()}\n')
-        for table in self.HISTORY_TABLES:
-            with self.subTest(table=table):
-                self.assertLess(second.read(table) - first.read(table), 100,
-                                f'{first.read(table):,} then {second.read(table):,}\n{second.described(table)}')
-
     def test_a_round_reads_the_queue_never_the_whole_history(self):
         queued = sorted(row.pk for row in self.system(3, 'critical'))
 
@@ -222,7 +206,7 @@ class QueueTests(Case):
                 rows = outbox.backlog()
             self.assertEqual(sorted(row.pk for row in rows), queued)
             return found
-        self.assert_independent_of_the_history(backlog, 'backlog()')
+        assert_reads_do_not_grow(self, self.grow, backlog, self.HISTORY_TABLES, 'backlog()')
 
     @override_settings(ALARM_TRANSPORTS=RECORDING)
     def test_a_sending_round_reads_the_recent_attempts_never_the_whole_history(self):
@@ -240,7 +224,7 @@ class QueueTests(Case):
                              (3, sorted(row.pk for row in queued)))
             rounds.append(found)
             return found
-        self.assert_independent_of_the_history(round_, 'a sending round')
+        assert_reads_do_not_grow(self, self.grow, round_, self.HISTORY_TABLES, 'a sending round')
 
 
 # ---- F9 ----------------------------------------------------------------------------------------------------------------

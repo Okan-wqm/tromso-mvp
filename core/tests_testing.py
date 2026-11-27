@@ -10,7 +10,7 @@ from django.db import IntegrityError, connection, connections, transaction
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
-from core.testing import FrozenClock, Unmeasured, reads
+from core.testing import FrozenClock, Unmeasured, assert_reads_do_not_grow, reads
 
 THEN = datetime(2026, 10, 17, tzinfo=utc.utc)
 GIVEN = timezone.now            # the clock as the run gave it, the same function object a test must leave behind
@@ -242,3 +242,37 @@ class ReadsTests(TestCase):
         with reads():
             self.assertEqual(workers(), '0')
         self.assertEqual(workers(), '3')
+
+    def test_a_read_that_grows_with_the_history_is_refused_and_one_by_key_is_not(self):
+        import contextlib
+        added = []
+
+        class Recorder:                       # the assertions as a test makes them, recorded
+            def __init__(self):
+                self.failed = []
+
+            def subTest(self, **kwargs):
+                return contextlib.nullcontext()
+
+            def assertLessEqual(self, first, second, msg=None):
+                if first > second:
+                    self.failed.append(msg)
+
+        def grow():
+            Group.objects.bulk_create(Group(name=f'grown {len(added)} {number}') for number in range(1000))
+            added.append(1000)
+
+        def measured(rows):
+            def measure():
+                with reads() as found:
+                    list(rows())
+                return found
+            return measure
+        key = Group.objects.order_by('pk').values_list('pk', flat=True)[0]
+        by_key, by_text = Recorder(), Recorder()
+        assert_reads_do_not_grow(by_key, grow, measured(lambda: Group.objects.filter(pk=key)), ['auth_group'], 'key')
+        assert_reads_do_not_grow(by_text, grow, measured(lambda: Group.objects.filter(name__endswith='x')),
+                                 ['auth_group'], 'text')
+        self.assertEqual(by_key.failed, [])
+        self.assertEqual(len(by_text.failed), 1)
+        self.assertIn('rows of auth_group, then', by_text.failed[0])

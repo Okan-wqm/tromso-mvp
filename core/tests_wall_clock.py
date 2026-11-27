@@ -6,13 +6,14 @@ waits (a join's timeout), and that a thing did not wait is asked of the thing (s
 
 Read from every test module (each function and method, in classes nested to any depth, with the functions they
 define), a measured value is:
-- a reading of time.monotonic, perf_counter, time, process_time, thread_time or clock_gettime (each also as _ns) or
-  timeit.default_timer, however imported, and through any name bound to one of those functions (`clock =
-  time.monotonic`, `self.clock = ...`);
-- the difference of two moments of the real calendar clock: datetime.now(), datetime.utcnow(), timezone.now() (or a
-  name holding one) on both sides of a minus;
+- a reading of time.monotonic, perf_counter, time, process_time, thread_time or clock_gettime (each also as _ns),
+  timeit.default_timer, timeit.timeit or timeit.repeat, or an event loop's .time(), however imported, and through any
+  name bound to one of those functions (`clock = time.monotonic`, `self.clock = ...`, functools.partial of one);
+- the difference of two moments of the real calendar clock: datetime.now(), datetime.utcnow(), timezone.now() (also
+  as `timezone as tz`, or a name holding one) on both sides of a minus;
 - anything computed from one of those, in the same function: a name, an item of a list or dict it is put in, a part
-  of a tuple, the result of a function of the same module that returns one (or a tuple with one in it).
+  of a tuple, the result of a function of the same module that returns one (or a tuple with one in it); and a `self.`
+  name another method of the same class holds one in (measured in setUp, asserted in a test).
 Refused: a measured value in the arguments (by position or keyword) of any assert... or fail... call, in an `assert`
 statement, or in the test of an `if` whose body fails the test (a fail... call or a raise). A wait with a ceiling
 (`until`, a deadline loop that raises once it is past) compares a reading in a `while`, never asserts on it, and passes;
@@ -28,9 +29,10 @@ from .tests_company_clock import _name, _owner, modules
 
 CLOCK_FUNCTIONS = ('monotonic', 'perf_counter', 'time', 'process_time', 'thread_time', 'clock_gettime')
 CLOCKS = ({('time', name) for name in CLOCK_FUNCTIONS} | {('time', f'{name}_ns') for name in CLOCK_FUNCTIONS}
-          | {('timeit', 'default_timer')})
+          | {('timeit', 'default_timer'), ('timeit', 'timeit'), ('timeit', 'repeat')})
 NOWS = {('datetime', 'now'), ('datetime', 'utcnow'), ('timezone', 'now')}
 GROWS = {'append', 'extend', 'insert', 'add', 'update', 'setdefault'}      # a container a measured value is put in
+LOOPS = {'get_event_loop', 'get_running_loop', 'new_event_loop'}              # an event loop, whose .time() is a clock
 
 # (file, Class.test, the assertion as written): why it stays on the wall clock.
 ALLOWED = {
@@ -86,6 +88,7 @@ class _Reader:
     def __init__(self, tree):
         self.modules = {'time': 'time', 'timeit': 'timeit'}
         self.clocks, self.nows = set(), set()       # bare names that are a clock / a calendar clock
+        self.owners = {owner for owner, _name in NOWS}   # the names `timezone` and `datetime` go by (`timezone as tz`)
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.module in ('time', 'timeit', 'django.utils.timezone'):
                 for alias in node.names:
@@ -93,6 +96,10 @@ class _Reader:
                         self.clocks.add(alias.asname or alias.name)
                     elif node.module == 'django.utils.timezone' and alias.name == 'now':
                         self.nows.add(alias.asname or alias.name)
+            elif isinstance(node, ast.ImportFrom) and node.module in ('django.utils', 'datetime'):
+                for alias in node.names:
+                    if alias.name in ('timezone', 'datetime') and alias.asname:
+                        self.owners.add(alias.asname)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
                     if alias.name in ('time', 'timeit'):
@@ -108,15 +115,24 @@ class _Reader:
     def is_clock_function(self, node):
         if isinstance(node, (ast.Name, ast.Attribute)) and _held(node) in self.clocks:
             return True
+        if isinstance(node, ast.Call) and _name(node) == 'partial' and node.args:   # functools.partial(time.monotonic)
+            return self.is_clock_function(node.args[0])
         return (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
                 and (self.modules.get(node.value.id), node.attr) in CLOCKS)
 
     def is_clock(self, node):
-        return isinstance(node, ast.Call) and self.is_clock_function(node.func)
+        if not isinstance(node, ast.Call):
+            return False
+        func = node.func
+        if isinstance(func, ast.Attribute) and func.attr == 'time':       # an event loop's clock: loop.time()
+            owner = func.value
+            if (isinstance(owner, ast.Call) and _name(owner) in LOOPS) or _held(owner).split('.')[-1].endswith('loop'):
+                return True
+        return self.is_clock_function(func)
 
     def is_moment(self, node, scope):
         if isinstance(node, ast.Call):
-            return (_name(node), _owner(node)) in {(name, owner) for owner, name in NOWS} or (
+            return (_name(node) in {name for _owner_, name in NOWS} and _owner(node) in self.owners) or (
                 isinstance(node.func, ast.Name) and node.func.id in self.nows)
         return isinstance(node, (ast.Name, ast.Attribute)) and _held(node) in scope.moments
 
@@ -177,9 +193,11 @@ class _Reader:
             return self._bind(target, scope.shapes[_held(iterable)], scope)
         self._bind(target, True if self.measured(iterable, scope) else None, scope)
 
-    def scope(self, function):
-        """The measured names and the moments of `function` (its nested functions too), to a fixed point."""
+    def scope(self, function, held=()):
+        """The measured names and the moments of `function` (its nested functions too), to a fixed point; `held`: the
+        `self.` names its class's other methods hold a reading in (measured in setUp, asserted in a test)."""
         scope = _Scope()
+        scope.shapes.update(dict.fromkeys(held, True))
         while True:
             before = scope.state()
             for node in ast.walk(function):
@@ -231,9 +249,14 @@ def wall_clock_assertions_in(tree):
             got = reader.returns(function, reader.scope(function))
             if got is not None:
                 reader.returning[name.rsplit('.', 1)[-1]] = got
+    held = {}                                     # {Class: the `self.` names one of its methods holds a reading in}
+    for name, function in functions:
+        if '.' in name:
+            held.setdefault(name.rsplit('.', 1)[0], set()).update(
+                key for key, shape in reader.scope(function).shapes.items() if key.startswith('self.') and shape is True)
     found = []
     for name, function in functions:
-        scope = reader.scope(function)
+        scope = reader.scope(function, held.get(name.rsplit('.', 1)[0], ()) if '.' in name else ())
         for node in ast.walk(function):
             if isinstance(node, ast.Assert):
                 checked, source = [node.test], ast.unparse(node.test)
@@ -261,44 +284,60 @@ def wall_clock_assertions():
     return found + [f'allowed but not found: {entry}' for entry in sorted(set(ALLOWED) - seen)]
 
 
-# Each way the guard must see: one check per line (lines 17 to 31, and 35), each on a reading of the wall clock.
+# Each way the guard must see: every line marked `# caught` holds one check on a reading of the wall clock.
 PROBE = '''
+import asyncio
+import functools
 import time
 import timeit
 from datetime import datetime
 from time import perf_counter as pc
 
 from django.utils import timezone
+from django.utils import timezone as tz
 
 
 class Probe:
+    def setUp(self):
+        self.spent = time.monotonic() - started
+
     def measure(self):
         started = time.monotonic()
         return 'page', time.monotonic() - started
 
     def test_probe(self):
         clock = time.monotonic
-        self.assertLess(time.monotonic() - started, 5)
-        took = time.perf_counter() - started; self.assertLess(took, 0.5)
-        longest = max(longest, time.time() - started); self.assertGreater(1.0, longest)
-        seen = []; seen.append(pc() - started); self.assertLessEqual(max(seen), 10)
-        rows, seconds = self.measure(); self.assertGreaterEqual(30, seconds)
-        [one] = [timeit.default_timer()]; self.assertTrue(one < 3)
-        assert time.monotonic_ns() - started < 10
-        self.took.append(time.monotonic() - started); self.assertLess(self.took[0], 1)
-        if took > 1: self.fail('slow')
-        if time.monotonic() - started > 1: raise AssertionError('slow')
-        self.assertEqual(time.monotonic() - started < 1, True)
-        self.assertIs(time.thread_time() - started < 1, True)
-        self.assertLess(first=time.clock_gettime(time.CLOCK_MONOTONIC) - started, second=1)
-        self.assertLess(clock() - started, 1)
-        begun = timezone.now(); self.assertLess(datetime.now() - begun, 1)
+        tick = functools.partial(time.monotonic)
+        self.assertLess(time.monotonic() - started, 5)  # caught
+        took = time.perf_counter() - started; self.assertLess(took, 0.5)  # caught
+        longest = max(longest, time.time() - started); self.assertGreater(1.0, longest)  # caught
+        seen = []; seen.append(pc() - started); self.assertLessEqual(max(seen), 10)  # caught
+        rows, seconds = self.measure(); self.assertGreaterEqual(30, seconds)  # caught
+        [one] = [timeit.default_timer()]; self.assertTrue(one < 3)  # caught
+        assert time.monotonic_ns() - started < 10  # caught
+        self.took.append(time.monotonic() - started); self.assertLess(self.took[0], 1)  # caught
+        if took > 1: self.fail('slow')  # caught
+        if time.monotonic() - started > 1: raise AssertionError('slow')  # caught
+        self.assertEqual(time.monotonic() - started < 1, True)  # caught
+        self.assertIs(time.thread_time() - started < 1, True)  # caught
+        self.assertLess(first=time.clock_gettime(time.CLOCK_MONOTONIC) - started, second=1)  # caught
+        self.assertLess(clock() - started, 1)  # caught
+        begun = timezone.now(); self.assertLess(datetime.now() - begun, 1)  # caught
+        self.assertLess(timeit.timeit('pass', number=1), 1)  # caught
+        self.assertLess(min(timeit.repeat('pass', number=1)), 1)  # caught
+        self.assertLess(tz.now() - tz.now(), 1)  # caught
+        self.assertLess(tick() - started, 1)  # caught
+        self.assertLess(loop.time() - started, 1)  # caught
+        self.assertLess(asyncio.get_event_loop().time() - started, 1)  # caught
+
+    def test_elsewhere(self):
+        self.assertLess(self.spent, 1)  # caught
 
     class Inner:
         def test_inner(self):
-            self.assertLess(time.monotonic() - started, 1)
+            self.assertLess(time.monotonic() - started, 1)  # caught
 '''
-PROBE_LINES = [*range(17, 32), 35]
+PROBE_LINES = [number for number, line in enumerate(PROBE.split('\n'), 1) if line.endswith('# caught')]
 # What it must let pass: a wait with a ceiling, a measurement written out, a count, the other part of a measurement,
 # a moment of the calendar clock compared with a fixed one.
 FINE = '''
@@ -332,6 +371,7 @@ class Fine:
         self.assertLess(self.count, 3)
         self.assertLess(timezone.now() - THEN, DAY)
         if not rows: self.fail('nothing')
+        self.assertEqual(moment.time(), NOON)
 '''
 
 
@@ -339,7 +379,8 @@ class WallClockGuardTests(SimpleTestCase):
     def test_the_guard_sees_every_way_the_probe_asserts_on_the_wall_clock(self):
         found = wall_clock_assertions_in(ast.parse(PROBE))
         self.assertEqual([line for line, _name, _source in found], PROBE_LINES, found)
-        self.assertEqual({name for _line, name, _source in found}, {'Probe.test_probe', 'Probe.Inner.test_inner'})
+        self.assertEqual({name for _line, name, _source in found},
+                         {'Probe.test_probe', 'Probe.test_elsewhere', 'Probe.Inner.test_inner'})
         self.assertEqual(wall_clock_assertions_in(ast.parse(FINE)), [])
 
     def test_no_test_asserts_on_a_time_it_measured(self):

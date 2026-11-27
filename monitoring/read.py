@@ -597,7 +597,13 @@ def _alerts(middle, now):
             text = '{}: {}'.format(label, status)
         else:
             text = '{}: {}'.format(label, _('%(status)s, no recent data') % {'status': status})
-        text = Reason(text, _brief(reading, middle, stale))
+        brief = _brief(reading, middle, stale)
+        if brief is not None and any(said.brief == brief for said in (*critical, *warning)):
+            # the same crossing said again (a % of saturation judged through the mg/L row says the mg/L's figure and
+            # bound: one quantity, owner 2026-11-07): its short form would repeat the other's word for word, so this
+            # one is said whole (review 2, N10: "O2 (mg/L) 5.00 · critical limit 6.00" twice on TT-01)
+            brief = None
+        text = Reason(text, brief)
         if stale:
             old.append(text)
         (critical if judged == Status.CRITICAL else warning).append(text)

@@ -10552,6 +10552,9 @@ msgstr "Det er ingen fisk av %(batch)s å veie i %(unit)s %(date)s."
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "Det er ingen fisk av %(batch)s i %(unit)s %(date)s."
 
+msgid "No fish: nothing to dose."
+msgstr "Ingen fisk: ingenting å dosere."
+
 msgid "No flip link"
 msgstr "Ingen byttelenke"
 
@@ -21095,9 +21098,6 @@ msgstr "visningen valgt på denne skjermen"
 
 msgid "the whole site"
 msgstr "hele lokaliteten"
-
-msgid "there is no fish in this unit"
-msgstr "det er ingen fisk i denne enheten"
 
 msgid "this card’s own scale"
 msgstr "skalaen gjelder dette kortet"

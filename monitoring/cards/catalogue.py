@@ -70,12 +70,19 @@ class WidgetSpec:
     options: Schema = None
     enabled: bool = True        # False: catalogued, refused by the validator until what it needs exists
     on_empty: bool = False      # also drawn on the card of a unit with no fish
+    on_empty_next: bool = False  # also drawn, in the new look, on the full-height card of a unit with no fish (the
+                                 # design's Big card of an empty unit: the chart's place, what to dose, the other
+                                 # points, the stock; render.shown)
     says_hidden: bool = True    # False: left out, not 'not shown to you', for a person who may not read its source
     looks: tuple = (FLOW,)      # where it can be drawn: on a card that flows, on a fitted card, or both
     fit_units: tuple = None     # (width, height) in card units its fitted look needs at the least to print what it
                                 # prints uncut: under it the validator warns (advice: the preview is the proof)
-    tile_units: tuple = None    # (width, height) in card units a full-height card's place must have for the new look to
-                                # draw the widget's values as the design's tiles (two lines of four, render.tiled)
+    tiles: tuple = None         # (per line, lines): how many of the design's tiles the new look sets the widget's values
+                                # in on a full-height card (render.tiled; the sheet reads the per-line count from
+                                # data-tiles), each tile at least tile_units (width, height) in card units
+    tile_units: tuple = None
+    rows_units: float = None    # the least width, in card units, of one column of the widget's rows (name, figure,
+                                # strip, source, arrival and age on one line): two columns only where two fit
 
     @property
     def renderer(self):
@@ -97,7 +104,7 @@ WIDGETS = {spec.type: spec for spec in (
          'options': [{'value': 'middle', 'label': 'The middle point'}, {'value': 'all', 'label': 'Every active point'}]},
         {'name': 'parameters', 'label': 'Parameters', 'type': 'select', 'defaultValue': 'key',
          'options': [{'value': 'key', 'label': 'The key values'}, {'value': 'all', 'label': 'Every value measured'}]}),
-          looks=(FLOW, FIT), fit_units=(20.0, 3.0), tile_units=(40.0, 11.0)),
+          looks=(FLOW, FIT), fit_units=(20.0, 3.0), tiles=(4, 2), tile_units=(10.0, 5.5), rows_units=30.0),
     _spec('fish', _('Fish'), (4, 3), (12, 8), (12, 5), ('stock',), options=_schema(
         {'name': 'figures', 'label': 'Figures', 'type': 'select', 'defaultValue': 'brief',
          'options': [{'value': 'brief', 'label': 'The key figures'}, {'value': 'full', 'label': 'Every figure'}]})),
@@ -114,12 +121,13 @@ WIDGETS = {spec.type: spec for spec in (
     # size, in the screen's or the card's view (close or full scale); what to dose (Phase 1: no advice, and why); the
     # unit's other sampling points; its stock in one line.
     _spec('chart', _('Deffeyes chart, drawn'), (6, 4), (12, 12), (12, 8), ('water', 'chart'), looks=(FIT,),
-          fit_units=(24.0, 14.0)),
+          fit_units=(24.0, 14.0), on_empty_next=True),
     _spec('dosing', _('Dosing advice'), (3, 1), (12, 3), (4, 2), ('water', 'chart'), looks=(FIT,),
-          fit_units=(10.0, 2.4)),
+          fit_units=(10.0, 2.4), on_empty_next=True),
     _spec('points', _('Other sampling points'), (3, 1), (12, 4), (4, 2), ('water',), looks=(FIT,),
-          fit_units=(10.0, 2.4)),
-    _spec('stock', _('Stock in one line'), (3, 1), (12, 3), (4, 2), ('stock',), looks=(FIT,), fit_units=(10.0, 2.4)),
+          fit_units=(10.0, 2.4), on_empty_next=True),
+    _spec('stock', _('Stock in one line'), (3, 1), (12, 3), (4, 2), ('stock',), looks=(FIT,), fit_units=(10.0, 2.4),
+          on_empty_next=True),
     _spec('spark', _('Trend'), (3, 2), (12, 4), (6, 2), ('water',), bind=PARAMETER, enabled=False),
 )}
 _('Points'), _('The middle point'), _('Every active point'), _('Parameters'), _('The key values')

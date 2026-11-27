@@ -10580,6 +10580,9 @@ msgstr "%(date)s tarihinde %(unit)s içinde tartılacak %(batch)s balığı yok.
 msgid "No fish of %(batch)s are in %(unit)s on %(date)s."
 msgstr "%(date)s tarihinde %(unit)s içinde %(batch)s balığı yok."
 
+msgid "No fish: nothing to dose."
+msgstr "Balık yok: dozlanacak bir şey yok."
+
 msgid "No flip link"
 msgstr "Geçiş bağlantısı yok"
 
@@ -21143,9 +21146,6 @@ msgstr "bu ekranda seçilen görünüm"
 
 msgid "the whole site"
 msgstr "tüm saha"
-
-msgid "there is no fish in this unit"
-msgstr "bu birimde balık yok"
 
 msgid "this card’s own scale"
 msgstr "ölçek bu karta özgü"

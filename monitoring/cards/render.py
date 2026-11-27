@@ -126,18 +126,14 @@ def _views(card, drawn):
     return tuple(views)
 
 
-# What the design's Big card of a unit with no fish still draws, with the template's own widgets (the new look's only:
-# templates/monitoring/_card_fit.html, `shown`): the chart's place, saying there is no fish (no chart is drawn: `chart`),
-# what to dose, the other sampling points (their water, as the card read it) and the stock (no fish).
-EMPTY_NEXT = frozenset({'chart', 'dosing', 'points', 'stock'})
-
-
 def shown(card, next_look):
     """The widgets a fitted card draws: its template's (`build`), and in the new look, on a full-height card of a unit
-    with no fish, EMPTY_NEXT's as well, in reading order. The classic look's are `build`'s, unchanged."""
+    with no fish, the widgets the catalogue draws there too (WidgetSpec.on_empty_next: the design's Big card of an empty
+    unit, the chart's place saying there is no fish, what to dose, the other points and the stock), in reading order.
+    The classic look's are `build`'s, unchanged."""
     if not next_look or card.stock is not None or not card.template.fill:
         return card.widgets
-    return _views(card, lambda spec: spec.on_empty or spec.type in EMPTY_NEXT)
+    return _views(card, lambda spec: spec.on_empty or spec.on_empty_next)
 
 
 # ---- one value -------------------------------------------------------------------------------------------------
@@ -693,9 +689,8 @@ def chart(card):
     made = card.chart
     if card.stock is None:
         # (the design's Big card of an empty unit, the new look's only: shown) the chart is the water against the limits
-        # of the fish in it, and there are none: nothing is drawn, and the place says why
-        return DrawnChart(refused=gettext('there is no fish in this unit'), title=gettext('The chart cannot be drawn'),
-                          lines=(gettext('No chart: there is no fish in this unit.'),))
+        # of the fish in it, and there are none: nothing is drawn, and the place says why, once
+        return DrawnChart(refused=gettext('No chart: there is no fish in this unit.'))
     if made is None:
         return DrawnChart(refused=gettext('no data'), title=gettext('The chart cannot be drawn'))
     if not isinstance(made, calculation.UnitChart):
@@ -782,15 +777,33 @@ class WaterRow:
     alert: str
 
 
-# More rows than this stand in two columns: a row is never lower than a line of the card's small text.
+# The reasons a full-height card shows in sight where it is drawn at the size of its place (the pane, a wall): the rest
+# are "+N", whole in its title, for a screen reader and in the band's chips (templates/monitoring/_card_fit.html, the new
+# look's; a unit with ten values no limit judges said ten lines and pushed its water and boxes out of the card).
+FIT_REASONS = 3
+
+
+def beyond_reasons(reasons):
+    """The reasons a fitted full-height card says as "+N" (past FIT_REASONS)."""
+    return tuple(reasons[FIT_REASONS:])
+
+
+# More rows than this stand in two columns where two fit side by side (the water's rows_units): a row is never lower
+# than a line of the card's small text.
 WATER_ROWS = 14
-# At most this many values of a full-height card's water are the design's tiles in the new look (two lines of four).
-WATER_TILES = 8
+# At most this many values of a full-height card's water are the design's tiles in the new look: the catalogue's lines of
+# tiles, each of so many (catalogue water_table tiles), stated there once.
+WATER_TILES = catalogue.WIDGETS['water_table'].tiles[0] * catalogue.WIDGETS['water_table'].tiles[1]
+# Between two columns of rows, in card units (the template's gap-x-8: two units).
+ROWS_GAP = 2.0
 
 
-def water_rows(card):
+def water_rows(card, view=None):
     """((WaterRow, ...), ...): every value of the card's middle point in one column of rows, or in two when there are
-    more than WATER_ROWS; () when the unit has no middle point or it has no value."""
+    more than WATER_ROWS AND the widget's place on the card holds two columns of rows side by side (the water's
+    catalogue rows_units, measured as the validator measures a place: two columns were set whatever the place's width,
+    and on a Big card their cells lay over each other: review 2, N1); () when the unit has no middle point or it has no
+    value."""
     water = card.middle_water
     if water is None:
         return ()
@@ -800,27 +813,41 @@ def water_rows(card):
         rows.append(WaterRow(said, bar(said), arrived(reading.at, card.now), alert_of(said.status)))
     if not rows:
         return ()
-    per = (len(rows) + 1) // 2 if len(rows) > WATER_ROWS else len(rows)
+    per = (len(rows) + 1) // 2 if columns_for(card, view, len(rows)) == 2 else len(rows)
     return tuple(tuple(rows[start:start + per]) for start in range(0, len(rows), per))
 
 
-def tiled(card, view, columns):
-    """Whether a full-height card's water (`columns`: water_rows') is drawn as the design's tiles: ONE column of at most
-    WATER_TILES values, on a full-height card whose template gives the water a place that holds two lines of four
-    tiles (the water's catalogue tile_units, measured as the validator measures a place: validate.fitted_place); else
-    a row a value. The server's one answer, said on the rows' frame (`data-tiles`, in both looks: the classic sheet
-    reads nothing of it), which the new look's sheet draws (static/css/monitor-next.css); never a count made in a
-    sheet."""
+def columns_for(card, view, count):
+    """1 or 2: the columns of rows `count` values stand in on the card: two only for more than WATER_ROWS of them and
+    where the widget's place holds two columns side by side (the water's catalogue rows_units, and the gap between)."""
+    wide = 2 * catalogue.WIDGETS['water_table'].rows_units + ROWS_GAP
+    return 2 if count > WATER_ROWS and _place(card, view)[0] >= wide else 1
+
+
+def _place(card, view):
+    """(width, height) in card units of a widget's place on a fitted card (validate.fitted_place), or (0, 0) when the
+    card flows or the widget is not on its template."""
     template = card.template
-    if not template.fill or len(columns) != 1 or len(columns[0]) > WATER_TILES:
-        return False
+    widget = None if view is None else next((each for each in template.layout['widgets'] if each['id'] == view.id), None)
+    if widget is None or not template.measure:
+        return 0.0, 0.0
     from .validate import fitted_place
-    widget = next((each for each in template.layout['widgets'] if each['id'] == view.id), None)
-    need = catalogue.WIDGETS['water_table'].tile_units
-    if widget is None or need is None:
-        return False
-    wide, high = fitted_place(widget, template.rows, template.measure)
-    return wide >= need[0] and high >= need[1]
+    return fitted_place(widget, template.rows, template.measure)
+
+
+def tiled(card, view, columns):
+    """How many of the design's tiles a full-height card's water (`columns`: water_rows') stands in to a line, or 0 for
+    a row a value: ONE column of at most WATER_TILES values, on a full-height card whose template gives the water a
+    place that holds the catalogue's lines of tiles (the water's tiles and tile_units, measured as the validator
+    measures a place: validate.fitted_place). The server's one answer, said on the rows' frame (`data-tiles="4"`, in
+    both looks: the classic sheet reads nothing of it), which the new look's sheet draws for that count only
+    (static/css/monitor-next.css): a count it has no rule for is drawn as rows, never as tiles of another width."""
+    spec = catalogue.WIDGETS['water_table']
+    if not card.template.fill or len(columns) != 1 or len(columns[0]) > WATER_TILES:
+        return 0
+    (per, lines), (wide, high) = spec.tiles, spec.tile_units
+    place = _place(card, view)
+    return per if place[0] >= per * wide and place[1] >= lines * high else 0
 
 
 # What a card says of each of the unit's other sampling points.
@@ -828,10 +855,18 @@ POINT_VALUES = (parameters.OXYGEN_MG_L, parameters.TEMPERATURE, parameters.PH)
 
 
 def other_points(card):
-    """((name, (Face, Face, Face)), ...): the unit's sampling points other than its middle one, each with its oxygen,
-    temperature and pH as a card says a value."""
-    return tuple((water.point.name, tuple(face(water.get(code), card.now, parameters.get(code)) for code in POINT_VALUES))
-                 for water in card.water if water.point is not None and water.point.kind != water_read.MIDDLE)
+    """((name, (Face, Face, Face), oldest), ...): the unit's sampling points other than its middle one, each with its
+    oxygen, temperature and pH as a card says a value, and the Face of the OLDEST of them (None when it has none): a
+    point's age said once, never fresher than any of its values (the new look's box, where three ages do not fit beside
+    a point's name: review 2, N2)."""
+    found = []
+    for water in card.water:
+        if water.point is None or water.point.kind == water_read.MIDDLE:
+            continue
+        faces = tuple(face(water.get(code), card.now, parameters.get(code)) for code in POINT_VALUES)
+        said = [each for each in faces if not each.missing]
+        found.append((water.point.name, faces, min(said, key=lambda each: each.reading.at) if said else None))
+    return tuple(found)
 
 
 def grid_css():

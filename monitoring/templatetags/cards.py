@@ -68,14 +68,26 @@ def opener(openers, card):
 
 
 @register.simple_tag
-def water_rows(card):
+def water_rows(card, view=None):
     """Every value of the card's middle point as rows, in one or two columns (render.water_rows)."""
-    return render.water_rows(card)
+    return render.water_rows(card, view)
+
+
+@register.simple_tag
+def fit_reasons():
+    """How many reasons a full-height card shows in sight where it is drawn at the size of its place (render.FIT_REASONS)."""
+    return render.FIT_REASONS
+
+
+@register.simple_tag
+def beyond_reasons(reasons):
+    """The reasons past those (render.beyond_reasons)."""
+    return render.beyond_reasons(reasons)
 
 
 @register.simple_tag
 def tiled(card, view, columns):
-    """Whether a full-height card's water is drawn as the design's tiles (render.tiled)."""
+    """How many of the design's tiles to a line a full-height card's water stands in, 0 for rows (render.tiled)."""
     return render.tiled(card, view, columns)
 
 

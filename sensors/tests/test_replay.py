@@ -14,7 +14,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
-from core.testing import FrozenClock
+from core.testing import FrozenClock, reads
 from farm.models import System, Tank
 from farm.tests.helpers import point_of, role
 from farm.tests.test_stock import make_unit
@@ -42,7 +42,11 @@ def insert(channel_no, rows):
 
 
 def readings_queries(queries):
-    return [query for query in queries if 'sensors_reading' in query['sql'] or 'sensors_rollup' in query['sql']]
+    """The statements of `queries` (a CaptureQueriesContext's dicts, or core.testing.reads' statements) that read the
+    readings or their rollup."""
+    def sql(query):
+        return query['sql'] if isinstance(query, dict) else query.sql
+    return [query for query in queries if 'sensors_reading' in sql(query) or 'sensors_rollup' in sql(query)]
 
 
 class ReplayCase(FrozenClock, SensorsCase):
@@ -369,21 +373,6 @@ def insert_many(channel_no, rows):
                         [quality for *_rest, quality in rows]])
 
 
-def scanned(sql):
-    """How many rows of the readings' chunks a query reads (returned and filtered out), from its EXPLAIN ANALYZE."""
-    with connection.cursor() as cursor:
-        cursor.execute('EXPLAIN (ANALYZE, FORMAT JSON) ' + sql)
-        plan = cursor.fetchone()[0]
-    plan = json.loads(plan) if isinstance(plan, str) else plan
-    total, nodes = 0, [plan[0]['Plan']]
-    while nodes:
-        node = nodes.pop()
-        nodes.extend(node.get('Plans', []))
-        if node.get('Relation Name', '').startswith('_hyper_'):
-            total += (node['Actual Rows'] + node.get('Rows Removed by Filter', 0)) * node['Actual Loops']
-    return total
-
-
 class ValueAtTests(ReplayCase):
     """Each frame's sensor value is what the live view's rule gives at the frame's moment (`sensors.provider` value_at:
     the channel's newest clean reading at or before the moment, taken while it was bound there), within the channel's
@@ -490,14 +479,16 @@ class ValueAtTests(ReplayCase):
         insert_many(dense.channel_no, [(START + timedelta(seconds=second), 10.0 + second / 1e4, 0)
                                        for second in range(4 * 3600)])
         first, count, step = START + timedelta(minutes=20), 200, timedelta(minutes=1)
-        with CaptureQueriesContext(connection) as queries:
+        with reads() as found:
             read.deffeyes_frames(self.t1, first, first + count * step, step)
-        (query,) = readings_queries(queries)
+        (query,) = readings_queries(found)
         # The dense probe and the system's temperature, the pH probe's three stays in T-01, the backup.
         segments = [segment for code in read.REPLAY_INPUTS
                     for segment in read.segments(self.t1, code, first - read.CARRY, first + count * step)]
         self.assertEqual(len(segments), 6)
-        self.assertLessEqual(scanned(query['sql']), 2 * count * len(segments))
+        # What the readings query read of the readings' chunks (core.testing.reads: their rows and index entries).
+        chunks = sum(rows for table, rows in query.read.items() if table.startswith('_hyper_'))
+        self.assertLessEqual(chunks, 2 * count * len(segments), query.read)
 
     def test_the_planner_setting_is_as_it_was_after_a_page_inside_a_callers_transaction(self):
         """Cross review F4: the look-ups switch TimescaleDB's runtime exclusion off for their own query only; inside a

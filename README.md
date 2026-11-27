@@ -974,10 +974,13 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
     title, a point with no value "no data" once across its values' place (`_points.html`, the new look's only; three ages
     beside a point's name do not fit the box on a wall or in the pane). OTHER_POINTS in the test world: TW-01's inlet
     fresh, TW-08's bottom drain 30 hours old.
-  - **Its reasons where it is drawn at the size of its place** (the pane, a wall): the first `FIT_REASONS` (three) in
-    sight and "+N" for the rest, whole in its title, for a screen reader and in the band's chips (`_card_fit.html`, the
-    new look's only: a unit with ten values no limit judges said ten lines and pushed its water and boxes out of the
-    card); on the desk the card flows and shows every one.
+  - **Its reasons where it is drawn at the size of its place** (the pane, a wall), where nobody can hover
+    (`render.fold`, `_card_fit.html`, the new look's only; the coordinator's rule of 2026-11-27): an ALERT (a reason of
+    a critical, warning or no-recent-data card) is never folded while the card holds it (`FIT_ALERTS`, six: TW-14's
+    six criticals all in sight), and past that the rest are said in words in the card's tone ("2 more alerts, see the
+    band"), never hidden silently; NOTES (no limit, a note) fold past `FIT_NOTES` (three) into "+N", whole in its title
+    and for a screen reader (a unit with ten values no limit judges, TW-11, said ten lines and pushed its water and
+    boxes out of the card). On the desk the card flows and shows every one.
   - **The chart on a phone** (a card narrower than 30 rem): the picture keeps the width at which the server's labels stand
     apart (`--fit-min`) and scrolls sideways in its own frame, which is a stop of the keyboard with an id of its own in
     the new look (`_chart.html`), scrolled on load so the water's mark stands in its middle (`frontend/chartframe.ts`);

@@ -563,6 +563,12 @@ msgstr[0] "%(count)s medlem"
 msgstr[1] "%(count)s medlemmer"
 
 #, python-format
+msgid "%(count)s more alert, see the band"
+msgid_plural "%(count)s more alerts, see the band"
+msgstr[0] "%(count)s varsel til, se båndet"
+msgstr[1] "%(count)s varsler til, se båndet"
+
+#, python-format
 msgid "%(count)s more sampling point on Water chemistry"
 msgid_plural "%(count)s more sampling points on Water chemistry"
 msgstr[0] "%(count)s prøvepunkt til under Vannkjemi"

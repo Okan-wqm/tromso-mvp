@@ -116,11 +116,15 @@ html[data-ui="next"] .is-fit .w-chart .monitor-chart-svg { outline: 1px solid va
 html[data-ui="next"] .is-fit :is(.w-dosing, .w-points, .w-stock) > section { align-content: start; row-gap: 0; padding: .1em .45em; border: 1px solid var(--line-hair); background-color: var(--plate); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-card-head { padding-bottom: calc(var(--u) * .35); border-bottom: 1px solid var(--line-hair); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-card-line { padding-top: calc(var(--u) * .3); }
-/* (drawn at the size of its place, a pane or a wall: the first reasons in sight and "+N" for the rest, whole in its
-   title, for a screen reader and in the band's chips; on the desk the card flows and shows every one) */
+/* (drawn at the size of its place, a pane or a wall, where nobody can hover: every alert in sight while the card holds
+   it, the notes past the first few "+N" (render.fold); on the desk the card flows and shows every one) */
 html[data-ui="next"] .monitor-card.is-fit[data-fill] .monitor-reasons-more { display: none; }
 html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .monitor-reasons > [data-more] { display: none; }
 html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .monitor-reasons-more { display: block; align-self: flex-end; }
+/* (alerts past what the card holds: said in words, in the card's tone, never folded silently) */
+html[data-ui="next"] .monitor-card.is-fit[data-fill] .monitor-reasons-more.is-alert { font-weight: 600; color: var(--text-1); }
+html[data-ui="next"] .monitor-critical.is-fit[data-fill] .monitor-reasons-more.is-alert { color: var(--crit-text); }
+html[data-ui="next"] .monitor-warning.is-fit[data-fill] .monitor-reasons-more.is-alert { color: var(--warn-text); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-cells { margin-top: calc(var(--u) * .45); padding: calc(var(--u) * .35) calc(var(--u) * .5); border: 1px solid var(--line-hair); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] .card-grid { column-gap: 0; padding-top: calc(var(--u) * .45); border-top: 0; }
 /* (a widget with a widget on its left keeps the gap the grid no longer has; the value tiles share their lines instead) */

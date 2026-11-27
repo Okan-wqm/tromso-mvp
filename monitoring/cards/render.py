@@ -777,15 +777,32 @@ class WaterRow:
     alert: str
 
 
-# The reasons a full-height card shows in sight where it is drawn at the size of its place (the pane, a wall): the rest
-# are "+N", whole in its title, for a screen reader and in the band's chips (templates/monitoring/_card_fit.html, the new
-# look's; a unit with ten values no limit judges said ten lines and pushed its water and boxes out of the card).
-FIT_REASONS = 3
+# The reasons a full-height card shows where it is drawn at the size of its place (the pane, a wall), where nobody can
+# hover (templates/monitoring/_card_fit.html, the new look's): an ALERT, a reason of a critical, warning or no-recent-data
+# card, is never folded while the card holds it (FIT_ALERTS of them; past that the rest are said in words, "2 more
+# alerts, see the band", never hidden silently); NOTES (no limit, a note) fold past FIT_NOTES into "+N", whole in its
+# title, for a screen reader and in the band's chips (a unit with ten values no limit judges said ten lines and pushed
+# its water and boxes out of the card). The coordinator's rule of 2026-11-27: a critical or a warning is never folded
+# away where nobody can hover.
+FIT_NOTES = 3
+FIT_ALERTS = 6
+ALERT_STATES = frozenset({'critical', 'warning', 'blind'})
 
 
-def beyond_reasons(reasons):
-    """The reasons a fitted full-height card says as "+N" (past FIT_REASONS)."""
-    return tuple(reasons[FIT_REASONS:])
+@dataclass(frozen=True)
+class Folded:
+    """What a fitted full-height card shows of its state's reasons: the first `shown`, and `rest` folded; `alerts`:
+    they are alerts (the card's state is critical, a warning or no recent data), said in words when folded."""
+    shown: int
+    rest: tuple
+    alerts: bool
+
+
+def fold(state):
+    """The Folded of a card's state (FIT_ALERTS or FIT_NOTES)."""
+    alerts = state.key in ALERT_STATES
+    shown = FIT_ALERTS if alerts else FIT_NOTES
+    return Folded(shown, tuple(state.reasons[shown:]), alerts)
 
 
 # More rows than this stand in two columns where two fit side by side (the water's rows_units): a row is never lower

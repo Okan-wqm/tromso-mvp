@@ -74,15 +74,9 @@ def water_rows(card, view=None):
 
 
 @register.simple_tag
-def fit_reasons():
-    """How many reasons a full-height card shows in sight where it is drawn at the size of its place (render.FIT_REASONS)."""
-    return render.FIT_REASONS
-
-
-@register.simple_tag
-def beyond_reasons(reasons):
-    """The reasons past those (render.beyond_reasons)."""
-    return render.beyond_reasons(reasons)
+def fold_reasons(state):
+    """What a full-height card drawn at the size of its place folds of its reasons (render.fold)."""
+    return render.fold(state)
 
 
 @register.simple_tag

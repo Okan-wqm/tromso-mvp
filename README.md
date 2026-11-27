@@ -3008,9 +3008,10 @@ corrected temperature or a backdated transfer changes it at once:
     freshness when shorter). A probe day is not an audited record: each row is itself the append-only fact, never
     edited (a correction voids it and writes another); each closing of a day is in the activity log with its counts,
     and the daily job holds an advisory lock, so two jobs never close one day twice.
-    **Known gap: there is no calibration record in the sensors area** (only a channel's unit factor and offset), so "the
-    probe was calibrated" cannot be asked of a probe day; the comparison with the samples is what catches a probe that
-    reads wrong.
+    **Known gap: no record of a probe's calibration CHECK.** The sensors area keeps a channel's calibration (its gain
+    and offset from a moment on, applied by the ingest, `sensors.Calibration`), but no record of when the probe was
+    last checked against a reference and passed. So a probe day cannot be required to come from a probe checked within
+    a period; the comparison with the day's samples is what catches a probe that reads wrong.
   - **The tables start empty**: probe days count from the first day the job closes. History comes only from a guarded
     action of a person (`manage.py probe_days backfill`, from the readings and the bindings as they stand then, each
     row marked backfilled), which asks the withdrawal question first; a closed day is corrected the same way
@@ -3038,9 +3039,13 @@ corrected temperature or a backdated transfer changes it at once:
     first day measured after the gap when there is one. The cap does not run out inside a gap: it lifts only when a measurement
     says so ("9 days without a measured water temperature are counted below the species' assumed temperature: at the
     coldest daily mean measured in the 7 days before their gap began, or the first day measured after it when that is
-    colder."). A gap is traced back no further than the walk's first day (the day after the course, after the feeding) less
-    those 7 days: a bound that never moves with today, so a sample does not drop out of the cap as the days go by
-    (REVIEW-2, N-1). A projection at the assumed temperature is capped the same way (N-9). **0 °C when the species has none** ("... are
+    colder."). A gap is followed back as far as it goes, however long before the walk it began (one sample, then weeks without
+    one: the cap is that sample's day and the 7 before it), within a horizon of 365 days before the walk's first day
+    (`CAP_HORIZON_DAYS`; the day after the course, after the feeding): a bound of the walk, never of today, so a cap
+    never runs out as the days go by (REVIEW-2, N-1). Nothing measured within it: the assumption is not capped, as before
+    the cap existed, and the text says so ("No water temperature was measured in the 365 days before the gap of 3 days
+    counted at the assumed temperature: nothing caps them."). The water before the days read is read only then, in
+    two indexed queries and one read of the days needed. A projection at the assumed temperature is capped the same way (N-9). **0 °C when the species has none** ("... are
     counted as 0 °C: set the species' assumed temperature in Reference data › Species.").
   - **The rules are the platform owner's settings** (Platform settings › Degree-days: the hours a probe day needs, how
     long a reading stands, the days that cap an assumption, the tolerance), registered in the withdrawal gate: a
@@ -3058,8 +3063,8 @@ corrected temperature or a backdated transfer changes it at once:
   code before, `withdrawal_ends compare` with the code after; an end that would move earlier stops the landing, or is
   stored as a floor (`--floor`), so that no open withdrawal ends earlier than it did without a person's answer: the
   checklist is [Landing a change of the withdrawal rule](#landing-a-change-of-the-withdrawal-rule).
-  **Before probe days are closed in production**: a deadband channel's mean is now its lower bound (above), but a
-  probe's calibration still cannot be asked (no calibration record).
+  **Before probe days are closed in production**, one thing is still missing: a record of a probe's calibration check
+  (above). A deadband channel's mean is its lower bound (done, REVIEW-2 N-7).
   **Not built yet**: a page for the probe days, the days closed and the floors (the commands above are the way; the
   data map lists the gap);
 - both given, the later end wins; a running course counts from its planned last day;

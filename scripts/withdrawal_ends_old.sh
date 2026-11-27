@@ -8,6 +8,10 @@
 # test-runner image when it is missing, runs the dump in it on the compose project's network, and removes the worktree
 # on every way out. The dump holds development-database data: OUT must lie outside every checkout (the repository is
 # public), e.g. F:/dev/balik-notes/degree-days/ends-before-landing.json. Writes nothing to the database.
+#
+# A rehearsal against a throwaway database instead of the development one: WITHDRAWAL_ENDS_NETWORK (the docker network)
+# and WITHDRAWAL_ENDS_DB (the -e DB_... options); WITHDRAWAL_ENDS_MIGRATE=1 then migrates that database with the old
+# code first, and is refused while the database is the development one (DB_HOST=db).
 set -euo pipefail
 OUT=${1:?usage: scripts/withdrawal_ends_old.sh OUT [REF]}
 REF=${2:-origin/main}
@@ -24,7 +28,15 @@ git -C "$HERE" worktree add --detach "$OLD" "$REF" >/dev/null
 cp "$HERE/farm/management/commands/withdrawal_ends.py" "$OLD/farm/management/commands/withdrawal_ends.py"
 IMG=$(cd "$OLD" && sh scripts/testrunner/image.sh build)
 DIR=$(cd "$(dirname "$OUT")" && { pwd -W 2>/dev/null || pwd; })
-docker run --rm --network balik-ciftligi_default -e DB_HOST=db -e DB_PORT=5432 -e COMPANY_NAME="Nordhav Akva" \
+NETWORK=${WITHDRAWAL_ENDS_NETWORK:-balik-ciftligi_default}
+DB=${WITHDRAWAL_ENDS_DB:--e DB_HOST=db -e DB_PORT=5432}
+FIRST=
+if [ "${WITHDRAWAL_ENDS_MIGRATE:-}" = 1 ]; then
+  case " $DB " in *" DB_HOST=db "*) echo "refused: WITHDRAWAL_ENDS_MIGRATE on the development database" >&2; exit 2;; esac
+  FIRST='python manage.py migrate --noinput >/dev/null && '
+fi
+# shellcheck disable=SC2086 # the -e options are words, split on purpose
+docker run --rm --network "$NETWORK" $DB -e COMPANY_NAME="Nordhav Akva" \
   -v "$OLD:/app" -v "$DIR:/out" -w /app "$IMG" \
-  python manage.py withdrawal_ends dump --out "/out/$(basename "$OUT")"
+  sh -c "${FIRST}python manage.py withdrawal_ends dump --out /out/$(basename "$OUT")"
 echo "dump of $REF written to $OUT"

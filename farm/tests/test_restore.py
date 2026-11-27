@@ -178,8 +178,9 @@ class DeleteConfirmationPromiseTests(RestoreTestCase):
         for look in ('classic', 'next'):
             with self.subTest(look=look):
                 page = self.client.get(url, {'ui': look})
-                self.assertNotContains(page, 'restored from the admin')
-                self.assertContains(page, 'entered again on its page')
+                self.assertNotContains(page, 'it can be restored from the admin')
+                self.assertContains(page, 'It is not restored from the admin: one deleted by mistake is entered again on '
+                                          'its page.')
 
 
 class ConfirmedVersionTests(RestoreTestCase):

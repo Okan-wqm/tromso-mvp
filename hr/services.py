@@ -401,6 +401,7 @@ def clear_day(user, record):
     """Clears the plan `record` as the person confirmed it (its dialog's Delete: crud has refused a record whose version
     moved since the confirmation, core.crud.DeleteView): that row at that version, read again under the person's lock. A
     cell cleared, replanned or changed meanwhile is left as it is, with the reason."""
+    _verb(user, PLAN_PERMISSIONS)              # before the record is read (core/tests_service_rights.py)
     _plan(user, [(record.employee, record.day)], CLEAR, expected=record)
 
 

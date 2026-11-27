@@ -177,7 +177,6 @@ def run_once(now=None, outside=None, unchecked=None):
         summary.opened += found[0]
         summary.cleared += found[1]
 
-
     # The silent oxygen probes and where the oxygen is known all the same: read once, for the sensor rules and the
     # alarm system's warnings of this pass (sensors.alarms.OxygenPass).
     oxygen = sensor_alarms.OxygenPass(now)

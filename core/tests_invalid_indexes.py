@@ -32,3 +32,17 @@ class InvalidIndexCheckTests(TransactionTestCase):
         with connection.cursor() as cursor:                           # the remedy, as the hint says it
             cursor.execute(warning.hint.split(';')[0])
         self.assertEqual(checks.invalid_indexes(None), [])
+
+    def test_a_partitioned_tables_invalid_index_is_named_with_a_drop_it_accepts(self):
+        """An index made ON ONLY a partitioned table is invalid until its partitions' indexes are attached; PostgreSQL
+        refuses DROP INDEX CONCURRENTLY on it, so the hint drops it plainly."""
+        with connection.cursor() as cursor:
+            cursor.execute('CREATE TABLE w006_parted (x integer) PARTITION BY RANGE (x)')
+            self.addCleanup(lambda: connection.cursor().execute('DROP TABLE IF EXISTS w006_parted'))
+            cursor.execute('CREATE TABLE w006_part PARTITION OF w006_parted FOR VALUES FROM (0) TO (10)')
+            cursor.execute('CREATE INDEX w006_parted_x ON ONLY w006_parted (x)')
+        (warning,) = checks.invalid_indexes(None)
+        self.assertIn('DROP INDEX IF EXISTS public.w006_parted_x;', warning.hint)
+        with connection.cursor() as cursor:
+            cursor.execute(warning.hint.split(';')[0])
+        self.assertEqual(checks.invalid_indexes(None), [])

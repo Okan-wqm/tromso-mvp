@@ -30,8 +30,13 @@ dc up -d                                                           # 6. release 
 dc logs release                                                    #    "release: done"
 dc ps                                                              # 7. every service healthy
 sh scripts/check-roles.sh                                          # 8. the roles hold on the new tables
-dc run --rm manage python manage.py check --database default   #  quiet
+dc run --rm manage python manage.py check --database default   #  quiet: core.W003 to core.W006, alarms.W001
 ```
+
+`check --database default` also compares the open alarms' queue (`alarm_open`, kept by database triggers) with the
+alarms that have no clearance, both ways (alarms.W001): an open alarm missing from it would never be notified,
+escalated or listed. It names the alarms and gives the one statement that repairs the queue, run as the database's
+owner role (the app role may not write that table).
 
 Then sign in, open the pages of what the release changed, record one thing and look at it, and check that new sensor
 readings arrive (Sensors). Write the release and the date in the farm's record.
@@ -45,10 +50,12 @@ readings arrive (Sensors). Write the release and the date in the farm's record.
 - **`migrate` fails half-way**: a migration runs in a transaction unless it says `atomic = False`, and then the
   failed one left nothing; the ones before it are applied. A migration that is not atomic runs each of its steps on
   its own, and a step that failed may have left what it made: `sensors/migrations/0003_rollups.py` is one (its
-  continuous aggregate and its policies, each its own step). An index built CONCURRENTLY that failed is left invalid,
-  and the next run of the same migration stops at "already exists": `dc run --rm manage python manage.py check
-  --database default` names each invalid index (core.W006) with the `DROP INDEX CONCURRENTLY IF EXISTS ...` that
-  removes it. Do not start the old code on the new schema. Either fix forward (a corrected release), or go back:
+  continuous aggregate and its policies, each its own step). No migration here builds an index CONCURRENTLY, but an
+  administrator's CREATE INDEX CONCURRENTLY or REINDEX CONCURRENTLY that failed leaves the index invalid, and a
+  migration that makes an index of that name stops at "already exists": `dc run --rm manage python manage.py check
+  --database default` names each invalid index (core.W006) with the `DROP INDEX ...` that removes it (CONCURRENTLY,
+  except on a partitioned table's index). Do not start the old code on the new schema. Either fix forward (a corrected
+  release), or go back:
   1. `dc down` (volumes stay);
   2. `git checkout <old tag>`, build the old images (or set the old `WEB_IMAGE` tags);
   3. restore the dump taken in step 1 into an empty database ([backup-and-restore.md](backup-and-restore.md),

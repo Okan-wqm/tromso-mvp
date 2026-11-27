@@ -13,3 +13,7 @@ REVOKE UPDATE ON ALL SEQUENCES IN SCHEMA public FROM balik_app;
 REVOKE UPDATE, DELETE ON audit_log, alarm_clearances, alarm_notifications, alarm_delivery_attempts, alarm_escalations,
   alarm_acknowledgements, withdrawal_acknowledgements, regulatory_report_snapshots FROM balik_app;
 REVOKE DELETE ON alarms FROM balik_app;
+-- The open alarms' queue (alarms 0025) is written by its two triggers only, which run as their owner (SECURITY
+-- DEFINER): the app may read it, never write it, so no code can drop a live alarm from it or keep a cleared one in it
+-- (review 2, H2). `manage.py check --database default` compares it with the clearances (alarms.W001).
+REVOKE INSERT, UPDATE, DELETE ON alarm_open FROM balik_app;

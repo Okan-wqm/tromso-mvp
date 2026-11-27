@@ -885,7 +885,8 @@ updated), an optional one says "Could not be read: Tasks" on the frame, where no
 **In the new look** (`?ui=next`, see The new look; 2026-11-24). The same page, the same card read (`read.cards`,
 `_ladder`, `water_rungs`), the same templates, fragment, pane and polls (poll.ts's start-up gate, the merge by key, the
 announcer). A fitted card (Small, Big, the pane's, a wall's) is the same markup in both looks, byte for byte (but an empty
-unit's Big card, which says the unit in the new look: below); a card that
+unit's Big card, which says more in the new look, the other points' ages, and the chart's frame, a stop of the
+keyboard: below); a card that
 FLOWS (Simple, every unit's default; Detailed; Operator view; a farm's template without a measure) is the design's card
 in the new look (2026-11-25: the owner saw "the old cards"): `templates/monitoring/_card.html` includes
 `monitoring/_card_next.html` in its place when `UI_NEXT` (`core.ui.is_next`, which `monitoring/views.py` gives the
@@ -928,40 +929,69 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
   figure in a slot of its own in `_value_fit.html`: only the name gives way, whole in its title; the figure never cut,
   sized to its cell; where it came from and how old, cut with an ellipsis and whole in its title). The pH window is not in the design's Small card: it stays in the markup and on the wall, in the pane and
   on the Big screen. An empty unit's card says the unit in four cells (status, volume, max density, max biomass:
-  `monitoring/_empty_cells.html`). Big cards on a desk (from 1100 px) are each as tall as the longest of the screen (rows of
-  one fraction), their widgets in the template's columns and order, each row as high as what it says (below); the cards that flow (Simple, Detailed, Operator view) are as tall as the longest of them (rows of one fraction:
+  `monitoring/_empty_cells.html`). A grid with Big cards (the Big screen, a board that mixes them) is rows each as high as
+  their own cards, a stocked unit's Big cards of a row one size (below); the cards that flow (Simple, Detailed, Operator view) are as tall as the longest of them (rows of one fraction:
   nothing of a longer card is cut), their foot at the bottom, wherever they stand side by side (from 640 px; on a
   phone each card is as tall as what it says). On a wall the cards are the fitted ones, sized by the slot rule.
 - **The toolbar and the band**: on the desk page the search first, the filters named for a screen reader only (each
   select says its choice: "No board", "All sites"), the wall's buttons at the end (a wall keeps its own toolbar, the two
   buttons fixed at the band's end: the page test checks that nothing lies over the band, a state word or the buttons); the band a plate on the desk page with the switch of
   the cards as a segmented control on the right, the current one bold and underlined, not only tinted.
-- **The Big card** (2026-11-27: the owner saw the Big cards still in the classic style): the design's Big card
-  (`static/css/monitor-next.css`, "the Big card"; every rule under the new look, on the classic card's markup and in its
-  unit, so the slot rule, the pane's width and the wall's pages are as they were). Its head over a hairline, the reasons
-  under it with the state's glyph in the state's tone; its four first values as the design's hairline tiles sharing their
-  lines; the chart on the sheet in a hairline frame, a region past a limit in the design's toxic tone (`--zone-toxic`), faint
-  while the water is not in it and full, its border in the critical colour and the water's mark critical, while it is (the
-  server's `in-co2`, `in-nh3` and `is-critical`: the chemistry core's answer, never judged in the sheet), the pH lines
-  dashed, a chart that cannot be drawn a dashed box with its reason; the water of the middle point as the design's tiles,
-  four to a line (two on a phone), each its name, its figure in the display face beside its strip against the limits,
-  where it came from and when it arrived with its age, whole (it wraps, never cut), the table's head for a screen reader;
-  with more than eight values (two lines of tiles are what its place on a wall or in the pane holds) a row a value, as
-  classic (`core/test_world.py` TW-09); what to dose, the other points and the stock in three hairline boxes with their
-  names (`render._titled`, from the validator's `fitted_place`), on the desk each other point's name over its values. An
-  empty unit's Big card says the unit in four cells, as the Small card of an empty unit does (`monitoring/_card_fit.html`:
-  the one place a fitted card's markup differs between the looks; the classic Big card is as it was). On the desk it is not
-  held to the template's proportion: two Big cards of a 1440 px window are narrower than the template's 48 units at the
-  14 px floor, and rows sharing a proportional height let the dosing box run into the foot; each row is as high as what it
-  says there, the chart at its place's proportion (7 : 4). It keeps the template's reading order (the four first values
-  above the chart, owner decisions 10 to 12), where the design puts the chart first; the design's pH window under the chart
-  is not on it (it is not in the Big template, and reading the farm's pH scales for it would add a query to every wall of
-  Big cards).
+- **The Big card** (2026-11-27: the owner saw the Big cards still in the classic style; the weak points closed after the
+  review, REVIEW-1): the design's Big card (`static/css/monitor-next.css`, "the Big card"; every rule under the new look,
+  on the classic card's markup and in its unit, so the slot rule, the pane's width and the wall's pages are as they
+  were). Its head over a hairline (on a card narrower than 30 rem its right side on a line of its own: never over the
+  code), the reasons under it with the state's glyph in the state's tone; its four first values as the design's hairline
+  tiles sharing their lines; the chart on the sheet in a hairline frame, a region past a limit in the design's toxic tone
+  (`--zone-toxic`), faint, the region the water is in HATCHED in the critical colour (one pattern for the page,
+  `#monitor-hatch` in `templates/monitoring/monitor.html`; its stripe at 3:1 or more on its ground in the six themes),
+  its border and the water's mark critical, but an OLD mark stays hollow and dashed, the last known position, in a region
+  or not (TW-12: an old sample in the CO₂ region); in high contrast the classic look's Canvas and CanvasText; the pH lines
+  dashed, a chart that cannot be drawn a dashed box with its reason. The sheet judges and counts nothing: it reads the
+  server's `in-co2`, `in-nh3`, `is-critical`, `is-old`, `data-fill`, `data-state` and `data-tiles`.
+  - **Its water** is the design's tiles where the server says they fit: `monitoring/cards/render.py tiled` (the one rule:
+    ONE column of at most `WATER_TILES`, eight, values, on a full-height card whose template gives the water a place that
+    holds two lines of four tiles, the water's `tile_units` in the catalogue, measured as the validator measures a place,
+    `fitted_place`), said on the rows' frame as `data-tiles` in both looks (the classic HTML gains that attribute, its
+    sheet reads nothing of it). Four tiles to a line (two on a phone), each its name, its figure in the display face beside
+    its strip against the limits, where it came from and when it arrived with its age, whole (it wraps, never cut); the
+    table's head, wherever it stands, for a screen reader. Else a row a value, as classic: more than eight values (TW-09),
+    more than fourteen in two columns of rows (TW-10, TW-11: 15 and 17), a farm's own full-height template with a low
+    water place (`TEST_LOW_WATER` on the mixed board).
+  - What to dose, the other points (each value with its age beside it, "old" in words: `_points.html`, the new look's
+    only) and the stock in three hairline boxes with their names (`render._titled`).
+  - **The chart on a phone** (a card narrower than 30 rem): the picture keeps the width at which the server's labels stand
+    apart (34 rem, a desk Big card's) and scrolls sideways in its own frame, which is a stop of the keyboard with an id
+    of its own in the new look (`_chart.html`); at 390 px "pH 8.25" lay over "pH 8.75" and the axis's name.
+  - **An empty unit's Big card** says the unit in four cells, as the Small card of an empty unit does, then what the
+    design draws on it with the template's own widgets (`render.shown`, the new look's only: `EMPTY_NEXT`): the chart's
+    place saying "No chart: there is no fish in this unit." (no chart is drawn: `render.chart`), what to dose, the other
+    sampling points (their water as the card read it: no read is added) and the stock ("No fish"). On the desk it is as
+    tall as what it says, never a screen of blank. The classic Big card of an empty unit is as it was.
+  - **On the desk, at every width**, one rule for any grid that holds Big cards, whatever else it holds (the Big screen, a
+    board that mixes Small and Big cards: `TEST_MIXED_BOARD`): columns of at least the fitted cards' 34 rem, rows each as
+    high as their own cards (never a row of Small cards as tall as a Big one, never a Big card squeezed into a Small
+    card's row), a stocked unit's Big cards of a row one size, an empty unit's card and a Small card at their own height
+    at the top of the row (the Small card its one height, `--small-h`, written once). In the card the template's
+    columns, rows and spans (a farm's own full-height template keeps its shape), each row as high as what it says; the
+    chart at the proportion of its place on the template (from the card's measure and the place's columns and rows,
+    no number of the sheet's own); below 30 rem of card one column in reading order. Two Big cards of a 1440 px window
+    are narrower than the template's 48 units at the 14 px floor, so the desk does not hold a card to its measure's
+    proportion (rows sharing a proportional height let the dosing box run into the foot). The pane and the wall keep the
+    card fitted.
+  - **Every control a 44 px target** (the brief's): the Big card's code, water history, flip and chart-view links, the
+    overview's code links that open the pane, the pane's Close, the band's card and chart switches; each link's box is
+    drawn around it by its own `::after`, from its top down (never above a fitted card's edge, which clips), taking no
+    room, so no length of the card's type changes. The band's chips are a row of codes closer than 44 px and keep their
+    own size.
+  - It keeps the template's reading order (the four first values above the chart, owner decisions 10 to 12), where the
+    design puts the chart first; the design's pH window under the chart is not on it (it is not in the Big template, and
+    reading the farm's pH scales for it would add a query to every wall of Big cards).
 - **The pane beside the overview** (the design's "Focus · the big card beside the overview"): on a desk of 1400 px and
   more the page is two columns while a pane is open, the cards on the left and the pane on the right at five twelfths,
   never narrower than its card's least width (at 1440 px one column of Small cards beside it); the pane stays first in the
-  page, and a narrower window keeps it above the cards. Its Close is a 44 px target (the brief's). It does not stick in
-  sight while the cards scroll, as the design's does: at its least unit the Big card is higher than a 900 px window.
+  page, and a narrower window keeps it above the cards. It does not stick in sight while the cards scroll, as the
+  design's does: at its least unit the Big card is higher than a 900 px window.
 
 No safety word or figure is cut or faded: the page test holds every code, state word, figure, saturation, "old", and the
 first reason's figure and bound whole (en, nb, tr at 390, 1440 and 1920 px), the cards of one kind one size, and the wall's
@@ -980,13 +1010,13 @@ reader, name the unit. Tank › Water in the new look, the unit's history on Wat
 redirects there).
 
 Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py` `monitoring_world`: a unit in each
-of the seven states, an old critical one and one with more values than the Big card's tiles, and a wall board read
-from 2 m): each card says in the new look what it says
+of the seven states, an old critical one, units of 10, 15 and 17 values and an old sample in the CO₂ region, a wall board
+read from 2 m, and a board that mixes Small and Big cards with a farm's own full-height template: `mixed_board`): each card says in the new look what it says
 in the classic one (the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on
 the Small, Simple, Detailed, Big and Operator view cards (`operator_board`, a board whose default template is the
 Operator view) and in the pane, in English, Norwegian and Turkish; the cards that flow are the design's card in the new
-look and never in the classic one, the fitted ones the same markup (an empty unit's Big card says the unit in the new
-look only), and each look's token its own; the link resolves, and
+look and never in the classic one, the fitted ones the same markup (an empty unit's Big card says more in the new look
+only), the water's tiles the server's answer (`data-tiles`), and each look's token its own; the link resolves, and
 is absent for a person without the water right. `monitoring/tests/test_shell.py` holds the shell with its first answers
 to the full page in the new look too. And by `frontend/test/monitoring.pages.ts` (`npm run test:pages`, on the
 pages that test keeps in `.build/monitor-pages`): the shell as the server prints it under the product's policy and
@@ -996,7 +1026,12 @@ button on every card that flows (Simple in the three languages, Detailed, Operat
 the rail at its width beside a long strip), each state's edge style, the stale strip, one glyph per state and the classic
 shapes without `glyphs.css`, the hatch in six themes, the Big screen in the three languages as the design's Big card
 (`bigCards`: the hairlines, the tiles four to a line, nothing of a tile cut or out of its place, its text at 4.5:1 in the six
-themes), the pane beside the cards at 1440 and 1920 px, the wall at 1920×1080 and 3840×2160 and a board's wall
+themes, its foot inside the card, the region the water is in hatched and an old mark hollow, an empty unit's card no
+taller than what it says, the tiles what the server said with the table's head last or missing), the mixed board at 390,
+1024, 1440 and 1920 px (no card over another, the Small cards one size), every control a 44 px target (found as a tap
+finds it), the pane beside the cards at 1440 and 1920 px and the panes of TW-08, TW-09 and TW-12 in the three languages,
+the wall of Big cards with the alarms' notices (1920×1080 in the three languages and 3840×2160: the notices a row above
+the grid, nothing scrolls, every card's foot in sight), the wall at 1920×1080 and 3840×2160 and a board's wall
 read from 2 m, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that
 fails said as "cannot be read".
 
@@ -1013,7 +1048,10 @@ without a request, so the shell's context (the menu, the unread count) is never 
 polls keep the session alive once a day (the default session is two weeks and a wall must not sign itself out); the grid prints a
 large notice from `data-poll-state` when the server cannot be reached or cannot read the cards, or the person is signed out,
 and the announcer says it aloud (and says when the grid is updated again). A wall of cards that flow (Simple, Detailed, a
-template without a measure) is as it was: larger figures, and the page scrolls.
+template without a measure) is as it was: larger figures, and the page scrolls. The alarms' notices (whether they are
+checked and sent) are a row of their own above the grid, each one line at the band's size (`monitor.css`): at 1920×1080
+two notices at the page's own size took a seventh of the screen and cut every Big card's foot (both looks: a fix of the
+wall, not of a look).
 
 **The wall of fitted cards** (`?wall=1&mode=small`; `static/css/monitor.css`, `frontend/wall.ts`). A template with a
 **measure** (its card's width and height in the card's own unit: Small is 31 by 10) is FITTED: the card is drawn at the

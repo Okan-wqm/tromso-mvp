@@ -125,7 +125,7 @@ class Temperatures:
                     if target not in self.clocks:          # a system's own sensors
                         self.clocks[target] = zone_key(tier.owner.site)
         self.samples, self.probes, self.rowed, self.closed = {}, defaultdict(list), set(), {}
-        self._empty = []                     # [(floor, before)]: days a search found nothing at these places
+        self._empty = []                     # [(low, high)]: sorted, disjoint: days found empty (`last_measured`)
         last_closed = {}
         if self.clocks and first <= last:
             last_closed = dict(ProbeDayClosing.objects.values('timezone').annotate(last=Max('day'))
@@ -175,17 +175,47 @@ class Temperatures:
         """The latest day from `floor` to the day before `before` on which one of the units' places has a sample or a
         probe day that counts, each place's day on its own clock; None when none has (two indexed queries). A place's
         day, not yet the batch's: the batch may not have been in that unit then, and the caller looks again from there.
-        What was found empty is remembered for the read (`_empty`, from a floor up to a day): a later search of the
-        same days, for another batch or another course, asks nothing, and one from a lower floor asks only the days
-        below (REVIEW-3, R3-2)."""
-        for low, high in self._empty:
-            if low <= floor and high >= before:
-                return None
-            if high >= before and low > floor:
-                found = self.last_measured(floor, low)
-                if found is None:
-                    self._empty.append((floor, before))
+        The days found empty are remembered for the read (`_empty`: intervals of days, disjoint), and a search asks
+        only the parts of its days not yet proven empty, the latest first, until one has a day (two queries a part):
+        the same days again, for another batch or another course, ask nothing, and a search from a lower floor asks
+        only the days below. What the memory holds was asked of the same places, so it never changes an answer
+        (REVIEW-3, R3-2; REVIEW-4, R4-1)."""
+        for low, high in self._unproven(floor, before):
+            found = self._latest(low, high)
+            if found is not None:
                 return found
+            self._proven_empty(low, high)
+        return None
+
+    def _unproven(self, floor, before):
+        """[(low, high)]: the parts of the days from `floor` to the day before `before` that no search found empty yet,
+        the latest first."""
+        parts, top = [], before
+        for low, high in reversed(self._empty):         # sorted, disjoint
+            if top <= floor:
+                break
+            if low >= top:
+                continue
+            if high < top:
+                parts.append((max(high, floor), top))
+            top = low
+        if top > floor:
+            parts.append((floor, top))
+        return [(low, high) for low, high in parts if low < high]
+
+    def _proven_empty(self, low, high):
+        """Remembers that nothing was measured at the places from `low` to the day before `high`."""
+        merged = []
+        for first, last in sorted([*self._empty, (low, high)]):
+            if merged and first <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], last))
+            else:
+                merged.append((first, last))
+        self._empty = merged
+
+    def _latest(self, floor, before):
+        """The latest day from `floor` to the day before `before` measured at one of the places, or None (two queries:
+        the samples, each place's days on its own clock; the probe days that count)."""
         found = []
         if self.points:
             by_clock = defaultdict(list)
@@ -204,8 +234,6 @@ class Temperatures:
                    .aggregate(newest=Max('day'))['newest'])
             if day is not None:
                 found.append(day)
-        if not found:
-            self._empty.append((floor, before))
         return max(found, default=None)
 
     def extend(self, first):

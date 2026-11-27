@@ -25,8 +25,9 @@ of the first round, REVIEW-1: never an earlier end without a question).
   (`Species.withdrawal_temperature_c`, Setup › Reference data › Species), **but never above the cap**: the coldest
   daily mean measured in the `assumption_cap_days` (7) days before the gap of unmeasured days began (the cap does not
   run out inside a gap: it lifts only when a measurement says so), and not above the first day measured after the
-  gap when there is one. The gap is traced back at most LOOKBACK_DAYS before the first day asked. **0 °C when the
-  species has no assumed temperature.**
+  gap when there is one. The gap is traced back no further than the walk's first day less the cap's days, a bound
+  that never moves with today (REVIEW-2, N-1); a projection at the assumed temperature is capped the same way (N-9).
+  **0 °C when the species has no assumed temperature.**
 - A batch in several units that day takes the lowest unit's (a unit not closed yet makes the batch's day not closed).
 - **A daily mean of 0 °C or below adds nothing**: degree-days never go down.
 - **A projection** is the mean of the batch's last PROJECTION_DAYS (7) measured days within LOOKBACK_DAYS (30) of
@@ -63,7 +64,12 @@ DAY = timedelta(days=1)
 TEMPERATURE = parameters.TEMPERATURE
 ZERO = Decimal(0)
 PROJECTION_DAYS = 7     # the days with a temperature a projection takes the mean of
-LOOKBACK_DAYS = 30      # how far back from today they are looked for, and from the first day asked a gap is traced
+LOOKBACK_DAYS = 30      # how far back from today a projection looks for measured days
+# A probe is still expected at a place that had a closed row on one of this many last closed days of its clock: a day it
+# was silent (dead for a day, a cleaning flagged as maintenance) does not let the next day count from the samples before
+# the job closes it (REVIEW-2, N-2), and a probe removed for good stops being expected this many days after its last row,
+# so it never holds fish for ever (only days after the clock's last closing are ever not closed). A week: the cap's.
+EXPECTED_DAYS = 7
 
 # Where a day's temperature came from (Accrual.days counts them). UNCLOSED: a past day a probe is still expected for;
 # PENDING: today or a day to come, not measured.
@@ -130,11 +136,14 @@ class Temperatures:
         last_closed = dict(ProbeDayClosing.objects.values('timezone').annotate(last=Max('day'))
                            .values_list('timezone', 'last'))
         self.closed = {target: last_closed[clock] for target, clock in clocks.items() if clock in last_closed}
+        days = Q(day__gte=first, day__lte=last)
+        for closed in set(last_closed.values()):      # and the last closed days a probe is expected after
+            days |= Q(day__gt=closed - EXPECTED_DAYS * DAY, day__lte=closed)
         point_ids = [pk for kind, pk in clocks if kind == sources.POINT]
         system_ids = [pk for kind, pk in clocks if kind == sources.SYSTEM]
         rows = (ProbeDay.objects.filter(voided_at__isnull=True)
                 .filter(Q(point_id__in=point_ids) | Q(system_id__in=system_ids))
-                .filter(Q(day__gte=first, day__lte=last) | Q(day__in=set(last_closed.values())))
+                .filter(days)
                 .values_list('point_id', 'system_id', 'day', 'mean_c', 'counts'))
         for point_id, system_id, day, mean, counts in rows:
             target = (sources.POINT, point_id) if point_id else (sources.SYSTEM, system_id)
@@ -144,11 +153,11 @@ class Temperatures:
 
     def _expected(self, target, day):
         """Whether a probe day is still expected at `target` for `day`: the day is after the last one its clock was
-        closed for, the place had a probe day row on that last closed day, and has none for the day itself (a
-        backfilled or corrected one counts as it stands)."""
+        closed for, the place had a probe day row on one of the EXPECTED_DAYS last closed days, and has none for the
+        day itself (a backfilled or corrected one counts as it stands)."""
         closed = self.closed.get(target)
-        return (closed is not None and day > closed and (target, closed) in self.rowed
-                and (target, day) not in self.rowed)
+        return (closed is not None and day > closed and (target, day) not in self.rowed
+                and any((target, closed - back * DAY) in self.rowed for back in range(EXPECTED_DAYS)))
 
     def of(self, unit_id, day):
         """The unit's day: a Measured (the lowest of the probe days and the samples of the first tier that has any:
@@ -212,6 +221,7 @@ class Accrual:
     unknown: bool = False
     unreachable: bool = False
     differed: list = field(default_factory=list)
+    values: dict = field(default_factory=dict)      # {day: what it added}, of the days counted (not projected)
     cap_days: int = 0
     tolerance: Decimal = ZERO
 
@@ -233,8 +243,8 @@ class Accrual:
 
 class BatchWater:
     """The water of a set of batches on the farm's `today`, with the temperatures read from `first` (None: from the
-    first day any of the batches was on the farm), LOOKBACK_DAYS and the cap's days earlier (a gap of unmeasured days
-    is traced back so far for its cap) and at least the LOOKBACK_DAYS before today (a projection's days). `presence`
+    first day any of the batches was on the farm) and the cap's days earlier (a gap of unmeasured days is traced back
+    so far for its cap), and at least the LOOKBACK_DAYS before today (a projection's days). `presence`
     (farm.stock.read.Presence of the batches) can be handed in by a caller that has it already; `read_from`: the exact
     first day to read (`of_each`)."""
 
@@ -251,14 +261,14 @@ class BatchWater:
                 first = min((self.began(batch_id) for batch_id in self.batch_ids), default=today)
             read_from = self.first_day(today, first, self.cap_days)
         self.temperatures = Temperatures(list(self.units.values()), read_from, today, self.tolerance)
-        self._projections, self._days = {}, {}
+        self._projections, self._days, self._caps = {}, {}, {}
 
     @staticmethod
     def first_day(today, first, cap_days):
-        """The first day the temperatures are read for: LOOKBACK_DAYS and the cap's days before `first` (the gap an
-        unmeasured first day lies in is traced back so far, and capped by the measured days before it), and at least
-        LOOKBACK_DAYS back from today (a projection takes the last measured days within them)."""
-        return min(first - (LOOKBACK_DAYS + cap_days) * DAY, today - LOOKBACK_DAYS * DAY)
+        """The first day the temperatures are read for: the cap's days before `first` (a walk from `first` caps a gap
+        with the measured days no further back than that: `cap`), and at least LOOKBACK_DAYS back from today (a
+        projection takes the last measured days within them)."""
+        return min(first - cap_days * DAY, today - LOOKBACK_DAYS * DAY)
 
     @classmethod
     def of_each(cls, asked):
@@ -319,32 +329,44 @@ class BatchWater:
         found = [each for each in found if each is not None]
         return min(found, key=lambda each: each.value) if found else None
 
-    def _value(self, batch_id, day):
-        """The batch's measured mean of `day`, or None (not measured, not closed, or before the days read)."""
-        if day < self.temperatures.first:
+    def _value(self, batch_id, day, floor):
+        """The batch's measured mean of `day`, or None (not measured, not closed, or before `floor`: what a walk may not
+        look back to). A day after `floor` that was not read is an error (Temperatures.of), never "not measured"."""
+        if day < floor:
             return None
         found = self.measured(batch_id, day)
         return found.value if isinstance(found, Measured) else None
 
-    def cap(self, batch_id, day):
+    def cap(self, batch_id, day, floor):
         """What caps the assumed temperature of the unmeasured `day`: the coldest daily mean measured in the cap's days
-        before the gap of unmeasured days it lies in began, and the first day measured after the gap, the lower of
-        them; None when neither is there. The gap is followed back as far as the water was read, and forward to
-        today."""
-        before = day - DAY
-        while before >= self.temperatures.first and self._value(batch_id, before) is None:
-            before -= DAY
-        found = [value for value in (self._value(batch_id, before - back * DAY) for back in range(self.cap_days))
-                 if value is not None]
-        after = day + DAY
-        while after <= self.today and self._value(batch_id, after) is None:
-            after += DAY
-        if after <= self.today:
-            found.append(self._value(batch_id, after))
-        return min(found, default=None)
+        (calendar days) before the gap of unmeasured days it lies in began, and the first day measured after the gap,
+        the lower of them; None when neither is there. The gap is followed back no further than `floor`, the first day
+        of the walk less the cap's days (never a bound that moves with today: REVIEW-2, N-1), and forward to today.
+        Worked out once a gap: every day of it has the same cap (N-4)."""
+        key = (batch_id, floor, day)
+        if key not in self._caps:
+            first = day
+            while first - DAY >= floor and self._value(batch_id, first - DAY, floor) is None:
+                first -= DAY
+            last = day
+            while last + DAY <= self.today and self._value(batch_id, last + DAY, floor) is None:
+                last += DAY
+            before = first - DAY
+            found = [value for value in (self._value(batch_id, before - back * DAY, floor)
+                                         for back in range(self.cap_days)) if value is not None]
+            if last + DAY <= self.today:
+                found.append(self._value(batch_id, last + DAY, floor))
+            cap = min(found, default=None)
+            gap = first
+            while gap <= last:
+                self._caps[(batch_id, floor, gap)] = cap
+                gap += DAY
+        return self._caps[key]
 
-    def day(self, batch_id, day):
-        """What `day` counts for the batch (the module's rules)."""
+    def day(self, batch_id, day, floor=None):
+        """What `day` counts for the batch (the module's rules); `floor`: how far back a gap's cap may look (default:
+        the first day read)."""
+        floor = self.temperatures.first if floor is None else floor
         found = self.measured(batch_id, day)
         if isinstance(found, Measured):
             return Counted(found.value, found.source, found.differs)
@@ -355,41 +377,50 @@ class BatchWater:
         assumed = self.assumed(batch_id)
         if assumed is None:
             return Counted(ZERO, NOTHING)
-        cap = self.cap(batch_id, day)
+        cap = self.cap(batch_id, day, floor)
         return Counted(cap, CAPPED) if cap is not None and cap < assumed else Counted(assumed, ASSUMED)
 
-    def projection(self, batch_id):
+    def projection(self, batch_id, floor=None):
         """(the temperature a day is projected at, whether it is the species' assumed one): the mean of the batch's
-        last PROJECTION_DAYS measured days within LOOKBACK_DAYS of today; with none measured the assumed temperature;
-        (None, False) with neither."""
-        if batch_id not in self._projections:
+        last PROJECTION_DAYS measured days within LOOKBACK_DAYS of today; with none measured the assumed temperature,
+        capped as a past day of the gap today lies in is (REVIEW-2, N-9; `floor` as for `cap`); (None, False) with
+        neither."""
+        floor = self.temperatures.first if floor is None else floor
+        if (batch_id, floor) not in self._projections:
             found, day = [], self.today
             while day > self.today - LOOKBACK_DAYS * DAY and len(found) < PROJECTION_DAYS:
-                value = self._value(batch_id, day)
+                value = self._value(batch_id, day, self.temperatures.first)
                 if value is not None:
                     found.append(value)
                 day -= DAY
             if found:
-                self._projections[batch_id] = (sum(found, ZERO) / len(found), False)
+                self._projections[(batch_id, floor)] = (sum(found, ZERO) / len(found), False)
             else:
                 assumed = self.assumed(batch_id)
-                self._projections[batch_id] = (assumed, assumed is not None)
-        return self._projections[batch_id]
+                if assumed is not None:
+                    cap = self.cap(batch_id, self.today, floor)
+                    assumed = cap if cap is not None and cap < assumed else assumed
+                self._projections[(batch_id, floor)] = (assumed, assumed is not None)
+        return self._projections[(batch_id, floor)]
 
     def walk(self, batch_id, start, backward=False, needed=None, days=None):
         """THE accrual: the degree-days of the batch's days from `start`, forward (or `backward`), until the sum reaches
         `needed` (`reached` is that day) or after `days` days; at least one of them is given. A day counts at its
         temperature (the module's rules), 0 °C or below as 0; a day not closed, not over or still to come at the
         projection (with none, `unknown`, and the walk stops). Forward, every day from today's projected one on is
-        projected too: the days still needed are worked out at once (`unreachable` when the projection adds nothing)."""
+        projected too: the days still needed are worked out at once (`unreachable` when the projection adds nothing).
+        The cap of a gap looks back no further than the walk's first day less the cap's days (`cap`)."""
         if needed is None and days is None:
             raise ValueError('A walk needs a sum to reach or a number of days.')
+        earliest = (start if not backward else start - (days - 1) * DAY if days
+                    else self.temperatures.first + self.cap_days * DAY)
+        floor = min(earliest, start) - self.cap_days * DAY
         accrual = Accrual(assumed=self.assumed(batch_id), cap_days=self.cap_days, tolerance=self.tolerance)
         step, day, walked = (-DAY if backward else DAY), start, 0
         while (days is None or walked < days) and not (needed is not None and accrual.total >= needed):
-            counted = self.day(batch_id, day)
+            counted = self.day(batch_id, day, floor)
             if counted.value is None:
-                mean, at_assumed = self.projection(batch_id)
+                mean, at_assumed = self.projection(batch_id, floor)
                 if mean is None:
                     accrual.unknown = True
                     break
@@ -403,6 +434,7 @@ class BatchWater:
                 value = max(counted.value, ZERO)
                 accrual.days[counted.how] += 1
                 accrual.counted += value
+                accrual.values[day] = value
                 if counted.differs is not None:
                     accrual.differed.append(day)
             accrual.total += value

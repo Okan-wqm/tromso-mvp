@@ -529,6 +529,9 @@ class AnalyserAtOwnPointTests(WaterTestCase):
         it (the unit is critical) and the judge says it, still counted."""
         self.live()
         self.sample(self.t1, hours=1, source='lab', **BAD, conductivity_25_us_cm='40000')
+        # The point's newest conductivity is what the analyser's NH₃ is worked out with (Context.ionic_inputs_for): a
+        # kit's ordinary one after the lab's, so only the lab's sample is refused, never the analyser's value.
+        self.sample(self.t1, hours=0.5, conductivity_25_us_cm='500')
         reading = self.unit_water().get(NH3)
         self.assertEqual(reading.judged, 'critical')
         self.assertIn('still counted until', reading.note)

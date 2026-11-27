@@ -1,4 +1,4 @@
-"""Independent check of chemcore's gas_exchange module (F:/dev/balik-notes/gas-exchange/gas_exchange.rs).
+"""Independent check of chemcore's gas_exchange module (chemcore/experimental/src/gas_exchange.rs as delivered).
 
 Written from the equations, not from the Rust: the vessel is solved for its pH (not its DIC), the bounds are tested
 by sampling, and the H2S solubility is taken from its primary source (Douabul & Riley 1979, as the IUPAC Solubility
@@ -6,17 +6,18 @@ Data Series vol. 32 prints their data). Standard library only. Run:
 
     python -I independent_check.py [path-to-chemcore]
 
-The chemcore path (default F:/dev/balik-ciftligi/chemcore) is read only for its golden files: formula 1's constants at
-12 degC, S 35 (golden/v1/constants) to prove this file's formula-1 equilibria are the core's, and formula 4's constants
-(golden/v4/waters) for the formula-4 recomputation.
+The chemcore path (default: the chemcore folder holding this file) is read only for its golden files: formula 1's
+constants at 12 degC, S 35 (golden/v1/constants) to prove this file's formula-1 equilibria are the core's, and formula
+4's constants (golden/v4/waters) for the formula-4 recomputation.
 """
 import gzip
 import json
 import math
 import random
 import sys
+from pathlib import Path
 
-CHEMCORE = sys.argv[1] if len(sys.argv) > 1 else 'F:/dev/balik-ciftligi/chemcore'
+CHEMCORE = sys.argv[1] if len(sys.argv) > 1 else str(Path(__file__).resolve().parents[2])
 KELVIN = 273.15
 LN10 = math.log(10.0)
 

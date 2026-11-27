@@ -6,9 +6,12 @@ equations, the vessel solved for its pH, not a mirror of the Rust) and only thes
 - C2: the CO2 solubility per partial pressure is Weiss's K0 times the fugacity coefficient of CO2 in air
   (co2_fugacity_factor); the vessel's CO2 gas-over-water is 1 / (K0 phi R T), so a reading at equilibrium is the water's;
 - C3: the vessel takes two saturations (independent_check.contact already does);
-- C4: the depth test's H2S exponent is 2 (K0_H2S / K0_CO2) (D_H2S / D_CO2)^n with D ratio 0.712 and n = 2/3.
+- C4: the depth test's H2S exponent is 2 (K0_H2S / K0_CO2) (D_H2S / D_CO2)^n with D ratio 0.712 and n = 2/3;
+- F3 (second review): in that exponent K0_CO2 is per partial pressure too (Weiss times the fugacity coefficient);
+- below 2 degC (decided after the second review): Douabul & Riley extrapolated down to the freezing point of the
+  water, UNESCO (1983) at one atmosphere, -0.0575 S + 1.710523e-3 S^1.5 - 2.154996e-4 S^2 (as the second review gives it).
 
-independent_check.py is the reviewer's file as delivered (2026-11-27), unchanged; its golden files are read from the
+independent_check.py is the reviewer's file as delivered (2026-11-27), unchanged but for its default path; its golden files are read from the
 chemcore folder (default: this checkout's). Never run by the server or the tests: it wrote the numbers of
 tests/gas_exchange.rs once, and runs again only when a constant or a choice above changes. Run (Python 3.12, standard
 library), e.g. in the test runner's image:
@@ -65,10 +68,10 @@ def main():
     factor = D_RATIO ** FILM_N
     show('diffusivity factor 0.712^(2/3)', factor)
     x = 1 / 0.8 - 1
-    show('saturation_from_depths(0.8, 12, 35) h2s', 1 - x ** (2 * kd / ic.k0_co2(t, s) * factor))
+    show('saturation_from_depths(0.8, 12, 35, 1) h2s', 1 - x ** (2 * kd / k0c_eff(t, s) * factor))
     x = 1 / 0.55 - 1
     show('saturation_from_depths(0.55, 12, 35) co2', 1 - x * x)
-    show('saturation_from_depths(0.55, 12, 35) h2s', 1 - x ** (2 * kd / ic.k0_co2(t, s) * factor))
+    show('saturation_from_depths(0.55, 12, 35, 1) h2s', 1 - x ** (2 * kd / k0c_eff(t, s) * factor))
     # formula 4, golden v4's constants
     import gzip
     import json
@@ -91,6 +94,22 @@ def main():
     show('f4 fresh 12 C alk 200 mg/L contact(r 0.01, 1, 1)', got)
     worst = max(abs(ic.k0_h2s_dr(tk - ic.KELVIN, sv) / c - 1) for tk, sv, c in ic.DR_TABLE)
     show('worst deviation of the 42 points', worst)
+    # below 2 degC: extrapolated to the freezing point; the pure-water part against IUPAC's low-temperature equation
+    for sv in (0.0, 35.0, 40.0):
+        show(f'freezing_point({sv})', -0.0575 * sv + 1.710523e-3 * sv ** 1.5 - 2.154996e-4 * sv * sv)
+    for tc, sv in ((0.0, 35.0), (-1.9, 35.0), (0.0, 0.0), (1.0, 35.0)):
+        show(f'k0_h2s({tc}, {sv}) extrapolated', ic.k0_h2s_dr(tc, sv))
+    for tc in (0.0, -1.9):
+        iupac = ic.x_to_molar(ic.iupac_x_h2s(tc + ic.KELVIN), tc)
+        show(f'IUPAC low-T pure water at {tc}', iupac)
+        show(f'  D&R pure water at {tc} over IUPAC - 1', ic.k0_h2s_dr(tc, 0.0) / iupac - 1)
+    e0 = ic.formula1(0.0, 35.0)
+    got = ic.contact(e0, 2.0, 7.2, 0.01, ic.AIR_CO2, 1.0, 1.0, 1.0, k0c_eff(0.0, 35.0), ic.k0_h2s_dr(0.0, 35.0))
+    show('f1 contact 0 C S35 (r 0.01, 1, 1) ph,x,co2r,h2sr', got)
+    # F2: above 30 degC the H2S half is refused, the CO2 half is not (its numbers do not depend on K0 of H2S)
+    e32 = ic.formula1(32.0, 35.0)
+    got = ic.contact(e32, 2.0, 7.2, 0.01, ic.AIR_CO2, 1.0, 1.0, 1.0, k0c_eff(32.0, 35.0), 0.1)
+    show('f1 contact 32 C S35 (r 0.01, 1, -) ph,x,co2r', got[:3])
 
 
 if __name__ == '__main__':

@@ -61,6 +61,26 @@ def ledger(batch_ids, include_op=None):
     return lines
 
 
+
+class Measured(NamedTuple):
+    """How a measured line of the ledger was measured: a weighing's source (farm.WeightSource) and its sample (fish
+    weighed, their weight together) where it has one; nothing for a stocking or a harvest."""
+    source: object = None
+    sample_count: int = None
+    sample_weight_kg: Decimal = None
+
+
+def how_measured(line_ids):
+    """{line id: Measured} of these ledger lines (the walk's measured points name them, feeding.fold.Point.line_id), in
+    one query: the stock's own read of what measured its lines, whatever the source (a camera is one more row)."""
+    found = {}
+    for line in StockMovement.objects.select_related('weight_source').filter(pk__in=[pk for pk in line_ids if pk]):
+        weighed = line.kind == MovementKind.WEIGHING
+        found[line.pk] = (Measured(line.weight_source, line.sample_count, line.sample_weight_kg) if weighed
+                          else Measured())
+    return found
+
+
 def moved_grams(batch_ids):
     """{line id: the grams it moved} for every live line of these batches: what the fold took out (a harvest
     line's book kilos, beside its weighed kilos) or brought in; None for a weighing, which sets the grams."""

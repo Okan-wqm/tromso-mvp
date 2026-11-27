@@ -43,7 +43,7 @@ from farm.models.site import zone_of
 from farm.models.stock import MovementKind
 from farm.stock.dates import end_of, local_today, start_of
 from farm.stock.fold import operations
-from farm.stock.read import batches_ever_in, ledger
+from farm.stock.read import Measured as stock_measured, batches_ever_in, how_measured, ledger
 
 from .fold import ZERO, Feeding, PointKind, Window, ratio, walk
 from .projection import Projector
@@ -213,22 +213,21 @@ def measured_points(projection, unit_id, batch_id):
     """THE measured points of a batch in a unit, oldest first: those of its current stay there (fold.Stay.points, the
     walk's own), whatever measured them. Every page that sets a plan or an estimate beside what was measured reads
     them here, so a new source (a biomass camera) is one more row of farm.WeightSource on a weighing line and no
-    second path. One query for the lines' sources and samples."""
+    second path. The lines' sources and samples are the stock's read (stock.read.how_measured)."""
     stays = projection.walked.stays.get((unit_id, batch_id))
     if not stays:
         return []
     points = stays[-1].points
-    lines = StockMovement.objects.select_related('weight_source').in_bulk([point.line_id for point in points])
+    how = how_measured([point.line_id for point in points])
     corrections = {}
     for correction in projection.corrections(unit_id, batch_id):
         corrections[correction.day] = correction      # two weighings of one day: the later one's stands
     found = []
     for point in points:
-        line = lines.get(point.line_id)
-        weighed = line is not None and line.kind == MovementKind.WEIGHING
+        measured = how.get(point.line_id) or stock_measured()
         found.append(Measured(
-            point.kind, point.day, point.fish, point.avg_weight_g, line.weight_source if weighed else None,
-            line.sample_count if weighed else None, line.sample_weight_kg if weighed else None,
+            point.kind, point.day, point.fish, point.avg_weight_g, measured.source, measured.sample_count,
+            measured.sample_weight_kg,
             corrections.get(point.day) if point.kind == PointKind.WEIGHING else None))
     return found
 

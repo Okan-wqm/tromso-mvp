@@ -40,7 +40,7 @@ from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, Validatio
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import F, Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 from django.utils.text import capfirst
@@ -294,6 +294,26 @@ def tab_fields(tabs):
     """Every field name of the tabs, the ones inside a Fieldset too."""
     return [name for _, _, names in tabs for item in names
             for name in (item.names if isinstance(item, Fieldset) else [item])]
+
+
+def unchanged(seen, record):
+    """Whether `record` (as read now, locked or not) is still the one the person saw: its version is the one their page
+    carried (`seen`, posted as text or cleaned as a number). A record without a version (not an AuditedModel) has
+    nothing to compare. The one comparison of an edit, a row list and a delete."""
+    return not isinstance(record, AuditedModel) or str(seen) == str(record.version)
+
+
+def changed_meanwhile(name, deleting=False):
+    """The sentence of a record changed since the person read it: for an edit or a row list, the form shows their
+    version; for a delete, the confirmation showed another record than the one now there. The one place of both
+    sentences (hr.services says the delete's when it compares under its lock)."""
+    if deleting:
+        # Translators: %(name)s is the kind of record in lower case (e.g. site).
+        return _('This %(name)s was changed while you were looking at it: check it and delete it again.') % {
+            'name': name}
+    # Translators: %(name)s is the kind of record in lower case (e.g. site).
+    return _('Someone else changed this %(name)s while you were editing it. The form now shows their version; make '
+             'your changes again.') % {'name': name}
 
 
 def refusal_on_form(form, error):
@@ -992,8 +1012,8 @@ class UpdateView(FormView):
 
                 def write():
                     current = self.locked_object(pk)
-                    if versioned and form.cleaned_data.get('version') != current.version \
-                            or getattr(read, 'version', None) != getattr(current, 'version', None):
+                    if versioned and not unchanged(form.cleaned_data.get('version'), current) \
+                            or not unchanged(getattr(read, 'version', None), current):
                         raise Crossed
                     if r.service_writes:
                         return r.change_record(request, form, current)
@@ -1024,10 +1044,7 @@ class UpdateView(FormView):
         except Clashed:
             return self.page(form, self.get_object(pk))
         except Crossed:
-            # Translators: %(name)s is the kind of record in lower case (e.g. site).
-            messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                      'The form now shows their version; make your changes again.')
-                           % {'name': r.name})
+            messages.error(request, changed_meanwhile(r.name))
             return done(request, self.url('edit', pk))
         except ValidationError as error:
             # The save asked something first (Resource.edited), or the service refused it: the form again with the
@@ -1073,18 +1090,22 @@ class DeleteView(ResourceView):
         return render_page(request, 'crud/confirm_delete.html', self.context(
             object=obj, plan=plan, outcome=formpayload.delete_outcome(obj, plan), version=getattr(obj, 'version', None)))
 
-    def changed_since(self, request, obj):
-        """Whether `obj` (as read now) is not the record the person confirmed: the confirmation posts the version it
-        showed (`version`), and a record changed since is not deleted, said as an edit that crossed another is. A post
-        without one (an older page, a test's plain post) is taken as confirmed now."""
+    def not_as_confirmed(self, request, obj, pk):
+        """The answer when `obj` (as read now) is not the record the person confirmed, else None. The confirmation of a
+        versioned record (an AuditedModel) posts the version it showed (`version`): a post without it confirmed nothing
+        and is refused (400, said); a record changed since is not deleted, said, back on the confirmation. A record
+        without a version (a hard-deleted one) has nothing to confirm and deletes. Asked after the scope and the
+        record's own refusal, so a record the person may not reach stays a 404 or a 403."""
+        if not isinstance(obj, AuditedModel):
+            return None
         confirmed = request.POST.get('version', '')
-        if confirmed == '' or not hasattr(obj, 'version') or confirmed == str(obj.version):
-            return False
-        # Translators: %(name)s is the kind of record in lower case (e.g. site).
-        messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                  'The form now shows their version; make your changes again.')
-                       % {'name': self.resource.name})
-        return True
+        if confirmed == '':
+            return HttpResponseBadRequest(_('This delete was not confirmed: open the delete of this %(name)s again and '
+                                            'confirm it there.') % {'name': self.resource.name})
+        if unchanged(confirmed, obj):
+            return None
+        messages.error(request, changed_meanwhile(self.resource.name, deleting=True))
+        return done(request, self.url('delete', pk))
 
     def post(self, request, pk):
         r = self.resource
@@ -1093,9 +1114,12 @@ class DeleteView(ResourceView):
             try:
                 with transaction.atomic():
                     obj = self.get_object(pk)
-                    if self.changed_since(request, obj):
-                        return done(request, self.url('delete', pk))
-                    r.delete_record(request, obj)        # obj is the confirmed version: the service compares with it
+                    refused = self.not_as_confirmed(request, obj, pk)
+                    if refused is not None:
+                        return refused
+                    # obj is the version confirmed (checked just now, unlocked); the service compares it again under
+                    # its own lock (hr.services.as_confirmed)
+                    r.delete_record(request, obj)
             except ValidationError as error:
                 messages.error(request, ' '.join(error.messages))
                 return done(request, self.url('list'))
@@ -1111,8 +1135,9 @@ class DeleteView(ResourceView):
             obj = self.locked_object(pk)
             if not r.allowed(request, obj, 'delete'):
                 raise PermissionDenied
-            if self.changed_since(request, obj):
-                return done(request, self.url('delete', pk))
+            refused = self.not_as_confirmed(request, obj, pk)
+            if refused is not None:
+                return refused
             if isinstance(obj, AuditedModel):
                 plan = plan_delete(obj)
                 if not plan.can_delete:
@@ -1167,12 +1192,8 @@ class RowListView(ResourceView):
             # travels with the list), its version moved on. Asked again under the lock whether the record has
             # the list: a report filed meanwhile has no answers to change any more.
             current = self.locked_object(pk)
-            versioned = isinstance(current, AuditedModel)
-            if versioned and request.POST.get('version') != str(current.version):
-                # Translators: %(name)s is the kind of record in lower case (e.g. site).
-                messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                          'The form now shows their version; make your changes again.')
-                               % {'name': r.name})
+            if not unchanged(request.POST.get('version'), current):
+                messages.error(request, changed_meanwhile(r.name))
                 return done(request, self.url('edit', pk), stay=True)
             if not rows.applies_to(current):
                 raise Http404
@@ -1189,7 +1210,7 @@ class RowListView(ResourceView):
                                                                           'withdrawal_change': getattr(error, 'change', None)})
                 response.status_code = 422
                 return response
-            if versioned:
+            if isinstance(current, AuditedModel):
                 current.version += 1
                 current.updated_by = request.user
                 current.save(update_fields=['version', 'updated_by', 'updated_at'])

@@ -321,8 +321,9 @@ def delete_outcome(obj, plan):
 
 def delete_payload(obj, plan, name, *, action, cancel):
     """The delete confirmation (crud/confirm_delete.html) as the native dialog draws it: the question, what is in the way,
-    what goes with the record, what loses its link, what is kept and what stays linked, and what deleting does. Every
-    sentence is the old page's own msgid, said here in the request's language: the dialog adds no text of its own.
+    what goes with the record, what loses its link, what is kept and what stays linked, and what deleting does (said by
+    `delete_outcome`, for both looks). Every sentence is a msgid the classic page says too, said here in the request's
+    language: the dialog adds no text of its own. `version` is the record's, which the delete posts back.
     `plan` is core.softdelete.plan_delete's (None for a record erased outright)."""
     from django.utils.translation import gettext as _
 

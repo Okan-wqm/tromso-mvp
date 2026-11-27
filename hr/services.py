@@ -18,6 +18,7 @@ from django.utils.formats import date_format
 from django.utils.translation import gettext as _
 
 from core import audit, softdelete
+from core.crud import changed_meanwhile
 from core.models import AuditLog
 from core.platform import correction_window_days, plan_batch_cells
 from farm.stock.dates import site_today
@@ -49,6 +50,14 @@ def _allowed(user, employee, perms=EMPLOYEE_VERBS):
     _verb(user, perms)
     if not scope.can_reach(user, employee) or own_record(user, employee):
         raise PermissionDenied
+
+
+def as_confirmed(current, confirmed):
+    """The record a delete confirmed (`confirmed`, crud's read at the version the person confirmed) is still the one
+    locked now (`current`, read again under the person's lock: None when it is gone), else refused with the sentence
+    of a record changed while the person looked at it. The one step of HR's deletes (clear_day, void_presence)."""
+    if current is None or current.pk != confirmed.pk or current.version != confirmed.version:
+        raise ValidationError(changed_meanwhile(confirmed._meta.verbose_name, deleting=True))
 
 
 class NotReached(PermissionDenied):
@@ -422,9 +431,10 @@ ONE_PLAN = next(constraint for constraint in ShiftAssignment._meta.constraints
 
 def _plan(user, cells, shift, note=KEEP, expected=WHATEVER, most=None):
     _verb(user, PLAN_PERMISSIONS)              # who may plan no cell at all is refused before the cells are read
-    if most is not None and len(cells) > most():
+    bound = most() if most is not None else None
+    if bound is not None and len(cells) > bound:
         raise ValidationError(_('At most %(most)s days can be planned at once: select fewer and repeat.')
-                              % {'most': most()})
+                              % {'most': bound})
     by_person = {}
     for employee, day in cells:
         by_person.setdefault(employee.pk, (employee, {}))[1][day] = shift
@@ -442,9 +452,7 @@ def _plan(user, cells, shift, note=KEEP, expected=WHATEVER, most=None):
             for day in changes:
                 row = existing.get(day)
                 if expected is not WHATEVER and shift is CLEAR:
-                    if row is None or row.pk != expected.pk or row.version != expected.version:
-                        raise ValidationError(_('Someone planned one of these days at the same time. Look at the week '
-                                                'again.'))
+                    as_confirmed(row, expected)
                 elif expected is not WHATEVER and row is not None and row.pk != getattr(expected, 'pk', None):
                     raise ValidationError({'day': ONE_PLAN.violation_error_message})
                 if not user.has_perm(_cell_permission(existing.get(day), shift)):
@@ -851,10 +859,10 @@ def _keeps_attendance(user, employee, moment, still_open=False):
     stretch still open, today (scope.reaches_stretch); never their own attendance."""
     if own_record(user, employee):
         raise ValidationError(_('You do not enter or correct your own attendance.'))
-    if not scope.reaches_stretch(user, employee, read.governing(employee, moment).company_day, still_open):
-        if scope.can_reach(user, employee):
-            raise ValidationError(_('You do not see this person on this day.'))
-        raise PermissionDenied
+    if still_open and scope.can_reach(user, employee):
+        return                                  # an open stretch is today's lead's too (scope.reaches_stretch)
+    reached(user, [(employee, read.governing(employee, moment).company_day)],
+            _('You do not see this person on this day.'))
 
 
 def _note(note, needed):
@@ -909,14 +917,14 @@ def correct_presence(user, record, clock_in_at, clock_out_at, note):
 
 
 def void_presence(user, record):
-    """Voids a stretch (the Attendance page's delete): Delete on Attendance and the stretch the user's to correct
-    (`correct_presence`'s reach), never their own; the person is locked before the stretch; logged by the delete plan."""
+    """Voids a stretch (the Attendance page's delete) as the person confirmed it (`record`, at its version:
+    `as_confirmed`): Delete on Attendance and the stretch the user's to correct (`correct_presence`'s reach), never their
+    own; the person is locked before the stretch; logged by the delete plan."""
     _verb(user, ('hr.delete_attendancerecord',))
     with transaction.atomic():
         employee = lock_person(record.employee_id)
         current = AttendanceRecord.objects.select_for_update(of=('self',)).filter(pk=record.pk).first()
-        if current is None:
-            return None                         # voided meanwhile: nothing left to do
+        as_confirmed(current, record)           # voided or corrected since the confirmation: said, nothing voided
         if own_record(user, employee):
             raise PermissionDenied
         if not scope.reaches_stretch(user, employee, read.governing(employee, current.clock_in).company_day,

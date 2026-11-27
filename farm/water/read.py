@@ -2127,7 +2127,9 @@ def _worked_said(reading, shown, verdicts, judged_of, where, own_ids, point_wate
       evaluated"."""
     code = reading.code
     shown_record = record_of(shown, moment, reading.judged)
-    verdict = judge.place_verdict(shown_record, verdicts, own_ids)
+    points = {point.pk: point for point in (*where.own, *where.system)}
+    late = entered_late({points[key]: verdict for key, verdict in verdicts.items() if key in points})
+    verdict = judge.place_verdict(shown_record, verdicts, own_ids, lambda record: id(record.key) in late)
     if verdict.held is not None:
         held = judged_of(verdict.held.key)
         reading.judged = reading.status = held.judged
@@ -2143,8 +2145,9 @@ def _worked_said(reading, shown, verdicts, judged_of, where, own_ids, point_wate
         point_water.refused_newer[code] = judged_of(verdict.refused.key)
     for value, newer in verdict.counted:         # still counted: never called superseded
         _say(reading, messages.still_counted(judged_of(value.key), newer.key))
-    for late, newer in verdict.late[:LATE_SAID]:
-        _say(reading, messages.late_result(judged_of(late.key), newer.key))
+    for record, newer in verdict.late[:LATE_SAID]:     # entered late, or on time and overtaken later (judge.said_as)
+        said = messages.earlier_result if record in verdict.earlier else messages.late_result
+        _say(reading, said(judged_of(record.key), newer.key))
     if verdict.late[LATE_SAID:]:                 # late alerts judged and not said one by one: counted exactly
         _say(reading, messages.late_more(len(verdict.late[LATE_SAID:])))
     unread = sum(context.worked_at(point).late_more for point in (*where.own, *where.system))
@@ -2193,25 +2196,50 @@ def late_results_of(samples):
 
         more = [context._derived(sample)[1][NH3_N.code] for sample in mine.values()]
         verdict = context.verdict(point, NH3_N.code, now, status_of, live.get(point.pk, ()), more)
+        late = entered_late({point: verdict})
+        words = {judge.COUNTED: messages.still_counted, judge.LATE: messages.late_result,
+                 judge.EARLIER: messages.earlier_result}
         for record in verdict.late:
             if record.id in mine and record.status in ALERTS:
-                late = context.judge(replace(record.key), _local_day(mine[record.id]))
-                said = messages.still_counted if verdict.still_counted(record) else messages.late_result
-                found[mine[record.id].pk] = str(said(late, verdict.superseded(record).key))
+                value = context.judge(replace(record.key), _local_day(mine[record.id]))
+                said = words[verdict.said_as(record, id(record.key) in late)]
+                found[mine[record.id].pk] = str(said(value, verdict.superseded(record).key))
+    return found
+
+
+def entered_late(verdicts):
+    """{id of a Record's key} of the superseded records behind a LIVE value (`PointVerdict.late`, superseded by the
+    point's analyser) that were entered after the analyser at their point had a reading newer than their minute: the
+    analyser's history at each one's entry (sources.values_at of the TAN at the point's own targets, one ask a point).
+    What `judge.said_as` calls a late result rather than an earlier one (the coordinator's decision on review 9, P3).
+    `verdicts`: {point: PointVerdict}."""
+    found = set()
+    for point, verdict in verdicts.items():
+        behind = [record for record in verdict.late if not verdict.superseded(record).stored]
+        if not behind:
+            continue
+        targets = [target for target, _origin, _at in _observed(point)]
+        answers = sources.values_at(targets, TAN, [record.created_at for record in behind])
+        for record, answer in zip(behind, answers):
+            if any(judge.minute(value.at) > record.minute for values in answer.values.values() for value in values):
+                found.add(id(record.key))
     return found
 
 
 def live_worked_at(points, context, now):
-    """{point id: [Reading]} of the fresh live NH₃ BOUND at each point now (`bound_at`): the value worked out from its own
-    sensors' fresh TAN, as the latest read works it (`_resolve`, its own tier alone). What a late result entered at the
-    point is judged against beside its stored samples (review 8, N1). One read of the sensors for all of them."""
-    places = {point.pk: Places([point], _observed(point)) for point in points}
-    answer = sources.latest([target for where in places.values() for target, _origin, _at in where.own_targets], now)
+    """{point id: [Reading]} of the fresh live NH₃ BOUND at each point now (`bound_at`), worked out as the latest read
+    works it (review 9, P6): from the place's own sensors' newest fresh TAN with the pH, temperature and salinity fresh in
+    its own tier or else its system's (`_places`, `_resolve`), so the entry and the page always see the same analyser
+    value. What a result entered at the point is judged against beside its stored samples (review 8, N1). One read of
+    the sensors for all of them."""
+    places = _places(points)
+    answer = sources.latest([target for where in places.values()
+                             for target, _origin, _at in (*where.own_targets, *where.system_targets)], now)
     found = {}
     for point in points:
         where = places[point.pk]
-        _chosen, candidates = _resolve(_live(where.own_targets, answer), [], {}, [], context, now,
-                                       partial(_at_moment, where))
+        _chosen, candidates = _resolve(_live(where.own_targets, answer), [], _live(where.system_targets, answer), [],
+                                       context, now, partial(_at_moment, where))
         found[point.pk] = [reading for reading in candidates.get(NH3_N.code, []) if reading.sample.live
                            and reading.value is not None and reading.fresh(now) and bound_at(reading) == point.pk]
     return found

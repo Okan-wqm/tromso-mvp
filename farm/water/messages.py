@@ -462,6 +462,20 @@ def late_result(late, evidence):
         'newer_time': local_time(evidence.at, evidence.point).strftime('%d.%m.%Y %H:%M')}
 
 
+def earlier_result(earlier, newer):
+    """A result entered on time and overtaken later by its point's analyser, no longer counted (the coordinator's decision
+    on review 9, P3; judge.said_as): never called late. "Earlier result: critical 0.8924 at Middle on 25.11.2026 10:00,
+    superseded by 0.0011 on 26.11.2026 18:00." """
+    from ..models.water_point import local_time
+    from .evaluate import Status
+    from .read import said_value
+    return _('Earlier result: %(status)s %(value)s at %(point)s on %(time)s, superseded by %(newer)s on '
+             '%(newer_time)s.') % {
+        'status': str(Status(earlier.judged).label).lower(), 'value': said_value(earlier), 'point': earlier.point.name,
+        'time': local_time(earlier.at, earlier.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(newer),
+        'newer_time': local_time(newer.at, newer.point).strftime('%d.%m.%Y %H:%M')}
+
+
 def still_counted(value, newer):
     """A result entered behind a newer live reading at its point that is still fresh, so the place's status still counts
     it (review 3, N1; the coordinator's decision on review 8): never called superseded. "Result of 27.11.2026 09:00:

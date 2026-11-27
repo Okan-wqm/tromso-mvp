@@ -151,6 +151,7 @@ class PasswordResetForm(auth_forms.PasswordResetForm):
 PLATFORM_TABS = [
     ('records', _('Records'), ['correction_window_days', 'second_approval_withdrawal', 'unknown_withdrawal_days']),
     ('clocks', _('Clocks'), ['clock_tolerance_seconds']),
+    ('schedule', _('Shift schedule'), ['plan_batch_cells']),
 ]
 
 
@@ -168,6 +169,9 @@ class PlatformSettingsForm(TabbedForm):
                                         'may be voided, and how long after its last day an approved leave may still be '
                                         'shortened or cancelled. Older records stay as they are. 1 to 3650; 31 until you '
                                         'set another.'),
+            'plan_batch_cells': _('How many days of the shift schedule may be planned in one go (a paint over the '
+                                  'week’s grid: people times days). More than this is refused, and the person paints '
+                                  'fewer and repeats. 1 to 5000; 500 until you set another.'),
             'second_approval_withdrawal': _('When ticked, going on past a medicine withdrawal (a harvest during one, a '
                                             'treatment reaching back over a harvest) needs a second person’s approval. '
                                             'That approval is not built yet: while this is ticked, every such step is '

@@ -467,9 +467,9 @@ class Resource:
         the tab is declared, so nothing is dropped without a word."""
         found = []
         if cls.form_class is not None and cls.model is not None:
-            fields = getattr(cls.form_class._meta, 'fields', None) or ()
+            # the fields the form really has (`fields = '__all__'` and `exclude` too), not what its Meta spells
             found += [f'the many-to-many field {field.name} on its form (form.save_m2m)'
-                      for field in cls.model._meta.many_to_many if field.name in fields]
+                      for field in cls.model._meta.many_to_many if field.name in cls.form_class.base_fields]
         if cls.row_lists:
             found.append('row lists')
         for hook in ('after_save', 'change_severity'):

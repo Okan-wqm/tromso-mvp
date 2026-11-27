@@ -32,13 +32,14 @@ no database, about a second.
   are found, not listed: those it logs (`audit.entity_type_of(Model)`), builds (`Model(...)`) or writes through a
   manager, the name resolved by the module's own imports. What is not yet one writer is a ratchet, exact and never
   raised: the tabs crud still saves beside a service that writes their model (SECOND_WRITER_TABS, each with what the
-  two writers are; closed on wip/one-writer-guard) and the modules that build or write an undeclared service-written
+  two writers are; closed by the follow-up listed in the plan) and the modules that build or write an undeclared service-written
   model by name (BUILT_ELSEWHERE, a count and a reason).
 
 The scan is by name: it sees the usual spellings (a write through `getattr` or a variable holding a manager is not
 seen). It keeps developers inside the layers; the database's roles keep a mistake or a compromise from rewriting
 history (H-1)."""
 import ast
+import importlib
 from collections import Counter
 from pathlib import Path
 
@@ -207,7 +208,7 @@ HOOKS = (('add', 'create_record'), ('change', 'change_record'), ('delete', 'dele
 # (`_base_manager`, `_default_manager`: the spellings core/tests_sealing.py holds for the sealed models).
 ROW_MANAGERS = ('objects', 'all_objects', '_base_manager', '_default_manager')
 # {tab: the two writers}: a tab crud saves although its area's service writes the same model too. Found when the guard
-# came (the review of wip/hr-one-path, M-2); each is looked at and closed on wip/one-writer-guard. Never add one.
+# came (the review of wip/hr-one-path, M-2); each is closed by the follow-up listed in the plan. Never add one.
 SECOND_WRITER_TABS = {
     'ReportResource': "crud creates and edits a draft's answers; reports.services.submit files it (status, receipt, "
                       'frozen content) and start_correction creates a draft of its own: a second creator',
@@ -241,7 +242,9 @@ def _models():
 
 
 def _imported(module, tree):
-    """{name: the absolute module it is imported from} for the `from x import name` lines of a module."""
+    """{name bound in the module: (the absolute module it comes from, the name there)} for its imports: `from x import
+    name as alias` gives alias: (x, name), `from hr import models` gives models: (hr, models), `import hr.models as m`
+    gives m: (hr.models, '')."""
     package = module.split('/')[:-1]
     found = {}
     for node in ast.walk(tree):
@@ -249,36 +252,93 @@ def _imported(module, tree):
             base = package[:len(package) - node.level + 1] if node.level else []
             source = '.'.join([*base, *(node.module.split('.') if node.module else [])])
             for alias in node.names:
-                found[alias.asname or alias.name] = source
+                found[alias.asname or alias.name] = (source, alias.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.asname:
+                    found[alias.asname] = (alias.name, '')
     return found
 
 
-def models_written(module, tree, models=None):
-    """Counter of the models a module builds or writes by name (`Model(...)`, `Model.objects....create()`), and those it
-    logs (`audit.entity_type_of(Model)`, counted 0: a write through a variable is seen by its log entry): {model: n}. A
-    name is a model when the module imports it from that model's app."""
+def _service_forms():
+    """{form class: its model} of the model forms whose model declares `service_written`."""
+    from django import forms
+
+    from core.datamap import all_model_forms
+    return {form: form._meta.model for form in all_model_forms()
+            if issubclass(form, forms.ModelForm) and getattr(getattr(form, '_meta', None), 'model', None) is not None
+            and getattr(form._meta.model, 'service_written', False)}
+
+
+def models_written(module, tree, models=None, service_forms=None):
+    """Counter of the models a module builds or writes by name, and those it logs (`audit.entity_type_of(Model)`,
+    counted 0: a write through a variable is seen by its log entry): {model: n}. What it sees, by the model's name
+    imported (an alias too) or through its app's models module (`models.Posting`, `import hr.models as m`):
+    `Model(...)`; `Model.<manager>....<write>()` through any manager (`objects`, `all_objects`, `_base_manager`,
+    `_default_manager`); `QuerySet(Model)....<write>()`; and `<name>.save()` of a name bound in the same function to a
+    model form of a declared model (`form = ShiftAssignmentForm(...)`; crud's own save is core/crud.py's). What it
+    does not see: a row held in a variable, a related manager (`person.postings.create()`), a write through
+    `getattr`: the model itself refuses those at run time (core.writers)."""
     models = models or _models()
+    service_forms = _service_forms() if service_forms is None else service_forms
+    forms_by_name = {(form.__module__, form.__name__): model for form, model in service_forms.items()}
     imported = _imported(module, tree)
     found = Counter()
 
-    def model_named(name):
-        source = imported.get(name, '')
-        return next((model for model in models.get(name, ())
-                     if source.split('.')[0] == model.__module__.split('.')[0] and 'models' in source.split('.')), None)
+    def of_app(source, model):
+        return source.split('.')[0] == model.__module__.split('.')[0] and 'models' in source.split('.')
 
+    def model_named(name):
+        source, original = imported.get(name, ('', ''))
+        return next((model for model in models.get(original, ()) if of_app(source, model)), None)
+
+    def model_through(chain):
+        """The model a chain names through its app's models module: [module alias, Model, ...]; None otherwise."""
+        if len(chain) < 2 or chain[0] not in imported:
+            return None
+        source, original = imported[chain[0]]
+        where = f'{source}.{original}' if original else source
+        return next((model for model in models.get(chain[1], ()) if where.split('.')[-1] == 'models'
+                     and of_app(where, model)), None)
+
+    def form_named(name):
+        source, original = imported.get(name, ('', ''))
+        return next((model for (form_module, form_name), model in forms_by_name.items()
+                     if form_name == original and (form_module == source or form_module.startswith(source + '.'))),
+                    None)
+
+    for function in (node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))):
+        bound = {}                       # name: the declared model of the model form it holds, in this function
+        for node in ast.walk(function):
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) \
+                    and form_named(node.value.func.id):
+                bound.update({target.id: form_named(node.value.func.id) for target in node.targets
+                              if isinstance(target, ast.Name)})
+        for node in ast.walk(function):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == 'save' \
+                    and isinstance(node.func.value, ast.Name) and node.func.value.id in bound:
+                found[bound[node.func.value.id]] += 1
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        if isinstance(func, ast.Attribute) and func.attr == 'entity_type_of' and node.args \
-                and isinstance(node.args[0], ast.Name) and model_named(node.args[0].id):
-            found[model_named(node.args[0].id)] += 0
+        if isinstance(func, ast.Attribute) and func.attr == 'entity_type_of' and node.args:
+            argument = node.args[0]
+            model = model_named(argument.id) if isinstance(argument, ast.Name) else \
+                model_through(_chain(argument)) if isinstance(argument, ast.Attribute) else None
+            if model is not None:
+                found[model] += 0
         elif isinstance(func, ast.Name) and model_named(func.id):
             found[model_named(func.id)] += 1
+        elif isinstance(func, ast.Attribute) and func.attr not in SERVICE_WRITES and model_through(_chain(func)) \
+                and len(_chain(func)) == 2:
+            found[model_through(_chain(func))] += 1                      # models.Posting(...)
         elif isinstance(func, ast.Attribute) and func.attr in SERVICE_WRITES:
             chain = _chain(func.value)
             if len(chain) > 1 and chain[1] in ROW_MANAGERS and model_named(chain[0]):
                 found[model_named(chain[0])] += 1
+            elif len(chain) > 2 and chain[2] in ROW_MANAGERS and model_through(chain):
+                found[model_through(chain)] += 1
             elif chain[:1] == ['QuerySet']:
                 # `QuerySet(Model)...update()`: the rows as stored, past every manager (core/tests_sealing.py reads the
                 # same spelling for a sealed model)
@@ -286,18 +346,19 @@ def models_written(module, tree, models=None):
                 while isinstance(root, (ast.Attribute, ast.Call)) and not (
                         isinstance(root, ast.Call) and isinstance(root.func, ast.Name)):
                     root = root.value if isinstance(root, ast.Attribute) else root.func
-                if isinstance(root, ast.Call) and root.args and isinstance(root.args[0], ast.Name)                         and model_named(root.args[0].id):
+                if isinstance(root, ast.Call) and root.args and isinstance(root.args[0], ast.Name) \
+                        and model_named(root.args[0].id):
                     found[model_named(root.args[0].id)] += 1
     return found
 
 
 def service_written():
     """{model: the services.py that writes it} for every model its own app's services write."""
-    models = _models()
+    models, service_forms = _models(), _service_forms()
     found = {}
     for module, tree in production_modules():
         if module.endswith('/services.py'):
-            for model in models_written(module, tree, models):
+            for model in models_written(module, tree, models, service_forms):
                 if module.split('/')[0] == model.__module__.split('.')[0]:
                     found[model] = module
     return found
@@ -305,29 +366,37 @@ def service_written():
 
 def written_elsewhere(owners):
     """{(module, model name): count} of the service-written models built or written by name outside their service."""
-    models = _models()
+    models, service_forms = _models(), _service_forms()
     found = {}
     for module, tree in production_modules():
-        for model, count in models_written(module, tree, models).items():
+        for model, count in models_written(module, tree, models, service_forms).items():
             if count and model in owners and owners[model] != module:
                 found[(module, model.__name__)] = count
     return found
 
 
 def calls_a_service(tab, hook, seen=()):
-    """Whether a tab's hook calls into `services` (the area's service module, by the name every area imports it under),
-    itself or through a method of its own class."""
+    """Whether a tab's hook calls one of its area's service WRITERS (`services.<writer>(...)`, itself or through a
+    method of its own class): a public function of the services module that core/tests_service_rights.py holds as a
+    writer (not a question of its NOT_A_WRITER), and never saves the form itself."""
     import inspect
     import textwrap
+
+    from .tests_service_rights import NOT_A_WRITER
+    package = tab.__module__.split('.')[0]
+    services = importlib.import_module(f'{package}.services')
     tree = ast.parse(textwrap.dedent(inspect.getsource(getattr(tab, hook))))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            chain = _chain(node.func)
-            if chain[:1] == ['services'] and len(chain) > 1:
-                return True
-            if chain[:1] == ['cls'] and len(chain) == 2 and chain[1] not in seen and hasattr(tab, chain[1]) \
-                    and calls_a_service(tab, chain[1], (*seen, hook)):
-                return True
+    calls = [_chain(node.func) for node in ast.walk(tree) if isinstance(node, ast.Call)]
+    if any(chain[-1:] == ['save'] and chain[:1] == ['form'] for chain in calls):
+        return False
+    for chain in calls:
+        if chain[:1] == ['services'] and len(chain) == 2 and not chain[1].startswith('_') \
+                and inspect.isfunction(getattr(services, chain[1], None)) \
+                and f'{services.__name__}.{chain[1]}' not in NOT_A_WRITER:
+            return True
+        if chain[:1] == ['cls'] and len(chain) == 2 and chain[1] not in seen and hasattr(tab, chain[1]) \
+                and calls_a_service(tab, chain[1], (*seen, hook)):
+            return True
     return False
 
 

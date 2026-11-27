@@ -8,15 +8,41 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
+from . import writers
 from .sealing import SealedMixin
 
 
-class SealedManager(SealedMixin, models.Manager):
+class OneWriterQuerySet(models.QuerySet):
+    """The rows of a record's managers: a write of many rows at once asks who writes (core.writers.require), as the
+    record's own `save` and `delete` do. Only a model that declares `service_written` is held; every other model's
+    queryset is Django's."""
+
+    def update(self, **kwargs):
+        writers.require(self.model, 'update')
+        return super().update(**kwargs)
+    update.alters_data = True
+
+    def delete(self):
+        writers.require(self.model, 'delete')
+        return super().delete()
+    delete.alters_data = True
+    delete.queryset_only = True
+
+    def bulk_create(self, objs, *args, **kwargs):
+        writers.require(self.model, 'bulk_create')
+        return super().bulk_create(objs, *args, **kwargs)
+
+    def bulk_update(self, objs, fields, *args, **kwargs):
+        writers.require(self.model, 'bulk_update')
+        return super().bulk_update(objs, fields, *args, **kwargs)
+
+
+class SealedManager(SealedMixin, models.Manager.from_queryset(OneWriterQuerySet)):
     """Every record, as far as the viewer of the moment may see it (core.sealing: a model with no filtering seal is
     not narrowed)."""
 
 
-class ActiveManager(SealedMixin, models.Manager):
+class ActiveManager(SealedMixin, models.Manager.from_queryset(OneWriterQuerySet)):
     """Hides soft-deleted records, and the records the viewer of the moment may not see (core.sealing)."""
 
     def get_queryset(self):
@@ -55,7 +81,9 @@ class AuditedModel(models.Model):
 
     # One writer per record (core/tests_data_access.py, rule S): True on a model its area's services.py writes and
     # nothing else does. Every tab of it hands its writes to the service (core.crud.Resource.service_writes), no other
-    # module builds or writes it, and the delete plan's restore refuses it (core.softdelete.restore).
+    # module builds or writes it, the admin offers no restore of it (core.admin; core.softdelete.restore refuses one a
+    # parent's restore would bring along), and at run time the model refuses a write made outside its service's writing
+    # context (core.writers: `save` and `delete` below, the managers' writes of many rows above).
     service_written = False
 
     # What a delete's confirmation says of the records of this model that keep pointing at the deleted one
@@ -64,6 +92,14 @@ class AuditedModel(models.Model):
 
     class Meta:
         abstract = True
+
+    def save(self, *args, **kwargs):
+        writers.require(type(self), 'save')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        writers.require(type(self), 'delete')
+        return super().delete(*args, **kwargs)
 
     def soft_delete(self, user):
         """Deletes the record its caller has locked (and maybe changed: a void's reason), writing it whole."""
@@ -364,6 +400,7 @@ class AccountMail(models.Model):
 WINDOW_DAYS = (1, 3650)           # a day back at least; ten years at most, which keeps every date's arithmetic sane
 CLOCK_TOLERANCE = (0, 3600)          # seconds: at most the sensors' ingest contract's hour
 UNKNOWN_WITHDRAWAL_DAYS = (1, 3650)  # a day at least; ten years at most, as the correction window
+PLAN_BATCH_CELLS = (1, 5000)         # days of the shift schedule planned in one go: one at least; a bound on one request
 
 
 class PlatformSettings(AuditedModel):
@@ -381,6 +418,8 @@ class PlatformSettings(AuditedModel):
       after the course's last day (or the medicated feeding's day), 180 until the owner sets another. After them the
       fish are not held and the course is listed as unresolved (farm/health/withdrawal.py, rule 8). A change of it
       goes through the withdrawal guard, which asks when it would free fish held today.
+    - How many days of the shift schedule one paint may plan (hr.services.plan_shifts): 500 until the owner sets
+      another, which is a full page of fifty people for a week and some more. It bounds what one request may ask.
     The alarms' rules (delays, escalation, deadbands) are the alarms app's own reference data, per severity and per
     parameter (alarms.SeverityPolicy, alarms.ParameterDeadband)."""
 
@@ -398,6 +437,10 @@ class PlatformSettings(AuditedModel):
     clock_tolerance_seconds = models.PositiveIntegerField(
         _('Clock tolerance (seconds)'), default=300,
         validators=[MinValueValidator(CLOCK_TOLERANCE[0]), MaxValueValidator(CLOCK_TOLERANCE[1])])
+
+    plan_batch_cells = models.PositiveSmallIntegerField(
+        _('Days planned in one go on the shift schedule'), default=500,
+        validators=[MinValueValidator(PLAN_BATCH_CELLS[0]), MaxValueValidator(PLAN_BATCH_CELLS[1])])
 
     class Meta:
         db_table = 'platform_settings'
@@ -417,6 +460,9 @@ class PlatformSettings(AuditedModel):
                 condition=models.Q(unknown_withdrawal_days__gte=UNKNOWN_WITHDRAWAL_DAYS[0],
                                    unknown_withdrawal_days__lte=UNKNOWN_WITHDRAWAL_DAYS[1]),
                 name='chk_platform_settings_unknown_withdrawal'),
+            models.CheckConstraint(
+                condition=models.Q(plan_batch_cells__gte=PLAN_BATCH_CELLS[0], plan_batch_cells__lte=PLAN_BATCH_CELLS[1]),
+                name='chk_platform_settings_plan_batch'),
             # Changed, never deleted: a DELETE is refused by the database too (core 0015, KeepRows).
             models.CheckConstraint(condition=models.Q(is_deleted=False), name='chk_platform_settings_kept'),
         ]

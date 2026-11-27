@@ -24477,7 +24477,8 @@
         "experiments/tests/test_review.py",
         "experiments/tests/test_university.py",
         "experiments/tests/world.py",
-        "monitoring/tests/test_pages.py"
+        "monitoring/tests/test_pages.py",
+        "alarms/tests/test_derived_fresh.py"
       ]
     },
     {

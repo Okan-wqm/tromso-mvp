@@ -216,8 +216,9 @@ class LiveLateTests(SimpleTestCase):
             verdict = judge.point_verdict(with_live(values))
             self.assertEqual(key(verdict.evidence), 'live')
             stored = verdict.superseded_by
-            expected = {each.id for each in values if each.value and not each.refused and (
-                stored is None or each.minute >= stored.minute or each.created_at > stored.created_at)}
+            expected = {each.id for each in values if each.value and (
+                stored is None or each.minute >= stored.minute
+                or (not each.refused and each.created_at > stored.created_at))}
             self.assertEqual({each.id for each in verdict.late}, expected, said(values))
             for late in verdict.late:
                 newer = verdict.superseded(late)
@@ -226,6 +227,52 @@ class LiveLateTests(SimpleTestCase):
                 self.assertIs(newer, stored if stored is not None and stored.minute > late.minute else verdict.evidence)
                 checked += 1
         self.assertGreater(checked, 10000)
+
+    def test_still_counted_is_exactly_what_the_read_counts(self):
+        """Review 9, P1 (the reviewer's enumeration as a test): the read counts, per point, the judged set of its STORED
+        values when fresh now. `still_counted` says exactly that of every late alert, with the analyser at minute 5
+        and at 10, raw and with values stale from their start never fresh; and nothing the read counts is left unsaid
+        (a value refused on its basis included: review 9, P6)."""
+        checked = 0
+        for realistic in (True, False):
+            for values in scenarios():
+                if realistic:
+                    values = [each if each.fresh_at_own_time else dataclasses.replace(each, fresh_now=False)
+                              for each in values]
+                counted_by_read = judge.point_verdict(values).judged
+                for live_minute in (5, 10):
+                    live = record('live', 'ok', live_minute, 20, stored=False, fresh_now=True)
+                    verdict = judge.point_verdict([*values, live])
+                    for late in verdict.late:
+                        if late.status in ALERTS:
+                            checked += 1
+                            self.assertEqual(verdict.still_counted(late),
+                                             late in counted_by_read and late.fresh_now, said(values))
+                    for value in counted_by_read:
+                        if value.fresh_now and value.status in ALERTS:
+                            self.assertTrue(value in verdict.judged or value in verdict.late, said(values))
+        self.assertGreater(checked, 10000)
+
+    def test_one_wording_rule(self):
+        """Review 9, P3 (decided): still counted while it counts; else a LATE result when it was entered after a newer
+        value at its point already existed (a stored one, or the analyser's reading: the shell's `entered_late`), else
+        an EARLIER result."""
+        live = record('live', 'ok', 10, 20, stored=False, fresh_now=True)
+        fresh = record('fresh', 'critical', 0, 3, fresh_now=True)
+        verdict = judge.point_verdict([fresh, live])
+        self.assertEqual({verdict.said_as(fresh, late) for late in (True, False)}, {judge.COUNTED})
+        stale = record('stale', 'critical', 0, 3, fresh_now=False)
+        verdict = judge.point_verdict([stale, live])
+        self.assertEqual((verdict.said_as(stale, True), verdict.said_as(stale, False)), (judge.LATE, judge.EARLIER))
+        kit = record('kit', 'ok', 5, 0, fresh_now=True)
+        verdict = judge.point_verdict([kit, stale, live])
+        self.assertEqual((verdict.said_as(stale, True), verdict.said_as(stale, False)), (judge.LATE, judge.LATE))
+
+    def test_a_value_refused_on_its_basis_behind_the_analyser_is_said(self):
+        """Review 9, P6: the read counts a fresh critical refused on its basis behind the analyser; the judge says it."""
+        refused = record('refused', 'refused_basis_critical', 0, 3, fresh_now=True)
+        verdict = judge.point_verdict([refused, record('live', 'ok', 10, 20, stored=False, fresh_now=True)])
+        self.assertEqual(([each.key for each in verdict.late], verdict.still_counted(refused)), (['refused'], True))
 
     def test_a_lab_critical_behind_a_fresh_analyser_is_late_superseded_by_it(self):
         lab = record('lab', 'critical', 0, 3)
@@ -448,6 +495,40 @@ class PlaceExamplesTests(SimpleTestCase):
         place = judge.place_verdict(shown, {'loop': judge.point_verdict([critical, warning]),
                                             'o1': judge.point_verdict([shown])}, {'o1'})
         self.assertEqual(([each.key for each in place.older], place.held), (['critical', 'warning'], None))
+
+    def test_a_same_minute_peer_of_the_kit_behind_the_analyser_is_still_counted(self):
+        """Review 9, P1 (mutants R9-01, R9-02): the lab's critical at 09:00:10 and the kit's OK at 09:00:40 entered
+        after it (the stored evidence), the analyser at 10:00, both fresh: the read counts the lab value (a peer of the
+        kit's minute), so it is still counted beside the analyser, never superseded by the kit."""
+        lab = record('lab', 'critical', 0, 0, point='o1', fresh_now=True, seconds=10)
+        kit = record('kit', 'ok', 0, 1, point='o1', fresh_now=True, seconds=40)
+        live = record('live', 'ok', 60, 20, point='o1', stored=False, fresh_now=True)
+        verdict = judge.point_verdict([lab, kit, live])
+        self.assertTrue(verdict.still_counted(lab))
+        self.assertIs(verdict.superseded(lab), live)
+        place = judge.place_verdict(live, {'o1': verdict}, {'o1'})
+        self.assertEqual(([(each.key, newer.key) for each, newer in place.counted], place.late),
+                         ([('lab', 'live')], ()))
+
+    def test_a_counted_value_is_paired_with_its_own_points_analyser(self):
+        """Review 9, P4 (mutant R9-10): another point's value shown, the counted value names ITS point's analyser."""
+        lab = record('lab', 'critical', 0, 3, point='o1', fresh_now=True)
+        live = record('o1 live', 'ok', 10, 20, point='o1', stored=False, fresh_now=True)
+        shown = record('o2 kit', 'ok', 30, 4, point='o2', fresh_now=True)
+        place = judge.place_verdict(shown, {'o1': judge.point_verdict([lab, live]), 'o2': judge.point_verdict([shown])},
+                                    {'o1', 'o2'})
+        self.assertEqual([(each.key, newer.key) for each, newer in place.counted], [('lab', 'o1 live')])
+
+    def test_an_earlier_result_and_a_late_one_by_the_shells_answer(self):
+        live = record('live', 'ok', 10, 20, point='o1', stored=False, fresh_now=True)
+        stale = record('stale', 'critical', 0, 3, point='o1', fresh_now=False)
+        points = {'o1': judge.point_verdict([stale, live])}
+        on_time = judge.place_verdict(live, points, {'o1'})
+        entered_late = judge.place_verdict(live, points, {'o1'}, lambda record: record.key == 'stale')
+        self.assertEqual(([each.key for each in on_time.earlier], [each.key for each, _newer in on_time.late]),
+                         (['stale'], ['stale']))
+        self.assertEqual(([each.key for each in entered_late.earlier], [each.key for each, _n in entered_late.late]),
+                         ([], ['stale']))
 
     def test_a_late_alert_still_counted_is_never_called_superseded(self):
         """The coordinator's decision on review 8: a lab critical behind a fresh analyser value, still fresh itself, still

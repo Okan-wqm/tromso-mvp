@@ -248,7 +248,9 @@ class FailedStepTests(CrossReviewCase):
         self.assertEqual(open_levels(point__unit=self.t1), ['critical'])
         alarm = self.system().get()
         self.assertEqual(alarm.parameter, 'unit_unevaluated')
-        self.loop(minutes=1, failing=True)                         # evaluated again: restored, its alarms raised
+        # Evaluated again: restored, its alarms raised. Its UNIT_UNEVALUATED alarm is still open by its off-delay (so
+        # `failing`), but the pass itself must be clean (review 9, P5).
+        self.assertEqual(self.loop(minutes=1, failing=True).failed_steps, [])
         self.loop(minutes=2)
         self.assertFalse(read.is_open(alarm))
         self.assertEqual(open_levels(point__unit=self.t2), ['critical', 'warning'])

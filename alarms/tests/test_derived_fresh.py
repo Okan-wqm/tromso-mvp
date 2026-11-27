@@ -500,6 +500,39 @@ class AnalyserAtOwnPointTests(WaterTestCase):
         self.passes(1800, 1801, 1860, 1920, 2400)
         self.assertEqual(self.outcome(NH3), {'critical': 'returned', 'warning': 'returned'})
 
+    def test_a_result_entered_on_time_and_overtaken_by_the_analyser_is_an_earlier_result(self):
+        """Review 9, P3 (decided): the lab's critical of yesterday was entered five minutes after it was measured, before
+        the analyser sent anything; now the analyser reads OK. It was never late: "Earlier result … superseded by", and
+        its log entry says nothing (it was on time)."""
+        from farm.models import WaterMeasurement
+        lab = self.sample(self.t1, hours=24, source='lab', **BAD)
+        WaterMeasurement.objects.filter(pk=lab.pk).update(created_at=lab.measured_at + timedelta(minutes=5))
+        self.live()
+        note = self.unit_water().get(NH3).note
+        self.assertIn('Earlier result: critical 0.8924 at Middle on ', note)
+        self.assertIn(', superseded by ', note)
+        self.assertNotIn('Late result', note)
+        self.assertIsNone(self.logged(lab))
+
+    def test_a_result_entered_after_the_analysers_newer_reading_is_a_late_result(self):
+        """The other entry: the analyser already read when the lab's result of yesterday was keyed in: "Late result",
+        on the page and in the log alike."""
+        self.live()
+        lab = self.sample(self.t1, hours=24, source='lab', **BAD)
+        note = self.unit_water().get(NH3).note
+        self.assertIn('Late result: critical 0.8924 at Middle on ', note)
+        self.assertNotIn('Earlier result', note)
+        self.assertTrue(self.logged(lab)[1].startswith('Late result: critical 0.8924 at Middle on '), self.logged(lab))
+
+    def test_a_refused_critical_on_its_basis_behind_the_analyser_is_counted_and_said(self):
+        """Review 9, P6: a critical the core refused on its basis, an hour old, behind the analyser's OK: the read counts
+        it (the unit is critical) and the judge says it, still counted."""
+        self.live()
+        self.sample(self.t1, hours=1, source='lab', **BAD, conductivity_25_us_cm='40000')
+        reading = self.unit_water().get(NH3)
+        self.assertEqual(reading.judged, 'critical')
+        self.assertIn('still counted until', reading.note)
+
     def test_review_3_n1_a_fresh_lab_critical_is_never_hidden_by_the_analysers_newer_ok(self):
         """REVIEW 3, N1 (farm/tests/test_water_review3.py DerivedWorstFreshTests): a fresh manual NH₃ critical counts
         beside a newer sensor OK at the same point. Behind the analyser bound to T-01's middle, the lab's critical of an
@@ -532,6 +565,38 @@ class AnalyserAtOwnPointTests(WaterTestCase):
         note = self.unit_water().get(NH3).note
         self.assertIn('Late result: critical 0.8924 at Middle on ', note)
         self.assertNotIn('still counted', note)
+
+
+class AnalyserWithLoopProbesTests(WaterTestCase):
+    """Review 9, P6: the TAN analyser on T-01's middle, its pH and temperature probes on the system's loop point. The page
+    works the analyser's NH₃ with the loop's pH and temperature (A9: own tier, else the system's); the entry works it
+    the same way, so the log and the page say the same of a lab result keyed in behind it."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.tests.helpers import may_record
+        from sensors import bindings
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        may_record(self.user, 'add_binding')
+        device = make_device(make_connection(), make_format(), self.bergen, code='ANALYSER')
+        self.channels = {}
+        for quantity, value, point in (('tan_mg_l', 0.5, self.mid1), ('ph', 7.0, self.loop),
+                                       ('temperature_c', 12.0, self.loop)):
+            channel = make_channel(device, quantity, code=quantity.upper())
+            bindings.move(self.user, channel, point=point, at=self.now - timedelta(days=5))
+            self.channels[channel] = value
+
+    logged = AnalyserAtOwnPointTests.logged
+
+    def test_the_log_and_the_page_say_the_same(self):
+        self.live()
+        lab = self.sample(self.t1, hours=24, source='lab', **BAD)
+        reading = self.unit_water().get(NH3)
+        self.assertTrue(reading.sample.live)
+        self.assertIn('Late result: critical 0.8924 at Middle on ', reading.note)
+        self.assertTrue(self.logged(lab)[1].startswith('Late result: critical 0.8924 at Middle on '), self.logged(lab))
 
 
 class SystemSensorTests(WaterTestCase):
@@ -605,3 +670,4 @@ class SystemSensorTests(WaterTestCase):
 
 
 AnalyserAtOwnPointTests.live = SystemSensorTests.live
+AnalyserWithLoopProbesTests.live = SystemSensorTests.live

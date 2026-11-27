@@ -56,6 +56,13 @@ html[data-wall] body { padding-bottom: 0; }
 html[data-wall] .content { padding: clamp(8px, 1vw, 20px); }
 html[data-wall] .monitor-filters,
 html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Full screen and Leave buttons */
+/* The alarms' notices on a wall (whether they are checked and sent: alarms/_watch_notice.html): a row of their own above
+   the grid, each one line at the band's size (never under the 14 px floor, never cut: a longer one wraps), so the
+   cells keep the room a card needs (frontend/wall.ts measures the grid that is left): at 1920x1080 two notices in the
+   page's own size took a seventh of the screen and cut every Big card's foot. */
+html[data-wall] .content > .alarm-watch { flex: none; display: grid; gap: calc(.2 * var(--wu)); margin: 0 0 var(--wall-gap); font-size: var(--wu); line-height: 1.25; }
+html[data-wall] .content > .alarm-watch > p { margin: 0; padding: calc(.15 * var(--wu)) calc(.4 * var(--wu)); }
+html[data-wall] .content > .alarm-watch .icon { width: 1em; height: 1em; }
 
 /* ---- the movable windows (frontend/windows.ts) --------------------------------------------------------------- */
 .monitor-window {

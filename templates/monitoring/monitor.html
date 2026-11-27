@@ -57,5 +57,7 @@
   <p data-announcer aria-live="assertive"></p>
   <p data-announcer aria-live="polite"></p>
 </div>
-{% include "monitoring/_windows.html" %}
+{% include "monitoring/_windows.html" %}{% comment %} The new look's hatch of a chart's region the water is in (static/css/monitor-next.css: the brief's toxic regions in
+   critical colours): ONE pattern for the page, which the cards' charts, the fragment's and the pane's, name; its
+   colours are the sheet's (the theme's tokens). {% endcomment %}{% if UI_NEXT %}<svg class="monitor-defs" aria-hidden="true" focusable="false"><defs><pattern id="monitor-hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="monitor-hatch-ground" width="12" height="12"></rect><line class="monitor-hatch-line" x1="0" y1="0" x2="0" y2="12"></line></pattern></defs></svg>{% endif %}
 {% endblock %}

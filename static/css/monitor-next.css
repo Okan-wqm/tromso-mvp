@@ -90,23 +90,28 @@ html[data-ui="next"] .monitor-card.is-open { outline: 2px solid var(--action); o
 html[data-ui="next"] .is-fit .card-grid { padding-top: calc(var(--u) * .35); border-top: 1px solid var(--line-hair); }
 html[data-ui="next"] .is-fit .w-value + .w-value > dl { border-left-color: var(--line-hair); }
 
-/* ---- the Big card (a FULL-HEIGHT fitted card, data-fill: the Big screen, the pane of the unit gone into, a wall of
-   them): the design's Big card ("Suderra Console", Monitoring, the Big card), on the classic card's markup and in its
-   unit (--u), so the slot rule, the pane's width and the wall's pages hold as they are. In the template's reading
-   order (the four first values, the chart, the water, the three boxes: owner decisions 10 to 12; the design puts the
-   chart first, the order stays the template's: what is read, what Tab visits and what is seen in one order).
+/* ---- the Big card (a FULL-HEIGHT fitted card, data-fill: the Big screen, a board's Big card, the pane of the unit gone
+   into, a wall of them): the design's Big card ("Suderra Console", Monitoring, the Big card), on the classic card's
+   markup and in its unit (--u), so the slot rule, the pane's width and the wall's pages hold as they are. In the
+   template's reading order (the four first values, the chart, the water, the three boxes: owner decisions 10 to 12;
+   the design puts the chart first; the order stays the template's: what is read, what Tab visits and what is seen in
+   one order). Nothing here judges or counts: what the card is, the server says (data-fill, data-state, data-tiles, the
+   chart's in-co2, in-nh3, is-critical and is-old).
    - the head over a hairline, the reasons under it, each with the state's glyph in the state's tone;
    - the four first values as the design's tiles: hairline boxes side by side, sharing their lines;
    - the chart on the sheet in a hairline frame; a region past a limit in the design's toxic tone (--zone-toxic), faint
-     while the water is not in it, full, its border in the critical colour and the water's mark critical while it is
-     (the server's in-co2, in-nh3 and is-critical: the chemistry core's answer, never judged here); the pH lines dashed;
-   - the water of the middle point as the design's tiles, four to a line (two on a card narrower than 30 rem: a phone): each its
-     name, its figure in the display face beside its strip against the limits, where it came from, and when it arrived
-     with its age, whole (it wraps, never cut: review R1); the table's head is for a screen reader. With more than
-     eight values (two lines of tiles are what the place holds, whatever the card says above them) a row a value, as on
-     the classic card: the eighth value is the table's ninth child, its head the first;
-   - what to dose, the other points and the stock: three hairline boxes with their names, a gap apart;
-   - an empty unit's card: the unit in four cells (monitoring/_card_fit.html, the new look's only), in a hairline box. */
+     while the water is not in it; the region the water is in hatched in the critical colour (the brief: toxic regions
+     in critical colours; the pattern is the page's, templates/monitoring/monitor.html), its border critical, the
+     water's mark critical, unless the mark is old: the last known position stays hollow and dashed (monitor.css); the
+     pH lines dashed;
+   - the water of the middle point as the design's tiles when the server says they fit (data-tiles: one column of at
+     most eight values in a place that holds two lines of four, monitoring/cards/render.py tiled), four to a line (two
+     on a card narrower than 30 rem: a phone): each its name, its figure in the display face beside its strip against
+     the limits, where it came from, and when it arrived with its age, whole (it wraps, never cut: review R1); the
+     table's head, wherever it stands, is for a screen reader. Else a row a value, as on the classic card;
+   - what to dose, the other points (each value with its age) and the stock: three hairline boxes with their names;
+   - an empty unit's card: the unit in four cells, then the chart's place saying there is no fish and the three boxes
+     (monitoring/_card_fit.html, render.shown: the new look's only). */
 html[data-ui="next"] .is-fit .w-chart .monitor-chart-svg { outline: 1px solid var(--line-hair); outline-offset: .15em; background-color: var(--surface-sheet); }
 html[data-ui="next"] .is-fit :is(.w-dosing, .w-points, .w-stock) > section { align-content: start; row-gap: 0; padding: .1em .45em; border: 1px solid var(--line-hair); background-color: var(--plate); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-card-head { padding-bottom: calc(var(--u) * .35); border-bottom: 1px solid var(--line-hair); }
@@ -118,44 +123,79 @@ html[data-ui="next"] .monitor-card.is-fit[data-fill] .card-grid > .w:not(.gx-0, 
 html[data-ui="next"] .monitor-card.is-fit[data-fill] .w-value > dl { height: 100%; padding: calc(var(--u) * .2) calc(var(--u) * .45); border: 1px solid var(--line-hair); background-color: var(--plate); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] .w-value:not(.gx-0) > dl { border-left-width: 0; }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] .w-value dd b { font-family: var(--font-display); font-weight: 700; }
-/* the chart: the regions past a limit in the toxic tone, faint until the water is in one */
+/* (a narrow card: its head's right side, the water link, the flip link and the state, on a line of its own under the
+   code and the name, never over the code: review L4, at 390 px the icon lay over "01") */
+@container (max-width: 30rem) {
+  html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-card-head { grid-template-columns: auto minmax(0, 1fr); row-gap: calc(var(--u) * .9); }
+  html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-card-head > .monitor-card-state { grid-column: 1 / -1; flex-wrap: wrap; justify-content: flex-start; }
+}
+/* the chart: the regions past a limit in the toxic tone, faint; the one the water is in hatched in the critical colour */
 html[data-ui="next"] .is-fit .monitor-chart-svg :is(.chart-region-co2, .chart-region-nh3) { fill: var(--zone-toxic); fill-opacity: .6; }
 html[data-ui="next"] .is-fit .monitor-chart-svg.in-co2.is-critical .chart-region-co2,
-html[data-ui="next"] .is-fit .monitor-chart-svg.in-nh3.is-critical .chart-region-nh3 { fill: var(--zone-toxic); fill-opacity: 1; }
+html[data-ui="next"] .is-fit .monitor-chart-svg.in-nh3.is-critical .chart-region-nh3 { fill: url(#monitor-hatch) var(--zone-toxic); fill-opacity: 1; }
 html[data-ui="next"] .is-fit .monitor-chart-svg :is(.chart-name-co2, .chart-name-nh3) { fill: var(--crit-text); }
-html[data-ui="next"] .is-fit .monitor-chart-svg.is-critical .chart-water { fill: var(--crit); }
+html[data-ui="next"] .is-fit .monitor-chart-svg.is-critical:not(.is-old) .chart-water { fill: var(--crit); }
 html[data-ui="next"] .is-fit .monitor-chart-svg .chart-iso { stroke: var(--line-control); stroke-dasharray: 4 3; opacity: .7; }
 html[data-ui="next"] .is-fit .monitor-chart-svg .chart-iso.is-half { opacity: 1; }
+/* the hatch's own parts (the page's one pattern): the toxic tone and the critical colour's stripe */
+html[data-ui="next"] .monitor-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+html[data-ui="next"] .monitor-hatch-ground { fill: var(--zone-toxic); }
+html[data-ui="next"] .monitor-hatch-line { stroke: var(--crit); stroke-width: 2.5; }
+/* (a card narrower than 30 rem, a phone: the picture keeps the width at which the server's labels stand apart, a
+   desk's Big card's, and scrolls sideways in its own frame, a stop of the keyboard: _chart.html; review L4, at 390 px
+   "pH 8.25" lay over "pH 8.75" and the axis's name) */
+@container (max-width: 30rem) {
+  html[data-ui="next"] .is-fit[data-fill] .w-chart .monitor-chart:has(> svg) { overflow-x: auto; overflow-y: hidden; }
+  html[data-ui="next"] .is-fit[data-fill] .w-chart .monitor-chart > svg { flex: none; min-width: 34rem; }
+}
 /* (a chart that cannot be drawn: the design's dashed box, its reason in it) */
 html[data-ui="next"] .is-fit .monitor-chart > [role="status"] { border: 1px dashed var(--line-control); background-color: transparent; }
-/* the water as the design's tiles (eight values or fewer) */
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) {
+/* the water as the design's tiles, where the server says they fit */
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] > [role="table"] {
   position: relative; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: none;
   grid-auto-rows: min-content; align-content: start; gap: 0; white-space: normal;
   border-top: 1px solid var(--line-hair); border-left: 1px solid var(--line-hair);
 }
 @container (max-width: 30rem) {
-  html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] > [role="table"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) > [role="row"]:first-child {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] > [role="table"] > [role="row"]:has(> [role="columnheader"]) {
   position: absolute; display: block; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
 }
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) > [role="row"] + [role="row"] {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] > [role="table"] > [role="row"]:has(> [role="rowheader"]) {
   display: grid; grid-template-columns: auto minmax(1.5em, 1fr); grid-template-areas: "name name" "figure strip" "source source" "arrived arrived";
   align-content: start; align-items: center; gap: calc(var(--u) * .08) calc(var(--u) * .4); min-width: 0;
   padding: calc(var(--u) * .2) calc(var(--u) * .45); border-right: 1px solid var(--line-hair); border-bottom: 1px solid var(--line-hair);
   background-color: var(--plate);
 }
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) > [role="row"] + [role="row"] > * {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > :is([role="rowheader"], [role="cell"]) {
   min-width: 0; border-top: 0; line-height: 1.15; text-align: left; overflow-wrap: break-word;
 }
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) > [role="row"] + [role="row"] > :nth-child(1) { grid-area: name; }
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) > [role="row"] + [role="row"] > :nth-child(2) {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > [role="rowheader"] { grid-area: name; }
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > b[role="cell"] {
   grid-area: figure; font-family: var(--font-display); font-size: var(--fs-u-l); font-weight: 700; white-space: nowrap;
 }
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) > [role="row"] + [role="row"] > :nth-child(3) { grid-area: strip; }
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) > [role="row"] + [role="row"] > :nth-child(4) { grid-area: source; }
-html[data-ui="next"] .is-fit[data-fill] .w-water_table [role="table"]:not(:has(> [role="row"]:nth-child(10))) > [role="row"] + [role="row"] > :nth-child(5) { grid-area: arrived; }
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > span[role="cell"]:nth-of-type(2) { grid-area: strip; }
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > span[role="cell"]:nth-of-type(3) { grid-area: source; }
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > span[role="cell"]:nth-of-type(4) { grid-area: arrived; }
+/* the other points: each value with its age beside it, "old" in ink */
+html[data-ui="next"] .monitor-point-age { color: var(--text-3); font-size: var(--fs-u-s); font-style: normal; }
+html[data-ui="next"] .monitor-point-age.is-old { color: var(--text-1); font-weight: 600; }
+/* ---- every control of the cards, the pane and the band: a target of at least 44 px (the brief's), at every width and
+   in every place, without a length of the card's type changing: the link's own box, drawn around it by its ::after,
+   from its top down (never above the card's edge, which a fitted card clips), centred across it, over what follows it
+   (the water's tiles under the chart's switch), taking no room; 46 px, so a box between two pixels still holds 44. */
+html[data-ui="next"] :is(.monitor-card.is-fit :is(h3 a, .monitor-flip, .monitor-view a), .monitor-card.is-fit[data-fill] .monitor-water-link,
+                         .monitor-dock-close) { position: relative; }
+html[data-ui="next"] :is(.monitor-card.is-fit :is(h3 a, .monitor-flip, .monitor-view a), .monitor-card.is-fit[data-fill] .monitor-water-link,
+                         .monitor-dock-close)::after {
+  content: ""; position: absolute; z-index: 1; top: 0; left: 50%; width: max(100%, 46px); height: max(100%, 46px); transform: translateX(-50%);
+}
+/* (the band's switches of the cards and of the charts' view are rows of links that wrap on a phone, one under the
+   other: on the desk each link is a 44 px target itself, its own box, so no box lies over another's; a wall's band is
+   read, not touched, and keeps its size) */
+html[data-ui="next"]:not([data-wall]) .monitor-band :is(.monitor-modes > a, .monitor-view > a) { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+html[data-ui="next"]:not([data-wall]) .monitor-band .monitor-view { align-items: center; }
 
 /* ---- a card that flows (Simple, Detailed, Operator view, a farm's template without a measure) ----------------------
    The design's card (templates/monitoring/_card_next.html: the same frame and widgets as the classic card, laid out as
@@ -287,8 +327,11 @@ html[data-ui="next"] .is-next .monitor-flip { flex: none; font-weight: 600; whit
    saturation and the bound's "no recent data" were cut; the page test holds each of them). The pH window is not in the
    design's Small card: it stays in the markup (the parity of facts) and is shown on the wall, in the pane's Big card
    (the Deffeyes chart it is a slice of) and on the Big screen. On a wall the card is the fitted one (its cell's size). */
+/* (the Small card's one height, in one place: a grid of Small cards is rows of it, and on a grid with Big cards a Small
+   card keeps it, below) */
+html[data-ui="next"]:not([data-wall]) .monitor-grid { --small-h: 11.5em; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit:not([data-fill])) {
-  --card-min: 22em; grid-template-rows: auto; grid-auto-rows: 11.5em; align-items: stretch;
+  --card-min: 22em; grid-template-rows: auto; grid-auto-rows: var(--small-h); align-items: stretch;
 }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit:not([data-fill]) {
   display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-width: 0; overflow: hidden;
@@ -327,37 +370,50 @@ html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .w-value dd > span { overflow: visible; white-space: normal; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .monitor-under { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ---- the Big card on the desk page: every one the same size, as tall as the longest of its screen ------------------
-   The design's desk: two Big cards to a row at 1440 px. A Big card's unit is never under the 14 px floor (its smallest
-   text 11 px), and two cards of 1440 px are narrower than the template's measure at that unit (48 units: 672 px), so
-   the desk does not hold a card to its measure's proportion (its rows would share a height its words do not fit:
-   review of the Big card, 2026-11-27, the dosing box ran into the foot). Its widgets stand in the template's columns
-   and reading order, each row as high as what it says, the chart at the proportion of its place on the template
-   (7 : 4), and the rows of cards of one fraction each, so every card is the size of the longest (nothing of a longer
-   card is cut, a shorter one is as tall as it, its foot at the bottom). The pane and the wall keep the card FITTED to its
-   cell (monitor.css: the slot rule, the pane's width, the wall's pages). */
-/* (from a desk width up: on a phone the card flows in its column and its rows scroll in their own frame) */
-@media (min-width: 1100px) {
-  html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
-  /* (a board that mixes them: a Small card keeps its one size at the top of a row a Big card makes tall) */
-  html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) > .is-fit:not([data-fill]) { align-self: start; height: 11.5em; }
-  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] { display: flex; flex-direction: column; min-width: 0; }
-  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] > * { --u: max(14px, min(calc(100cqi / var(--mw)), 30px)); flex: none; }
-  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid { flex: 1 0 auto; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; align-content: start; }
-  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid > .w { grid-column: calc(var(--x) + 1) / span var(--w); grid-row: auto; }
-  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-chart :is(.monitor-chart-svg, .monitor-chart > [role="status"]) { flex: none; height: auto; aspect-ratio: 7 / 4; }
-  /* (each other point its name over its three values: the box's width is the template's, the names whole) */
-  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-points > section { grid-template-columns: repeat(3, auto); justify-content: space-between; }
-  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-points > section > span:not([title]) { grid-column: 1 / -1; overflow: visible; white-space: normal; }
-  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] > .monitor-card-basis { margin-top: auto; overflow: visible; white-space: normal; }
-}
-
 /* ---- the cards that flow (Simple, Detailed, Operator view) on the desk page: one size for all of them, the tallest
    card's (rows of one fraction each, sized to the longest card: nothing of a longer card is cut, a shorter one is as
    tall as it), wherever they stand side by side. On a phone (one column) each card is as tall as what it says: an empty
    unit's card the height of the longest one would be a screen of nothing to scroll past. */
 @media (min-width: 640px) {
   html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .monitor-card:not(.is-fit)) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
+}
+
+/* ---- a grid with Big cards on the desk page (the Big screen, a board that mixes them with other cards): ONE rule
+   whatever else the grid holds, at every width. The design's desk: two Big cards to a row at 1440 px. A Big card's unit
+   is never under the 14 px floor (its smallest text 11 px), and two cards of 1440 px are narrower than the template's
+   measure at that unit (48 units: 672 px), so the desk does not hold a card to its measure's proportion (its rows
+   would share a height its words do not fit: review of the Big card, 2026-11-27, the dosing box ran into the foot).
+   - the grid: columns of at least the fitted cards' 34 rem (monitor.css; a Small card on such a board is as wide), its
+     rows each as high as their own cards (never a row of Small cards as tall as a Big one, never a Big card squeezed
+     into a Small card's row: review H2);
+   - a Big card of a stocked unit is as tall as the tallest of its row (the cards of a row one size, their feet level);
+     an empty unit's card and a Small card take their own height at the top of the row (the Small card its one size);
+   - in the card the template's columns, rows and spans (a farm's own full-height template keeps its shape: review L3),
+     each row as high as what it says, one space between them; the chart at the proportion of its place on the
+     template (from the card's own measure, mw x mh, and the place's columns and rows: no number of the sheet's own);
+     below 30 rem of card (a phone) one column in reading order.
+   The pane and the wall keep the card FITTED to its cell (monitor.css: the slot rule, the pane's width, the wall's
+   pages). */
+html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) {
+  --card-min: 34rem; grid-template-rows: auto; grid-auto-rows: auto; align-items: start;
+}
+html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) > .is-fit:not([data-fill]) { height: var(--small-h); }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill]:not([data-state="empty"]) { align-self: stretch; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] { display: flex; flex-direction: column; min-width: 0; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] > * { --u: max(14px, min(calc(100cqi / var(--mw)), 30px)); flex: none; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid { flex: 1 0 auto; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; row-gap: 0; align-content: start; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid > .w { grid-column: calc(var(--x) + 1) / span var(--w); grid-row: calc(var(--y) + 1) / span var(--h); }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid > .w:not(.gy-0) { padding-top: calc(var(--u) * .45); }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-chart :is(.monitor-chart-svg, .monitor-chart > [role="status"]) {
+  flex: none; height: auto; aspect-ratio: calc(var(--w) * var(--mw)) / calc(var(--h) * var(--mh) * 12 / var(--gr));
+}
+/* (each other point its name over its values: the box's width is the template's, the names whole) */
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-points > section { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: .6em; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-points > section > :is(h4, span:not([title])) { flex-basis: 100%; overflow: visible; white-space: normal; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] > .monitor-card-basis { margin-top: auto; overflow: visible; white-space: normal; }
+@container (max-width: 30rem) {
+  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid { grid-template-columns: minmax(0, 1fr); }
+  html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid > .w { grid-column: 1; grid-row: auto; }
 }
 
 /* ---- the toolbar (the design's): the search first, the filters with their names for a screen reader only (each
@@ -424,4 +480,14 @@ html[data-ui="next"][data-wall] .monitor-actions .button { border: 1px solid var
   /* the edge of a critical or a warning card as wide as the classic look's in high contrast */
   html[data-ui="next"] :is(.monitor-critical, .monitor-warning) { border-left-width: 10px; }
   html[data-ui="next"] .monitor-blind > .monitor-card-head::before { display: none; }
+  /* the chart's regions and mark as the classic look draws them in high contrast (monitor.css): a region the system's
+     ground with its text colour's edge, the region the water is in hatched in the text colour, the mark the text
+     colour, hollow when it is old (review M1: the new look's tones must not win over these) */
+  html[data-ui="next"] .is-fit .monitor-chart-svg .chart-region { forced-color-adjust: none; fill: Canvas; fill-opacity: 1; stroke: CanvasText; }
+  html[data-ui="next"] .is-fit .monitor-chart-svg.in-co2.is-critical .chart-region-co2,
+  html[data-ui="next"] .is-fit .monitor-chart-svg.in-nh3.is-critical .chart-region-nh3 { fill: url(#monitor-hatch) Canvas; }
+  html[data-ui="next"] .monitor-hatch-ground { forced-color-adjust: none; fill: Canvas; }
+  html[data-ui="next"] .monitor-hatch-line { forced-color-adjust: none; stroke: CanvasText; }
+  html[data-ui="next"] .is-fit .monitor-chart-svg .chart-water { forced-color-adjust: none; fill: CanvasText; stroke: Canvas; }
+  html[data-ui="next"] .is-fit .monitor-chart-svg.is-old .chart-water { fill: Canvas; stroke: CanvasText; }
 }

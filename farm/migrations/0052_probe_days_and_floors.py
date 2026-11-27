@@ -73,7 +73,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(primary_key=True, serialize=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Set at')),
                 ('not_before', models.DateField(blank=True, null=True, verbose_name='Not before')),
-                ('origin', models.CharField(choices=[('landing', 'A change of the rule'), ('closing', 'A probe day closed'), ('write', 'A write nobody could be asked about')], max_length=10, verbose_name='Why it was set')),
+                ('origin', models.CharField(choices=[('landing', 'A change of the rule'), ('closing', 'A probe day closed')], max_length=10, verbose_name='Why it was set')),
                 ('reason', models.CharField(max_length=500, verbose_name='Reason')),
                 ('lifted_at', models.DateTimeField(blank=True, null=True, verbose_name='Lifted at')),
                 ('lift_reason', models.CharField(blank=True, max_length=500, verbose_name='Reason for lifting')),
@@ -88,7 +88,7 @@ class Migration(migrations.Migration):
                 'db_table': 'withdrawal_floors',
                 'ordering': ['id'],
                 'indexes': [models.Index(condition=models.Q(('lifted_at__isnull', True)), fields=['treatment', 'batch'], name='withdrawal_floors_live_idx')],
-                'constraints': [models.CheckConstraint(condition=models.Q(('origin__in', ['landing', 'closing', 'write'])), name='chk_withdrawal_floors_origin'), models.CheckConstraint(condition=models.Q(('reason', ''), _negated=True), name='chk_withdrawal_floors_reason'), models.CheckConstraint(condition=models.Q(models.Q(('lift_reason', ''), ('lifted_at__isnull', True), ('lifted_by__isnull', True)), models.Q(('lifted_at__isnull', False), ('lifted_by__isnull', False), models.Q(('lift_reason', ''), _negated=True)), _connector='OR'), name='chk_withdrawal_floors_lift')],
+                'constraints': [models.CheckConstraint(condition=models.Q(('origin__in', ['landing', 'closing'])), name='chk_withdrawal_floors_origin'), models.CheckConstraint(condition=models.Q(('reason', ''), _negated=True), name='chk_withdrawal_floors_reason'), models.CheckConstraint(condition=models.Q(models.Q(('lift_reason', ''), ('lifted_at__isnull', True), ('lifted_by__isnull', True)), models.Q(('lifted_at__isnull', False), ('lifted_by__isnull', False), models.Q(('lift_reason', ''), _negated=True)), _connector='OR'), name='chk_withdrawal_floors_lift')],
             },
         ),
     ]

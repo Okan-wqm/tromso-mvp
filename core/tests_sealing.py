@@ -228,6 +228,7 @@ RAW_SQL = {
     'inventory/services.py:item_for': 'an advisory lock, no rows',
     'knowledge/search.py:parse': 'the text search configuration’s stems of the typed words, no rows',
     'sensors/alarms.py:_extremes': 'the readings of a channel a sensor alarm rule watches, evaluated as the system',
+    'farm/water/services.py:close_probe_days': 'the advisory lock of the daily closing, no rows',
     'sensors/provider.py:SensorSource.covered': 'the readings of the bindings the sealed Binding manager returned (asked '
                                                'by the closing of probe days, as the system)',
     'sensors/provider.py:SensorSource.values_at': 'the readings of the bindings the sealed Binding manager returned, '

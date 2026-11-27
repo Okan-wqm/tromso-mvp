@@ -25,8 +25,8 @@ from decimal import ROUND_FLOOR, ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.db import transaction
-from django.db.models import Max, Q
+from django.db import connection, transaction
+from django.db.models import Max
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy
 
@@ -37,13 +37,13 @@ from farm.models import Equipment, ProbeDay, ProbeDayClosing, SamplingPoint, Sys
 from farm.models.health import FloorOrigin
 from farm.models.water import (BASIS_COLUMNS, NBS, PH_SCALE_COLUMNS, PHOSPHATE_UNIT_COLUMNS, PhosphateUnit, PhScale,
                                ProbeDayHow)
-from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, PointKind, local_time, site_of
+from farm.models.water_point import EQUIPMENT, SYSTEM, UNIT, local_time, site_of
 from farm.stock import dates
 from farm.stock.services import AlreadyRecorded, lock_fish
 
 from . import messages, parameters, sources
 from .degree_days import zone_key
-from .read import OWN_WATER_KINDS, POINT_RELATED, Context, oxygen_basis, ph_on_nbs, scale_origin, tiers
+from .read import POINT_RELATED, Context, middle_points, oxygen_basis, ph_on_nbs, scale_origin, tiers
 
 DAY = timedelta(days=1)
 
@@ -379,6 +379,8 @@ def _fish_of(points, measured_at):
 TEMPERATURE = parameters.get(parameters.TEMPERATURE)
 PROBE_STEP = Decimal('0.01')
 PROBE_BOUND = Decimal('999.99')          # what the column holds: a mean beyond it is kept at it and never counts
+# The advisory lock the daily closing holds (a constant of this one use: "probe" in ASCII).
+CLOSING_LOCK = 0x70726F6265
 
 
 class SensorsUnread(Exception):
@@ -386,18 +388,20 @@ class SensorsUnread(Exception):
 
 
 def probe_places():
-    """[(target, point or None, system or None, clock)] of every place a probe day is closed for: each active
-    own-water point (the middle point and the others; never an inlet) of a live unit, each active middle point of a
-    live system (its loop), and each live system (its own sensors); `clock`: the time zone its days are counted on."""
-    found = []
-    points = (SamplingPoint.objects.filter(is_active=True)
-              .filter(Q(unit__isnull=False, kind__in=[PointKind.MIDDLE, *OWN_WATER_KINDS])
-                      | Q(system__isnull=False, kind=PointKind.MIDDLE)).with_owners())
-    for point in points:
-        found.append(((sources.POINT, point.pk), point, None, zone_key(site_of(point))))
-    for system in System.objects.select_related('site'):
-        found.append(((sources.SYSTEM, system.pk), None, system, zone_key(system.site)))
-    return found
+    """[(target, point or None, system or None, clock)] of every place a probe day is closed for: the places of every
+    live unit's tiers (`_places_of`, the one resolver: its own-water points, never an inlet, and its system's loop
+    point or own sensors), and every live system's loop point and own sensors; `clock`: the time zone its days are
+    counted on."""
+    found = {place[0]: place for place in _places_of(Tank.objects.select_related('production_department__site'))}
+    systems = list(System.objects.select_related('site'))
+    loops = middle_points(systems)
+    for system in systems:
+        target = (sources.SYSTEM, system.pk)
+        found.setdefault(target, (target, None, system, zone_key(system.site)))
+        loop = loops.get(system.pk)
+        if loop is not None:
+            found.setdefault((sources.POINT, loop.pk), ((sources.POINT, loop.pk), loop, None, zone_key(site_of(loop))))
+    return list(found.values())
 
 
 def _probe_rows(places, days, hours, hold, how, user=None, note=''):
@@ -429,7 +433,7 @@ def _probe_rows(places, days, hours, hold, how, user=None, note=''):
                       and TEMPERATURE.low <= kept <= TEMPERATURE.high)
             rows.append(ProbeDay(point=point, system=system, day=day, channel_no=each.channel_no, mean_c=kept,
                                  covered_seconds=int(each.seconds), hours=each.hours, readings=each.readings,
-                                 ranged=each.ranged, hours_needed=hours, hold_seconds=hold, counts=counts, how=how,
+                                 ranged=each.ranged, hours_needed=hours, hold_seconds=each.hold, counts=counts, how=how,
                                  created_by=user, note=note))
     return rows
 
@@ -451,7 +455,14 @@ def close_probe_days(now=None):
     closed days would move EARLIER keeps the end it had as a floor. Returns (the rows written, the closings, the
     floors). SensorsUnread: nothing is written, the days stay not closed (and so pending for the degree-days)."""
     from farm.health import services as health_services
-    now = now or timezone.now()
+    with transaction.atomic():
+        # One closing at a time (REVIEW-2, N-10): a second job waits here, then finds the days closed.
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT pg_advisory_xact_lock(%s)', [CLOSING_LOCK])
+        return _close_probe_days(now or timezone.now(), health_services)
+
+
+def _close_probe_days(now, health_services):
     hours, hold, _cap, _tolerance = platform.degree_day_rules()
     by_clock = defaultdict(list)
     for place in probe_places():
@@ -472,9 +483,14 @@ def close_probe_days(now=None):
         for clock, day, places in todo:
             rows = _unwritten(_probe_rows(places, [day], hours, hold, ProbeDayHow.CLOSED))
             ProbeDay.objects.bulk_create(rows)
-            closings.append(ProbeDayClosing.objects.create(
-                timezone=clock, day=day, hours_needed=hours, hold_seconds=hold,
-                probe_days=sum(row.counts for row in rows)))
+            closing = ProbeDayClosing.objects.create(timezone=clock, day=day, hours_needed=hours, hold_seconds=hold,
+                                                     probe_days=sum(row.counts for row in rows))
+            with audit.source_language():
+                audit.record(None, AuditLog.Action.CREATE, closing, {
+                    str(_('Day')): [None, day.isoformat()], str(_('Time zone')): [None, clock],
+                    str(_('Probe days written')): [None, len(rows)],
+                    str(_('Probe days that count')): [None, closing.probe_days]}, label=str(closing))
+            closings.append(closing)
             written += rows
         return written, closings
 

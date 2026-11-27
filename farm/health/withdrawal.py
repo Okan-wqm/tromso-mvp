@@ -200,7 +200,6 @@ class Withdrawal:
     floor: object = field(default=None, compare=False)
     waits: bool = False
 
-    
     @property
     def settled(self):
         """The end without the wait for a closing: the days' own, or the floor's when one holds it. What a floor is
@@ -209,26 +208,22 @@ class Withdrawal:
             return self.until
         return self.floor.not_before if self.floor is not None else self.worked_out
 
-    
     @property
     def days_without_temperature(self):
         """Past days counted without a measured temperature (at the assumed one, capped or not, or as 0 °C)."""
         return self.accrual.missing if self.accrual is not None else 0
 
-    
     @property
     def assumed_temperature(self):
         """The batch species' assumed temperature those days were counted at; None: it has none (0 °C)."""
         return self.accrual.assumed if self.accrual is not None else None
 
-    
     @property
     def projected_at_assumed(self):
         """No temperature was measured lately: the degree-days' end is projected at the species' assumed one."""
         return bool(self.accrual is not None and self.degrees_decide and self.accrual.reached is not None
                     and self.accrual.projected and self.accrual.projected_at_assumed)
 
-    
     @property
     def unclosed(self):
         """The probe days its sum still waits for: while there are any, its end is "about" and after today."""
@@ -1699,6 +1694,7 @@ class Moved:
     batch_id: object
     was: object
     now: Withdrawal = None
+    why: str = ''                        # what moved it (the floor keeps it as its reason)
 
 
 def settled_ends(ends):

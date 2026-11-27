@@ -22,7 +22,7 @@ which is the feeding itself. Too short a fast is a warning; the person goes on b
 were shown, which are stored on the treatment (HandlingAcknowledgement) and make its log entry critical (owner
 decision: warn, never block)."""
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import timedelta
 
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -410,34 +410,59 @@ def set_floors(moved, origin, reason):
     """A WithdrawalFloor for each Moved of `moved` (farm.health.withdrawal.earlier): the end the withdrawal had (none:
     unknown) stays the earliest day its fish go to food, whatever the days add up to now. Not a write of a person:
     the daily closing of probe days and a landing call it for the ends that would move earlier with nobody there to
-    be asked; each is logged as critical. Inside the withdrawal gate. Returns the floors."""
+    be asked; each is logged as critical, with what moved it (`Moved.why`). Never at a day already past on the clock
+    of the course's units (it would hold nobody: REVIEW-2, N-6). Inside the withdrawal gate. Returns the floors."""
     found = []
     with transaction.atomic(), gate.opened('a floor: the end a withdrawal had, kept'):
         for each in moved:
+            if each.was is not None and each.was <= _today(list(each.treatment.units.all())):
+                continue
+            why = f'{reason} {each.why}'.strip()
             floor = WithdrawalFloor.objects.create(treatment=each.treatment, batch_id=each.batch_id,
-                                                   not_before=each.was, origin=origin, reason=reason)
+                                                   not_before=each.was, origin=origin, reason=why[:500])
             now = (str(_('no withdrawal of these fish any more')) if each.now is None
                    else each.now.settled.isoformat() if each.now.settled else str(_('unknown')))
             with audit.source_language():
                 audit.record(None, AuditLog.Action.CREATE, floor, {
                     str(_('Not before')): [None, each.was.isoformat() if each.was else str(_('unknown'))],
                     str(_('The days counted give')): [None, now],
-                    str(_('Reason')): [None, reason]}, label=floor_label(floor), severity=AuditLog.Severity.CRITICAL)
+                    str(_('Reason')): [None, why]}, label=floor_label(floor), severity=AuditLog.Severity.CRITICAL)
             found.append(floor)
     return found
+
+
+def past_moved(was, now):
+    """'' when the end of a withdrawal moved earlier only because days that were projected (not over, or not closed
+    yet) are now counted: a projection met the water, and the fish go when the days say (the coordinator's decision
+    N-5 of REVIEW-2). Else what moved in the past: the days counted before that count higher now ("2026-11-25: 3.00
+    -> 10.00 °C"), or that the course no longer reaches the fish. `was` and `now`: the withdrawal before and after."""
+    if now is None:
+        return 'The course no longer reaches these fish.'
+    before = was.accrual.values if was.accrual is not None else {}
+    after = now.accrual.values if now.accrual is not None else {}
+    raised = [f'{day.isoformat()}: {value} -> {after[day]} °C' for day, value in sorted(before.items())
+              if day in after and after[day] > value]
+    return 'Days already counted count higher now: ' + '; '.join(raised) + '.' if raised else ''
 
 
 def unattended(write, origin, reason):
     """A write of a withdrawal input that nobody can be asked about (the daily closing of probe days): the withdrawals
     in force are read, `write()` is made inside the withdrawal gate, they are read again, and every one whose end the
-    write would move EARLIER, or end, keeps the end it had as a floor (`set_floors`): never an earlier end without a
-    question. An end that moves later is the safe direction: the harvests it brings inside a withdrawal are listed by
-    `check_withdrawal` as every harvest inside one is. Returns (what `write()` returned, the floors)."""
+    write would move EARLIER, or end, BECAUSE A DAY ALREADY COUNTED MOVED (a day closed or added at a higher value than
+    it was counted at; not a projection replaced by the day it projected: `past_moved`) keeps the end it had as a
+    floor (`set_floors`): never an earlier end without a question. An end that moves later is the safe direction: the
+    harvests it brings inside a withdrawal are listed by `check_withdrawal` as every harvest inside one is. Returns
+    (what `write()` returned, the floors)."""
     with transaction.atomic():
-        before = withdrawal.settled_ends(withdrawal.ends_now())
+        before = withdrawal.ends_now()
         with gate.opened('a write nobody can be asked about: an earlier end is floored'):
             result = write()
-        floors = set_floors(withdrawal.earlier(before), origin, reason)
+        moved = []
+        for each in withdrawal.earlier(withdrawal.settled_ends(before)):
+            why = past_moved(before[(each.treatment.pk, each.batch_id)], each.now)
+            if why:
+                moved.append(replace(each, why=why))
+        floors = set_floors(moved, origin, reason)
     return result, floors
 
 

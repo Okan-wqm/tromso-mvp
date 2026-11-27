@@ -612,7 +612,6 @@ class LiceCount(AuditedModel):
 class FloorOrigin(models.TextChoices):
     LANDING = 'landing', _('A change of the rule')
     CLOSING = 'closing', _('A probe day closed')
-    WRITE = 'write', _('A write nobody could be asked about')
 
 
 class WithdrawalFloor(models.Model):

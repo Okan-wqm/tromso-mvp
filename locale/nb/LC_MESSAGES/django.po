@@ -11417,6 +11417,9 @@ msgstr "Ikke veid siden fisken kom inn."
 msgid "Not worked out"
 msgstr "Ikke beregnet"
 
+msgid "Not worked out here: the unit works out its newest TAN at another point (see the unit)."
+msgstr "Ikke beregnet her: enheten beregner sin nyeste TAN ved et annet punkt (se enheten)."
+
 #, python-format
 msgid "Not worked out: %(why)s."
 msgstr "Ikke beregnet: %(why)s."

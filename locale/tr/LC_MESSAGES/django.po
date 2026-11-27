@@ -11446,6 +11446,9 @@ msgstr "Balıklar geldiğinden beri tartılmadı."
 msgid "Not worked out"
 msgstr "Hesaplanmadı"
 
+msgid "Not worked out here: the unit works out its newest TAN at another point (see the unit)."
+msgstr "Burada hesaplanmadı: birim en yeni TAN değerini başka bir noktada hesaplıyor (birime bakın)."
+
 #, python-format
 msgid "Not worked out: %(why)s."
 msgstr "Hesaplanmadı: %(why)s."

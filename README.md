@@ -1793,11 +1793,15 @@ The judge's rule for each point (`judge.point_verdict`):
     cut is silent.
   - **In the activity log:** kept with the sample's entry, in English at rest. The entered samples are judged against
     their point's evidence directly, the analyser's fresh value included (`read.late_results_of`, `live_worked_at`), so
-    no cap applies and the entry order changes nothing. The analyser's value is worked out as the unit's page works it:
-    a unit's own-water point (its middle, an outlet, a depth) inside its unit's standing place, built on the one tier
-    resolver `read.tiers` (the place's newest fresh TAN with the pH and temperature fresh in its own tier, else its
-    system's), filed where its sensor is bound; any other point on its own. So the log says of a sample what the unit's
-    page says.
+    no cap applies and the entry order changes nothing. An analyser's value is worked out by ONE rule everywhere (the
+    coordinator's decision on review 11, N5): a unit's own-water point (its middle, an outlet, a depth) inside its
+    unit's standing place, built on the one tier resolver `read.tiers` (the place's newest fresh TAN with the pH and
+    temperature fresh in its own tier, else its system's), filed where its sensor is bound; any other point in its own
+    place. The unit's page, the outlet's own page (`latest`, `_standing_worked`), the log and the history rows
+    (`late_results_of`) all read it so, and each builds what it reads by one helper (`read.reading_places`: the places
+    and every point in them, the Context over all of them). Where the unit's place works out the TAN of another of its
+    points (the newest), the outlet's page says "Not worked out here: the unit works out its newest TAN at another
+    point (see the unit)."
   - **On its history row:** the same way, whatever else the page holds.
 - **The late check at entry never blocks the write.** It is one read for all the samples of a write, in a savepoint.
   If it fails, each point is read on its own, so one unreadable point does not strip the others' words. The samples of

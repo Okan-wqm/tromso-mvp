@@ -20,9 +20,14 @@ name ESTIMATE_OVER_BOUND
 name FITTED_FROM_TEMP_C
 name FORMULA_VERSION
 name FRESH_UP_TO
+name GAS_CONSTANT
+name G_H2S_PER_MOL
 name H2S_PER_S
 name IONIC_PER_MICROSIEMENS
 name IONIC_PER_MICROSIEMENS_NACL
+name K0_H2S_25
+name K0_H2S_SALTING
+name K0_H2S_TEMP
 name LABEL_AT
 name LABEL_STEPS
 name LEFT_OUT_G
@@ -73,6 +78,7 @@ name co2_corrected
 name co2_curve
 name co2_curve_judged
 name co2_from_air
+name co2_from_gas
 name co2_judged
 name core_hash
 name counter_productive
@@ -81,6 +87,7 @@ name debye_huckel_a
 name debye_huckel_a_v1
 name dielectric_constant
 name direction_line
+name dried_gas_factor
 name equilibria_v3
 name equilibria_v4
 name equilibria_with
@@ -90,7 +97,9 @@ name fresh_equilibria
 name fresh_ionic_strength
 name from_code
 name full_window
+name gas_over_water
 name h2s_assessed
+name h2s_from_gas
 name h2s_plot
 name h2s_share
 name in_region
@@ -100,6 +109,7 @@ name isoline_phs
 name isoline_segment
 name judge_step
 name k0_co2
+name k0_h2s
 name k1_sws
 name k1p_sws
 name k2_sws
@@ -119,6 +129,7 @@ name label_box
 name label_place
 name limits_basis
 name limits_equilibria
+name mixed_contact
 name nbs_minus_total_25
 name nh3_basis
 name nh3_fraction
@@ -135,6 +146,7 @@ name ph_free
 name ph_label
 name ph_nbs
 name ph_offset
+name ph_rise_bound
 name ph_where_carbonate
 name ph_where_co2
 name ph_where_co2_at_dic
@@ -153,6 +165,7 @@ name region_names
 name require_water
 name safe_zone
 name safe_zone_gaps
+name saturation_from_depths
 name saturation_index
 name saturation_plot
 name sea_equilibria
@@ -162,6 +175,7 @@ name sws_to_nbs
 name total_boron
 name total_fluoride
 name total_sulfate
+name total_sulfide
 name unit_move
 name vapour_pressure_atm
 name water_density
@@ -215,6 +229,7 @@ number 0.053105
 number 0.06793952
 number 0.068393
 number 0.077993
+number 0.082057366
 number 0.10018
 number 0.130571
 number 0.1462507
@@ -246,6 +261,7 @@ number 3.32254
 number 3.3336
 number 5.25588
 number 7.0261
+number 8.314462618
 number 8.9636
 number 9.2446
 number 9.244605
@@ -317,6 +333,7 @@ number 90.18333
 number 90.5069
 number 96.062
 number 100.0869
+number 101.325
 number 106.736
 number 114.723
 number 115.525
@@ -351,6 +368,7 @@ number 1023.34306
 number 1027.67547
 number 1590.2
 number 1776.0
+number 2100.0
 number 2140.7
 number 2698.0
 number 2729.33

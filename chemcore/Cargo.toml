@@ -2,7 +2,7 @@
 # server through PyO3 (owner amendment B2: no chemistry in the browser, no WebAssembly). README.md says how to
 # build it from a clean machine; every version here is pinned and Cargo.lock is committed (--locked everywhere).
 [workspace]
-members = ["core", "py"]
+members = ["core", "experimental", "py"]
 resolver = "3"
 
 [workspace.package]

@@ -1,6 +1,7 @@
 """The deny-list of the browser guard (owner amendment B2: no chemistry in the browser). Writes
 chemcore/guard-list.txt from the code that holds the chemistry: the public functions and constants of the Rust
-core (chemcore/core/src) and the names of its Python doors (farm/water/chemistry.py, deffeyes.py, dosing.py,
+core (chemcore/core/src) and of the chemistry not yet cleared beside it (chemcore/experimental/src, which the
+application never reaches, but whose formulas must not reach the browser either) and the names of its Python doors (farm/water/chemistry.py, deffeyes.py, dosing.py,
 charts.py: they hold no formula since the retirement audit S10, farm/tests/test_one_formula.py). Two kinds of entry:
 
   name <identifier>   a function or constant name with an underscore, at least 6 characters (single words such as
@@ -18,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 PYTHON_SOURCES = ['farm/water/chemistry.py', 'farm/water/deffeyes.py', 'farm/water/dosing.py', 'farm/water/charts.py']
-RUST_SOURCES = 'chemcore/core/src'
+RUST_SOURCES = ['chemcore/core/src', 'chemcore/experimental/src']
 RUST_ITEM = re.compile(r'\bpub\s+(?:const\s+fn|fn|const|static)\s+([A-Za-z_][A-Za-z0-9_]*)')
 RUST_NUMBER = re.compile(r'(?<![A-Za-z0-9_.])(\d[\d_]*\.\d[\d_]*(?:[eE][-+]?\d+)?|\d[\d_]*[eE][-+]?\d+)(?:_?f64)?')
 
@@ -78,7 +79,11 @@ def from_rust(folder):
 
 
 def entries(root=ROOT):
-    names, numbers = from_rust(root / RUST_SOURCES)
+    names, numbers = set(), set()
+    for folder in RUST_SOURCES:
+        more_names, more_numbers = from_rust(root / folder)
+        names |= more_names
+        numbers |= more_numbers
     for source in PYTHON_SOURCES:
         more_names, more_numbers = from_python(root / source)
         names |= more_names

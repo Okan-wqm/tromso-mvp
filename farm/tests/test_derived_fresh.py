@@ -625,6 +625,14 @@ class LateResultTests(WaterTestCase):
         self.assertNotIn(tan_only.pk, words)                  # review 8, N5: the one predicate (read.gives_value)
 
 
+class ResultWordsTests(TestCase):
+    """Review 10, F3: one table of what a superseded result is said as, one entry a word of the judge."""
+
+    def test_every_word_has_its_one_message(self):
+        from ..water import messages
+        self.assertEqual(set(messages.RESULT_SAID), {judge.COUNTED, judge.LATE, judge.EARLIER, judge.UNCHECKED})
+
+
 class PointOwnStatusTests(WaterTestCase):
     """Review 7, M5: a point's OWN status, and a point read on its own, are the judge's: the worst of its judged set."""
 

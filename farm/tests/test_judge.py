@@ -268,6 +268,32 @@ class LiveLateTests(SimpleTestCase):
         verdict = judge.point_verdict([kit, stale, live])
         self.assertEqual((verdict.said_as(stale, True), verdict.said_as(stale, False)), (judge.LATE, judge.LATE))
 
+    def test_an_unanswered_history_is_never_taken_for_on_time(self):
+        """Review 10, F2: where the shell could not read the analyser's history (None), the word is UNCHECKED, never
+        EARLIER; a value still counted or behind a stored one needs no history and is said as before."""
+        live = record('live', 'ok', 10, 20, stored=False, fresh_now=True)
+        stale = record('stale', 'critical', 0, 3, fresh_now=False)
+        verdict = judge.point_verdict([stale, live])
+        self.assertEqual(verdict.said_as(stale, None), judge.UNCHECKED)
+        fresh = record('fresh', 'critical', 0, 3, fresh_now=True)
+        self.assertEqual(judge.point_verdict([fresh, live]).said_as(fresh, None), judge.COUNTED)
+        kit = record('kit', 'ok', 5, 0, fresh_now=True)
+        self.assertEqual(judge.point_verdict([kit, stale, live]).said_as(stale, None), judge.LATE)
+
+    def test_the_history_is_asked_only_for_an_alert_behind_the_analyser_no_longer_counted(self):
+        """Review 10, F2: `asks_history` (what the shell looks the analyser's history up for) is exactly the records
+        whose word depends on it."""
+        live = record('live', 'ok', 10, 20, stored=False, fresh_now=True)
+        for kind, fresh, behind_kit, expected in (('critical', False, False, True), ('warning', False, False, True),
+                                                  ('ok', False, False, False), ('critical', True, False, False),
+                                                  ('critical', False, True, False)):
+            value = record('value', kind, 0, 3, fresh_now=fresh)
+            values = [value, live, *([record('kit', 'ok', 5, 0, fresh_now=True)] if behind_kit else [])]
+            verdict = judge.point_verdict(values)
+            self.assertEqual(verdict.asks_history(value), expected, (kind, fresh, behind_kit))
+            words = {verdict.said_as(value, answer) for answer in (True, False, None)}
+            self.assertEqual(len(words) > 1, expected and kind != 'ok', (kind, fresh, behind_kit, words))
+
     def test_a_value_refused_on_its_basis_behind_the_analyser_is_said(self):
         """Review 9, P6: the read counts a fresh critical refused on its basis behind the analyser; the judge says it."""
         refused = record('refused', 'refused_basis_critical', 0, 3, fresh_now=True)
@@ -518,6 +544,17 @@ class PlaceExamplesTests(SimpleTestCase):
         place = judge.place_verdict(shown, {'o1': judge.point_verdict([lab, live]), 'o2': judge.point_verdict([shown])},
                                     {'o1', 'o2'})
         self.assertEqual([(each.key, newer.key) for each, newer in place.counted], [('lab', 'o1 live')])
+
+    def test_the_place_gives_each_said_record_its_word(self):
+        """Review 10, F3: the place's `words` hold the judge's word for every record it says, by the record's id."""
+        live = record('live', 'ok', 10, 20, point='o1', stored=False, fresh_now=True)
+        fresh = record('fresh', 'critical', 1, 3, point='o1', fresh_now=True)
+        stale = record('stale', 'warning', 0, 4, point='o1', fresh_now=False)
+        points = {'o1': judge.point_verdict([fresh, stale, live])}
+        for answer, word in ((True, judge.LATE), (False, judge.EARLIER), (None, judge.UNCHECKED)):
+            place = judge.place_verdict(live, points, {'o1'}, lambda record, answer=answer: answer)
+            self.assertEqual({key(each): place.words[id(each)] for each, _newer in (*place.counted, *place.late)},
+                             {'fresh': judge.COUNTED, 'stale': word}, answer)
 
     def test_an_earlier_result_and_a_late_one_by_the_shells_answer(self):
         live = record('live', 'ok', 10, 20, point='o1', stored=False, fresh_now=True)

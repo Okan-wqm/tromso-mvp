@@ -4,6 +4,7 @@ stale value never ends an alarm, exactly as the stale temperature it was worked 
 limits 0.0125 (warning) and 0.025 (critical), a temperature limit 11 °C (critical above) beside it as the measured
 control (a critical opens the warning level beside it). Raised 40 h ago by a full sample (NH₃-N 0.8924, 12 °C); then a full sample inside both limits."""
 from datetime import timedelta
+from unittest import mock
 
 from farm.tests.test_water import WaterTestCase
 
@@ -524,6 +525,31 @@ class AnalyserAtOwnPointTests(WaterTestCase):
         self.assertNotIn('Earlier result', note)
         self.assertTrue(self.logged(lab)[1].startswith('Late result: critical 0.8924 at Middle on '), self.logged(lab))
 
+    def test_an_unreadable_analyser_history_is_said_never_taken_for_on_time(self):
+        """Review 10, F2: the analyser's history cannot be read: the superseded critical says so, never "Earlier"."""
+        from farm.water import read as water_read, sources as water_sources
+        self.live()
+        self.sample(self.t1, hours=24, source='lab', **BAD)
+
+        def failing(targets, code, moments):
+            return [water_sources.Answer({}, True) for _moment in moments]
+
+        with mock.patch.object(water_read.sources, 'values_at', side_effect=failing):
+            note = self.unit_water().get(NH3).note
+        self.assertIn('Superseded result: critical 0.8924 at Middle on ', note)
+        self.assertIn('whether it was entered late could not be checked', note)
+        self.assertNotIn('Earlier result', note)
+
+    def test_the_history_is_asked_only_where_the_words_need_it(self):
+        """Review 10, F2: an OK result behind the analyser, and a critical still counted, never ask it."""
+        from farm.water import read as water_read
+        self.live()
+        self.sample(self.t1, hours=24, source='lab', **GOOD)
+        self.sample(self.t1, hours=1, source='lab', **BAD)
+        with mock.patch.object(water_read.sources, 'values_at', wraps=water_read.sources.values_at) as asked:
+            self.unit_water().get(NH3)
+        asked.assert_not_called()
+
     def test_a_refused_critical_on_its_basis_behind_the_analyser_is_counted_and_said(self):
         """Review 9, P6: a critical the core refused on its basis, an hour old, behind the analyser's OK: the read counts
         it (the unit is critical) and the judge says it, still counted."""
@@ -602,6 +628,39 @@ class AnalyserWithLoopProbesTests(WaterTestCase):
         self.assertTrue(self.logged(lab)[1].startswith('Late result: critical 0.8924 at Middle on '), self.logged(lab))
 
 
+class AnalyserAtTheOutletTests(WaterTestCase):
+    """Review 10, F1: the TAN analyser on T-01's outlet, its pH and temperature probes on the loop. The unit's page works
+    the analyser's NH₃ inside the unit's place (its own tier's newest TAN, the loop's pH and temperature) and files it at
+    the outlet; the entry does the same for a sample at the outlet, so the log says what the page says."""
+
+    def setUp(self):
+        super().setUp()
+        from farm.models import SamplingPoint
+        from farm.tests.helpers import may_record
+        from sensors import bindings
+        from sensors.tests import make_channel, make_connection, make_device, make_format
+        self.stock()
+        self.limit(NH3, critical_high='0.025', warning_high='0.0125')
+        self.outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
+        may_record(self.user, 'add_binding')
+        device = make_device(make_connection(), make_format(), self.bergen, code='ANALYSER')
+        self.channels = {}
+        for quantity, value, point in (('tan_mg_l', 0.5, self.outlet), ('ph', 7.0, self.loop),
+                                       ('temperature_c', 12.0, self.loop)):
+            channel = make_channel(device, quantity, code=quantity.upper())
+            bindings.move(self.user, channel, point=point, at=self.now - timedelta(days=5))
+            self.channels[channel] = value
+
+    logged = AnalyserAtOwnPointTests.logged
+
+    def test_the_log_and_the_unit_page_say_the_same_of_an_outlet_sample(self):
+        self.live()
+        lab = self.sample(self.outlet, hours=24, source='lab', **BAD)
+        note = self.unit_water().get(NH3).note
+        self.assertIn('Late result: critical 0.8924 at Outlet on ', note)
+        self.assertTrue(self.logged(lab)[1].startswith('Late result: critical 0.8924 at Outlet on '), self.logged(lab))
+
+
 class SystemSensorTests(WaterTestCase):
     """Review 7, H1: a RAS with NO loop point, a TAN analyser with its pH and temperature probes bound to the SYSTEM; T-03's
     own lab NH₃ critical. The analyser's fresh OK is the system's value, never the unit's own point's: it is shown (A9),
@@ -674,3 +733,4 @@ class SystemSensorTests(WaterTestCase):
 
 AnalyserAtOwnPointTests.live = SystemSensorTests.live
 AnalyserWithLoopProbesTests.live = SystemSensorTests.live
+AnalyserAtTheOutletTests.live = SystemSensorTests.live

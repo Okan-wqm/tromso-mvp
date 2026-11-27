@@ -412,7 +412,7 @@ class PlatformSettings(AuditedModel):
         _('A probe reading stands for (seconds)'), default=3600,
         validators=[MinValueValidator(SENSOR_HOLD_SECONDS[0]), MaxValueValidator(SENSOR_HOLD_SECONDS[1])])
     assumption_cap_days = models.PositiveSmallIntegerField(
-        _('Measured days that cap an assumed temperature'), default=7,
+        _('Days before a gap that cap an assumed temperature'), default=7,
         validators=[MinValueValidator(ASSUMPTION_CAP_DAYS[0]), MaxValueValidator(ASSUMPTION_CAP_DAYS[1])])
     probe_sample_tolerance_c = models.DecimalField(
         _('Probe and samples may differ by (°C)'), max_digits=3, decimal_places=1, default=Decimal('1.0'),

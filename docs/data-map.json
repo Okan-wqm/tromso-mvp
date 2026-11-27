@@ -25951,8 +25951,7 @@
           "null": false,
           "choices": [
             "landing",
-            "closing",
-            "write"
+            "closing"
           ],
           "link": null,
           "on_form": [],

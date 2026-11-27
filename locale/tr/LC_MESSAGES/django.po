@@ -2367,14 +2367,17 @@ msgstr "Dönemdeki bir gün"
 
 msgid ""
 "A day without a measured water temperature counts at the species’ assumed temperature, but never "
-"above the coldest daily mean measured in this many measured days before the gap began. 1 to 30; 7"
-" until you set another. A change that would free fish held today or bring a recorded harvest "
-"inside a withdrawal asks first."
+"above the coldest daily mean measured in this many calendar days before its gap of unmeasured "
+"days began (the days before the gap, measured or not), nor above the first day measured after the"
+" gap. 1 to 30; 7 until you set another. A change that would free fish held today or bring a "
+"recorded harvest inside a withdrawal asks first."
 msgstr ""
-"Ölçülmüş su sıcaklığı olmayan bir gün türün varsayılan sıcaklığıyla sayılır, ama asla boşluk "
-"başlamadan önceki bu kadar ölçülmüş günde ölçülen en soğuk günlük ortalamanın üstünde değil. 1 "
-"ila 30; siz başka bir değer verene kadar 7. Bugün bekletilen balığı serbest bırakacak ya da "
-"kayıtlı bir hasadı bekleme süresinin içine alacak bir değişiklik önce sorar."
+"Ölçülmüş su sıcaklığı olmayan bir gün türün varsayılan sıcaklığıyla sayılır, ama asla ölçülmemiş "
+"günlerden oluşan boşluğu başlamadan önceki bu kadar takvim gününde (boşluktan önceki günler, "
+"ölçülmüş olsun ya da olmasın) ölçülen en soğuk günlük ortalamanın ve boşluktan sonra ölçülen ilk "
+"günün üstünde değil. 1 ila 30; siz başka bir değer verene kadar 7. Bugün bekletilen balığı "
+"serbest bırakacak ya da kayıtlı bir hasadı bekleme süresinin içine alacak bir değişiklik önce "
+"sorar."
 
 msgid "A deadband above 0, unless every value is stored."
 msgstr "Her değer saklanmıyorsa ölü bant 0’dan büyük olmalıdır."
@@ -3262,9 +3265,6 @@ msgstr "Bir tam sayı: aynı havuz ve tohum her zaman aynı yerleşimleri verir.
 
 msgid "A wide chart scrolls sideways inside its frame."
 msgstr "Geniş bir şema kendi çerçevesi içinde yana kayar."
-
-msgid "A write nobody could be asked about"
-msgstr "Kimseye sorulamayan bir yazma"
 
 msgid "A year class is a year, e.g. 2026."
 msgstr "Yıl sınıfı bir yıldır, örneğin 2026."
@@ -6159,6 +6159,9 @@ msgstr "Yıllık gün"
 
 msgid "Days and punches"
 msgstr "Günler ve giriş-çıkışlar"
+
+msgid "Days before a gap that cap an assumed temperature"
+msgstr "Varsayılan sıcaklığı sınırlayan, boşluktan önceki günler"
 
 #, python-format
 msgid "Days counted: %(parts)s."
@@ -9990,9 +9993,6 @@ msgstr "Ölçüm zamanı"
 
 msgid "Measured average weight (g)"
 msgstr "Ölçülen ortalama ağırlık (g)"
-
-msgid "Measured days that cap an assumed temperature"
-msgstr "Varsayılan sıcaklığı sınırlayan ölçülmüş günler"
 
 msgid "Measured on"
 msgstr "Ölçüm tarihi"

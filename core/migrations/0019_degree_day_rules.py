@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='platformsettings',
             name='assumption_cap_days',
-            field=models.PositiveSmallIntegerField(default=7, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(30)], verbose_name='Measured days that cap an assumed temperature'),
+            field=models.PositiveSmallIntegerField(default=7, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(30)], verbose_name='Days before a gap that cap an assumed temperature'),
         ),
         migrations.AddField(
             model_name='platformsettings',

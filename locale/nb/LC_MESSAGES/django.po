@@ -2357,14 +2357,16 @@ msgstr "En dag i perioden"
 
 msgid ""
 "A day without a measured water temperature counts at the species’ assumed temperature, but never "
-"above the coldest daily mean measured in this many measured days before the gap began. 1 to 30; 7"
-" until you set another. A change that would free fish held today or bring a recorded harvest "
-"inside a withdrawal asks first."
+"above the coldest daily mean measured in this many calendar days before its gap of unmeasured "
+"days began (the days before the gap, measured or not), nor above the first day measured after the"
+" gap. 1 to 30; 7 until you set another. A change that would free fish held today or bring a "
+"recorded harvest inside a withdrawal asks first."
 msgstr ""
 "En dag uten målt vanntemperatur teller med artens antatte temperatur, men aldri over det kaldeste"
-" døgnsnittet målt i så mange målte dager før hullet begynte. 1 til 30; 7 til du setter noe annet."
-" En endring som ville frigi fisk som holdes tilbake i dag, eller legge en registrert slakting inn"
-" i en tilbakeholdelsestid, spør først."
+" døgnsnittet målt i så mange kalenderdager før hullet av umålte dager begynte (dagene før hullet,"
+" målt eller ikke), og heller ikke over den første dagen målt etter hullet. 1 til 30; 7 til du "
+"setter noe annet. En endring som ville frigi fisk som holdes tilbake i dag, eller legge en "
+"registrert slakting inn i en tilbakeholdelsestid, spør først."
 
 msgid "A deadband above 0, unless every value is stored."
 msgstr "Et dødbånd over 0, med mindre hver verdi lagres."
@@ -3255,9 +3257,6 @@ msgstr "Et helt tall: det samme utvalget og frøet gir alltid de samme plasserin
 
 msgid "A wide chart scrolls sideways inside its frame."
 msgstr "Et bredt kart rulles sidelengs inne i sin egen ramme."
-
-msgid "A write nobody could be asked about"
-msgstr "En endring ingen kunne bli spurt om"
 
 msgid "A year class is a year, e.g. 2026."
 msgstr "En årsklasse er et år, for eksempel 2026."
@@ -6141,6 +6140,9 @@ msgstr "Dager i året"
 
 msgid "Days and punches"
 msgstr "Dager og stemplinger"
+
+msgid "Days before a gap that cap an assumed temperature"
+msgstr "Dager før et hull som begrenser en antatt temperatur"
 
 #, python-format
 msgid "Days counted: %(parts)s."
@@ -9956,9 +9958,6 @@ msgstr "Målt"
 
 msgid "Measured average weight (g)"
 msgstr "Målt snittvekt (g)"
-
-msgid "Measured days that cap an assumed temperature"
-msgstr "Målte dager som begrenser en antatt temperatur"
 
 msgid "Measured on"
 msgstr "Målt"

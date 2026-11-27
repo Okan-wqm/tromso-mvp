@@ -24,7 +24,7 @@
   <dl class="facts">
     <div><dt>{% trans "A probe day needs readings in (hours)" %}</dt><dd>{{ row.sensor_day_hours }}</dd></div>
     <div><dt>{% trans "A probe reading stands for (seconds)" %}</dt><dd>{{ row.sensor_hold_seconds }}</dd></div>
-    <div><dt>{% trans "Measured days that cap an assumed temperature" %}</dt><dd>{{ row.assumption_cap_days }}</dd></div>
+    <div><dt>{% trans "Days before a gap that cap an assumed temperature" %}</dt><dd>{{ row.assumption_cap_days }}</dd></div>
     <div><dt>{% trans "Probe and samples may differ by (°C)" %}</dt><dd>{{ row.probe_sample_tolerance_c }}</dd></div>
   </dl>
 </section>

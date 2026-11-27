@@ -2984,7 +2984,7 @@ corrected temperature or a backdated transfer changes it at once:
   early is the dangerous direction, and **an end never moves earlier without a question**). One definition and one
   accrual (`farm/water/degree_days.py`, `BatchWater.walk`), which the purging fast adds up too:
   - **Where a unit's water is read**: owner rule A9's tiers, from the one resolver (`farm/water/read.py` `tiers`,
-    which the ration's temperature takes its places from too): the unit's OWN places (its own-water points, never the
+    which the water page, the ration's temperature and the closing of probe days take their places from too): the unit's OWN places (its own-water points, never the
     inlet), and only when the day has nothing there, its SYSTEM's (the loop point, or the system's own sensors when it
     has no loop point).
   - **A day counts at the lowest of everything measured in that tier**, the closed probe days and the water samples
@@ -3000,9 +3000,14 @@ corrected temperature or a backdated transfer changes it at once:
     hypertable, by the closing service `farm/water/services.py`). A day counts when **at least 20 of its hours hold a
     good reading and as many hours are covered** (Platform settings), a good reading standing for the water **until the
     channel's next stored row, good or not, and an hour at most** (Platform settings; never longer than the channel's
-    own freshness: a dead probe does not keep measuring, a bad or maintenance row ends a hold), **the channel has a
+    own freshness: a dead probe does not keep measuring, a bad or maintenance row ends a hold), and **at the lowest
+    message of the deadband's run up to that next row** when the channel stores only on a move (the water was as low
+    as that in between), **the channel has a
     range set** (a channel without one flags nothing out of range) and the mean, rounded down to 0.01 °C, lies inside
-    the temperature's plausible range (−3 to 40 °C). The row keeps the hours and the hold it was closed with.
+    the temperature's plausible range (−3 to 40 °C). The row keeps the hours and the hold it was closed with (the hold it used: the setting, or the channel's
+    freshness when shorter). A probe day is not an audited record: each row is itself the append-only fact, never
+    edited (a correction voids it and writes another); each closing of a day is in the activity log with its counts,
+    and the daily job holds an advisory lock, so two jobs never close one day twice.
     **Known gap: there is no calibration record in the sensors area** (only a channel's unit factor and offset), so "the
     probe was calibrated" cannot be asked of a probe day; the comparison with the samples is what catches a probe that
     reads wrong.
@@ -3012,24 +3017,30 @@ corrected temperature or a backdated transfer changes it at once:
     (`probe_days correct`: the row is voided with who, when and why, and worked out again). Both tables and the
     floors are registered whole in the withdrawal gate (`farm/withdrawal_gate.py`): no write of them outside the guard.
   - **A day a probe is still expected for is not closed yet**: a past day after the last one the job closed, at a
-    place that had a probe day row on that last closed day. It is projected, never assumed and never read from the
+    place that had a probe day row on one of the 7 last closed days of its clock (`EXPECTED_DAYS`: a probe silent for
+    a day is still expected the day after; one removed for good stops being expected a week after its last row). It is projected, never assumed and never read from the
     samples alone, the end is "about", and such a sum **frees nobody today** ("Not before tomorrow: 1 sensor day is not
     closed yet, and the fish are held until it is."). Today is never a probe day. A job that does not run is therefore
     visible, never a silent assumption.
-  - **A write nobody can be asked about never moves an end earlier**: when the job closes a day that would end a
-    withdrawal in force earlier than it was shown to (the probe was warmer than the projection), the end it had stays
-    as a **floor** (`farm.models.WithdrawalFloor`: a recorded decision, not a stored end; the withdrawal is still
+  - **A write nobody can be asked about never moves an end earlier because the past moved**: when the job closes a
+    day that raises a day already counted (a day counted at the samples or the capped assumption before it was
+    closed, now at a warmer probe), and so would end a withdrawal in force earlier than it was shown to, the end it had
+    stays as a **floor**, which names the days that moved (`farm.models.WithdrawalFloor`: a recorded decision, not a stored end; the withdrawal is still
     worked out on read and ends at the later of the two, "Held to 29.11.2026 by a floor (A probe day closed,
-    26.11.2026), although the days counted give 27.11.2026 ..."). A floor ends by itself on its day; before, it is
-    lifted only through the withdrawal guard, which asks the Released question (`manage.py withdrawal_floors`). A day
-    that closes on the end that was shown sets none.
+    26.11.2026), although the days counted give 27.11.2026 ..."). A floor ends by itself on its day, and none is set at a day
+    already past; before, it is lifted only through the withdrawal guard, which asks the Released question (`manage.py
+    withdrawal_floors`). **A projection that meets the water sets none** (the coordinator's decision N-5 of REVIEW-2):
+    a day that was projected (not over, or not closed yet) and closes warmer than the projection frees the fish when
+    the closed days say, as "about" always meant.
   - **A past day with nothing measured** counts at **the batch species' assumed water temperature** (Reference data ›
     Species; one query reads the species of all the batches), **but never above the cap**: the coldest daily mean
-    measured in the 7 days (Platform settings) before the gap of unmeasured days began, and not above the first day
-    measured after the gap when there is one. The cap does not run out inside a gap: it lifts only when a measurement
+    measured in the 7 calendar days (Platform settings) before the gap of unmeasured days began, and not above the
+    first day measured after the gap when there is one. The cap does not run out inside a gap: it lifts only when a measurement
     says so ("9 days without a measured water temperature are counted below the species' assumed temperature: at the
     coldest daily mean measured in the 7 days before their gap began, or the first day measured after it when that is
-    colder."). A gap is traced back 30 days before the first day asked. **0 °C when the species has none** ("... are
+    colder."). A gap is traced back no further than the walk's first day (the day after the course, after the feeding) less
+    those 7 days: a bound that never moves with today, so a sample does not drop out of the cap as the days go by
+    (REVIEW-2, N-1). A projection at the assumed temperature is capped the same way (N-9). **0 °C when the species has none** ("... are
     counted as 0 °C: set the species' assumed temperature in Reference data › Species.").
   - **The rules are the platform owner's settings** (Platform settings › Degree-days: the hours a probe day needs, how
     long a reading stands, the days that cap an assumption, the tolerance), registered in the withdrawal gate: a
@@ -3045,7 +3056,10 @@ corrected temperature or a backdated transfer changes it at once:
   days"), else, or at a projection of 0 °C or below, the end is unknown ("record the water temperature").
   **At a landing that changes this rule** the ends are measured, not trusted: `manage.py withdrawal_ends dump` with the
   code before, `withdrawal_ends compare` with the code after; an end that would move earlier stops the landing, or is
-  stored as a floor (`--floor`), so that no open withdrawal ends earlier than it did without a person's answer.
+  stored as a floor (`--floor`), so that no open withdrawal ends earlier than it did without a person's answer: the
+  checklist is [Landing a change of the withdrawal rule](#landing-a-change-of-the-withdrawal-rule).
+  **Before probe days are closed in production**: a deadband channel's mean is now its lower bound (above), but a
+  probe's calibration still cannot be asked (no calibration record).
   **Not built yet**: a page for the probe days, the days closed and the floors (the commands above are the way; the
   data map lists the gap);
 - both given, the later end wins; a running course counts from its planned last day;
@@ -6758,6 +6772,47 @@ mailer is SMTP whatever the environment holds, and the system check `core.checks
 A development server pointed at a real SMTP server is held to E003 to E005 too, and every server to E006. The deploy check
 (`CHECKS=1 scripts/test.sh`) runs with an SMTP server, a sender and a public address in its production-like settings,
 so Django's `mail.E001` (a development-only mail backend) is closed and no longer in the list of open deploy issues.
+
+### Landing a change of the withdrawal rule
+
+A change of how a withdrawal or a purge is worked out (the degree-days, the cap, a rule of `farm/health/withdrawal.py`)
+lands with its ends MEASURED, between steps 4 and 5 of the landing list (CLAUDE.md): every open withdrawal's end with the
+old code, then with the new, compared, and any end that would move earlier either stops the landing or is kept as a floor
+with the owner's yes. Nothing may write between the dump and the compare: do it on one local day, well away from
+midnight (if a midnight passes in between, start again at step 3). The dumps hold development-database data: they go to
+`F:\dev\balik-notes\degree-days\`, never into a checkout.
+
+1. **Backup** (landing step 4): `pg_dump -U balik` into `Programlar\db-backups\` as usual.
+2. **Dry run, everything still running**: `bash scripts/withdrawal_ends_old.sh
+   F:/dev/balik-notes/degree-days/ends-dryrun.json` from the branch's checkout. It makes a throwaway worktree of
+   `origin/main` (`F:\dev\balik-wt\landing-old`), copies the branch's `withdrawal_ends.py` into it (its `dump` reads only
+   what the old code has), builds the old image when missing, runs the dump on the compose network and removes the
+   worktree. It must finish and say how many withdrawals and fasts it wrote.
+3. **Stop the dev server** (`docker stop balik-dev-web`), then the real dump with the old code: `bash
+   scripts/withdrawal_ends_old.sh F:/dev/balik-notes/degree-days/ends-before-landing.json`.
+4. **Fast-forward `main`** to the branch; with the server still stopped and the branch's image, `migrate` +
+   `compile_catalogs` + `npm run build` (landing step 5).
+5. **Compare, server still stopped**, with the new code:
+   ```
+   MSYS_NO_PATHCONV=1 docker run --rm --network balik-ciftligi_default -e DB_HOST=db -e DB_PORT=5432 \
+     -e COMPANY_NAME="Nordhav Akva" -v F:/dev/balik-ciftligi:/app -v F:/dev/balik-notes/degree-days:/out \
+     -w /app "$IMG" python manage.py withdrawal_ends compare /out/ends-before-landing.json
+   ```
+   - "0 would end earlier": go on to step 6.
+   - It fails with `EARLIER` lines: **stop and give the list to the owner.** Then either roll back (restore the backup,
+     reset `main` to `origin/main`), or, with the owner's yes, run it again with `--floor --reason "<the rule's change
+     and its date>"`: each such withdrawal then ends no earlier than it did, said on its line, until a person lifts the
+     floor through the withdrawal question (`manage.py withdrawal_floors`).
+   - Either way, then `python manage.py check_withdrawal` for the harvests a later end now puts inside a withdrawal,
+     and read the `later` and `fast` lines of the compare.
+6. `manage.py check --database default` must be quiet; then start the dev server and do the live check (landing step 6).
+7. **Do not run `close_probe_days` before step 5 has passed.** In development nothing runs it by itself.
+8. If step 2 or 3 stopped half way, remove `F:\dev\balik-wt\landing-old` (`git worktree remove --force`); the script
+   removes it on every way out of its own.
+
+**In production** (only with the owner's go-ahead): the same order, with web AND the jobs container stopped from before
+the dump until after the compare (and `--floor`): the jobs run `close_probe_days` on their first turn, and web would
+serve the new ends before the floors exist.
 
 ### Starting a production server
 

@@ -196,9 +196,10 @@ class PlatformSettingsForm(TabbedForm):
                                      'closed day keeps the value it was closed with.'),
             'assumption_cap_days': _('A day without a measured water temperature counts at the species’ assumed '
                                      'temperature, but never above the coldest daily mean measured in this many '
-                                     'measured days before the gap began. 1 to 30; 7 until you set another. A change '
-                                     'that would free fish held today or bring a recorded harvest inside a withdrawal '
-                                     'asks first.'),
+                                     'calendar days before its gap of unmeasured days began (the days before the gap, '
+                                     'measured or not), nor above the first day measured after the gap. 1 to 30; 7 '
+                                     'until you set another. A change that would free fish held today or bring a '
+                                     'recorded harvest inside a withdrawal asks first.'),
             'probe_sample_tolerance_c': _('When a probe’s daily mean and the same day’s water samples differ by more '
                                           'than this, the withdrawal says so; the lower always counts. 0 to 10 °C; 1.0 '
                                           'until you set another.'),

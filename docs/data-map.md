@@ -515,7 +515,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Administration › platform_settings
 - **forms**: `PlatformSettingsForm`
 - **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check); chk_platform_settings_plan_horizon (check); chk_platform_settings_kept (check)
-- **tests that mention it**: `core/tests_kept_rows.py`, `core/tests_platform.py`, `core/tests_rev.py` and 12 more
+- **tests that mention it**: `core/tests_kept_rows.py`, `core/tests_platform.py`, `core/tests_rev.py` and 13 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1107,7 +1107,7 @@ A weight band of a protocol's feeding table: fish from the lower weight up to, n
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › feeding_protocol_bands
 - **forms**: `BandRowForm`
 - **constraints**: chk_feeding_protocol_bands_min_weight (check); chk_feeding_protocol_bands_band (check); chk_feeding_protocol_bands_meals (check); chk_feeding_protocol_bands_expected_fcr (check); chk_feeding_protocol_bands_uneaten (check); chk_feeding_protocol_bands_mortality (check); uq_feeding_protocol_bands_start (unique: protocol, min_weight_g); excl_feeding_protocol_bands_overlap (exclusion: protocol, min_weight_g, max_weight_g)
-- **tests that mention it**: `core/test_world.py`, `farm/tests/test_production_plan.py`, `farm/tests/test_protocols.py` and 4 more
+- **tests that mention it**: `core/test_world.py`, `farm/tests/test_production_plan.py`, `farm/tests/test_production_plans_reads.py` and 5 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1133,7 +1133,7 @@ One cell of a feeding table: the SFR (% of the body weight a day) of a band at a
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › feeding_protocol_rates
 - **forms**: `ProtocolTableForm`
 - **constraints**: chk_feeding_protocol_rates_temperature (check); chk_feeding_protocol_rates_sfr (check); uq_feeding_protocol_rates_cell (unique: band, temperature_c)
-- **tests that mention it**: `core/test_world.py`, `farm/tests/test_protocols.py`, `experiments/tests/__init__.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `farm/tests/test_production_plans_reads.py`, `farm/tests/test_protocols.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1154,7 +1154,7 @@ A feeding table for one species: weight bands with their feed, meals and expecte
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › feeding_protocols
 - **forms**: `ProtocolForm`
 - **constraints**: uq_feeding_protocols_name_live (unique: name); chk_feeding_protocols_status (check); chk_feeding_protocols_expected_fcr (check); chk_feeding_protocols_uneaten (check); chk_feeding_protocols_mortality (check); chk_feeding_protocols_fcr_between (check); chk_feeding_protocols_uneaten_between (check); chk_feeding_protocols_sfr_between (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_formpanels.py`, `core/tests_workspaces.py` and 11 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_formpanels.py`, `core/tests_workspaces.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1637,7 +1637,7 @@ A protocol in force for a unit, a whole batch or a batch in one unit, from a day
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › protocol_assignments
 - **forms**: `AssignmentForm`, `NewAssignmentForm`
 - **constraints**: chk_protocol_assignments_target (check); chk_protocol_assignments_period (check); excl_protocol_assignments_unit (exclusion: unit, valid_from, valid_until); excl_protocol_assignments_batch (exclusion: batch, valid_from, valid_until); excl_protocol_assignments_batch_in_unit (exclusion: unit, batch, valid_from, valid_until)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_assignments.py` and 8 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `farm/tests/test_assignments.py` and 9 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2097,7 +2097,7 @@ A temperature profile in force for a unit, a whole batch or a batch in one unit,
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › temperature_profile_assignments
 - **forms**: `NewProfileAssignmentForm`, `ProfileAssignmentForm`
 - **constraints**: chk_temperature_profile_assignments_target (check); chk_temperature_profile_assignments_period (check); excl_temperature_profile_assignments_unit (exclusion: unit, valid_from, valid_until); excl_temperature_profile_assignments_batch (exclusion: batch, valid_from, valid_until); excl_temperature_profile_assignments_batch_in_unit (exclusion: unit, batch, valid_from, valid_until)
-- **tests that mention it**: `core/tests_workspaces.py`
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_production_plan.py`, `farm/tests/test_production_plans_reads.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2130,6 +2130,7 @@ A point of a profile: fish of this weight (g) are expected in water of this temp
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › temperature_profile_points
 - **forms**: `TemperatureProfilePointForm`, `TemperaturePointForm`
 - **constraints**: chk_temperature_profile_points_weight (check); chk_temperature_profile_points_temperature (check); uq_temperature_profile_points_weight (unique: profile, weight_g)
+- **tests that mention it**: `farm/tests/test_production_plans_reads.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2152,7 +2153,7 @@ The water temperature over the fish's weight for one species: its points (Temper
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › temperature_profiles
 - **forms**: `TemperatureProfileForm`
 - **constraints**: uq_temperature_profiles_name_live (unique: name); chk_temperature_profiles_status (check); chk_temperature_profiles_between (check)
-- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_production_plan.py`
+- **tests that mention it**: `core/tests_workspaces.py`, `farm/tests/test_production_plan.py`, `farm/tests/test_production_plans_reads.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

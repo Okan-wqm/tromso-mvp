@@ -4447,6 +4447,7 @@
         "farm/tests/helpers.py",
         "farm/tests/test_harvest_inside_withdrawal.py",
         "farm/tests/test_production_plan.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_second_approval_said_first.py",
         "farm/tests/test_withdrawal_ceiling.py",
         "farm/tests/test_withdrawal_delivery_after.py",
@@ -10539,6 +10540,7 @@
       "tests": [
         "core/test_world.py",
         "farm/tests/test_production_plan.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
@@ -10718,6 +10720,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "experiments/tests/__init__.py",
         "experiments/tests/test_design.py",
@@ -11146,6 +11149,7 @@
         "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_one_column_table.py",
         "farm/tests/test_production_plan.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/__init__.py",
@@ -16692,6 +16696,7 @@
         "farm/tests/test_assignments.py",
         "farm/tests/test_cleaner_ration.py",
         "farm/tests/test_production_plan.py",
+        "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "reports/tests/test_compute.py",
         "experiments/tests/test_amend.py",
@@ -22856,7 +22861,9 @@
         "left_out": false
       },
       "tests": [
-        "core/tests_workspaces.py"
+        "core/tests_workspaces.py",
+        "farm/tests/test_production_plan.py",
+        "farm/tests/test_production_plans_reads.py"
       ]
     },
     {
@@ -23065,7 +23072,9 @@
         "masked": [],
         "left_out": false
       },
-      "tests": []
+      "tests": [
+        "farm/tests/test_production_plans_reads.py"
+      ]
     },
     {
       "app": "farm",
@@ -23377,7 +23386,8 @@
       },
       "tests": [
         "core/tests_workspaces.py",
-        "farm/tests/test_production_plan.py"
+        "farm/tests/test_production_plan.py",
+        "farm/tests/test_production_plans_reads.py"
       ]
     },
     {

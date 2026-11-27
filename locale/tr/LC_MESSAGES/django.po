@@ -880,8 +880,8 @@ msgstr ""
 " Yemler)."
 
 #, python-format
-msgid "%(feed)s of feed to the target · economic FCR %(fcr)s"
-msgstr "hedefe kadar %(feed)s yem · ekonomik FCR %(fcr)s"
+msgid "%(feed)s of feed to the target · FCR on feed given %(fcr)s · economic FCR %(efcr)s"
+msgstr "hedefe kadar %(feed)s yem · verilen yem üzerinden FCR %(fcr)s · ekonomik FCR %(efcr)s"
 
 #, python-format
 msgid "%(feed)s · %(size)s mm"
@@ -1614,6 +1614,10 @@ msgid "%(system)s is on another site than the production department."
 msgstr "%(system)s, üretim departmanından farklı bir sahada."
 
 #, python-format
+msgid "%(table)s is no longer active: it was changed meanwhile."
+msgstr "%(table)s artık etkin değil: bu arada değiştirildi."
+
+#, python-format
 msgid ""
 "%(tank)s already has the feeding protocol %(protocol)s assigned (%(period)s): end it first, for "
 "starting an experiment never ends another record."
@@ -1705,6 +1709,14 @@ msgstr "%(temperature)s °C bu tablonun dışında (%(low)s–%(high)s °C)."
 #, python-format
 msgid "%(temperature)s °C, %(salinity)s ‰"
 msgstr "%(temperature)s °C, %(salinity)s ‰"
+
+#, python-format
+msgid ""
+"%(temperature)s °C, the temperature profile %(profile)s’s at this weight, is outside this table "
+"(%(low)s–%(high)s °C)."
+msgstr ""
+"%(temperature)s °C, %(profile)s sıcaklık profilinin bu ağırlıktaki değeri, bu tablonun dışında "
+"(%(low)s–%(high)s °C)."
 
 #, python-format
 msgid "%(title)s · %(quantity)s · %(tier)s, %(width)s each"
@@ -3885,6 +3897,9 @@ msgstr ""
 "Saf maddenin miktarları, hacim için (Sistem sekmesi); bir çözelti ya da teknik kalite daha fazla "
 "tartılır (derişimine bölün). Parça parça dozlayın ve pH’yi yeniden ölçün: güçlü bir baz ya da "
 "asit girdiği yerde pH’yi hızla değiştirir."
+
+msgid "An active profile has points: set it to draft or retired first to remove them all."
+msgstr "Etkin bir profilin noktaları olur: hepsini kaldırmak için önce taslak ya da emekli yapın."
 
 msgid "An active protocol has a table."
 msgstr "Aktif bir protokolün tablosu olmalı."
@@ -6735,14 +6750,14 @@ msgid ""
 "Each band’s FCR, uneaten share and SFR sit at the middle of the band (a band without an upper "
 "weight: at its lower weight). With the rule “Smooth between bands” the value of fish between two "
 "middles is read in between, so it does not jump at a band’s edge; with “Step at the band edge” it"
-" is the fish’s own band’s. The rule is chosen per quantity on the General tab. The economic FCR "
-"is the FCR on the feed given: the FCR divided by the share eaten."
+" is the fish’s own band’s. The rule is chosen per quantity on the General tab. The FCR on feed "
+"given is the FCR divided by the share eaten."
 msgstr ""
 "Her bandın FCR’si, yenmeyen payı ve SFR’si bandın ortasında durur (üst ağırlığı olmayan bantta: "
 "alt ağırlığında). “Bantlar arasında yumuşak” kuralıyla iki orta nokta arasındaki balığın değeri "
 "arada okunur, böylece bant sınırında sıçramaz; “Bant sınırında basamak” kuralıyla balığın kendi "
-"bandının değeridir. Kural her büyüklük için Genel sekmesinde seçilir. Ekonomik FCR, verilen yem "
-"üzerinden FCR’dir: FCR bölü yenen pay."
+"bandının değeridir. Kural her büyüklük için Genel sekmesinde seçilir. Verilen yem üzerinden FCR, "
+"FCR bölü yenen paydır."
 
 msgid "Each day"
 msgstr "Her gün"
@@ -7071,6 +7086,9 @@ msgstr "Her etkin nokta"
 msgid "Every alarm"
 msgstr "Her alarm"
 
+msgid "Every band has an SFR in every temperature column."
+msgstr "Her bandın her sıcaklık sütununda bir SFR’si olur."
+
 msgid ""
 "Every change anyone made: who, when, which record and the old and new values. Entries cannot be "
 "edited or deleted."
@@ -7095,6 +7113,13 @@ msgstr ""
 "Planın her günü, günün rasyonunu verilmiş sayar. Geçmiş bir gün asla planlanmaz: tartımlar "
 "arasındaki tahmin yalnızca kaydedilen yemlemelerle büyür, yemleme kaydı olmayan gün hiçbir şey "
 "eklemez. Tartım, tahmini ölçülen ağırlığa getirir ve ilerideki plan oradan yeniden başlar."
+
+msgid ""
+"Every day of this plan, from its past start on, counts the day’s ration as given, as the plan did"
+" on that day: it is compared with what was measured since, which grew on the feedings recorded."
+msgstr ""
+"Bu planın geçmişteki başlangıcından itibaren her günü, planın o gün yaptığı gibi günün rasyonunu "
+"verilmiş sayar: o günden beri ölçülenlerle karşılaştırılır; onlar kaydedilen yemlemelerle büyüdü."
 
 #, python-format
 msgid ""
@@ -7312,6 +7337,20 @@ msgstr "Bantlar arasında FCR"
 msgid "FCR in force"
 msgstr "Geçerli FCR"
 
+msgid "FCR on feed given"
+msgstr "Verilen yem üzerinden FCR"
+
+msgid ""
+"FCR on feed given: the feed given divided by the growth of the fish fed (the FCR divided by the "
+"share eaten). Economic FCR, as the industry says it: the feed given divided by the biomass "
+"gained, the biomass at the end less the biomass at the start, so the weight of the fish that die "
+"is not gained; it is above the FCR on feed given whenever fish die."
+msgstr ""
+"Verilen yem üzerinden FCR: verilen yem bölü yemlenen balıkların büyümesi (FCR bölü yenen pay). "
+"Ekonomik FCR, sektörün tanımıyla: verilen yem bölü kazanılan biyokütle, yani sondaki biyokütleden"
+" baştakinin çıkarılması; ölen balıkların ağırlığı kazanılmış sayılmaz; balık öldüğünde verilen "
+"yem üzerinden FCR’den yüksektir."
+
 msgid "FCR realised · expected"
 msgstr "FCR gerçekleşen · beklenen"
 
@@ -7478,11 +7517,11 @@ msgstr "Eldeki yem"
 
 #, python-format
 msgid ""
-"Feed over these days: %(feed)s given, %(eaten)s eaten, %(uneaten)s uneaten; economic FCR of the "
-"period %(fcr)s; %(fish)s fish and %(biomass)s at the end."
+"Feed over these days: %(feed)s given, %(eaten)s eaten, %(uneaten)s uneaten; FCR on feed given of "
+"the period %(fcr)s, economic FCR %(efcr)s; %(fish)s fish and %(biomass)s at the end."
 msgstr ""
-"Bu günlerdeki yem: %(feed)s verildi, %(eaten)s yendi, %(uneaten)s yenmedi; dönemin ekonomik "
-"FCR’si %(fcr)s; sonunda %(fish)s balık ve %(biomass)s."
+"Bu günlerdeki yem: %(feed)s verildi, %(eaten)s yendi, %(uneaten)s yenmedi; dönemin verilen yem "
+"üzerinden FCR’si %(fcr)s, ekonomik FCR %(efcr)s; sonunda %(fish)s balık ve %(biomass)s."
 
 msgid "Feed per shot (g)"
 msgstr "Atış başına yem (g)"
@@ -11126,6 +11165,14 @@ msgstr "Henüz tamamlanan veya iptal edilen görev yok"
 
 msgid "No task matches these filters."
 msgstr "Bu filtrelere uyan görev yok."
+
+#, python-format
+msgid ""
+"No temperature had been measured here by %(date)s, and no temperature profile applies: the plan "
+"as it stood then has none to read."
+msgstr ""
+"%(date)s tarihine kadar burada sıcaklık ölçülmemişti ve uygulanan bir sıcaklık profili yok: o "
+"günkü haliyle planın okuyacağı sıcaklık yok."
 
 msgid "No temperature recorded here yet: record one."
 msgstr "Burada henüz sıcaklık kaydedilmedi: bir tane kaydedin."
@@ -15945,11 +15992,13 @@ msgid "The diet has no unit: its levels are protocols."
 msgstr "Yem rejiminin birimi yoktur: düzeyleri protokollerdir."
 
 msgid ""
-"The diets’ feeding tables differ in more than the feed (weight bands, meals, expected FCR or "
-"feeding rates): the groups would differ in more than the diet."
+"The diets’ feeding tables differ in more than the feed (weight bands, meals, expected FCR, "
+"uneaten feed, mortality, feeding rates or how they are read between the bands): the groups would "
+"differ in more than the diet."
 msgstr ""
-"Yem rejimlerinin yemleme tabloları yemden fazlasında farklı (ağırlık bantları, öğünler, beklenen "
-"FCR veya yemleme oranları): gruplar yem rejiminden fazlasında farklı olur."
+"Diyetlerin yemleme tabloları yemden fazlasıyla farklı (ağırlık bantları, öğünler, beklenen FCR, "
+"yenmeyen yem, ölüm oranı, yemleme oranları ya da bantlar arasında nasıl okundukları): gruplar "
+"diyetten fazlasıyla farklılaşır."
 
 msgid "The digestible energy cannot be more than the gross energy."
 msgstr "Sindirilebilir enerji brüt enerjiden fazla olamaz."
@@ -16699,6 +16748,14 @@ msgstr "Suyu dağıtım deliklerinden tanka veren boru."
 
 #, python-format
 msgid ""
+"The plan as it stood on %(date)s: the assignments recorded by then (%(tables)s) and the "
+"temperature measured by then; nothing assigned or measured since counts in it."
+msgstr ""
+"%(date)s tarihindeki haliyle plan: o güne kadar kaydedilen atamalar (%(tables)s) ve o güne kadar "
+"ölçülen sıcaklık; sonradan atanan ya da ölçülen hiçbir şey sayılmaz."
+
+#, python-format
+msgid ""
 "The planned harvest of %(unit)s on %(date)s has no planned kilos (Operations › Harvest › Harvest "
 "plan)."
 msgstr ""
@@ -17009,11 +17066,11 @@ msgstr "%(place)s yerindeki sensörler: önce şu an orada olanlar, sonra daha �
 msgid ""
 "The share of the feed given that the fish do not eat, 0 to 50 %%; a band may have its own. Empty:"
 " all of it is eaten. The feed given less this share is what grows the fish; the FCR on the feed "
-"given (the economic FCR) is worked out from the two and shown, never entered."
+"given is worked out from the two and shown, never entered."
 msgstr ""
 "Verilen yemin balıkların yemediği payı, %%0 ile %%50 arası; bir bandın kendi değeri olabilir. "
 "Boş: hepsi yenir. Balığı büyüten, verilen yemden bu payın düşülmüş hâlidir; verilen yem üzerinden"
-" FCR (ekonomik FCR) bu ikisinden hesaplanıp gösterilir, asla girilmez."
+" FCR bu ikisinden hesaplanıp gösterilir, asla girilmez."
 
 #, python-format
 msgid ""
@@ -17287,6 +17344,14 @@ msgstr "Sıcaklık: %(source)s."
 #, python-format
 msgid "The temperature of a day is the temperature profile %(profile)s at the fish’s weight that day."
 msgstr "Bir günün sıcaklığı, o gün balığın ağırlığında %(profile)s sıcaklık profilinin verdiğidir."
+
+#, python-format
+msgid ""
+"The temperature profile %(profile)s has no points: give its points (Operations › Feeding › "
+"Temperature profiles)."
+msgstr ""
+"%(profile)s sıcaklık profilinin noktası yok: noktalarını girin (Operasyonlar › Yemleme › Sıcaklık"
+" profilleri)."
 
 msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
 msgstr ""

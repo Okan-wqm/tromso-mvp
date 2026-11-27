@@ -1432,8 +1432,10 @@ own over whole grids of values, `farm/tests/test_growth.py`), used by the estima
 production plan alike; nothing else in the code turns feed into weight.
 - **The FCR entered is the biological FCR**, on the feed eaten. A protocol also has an **uneaten share** of the feed given
   (`uneaten_pct`, 0–50 %, empty: none), which a band may override like the FCR: growth = feed given × (1 − uneaten) ÷ FCR.
-  The **economic FCR**, on the feed given, is FCR ÷ (1 − uneaten): computed and shown (the fixed table, the growth plan),
-  never entered.
+  The **FCR on feed given** is FCR ÷ (1 − uneaten): computed and shown (the fixed table, the growth plan), never
+  entered. The **economic FCR** is the industry's: feed given ÷ the biomass gained (the biomass at the end less the
+  biomass at the start), so the weight of the fish that die is not gained; it is a plan's whole period's
+  (`growth.Curve.economic_fcr`) and above the FCR on feed given whenever fish die. Both are said in the page's help.
 - **Between two bands each quantity follows the protocol's own rule** (`fcr_between`, `uneaten_between`, `sfr_between`
   on the General tab; database checks), for the FCR, the uneaten share and the SFR (owner decisions 13 and 14):
   **Smooth between bands** (a new protocol's): each band's value sits at the middle of the band (a band without an upper
@@ -1483,11 +1485,14 @@ exclusion constraints (`assignment_constraints`), the same dialog (`farm/forms/a
 after a grading or a split each part reads the row of its own place without anything entered again (decision 19). A
 profile is read for the days ahead only; the past keeps the temperatures measured.
 
-**The projection as a service** (decision 20): `farm.harvest.forecast.projection(unit id, batch id, start day=None)`
-is the one read-only entry for planning tools and, later, the AI agents (they interpret and propose; they never write a
-plan): its output is documented on the function (each day's weight, fish, biomass, feed, eaten, uneaten, growth, feed to
-date, FCR, uneaten share, temperature and its source, fasting; the target day, the feed and the economic FCR), the numbers
-from one pure function, `growth.curve`.
+**The projection as a service** (decision 20): `farm.harvest.forecast.projection(unit id, batch id, start day=None,
+horizon days=None)` is the one read-only entry for planning tools and, later, the AI agents (they interpret and propose;
+they never write a plan). Ids may be UUIDs or their text; anything else, or a unit that does not exist, is a
+`ProjectionError`, never a silent nothing (None only when the batch has no fish in the unit). Its output is plain values
+only, no database records: a dict whose keys a test pins (each day's weight, fish, biomass, feed, eaten, uneaten,
+growth, feed to date, FCR, uneaten share, temperature and its source's name, fasting; the target day, the feed, the FCR
+on feed given and the economic FCR, the protocols and profiles read, the measured points); a test also holds that it
+runs only SELECTs. The numbers come from one pure function, `growth.curve`.
 
 **The ration** of a batch in a unit on a day (`farm/feeding/ration.py`): the protocol by the rule above; the band
 by the fish's **estimated** average (owner decision Q7); the **temperature** of the unit, else of its system's loop,
@@ -2667,7 +2672,10 @@ unit that day at the fish's projected weight (below), else the unit's latest mea
 which (the plan's Temperature column, the file's `temperature_source`), and a temperature held that is not fresh says how
 old it is. The SFR is then read both ways, between two bands over the weight and between two columns over that
 temperature. The row says the day the target is reached, the feed to it and the economic
-FCR of those days (feed given ÷ growth). Past days are never planned: the estimate grows on recorded feedings only.
+FCR on feed given and the economic FCR of those days. Past days are never planned from today: the estimate grows on
+recorded feedings only (a plan from a past start plans the days since as it would have, and says so). A temperature
+profile without points (stored by any path but its form, which refuses it for an active profile) stops the plan with
+its reason, naming the profile; so does a profile temperature outside the protocol's columns.
 Nothing is stored.
 
 **Growth plan** (`/operations/production-plans/growth/<unit>/<batch>/`, the row's link; the production plans' Read) is
@@ -2677,8 +2685,11 @@ column names, a decimal point, ISO dates). Beside it, **Measured against the pla
 stay in the unit (its stocking, each weighing) with the estimate the weighing replaced, the difference in g and %, the
 realised bFCR since the previous point against the expected FCR on the feed given, and what the plan said for that
 day. **Plan from** chooses the start: today's estimate, or a measured point (`?from=<day>`), from which the plan is
-worked out again from the weight and fish measured then and the protocol in force on each day, so "where the plan said
-we would be" is reproducible; a day that is no measured point of the stay shows today's. One page of words for both
+worked out again **as it stood that day** (decision 12 as decided after review 1): the weight and fish measured then, only
+the protocol and profile assignment rows recorded by the end of that day (rows made later are left out; a row ended or
+changed since is read with the days it had then, from the activity log: `read.as_recorded`, `core.audit.values_before`),
+and the temperature measured by then, held (none by then and no profile: the plan stops and says so; no later reading
+leaks in, and no day's sensor values are read). The page says what the plan holds; a day that is no measured point of the stay shows today's. One page of words for both
 looks (`farm/harvest/plan_page.py`: the classic template draws the props the island draws). A drawn chart of the two
 lines is not built: the page is tables.
 

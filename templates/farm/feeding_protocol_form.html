@@ -14,10 +14,10 @@
   {% with columns=object.columns %}
   <div class="table-wrap">
     <table class="data-table grid-table">
-      <thead><tr><th scope="col">{{ fw.weight_band }}</th><th scope="col">{{ fw.feed }}</th><th scope="col" class="num">{{ fw.meals_a_day }}</th><th scope="col" class="num">{{ fw.expected_fcr }}</th><th scope="col" class="num">{{ fw.uneaten_feed }}</th><th scope="col" class="num">{{ fw.economic_fcr }}</th><th scope="col" class="num">{{ fw.mortality_a_month }}</th>{% for temperature in columns %}<th scope="col" class="num">{{ temperature|celsius }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th scope="col">{{ fw.weight_band }}</th><th scope="col">{{ fw.feed }}</th><th scope="col" class="num">{{ fw.meals_a_day }}</th><th scope="col" class="num">{{ fw.expected_fcr }}</th><th scope="col" class="num">{{ fw.uneaten_feed }}</th><th scope="col" class="num">{{ fw.fcr_on_feed_given }}</th><th scope="col" class="num">{{ fw.mortality_a_month }}</th>{% for temperature in columns %}<th scope="col" class="num">{{ temperature|celsius }}</th>{% endfor %}</tr></thead>
       <tbody>
         {% for terms in band_terms %}{% with band=terms.band %}
-        <tr><td class="nowrap">{{ band|weights }}</td><td>{{ band.feed }}</td><td class="num">{{ band.meals }}</td><td class="num">{% if terms.fcr_own %}{{ terms.fcr|fcr }}{% else %}<span class="muted">{{ terms.fcr|fcr }}</span>{% endif %}</td><td class="num">{{ terms.uneaten_pct|percent:1 }}</td><td class="num">{{ terms.economic_fcr|fcr }}</td><td class="num">{{ terms.mortality_pct_month|percent:2 }}</td>{% for cell in band.cells %}<td class="num">{{ cell.sfr_pct|percent:2 }}</td>{% endfor %}</tr>
+        <tr><td class="nowrap">{{ band|weights }}</td><td>{{ band.feed }}</td><td class="num">{{ band.meals }}</td><td class="num">{% if terms.fcr_own %}{{ terms.fcr|fcr }}{% else %}<span class="muted">{{ terms.fcr|fcr }}</span>{% endif %}</td><td class="num">{{ terms.uneaten_pct|percent:1 }}</td><td class="num">{{ terms.fcr_on_feed_given|fcr }}</td><td class="num">{{ terms.mortality_pct_month|percent:2 }}</td>{% for cell in band.cells %}<td class="num">{{ cell.sfr_pct|percent:2 }}</td>{% endfor %}</tr>
         {% endwith %}{% endfor %}
       </tbody>
     </table>

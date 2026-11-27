@@ -379,7 +379,7 @@ class LookBackBudgetTests(WaterTestCase):
         with counting() as fetched:
             worked = context.worked_at(self.mid1)
         self.assertEqual((len(worked.found), worked.complete), (judge.CEILING, False))
-        self.assertEqual(sum(fetched), judge.CEILING + 1)          # and the one newest sample that cannot give a value
+        self.assertEqual(sum(fetched), judge.CEILING)              # (every sample has its own inputs: no other row)
         self.assertTrue(context.verdict(self.mid1, NH3).ceiling)
 
     def test_the_ceiling_stops_the_look_back_and_the_point_cannot_be_evaluated(self):

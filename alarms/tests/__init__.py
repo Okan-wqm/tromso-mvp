@@ -37,7 +37,7 @@ def ran_clean(case, summary):
     unit's water was left unevaluated by an exception (sources.UNIT_UNEVALUATED). Returns the summary."""
     from ..sources import UNIT_UNEVALUATED
     case.assertEqual(summary.failed_steps, [], f'a step of the pass failed: {summary}')
-    case.assertFalse(Alarm.objects.filter(source='system', parameter=UNIT_UNEVALUATED).exists(),
+    case.assertFalse(Alarm.objects.filter(source='system', parameter=UNIT_UNEVALUATED, clearance__isnull=True).exists(),
                      'a unit could not be evaluated: its water read raised')
     return summary
 

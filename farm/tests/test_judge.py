@@ -184,6 +184,21 @@ class PointRuleTests(SimpleTestCase):
             self.assertEqual({each.id for each in verdict.late}, expected, said(values))
 
 
+    def test_clears_needs_fresh_now_on_its_own_axis(self):
+        for kind in KINDS:
+            for fresh_now in (True, False):
+                value = record('v', kind, 5, 0, fresh_now=fresh_now)
+                expected = value.evidence and fresh_now
+                self.assertEqual(judge.clears(value, T0), expected, (kind, fresh_now))
+                self.assertEqual(judge.clears(value, None), expected, (kind, fresh_now))      # no last bad value known
+                self.assertFalse(judge.clears(value, T0 + timedelta(minutes=5)), (kind, fresh_now))
+
+    def test_shown_is_the_worst_else_the_newest(self):
+        for values in scenarios():
+            verdict = judge.point_verdict(values)
+            self.assertEqual(verdict.shown, verdict.worst or max(values, key=lambda each: each.order), said(values))
+
+
 def with_live(values):
     """`values` and a live analyser's OK at minute 10, fresh: the point's evidence."""
     return [*values, record('live', 'ok', 10, 20, stored=False, fresh_now=True)]
@@ -228,20 +243,6 @@ class LiveLateTests(SimpleTestCase):
         stored = record('stored', 'ok', 5, 0)
         earlier_live = record('earlier live', 'critical', 0, 3, stored=False)
         self.assertEqual(judge.point_verdict([stored, earlier_live]).late, ())
-
-    def test_clears_needs_fresh_now_on_its_own_axis(self):
-        for kind in KINDS:
-            for fresh_now in (True, False):
-                value = record('v', kind, 5, 0, fresh_now=fresh_now)
-                expected = value.evidence and fresh_now
-                self.assertEqual(judge.clears(value, T0), expected, (kind, fresh_now))
-                self.assertEqual(judge.clears(value, None), expected, (kind, fresh_now))      # no last bad value known
-                self.assertFalse(judge.clears(value, T0 + timedelta(minutes=5)), (kind, fresh_now))
-
-    def test_shown_is_the_worst_else_the_newest(self):
-        for values in scenarios():
-            verdict = judge.point_verdict(values)
-            self.assertEqual(verdict.shown, verdict.worst or max(values, key=lambda each: each.order), said(values))
 
 
 class ExamplesTests(SimpleTestCase):
@@ -298,6 +299,12 @@ class ExamplesTests(SimpleTestCase):
         evidence = record('evidence', 'ok', 5, 2)
         older = record('older', 'critical', 0, 2)
         self.assertEqual(judge.point_verdict([evidence, older]).late, ())
+
+    def test_a_refused_value_entered_late_is_never_late(self):
+        """A value the core refused (its basis inside the limits) measured before the evidence and entered after it is not
+        a late result: it gives no evaluable value."""
+        verdict = judge.point_verdict([record('ok', 'ok', 5, 0), record('refused', 'refused_basis_ok', 0, 3)])
+        self.assertEqual(verdict.late, ())
 
     def test_a_late_value_stale_from_its_start_is_still_late(self):
         """Review 8, R8-01: a late critical whose salinity ended at its own moment is still said."""

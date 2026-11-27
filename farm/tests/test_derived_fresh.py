@@ -372,7 +372,9 @@ class LookBackBudgetTests(WaterTestCase):
             row.pk = uuid.uuid4()
             row.measured_at = template.measured_at - timedelta(minutes=index)
             rows.append(row)
-        WaterMeasurement.objects.bulk_create(rows)
+        from .. import withdrawal_gate
+        with withdrawal_gate.opened('test fixture: samples written straight in the database'):
+            WaterMeasurement.objects.bulk_create(rows)
         context = read.Context([self.mid1], self.now - read.WINDOW)
         with counting() as fetched:
             worked = context.worked_at(self.mid1)

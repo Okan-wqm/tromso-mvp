@@ -72,7 +72,7 @@ MUTANTS = [
     ('superseded always by the stored evidence', 'stored.minute > late.minute else self.evidence',
      'True else self.evidence', ('LiveLateTests',)),
     ('superseded always by the evidence', 'stored.minute > late.minute else self.evidence',
-     'False else self.evidence', POINT),
+     'False else self.evidence', ('LiveLateTests',)),
     ('late results are the newest first', 'late = () if evidence is None else tuple(worst_first(',
      'late = () if evidence is None else tuple(newest_first(', E),
     ('a late value stale from its start is dropped', 'record.stored and record.value and not record.refused',

@@ -248,7 +248,7 @@ class FailedStepTests(CrossReviewCase):
         self.assertEqual(open_levels(point__unit=self.t1), ['critical'])
         alarm = self.system().get()
         self.assertEqual(alarm.parameter, 'unit_unevaluated')
-        self.loop(minutes=1)                                       # evaluated again: restored, its alarms raised
+        self.loop(minutes=1, failing=True)                         # evaluated again: restored, its alarms raised
         self.loop(minutes=2)
         self.assertFalse(read.is_open(alarm))
         self.assertEqual(open_levels(point__unit=self.t2), ['critical', 'warning'])

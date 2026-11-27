@@ -1808,7 +1808,9 @@ For each place (`judge.place_verdict`: a unit's own points and its system's, or 
   one.
 
 Every value of the judged set is a candidate. A9 chooses among them, and the worst fresh value decides, as for every
-value. Where no tier has a worked-out value, the judge names the value-less record shown (`judge.shown_without_value`).
+value. Only what the judge judges takes part in the worst fresh value: a stored value superseded at its point by a
+newer one, an analyser's fresh value included, is said as the judge says it (late, held or not at all), never counted
+beside it. Where no tier has a worked-out value, the judge names the value-less record shown (`judge.shown_without_value`).
 
 **The tests.** `farm/tests/test_judge.py` tries every order of entry of tens of thousands of point scenarios (itertools).
 Each has two to four values at a point: critical, warning, OK, refused with or without a basis, value-less, or stale

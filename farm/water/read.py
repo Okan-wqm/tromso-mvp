@@ -1936,16 +1936,21 @@ def latest(points, now=None, at=None, own=None, units=()):
             reading = judged(reading)
             if code in WORST_FRESH_CODES:
                 found = [each for each in candidates.get(code, []) if each is not resolved[code]]
+                if code in DERIVED:
+                    # The judge's verdicts of the place's points (and of its system's own sensors), each value judged
+                    # for the place's fish. Only what they judge takes part in the worst fresh value: a stored value
+                    # superseded by a newer one, an analyser's fresh value among them, is the judge's to say (late,
+                    # held or nothing), never a fresh candidate beside it (review 8).
+                    verdicts, judged_of = _verdicts(code, resolved[code], found, where, context, judged, moment)
+                    standing = {id(record.key) for verdict in verdicts.values() for record in verdict.judged}
+                    found = [each for each in found if id(each) in standing]
                 point_water.future += [judged(each) for each in found if each.at - moment > MAX_AHEAD]
                 # Fresh, or ahead of the clock within the ingest contract's hour: they take part in the status.
                 deciding = [judged(each) for each in found
                             if each.fresh(moment) or freshness.tolerance() < each.at - moment <= MAX_AHEAD]
                 # MEASURED AT THE POINT: the point's own newest value of the code, and its fresh others, each judged
                 # before another point's value decides (the point's own old critical stays).
-                if code in DERIVED:
-                    # The judge's verdicts of the place's points (and of its system's own sensors), each value judged
-                    # for the place's fish; the point's OWN status is its verdict's worst (review 7, M5).
-                    verdicts, judged_of = _verdicts(code, resolved[code], found, where, context, judged, moment)
+                if code in DERIVED:                 # the point's OWN status is its verdict's worst (review 7, M5)
                     worst = verdicts[point.pk].worst if point is not None and point.pk in verdicts else None
                     if worst is not None:
                         point_water.measured.append((judged_of(worst.key).status, judged_of(worst.key).judged))

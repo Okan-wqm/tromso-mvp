@@ -2197,3 +2197,10 @@ def history_events(user, owner, start, end):
              'until': int(event['until'].timestamp()) if event['until'] else None, 'label': str(event['label']),
              'when': str(event['when'])}
             for event in found]
+
+
+def live_samples_at(unit_ids, system_ids):
+    """The live water samples taken at these units' own points or these systems' (an experiment's raw data,
+    experiments/rawdata.py), with their point, read through the sealed manager (`samples_of` reads voided ones too)."""
+    return WaterMeasurement.objects.filter(Q(point__unit__in=unit_ids) | Q(point__system__in=system_ids)).select_related(
+        'point')

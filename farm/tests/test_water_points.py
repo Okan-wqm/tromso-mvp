@@ -707,8 +707,9 @@ class ReadTests(PointTestCase):
                          if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)
                          and 'WaterMeasurement' in path.read_text(encoding='utf-8'))
         self.assertEqual(readers, ['admin.py', 'apps.py', 'forms/water.py', 'models/__init__.py', 'models/water.py',
-                                   'models/water_point.py', 'screens.py'])    # the sample's form, its data-map
-        # declaration and the withdrawal gate's registry (apps.py) name its model, they read nothing
+                                   'models/water_point.py', 'screens.py', 'sealing.py'])
+        # the sample's form, its data-map declaration, the withdrawal gate's registry (apps.py) and its seal
+        # (sealing.py: how a confidential experiment's cell hides it) name its model, they read nothing
 
     def test_a_samples_salinity_falls_back_to_its_points_then_its_owners_middle_point(self):
         Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater')

@@ -7,7 +7,9 @@ class ExperimentsConfig(AppConfig):
     def ready(self):
         from farm import placements
 
-        from . import read, resources  # noqa: F401  resources declares the tab on Resource.registry
+        from . import read, resources, sealing  # noqa: F401  resources declares the tab on Resource.registry
+        # What a sealed cell is and who is granted what (core.sealing), and the seals of the experiments' records.
+        sealing.register()
 
         # The chip beside a tank booked to an experiment on Production units, the meal board and the drawer (it fails open).
         placements.register(read.chips)

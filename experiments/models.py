@@ -17,6 +17,8 @@ level with a protocol, one diet factor, one lead, a started experiment with its 
 allocation; and, by triggers (migration 0002), a started design that no writer can change. What PostgreSQL cannot
 say without copying columns (a tank on the experiment's site, a window inside the experiment's span, a level for
 every factor) is checked by `design.problems` and the services, and said so there."""
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import RangeOperators
@@ -24,10 +26,11 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q, Value
 from django.db.models.functions import Lower
+from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
-from core.models import AuditedModel
-from farm.models import FeedingProtocol, Site, Species, Tank
+from core.models import AuditedModel, SealedManager
+from farm.models import FeedingProtocol, Site, Species, System, Tank
 from farm.models.feeding_protocol import DateRange
 
 from .variables import ENDPOINTS, Endpoint
@@ -54,6 +57,18 @@ TRANSITIONS = {
 }
 
 
+class Audience(models.TextChoices):
+    """Who may read an experiment (owner amendment C4: its lead alone decides). Open: everyone who may read experiments.
+    Sealed (the default): its team and the people its lead shares a part with, and the platform admin for support, each
+    such read logged and shown to the lead. Private: its team and shares only, not the platform admin either. A sealed or
+    private experiment, its cells and everything on them do not exist for anyone else; what the platform admin still sees
+    of a private one is that a tank or system is booked, and for which days (booking conflicts must stay visible).
+    Changed by the lead only, logged."""
+    OPEN = 'open', _('Everyone who reads experiments')
+    SEALED = 'sealed', _('Team and shares, and the platform admin for support')
+    PRIVATE = 'private', _('Team and shares only, not the platform admin')
+
+
 class AllocationMethod(models.TextChoices):
     """How the replicates were given their tanks. Randomised: a seeded deal (experiments/allocation.py) whose
     method id is stored with the seed, so the same pool and seed give the same placements for ever."""
@@ -70,7 +85,7 @@ class Experiment(AuditedModel):
     name, notes and status, and a placement can only be shortened. A template is a design without dates, tanks or
     allocation, copied into new experiments."""
 
-    Status, AllocationMethod, Endpoint = Status, AllocationMethod, Endpoint
+    Status, AllocationMethod, Endpoint, Audience = Status, AllocationMethod, Endpoint, Audience
 
     # Generated on creation (experiments/forms.py, core.codes.next_code), never typed or changed, never reused.
     code = models.CharField(_('Experiment number'), max_length=20, editable=False)
@@ -96,6 +111,21 @@ class Experiment(AuditedModel):
     copied_from = models.ForeignKey('self', null=True, blank=True, on_delete=models.DO_NOTHING,
                                     related_name='copies', verbose_name=_('Copied from'))
     notes = models.CharField(_('Notes'), max_length=2000, blank=True)
+    # Who may read it (core.sealing; sealed whatever writes the row, the database default too): a sealed or private
+    # experiment, its cells and everything on them do not exist for anyone outside its team and its shares (and, for a
+    # sealed one, the platform admin). Editable after the start, like the name (migration 0004).
+    audience = models.CharField(_('Who may read it'), max_length=7, choices=Audience.choices, default=Audience.SEALED,
+                                db_default=Audience.SEALED)
+    # The animal-research approval it runs under (FOTS), shown on the card a person overseeing its tanks sees.
+    approval_ref = models.CharField(_('Approval reference'), max_length=60, blank=True, default='', db_default='')
+    approval_valid_until = models.DateField(_('Approval valid until'), null=True, blank=True)
+    # A number the lead types for whoever keeps the fish at night (the Oversee card only); HR keeps no contact detail.
+    on_call_phone = models.CharField(_('On-call phone'), max_length=30, blank=True, default='', db_default='')
+    # What everyone who works its tanks must do (owner 2026-11-24: welfare and people's safety come before
+    # confidentiality): protective equipment, disinfection, the order tanks are handled in. Shown with the tanks to
+    # everyone who works them (the Oversee card and the team's chip, experiments.read), never the design or the pathogen.
+    care_instructions = models.CharField(_('Care and biosecurity instructions'), max_length=1000, blank=True, default='',
+                                         db_default='')
 
     kept_note = _('They stay as they are.')
 
@@ -104,11 +134,18 @@ class Experiment(AuditedModel):
         ordering = ['-created_at']
         verbose_name = _('experiment')
         verbose_name_plural = _('experiments')
+        # Oversee (the role matrix's column, offered by the Experiments area): the farm facts of every sealed cell
+        # (stock, feeding, water, health, alarms, tasks), never its design or results; the experiment shown as a card.
+        permissions = [('oversee_experiment', 'Can oversee the tanks of experiments')]
         constraints = [
             # Never reused, not even the number of a deleted experiment (as batches).
             models.UniqueConstraint(fields=['code'], name='uq_experiments_code'),
             models.CheckConstraint(condition=Q(code__regex=CODE_PATTERN), name='chk_experiments_code'),
             models.CheckConstraint(condition=Q(status__in=Status.values), name='chk_experiments_status'),
+            models.CheckConstraint(condition=Q(audience__in=Audience.values), name='chk_experiments_audience'),
+            models.CheckConstraint(condition=Q(approval_valid_until__isnull=True) | ~Q(approval_ref=''),
+                                   name='chk_experiments_approval',
+                                   violation_error_message=_("An approval's validity needs its reference.")),
             models.CheckConstraint(condition=Q(primary_endpoint__in=['', *Endpoint.values]),
                                    name='chk_experiments_endpoint'),
             models.CheckConstraint(condition=Q(duration_days__gte=1, duration_days__lte=MAX_DURATION_DAYS),
@@ -305,6 +342,8 @@ class GroupLevel(models.Model):
     level = models.ForeignKey(Level, on_delete=models.CASCADE, related_name='group_levels',
                               verbose_name=_('Level'))
 
+    objects = SealedManager()
+
     class Meta:
         db_table = 'experiment_group_levels'
         ordering = ['id']
@@ -362,6 +401,9 @@ class ReplicateUnit(AuditedModel):
     from_on = models.DateField(_('From'))
     until_on = models.DateField(_('Until'))
     left_reason = models.CharField(_('Reason it left'), max_length=500, blank=True)
+    # The whole-system booking this placement is a tank of (ReplicateSystem); none for a tank booked by itself.
+    booking = models.ForeignKey('ReplicateSystem', null=True, blank=True, on_delete=models.PROTECT,
+                                related_name='placements', verbose_name=_('System booking'))
 
     class Meta:
         db_table = 'experiment_replicate_units'
@@ -406,8 +448,13 @@ class Member(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='experiment_memberships',
                              verbose_name=_('Person'))
     role = models.CharField(_('Role'), max_length=12, choices=MemberRole.choices, default=MemberRole.RESEARCHER)
+    # The member's window, read at each request (no job): an empty end is open.
+    valid_from = models.DateTimeField(_('From'), null=True, blank=True)
+    valid_until = models.DateTimeField(_('Until'), null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+', verbose_name=_('Created by'))
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'experiment_members'
@@ -421,7 +468,151 @@ class Member(models.Model):
                                     name='uq_experiment_members_lead',
                                     violation_error_message=_('An experiment has one lead.')),
             models.CheckConstraint(condition=Q(role__in=MemberRole.values), name='chk_experiment_members_role'),
+            models.CheckConstraint(condition=Q(valid_from__isnull=True) | Q(valid_until__isnull=True)
+                                   | Q(valid_until__gt=F('valid_from')), name='chk_experiment_members_window',
+                                   violation_error_message=_('The window ends after it begins.')),
         ]
 
     def __str__(self):
         return f'{self.user.get_full_name() or self.user.get_username()} ({self.get_role_display()})'
+
+
+class SharePart(models.TextChoices):
+    """What a share opens of an experiment (the owner's five). Closure is read at read time (experiments/sealing.py):
+    the results and the data come with the design and the systems; the water with the systems."""
+    DESIGN = 'design', _('Design')
+    RESULTS = 'results', _('Results')
+    SYSTEMS = 'systems', _('Systems and tanks')
+    DATA = 'data', _('Data')
+    WATER = 'water', _('Water')
+
+
+# The longest a share lasts: a grant is renewed, never left open.
+MAX_SHARE_DAYS = 730
+
+
+class ExperimentShare(models.Model):
+    """A part of an experiment given by its lead to a person or a role outside its team, for a time and with a reason.
+    The one grant table for people who are not in the team. A row is never deleted or edited: a revoke sets who and when,
+    a new share is a new row, so the history of who could read what stays. Logged on the experiment."""
+
+    Part = SharePart
+
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, related_name='shares',
+                                   verbose_name=_('Experiment'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+                             related_name='experiment_shares', verbose_name=_('Person'))
+    group = models.ForeignKey('auth.Group', null=True, blank=True, on_delete=models.PROTECT,
+                              related_name='experiment_shares', verbose_name=_('Role'))
+    part = models.CharField(_('Part'), max_length=8, choices=SharePart.choices)
+    valid_from = models.DateTimeField(_('From'), default=timezone.now)
+    valid_until = models.DateTimeField(_('Until'))
+    reason = models.CharField(_('Reason'), max_length=300)
+    revoked_at = models.DateTimeField(_('Revoked at'), null=True, blank=True)
+    revoked_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+                                   related_name='+', verbose_name=_('Revoked by'))
+    created_at = models.DateTimeField(_('Created at'), auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name='+', verbose_name=_('Created by'))
+
+    objects = SealedManager()
+
+    class Meta:
+        db_table = 'experiment_shares'
+        ordering = ['-valid_from', 'id']
+        verbose_name = _('experiment share')
+        verbose_name_plural = _('experiment shares')
+        constraints = [
+            models.CheckConstraint(condition=Q(user__isnull=False, group__isnull=True)
+                                   | Q(user__isnull=True, group__isnull=False), name='chk_experiment_shares_grantee',
+                                   violation_error_message=_('A share is for one person or one role.')),
+            models.CheckConstraint(condition=Q(part__in=SharePart.values), name='chk_experiment_shares_part'),
+            models.CheckConstraint(condition=Q(valid_until__gt=F('valid_from')), name='chk_experiment_shares_period',
+                                   violation_error_message=_('A share ends after it begins.')),
+            models.CheckConstraint(
+                condition=Q(valid_until__lte=F('valid_from') + timedelta(days=MAX_SHARE_DAYS)),
+                name='chk_experiment_shares_length',
+                violation_error_message=_('A share lasts at most two years: renew it when it ends.')),
+            models.CheckConstraint(condition=~Q(reason=''), name='chk_experiment_shares_reason',
+                                   violation_error_message=_('Say why it is shared.')),
+            models.CheckConstraint(condition=Q(revoked_at__isnull=True, revoked_by__isnull=True)
+                                   | Q(revoked_at__isnull=False, revoked_by__isnull=False),
+                                   name='chk_experiment_shares_revoked'),
+            models.UniqueConstraint(fields=['experiment', 'user', 'part'],
+                                    condition=Q(revoked_at__isnull=True, user__isnull=False),
+                                    name='uq_experiment_shares_user_part',
+                                    violation_error_message=_('This person already holds this part.')),
+            models.UniqueConstraint(fields=['experiment', 'group', 'part'],
+                                    condition=Q(revoked_at__isnull=True, group__isnull=False),
+                                    name='uq_experiment_shares_group_part',
+                                    violation_error_message=_('This role already holds this part.')),
+        ]
+        indexes = [models.Index(fields=['user', 'valid_until'], name='idx_experiment_shares_user'),
+                   models.Index(fields=['group', 'valid_until'], name='idx_experiment_shares_group')]
+
+    def __str__(self):
+        grantee = self.user or self.group
+        return f'{grantee} · {self.get_part_display()}'
+
+    def is_live(self, at=None):
+        at = at or timezone.now()
+        return self.revoked_at is None and self.valid_from <= at < self.valid_until
+
+
+class ReplicateSystem(AuditedModel):
+    """A whole system booked to a replicate for a range of days, both included: the intent ("this loop is replicate 2")
+    and the window for what is kept by system (its sampling points, its sensor bindings, its tasks). Its tanks are
+    booked too, each a placement (ReplicateUnit) tagged with this booking, written in the same save
+    (experiments.services.save_places). A system is in one experiment at a time (the exclusion constraint, the twin of
+    the tanks'); a nested system is booked as a row of its own. While a booking is live, the database refuses to move a
+    tank into or out of the system, or the system under another parent (migration 0004): the tanks' rows stay what the
+    system held."""
+
+    replicate = models.ForeignKey(Replicate, on_delete=models.CASCADE, related_name='system_bookings',
+                                  verbose_name=_('Replicate'))
+    # A system that was ever booked is never deleted, as a booked tank.
+    system = models.ForeignKey(System, on_delete=models.PROTECT, related_name='experiment_bookings',
+                               verbose_name=_('System'))
+    from_on = models.DateField(_('From'))
+    until_on = models.DateField(_('Until'))
+    left_reason = models.CharField(_('Reason it left'), max_length=500, blank=True)
+
+    class Meta:
+        db_table = 'experiment_replicate_systems'
+        ordering = ['from_on', 'id']
+        verbose_name = _('system booking')
+        verbose_name_plural = _('system bookings')
+        constraints = [
+            models.CheckConstraint(condition=Q(until_on__gte=F('from_on')), name='chk_experiment_bookings_period',
+                                   violation_error_message=_('The last day comes on or after the first day.')),
+            ExclusionConstraint(
+                name='excl_replicate_systems_system',
+                expressions=[(F('system'), RangeOperators.EQUAL),
+                             (DateRange(F('from_on'), F('until_on'), Value('[]')), RangeOperators.OVERLAPS)],
+                condition=Q(is_deleted=False),
+                violation_error_message=_('This system is booked on some of these days.')),
+        ]
+        indexes = [models.Index(fields=['system', 'from_on'], name='idx_experiment_bookings_system')]
+
+    def __str__(self):
+        return f'{self.replicate} · {self.system.code} · {self.from_on.isoformat()}'
+
+
+class SealedCell(models.Model):
+    """A sealed cell: a tank or a system booked to a sealed experiment for a range of days (the database view
+    `experiment_cells`, migration 0004: the live placements and system bookings of live experiments whose audience is
+    sealed, drafts included). Read only; the seal (core.sealing) is the one place that reads it."""
+
+    id = models.UUIDField(primary_key=True)
+    unit = models.ForeignKey(Tank, null=True, on_delete=models.DO_NOTHING, db_constraint=False, related_name='+')
+    system = models.ForeignKey(System, null=True, on_delete=models.DO_NOTHING, db_constraint=False, related_name='+')
+    from_on = models.DateField()
+    until_on = models.DateField()
+    work = models.UUIDField(db_column='experiment_id')
+    zone = models.CharField(max_length=50)        # its site's time zone: its days are that clock's (experiments 0008)
+
+    class Meta:
+        managed = False
+        db_table = 'experiment_cells'
+        verbose_name = _('sealed cell')
+        verbose_name_plural = _('sealed cells')

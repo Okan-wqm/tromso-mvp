@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from core.crud import Resource, filter_by
 
 from ..forms.health import HealthEventForm
-from ..health import diseases, lists, notices
+from ..health import diseases, lists, notices, read as health_read
 from ..health.read import with_deaths
 from ..models import HealthEvent, Site, Tank
 from ..stock import views as stock_views
@@ -58,7 +58,7 @@ class HealthEventResource(Resource):
 
     @classmethod
     def filter_list(cls, request, objects):
-        sites = Site.objects.filter(health_events__isnull=False).distinct().order_by('name')
+        sites = Site.objects.filter(pk__in=health_read.event_sites()).order_by('name')   # seen (core.sealing)
         objects, chosen_site = filter_by(request, objects, 'site', sites, 'site_id')
         objects, chosen_kind = filter_by(request, objects, 'kind', HealthEvent.Kind.choices, 'kind')
         states = [(OPEN, _('Open')), (CLOSED, _('Closed')), (NOTIFIABLE, _('Notifiable diagnosis'))]

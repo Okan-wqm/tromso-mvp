@@ -21,7 +21,11 @@
     <button type="submit" class="button button-inline">{% trans "Apply" %}</button>
     {% if grid.custom %}<a class="button button-ghost" href="{% url 'core:database_table' table.name %}">{% trans "Clear" %}</a>{% endif %}
   </div>
-  <a class="button button-ghost" href="{{ grid.export_href }}" title="{% blocktrans trimmed with limit=export_limit %}Download the rows below as CSV, up to {{ limit }} rows{% endblocktrans %}">{% include "icons/_icon.html" with name="download" %}{% trans "Export CSV" %}</a>
+</form>
+<form method="get" action="{% url 'core:database_export' table.name %}" class="grid-export">
+  {% for key, value in grid.export_params %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+  <label class="field"><span>{% trans "Why you export it" %}</span><input type="text" name="reason" maxlength="300" required></label>
+  <button type="submit" class="button button-ghost" title="{% blocktrans trimmed with limit=export_limit %}Download the rows below as CSV, up to {{ limit }} rows{% endblocktrans %}">{% include "icons/_icon.html" with name="download" %}{% trans "Export CSV" %}</button>
 </form>
 
 <div class="table-wrap grid-wrap">

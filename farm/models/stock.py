@@ -17,7 +17,8 @@ from django.db import models
 from django.db.models import F, Q
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
-from core.models import AuditedModel
+from core.models import AuditedModel, SealedManager
+from core.sealing import SealedMixin
 
 from .species import Species
 from .supplier import Supplier, SupplierLink, SupplyCategory
@@ -395,6 +396,8 @@ class StockMovement(models.Model):
     sample_weight_kg = models.DecimalField(_('Their weight (kg)'), max_digits=12, decimal_places=4, null=True,
                                            blank=True)
 
+    objects = SealedManager()
+
     class Meta:
         db_table = 'stock_movements'
         ordering = ['id']
@@ -434,7 +437,7 @@ class StockMovement(models.Model):
 
 
 # ---- what an escape and a delivery add to their operation -------------------------------------------------
-class LiveOperations(models.Manager):
+class LiveOperations(SealedMixin, models.Manager):
     """The records whose operation counts: it is not voided."""
 
     def get_queryset(self):
@@ -459,7 +462,7 @@ class EscapeRecord(models.Model):
     recaptured = models.PositiveIntegerField(_('Fish recaptured'), null=True, blank=True)
 
     objects = LiveOperations()
-    all_objects = models.Manager()
+    all_objects = SealedManager()
 
     class Meta:
         db_table = 'escape_records'
@@ -489,7 +492,7 @@ class DeliveryRecord(models.Model):
                                                           blank=True, validators=SITE_NUMBER)
 
     objects = LiveOperations()
-    all_objects = models.Manager()
+    all_objects = SealedManager()
 
     class Meta:
         db_table = 'delivery_records'
@@ -525,7 +528,7 @@ class OpeningBalance(models.Model):
     document = models.CharField(_('Source document'), max_length=300)
 
     objects = LiveOperations()
-    all_objects = models.Manager()
+    all_objects = SealedManager()
 
     class Meta:
         db_table = 'opening_balances'

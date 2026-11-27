@@ -195,6 +195,7 @@ class ReadTests(PageTestCase):
     def test_the_list_and_the_read_page_show_the_experiment_to_a_reader(self):
         self.create()
         trial = Experiment.objects.get()
+        Experiment.objects.filter(pk=trial.pk).update(audience='open')      # its lead opened it: a reader reads it
         reader = person('reader', *READER)
         self.client.force_login(reader)
         listing = self.client.get(reverse('experiments:experiment_list'))
@@ -434,10 +435,10 @@ class PermissionTests(PageTestCase):
                          {'list': 200, 'detail': 200, 'create': 200, 'edit': 200, 'create post': 200,
                           'edit post': 200})
         self.assertEqual((student['delete'], student['delete post']), (403, 403))
-        self.assertNotEqual(student['team post'], 403)
+        self.assertEqual(student['team post'], 403)          # the team is its lead's alone (review F3)
         researcher = self.statuses(person('researcher', *RESEARCHER))
         self.assertEqual({researcher[name] for name in ('list', 'detail', 'create', 'edit', 'delete')}, {200})
-        self.assertEqual((researcher['team post'], researcher['delete post']), (200, 302))
+        self.assertEqual((researcher['team post'], researcher['delete post']), (403, 302))    # the team: its lead's
         self.assertTrue(Experiment.all_objects.filter(pk=self.trial.pk, is_deleted=True).exists())
 
     def test_signed_out_everything_asks_to_sign_in(self):
@@ -458,7 +459,7 @@ class MenuAndAccessTests(PageTestCase):
         self.assertEqual(str(place.path), 'Production · Research')
         areas = {area.model: area for area in access.areas()}
         self.assertEqual(str(areas['experiments.Experiment'].label), 'Experiments')
-        self.assertEqual(areas['experiments.Experiment'].actions, ('view', 'add', 'change', 'delete'))
+        self.assertEqual(areas['experiments.Experiment'].actions, ('view', 'add', 'change', 'delete', 'oversee'))
         page = self.client.get(reverse('experiments:experiment_list'))
         self.assertEqual(page.context['workspace']['key'], 'production')
         current = [entry['label'] for section in page.context['rail_sections'] for group in section['groups']
@@ -470,7 +471,8 @@ class MenuAndAccessTests(PageTestCase):
         tables = {table.name: table for table in sections['Research']}
         self.assertEqual(set(tables), {'experiments', 'experiment_factors', 'experiment_levels', 'experiment_groups',
                                        'experiment_group_levels', 'experiment_replicates',
-                                       'experiment_replicate_units', 'experiment_members'})
+                                       'experiment_replicate_units', 'experiment_members', 'experiment_shares',
+                                       'experiment_replicate_systems'})
         self.assertTrue(all(table.description for table in tables.values()))
         self.assertTrue(tables['experiments'].description.startswith('A trial of one species on one site'))
         constraints = {c.name for c in tables['experiment_replicate_units'].structure().constraints}
@@ -489,7 +491,7 @@ class MenuAndAccessTests(PageTestCase):
         registered = {model.__name__: model_admin for model, model_admin in admin.site._registry.items()
                       if model._meta.app_label == 'experiments'}
         self.assertEqual(set(registered), {'Experiment', 'Factor', 'Level', 'ExperimentGroup', 'Replicate',
-                                           'ReplicateUnit'})
+                                           'ReplicateUnit', 'ReplicateSystem'})
         self.assertEqual(registered['Experiment'].actions, ['restore'])
         self.assertTrue(all(model_admin.actions == [] for name, model_admin in registered.items()
                             if name != 'Experiment'))

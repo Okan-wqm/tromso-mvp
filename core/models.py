@@ -2,15 +2,23 @@ import uuid
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
+from .sealing import SealedMixin
 
-class ActiveManager(models.Manager):
-    """Hides soft-deleted records."""
+
+class SealedManager(SealedMixin, models.Manager):
+    """Every record, as far as the viewer of the moment may see it (core.sealing: a model with no filtering seal is
+    not narrowed)."""
+
+
+class ActiveManager(SealedMixin, models.Manager):
+    """Hides soft-deleted records, and the records the viewer of the moment may not see (core.sealing)."""
 
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
@@ -18,7 +26,8 @@ class ActiveManager(models.Manager):
 
 class AuditedModel(models.Model):
     """Base of every farm record: author and time of creation and last change, an optimistic-lock
-    version, and soft delete. `objects` shows live records only; `all_objects` shows everything.
+    version, and soft delete. `objects` shows live records only; `all_objects` shows everything; both leave out what
+    the viewer of the moment may not see (core.sealing).
 
     How deleting one of these affects the records that point at it is not written per model: it
     follows each link's `on_delete` (see core.softdelete)."""
@@ -43,7 +52,7 @@ class AuditedModel(models.Model):
     )
 
     objects = ActiveManager()
-    all_objects = models.Manager()
+    all_objects = SealedManager()
 
     # What a delete's confirmation says of the records of this model that keep pointing at the deleted one
     # (their link is DO_NOTHING, core.softdelete): where they are while it is deleted.
@@ -174,6 +183,20 @@ class AuditSeverity(models.TextChoices):
     CRITICAL = 'critical', _('Critical')
 
 
+class AuditLogManager(SealedMixin, models.Manager):
+    """The log as the person looking may read it: every read through it leaves out the entries about a record they may
+    not see (core.sealing's ABOUT rule, core.audit.sealed_out: the seals at read time and the entries' stamps), so no
+    page, tab or later reader shows one by reading the log plainly (landing review L5). The few readers that must read
+    every entry (the change token reads the stamps itself) take the base manager, by name (core/tests_sealing.py)."""
+
+    def bulk_create(self, objs, *args, **kwargs):
+        """The entries stamped with their works first (core.audit.stamp), as `save` does for one."""
+        from .audit import stamp
+        objs = list(objs)
+        stamp(objs)
+        return super().bulk_create(objs, *args, **kwargs)
+
+
 class AuditLog(models.Model):
     """Who did what to which record, with old and new values. Rows are append-only: a database
     trigger (migration 0003) refuses UPDATE and DELETE, so history cannot be edited, not even by
@@ -215,10 +238,19 @@ class AuditLog(models.Model):
     # contact list: the parts of each contact) (see core.audit).
     changes = models.JSONField(default=dict, blank=True)
     severity = models.CharField(max_length=10, choices=Severity.choices, default=Severity.NORMAL)
+    # The confidential works the record lay in when the entry was written (core.sealing.works_of; '*' when that could
+    # not be read): stamped by `save` and the log's bulk_create (core.audit.stamp). The change token leaves out an entry
+    # stamped with a work hidden from the person looking (core.audit.revision), and so does the log's reading
+    # (core.audit.sealed_out), beside the seals read at read time: the entry's text may name what the record reached.
+    works = ArrayField(models.CharField(max_length=64), default=list, blank=True, editable=False)
+
+    objects = AuditLogManager()
 
     class Meta:
         db_table = 'audit_log'
-        ordering = ['-created_at']
+        # Newest first, and one order for entries of the same moment (one transaction): never left to the plan, so a
+        # list does not tell by its order what else a statement read (a narrowed read and a plain one alike).
+        ordering = ['-created_at', '-id']
         indexes = [
             models.Index(fields=['entity_type', 'entity_id']),
             # The few critical entries, newest first, without reading the whole log.
@@ -235,6 +267,12 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f'{self.user_name} {self.get_action_display().lower()} {self.entity_type} {self.entity_label}'
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            from .audit import stamp
+            stamp([self])
+        super().save(*args, **kwargs)
 
     def shown_type(self):
         """The record type in the active language."""
@@ -485,3 +523,45 @@ class Rev(models.Model):
 
     def __str__(self):
         return f'{self.scope}:{self.key}:{self.rev}'
+
+
+class AccessKind(models.TextChoices):
+    """Why a confidential record was read (core.sealing.log_access)."""
+    VIEW = 'view', _('Viewed')
+    EXPORT = 'export', _('Exported')
+    DENIED = 'denied', _('Refused')
+    OVERSEE = 'oversee', _('Oversaw')
+    SUPPORT = 'support', _('Support read')
+
+
+class AccessEvent(models.Model):
+    """Who read which confidential record, when and how: the one read log (the activity log is for changes). Rows are
+    append-only, as the activity log's: a database trigger (migration 0015) refuses UPDATE and DELETE. The person is
+    kept by id and by the name they had, with no database link, so the row outlives an account."""
+
+    Kind = AccessKind
+
+    id = models.BigAutoField(primary_key=True)
+    at = models.DateTimeField(_('When'), default=timezone.now)
+    user_id = models.IntegerField(_('Person id'), null=True, blank=True)
+    user_name = models.CharField(_('Person'), max_length=150)
+    kind = models.CharField(_('Kind'), max_length=8, choices=AccessKind.choices)
+    entity_type = models.CharField(_('Record type'), max_length=64)
+    entity_id = models.CharField(_('Record'), max_length=64)
+    part = models.CharField(_('Part'), max_length=8, blank=True)
+    route = models.CharField(_('Page'), max_length=120, blank=True)
+    # Why, where the person had to say it (an export of the database viewer).
+    reason = models.CharField(_('Reason'), max_length=300, blank=True)
+
+    class Meta:
+        db_table = 'core_access_events'
+        ordering = ['-at', '-id']
+        verbose_name = _('read of a confidential record')
+        verbose_name_plural = _('reads of confidential records')
+        indexes = [models.Index(fields=['entity_type', 'entity_id', 'at'], name='idx_access_events_entity'),
+                   models.Index(fields=['user_name', 'at'], name='idx_access_events_user')]
+        constraints = [models.CheckConstraint(condition=models.Q(kind__in=AccessKind.values),
+                                              name='chk_access_events_kind')]
+
+    def __str__(self):
+        return f'{self.user_name} {self.get_kind_display().lower()} {self.entity_type} {self.entity_id}'

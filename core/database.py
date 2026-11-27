@@ -17,6 +17,8 @@ from django.utils.module_loading import import_string
 from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
 
+from . import sealing
+
 PERMISSION = 'core.browse_database'
 
 
@@ -129,7 +131,7 @@ class Table:
         counted = {'rows': Count('pk')}
         if self.soft_deletable:
             counted['deleted'] = Count('pk', filter=Q(is_deleted=True))
-        counts = self.model._base_manager.aggregate(**counted)
+        counts = sealing.narrow(self.model._base_manager.all()).aggregate(**counted)
         return {'deleted': None, **counts, 'estimated': False}
 
     def structure(self):

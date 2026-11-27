@@ -200,7 +200,9 @@ class FragmentTests(MonitoringCase):
         self.client.get(after)
         with CaptureQueriesContext(connection) as log:
             self.client.get(after)
-        tables = ' '.join(query['sql'] for query in log)
+        # The revision reads the activity log the person may read (core.sealing): its subqueries name the sealed tables
+        # to leave out entries about what the person may not see; no other query reads a record.
+        tables = ' '.join(query['sql'] for query in log if '"audit_log"' not in query['sql'])
         for table in ('"stock_movements"', '"water_measurements"', '"feeding_records"', '"batches"'):
             self.assertNotIn(table, tables)
         self.assertLessEqual(len(log), 8)

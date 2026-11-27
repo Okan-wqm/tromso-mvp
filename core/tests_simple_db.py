@@ -16,6 +16,8 @@ SKIP = {'node_modules', '.git', 'static', 'frontend', 'chemcore', 'sensors-inges
 ALLOWED = {
     ('core/tests_commands.py', 'DevCommandTests'): "the session's database role (core.management.devtool.superuser)",
     ('farm/tests/test_size_mix_review.py', 'SizeAckConstraintMigrationTests'): "a constraint's state in pg_constraint",
+    ('core/tests_boot.py', 'BootTests'): 'the server started as a server against the test database (the seal with '
+                                         'nobody looking, review F1): it reads no row of its own',
 }
 
 

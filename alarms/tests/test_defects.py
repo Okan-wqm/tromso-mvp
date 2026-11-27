@@ -13,10 +13,10 @@ from sensors import alarms as sensor_alarms, bindings
 from sensors.models import AlarmEvent, AlarmRule
 from sensors.tests import make_channel, make_connection, make_device, make_format
 
-from .. import read, services, sources
-from ..models import (Alarm, AlarmClearance, AlarmSubjectState, Escalation, Notification, ParameterDeadband,
+from .. import engine, outbox, read, services, sources
+from ..models import (AlarmClearance, AlarmSubjectState, Escalation, Notification, ParameterDeadband,
                       SeverityPolicy)
-from . import AlarmsCase
+from . import AlarmsCase, farm_alarms
 
 
 class UnitSubjectTests(AlarmsCase):
@@ -28,7 +28,7 @@ class UnitSubjectTests(AlarmsCase):
         self.sample(5.5, point=point_of(self.t1, 'inlet'))
         self.sample(7.0, hours=0.5)                          # the unit's own water is fine
         self.loop()
-        self.assertFalse(Alarm.objects.exists())
+        self.assertFalse(farm_alarms().exists())
 
     def test_a_depth_points_critical_value_is_its_units_one_alarm(self):
         depth = SamplingPoint.objects.create(unit=self.t1, kind='depth', name='Bottom', depth_m=1)
@@ -41,7 +41,7 @@ class UnitSubjectTests(AlarmsCase):
     def test_a_loops_value_is_judged_for_the_units_fish_and_raises_the_units_alarm_only(self):
         self.sample(5.5, point=point_of(self.ras))
         self.loop()
-        self.assertEqual(sorted((alarm.point.pk, alarm.severity) for alarm in Alarm.objects.all()),
+        self.assertEqual(sorted((alarm.point.pk, alarm.severity) for alarm in farm_alarms().all()),
                          [(self.mid1.pk, 'critical'), (self.mid1.pk, 'warning')])      # the unit's two levels, no loop's
 
 
@@ -51,7 +51,7 @@ class LevelTests(AlarmsCase):
     off-delay: a severity change never clears and reopens, and a value at the limit does not chatter."""
 
     def open_levels(self):
-        return sorted(alarm.severity for alarm in Alarm.objects.filter(clearance__isnull=True))
+        return sorted(alarm.severity for alarm in farm_alarms().filter(clearance__isnull=True))
 
     def test_a_warning_waits_for_its_on_delay_counted_from_the_value(self):
         self.sample(6.2, hours=0)
@@ -134,7 +134,7 @@ class FailedSourceTests(AlarmsCase):
         finally:
             water_sources.unregister(self.unreadable)
         self.assertTrue(read.is_open(self.critical()))
-        system = Alarm.objects.get(source='system')
+        system = farm_alarms().get(source='system')
         self.assertEqual((system.parameter, system.severity, read.is_open(system)), ('sensors_failed', 'critical', True))
         self.loop(minutes=6)
         self.loop(minutes=7)
@@ -178,7 +178,7 @@ class FailureIsolationTests(AlarmsCase):
                 self.assertLogs('alarms.engine', level='ERROR') as logged:
             summary = self.loop()
         self.assertEqual(summary.failed_steps, ['water'])
-        self.assertTrue(Alarm.objects.filter(source='sensor_rule').exists())
+        self.assertTrue(farm_alarms().filter(source='sensor_rule').exists())
         self.assertIn('the water read failed', '\n'.join(logged.output))
         self.assertIn('1 step failed: water', str(summary))
 
@@ -205,7 +205,7 @@ class OneOpenAlarmTests(AlarmsCase):
             services.raise_for(self.key, lambda: services.open_alarm(
                 at=self.now, severity='critical', summary='twice', source='water_limit', point=self.mid1,
                 parameter='ph', site=self.bergen, production_department=self.hall))
-        self.assertEqual(Alarm.objects.filter(severity='critical', source='water_limit').count(), 1)
+        self.assertEqual(farm_alarms().filter(severity='critical', source='water_limit').count(), 1)
         self.assertEqual(AlarmSubjectState.objects.get(key=self.key).open_alarm, self.alarm)
 
 
@@ -227,8 +227,10 @@ class BulkTests(AlarmsCase):
             unit = make_unit(f'B{units}-{number}', self.hall, system=self.ras)
             stock_fish(self.keeper, unit, 100, '50', 10, species=self.salmon)
             self.sample(5.5, point=point_of(unit))
-        with CaptureQueriesContext(connection) as queries:
-            summary = self.loop(minutes=units)
+        at = self.now + timedelta(minutes=units)
+        with CaptureQueriesContext(connection) as queries:              # the pass; the sender's round after it sends one
+            summary = engine.run_once(at)                               # message per notification, a call each
+        outbox.send_due(at)
         self.assertEqual(summary.failed_steps, [])
         return len(queries), summary.opened
 

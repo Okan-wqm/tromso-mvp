@@ -5,6 +5,7 @@ from django.db.models import F, Func, Q
 from django.utils.translation import gettext_lazy as _
 
 from core.models import AuditedModel
+from core.sealing import SealedMixin, sealed
 from farm.models import Equipment, SamplingPoint, System
 from farm.models.water_point import live_owner
 
@@ -58,7 +59,7 @@ class BindingQuerySet(models.QuerySet):
         return self.filter(Q(valid_to__isnull=True) | Q(valid_to__gt=moment), valid_from__lte=moment)
 
 
-class BindingManager(models.Manager.from_queryset(BindingQuerySet)):
+class BindingManager(SealedMixin, models.Manager.from_queryset(BindingQuerySet)):
     def get_queryset(self):
         return super().get_queryset().filter(is_deleted=False)
 
@@ -85,7 +86,7 @@ class Binding(AuditedModel):
     note = models.CharField(_('Note'), max_length=300, blank=True)
 
     objects = BindingManager()
-    all_objects = models.Manager.from_queryset(BindingQuerySet)()
+    all_objects = sealed(models.Manager.from_queryset(BindingQuerySet))()
 
     kept_note = _('They stay, out of sight while it is deleted, and come back when it is restored: the values the sensor '
                   'measured there keep belonging there.')

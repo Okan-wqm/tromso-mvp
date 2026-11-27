@@ -20,7 +20,7 @@ from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
 from core.fields import ChoiceArrayField
-from core.models import AuditedModel
+from core.models import AuditedModel, SealedManager
 
 from ..health import diseases
 from .site import Site
@@ -642,6 +642,8 @@ class WithdrawalFloor(models.Model):
     lifted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
                                   related_name='+', verbose_name=_('Lifted by'))
     lift_reason = models.CharField(_('Reason for lifting'), max_length=500, blank=True)
+
+    objects = SealedManager()
 
     class Meta:
         db_table = 'withdrawal_floors'

@@ -49,7 +49,7 @@ from django.utils import timezone, translation
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _, gettext_lazy, ngettext
 
-from core import audit
+from core import audit, sealing
 from core.text import lower as text_lower
 from farm.feeding import read as feeding_read, services as feeding_services
 from farm.handling.withdrawal import harvest_from
@@ -912,9 +912,16 @@ def change_token(user, canonical_query, board='', now=None, revision=None, look=
     the two reads then makes the next token differ, never the other way round. The minute re-draws the figures that run
     on the clock (age, next meal) at most once a minute per screen. `revision`: audit.revision() as the caller has just
     read it (the page's two tokens, the grid's and the pane's, read it once). `look`: the new look's name when the
-    screen is drawn in it (core.ui.NEXT: its cards are other markup, monitoring/_card_next.html), '' in the classic one."""
+    screen is drawn in it (core.ui.NEXT: its cards are other markup, monitoring/_card_next.html), '' in the classic one.
+
+    For a person who reads confidential work the digest of what they read is added (core.sealing.reach, read once a
+    request): a grant, a share's end or an audience change that opens or closes some to them moves their token, and
+    nothing they may not read does. A person who reads none gets the token as it was before confidentiality."""
     revision = audit.revision() if revision is None else revision
     now = now or timezone.now()
     parts = (revision, str(int(now.timestamp() // TOKEN_BUCKET)), translation.get_language() or '',
              ','.join(sorted(sections_for(user))), board, canonical_query) + ((look,) if look else ())
+    digest = sealing.reach().digest
+    if digest:
+        parts += (digest,)
     return hashlib.sha256('\x1f'.join(parts).encode()).hexdigest()[:32]

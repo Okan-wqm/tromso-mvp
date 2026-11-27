@@ -11,7 +11,7 @@ from django.utils.translation import gettext
 from django.views import i18n
 
 from .dates import company_zone, read_day
-from . import accountmail, audit
+from . import accountmail, audit, sealing
 from .language import account_language, is_supported, save_account_language
 from .models import AuditLog
 
@@ -89,6 +89,8 @@ def activity_log(request):
         entries = entries.filter(created_at__lte=end)
 
     page = Paginator(entries, 50).get_page(request.GET.get('page'))
+    # An entry about confidential work outside the person's team is a read of it (core.sealing, review F8).
+    sealing.note_reads([entry.entity_id for entry in page], 'core:activity_log')
     query = request.GET.copy()
     query.pop('page', None)
     return render(request, 'core/activity_log.html', {

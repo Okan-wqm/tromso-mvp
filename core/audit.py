@@ -5,6 +5,7 @@ The log is language-neutral at rest: labels, record types and enumerated values 
 English msgids whatever language the person who made the change was using, and shown translated
 (AuditLog.shown_changes). Build every snapshot inside `source_language()` (core.crud does); a person's
 own text (names, descriptions) is stored as written and never translated."""
+import functools
 import hashlib
 import hmac
 from datetime import timedelta
@@ -13,10 +14,12 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Max
+from django.db.models.functions import Cast
 from django.utils import translation
 from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _, gettext_noop
 
+from . import sealing
 from .models import AuditLog
 
 
@@ -37,10 +40,136 @@ def hidden_types(user):
 
 
 def readable(user, entries=None):
-    """The log entries `user` may read: every one but those of a restricted record type they lack the permission for."""
+    """The log entries `user` may read: every one but those of a restricted record type they lack the permission for,
+    and those about a record the viewer of the moment may not see (core.sealing: a sealed cell's records, decided at
+    read time from the same seals, and the works each entry was stamped with when written, `stamp`)."""
     entries = AuditLog.objects.all() if entries is None else entries
     hidden = hidden_types(user)
+    # The rows about records the person may not see are left out by the log's own manager (AuditLogManager, the ABOUT
+    # rule, `sealed_out`): every AuditLog queryset carries it.
     return entries.exclude(entity_type__in=hidden) if hidden else entries
+
+
+def entity_types(model):
+    """Every name a row about a record of `model` may give it: the log's (its own, and that of each tab that serves it)
+    and the model's label (`app_label.model_name`, as the form keys name it: core.models.EntryKey, review L8), so the
+    rule that hides such rows with their record matches them all."""
+    from .crud import Resource
+    return sorted({entity_type_of(model), model._meta.label_lower,
+                   *(tab.entity_type() for tab in Resource.registry if tab.model is model)})
+
+
+def sealed_out(entries):
+    """`entries` without those about a record whoever is looking may not see (core.sealing's ABOUT rule: the activity
+    log, the read log, the form keys). Decided when the statement is compiled, never when the queryset is built
+    (`HiddenEntries`, as core.sealing.HiddenRows: landing review 2, N6): nothing is built for a reader from whom nothing
+    is hidden, and a queryset built in one context and read in another is narrowed for its reader."""
+    return entries.exclude(models.Q(HiddenEntries(entries.model)))
+
+
+class HiddenEntries(models.Expression):
+    """The rows of an ABOUT model (the activity log, the read log, the form keys) about a record hidden from whoever is
+    looking, as a condition on the rows' own columns, built when the SQL is compiled: FALSE for the system and for a
+    person from whom nothing is hidden; otherwise `_hidden_entries`, compiled in place (no join: the record type, the
+    record's id and the stamp are the rows' own)."""
+
+    contains_aggregate = False
+
+    def __init__(self, model):
+        super().__init__(output_field=models.BooleanField())
+        self.model = model
+
+    def __repr__(self):
+        return f'HiddenEntries({self.model._meta.label})'
+
+    def get_group_by_cols(self):
+        return []
+
+    def as_sql(self, compiler, connection):
+        if sealing.who() is None:
+            return 'FALSE', []
+        found = sealing.reach()
+        if not any(found.hidden.values()):
+            return 'FALSE', []
+        condition = _hidden_entries(self.model, found)
+        if condition is None:
+            return 'FALSE', []
+        where = condition.resolve_expression(compiler.query, allow_joins=False)
+        sql, params = compiler.compile(where)
+        return (sql, params) if sql else ('FALSE', [])
+
+
+def _hidden_entries(model, found):
+    """The condition (a Q on `model`'s rows) of the rows about a record hidden from a person with the Reach `found`."""
+    condition = None
+    for seal in sealing.registry():
+        if not seal.filters:
+            continue
+        # Every level of parents and children the seal follows (sealing.seal_depth): what an entry is about and the
+        # records it hangs on, to the record sealed by its own cell (read when a person opens the log; the change token
+        # reads the entries' stamps instead, `revision`).
+        # An entry is hidden when its record is hidden for the record's part or for any part its entries hold
+        # (`log_parts`: an experiment's entries hold its design and its places, review L6).
+        for part in dict.fromkeys((seal.part, *seal.log_parts)):
+            rows = sealing.hidden(seal, part, depth=sealing.seal_depth(seal.model))
+            if rows is None:
+                continue
+            ids = sealing.unsealed(seal.model).filter(rows).annotate(log_id=Cast('pk', models.CharField())).values(
+                'log_id')
+            each = models.Q(entity_type__in=entity_types(seal.model), entity_id__in=ids)
+            condition = each if condition is None else condition | each
+    if model is AuditLog:
+        # And those stamped, when they were written, with a work hidden from the person (`stamp`): an entry's text was
+        # written once for everyone and may name what its record reached then (a transfer from an open tank into a
+        # sealed one names both, while the operation itself stays visible with its open line).
+        left_out = _left_out(found)
+        if left_out is not None:
+            condition = left_out if condition is None else condition | left_out
+    return condition
+
+
+@functools.cache
+def _sealed_types():
+    """{entity type: model} of every model whose rows a seal filters (core.sealing), by each name the log gives it."""
+    return {entity_type: seal.model for seal in sealing.registry() if seal.filters
+            for entity_type in entity_types(seal.model)}
+
+
+def stamp(entries):
+    """Gives each new entry about a sealed record the works its record lies in now (core.sealing.works_of: its own
+    work, its cells, its parents' and children's), read as the system in one statement per kind of record and level.
+    AuditLog.save and the log's bulk_create call it, so every entry written through the ORM is stamped when it is
+    made; the stamp never changes after (the log is append-only). An entry about any other record keeps no work."""
+    groups = {}
+    for found in entries:
+        model = _sealed_types().get(found.entity_type)
+        if model is not None and not found.works:
+            groups.setdefault(model, []).append(found)
+    for model, group in groups.items():
+        works = sealing.works_of(model, sorted({found.entity_id for found in group}))
+        for found in group:
+            found.works = sorted(works.get(found.entity_id, ()))
+
+
+def _left_out(reach):
+    """The condition on the log's entries that a person with this Reach may not see: an entry about a record of a kind
+    some seal filters, stamped with a work hidden from them for a part that record is sealed with (or with UNKNOWN when
+    anything is hidden), unless they hold Oversee and the record is a farm fact all the way down. None when nothing is
+    hidden from them."""
+    if not reach.hidden:
+        return None
+    by_works = {}
+    for entity_type, model in _sealed_types().items():
+        if reach.oversee and sealing.stamp_shows_overseer(model):
+            continue
+        works = set().union(*(reach.hidden.get(part, ()) for part in sealing.stamp_parts(model)))
+        if works:
+            by_works.setdefault(frozenset(works), []).append(entity_type)
+    condition = None
+    for works, types in by_works.items():
+        each = models.Q(entity_type__in=sorted(types), works__overlap=sorted(works) + [sealing.UNKNOWN])
+        condition = each if condition is None else condition | each
+    return condition
 
 
 def source_language():
@@ -165,10 +294,18 @@ def revision():
     reading them. The count catches an entry committed late with a stamp earlier than the newest one (the stamp is
     taken when the row is made, the row appears when its transaction commits). Read it BEFORE the data it stands
     for: a change that lands between the two reads then makes the next read differ, never the other way round."""
-    newest = AuditLog.objects.aggregate(newest=Max('created_at'))['newest']
+    # Only the entries whoever is looking may read: a change to a record of work hidden from them never moves their
+    # token, so its timing tells them nothing (review F8). Read from the works each entry was stamped with when it was
+    # written (`stamp`) and what the person reads (core.sealing.reach, one statement a request): two indexed queries
+    # still, the seal itself is never read here. A person from whom nothing is hidden reads the plain log.
+    entries = AuditLog._base_manager.all()            # the stamps, never the seal: `_left_out` below
+    left_out = _left_out(sealing.reach())
+    if left_out is not None:
+        entries = entries.exclude(left_out)
+    newest = entries.aggregate(newest=Max('created_at'))['newest']
     if newest is None:
         return '0'
-    recent = AuditLog.objects.filter(created_at__gte=newest - LATE_COMMIT, created_at__lte=newest).count()
+    recent = entries.filter(created_at__gte=newest - LATE_COMMIT, created_at__lte=newest).count()
     return f'{newest.isoformat()}/{recent}'
 
 

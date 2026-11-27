@@ -9,6 +9,7 @@ from django.test.runner import DiscoverRunner, ParallelTestSuite
 from django.test.utils import override_settings
 from django.utils import timezone
 
+from core import sealing
 from core.testing import run_clock
 
 # Third-party code's own warnings that the strict filters below would otherwise turn into errors: reported (once per
@@ -51,8 +52,10 @@ def fresh_rights():
 
 def strict_warnings_in_worker(*args):
     """A parallel worker started by spawn or forkserver gets the filters too (a forked one inherits them), and the run's
-    clock when the run was given one (core.testing.run_clock: a forked worker inherits the parent's, started once)."""
+    clock when the run was given one (core.testing.run_clock: a forked worker inherits the parent's, started once); it
+    reads as the system, as the run does (core.sealing)."""
     strict_warnings()
+    sealing.enter_process_system('tests')
     fresh_rights()
     if os.environ.get('TEST_CLOCK') and not isinstance(timezone.now, mock.NonCallableMock):
         run_clock()
@@ -93,12 +96,14 @@ class TestByTestParallelSuite(ParallelTestSuite):
 
 
 class FastPasswordRunner(DiscoverRunner):
-    """Password hashing is made deliberately slow; tests create many users and do not need that."""
+    """Password hashing is made deliberately slow; tests create many users and do not need that. A test reads as the
+    system (core.sealing), and its requests as their person: a test that reads as someone says so (`sealing.as_viewer`)."""
     parallel_test_suite = TestByTestParallelSuite
 
     def setup_test_environment(self, **kwargs):
         super().setup_test_environment(**kwargs)
         strict_warnings()
+        sealing.enter_process_system('tests')
         fresh_rights()
         # TEST_CLOCK: the whole run's clock starts at that moment (core.testing.run_clock; README, Tests).
         self._clock = run_clock()
@@ -111,6 +116,7 @@ class FastPasswordRunner(DiscoverRunner):
 
     def teardown_test_environment(self, **kwargs):
         self._fast_hasher.disable()
+        sealing.leave_process_system()
         if self._clock is not None:
             self._clock.stop()
         super().teardown_test_environment(**kwargs)

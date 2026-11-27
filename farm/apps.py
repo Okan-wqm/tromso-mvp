@@ -6,6 +6,8 @@ class FarmConfig(AppConfig):
 
     def ready(self):
         from . import checks, resources  # noqa: F401  registers the system checks, declares the tabs
+        from .sealing import declare_all
+        declare_all()       # how this app's records are sealed (core.sealing)
         from . import withdrawal_gate
         from .handling import withdrawal
         from .health.withdrawal import blockers_while_live, provider, weighed

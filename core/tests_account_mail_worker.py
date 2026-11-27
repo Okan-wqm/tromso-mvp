@@ -318,12 +318,12 @@ class WorkerTests(WorkerCase):
         self.assertEqual([wrapper.connection for wrapper in connects], [None])    # closed by the worker, now at rest
         self.assertEqual(left_open(before), set(), 'the database still lists the connection')    # none left open
 
-    def test_two_hundred_lookups_of_addresses_nobody_has_are_emptied_in_a_moment(self):
+    def test_two_hundred_lookups_of_addresses_nobody_has_are_done_on_one_connection(self):
         # Measured before: 4.8 s for 200 (42 a second), a connection opened for each; the connection kept: well under a
-        # second. "A moment" was 2.5 s of the clock, which a loaded machine does not keep. It is now measured against
-        # the same 200 lookups done at once on this thread's own kept connection, on the same machine at the same
-        # minute: the worker may take three times that and a second. A connection for each lookup takes it some
-        # sixteen times as long (4.8 s against 0.3 s), on a slow machine as on a fast one. And the cause is counted.
+        # second. The cost was the connections, so the connections are what is counted, never the clock (2.5 s, then
+        # "three times the same lookups done at once", were the machine's time as much as the worker's): 200 lookups
+        # handed over while the worker is held at a first job, so that all of them wait, are done on one connection.
+        # The keep window (KEEP_CONNECTION) is set out of reach: a slow machine must not open a second one.
         from django.db.backends.base.base import BaseDatabaseWrapper
         connects, opened = [], BaseDatabaseWrapper.connect
 
@@ -331,21 +331,24 @@ class WorkerTests(WorkerCase):
             if threading.current_thread().name == 'account-mail':
                 connects.append(wrapper)
             return opened(wrapper)
+        held, gate = threading.Event(), threading.Event()
+        self.addCleanup(gate.set)
+
+        def hold():
+            held.set()
+            gate.wait(timeout=2 * WAIT)
 
         self.rested()
-        start = time.perf_counter()
-        for n in range(accountmail.QUEUE_SIZE):
-            accountmail.reset_now(f'nobody{n}@example.com', 'en')
-        at_once = time.perf_counter() - start
-        with mock.patch.object(BaseDatabaseWrapper, 'connect', counted):
-            start = time.perf_counter()
-            for n in range(accountmail.QUEUE_SIZE):
-                accountmail.background(accountmail.reset_now, f'nobody{n}@example.com', 'en', anonymous=True)
+        with mock.patch.object(BaseDatabaseWrapper, 'connect', counted), \
+                mock.patch.object(accountmail, 'KEEP_CONNECTION', float('inf')):
+            self.assertTrue(accountmail.background(hold))
+            self.reached(held, 'the worker held at its first job')
+            asked = [accountmail.background(accountmail.reset_now, f'nobody{n}@example.com', 'en', anonymous=True)
+                     for n in range(accountmail.QUEUE_SIZE)]
+            gate.set()
             self.rested()
-            by_the_worker = time.perf_counter() - start
-        self.assertLess(by_the_worker, 3 * at_once + 1,
-                        f'the worker took {by_the_worker:.2f} s for what takes {at_once:.2f} s at once')
-        self.assertLessEqual(len(connects), 1 + int(by_the_worker // accountmail.KEEP_CONNECTION))
+        self.assertEqual(asked, [True] * accountmail.QUEUE_SIZE)
+        self.assertEqual(len(connects), 1)
         self.assertEqual(AccountMail.objects.count(), 0)
 
     def test_the_queue_is_bounded(self):

@@ -3001,8 +3001,8 @@ corrected temperature or a backdated transfer changes it at once:
     good reading and as many hours are covered** (Platform settings), a good reading standing for the water **until the
     channel's next stored row, good or not, and an hour at most** (Platform settings; never longer than the channel's
     own freshness: a dead probe does not keep measuring, a bad or maintenance row ends a hold), and **at the lowest
-    message of the deadband's run up to that next row** when the channel stores only on a move (the water was as low
-    as that in between), **the channel has a
+    message of the deadband's run up to the next GOOD row** when the channel stores only on a move (the water was as
+    low as that in between; the ingest carries a run to the next good row, a bad row stored in between or not), **the channel has a
     range set** (a channel without one flags nothing out of range) and the mean, rounded down to 0.01 °C, lies inside
     the temperature's plausible range (−3 to 40 °C). The row keeps the hours and the hold it was closed with (the hold it used: the setting, or the channel's
     freshness when shorter). A probe day is not an audited record: each row is itself the append-only fact, never
@@ -3032,7 +3032,11 @@ corrected temperature or a backdated transfer changes it at once:
     already past; before, it is lifted only through the withdrawal guard, which asks the Released question (`manage.py
     withdrawal_floors`). **A projection that meets the water sets none** (the coordinator's decision N-5 of REVIEW-2):
     a day that was projected (not over, or not closed yet) and closes warmer than the projection frees the fish when
-    the closed days say, as "about" always meant.
+    the closed days say, as "about" always meant. **But a projected day closed with no probe day that counts** (a short
+    day, a dead probe) and counted at an ASSUMPTION (the species' assumed temperature, capped, or 0 °C) above the
+    projection it replaced is not the water: an earlier end from it is floored, and the floor says so (REVIEW-3, R3-3).
+    With two channels at one place on one day, the lowest counting row counts, whatever the order of the rows, and a
+    row that does not count never hides one that does (R3-1).
   - **A past day with nothing measured** counts at **the batch species' assumed water temperature** (Reference data ›
     Species; one query reads the species of all the batches), **but never above the cap**: the coldest daily mean
     measured in the 7 calendar days (Platform settings) before the gap of unmeasured days began, and not above the
@@ -3043,9 +3047,13 @@ corrected temperature or a backdated transfer changes it at once:
     one: the cap is that sample's day and the 7 before it), within a horizon of 365 days before the walk's first day
     (`CAP_HORIZON_DAYS`; the day after the course, after the feeding): a bound of the walk, never of today, so a cap
     never runs out as the days go by (REVIEW-2, N-1). Nothing measured within it: the assumption is not capped, as before
-    the cap existed, and the text says so ("No water temperature was measured in the 365 days before the gap of 3 days
-    counted at the assumed temperature: nothing caps them."). The water before the days read is read only then, in
-    two indexed queries and one read of the days needed. A projection at the assumed temperature is capped the same way (N-9). **0 °C when the species has none** ("... are
+    the cap existed, and the text says so ("Nothing measured for these fish caps 3 days counted at the assumed
+    temperature: nothing was measured for them from 27.11.2025, 365 days before the first day counted, to the start of
+    their gaps."). The water before the days read is searched only when a gap reaches back past them: two indexed
+    queries (the samples, each place on its own clock, and the probe days) find the latest day measured at the units'
+    places, then the days from there less the cap's are read; that repeats while the day found is another unit's (the
+    fish were not there), and what a search found empty is remembered for the read, so a page or a job searches the
+    same days once, whatever the number of batches (REVIEW-3, R3-2). A projection at the assumed temperature is capped the same way (N-9). **0 °C when the species has none** ("... are
     counted as 0 °C: set the species' assumed temperature in Reference data › Species.").
   - **The rules are the platform owner's settings** (Platform settings › Degree-days: the hours a probe day needs, how
     long a reading stands, the days that cap an assumption, the tolerance), registered in the withdrawal gate: a
@@ -6789,11 +6797,13 @@ midnight (if a midnight passes in between, start again at step 3). The dumps hol
 
 1. **Backup** (landing step 4): `pg_dump -U balik` into `Programlar\db-backups\` as usual.
 2. **Dry run, everything still running**: `bash scripts/withdrawal_ends_old.sh
-   F:/dev/balik-notes/degree-days/ends-dryrun.json` from the branch's checkout. It makes a throwaway worktree of
-   `origin/main` (`F:\dev\balik-wt\landing-old`), copies the branch's `withdrawal_ends.py` into it (its `dump` reads only
+   F:/dev/balik-notes/degree-days/ends-dryrun.json` from the branch's checkout. It refuses unless the local `main`
+   (what the dev server runs) is `origin/main`, an output path in a git checkout or with a backslash or a space, and a
+   migration on the compose network; then it makes a throwaway worktree of `main` (`F:\dev\balik-wt\landing-old`), copies the branch's `withdrawal_ends.py` into it (its `dump` reads only
    what the old code has), builds the old image when missing, runs the dump on the compose network and removes the
    worktree. It must finish and say how many withdrawals and fasts it wrote.
-3. **Stop the dev server** (`docker stop balik-dev-web`), then the real dump with the old code: `bash
+3. **Stop the dev server and the alarm worker** (`docker stop balik-dev-web balik-ciftligi-alarms-1`: the worker runs
+   main's checkout and would import the new code after step 4), then the real dump with the old code: `bash
    scripts/withdrawal_ends_old.sh F:/dev/balik-notes/degree-days/ends-before-landing.json`.
 4. **Fast-forward `main`** to the branch; with the server still stopped and the branch's image, `migrate` +
    `compile_catalogs` + `npm run build` (landing step 5).
@@ -6810,7 +6820,7 @@ midnight (if a midnight passes in between, start again at step 3). The dumps hol
      floor through the withdrawal question (`manage.py withdrawal_floors`).
    - Either way, then `python manage.py check_withdrawal` for the harvests a later end now puts inside a withdrawal,
      and read the `later` and `fast` lines of the compare.
-6. `manage.py check --database default` must be quiet; then start the dev server and do the live check (landing step 6).
+6. `manage.py check --database default` must be quiet; then start the dev server and the alarm worker (`docker start balik-ciftligi-alarms-1`) and do the live check (landing step 6).
 7. **Do not run `close_probe_days` before step 5 has passed.** In development nothing runs it by itself.
 8. If step 2 or 3 stopped half way, remove `F:\dev\balik-wt\landing-old` (`git worktree remove --force`); the script
    removes it on every way out of its own.

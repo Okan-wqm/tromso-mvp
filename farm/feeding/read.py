@@ -119,7 +119,7 @@ def tables(protocol_ids):
     return found
 
 
-def policy(units, batch_ids, first, now, read=()):
+def policy(units, batch_ids, first, now, read=(), ahead_days=0):
     """The ration.Policy of these units (Tank, by id) and batches from the day `first` to now: the assignment rows
     in force over those days, their tables, the batches' species and the units' temperatures, read once. `read`: the
     (unit id, day) pairs whose temperature the walk may ask (its feeding days and the days asked): the sensors' values
@@ -154,8 +154,9 @@ def policy(units, batch_ids, first, now, read=()):
 
     book.prefetch(sorted({moment(unit_id, day) for unit_id, day in read if unit_id in units and may_ask(unit_id, day)}))
 
-    # The fasts planned harvests and transports ask for, from `first` to the units' today (one query).
-    fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first))
+    # The fasts planned harvests and transports ask for, from `first` to the units' today and `ahead_days` past it (a
+    # production plan's days ahead), in one query.
+    fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first) + timedelta(days=ahead_days))
     return Policy(rows, tables({row.protocol_id for row in rows}), species, temperature,
                   fasting=lambda unit_id, day: fasts.get((unit_id, day)), cleaner=cleaner)
 
@@ -177,10 +178,10 @@ class Projection:
                 if unit == unit_id and (batch_id is None or batch == batch_id) for correction in found]
 
 
-def project(unit_ids, days=(), now=None):
+def project(unit_ids, days=(), now=None, ahead_days=0):
     """One walk of the units' lineage with the projected weight, keeping the UnitDay of each (unit id, day) of
     `days`. Every feeding of those units is walked: the estimate runs from the last measured point, wherever the
-    fish were then."""
+    fish were then. `ahead_days`: the policy reads the fasts that far past today too (a production plan's days ahead)."""
     now = now or timezone.now()
     unit_ids, batch_ids = lineage(unit_ids)
     records = feedings(unit_ids)
@@ -188,7 +189,7 @@ def project(unit_ids, days=(), now=None):
     first = min([record.date for record in records] + [day for _unit, day in days],
                 default=timezone.localdate(now, zone_of(None)))
     read = {(record.unit_id, record.date) for record in records} | set(days)
-    projector = Projector(policy(units, batch_ids, first, now, read), days)
+    projector = Projector(policy(units, batch_ids, first, now, read, ahead_days), days)
     return Projection(walk(ledger(batch_ids), records, days, projector=projector), projector)
 
 

@@ -11,23 +11,23 @@ measured weights beside it, and the plan as it was from any measured point. Comp
   the feed given less the uneaten share, ÷ the FCR. Feed above the ration is never growth (owner decision Q4), and
   past days are not planned: the estimate between weighings grows on recorded feedings only.
 - The temperature ahead is the site's water temperature of the day's month when the site has its twelve (Setup ›
-  Sites), else the unit's latest usable one at the start, held constant. The page says which.
+  Sites), else the unit's latest usable one, held constant (from a past start: the unit's as it was that day). The page
+  says which, and how old a temperature held is when it is not fresh.
 - The expected mortality a month of the band (else the protocol's, else none) lowers the fish, so the biomass and the
   feed, never the average weight.
 - A fasting day ahead (a planned harvest or transport, farm/handling/fasting.py) gives no feed and no growth.
 - No protocol, a weight outside its bands, no temperature or one outside its table stops the walk: the page shows
   the basis's reason, never a default. The platform owner's horizon (core.platform.plan_horizon_days) stops it too."""
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 
 from django.utils.translation import gettext as _
 
 from core import platform
-from farm.feeding import growth, read as feeding_read
+from farm.feeding import growth, ration, read as feeding_read
 from farm.feeding.fold import PointKind
 from farm.feeding.ration import PlannedTemperature
-from farm.handling import fasting
 from farm.stock.dates import local_today
 
 HUNDRED = Decimal(100)
@@ -95,24 +95,36 @@ class Forecast:
         return [point for index, point in enumerate(points, start=1) if index % WEEK == 0 or index == len(points)]
 
 
-def _ahead(policy, unit, batch, start, weight_g, fish, target_g, horizon_days, fasts):
-    """The Forecast from `start`, where the fish weigh `weight_g` and number `fish`."""
+def _ahead(policy, unit, batch, start, weight_g, fish, target_g, horizon_days, today):
+    """The Forecast from `start`, where the fish weigh `weight_g` and number `fish`. Each day's terms are the policy's
+    basis of that day (ration.Policy.basis: the protocol in force, the band, the SFR, the fast a planned harvest or
+    transport asks, read with the walk's own reads). The temperature: the site's month when the site has its twelve;
+    else from today the unit's own as the ration reads it (its latest, held), and from a past start the unit's as it was
+    then, held, so the plan as it stood that day comes out again."""
     site = unit.production_department.site
     monthly = site.plan_temperatures() if site is not None else None
-    held = None if monthly else policy.temperature(unit.pk, start)
+    then = policy.temperature(unit.pk, start) if not monthly and start < today else None
+    held = []                     # the temperature the first day fed read, said when it is not fresh
 
     def terms_of(day, weight):
-        temperature = PlannedTemperature(monthly[day.month - 1]) if monthly else held
-        basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=temperature)
-        if (unit.pk, day) in fasts:
+        if monthly:
+            basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=PlannedTemperature(monthly[day.month - 1]))
+        elif then is not None:
+            basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=then)
+        else:
+            basis = policy.basis(unit.pk, batch.pk, day, weight)
+        if basis.missing == ration.FASTING:
             return growth.Terms(mortality_pct_month=basis.mortality_pct_month, fasting=True)
         if not basis.has_ration or basis.fcr is None:
             return growth.Stop(basis.why(batch))
+        if not held:
+            held.append(basis.temperature)
         return growth.Terms(basis.sfr.value, basis.fcr, basis.uneaten_pct, basis.mortality_pct_month,
-                            temperature.value_c)
+                            basis.temperature.value_c)
 
     curve = growth.curve(start, weight_g, Decimal(fish), target_g, horizon_days, terms_of)
-    return Forecast(weight_g, Decimal(fish), start, curve, bool(monthly), horizon_days, held)
+    return Forecast(weight_g, Decimal(fish), start, curve, bool(monthly), horizon_days,
+                    None if monthly or not held else held[0])
 
 
 def forecasts(shares, targets):
@@ -122,10 +134,10 @@ def forecasts(shares, targets):
     if not wanted:
         return {}
     today = {unit.pk: local_today(unit) for unit, _share in wanted}
-    projection = feeding_read.project(list(today), [(unit_id, day) for unit_id, day in today.items()])
-    units = list({unit.pk: unit for unit, _share in wanted}.values())
     horizon_days = platform.plan_horizon_days()
-    fasts = fasting.fasts(units, min(today.values()), max(today.values()) + timedelta(days=horizon_days))
+    # one walk, its policy reading the fasts of the days ahead too (one read of the planned harvests and transports)
+    projection = feeding_read.project(list(today), [(unit_id, day) for unit_id, day in today.items()],
+                                      ahead_days=horizon_days)
     found = {}
     for unit, share in wanted:
         estimate = _estimate(projection, unit, share.batch, today[unit.pk])
@@ -135,7 +147,7 @@ def forecasts(shares, targets):
         found[(unit.pk, share.batch.pk)] = (
             Forecast(estimate.end_g, Decimal(share.count), today[unit.pk]) if target is None else
             _ahead(projection.projector.policy, unit, share.batch, today[unit.pk], estimate.end_g, share.count,
-                   target, horizon_days, fasts))
+                   target, horizon_days, today[unit.pk]))
     return found
 
 
@@ -179,20 +191,19 @@ def plan(unit, share, target_g, start_day=None):
     # a start is a measured point of the stay: a day outside it is never read (an address is typed by anyone)
     within = start_day is not None and share.since <= start_day < today
     asked = [(unit.pk, today)] + ([(unit.pk, start_day)] if within else [])
-    projection = feeding_read.project([unit.pk], asked)
+    horizon_days = platform.plan_horizon_days()
+    projection = feeding_read.project([unit.pk], asked, ahead_days=horizon_days)
     estimate = _estimate(projection, unit, batch, today)
     if estimate is None:
         return None
     points = feeding_read.measured_points(projection, unit.pk, batch.pk)
     chosen = next((point for point in points if point.day == start_day and point.kind != PointKind.CLOSE), None)
-    horizon_days = platform.plan_horizon_days()
     start = chosen.day if chosen is not None else today
-    fasts = fasting.fasts([unit], start, max(start, today) + timedelta(days=horizon_days))
     policy = projection.projector.policy
     if chosen is None:
-        forecast = _ahead(policy, unit, batch, today, estimate.end_g, share.count, target_g, horizon_days, fasts)
+        forecast = _ahead(policy, unit, batch, today, estimate.end_g, share.count, target_g, horizon_days, today)
     else:
         forecast = _ahead(policy, unit, batch, chosen.day, chosen.avg_weight_g, chosen.fish, target_g, horizon_days,
-                          fasts)
+                          today)
     return Plan(forecast, tuple(Against(point, forecast.weight_on(point.day) if point.day > start else None)
                                 for point in points), chosen, today)

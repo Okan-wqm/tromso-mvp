@@ -1,5 +1,5 @@
-"""The write path of protocol assignments: the rows for a protocol, a day range and the units or the batch it
-feeds (checked as the assignment dialog checks them), writing them, each logged, and ending one. The dialog
+"""The write path of assignments, of feeding protocols and of temperature profiles alike (farm/models/assignment.py):
+the rows for a table, a day range and the units or the batch it applies to (checked as the assignment dialog checks them), writing them, each logged, and ending one. The dialog
 (farm/forms/feeding_protocol.py, farm/resources/feeding_protocol.py) and an experiment's start and its amendments
 (experiments/services.py) come through here, so a row written or ended for an experiment is the row the dialog
 would write or end and the log shows the same entry."""
@@ -12,7 +12,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 
 from core import access, audit
-from farm.models import ProtocolAssignment, Tank
+from farm.models import Tank
 from farm.stock.dates import local_today
 
 # The fields the activity log shows of an assignment (and the assignment's form, on its one tab).
@@ -20,6 +20,11 @@ from farm.stock.dates import local_today
 # L-6). An experiment writes its diet's rows under its own right, through `write` inside its checked call.
 ASSIGN = 'farm.add_protocolassignment'
 FIELDS = ('protocol', 'unit', 'batch', 'valid_from', 'valid_until', 'notes')
+
+
+def fields_of(subject):
+    """The fields the activity log shows of an assignment of `subject` (its table's field: protocol, profile)."""
+    return (subject, *FIELDS[1:])
 
 
 @dataclass(frozen=True)
@@ -31,16 +36,17 @@ class RowError:
     message: str
 
 
-def rows(protocol, units, batch, first, last, notes=''):
-    """([ProtocolAssignment], [RowError]): a row per unit (one row for a batch alone), all with one group,
+def rows(subject, units, batch, first, last, notes=''):
+    """([assignment], [RowError]) of `subject` (a feeding protocol, a temperature profile: its rows' model): a row per unit (one row for a batch alone), all with one group,
     checked as a row (its fields, and the overlap with the rows in force, by the database's own constraints).
     A row with an error is left out; the caller refuses the whole, or shows what concerns each unit. `last` None:
     until it is ended."""
     group = uuid.uuid4()
     made, errors = [], []
     for unit in units or [None]:
-        row = ProtocolAssignment(protocol=protocol, unit=unit, batch=batch, group_id=group, valid_from=first,
-                                 valid_until=last, notes=notes)
+        model = subject.assignments.model
+        row = model(**{model.SUBJECT: subject}, unit=unit, batch=batch, group_id=group, valid_from=first,
+                    valid_until=last, notes=notes)
         try:
             row.full_clean(exclude=['group_id'])
         except ValidationError as error:
@@ -54,14 +60,15 @@ def rows(protocol, units, batch, first, last, notes=''):
 def recorded(row):
     """The row as the activity log stores it."""
     with audit.source_language():
-        return audit.snapshot(row, FIELDS)
+        return audit.snapshot(row, fields_of(row.SUBJECT))
 
 
 def save(user, made):
-    """Writes the rows of `rows()` together for `user`, who may assign protocols (ASSIGN), each logged as created by
-    them. An IntegrityError (a row written for the same fish meanwhile: the constraints) leaves nothing written and is
+    """Writes the rows of `rows()` together for `user`, who may assign their table (its rows' add right), each logged
+    as created by them. An IntegrityError (a row written for the same fish meanwhile: the constraints) leaves nothing written and is
     the caller's to report."""
-    access.require(user, ASSIGN)
+    meta = made[0]._meta if made else None
+    access.require(user, f'{meta.app_label}.add_{meta.model_name}' if meta else ASSIGN)
     return write(user, made)
 
 
@@ -83,7 +90,7 @@ def end(user, row, last_day):
     own last day, is refused. Returns the row. A step of an experiment's release, inside its checked call (the
     assignment page has no end of its own: an edit there is crud's)."""
     with transaction.atomic():
-        row = ProtocolAssignment.all_objects.select_for_update().get(pk=row.pk)
+        row = type(row).all_objects.select_for_update().get(pk=row.pk)
         if row.is_deleted:
             raise ValidationError({'valid_until': _('This assignment was deleted meanwhile.')})
         if last_day < row.valid_from:

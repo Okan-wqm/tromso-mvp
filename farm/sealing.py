@@ -34,6 +34,7 @@ def declare_all():
     # Feeding, health, water.
     declare(m.FeedingRecord, unit='unit', day='date')
     declare(m.ProtocolAssignment, unit='unit', day=('valid_from', 'valid_until'), via=('batch',))
+    declare(m.TemperatureProfileAssignment, unit='unit', day=('valid_from', 'valid_until'), via=('batch',))
     declare(m.Treatment, unit='units', day=('start_date', 'end_date'))
     declare(m.HealthEvent, unit='units', day='date')
     # Their units' rows (the many-to-many tables Django makes), hidden with their treatment or event (review L8).

@@ -22,12 +22,11 @@ from core.ui import is_next
 
 from ..handling import check, fasting
 from ..models import (
-    Batch, HandlingPlanItem, ProductionDepartment, ProductionPlan, SlaughterFacility, Site, Species, StockMovement,
+    Batch, HandlingPlanItem, ProductionDepartment, SlaughterFacility, Site, Species, StockMovement,
     Tank,
 )
 from ..models.handling import HandlingKind
 from ..models.stock import MovementKind
-from ..stock import read as stock_read
 from ..stock.dates import earliest, local_today
 from . import forecast, read
 
@@ -151,24 +150,20 @@ def production_plan(request, unit_pk, batch_pk):
     Read with the production plans' right. The page's words and the file are farm/harvest/plan_page.py's."""
     from . import plan_page
     unit = get_object_or_404(Tank.objects.select_related('production_department__site'), pk=unit_pk)
-    stock = stock_read.stock_of([unit]).get(unit.pk)
-    share = next((each for each in (stock.counted if stock is not None else ()) if each.batch.pk == batch_pk), None)
-    if share is None:
-        raise Http404
-    target = ProductionPlan.objects.filter(batch=share.batch).first()
-    target_g = target.target_weight_g if target is not None else None
-    found = forecast.plan(unit, share, target_g, read_day(request.GET.get('from', '')))
+    found = forecast.projection(unit.pk, batch_pk, read_day(request.GET.get('from', '')))
     if found is None:
         raise Http404
+    batch = found.batch
+    target_g = found.forecast.curve.target_g
     if request.GET.get('format') == 'csv':
-        return plan_page.csv_response(unit, share.batch, found)
+        return plan_page.csv_response(unit, batch, found)
     place = navigation.place(TARGETS)
-    url = reverse('farm:production_plan', args=[unit.pk, share.batch.pk])
+    url = reverse('farm:production_plan', args=[unit.pk, batch.pk])
     kept = {'from': found.chosen.day.isoformat()} if found.chosen is not None else {}
     context = {
-        'title': _('Growth plan · %(unit)s · %(batch)s') % {'unit': unit.code, 'batch': share.batch.code},
+        'title': _('Growth plan · %(unit)s · %(batch)s') % {'unit': unit.code, 'batch': batch.code},
         'eyebrow': f'{place.section.label} · {place.group.label} · {place.entry.label}',
-        'unit': unit, 'batch': share.batch, 'target_g': target_g, 'plan': found, 'url': url,
+        'unit': unit, 'batch': batch, 'target_g': target_g, 'plan': found, 'url': url,
         'csv_url': f"{url}?{urlencode({**kept, 'format': 'csv'})}", 'back_url': reverse('farm:productionplan_list'),
         'tabs': tabs(request, 'targets'),
     }

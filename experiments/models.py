@@ -30,8 +30,8 @@ from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 
 from core.models import AuditedModel, SealedManager
+from core.ranges import DateRange
 from farm.models import FeedingProtocol, Site, Species, System, Tank
-from farm.models.feeding_protocol import DateRange
 
 from .variables import ENDPOINTS, Endpoint
 

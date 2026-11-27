@@ -4612,6 +4612,7 @@
         "core/test_languages.py",
         "core/tests_account_mail.py",
         "core/tests_matrix_notes.py",
+        "core/tests_workspaces.py",
         "farm/tests/test_bound_text.py",
         "farm/tests/test_calculator.py",
         "farm/tests/test_calculator_loaded_ph.py",
@@ -4630,6 +4631,7 @@
         "farm/tests/test_plan_form_notice.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_protocols.py",
+        "farm/tests/test_resolve.py",
         "farm/tests/test_review_texts.py",
         "farm/tests/test_size_mix.py",
         "farm/tests/test_size_mix_chips.py",
@@ -8473,6 +8475,7 @@
         "farm/tests/test_health.py",
         "farm/tests/test_migration_production_plan.py",
         "farm/tests/test_opening_balance.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_size_mix.py",
         "farm/tests/test_stock.py",
@@ -16426,59 +16429,6 @@
           "why": "author, time, version or delete mark"
         },
         {
-          "name": "protocol_id",
-          "field": "protocol",
-          "type": "uuid",
-          "null": false,
-          "choices": [],
-          "link": {
-            "table": "feeding_protocols",
-            "model": "farm.FeedingProtocol",
-            "on_delete": "PROTECT"
-          },
-          "on_form": [
-            "AssignmentForm › Assignment",
-            "NewAssignmentForm › Assignment"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "unit_id",
-          "field": "unit",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "tanks",
-            "model": "farm.Tank",
-            "on_delete": "DO_NOTHING"
-          },
-          "on_form": [
-            "AssignmentForm › Assignment"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "batch_id",
-          "field": "batch",
-          "type": "uuid",
-          "null": true,
-          "choices": [],
-          "link": {
-            "table": "batches",
-            "model": "farm.Batch",
-            "on_delete": "DO_NOTHING"
-          },
-          "on_form": [
-            "AssignmentForm › Assignment",
-            "NewAssignmentForm › Assignment"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
           "name": "valid_from",
           "field": "valid_from",
           "type": "date",
@@ -16524,6 +16474,59 @@
           "null": false,
           "choices": [],
           "link": null,
+          "on_form": [
+            "AssignmentForm › Assignment",
+            "NewAssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "protocol_id",
+          "field": "protocol",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "feeding_protocols",
+            "model": "farm.FeedingProtocol",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "AssignmentForm › Assignment",
+            "NewAssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "unit_id",
+          "field": "unit",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "tanks",
+            "model": "farm.Tank",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "AssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "batch_id",
+          "field": "batch",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "batches",
+            "model": "farm.Batch",
+            "on_delete": "DO_NOTHING"
+          },
           "on_form": [
             "AssignmentForm › Assignment",
             "NewAssignmentForm › Assignment"
@@ -17431,162 +17434,6 @@
           "why": ""
         },
         {
-          "name": "plan_temperature_01",
-          "field": "plan_temperature_01",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_02",
-          "field": "plan_temperature_02",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_03",
-          "field": "plan_temperature_03",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_04",
-          "field": "plan_temperature_04",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_05",
-          "field": "plan_temperature_05",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_06",
-          "field": "plan_temperature_06",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_07",
-          "field": "plan_temperature_07",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_08",
-          "field": "plan_temperature_08",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_09",
-          "field": "plan_temperature_09",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_10",
-          "field": "plan_temperature_10",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_11",
-          "field": "plan_temperature_11",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
-          "name": "plan_temperature_12",
-          "field": "plan_temperature_12",
-          "type": "numeric(3, 1)",
-          "null": true,
-          "choices": [],
-          "link": null,
-          "on_form": [
-            "SiteForm › Plan temperatures"
-          ],
-          "how": "form",
-          "why": ""
-        },
-        {
           "name": "facilities",
           "field": "facilities",
           "type": "jsonb",
@@ -17632,84 +17479,6 @@
         }
       ],
       "constraints": [
-        {
-          "name": "chk_sites_plan_temperatures_whole",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_01",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_02",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_03",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_04",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_05",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_06",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_07",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_08",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_09",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_10",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_11",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
-        {
-          "name": "chk_sites_plan_temperature_12",
-          "kind": "check",
-          "fields": [],
-          "conditional": false
-        },
         {
           "name": "uq_sites_code_live",
           "kind": "unique",
@@ -17891,18 +17660,6 @@
             "organisation_number": "Reports",
             "production_form": "Reports",
             "reports_from": "Reports",
-            "plan_temperature_01": "Plan temperatures",
-            "plan_temperature_02": "Plan temperatures",
-            "plan_temperature_03": "Plan temperatures",
-            "plan_temperature_04": "Plan temperatures",
-            "plan_temperature_05": "Plan temperatures",
-            "plan_temperature_06": "Plan temperatures",
-            "plan_temperature_07": "Plan temperatures",
-            "plan_temperature_08": "Plan temperatures",
-            "plan_temperature_09": "Plan temperatures",
-            "plan_temperature_10": "Plan temperatures",
-            "plan_temperature_11": "Plan temperatures",
-            "plan_temperature_12": "Plan temperatures",
             "version": ""
           }
         }
@@ -17960,7 +17717,6 @@
         "farm/tests/test_overview_truth.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_production_departments.py",
-        "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "farm/tests/test_restore.py",
@@ -22722,6 +22478,906 @@
         "sensors/tests/test_water_history.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_migration_place.py"
+      ]
+    },
+    {
+      "app": "farm",
+      "model": "TemperatureProfileAssignment",
+      "table": "temperature_profile_assignments",
+      "description": "A temperature profile in force for a unit, a whole batch or a batch in one unit, from a day (the rules of farm/models/assignment.py, shared with the protocols' rows).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "valid_from",
+          "field": "valid_from",
+          "type": "date",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "NewProfileAssignmentForm › Assignment",
+            "ProfileAssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "valid_until",
+          "field": "valid_until",
+          "type": "date",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "NewProfileAssignmentForm › Assignment",
+            "ProfileAssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "group_id",
+          "field": "group_id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "not editable: set by the code"
+        },
+        {
+          "name": "notes",
+          "field": "notes",
+          "type": "varchar(500)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "NewProfileAssignmentForm › Assignment",
+            "ProfileAssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "profile_id",
+          "field": "profile",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "temperature_profiles",
+            "model": "farm.TemperatureProfile",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "NewProfileAssignmentForm › Assignment",
+            "ProfileAssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "unit_id",
+          "field": "unit",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "tanks",
+            "model": "farm.Tank",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "ProfileAssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "batch_id",
+          "field": "batch",
+          "type": "uuid",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "batches",
+            "model": "farm.Batch",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [
+            "NewProfileAssignmentForm › Assignment",
+            "ProfileAssignmentForm › Assignment"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_temperature_profile_assignments_target",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_temperature_profile_assignments_period",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "excl_temperature_profile_assignments_unit",
+          "kind": "exclusion",
+          "fields": [
+            "unit",
+            "valid_from",
+            "valid_until"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "excl_temperature_profile_assignments_batch",
+          "kind": "exclusion",
+          "fields": [
+            "batch",
+            "valid_from",
+            "valid_until"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "excl_temperature_profile_assignments_batch_in_unit",
+          "kind": "exclusion",
+          "fields": [
+            "unit",
+            "batch",
+            "valid_from",
+            "valid_until"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "profile assignments tab",
+              "url_names": [
+                "farm:temperatureprofileassignment_create"
+              ],
+              "routes": [
+                "/operations/feeding/profile-assignments/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "profile assignments tab",
+              "url_names": [
+                "farm:temperatureprofileassignment_edit"
+              ],
+              "routes": [
+                "/operations/feeding/profile-assignments/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "profile assignments tab",
+              "url_names": [
+                "farm:temperatureprofileassignment_delete"
+              ],
+              "routes": [
+                "/operations/feeding/profile-assignments/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "profile assignments tab",
+              "url_names": [
+                "farm:temperatureprofileassignment_list"
+              ],
+              "routes": [
+                "/operations/feeding/profile-assignments/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "NewProfileAssignmentForm",
+          "module": "farm.forms.temperature_profile",
+          "fields": {
+            "profile": "Assignment",
+            "batch": "Assignment",
+            "valid_from": "Assignment",
+            "valid_until": "Assignment",
+            "notes": "Assignment",
+            "version": "",
+            "units": "Assignment"
+          }
+        },
+        {
+          "form": "ProfileAssignmentForm",
+          "module": "farm.forms.temperature_profile",
+          "fields": {
+            "profile": "Assignment",
+            "unit": "Assignment",
+            "batch": "Assignment",
+            "valid_from": "Assignment",
+            "valid_until": "Assignment",
+            "notes": "Assignment",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py"
+      ]
+    },
+    {
+      "app": "farm",
+      "model": "TemperatureProfilePoint",
+      "table": "temperature_profile_points",
+      "description": "A point of a profile: fish of this weight (g) are expected in water of this temperature (°C).",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "profile_id",
+          "field": "profile",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "temperature_profiles",
+            "model": "farm.TemperatureProfile",
+            "on_delete": "CASCADE"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "the temperature profile the row belongs to"
+        },
+        {
+          "name": "weight_g",
+          "field": "weight_g",
+          "type": "numeric(10, 2)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "TemperatureProfilePointForm",
+            "TemperaturePointForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "temperature_c",
+          "field": "temperature_c",
+          "type": "numeric(3, 1)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "TemperatureProfilePointForm",
+            "TemperaturePointForm"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_temperature_profile_points_weight",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_temperature_profile_points_temperature",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_temperature_profile_points_weight",
+          "kind": "unique",
+          "fields": [
+            "profile",
+            "weight_g"
+          ],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Points list on the temperature profiles tab",
+              "url_names": [
+                "farm:temperatureprofile_points"
+              ],
+              "routes": [
+                "/operations/feeding/temperature-profiles/<uuid:pk>/points/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Points list on the temperature profiles tab",
+              "url_names": [
+                "farm:temperatureprofile_points"
+              ],
+              "routes": [
+                "/operations/feeding/temperature-profiles/<uuid:pk>/points/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Points list on the temperature profiles tab",
+              "url_names": [
+                "farm:temperatureprofile_points"
+              ],
+              "routes": [
+                "/operations/feeding/temperature-profiles/<uuid:pk>/points/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "rowlist",
+              "label": "Points list on the temperature profiles tab",
+              "url_names": [
+                "farm:temperatureprofile_edit"
+              ],
+              "routes": [
+                "/operations/feeding/temperature-profiles/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "TemperatureProfilePointForm",
+          "module": "django.forms.widgets",
+          "fields": {
+            "weight_g": "",
+            "temperature_c": ""
+          }
+        },
+        {
+          "form": "TemperaturePointForm",
+          "module": "farm.forms.temperature_profile",
+          "fields": {
+            "weight_g": "",
+            "temperature_c": ""
+          }
+        }
+      ],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": []
+    },
+    {
+      "app": "farm",
+      "model": "TemperatureProfile",
+      "table": "temperature_profiles",
+      "description": "The water temperature over the fish's weight for one species: its points (TemperatureProfilePoint) and how the temperature is read between two of them.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "created_at",
+          "field": "created_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_at",
+          "field": "updated_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "created_by_id",
+          "field": "created_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "updated_by_id",
+          "field": "updated_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "version",
+          "field": "version",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "is_deleted",
+          "field": "is_deleted",
+          "type": "boolean",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_at",
+          "field": "deleted_at",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "deleted_by_id",
+          "field": "deleted_by",
+          "type": "integer",
+          "null": true,
+          "choices": [],
+          "link": {
+            "table": "auth_user",
+            "model": "auth.User",
+            "on_delete": "SET_NULL"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "author, time, version or delete mark"
+        },
+        {
+          "name": "name",
+          "field": "name",
+          "type": "varchar(100)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "TemperatureProfileForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "species_id",
+          "field": "species",
+          "type": "uuid",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "species",
+            "model": "farm.Species",
+            "on_delete": "PROTECT"
+          },
+          "on_form": [
+            "TemperatureProfileForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "status",
+          "field": "status",
+          "type": "varchar(10)",
+          "null": false,
+          "choices": [
+            "draft",
+            "active",
+            "retired"
+          ],
+          "link": null,
+          "on_form": [
+            "TemperatureProfileForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "temperature_between",
+          "field": "temperature_between",
+          "type": "varchar(6)",
+          "null": false,
+          "choices": [
+            "smooth",
+            "step"
+          ],
+          "link": null,
+          "on_form": [
+            "TemperatureProfileForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        },
+        {
+          "name": "notes",
+          "field": "notes",
+          "type": "varchar(2000)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "TemperatureProfileForm › General"
+          ],
+          "how": "form",
+          "why": ""
+        }
+      ],
+      "constraints": [
+        {
+          "name": "uq_temperature_profiles_name_live",
+          "kind": "unique",
+          "fields": [
+            "name"
+          ],
+          "conditional": true
+        },
+        {
+          "name": "chk_temperature_profiles_status",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_temperature_profiles_between",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "temperature profiles tab",
+              "url_names": [
+                "farm:temperatureprofile_create"
+              ],
+              "routes": [
+                "/operations/feeding/temperature-profiles/new/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "edit": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "temperature profiles tab",
+              "url_names": [
+                "farm:temperatureprofile_edit"
+              ],
+              "routes": [
+                "/operations/feeding/temperature-profiles/<uuid:pk>/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "delete": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "temperature profiles tab",
+              "url_names": [
+                "farm:temperatureprofile_delete"
+              ],
+              "routes": [
+                "/operations/feeding/temperature-profiles/<uuid:pk>/delete/"
+              ]
+            }
+          ],
+          "why": ""
+        },
+        "read": {
+          "status": "paths",
+          "paths": [
+            {
+              "how": "tab",
+              "label": "temperature profiles tab",
+              "url_names": [
+                "farm:temperatureprofile_list"
+              ],
+              "routes": [
+                "/operations/feeding/temperature-profiles/"
+              ]
+            }
+          ],
+          "why": ""
+        }
+      },
+      "note": "",
+      "forms": [
+        {
+          "form": "TemperatureProfileForm",
+          "module": "farm.forms.temperature_profile",
+          "fields": {
+            "name": "General",
+            "species": "General",
+            "status": "General",
+            "temperature_between": "General",
+            "notes": "General",
+            "version": ""
+          }
+        }
+      ],
+      "delete_kind": "soft delete through the delete plan",
+      "soft_delete": true,
+      "restore": {
+        "status": "admin",
+        "why": "the Restore action in the admin (platform admin)"
+      },
+      "viewer": {
+        "section": "Facility",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_workspaces.py",
+        "farm/tests/test_production_plan.py"
       ]
     },
     {

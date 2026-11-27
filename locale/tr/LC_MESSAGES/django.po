@@ -107,6 +107,10 @@ msgstr ""
 "bekleyecek: %(end)s. %(withdrawal)s"
 
 #, python-format
+msgid "%(batch)s is %(species)s; the profile is for %(protocol_species)s."
+msgstr "%(batch)s %(species)s; profil %(protocol_species)s için."
+
+#, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s partisi %(species)s; protokol ise %(protocol_species)s için."
 
@@ -408,6 +412,12 @@ msgid "%(count)d planned harvest or transport names it: keep “%(category)s” 
 msgid_plural "%(count)d planned harvests or transports name it: keep “%(category)s” ticked."
 msgstr[0] "%(count)d planlanmış hasat veya taşıma onu gösteriyor: “%(category)s” işaretli kalsın."
 msgstr[1] "%(count)d planlanmış hasat veya taşıma onu gösteriyor: “%(category)s” işaretli kalsın."
+
+#, python-format
+msgid "%(count)d point saved."
+msgid_plural "%(count)d points saved."
+msgstr[0] "%(count)d nokta kaydedildi."
+msgstr[1] "%(count)d nokta kaydedildi."
 
 #, python-format
 msgid "%(count)d record"
@@ -2135,6 +2145,9 @@ msgstr ""
 "En fazla %(limit)s büyüklüğünde bir PDF. Metni kaydedilirken sayfa sayfa okunur: arama için ve "
 "ileride yapay zekâ ajanları için."
 
+msgid "A batch alone: the profile follows it into every unit it is moved to."
+msgstr "Yalnızca parti: profil, partiyi taşındığı her birime izler."
+
 msgid "A batch alone: the protocol follows it into every unit it is moved to."
 msgstr "Yalnızca parti: protokol, parti hangi birime taşınırsa onunla birlikte gider."
 
@@ -2427,6 +2440,9 @@ msgstr "Kütüphanedeki bir belge"
 msgid "A dose needs its unit, and a unit its dose."
 msgstr "Doz birimiyle, birim de dozuyla girilir."
 
+msgid "A draft copy with these points, to change and assign from a date."
+msgstr "Bu noktalarla bir taslak kopya; değiştirip bir tarihten itibaren atamak için."
+
 msgid "A draft copy with this table, to change and assign from a date."
 msgstr "Bu tabloyla bir taslak kopya: değiştirip bir tarihten itibaren atamak için."
 
@@ -2641,6 +2657,9 @@ msgstr "Aylık bir görev ayın bir gününde yinelenir; diğerleri hiçbirinde.
 msgid "A new experiment"
 msgstr "Yeni bir deney"
 
+msgid "A new profile is a draft: give its points, then set it active."
+msgstr "Yeni bir profil taslaktır: noktalarını girin, sonra etkin yapın."
+
 msgid "A new protocol is a draft: fill in its feeding table, then set it active."
 msgstr "Yeni bir protokol taslaktır: yemleme tablosunu doldurun, ardından aktif yapın."
 
@@ -2789,6 +2808,12 @@ msgstr "Üretim departmanı, oluşturulduğu sahada kalır."
 
 msgid "A production plan looks ahead (days)"
 msgstr "Üretim planı ileriye bakar (gün)"
+
+#, python-format
+msgid "A profile has at most %(num)d point."
+msgid_plural "A profile has at most %(num)d points."
+msgstr[0] "Bir profilde en fazla %(num)d nokta olur."
+msgstr[1] "Bir profilde en fazla %(num)d nokta olur."
 
 #, python-format
 msgid ""
@@ -3059,6 +3084,30 @@ msgstr "Bir sıcaklık sütununda en fazla bir ondalık basamak olabilir: %(valu
 #, python-format
 msgid "A temperature column is between %(low)s and %(high)s °C."
 msgstr "Bir sıcaklık sütunu %(low)s ile %(high)s °C arasındadır."
+
+msgid ""
+"A temperature profile gives the water temperature the fish are expected to be kept at as they "
+"grow: points of fish weight and temperature, read in between (smooth) or from each point on "
+"(step), the first point’s before it and the last point’s after it. A production plan reads it for"
+" the days ahead, at the fish’s projected weight each day; the past keeps the temperatures "
+"measured. It is assigned to units, batches or a batch in a unit as a feeding protocol is."
+msgstr ""
+"Bir sıcaklık profili, balıkların büyürken tutulması beklenen su sıcaklığını verir: balık ağırlığı"
+" ve sıcaklık noktaları, arada okunur (yumuşak) ya da her noktadan itibaren (basamak); ilk "
+"noktadan önce ilk noktanınki, son noktadan sonra sonuncununki. Üretim planı bunu ileriki günler "
+"için, her gün balığın öngörülen ağırlığında okur; geçmiş ölçülen sıcaklıkları korur. Yemleme "
+"protokolü gibi birimlere, partilere ya da bir birimdeki bir partiye atanır."
+
+msgid ""
+"A temperature profile is assigned as a feeding protocol is: to units (it applies to whatever is "
+"in them), to a whole batch (it follows the batch into every unit it is moved to) or to a batch in"
+" chosen units. For a batch in a unit the most specific row in force applies: batch in unit, then "
+"unit, then whole batch. A production plan reads it for the days ahead."
+msgstr ""
+"Sıcaklık profili, yemleme protokolü gibi atanır: birimlere (içlerinde ne varsa ona uygulanır), "
+"bütün bir partiye (partiyi taşındığı her birime izler) ya da seçilen birimlerdeki bir partiye. "
+"Bir birimdeki parti için geçerli en özel satır uygulanır: birimdeki parti, sonra birim, sonra "
+"bütün parti. Üretim planı bunu ileriki günler için okur."
 
 msgid "A template"
 msgstr "Bir şablon"
@@ -3391,6 +3440,9 @@ msgstr "Notu ekle"
 msgid "Add person"
 msgstr "Kişi ekle"
 
+msgid "Add point"
+msgstr "Nokta ekle"
+
 msgid "Add species"
 msgstr "Balık türü ekle"
 
@@ -3680,6 +3732,9 @@ msgstr "Tüm üretim"
 
 msgid "All production departments"
 msgstr "Tüm üretim departmanları"
+
+msgid "All profiles"
+msgstr "Tüm profiller"
 
 msgid "All protocols"
 msgstr "Tüm protokoller"
@@ -4006,6 +4061,9 @@ msgstr "Bu ad başka bir mesaj biçiminde zaten kullanılıyor."
 msgid "Another production department already uses this code."
 msgstr "Bu kodu başka bir üretim departmanı zaten kullanıyor."
 
+msgid "Another profile was assigned to these fish meanwhile: look at the list and try again."
+msgstr "Bu arada bu balıklara başka bir profil atandı: listeye bakıp yeniden deneyin."
+
 msgid "Another protocol is assigned to this batch in this unit on some of these days."
 msgstr "Bu günlerin bazılarında bu birimdeki bu partiye başka bir protokol atanmış."
 
@@ -4074,6 +4132,18 @@ msgstr "Bu kuruluş numarasına sahip başka bir tedarikçi zaten var."
 
 msgid "Another supplier already uses this code."
 msgstr "Bu kodu başka bir tedarikçi zaten kullanıyor."
+
+msgid "Another temperature profile already has this name."
+msgstr "Başka bir sıcaklık profili zaten bu adı kullanıyor."
+
+msgid "Another temperature profile is assigned to this batch in this unit on some of these days."
+msgstr "Bu birimdeki bu partiye bu günlerin bazılarında başka bir sıcaklık profili atanmış."
+
+msgid "Another temperature profile is assigned to this batch on some of these days."
+msgstr "Bu partiye bu günlerin bazılarında başka bir sıcaklık profili atanmış."
+
+msgid "Another temperature profile is assigned to this unit on some of these days."
+msgstr "Bu birime bu günlerin bazılarında başka bir sıcaklık profili atanmış."
 
 msgid "Another unit already uses this code."
 msgstr "Bu kodu başka bir birim zaten kullanıyor."
@@ -4144,6 +4214,9 @@ msgstr ""
 
 msgid "App"
 msgstr "Uygulama"
+
+msgid "Applies now"
+msgstr "Şu an uygulanan"
 
 msgid "Applies to"
 msgstr "Kapsam"
@@ -4619,6 +4692,9 @@ msgstr "0 ile 5000 m arasında: deniz seviyesinden en yüksek çiftliklere kadar
 
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "10 ile 600 arasında. Boş bırakılırsa sistemin 15 saniyesi kullanılır."
+
+msgid "Between points"
+msgstr "Noktalar arası"
 
 msgid "Between the CO₂ and the NH₃ limit, outside the alkalinity band"
 msgstr "CO₂ ve NH₃ sınırı arasında, alkalinite bandının dışında"
@@ -5778,6 +5854,10 @@ msgid "Copied as “%(copy)s”: a draft, to change and start."
 msgstr "“%(copy)s” olarak kopyalandı: değiştirilecek ve başlatılacak bir taslak."
 
 #, python-format
+msgid "Copied as “%(profile)s”, a draft: change it, set it active and assign it."
+msgstr "“%(profile)s” olarak kopyalandı, bir taslak: değiştirin, etkin yapın ve atayın."
+
+#, python-format
 msgid "Copied as “%(protocol)s”, a draft: change it, set it active and assign it."
 msgstr "“%(protocol)s” adıyla taslak olarak kopyalandı: değiştirin, aktif yapın ve atayın."
 
@@ -6550,6 +6630,11 @@ msgstr ""
 "Taslak: hazırlanıyor. Aktif: atanabilir. Kullanımdan kaldırıldı: yemlediği günler için saklanır, "
 "artık atanmaz."
 
+msgid ""
+"Draft: being built. Active: can be assigned. Retired: kept for the days it was read for, assigned"
+" no more."
+msgstr "Taslak: hazırlanıyor. Etkin: atanabilir. Emekli: okunduğu günler için saklanır, artık atanmaz."
+
 msgid "Draw"
 msgstr "Çiz"
 
@@ -6697,6 +6782,9 @@ msgstr ""
 "değerlendirilir; bir döngünün numunesi döngünün her birimi için. Balığı olmayan bir birim "
 "değerlerini limitsiz gösterir. Her değer hangi numune noktasında alındığını söyler; bir birimin "
 "suyu orta noktasının suyudur."
+
+msgid "Each weight is a point once."
+msgstr "Her ağırlık yalnızca bir kez nokta olur."
 
 msgid "Each widget needs a short name: a lower-case letter, then up to 15 letters, digits, - or _."
 msgstr "Her bileşenin kısa bir adı olmalı: küçük bir harf, ardından en fazla 15 harf, rakam, - veya _."
@@ -6999,13 +7087,6 @@ msgid_plural "Every %(count)d days"
 msgstr[0] "Her gün"
 msgstr[1] "%(count)d günde bir"
 
-#, python-format
-msgid "Every day at %(temperature)s, the unit’s latest temperature at the start, held."
-msgstr "Her gün %(temperature)s: birimin başlangıçtaki son sıcaklığı sabit tutulur."
-
-msgid "Every day at the site’s water temperature of its month (Setup › Sites)."
-msgstr "Her gün, sahanın o aya ait su sıcaklığında (Kurulum › Sahalar)."
-
 msgid ""
 "Every day of the plan counts the day’s ration as given. A past day is never planned: the estimate"
 " between weighings grows on the feedings recorded only, and a day without one adds nothing. A "
@@ -7014,6 +7095,14 @@ msgstr ""
 "Planın her günü, günün rasyonunu verilmiş sayar. Geçmiş bir gün asla planlanmaz: tartımlar "
 "arasındaki tahmin yalnızca kaydedilen yemlemelerle büyür, yemleme kaydı olmayan gün hiçbir şey "
 "eklemez. Tartım, tahmini ölçülen ağırlığa getirir ve ilerideki plan oradan yeniden başlar."
+
+#, python-format
+msgid ""
+"Every day without a temperature profile at %(temperature)s, the unit’s latest measured "
+"temperature at the start, held."
+msgstr ""
+"Sıcaklık profili olmayan her gün %(temperature)s: birimin başlangıçtaki son ölçülen sıcaklığı "
+"sabit tutulur."
 
 msgid "Every department"
 msgstr "Her departman"
@@ -7723,6 +7812,9 @@ msgstr "Tartılan balık"
 msgid "Fish weight"
 msgstr "Balık ağırlığı"
 
+msgid "Fish weight (g)"
+msgstr "Balık ağırlığı (g)"
+
 msgid "Fish with no limit"
 msgstr "Sınırı olmayan balıklar"
 
@@ -7755,6 +7847,9 @@ msgstr "Sabit: bu türün balıkları stoklandı, bu yüzden temizleyici balık 
 
 msgid "Fixed: the experiment has started. Copy it to change the design."
 msgstr "Sabit: deney başladı. Tasarımı değiştirmek için kopyalayın."
+
+msgid "Fixed: the profile is assigned. Duplicate it to change it."
+msgstr "Sabit: profil atanmış. Değiştirmek için çoğaltın."
 
 msgid "Fixed: the protocol is assigned. Duplicate it to change it."
 msgstr "Kilitli: protokol atanmış. Değiştirmek için kopyalayın."
@@ -7853,6 +7948,14 @@ msgid ""
 "For example: the slaughter did not take place, or the notice was filed elsewhere. It is kept with"
 " your name and the day."
 msgstr "Örneğin: kesim yapılmadı veya bildirim başka yerde yapıldı. Adınız ve günle birlikte saklanır."
+
+msgid ""
+"For fish between two points. Smooth: read in between, with no jump. Step: the point’s temperature"
+" from its weight on. Before the first point its temperature, after the last point the last one’s."
+msgstr ""
+"İki nokta arasındaki balıklar için. Yumuşak: arada okunur, sıçrama olmaz. Basamak: noktanın "
+"sıcaklığı, ağırlığından itibaren. İlk noktadan önce onun sıcaklığı, son noktadan sonra "
+"sonuncununki."
 
 msgid ""
 "For fish between two weight bands. Smooth: each band’s value sits at the middle of the band and "
@@ -8190,6 +8293,9 @@ msgstr "İkisini birden verin ya da hiçbirini."
 msgid "Give either the value’s path or the item’s name, one of the two."
 msgstr "Değerin yolunu ya da öğenin adını girin, ikisinden yalnızca birini."
 
+msgid "Give its points first: a profile without them cannot be active."
+msgstr "Önce noktalarını girin: noktasız bir profil etkin olamaz."
+
 msgid "Give the TAN to draw the NH₃ it holds."
 msgstr "İçerdiği NH₃’ü çizmek için TAN’ı girin."
 
@@ -8264,9 +8370,6 @@ msgstr "Değerin yolunu girin: cihazın mesaj biçimi tek bir nesnedir."
 
 msgid "Give the volume to follow the amounts."
 msgstr "Miktarları izlemek için hacmi girin."
-
-msgid "Give the water temperature of all twelve months, or of none."
-msgstr "On iki ayın hepsinin su sıcaklığını girin ya da hiçbirini girmeyin."
 
 msgid "Give the withdrawal in degree-days, in days or both, as the SPC states it (0 when it has none)."
 msgstr "Bekleme süresini KÜB’de yazdığı gibi gün-derece, gün ya da ikisiyle girin (yoksa 0)."
@@ -9127,6 +9230,9 @@ msgstr "Başladı: kayıt olarak saklanır. Bunun yerine kapatın."
 
 msgid "It has started: set its last day instead. The days it fed keep their protocol."
 msgstr "Başladı: bunun yerine son gününü girin. Yemlediği günler protokollerini korur."
+
+msgid "It has started: set its last day instead. The days it planned keep their profile."
+msgstr "Başladı: bunun yerine son gününü belirleyin. Planladığı günler profillerini korur."
 
 msgid "It has stock operations: void them first."
 msgstr "Stok işlemleri var: önce onları iptal edin."
@@ -10895,6 +11001,9 @@ msgstr "Üst departman yok (en üst düzey)"
 msgid "No parent (top-level system)"
 msgstr "Üst sistem yok (en üst düzey sistem)"
 
+msgid "No point yet. Use “Add point” to add a row."
+msgstr "Henüz nokta yok. Satır eklemek için “Nokta ekle”yi kullanın."
+
 msgid "No production department"
 msgstr "Üretim departmanı yok"
 
@@ -11728,6 +11837,15 @@ msgstr "Yem başına bir yeniden sipariş seviyesi."
 msgid "One reorder level per item."
 msgstr "Kalem başına bir yeniden sipariş seviyesi."
 
+msgid ""
+"One row per fish weight (g) with the water temperature (°C) expected then. Between two points the"
+" profile’s rule applies (smooth or a step); before the first point its temperature, after the "
+"last the last one’s. At most 30 points; saved separately from the profile’s details."
+msgstr ""
+"Her balık ağırlığı (g) için o zaman beklenen su sıcaklığıyla (°C) bir satır. İki nokta arasında "
+"profilin kuralı uygulanır (yumuşak ya da basamak); ilk noktadan önce onun sıcaklığı, son noktadan"
+" sonra sonuncununki. En fazla 30 nokta; profilin ayrıntılarından ayrı kaydedilir."
+
 msgid "One row per water parameter is made by the platform; it is changed, never added or deleted."
 msgstr "Platform her su parametresi için bir satır oluşturur; değiştirilir, asla eklenmez ya da silinmez."
 
@@ -11811,6 +11929,10 @@ msgstr "Yemleme makinesini yalnızca bir silo besler: yemleme makinesini temizle
 #, python-format
 msgid "Only an active protocol can be assigned; this one is %(status)s."
 msgstr "Yalnızca aktif bir protokol atanabilir; bunun durumu: %(status)s."
+
+#, python-format
+msgid "Only an active temperature profile can be assigned; this one is %(status)s."
+msgstr "Yalnızca etkin bir sıcaklık profili atanabilir; bu profil %(status)s."
 
 msgid "Only an open task can be started."
 msgstr "Yalnızca açık bir görev başlatılabilir."
@@ -12580,9 +12702,6 @@ msgstr "Planın başlangıcı"
 msgid "Plan harvest"
 msgstr "Hasat planla"
 
-msgid "Plan temperatures"
-msgstr "Plan sıcaklıkları"
-
 msgid "Plan this day"
 msgstr "Bu günü planla"
 
@@ -12834,6 +12953,9 @@ msgstr "Üretim birimleri"
 
 msgid "Production units, scrolls sideways"
 msgstr "Üretim birimleri, yana kayar"
+
+msgid "Profile assignments"
+msgstr "Profil atamaları"
 
 #, python-format
 msgid ""
@@ -13337,6 +13459,9 @@ msgstr "Kaldır"
 msgid "Remove the file"
 msgstr "Dosyayı kaldır"
 
+msgid "Rename the profile first: its copies have used every name."
+msgstr "Önce profili yeniden adlandırın: kopyaları tüm adları kullandı."
+
 msgid "Rename the protocol first: its copies have used every name."
 msgstr "Önce protokolün adını değiştirin: kopyaları tüm adları kullanmış."
 
@@ -13750,6 +13875,9 @@ msgstr "Parolayı kaydet"
 msgid "Save places"
 msgstr "Yerleşimi kaydet"
 
+msgid "Save points"
+msgstr "Noktaları kaydet"
+
 msgid "Save reorder levels"
 msgstr "Yeniden sipariş seviyelerini kaydet"
 
@@ -14018,6 +14146,9 @@ msgstr "Numara, soru veya yanıta göre ara"
 msgid "Search by point or owner"
 msgstr "Nokta veya sahibe göre ara"
 
+msgid "Search by profile, unit or batch"
+msgstr "Profile, birime ya da partiye göre ara"
+
 msgid "Search by protocol, unit or batch"
 msgstr "Protokol, birim veya partiye göre ara"
 
@@ -14195,6 +14326,9 @@ msgstr "Bir su tipi seçin"
 
 msgid "Select a widget to change it."
 msgstr "Değiştirmek için bir bileşen seçin."
+
+msgid "Select an active profile"
+msgstr "Etkin bir profil seçin"
 
 msgid "Select an active protocol"
 msgstr "Aktif bir protokol seçin"
@@ -15255,8 +15389,20 @@ msgstr "Sıcaklık (°C)"
 msgid "Temperature and oxygen"
 msgstr "Sıcaklık ve oksijen"
 
+msgid "Temperature between points"
+msgstr "Noktalar arası sıcaklık"
+
 msgid "Temperature columns (°C)"
 msgstr "Sıcaklık sütunları (°C)"
+
+msgid "Temperature over the fish’s weight"
+msgstr "Balık ağırlığına göre sıcaklık"
+
+msgid "Temperature profile"
+msgstr "Sıcaklık profili"
+
+msgid "Temperature profiles"
+msgstr "Sıcaklık profilleri"
 
 msgid "Temperature sensor"
 msgstr "Sıcaklık sensörü"
@@ -15706,6 +15852,9 @@ msgstr "Yıllık gün sayısı negatif olamaz."
 msgid "The days are the days the fish leave their units: check they are the slaughter days."
 msgstr "Günler, balıkların birimlerinden ayrıldığı günlerdir: kesim günleri olduklarını kontrol edin."
 
+msgid "The days before yesterday keep their profile: the last day is yesterday at the earliest."
+msgstr "Dünden önceki günler profillerini korur: son gün en erken dündür."
+
 msgid "The days before yesterday keep their protocol: the last day is yesterday at the earliest."
 msgstr "Dünden önceki günler protokollerini korur: son gün en erken dün olabilir."
 
@@ -15970,6 +16119,9 @@ msgstr[1] "Son tartım %(days)s gün önceydi"
 
 msgid "The first day away."
 msgstr "Yok olunan ilk gün."
+
+msgid "The first day it applies to, on the farm’s clock."
+msgstr "Uygulandığı ilk gün, çiftliğin saatine göre."
 
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Bu protokolle yemlenen ilk gün, çiftliğin saatine göre."
@@ -16568,6 +16720,9 @@ msgstr ""
 "Planlı kesim bildirimi tesis başına verilir; ayrıca tesis adına bildirimi yapan şirketin "
 "(işletmecisi, Satın alma › Tedarikçiler) 9 haneli bir kuruluş numarası olması gerekir."
 
+msgid "The points can be given once the profile is created."
+msgstr "Noktalar profil oluşturulduktan sonra girilebilir."
+
 #, python-format
 msgid "The points of %(owner)s."
 msgstr "%(owner)s noktaları."
@@ -16605,6 +16760,13 @@ msgid ""
 msgstr ""
 "Üretim balığı veya yanındaki temizleyici balık: her yem kendi balığına gider. “Yemin uygunluğuna "
 "göre” bırakılırsa, yem yalnızca temizleyici balığa uygunsa onunkidir."
+
+msgid ""
+"The profile is assigned, so its points are fixed: the plans of the days it was read for keep "
+"them. To change it, duplicate the profile, change the copy and assign it."
+msgstr ""
+"Profil atanmış, bu yüzden noktaları sabit: okunduğu günlerin planları onları korur. Değiştirmek "
+"için profili çoğaltın, kopyayı değiştirip atayın."
 
 msgid "The protocol is assigned, so its table is fixed: duplicate it to change it."
 msgstr "Protokol atanmış, bu yüzden tablosu kilitli: değiştirmek için kopyalayın."
@@ -16991,6 +17153,9 @@ msgstr "Varsa, konu aldığı balık türleri."
 msgid "The species it takes. None ticked: it takes every species."
 msgstr "Aldığı türler. Hiçbiri işaretli değilse: her türü alır."
 
+msgid "The species the profile is for: it is assigned only to fish of this species."
+msgstr "Profilin ait olduğu tür: yalnızca bu türün balıklarına atanır."
+
 msgid "The species the table is for: it is assigned only to fish of this species."
 msgstr "Tablonun yapıldığı balık türü: yalnızca bu türdeki balıklara atanır."
 
@@ -17089,16 +17254,18 @@ msgid ""
 "The target weight each batch is grown to for harvest. The estimated weight now is the feeding "
 "protocols’ estimate from the feedings recorded; the plan walks it forward a day at a time, every "
 "day’s ration counted as given: the feed less the protocol’s uneaten share, divided by its FCR, at"
-" the site’s monthly water temperatures or, without them, the unit’s latest temperature held, with"
-" no growth on a fasting day. Growth plan opens the curve, the feed to the target and the measured"
-" weights beside it. The expected harvest is the date given when the batch was stocked."
+" the temperature its temperature profile gives the fish’s weight or, without one, the unit’s "
+"latest measured temperature held, with no growth on a fasting day. Growth plan opens the curve, "
+"the feed to the target and the measured weights beside it. The expected harvest is the date given"
+" when the batch was stocked."
 msgstr ""
 "Her partinin hasat için büyütüldüğü hedef ağırlık. Şimdiki tahmini ağırlık, yemleme "
 "protokollerinin kaydedilen yemlemelerden çıkardığı tahmindir; plan bunu gün gün ileriye yürütür "
 "ve her günün rasyonunu verilmiş sayar: yemden protokolün yenmeyen payı düşülür, FCR’sine bölünür;"
-" sahanın aylık su sıcaklıkları, onlar yoksa birimin sabit tutulan son sıcaklığı kullanılır; aç "
-"bırakma gününde büyüme olmaz. Büyüme planı eğriyi, hedefe kadarki yemi ve yanında ölçülen "
-"ağırlıkları açar. Beklenen hasat, parti stoklanırken girilen tarihtir."
+" sıcaklık profili balığın ağırlığına hangi sıcaklığı veriyorsa o, profil yoksa birimin sabit "
+"tutulan son ölçülen sıcaklığı kullanılır; aç bırakma gününde büyüme olmaz. Büyüme planı eğriyi, "
+"hedefe kadarki yemi ve yanında ölçülen ağırlıkları açar. Beklenen hasat, parti stoklanırken "
+"girilen tarihtir."
 
 #, python-format
 msgid "The task is %(status)s: its checklist can no longer be ticked."
@@ -17116,6 +17283,10 @@ msgstr "Ekibin bir yürütücüsü olmalı."
 #, python-format
 msgid "The temperature is %(source)s."
 msgstr "Sıcaklık: %(source)s."
+
+#, python-format
+msgid "The temperature of a day is the temperature profile %(profile)s at the fish’s weight that day."
+msgstr "Bir günün sıcaklığı, o gün balığın ağırlığında %(profile)s sıcaklık profilinin verdiğidir."
 
 msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
 msgstr ""
@@ -17353,13 +17524,11 @@ msgid "The water surface when the pond is full."
 msgstr "Havuz doluyken su yüzeyi."
 
 msgid ""
-"The water temperature a production plan reads for each day ahead in that month. Give all twelve, "
-"or none: without them a plan holds the unit’s latest temperature for every day ahead, and says "
-"so."
+"The water temperature the fish are expected to be kept at as they grow, per species: read by the "
+"production plans for the days ahead."
 msgstr ""
-"Üretim planının o aydaki her ileri gün için okuduğu su sıcaklığı. On ikisini de girin ya da "
-"hiçbirini girmeyin: bunlar olmadan plan, ilerideki her gün için birimin son sıcaklığını sabit "
-"tutar ve bunu belirtir."
+"Balıkların büyürken tutulması beklenen su sıcaklığı, tür başına: üretim planları ileriki günler "
+"için okur."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Miktarların ait olduğu su: bir tank ya da bir döngü. Boş: yalnızca m³ başına dozlar."
@@ -18309,6 +18478,13 @@ msgstr "İçinde başka bir üretim departmanının birimleri var: %(units)s. Ö
 msgid "Units of reduced capacity"
 msgstr "Azaltılmış kapasiteli birimler"
 
+msgid ""
+"Units only: the profile applies to whatever is in them. With a batch: that batch in these units "
+"only."
+msgstr ""
+"Yalnızca birimler: profil içlerinde ne varsa ona uygulanır. Bir partiyle: yalnızca bu "
+"birimlerdeki o parti."
+
 msgid "Units only: the protocol feeds whatever is in them. With a batch: that batch in these units only."
 msgstr ""
 "Yalnızca birimler: protokol, içlerinde ne varsa onu yemler. Bir partiyle: yalnızca bu "
@@ -18643,42 +18819,6 @@ msgstr "Su numuneleri, yana kayar"
 
 msgid "Water source"
 msgstr "Su kaynağı"
-
-msgid "Water temperature ahead, April (°C)"
-msgstr "İlerideki su sıcaklığı, Nisan (°C)"
-
-msgid "Water temperature ahead, August (°C)"
-msgstr "İlerideki su sıcaklığı, Ağustos (°C)"
-
-msgid "Water temperature ahead, December (°C)"
-msgstr "İlerideki su sıcaklığı, Aralık (°C)"
-
-msgid "Water temperature ahead, February (°C)"
-msgstr "İlerideki su sıcaklığı, Şubat (°C)"
-
-msgid "Water temperature ahead, January (°C)"
-msgstr "İlerideki su sıcaklığı, Ocak (°C)"
-
-msgid "Water temperature ahead, July (°C)"
-msgstr "İlerideki su sıcaklığı, Temmuz (°C)"
-
-msgid "Water temperature ahead, June (°C)"
-msgstr "İlerideki su sıcaklığı, Haziran (°C)"
-
-msgid "Water temperature ahead, March (°C)"
-msgstr "İlerideki su sıcaklığı, Mart (°C)"
-
-msgid "Water temperature ahead, May (°C)"
-msgstr "İlerideki su sıcaklığı, Mayıs (°C)"
-
-msgid "Water temperature ahead, November (°C)"
-msgstr "İlerideki su sıcaklığı, Kasım (°C)"
-
-msgid "Water temperature ahead, October (°C)"
-msgstr "İlerideki su sıcaklığı, Ekim (°C)"
-
-msgid "Water temperature ahead, September (°C)"
-msgstr "İlerideki su sıcaklığı, Eylül (°C)"
 
 msgid "Water treatment"
 msgstr "Su arıtma"
@@ -19112,6 +19252,9 @@ msgstr "Her kütüphane belgesinin hangi balık türleriyle ilgili olduğu."
 
 msgid "Which species each slaughter facility takes."
 msgstr "Her kesimhanenin hangi türleri aldığı."
+
+msgid "Which temperature profile applies to which fish, from which day."
+msgstr "Hangi sıcaklık profilinin hangi balığa hangi günden itibaren uygulandığı."
 
 msgid ""
 "Which template a unit’s card gets: a rule for one unit, system, system type, species or kind of "
@@ -20046,6 +20189,9 @@ msgstr ""
 "örn. 10.1016/j.aquaculture.2019.01.001; doi.org bağlantısı DOI olarak okunur. Kütüphanedeki iki "
 "belge aynı DOI’ye sahip olamaz."
 
+msgid "e.g. 12"
+msgstr "ör. 12"
+
 msgid "e.g. 12345"
 msgstr "örn. 12345"
 
@@ -20235,6 +20381,9 @@ msgstr "örn. SYS-001"
 msgid "e.g. Salmo salar"
 msgstr "örn. Salmo salar"
 
+msgid "e.g. Salmon smolt, RAS hall A"
+msgstr "ör. Somon smolt, RAS salon A"
+
 msgid "e.g. Salmonidae"
 msgstr "örn. Salmonidae"
 
@@ -20307,6 +20456,9 @@ msgstr "sonu bilinmiyor"
 
 msgid "ended"
 msgstr "sona erdi"
+
+msgid "entered"
+msgstr "girilen"
 
 #, python-format
 msgid "entered as %(value)s mg/L PO₄"
@@ -20522,6 +20674,9 @@ msgstr "grup düzeyi"
 msgid "group levels"
 msgstr "grup düzeyleri"
 
+msgid "half way"
+msgstr "orta nokta"
+
 msgid "handling acknowledgement"
 msgstr "elleçleme onayı"
 
@@ -20732,6 +20887,9 @@ msgid ""
 "measured before the channel’s pH scale was changed (%(time)s): the scale it was measured on is "
 "not known"
 msgstr "kanalın pH ölçeği değiştirilmeden önce ölçüldü (%(time)s): ölçüldüğü ölçek bilinmiyor"
+
+msgid "measured, held"
+msgstr "ölçülen, sabit"
 
 msgid "medicine"
 msgstr "ilaç"
@@ -21169,6 +21327,12 @@ msgstr "üretim planı"
 msgid "production plans"
 msgstr "üretim planları"
 
+msgid "profile assignment"
+msgstr "profil ataması"
+
+msgid "profile assignments"
+msgstr "profil atamaları"
+
 msgid "protocol assignment"
 msgstr "protokol ataması"
 
@@ -21421,8 +21585,8 @@ msgid "target on %(date)s, at %(temperature)s °C held"
 msgstr "hedefe %(date)s tarihinde, %(temperature)s °C sabit"
 
 #, python-format
-msgid "target on %(date)s, at the site’s monthly temperatures"
-msgstr "hedef %(date)s, sahanın aylık sıcaklıklarıyla"
+msgid "target on %(date)s, on the temperature profile %(profile)s"
+msgstr "hedef %(date)s, %(profile)s sıcaklık profiliyle"
 
 msgid "target reached"
 msgstr "hedefe ulaşıldı"
@@ -21432,6 +21596,18 @@ msgstr "görev"
 
 msgid "tasks"
 msgstr "görevler"
+
+msgid "temperature profile"
+msgstr "sıcaklık profili"
+
+msgid "temperature profile point"
+msgstr "sıcaklık profili noktası"
+
+msgid "temperature profile points"
+msgstr "sıcaklık profili noktaları"
+
+msgid "temperature profiles"
+msgstr "sıcaklık profilleri"
 
 msgid "the 7th of the next month"
 msgstr "sonraki ayın 7’si"

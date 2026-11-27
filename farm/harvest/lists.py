@@ -133,7 +133,7 @@ def _forecast(row):
 
 def forecast_said(forecast):
     """What a row says under its estimate now, once for both looks (the classic template draws the same lines): the day
-    the target is reached and at what temperature (held, or the site's months), then the feed to it and the economic
+    the target is reached and at what temperature (a temperature profile's, or the measured one held), then the feed to it and the economic
     FCR of those days; why it is not reached (`warn`); or that the fish are there already (`reached_already`)."""
     from ..templatetags.feeding import fcr, feed_kg
     said = {'lines': [], 'reached_already': False, 'warn': False}
@@ -142,8 +142,9 @@ def forecast_said(forecast):
     elif not forecast.reached:
         said['lines'], said['warn'] = ([str(forecast.why)] if forecast.why else []), True
     else:
-        if forecast.monthly:
-            reached = _('target on %(date)s, at the site’s monthly temperatures') % {'date': _day(forecast.day)}
+        if forecast.profiles and forecast.held is None:
+            reached = _('target on %(date)s, on the temperature profile %(profile)s') % {
+                'date': _day(forecast.day), 'profile': ', '.join(profile.name for profile in forecast.profiles)}
         else:
             reached = _('target on %(date)s, at %(temperature)s °C held') % {
                 'date': _day(forecast.day), 'temperature': floatformat(forecast.temperature_c, '1')}

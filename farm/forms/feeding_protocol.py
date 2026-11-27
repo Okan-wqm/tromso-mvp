@@ -1,23 +1,21 @@
 """The forms of Operations › Feeding › Protocols and Assignments: a protocol's general fields (a tab of core.crud), its
 feeding table (a grid of bands by temperature columns, saved whole by farm/feeding/protocols.py) and the assignment
 dialogs (several units at once on create, one row on edit)."""
-from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 
 from django import forms
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.utils.translation import gettext_lazy as _, ngettext
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from core.crud import DRAFT, CodedFormMixin, TabbedForm, tab_fields
-from core.widgets import DayInput
 
-from ..feeding import assignments
-from ..models import Batch, Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species, StockMovement, Tank
+
+from ..models import Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, Species
 from ..models.feeding_protocol import (
     BETWEEN_FIELDS, FIXED_ONCE_ASSIGNED, MAX_SFR, TEMPERATURE, BetweenBands, ProtocolStatus,
 )
-from ..stock.dates import earliest, local_today, too_old
+from .assignment import HELP, AssignmentBase, NewAssignmentBase, SubjectChoice, edit_tabs, new_tabs
 
 DECIMAL = {'inputmode': 'decimal'}
 MAX_COLUMNS = 12      # temperature columns a table can have: what a screen shows side by side
@@ -259,161 +257,30 @@ def _drafted_rows(draft, columns):
 
 
 # ---- assignments ------------------------------------------------------------------------------------------
-class UnitChoices(forms.ModelMultipleChoiceField):
-    def label_from_instance(self, unit):
-        place = unit.production_department.name
-        if unit.production_department.site:
-            place = f'{place} · {unit.production_department.site.name}'
-        return f'{unit.code} · {unit.name} · {place}'
+class NewAssignmentForm(NewAssignmentBase):
+    """Assigns an active protocol (farm/forms/assignment.py: the dialog shared with the temperature profiles)."""
 
+    tabs = new_tabs('protocol')
+    select_label = _('Select an active protocol')
+    units_help = _('Units only: the protocol feeds whatever is in them. With a batch: that batch in these units only.')
 
-class BatchChoice(forms.ModelChoiceField):
-    def label_from_instance(self, batch):
-        return f'{batch.code} · {batch.species}' + (f' · {batch.name}' if batch.name else '')
-
-
-class ProtocolChoice(forms.ModelChoiceField):
-    def label_from_instance(self, protocol):
-        return f'{protocol.name} · {protocol.species}'
-
-
-def batches_in_stock():
-    """The live batches with fish now (farm.stock.read.present), the ones a protocol can be assigned to."""
-    from ..stock import read
-    return (Batch.objects.filter(pk__in=read.present('batch_id').values('batch_id')).select_related('species')
-            .order_by('-input_date', '-code'))
-
-
-def within_window(day, stored=None, unit=None):
-    """A first day changed or new is at most the correction window back, as every daily record (farm/stock/dates.py):
-    the days before are history."""
-    if day != stored and day < earliest(unit):
-        raise ValidationError(too_old(_('An assignment can start at most %(days)d days back.')))
-    return day
-
-
-ASSIGNMENT_TABS = [('assignment', _('Assignment'), list(assignments.FIELDS))]
-NEW_ASSIGNMENT_TABS = [('assignment', _('Assignment'),
-                        ['protocol', 'units', 'batch', 'valid_from', 'valid_until', 'notes'])]
-HELP = {
-    'valid_from': _('The first day it feeds by, on the farm’s clock.'),
-    'valid_until': _('Optional: the last day. Empty: until it is ended.'),
-}
-
-
-class NewAssignmentForm(TabbedForm):
-    """Assigns an active protocol: to units (one or more: a row each), to a whole batch (one row, which follows the
-    batch through transfers and splits), or to a batch in chosen units (a row per unit). The units and the batch
-    chosen say which; the rows are written together, with one group (ProtocolAssignment.group_id)."""
-
-    tabs = NEW_ASSIGNMENT_TABS
-    units = UnitChoices(label=_('Units'), queryset=Tank.objects.none(), required=False,
-                        widget=forms.CheckboxSelectMultiple,
-                        help_text=_('Units only: the protocol feeds whatever is in them. With a batch: that batch in '
-                                    'these units only.'))
-
-    class Meta:
+    class Meta(NewAssignmentBase.Meta):
         model = ProtocolAssignment
-        fields = ['protocol', 'batch', 'valid_from', 'valid_until', 'notes']
-        field_classes = {'protocol': ProtocolChoice, 'batch': BatchChoice}
-        widgets = {'valid_from': DayInput(),
-                   'valid_until': DayInput(),
-                   'notes': forms.Textarea(attrs={'rows': 2})}
+        fields = ['protocol', *NewAssignmentBase.Meta.fields]
+        field_classes = {**NewAssignmentBase.Meta.field_classes, 'protocol': SubjectChoice}
         help_texts = {**HELP, 'batch': _('A batch alone: the protocol follows it into every unit it is moved to.')}
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['protocol'].queryset = (FeedingProtocol.objects.filter(status=ProtocolStatus.ACTIVE)
-                                            .select_related('species').order_by('name'))
-        self.fields['protocol'].empty_label = _('Select an active protocol')
-        self.fields['units'].queryset = (Tank.objects.select_related('production_department__site')
-                                         .order_by('code'))
-        self.fields['batch'].queryset = batches_in_stock()
-        self.fields['batch'].empty_label = _('No batch')
-        self.fields['valid_from'].initial = local_today()
-        self.rows = []
-        self.unvisited = []
 
-    def clean_valid_from(self):
-        return within_window(self.cleaned_data['valid_from'])
+class AssignmentForm(AssignmentBase):
+    """One protocol assignment row (farm/forms/assignment.py)."""
 
-    def _check_conditional_constraints(self, cleaned):
-        """The form's own record is not one of the rows it writes (a row per unit chosen): each row is checked
-        against the constraints in clean()."""
+    tabs = edit_tabs('protocol')
+    kept_message = _('The days before yesterday keep their protocol: the last day is yesterday at the earliest.')
 
-    def clean(self):
-        cleaned = super().clean()
-        if self.errors:
-            return cleaned
-        units, batch = list(cleaned.get('units') or []), cleaned.get('batch')
-        if not units and batch is None:
-            self.add_error('units', _('Choose units, a batch, or a batch and units.'))
-            return cleaned
-        self.rows, errors = assignments.rows(cleaned['protocol'], units, batch, cleaned['valid_from'],
-                                             cleaned.get('valid_until'), cleaned.get('notes', ''))
-        for error in errors:
-            # What concerns a field the form shows is said once by the form's own check of the record; what
-            # concerns the row as a whole (another protocol on those days) is said per unit.
-            if error.field != NON_FIELD_ERRORS:
-                continue
-            if error.unit is not None:
-                self.add_error('units', f'{error.unit.code}: {error.message}')
-            else:
-                self.add_error('batch', error.message)
-        if batch is not None:
-            visited = set(StockMovement.objects.filter(batch=batch, operation__is_deleted=False)
-                          .values_list('unit_id', flat=True))
-            self.unvisited = [unit for unit in units if unit.pk not in visited]
-        return cleaned
-
-    def notices(self):
-        """What to tell after saving: units the batch has not been in yet (planning a move is allowed)."""
-        if not self.unvisited:
-            return []
-        batch = self.cleaned_data['batch']
-        return [ngettext('%(batch)s has not been in %(units)s yet: the row applies once it is.',
-                         '%(batch)s has not been in %(units)s yet: the rows apply once it is.', len(self.unvisited))
-                % {'batch': batch.code, 'units': ', '.join(unit.code for unit in self.unvisited)}]
-
-
-class AssignmentForm(TabbedForm):
-    """One assignment row. Its unit and batch are chosen once. Before its first day everything else may change;
-    from then on only its last day and notes (the days it fed keep their protocol), and its last day is yesterday at
-    the earliest (ending it today still feeds today by it)."""
-
-    tabs = ASSIGNMENT_TABS
-    fixed_after_creation = ('unit', 'batch')
-
-    class Meta:
+    class Meta(AssignmentBase.Meta):
         model = ProtocolAssignment
-        fields = tab_fields(ASSIGNMENT_TABS)
-        field_classes = {'protocol': ProtocolChoice, 'batch': BatchChoice}
-        widgets = NewAssignmentForm.Meta.widgets
-        help_texts = HELP
+        fields = tab_fields(edit_tabs('protocol'))
+        field_classes = {**AssignmentBase.Meta.field_classes, 'protocol': SubjectChoice}
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        stored = self.instance
-        self.today = stored.today()
-        protocols = FeedingProtocol.objects.filter(status=ProtocolStatus.ACTIVE)
-        if stored.protocol_id:
-            protocols = protocols | FeedingProtocol.objects.filter(pk=stored.protocol_id)
-        self.fields['protocol'].queryset = protocols.select_related('species').order_by('name')
-        self.fields['batch'].queryset = Batch.all_objects.select_related('species')
-        self.fields['unit'].queryset = Tank.all_objects.all()
-        self.started = stored.pk is not None and stored.valid_from <= self.today
-        if self.started:
-            for name in ('protocol', 'valid_from'):
-                self.fields[name].disabled = True
-                self.fields[name].help_text = _('Fixed: the row has started. End it and add another to change it.')
 
-    def clean_valid_until(self):
-        until = self.cleaned_data.get('valid_until')
-        stored = self.instance.valid_until
-        if self.started and until != stored and until is not None and until < self.today - timedelta(days=1):
-            raise ValidationError(_('The days before yesterday keep their protocol: the last day is yesterday at '
-                                    'the earliest.'))
-        return until
-
-    def clean_valid_from(self):
-        return within_window(self.cleaned_data['valid_from'], self.instance.valid_from, self.instance.unit)
+ASSIGNMENT_TABS = AssignmentForm.tabs

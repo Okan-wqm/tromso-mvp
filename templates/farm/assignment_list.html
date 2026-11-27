@@ -1,9 +1,10 @@
 {% extends "crud/list.html" %}
 {% load i18n stock feeding farm_words %}
-{% comment %} Operations › Feeding › Assignments: which protocol feeds which fish from which day. The rows one dialog
+{% comment %} Operations › Feeding › Protocol assignments and Profile assignments (farm.resources.assignment_tab): which table
+   (a feeding protocol, a temperature profile: `kind`) applies to which fish from which day. The rows one dialog
    wrote (several units at once) are listed together; "Feeds now" counts the fish the row applies to today, after
    the more specific rows (batch in unit, then unit, then whole batch).{% endcomment %}
-{% block search_placeholder %}{% trans "Search by protocol, unit or batch" %}{% endblock %}
+{% block search_placeholder %}{{ kind.search }}{% endblock %}
 {% block filters %}{% farm_words as fw %}
 <form method="get" class="toolbar-filter">
   {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
@@ -24,10 +25,10 @@
     <option value="">{{ fw.all_batches }}</option>
     {% for batch in batches %}<option value="{{ batch.pk }}"{% if chosen_batch == batch.pk|stringformat:"s" %} selected{% endif %}>{{ batch.code }}</option>{% endfor %}
   </select>
-  <label class="sr-only" for="protocol-filter">{{ fw.protocol }}</label>
-  <select id="protocol-filter" name="protocol" data-autosubmit>
-    <option value="">{{ fw.all_protocols }}</option>
-    {% for protocol in protocol_list %}<option value="{{ protocol.pk }}"{% if chosen_protocol == protocol.pk|stringformat:"s" %} selected{% endif %}>{{ protocol.name }}</option>{% endfor %}
+  <label class="sr-only" for="subject-filter">{{ kind.label }}</label>
+  <select id="subject-filter" name="{{ kind.subject }}" data-autosubmit>
+    <option value="">{{ kind.all }}</option>
+    {% for each in subject_list %}<option value="{{ each.pk }}"{% if chosen_subject == each.pk|stringformat:"s" %} selected{% endif %}>{{ each.name }}</option>{% endfor %}
   </select>
   <label class="sr-only" for="period-filter">{{ fw.when }}</label>
   <select id="period-filter" name="period" data-autosubmit>
@@ -37,20 +38,20 @@
   <noscript><button type="submit" class="button button-ghost">{% trans "Filter" %}</button></noscript>
 </form>
 {% endblock %}
-{% block notice %}{% farm_words as fw %}<p class="panel-help">{{ fw.a_protocol_is_assigned_to_units_it }}</p>{% endblock %}
-{% block empty_text %}{% trans "Which feeding protocol feeds which fish, from which day." %}{% endblock %}
+{% block notice %}{% farm_words as fw %}<p class="panel-help">{{ kind.how }}</p>{% endblock %}
+{% block empty_text %}{{ kind.empty }}{% endblock %}
 {% block items %}{% farm_words as fw %}
 <div class="table-wrap">
   <table class="data-table">
     <thead>
-      <tr><th scope="col">{{ fw.protocol }}</th><th scope="col">{{ fw.applies_to }}</th><th scope="col">{{ fw.unit }}</th><th scope="col">{{ fw.batch }}</th><th scope="col">{{ fw.from }}</th><th scope="col">{{ fw.until }}</th><th scope="col" class="num">{{ fw.feeds_now }}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
+      <tr><th scope="col">{{ kind.label }}</th><th scope="col">{{ fw.applies_to }}</th><th scope="col">{{ fw.unit }}</th><th scope="col">{{ fw.batch }}</th><th scope="col">{{ fw.from }}</th><th scope="col">{{ fw.until }}</th><th scope="col" class="num">{{ kind.now }}</th><th scope="col"><span class="sr-only">{% trans "Actions" %}</span></th></tr>
     </thead>
     {% regroup objects by group_id as groups %}
     {% for group in groups %}
     <tbody class="assignment-group">
       {% for row in group.list %}
       <tr>
-        <td>{% if can_change %}<a class="row-title" href="{% url 'farm:protocolassignment_edit' row.pk %}" data-modal>{{ row.protocol.name }}</a>{% else %}<span class="row-title">{{ row.protocol.name }}</span>{% endif %}<span class="row-sub">{{ row.protocol.species.common_name }}{% if row.protocol.status != "active" %} · {{ row.protocol.get_status_display }}{% endif %}</span></td>
+        <td>{% if can_change %}<a class="row-title" href="{% url edit_name row.pk %}" data-modal>{{ row.subject.name }}</a>{% else %}<span class="row-title">{{ row.subject.name }}</span>{% endif %}<span class="row-sub">{{ row.subject.species.common_name }}{% if row.subject.status != "active" %} · {{ row.subject.get_status_display }}{% endif %}</span></td>
         <td>{{ row.scope.label }}</td>
         <td>{% if row.unit %}{{ row.unit.code }}{% if row.unit.is_deleted %} <span class="badge badge-voided">{{ fw.deleted }}</span>{% endif %}<span class="row-sub">{{ row.unit.production_department.name }}{% if row.unit.production_department.site %} · {{ row.unit.production_department.site.name }}{% endif %}</span>{% else %}<span class="muted">{{ fw.wherever_it_is }}</span>{% endif %}</td>
         <td>{% if row.batch %}{{ row.batch.code }}{% if row.batch.is_deleted %} <span class="badge badge-voided">{{ fw.voided }}</span>{% endif %}<span class="row-sub">{{ row.batch.species.common_name }}</span>{% else %}<span class="muted">{{ fw.whatever_is_in_it }}</span>{% endif %}</td>
@@ -58,8 +59,8 @@
         <td class="nowrap">{% if row.valid_until %}{{ row.valid_until|date:"DATE_FORMAT" }}{% else %}<span class="muted">{{ fw.open }}</span>{% endif %}{% if row.valid_until and row.valid_until < today %}<span class="row-sub">{{ fw.ended }}</span>{% elif row.valid_from > today %}<span class="row-sub">{{ fw.starts_later }}</span>{% endif %}</td>
         <td class="num">{% with fish=feeds_now|lookup:row.pk %}{% if fish %}{{ fish|fish }}{% else %}<span class="muted">{{ fw.no_fish }}</span>{% endif %}{% endwith %}</td>
         <td class="row-actions">
-          {% if can_change %}<a class="icon-button" href="{% url 'farm:protocolassignment_edit' row.pk %}" data-modal title="{{ fw.edit }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{{ fw.edit }}</span></a>{% endif %}
-          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url 'farm:protocolassignment_delete' row.pk %}" data-modal title="{{ fw.delete }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{{ fw.delete }}</span></a>{% endif %}
+          {% if can_change %}<a class="icon-button" href="{% url edit_name row.pk %}" data-modal title="{{ fw.edit }}">{% include "icons/_icon.html" with name="pencil" %}<span class="sr-only">{{ fw.edit }}</span></a>{% endif %}
+          {% if can_delete %}<a class="icon-button icon-button-danger" href="{% url delete_name row.pk %}" data-modal title="{{ fw.delete }}">{% include "icons/_icon.html" with name="trash" %}<span class="sr-only">{{ fw.delete }}</span></a>{% endif %}
         </td>
       </tr>
       {% endfor %}

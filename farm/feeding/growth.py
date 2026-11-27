@@ -6,6 +6,7 @@ weight.
 - `step(feed, fcr, uneaten_pct)`: of the feed given, the uneaten share is not eaten; the fish grow by the feed eaten
   ÷ the FCR. The FCR is the biological one (on feed eaten); the economic one (on feed given) is
   `economic_fcr(fcr, uneaten_pct)` = FCR ÷ (1 − uneaten), computed and shown, never entered.
+- `between(points, at, step)`: a temperature profile's reading, smooth (`interpolate`) or a step at each point.
 - `interpolate(anchors, at)`: a value that changes over the fish's weight without a jump. Each band's value sits at
   the band's anchor weight (`anchor`: the middle of the band; a band without an upper weight has no middle, so its
   lower weight); between two neighbouring anchors the value is linear, before the first and after the last it is
@@ -64,6 +65,20 @@ def interpolate(anchors, at):
     return anchors[-1][1]
 
 
+def between(points, at, step=False):
+    """A value given at points of weight ((weight, value) in weight order, at least one), at `at`: smooth
+    (`interpolate`), or with a step at each point (`step`: the value of the last point at or below `at`, the first
+    point's before it). A temperature profile's rule; a feeding table's bands read theirs by band (ration.Table)."""
+    if not step:
+        return interpolate(points, at)
+    found = points[0][1]
+    for weight, value in points:
+        if weight > at:
+            break
+        found = value
+    return found
+
+
 def survival_a_day(mortality_pct_month):
     """The share of the fish alive after one day; 1 without an expected mortality."""
     if not mortality_pct_month:
@@ -83,6 +98,7 @@ class Terms:
     mortality_pct_month: object = None
     temperature_c: object = None
     fasting: bool = False
+    temperature_from: object = None   # what the temperature was read from: a profile, or None (measured, held)
 
 
 @dataclass(frozen=True)
@@ -106,6 +122,7 @@ class Point:
     uneaten_pct: object = 0
     temperature_c: object = None
     fasting: bool = False
+    temperature_from: object = None
 
     @property
     def biomass_kg(self):
@@ -196,6 +213,6 @@ def curve(start, weight_g, fish, target_g, horizon_days, terms_of):
         alive = fish * survival_a_day(terms.mortality_pct_month)
         points.append(Point(day, weight_g, alive, fed.given * fish / 1000, fed.eaten * fish / 1000,
                             fed.uneaten * fish / 1000, fed.growth * fish / 1000, to_date, fcr, uneaten_pct,
-                            terms.temperature_c, terms.fasting))
+                            terms.temperature_c, terms.fasting, terms.temperature_from))
         fish = alive
     return ended(horizon=True)

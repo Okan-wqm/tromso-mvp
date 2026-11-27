@@ -1,6 +1,6 @@
 """The new look's lists (core/listprops.py, island `list-page`) of Operations › Feeding's two tabs, Protocols and
 Assignments (farm/resources/feeding_protocol.py: `list_rows`, `list_filters`), worded as their classic templates word them
-(templates/farm/feeding_protocol_list.html, protocol_assignment_list.html: the same msgids) from the rows and the context
+(templates/farm/feeding_protocol_list.html, assignment_list.html: the same msgids) from the rows and the context
 the one list view (core.crud.ListView) read for the classic page."""
 from django.template.defaultfilters import floatformat, truncatechars
 from django.utils import formats
@@ -65,6 +65,7 @@ def protocols(view, objects, context):
 
 
 def assignment_filters(view, context):
+    kind = context['kind']
     filters = []
     if len(context['sites']) > 1:
         filters.append(L.choice('site', str(words.SITE), context['chosen_site'],
@@ -74,16 +75,17 @@ def assignment_filters(view, context):
                  [('', str(words.ALL_UNITS)), *((unit.pk, unit.code) for unit in context['units'])]),
         L.choice('batch', str(words.BATCH), context['chosen_batch'],
                  [('', str(words.ALL_BATCHES)), *((batch.pk, batch.code) for batch in context['batches'])]),
-        L.choice('protocol', str(words.PROTOCOL), context['chosen_protocol'],
-                 [('', str(words.ALL_PROTOCOLS)), *((each.pk, each.name) for each in context['protocol_list'])]),
+        L.choice(kind['subject'], str(kind['label']), context['chosen_subject'],
+                 [('', str(kind['all'])), *((each.pk, each.name) for each in context['subject_list'])]),
         L.choice('period', str(words.WHEN), context['chosen_period'], [('', str(words.ANY_TIME)), *context['periods']]),
     ]
 
 
 def assignments(view, objects, context):
-    """Assignments: which protocol feeds which fish from which day, and the fish each row feeds now (after the more
-    specific rows); the rows one dialog wrote stay next to each other (the view's order)."""
-    today, request, resource = context['today'], view.request, view.resource
+    """Assignments (of feeding protocols, of temperature profiles: the context's `kind`): which table applies to which
+    fish from which day, and the fish each row applies to now (after the more specific rows); the rows one dialog wrote
+    stay next to each other (the view's order)."""
+    today, request, resource, kind = context['today'], view.request, view.resource, context['kind']
 
     def unit_cell(row):
         if not row.unit:
@@ -114,11 +116,11 @@ def assignments(view, objects, context):
 
     rows = []
     for row in objects:
-        protocol = row.protocol
+        subject = row.subject
         fed = context['feeds_now'].get(row.pk)
         rows.append(L.row(row.pk, {
-            'protocol': L.title(view, context, row, protocol.name, sub=[protocol.species.common_name + (
-                f' · {protocol.get_status_display()}' if protocol.status != 'active' else '')]),
+            kind['subject']: L.title(view, context, row, subject.name, sub=[subject.species.common_name + (
+                f' · {subject.get_status_display()}' if subject.status != 'active' else '')]),
             'scope': L.cell(row.scope.label),
             'unit': unit_cell(row), 'batch': batch_cell(row),
             'from': L.cell(formats.date_format(row.valid_from, 'DATE_FORMAT')),
@@ -126,9 +128,9 @@ def assignments(view, objects, context):
             'fish': L.cell(fish(fed) if fed else str(words.NO_FISH)),
         }, actions(row)))
     return {
-        'columns': [L.column('protocol', str(words.PROTOCOL)), L.column('scope', str(words.APPLIES_TO)), L.column('unit', str(words.UNIT)),
+        'columns': [L.column(kind['subject'], str(kind['label'])), L.column('scope', str(words.APPLIES_TO)), L.column('unit', str(words.UNIT)),
                     L.column('batch', str(words.BATCH)), L.column('from', str(words.FROM)), L.column('until', str(words.UNTIL)),
-                    L.column('fish', str(words.FEEDS_NOW), numeric=True)],
-        'notices': [L.notice('how', 'neutral', str(words.A_PROTOCOL_IS_ASSIGNED_TO_UNITS_IT))],
+                    L.column('fish', str(kind['now']), numeric=True)],
+        'notices': [L.notice('how', 'neutral', str(kind['how']))],
         'rows': rows,
     }

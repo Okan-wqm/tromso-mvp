@@ -112,6 +112,10 @@ WORKSPACES = [
                 Entry(_('Records'), 'farm:feeding_records', 'clipboard-list', 'farm.view_feedingrecord'),
                 Entry(_('Protocols'), 'farm:feedingprotocol_list', 'table', 'farm.view_feedingprotocol'),
                 Entry(_('Assignments'), 'farm:protocolassignment_list', 'link', 'farm.view_protocolassignment'),
+                # The water temperature over the fish's weight the production plans read for the days ahead (owner
+                # decisions 15-17), and where it applies.
+                Entry(_('Temperature profiles'), 'farm:temperatureprofile_list', 'activity', 'farm.view_temperatureprofile'),
+                Entry(_('Profile assignments'), 'farm:temperatureprofileassignment_list', 'link', 'farm.view_temperatureprofileassignment'),
             ]),
             Group(_('Harvest'), area='stock', entries=[
                 Entry(pgettext_lazy('page', 'Harvested'), 'farm:harvests', 'package-check', 'farm.view_harvestrecord'),

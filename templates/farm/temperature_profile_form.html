@@ -1,0 +1,26 @@
+{% extends "crud/form.html" %}
+{% load i18n farm_words %}
+{% comment %} A temperature profile (farm.resources.temperature_profile): its general fields (crud/form.html), its points on a
+   tab of their own, saved as a list (core.crud.RowList) while it is not assigned, and the temperature it gives over the
+   fish's weight with Duplicate. The new look draws the same words (TemperatureProfileResource.next_panels).{% endcomment %}
+{% block extra_tabs %}{% farm_words as fw %}<button type="button" role="tab" class="ui-tab" data-tab="points">{{ row_words.points.title }}</button>{% if object %}<button type="button" role="tab" class="ui-tab" data-tab="curve">{{ fw.temperature_over_the_weight }}</button>{% endif %}{% endblock %}
+{% block extra_panels %}{% farm_words as fw %}
+{% if object %}{% url 'farm:temperatureprofile_points' object.pk as action %}{% endif %}
+{% include "crud/_row_list.html" with rows=points tab="points" words=row_words.points kind="profile-point-row" %}
+{% if object %}
+<section class="tab-panel" data-panel="curve" aria-labelledby="curve-title">
+  <h3 class="panel-title" id="curve-title">{{ fw.temperature_over_the_weight }}</h3>
+  {% if used %}
+  {% include "farm/_props_table.html" with columns=used.columns rows=used.rows label=used.title %}
+  {% for line in used.lines %}<p class="panel-help">{{ line }}</p>{% endfor %}
+  {% endif %}
+  {% if duplicate_url %}
+  <form method="post" action="{{ duplicate_url }}" class="duplicate-form">
+    {% csrf_token %}
+    <button type="submit" class="ui-btn">{{ fw.duplicate }}</button>
+    <span class="help">{{ fw.a_draft_copy_with_these_points }}</span>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

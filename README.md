@@ -1468,6 +1468,27 @@ the correction window back (Platform settings). Before its first day a row may c
 The list groups the rows of one dialog, filters by site, unit, batch, protocol and in force / starting later /
 ended, and counts the fish each row feeds today after the more specific rows.
 
+**Temperature profiles** (Operations › Feeding › Temperature profiles, table `temperature_profiles` with its points
+`temperature_profile_points`; owner decisions 15–17) are reference data per species like a protocol: points of fish
+weight (g) → water temperature (°C), read in between (smooth, the default) or from each point on (step), the first
+point's before it and the last point's after it (`growth.between`, the protocols' own rule). Draft, active, retired and
+fixed once assigned exactly as a protocol (`farm/models/assignment.py`, `Assignable`: one rule for both); the points
+are a row list (core.crud.RowList, at most 30, a weight once) on their own tab while the profile is not assigned, and
+under them "Temperature over the fish's weight" shows what the profile gives at each point and half way between two,
+by the function the plan reads (`farm/feeding/profiles.py`, `used`); Duplicate makes a draft copy. **Profile
+assignments** (`temperature_profile_assignments`) are the protocols' rows for profiles: the same three targets, the same
+exclusion constraints (`assignment_constraints`), the same dialog (`farm/forms/assignment.py`), the same list
+(`farm/resources/assignment_tab.py`, `templates/farm/assignment_list.html`) and **the one resolver**
+(`farm/feeding/resolve.py`, which the protocols' rows are read by too): batch in unit, then unit, then whole batch, so
+after a grading or a split each part reads the row of its own place without anything entered again (decision 19). A
+profile is read for the days ahead only; the past keeps the temperatures measured.
+
+**The projection as a service** (decision 20): `farm.harvest.forecast.projection(unit id, batch id, start day=None)`
+is the one read-only entry for planning tools and, later, the AI agents (they interpret and propose; they never write a
+plan): its output is documented on the function (each day's weight, fish, biomass, feed, eaten, uneaten, growth, feed to
+date, FCR, uneaten share, temperature and its source, fasting; the target day, the feed and the economic FCR), the numbers
+from one pure function, `growth.curve`.
+
 **The ration** of a batch in a unit on a day (`farm/feeding/ration.py`): the protocol by the rule above; the band
 by the fish's **estimated** average (owner decision Q7); the **temperature** of the unit, else of its system's loop,
 then of the systems that system is nested in (`farm/feeding/temperature.py`, the water samples' series of
@@ -2641,9 +2662,11 @@ temperature) and grow by the growth rule (the feed less the uneaten share, ÷ th
 band's expected mortality takes its share of the fish at the day's end; a fasting day before a planned harvest or
 transport gives no feed and no growth; no protocol, a weight outside the bands or no temperature stops it with the
 reason, never a default, and so does the platform owner's horizon (Platform settings, "A production plan looks ahead",
-730 days until they set another). The temperature ahead is the site's water temperature of the day's month when the
-site has its twelve (Setup › Sites, tab Plan temperatures: all twelve or none, a database check), else the unit's
-latest temperature held; the row says which, and a temperature held that is not fresh says how old it is. The row says the day the target is reached, the feed to it and the economic
+730 days until they set another). The temperature of a day ahead is the **temperature profile** in force for the batch in the
+unit that day at the fish's projected weight (below), else the unit's latest measured temperature held; each day says
+which (the plan's Temperature column, the file's `temperature_source`), and a temperature held that is not fresh says how
+old it is. The SFR is then read both ways, between two bands over the weight and between two columns over that
+temperature. The row says the day the target is reached, the feed to it and the economic
 FCR of those days (feed given ÷ growth). Past days are never planned: the estimate grows on recorded feedings only.
 Nothing is stored.
 
@@ -6871,6 +6894,8 @@ runs the server:
 | `/operations/production-plans/` | Operations › Harvest › Production plans: the target weight per batch in stock |
 | `/operations/production-plans/growth/<unit>/<batch>/` | A batch's growth plan: `?from=<day>` from a measured point, `?format=csv` every day as a file |
 | `/weight-sources/` | Setup › Reference data › Weight sources: how an average weight was measured |
+| `/operations/feeding/temperature-profiles/` | Operations › Feeding › Temperature profiles: the water temperature over the fish's weight, per species |
+| `/operations/feeding/profile-assignments/` | Operations › Feeding › Profile assignments: which profile applies to which fish from which day |
 | `/operations/units/<id>/harvest/?plan=<id>` | A harvest (or `transfer/`, a transfer) recorded from its plan; `next=` goes back to the plan |
 | `/slaughter-facilities/` | Harvest and logistics › Slaughter facilities |
 | `/handling-rules/` | Reference data › Handling rules |

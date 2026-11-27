@@ -12,26 +12,25 @@ An assignment says which protocol feeds which fish from which day: a unit, a who
 through transfers and splits), or a batch in one unit. One row per target, so the database keeps one
 protocol in force per unit, per batch and per batch in a unit (three exclusion constraints); the most
 specific row wins on read (batch in unit, then unit, then whole batch)."""
-import uuid
 from decimal import Decimal
 
 from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import DecimalRangeField, RangeOperators
-from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Func, Q, Value
 from django.db.models.functions import Lower
-from django.utils import timezone
-from django.utils.translation import gettext, gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from core.models import AuditedModel
-from core.ranges import DateRange
+from core.ranges import DateRange  # noqa: F401 (older migrations name it here: experiments 0001)
 
 from ..water import parameters
 from .feed import MAX_WEIGHT_G, Feed
 from .feeding import MAX_MEALS
-from .site import zone_of
+from .assignment import (  # noqa: F401 (the names this module has always given)
+    Assignable, BetweenBands, ProtocolStatus, Scope, TargetedAssignment, assignment_constraints,
+)
 from .species import Species
 from .stock import Batch
 from .tank import Tank
@@ -65,21 +64,9 @@ class NumRange(Func):
     output_field = DecimalRangeField()
 
 
-class ProtocolStatus(models.TextChoices):
-    DRAFT = 'draft', _('Draft')
-    ACTIVE = 'active', _('Active')
-    RETIRED = 'retired', _('Retired')
-
-
 # What a protocol's rations and growth are read from, beside its table: fixed once it is assigned (owner decision Q3).
 FIXED_ONCE_ASSIGNED = ('species', 'expected_fcr', 'uneaten_pct', 'mortality_pct_month', 'fcr_between',
                        'uneaten_between', 'sfr_between')
-
-
-class BetweenBands(models.TextChoices):
-    """How a quantity of the table is read for fish between two bands (farm/feeding/ration.py, Table)."""
-    SMOOTH = 'smooth', _('Smooth between bands')
-    STEP = 'step', _('Step at the band edge')
 
 
 BETWEEN_FIELDS = ('fcr_between', 'uneaten_between', 'sfr_between')
@@ -89,7 +76,7 @@ def _between(label):
     return models.CharField(label, max_length=6, choices=BetweenBands.choices, default=BetweenBands.SMOOTH)
 
 
-class FeedingProtocol(AuditedModel):
+class FeedingProtocol(Assignable, AuditedModel):
     """A feeding table for one species: weight bands with their feed, meals and expected FCR, and an SFR per band
     and temperature. Source table: farm.feeding_protocols_v2.
 
@@ -156,30 +143,12 @@ class FeedingProtocol(AuditedModel):
         """The temperature columns of its table, in order (read from the bands' cells, prefetched or not)."""
         return sorted({rate.temperature_c for band in self.bands.all() for rate in band.rates.all()})
 
-    def is_assigned(self):
-        """Whether an assignment names it: from then on its table, species and expected FCR are fixed."""
-        return self.pk is not None and ProtocolAssignment.objects.filter(protocol=self).exists()
+    FIXED = FIXED_ONCE_ASSIGNED
+    NEEDS_TABLE = _('Fill in its feeding table first: a protocol without one cannot be active.')
+    FIXED_MESSAGE = _('Fixed: the protocol is assigned. Duplicate it to change it.')
 
-    def clean(self):
-        """The rules of its status and of an assigned protocol, each with its message on the field to change."""
-        super().clean()
-        errors = {}
-        stored = None if self._state.adding else FeedingProtocol.all_objects.filter(pk=self.pk).first()
-        if self.status == ProtocolStatus.ACTIVE and (stored is None or not self.bands.exists()):
-            errors['status'] = gettext('Fill in its feeding table first: a protocol without one cannot be active.')
-        if stored is not None and self.is_assigned():
-            fixed = gettext('Fixed: the protocol is assigned. Duplicate it to change it.')
-            for name in FIXED_ONCE_ASSIGNED:
-                if getattr(self, name) != getattr(stored, name):
-                    errors[name] = fixed
-            if self.status == ProtocolStatus.DRAFT:
-                errors['status'] = gettext('It is assigned: it cannot go back to draft.')
-        if self.status == ProtocolStatus.RETIRED and stored is not None and stored.status != ProtocolStatus.RETIRED:
-            today = timezone.localdate(timezone=zone_of(None))
-            if self.assignments.filter(Q(valid_until__isnull=True) | Q(valid_until__gte=today)).exists():
-                errors['status'] = gettext('It is assigned for today or later: end those assignments first.')
-        if errors:
-            raise ValidationError(errors)
+    def has_table(self):
+        return self.bands.exists()
 
 
 class ProtocolBand(models.Model):
@@ -273,18 +242,7 @@ class ProtocolRate(models.Model):
         return f'{self.temperature_c} °C: {self.sfr_pct.normalize():f} %'
 
 
-class Scope(models.TextChoices):
-    """What an assignment row feeds, from the most specific to the least: the order the ration reads them in."""
-    BATCH_IN_UNIT = 'batch_in_unit', _('Batch in unit')
-    UNIT = 'unit', _('Unit')
-    BATCH = 'batch', _('Whole batch')
-
-
-def _period():
-    return DateRange(F('valid_from'), F('valid_until'), Value('[]'))
-
-
-class ProtocolAssignment(AuditedModel):
+class ProtocolAssignment(TargetedAssignment):
     """A protocol in force for a unit, a whole batch or a batch in one unit, from a day and optionally until a
     day (both included). Source table: farm.feeding_protocol_assignments.
 
@@ -302,7 +260,10 @@ class ProtocolAssignment(AuditedModel):
     assignment onto its units once and never followed a transfer, FP-06); the dates are read (the source ignored
     them, FP-07); no paused state, overrides or suspensions."""
 
-    Scope = Scope
+    SUBJECT = 'protocol'
+    ONLY_ACTIVE = _('Only an active protocol can be assigned; this one is %(status)s.')
+    OTHER_SPECIES = _('%(batch)s is %(species)s; the protocol is for %(protocol_species)s.')
+    STARTED = _('It has started: set its last day instead. The days it fed keep their protocol.')
 
     protocol = models.ForeignKey(FeedingProtocol, on_delete=models.PROTECT, related_name='assignments',
                                  verbose_name=_('Feeding protocol'))
@@ -310,87 +271,13 @@ class ProtocolAssignment(AuditedModel):
                              related_name='protocol_assignments', verbose_name=_('Unit'))
     batch = models.ForeignKey(Batch, null=True, blank=True, on_delete=models.DO_NOTHING,
                               related_name='protocol_assignments', verbose_name=_('Batch'))
-    valid_from = models.DateField(_('From'))
-    valid_until = models.DateField(_('Until'), null=True, blank=True)
-    # The rows one dialog wrote (several units at once), shown together.
-    group_id = models.UUIDField(default=uuid.uuid4, editable=False)
-    notes = models.CharField(_('Notes'), max_length=500, blank=True)
 
     class Meta:
         db_table = 'protocol_assignments'
         ordering = ['-valid_from', '-created_at', 'group_id']
         verbose_name = _('protocol assignment')
         verbose_name_plural = _('protocol assignments')
-        constraints = [
-            models.CheckConstraint(condition=Q(unit__isnull=False) | Q(batch__isnull=False),
-                                   name='chk_protocol_assignments_target',
-                                   violation_error_message=_('Choose a unit, a batch, or both.')),
-            models.CheckConstraint(condition=Q(valid_until__isnull=True) | Q(valid_until__gte=F('valid_from')),
-                                   name='chk_protocol_assignments_period',
-                                   violation_error_message=_('The last day comes on or after the first day.')),
-            ExclusionConstraint(
-                name='excl_protocol_assignments_unit',
-                expressions=[(F('unit'), RangeOperators.EQUAL), (_period(), RangeOperators.OVERLAPS)],
-                condition=Q(batch__isnull=True, is_deleted=False),
-                violation_error_message=_('Another protocol is assigned to this unit on some of these days.')),
-            ExclusionConstraint(
-                name='excl_protocol_assignments_batch',
-                expressions=[(F('batch'), RangeOperators.EQUAL), (_period(), RangeOperators.OVERLAPS)],
-                condition=Q(unit__isnull=True, is_deleted=False),
-                violation_error_message=_('Another protocol is assigned to this batch on some of these days.')),
-            ExclusionConstraint(
-                name='excl_protocol_assignments_batch_in_unit',
-                expressions=[(F('unit'), RangeOperators.EQUAL), (F('batch'), RangeOperators.EQUAL),
-                             (_period(), RangeOperators.OVERLAPS)],
-                condition=Q(unit__isnull=False, batch__isnull=False, is_deleted=False),
-                violation_error_message=_('Another protocol is assigned to this batch in this unit on some of these '
-                                          'days.')),
-        ]
-
-    def __str__(self):
-        target = ' · '.join(part for part in (self.unit.code if self.unit_id else '',
-                                               self.batch.code if self.batch_id else '') if part)
-        return f'{self.protocol} · {target} · {self.valid_from.isoformat()}'
-
-    @property
-    def scope(self):
-        if self.unit_id and self.batch_id:
-            return Scope.BATCH_IN_UNIT
-        return Scope.UNIT if self.unit_id else Scope.BATCH
-
-    def covers(self, day):
-        return self.valid_from <= day and (self.valid_until is None or day <= self.valid_until)
-
-    def today(self):
-        """Today on the clock of the unit's site, else the company's."""
-        site = self.unit.production_department.site if self.unit_id else None
-        return timezone.localdate(timezone=zone_of(site))
-
-    def started(self):
-        return self.valid_from <= self.today()
-
-    def delete_blockers(self):
-        if self.started():
-            return [gettext('It has started: set its last day instead. The days it fed keep their protocol.')]
-        return []
-
-    def clean(self):
-        """The rules a row can check on its own: an active protocol for a new row or a new protocol, of the batch's
-        species. What may change once it has started is the form's rule (farm/forms/feeding_protocol.py); the
-        overlaps are the exclusion constraints'."""
-        super().clean()
-        errors = {}
-        if self.valid_until is not None and self.valid_from is not None and self.valid_until < self.valid_from:
-            errors['valid_until'] = gettext('The last day comes on or after the first day.')
-        if self.protocol_id:
-            protocol = self.protocol
-            stored = None if self._state.adding else ProtocolAssignment.all_objects.filter(pk=self.pk).first()
-            changed = stored is None or stored.protocol_id != self.protocol_id
-            if changed and protocol.status != ProtocolStatus.ACTIVE:
-                errors['protocol'] = gettext('Only an active protocol can be assigned; this one is %(status)s.') % {
-                    'status': str(protocol.get_status_display()).lower()}
-            elif self.batch_id and self.batch.species_id != protocol.species_id:
-                errors['batch'] = gettext('%(batch)s is %(species)s; the protocol is for %(protocol_species)s.') % {
-                    'batch': self.batch.code, 'species': self.batch.species, 'protocol_species': protocol.species}
-        if errors:
-            raise ValidationError(errors)
+        constraints = assignment_constraints(
+            'protocol_assignments', _('Another protocol is assigned to this unit on some of these days.'),
+            _('Another protocol is assigned to this batch on some of these days.'),
+            _('Another protocol is assigned to this batch in this unit on some of these days.'))

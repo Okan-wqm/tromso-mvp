@@ -11,7 +11,6 @@ from core.models import AuditedModel, CodedMixin
 from core.softdelete import protected
 
 from ..health import lice
-from ..water import parameters
 from .contact import ONE_PRIMARY, Contact
 
 # The altitude a site may have (m above sea level): sea level to the highest farms (Lake Titicaca's trout cages, about
@@ -22,36 +21,6 @@ from .contact import ONE_PRIMARY, Contact
 # (chk_sites_altitude_range), and the calculator's field takes the same range.
 ALTITUDE_LOW, ALTITUDE_HIGH = 0, 5000
 ALTITUDE_MESSAGE = _('Between 0 and 5000 m: sea level to the highest farms.')
-
-
-# The plan ahead's water temperature per month (Site.plan_temperature_01 … _12), within the temperature parameter's
-# plausible range (farm/water/parameters.py), as a feeding table's columns are.
-TEMPERATURE = parameters.get(parameters.TEMPERATURE)
-PLAN_TEMPERATURES = tuple(f'plan_temperature_{month:02d}' for month in range(1, 13))
-PLAN_TEMPERATURES_MESSAGE = _('Give the water temperature of all twelve months, or of none.')
-
-
-# Each month's label is a msgid of its own: a form's label is looked up in the catalogs as it is written.
-MONTH_LABELS = (
-    _('Water temperature ahead, January (°C)'),
-    _('Water temperature ahead, February (°C)'),
-    _('Water temperature ahead, March (°C)'),
-    _('Water temperature ahead, April (°C)'),
-    _('Water temperature ahead, May (°C)'),
-    _('Water temperature ahead, June (°C)'),
-    _('Water temperature ahead, July (°C)'),
-    _('Water temperature ahead, August (°C)'),
-    _('Water temperature ahead, September (°C)'),
-    _('Water temperature ahead, October (°C)'),
-    _('Water temperature ahead, November (°C)'),
-    _('Water temperature ahead, December (°C)'),
-)
-
-
-def _month_temperature(month):
-    return models.DecimalField(MONTH_LABELS[month - 1],
-                               max_digits=3, decimal_places=1, null=True, blank=True,
-                               validators=[MinValueValidator(TEMPERATURE.low), MaxValueValidator(TEMPERATURE.high)])
 
 
 def company_zone():
@@ -161,30 +130,10 @@ class Site(CodedMixin, AuditedModel):
     contact_email = models.EmailField(_('Contact email'), max_length=150, blank=True)
     contact_phone = models.CharField(_('Contact phone'), max_length=50, blank=True)
 
-    # The water temperature the plan ahead reads in each month of the year (farm/harvest/forecast.py): all twelve, or
-    # none (then the unit's latest temperature is held for every day ahead, and the page says so).
-    plan_temperature_01 = _month_temperature(1)
-    plan_temperature_02 = _month_temperature(2)
-    plan_temperature_03 = _month_temperature(3)
-    plan_temperature_04 = _month_temperature(4)
-    plan_temperature_05 = _month_temperature(5)
-    plan_temperature_06 = _month_temperature(6)
-    plan_temperature_07 = _month_temperature(7)
-    plan_temperature_08 = _month_temperature(8)
-    plan_temperature_09 = _month_temperature(9)
-    plan_temperature_10 = _month_temperature(10)
-    plan_temperature_11 = _month_temperature(11)
-    plan_temperature_12 = _month_temperature(12)
-
     facilities = models.JSONField(_('Facilities'), null=True, blank=True)
     settings = models.JSONField(_('Settings'), null=True, blank=True)
     notes = models.TextField(_('Notes'), blank=True)
     metadata = models.JSONField(_('Metadata'), null=True, blank=True)
-
-    def plan_temperatures(self):
-        """The twelve monthly water temperatures the plan ahead reads (January first), or None when they are not set."""
-        values = tuple(getattr(self, name) for name in PLAN_TEMPERATURES)
-        return None if values[0] is None else values
 
     def delete_blockers(self):
         """A site whose units have stock records is closed, not deleted: its past figures would lose their locality.
@@ -203,14 +152,6 @@ class Site(CodedMixin, AuditedModel):
         verbose_name = _('site')
         verbose_name_plural = _('sites')
         constraints = [
-            models.CheckConstraint(
-                condition=Q(**{f'{name}__isnull': True for name in PLAN_TEMPERATURES})
-                | Q(**{f'{name}__isnull': False for name in PLAN_TEMPERATURES}),
-                name='chk_sites_plan_temperatures_whole', violation_error_message=PLAN_TEMPERATURES_MESSAGE),
-            *(models.CheckConstraint(
-                condition=Q(**{f'{name}__isnull': True})
-                | Q(**{f'{name}__gte': TEMPERATURE.low, f'{name}__lte': TEMPERATURE.high}),
-                name=f'chk_sites_{name}') for name in PLAN_TEMPERATURES),
             models.UniqueConstraint(
                 fields=['code'], condition=Q(is_deleted=False), name='uq_sites_code_live',
                 violation_error_message=_('Another site already uses this code.'),

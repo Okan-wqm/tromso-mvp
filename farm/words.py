@@ -192,11 +192,32 @@ THE_TARGET_WEIGHT_EACH_BATCH_IS_GROWN = _('The target weight each batch is grown
                                           'weight now is the feeding protocols’ estimate from the feedings recorded; '
                                           'the plan walks it forward a day at a time, every day’s ration counted as '
                                           'given: the feed less the protocol’s uneaten share, divided by its FCR, at '
-                                          'the site’s monthly water temperatures or, without them, the unit’s latest '
-                                          'temperature held, with no growth on a fasting day. Growth plan opens the '
+                                          'the temperature its temperature profile gives the fish’s weight or, '
+                                          'without one, the unit’s latest measured temperature held, with no growth on a fasting day. Growth plan opens the '
                                           'curve, the feed to the target and the measured weights beside it. The '
                                           'expected harvest is the date given when the batch was stocked.')
 GROWTH_PLAN = _('Growth plan')
+MEASURED_HELD = _('measured, held')
+TEMPERATURE_PROFILES = _('Temperature profiles')
+POINTS = _('Points')
+TEMPERATURE_OVER_THE_WEIGHT = _('Temperature over the fish’s weight')
+THE_PROFILE_IS_ASSIGNED_SO_ITS = _('The profile is assigned, so its points are fixed: the plans of the days it was read for '
+                                   'keep them. To change it, duplicate the profile, change the copy and assign it.')
+NAME = _('Name')
+BETWEEN_POINTS = _('Between points')
+TEMPERATURE_PROFILE = _('Temperature profile')
+ALL_PROFILES = _('All profiles')
+APPLIES_NOW = _('Applies now')
+A_DRAFT_COPY_WITH_THESE_POINTS = _('A draft copy with these points, to change and assign from a date.')
+A_PROFILE_IS_ASSIGNED = _('A temperature profile is assigned as a feeding protocol is: to units (it applies to whatever '
+                          'is in them), to a whole batch (it follows the batch into every unit it is moved to) or to a '
+                          'batch in chosen units. For a batch in a unit the most specific row in force applies: batch '
+                          'in unit, then unit, then whole batch. A production plan reads it for the days ahead.')
+A_PROFILE_GIVES = _('A temperature profile gives the water temperature the fish are expected to be kept at as they '
+                    'grow: points of fish weight and temperature, read in between (smooth) or from each point on '
+                    '(step), the first point’s before it and the last point’s after it. A production plan reads it for '
+                    'the days ahead, at the fish’s projected weight each day; the past keeps the temperatures '
+                    'measured. It is assigned to units, batches or a batch in a unit as a feeding protocol is.')
 PLAN_FROM = _('Plan from')
 TODAYS_ESTIMATE = _('Today’s estimate')
 MEASURED_AGAINST_THE_PLAN = _('Measured against the plan')

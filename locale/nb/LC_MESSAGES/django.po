@@ -106,6 +106,10 @@ msgstr ""
 "%(withdrawal)s"
 
 #, python-format
+msgid "%(batch)s is %(species)s; the profile is for %(protocol_species)s."
+msgstr "%(batch)s er %(species)s; profilen er for %(protocol_species)s."
+
+#, python-format
 msgid "%(batch)s is %(species)s; the protocol is for %(protocol_species)s."
 msgstr "%(batch)s er %(species)s; protokollen er for %(protocol_species)s."
 
@@ -403,6 +407,12 @@ msgid "%(count)d planned harvest or transport names it: keep “%(category)s” 
 msgid_plural "%(count)d planned harvests or transports name it: keep “%(category)s” ticked."
 msgstr[0] "%(count)d planlagt høsting eller transport viser til den: la «%(category)s» stå avkrysset."
 msgstr[1] "%(count)d planlagte høstinger eller transporter viser til den: la «%(category)s» stå avkrysset."
+
+#, python-format
+msgid "%(count)d point saved."
+msgid_plural "%(count)d points saved."
+msgstr[0] "%(count)d punkt lagret."
+msgstr[1] "%(count)d punkter lagret."
 
 #, python-format
 msgid "%(count)d record"
@@ -2124,6 +2134,9 @@ msgstr ""
 "En PDF på opptil %(limit)s. Teksten leses side for side når den lagres, for søket og senere for "
 "KI-agentene."
 
+msgid "A batch alone: the profile follows it into every unit it is moved to."
+msgstr "Bare en fiskegruppe: profilen følger den inn i hver enhet den flyttes til."
+
 msgid "A batch alone: the protocol follows it into every unit it is moved to."
 msgstr "Bare en fiskegruppe: protokollen følger den til hver enhet den flyttes til."
 
@@ -2416,6 +2429,9 @@ msgstr "Et dokument i biblioteket"
 msgid "A dose needs its unit, and a unit its dose."
 msgstr "En dose trenger sin enhet, og en enhet sin dose."
 
+msgid "A draft copy with these points, to change and assign from a date."
+msgstr "Et utkast med disse punktene, til å endre og tildele fra en dato."
+
 msgid "A draft copy with this table, to change and assign from a date."
 msgstr "En utkastkopi med denne tabellen, som kan endres og tildeles fra en dato."
 
@@ -2630,6 +2646,9 @@ msgstr "En månedlig oppgave gjentas på en dag i måneden; de andre på ingen."
 msgid "A new experiment"
 msgstr "Et nytt forsøk"
 
+msgid "A new profile is a draft: give its points, then set it active."
+msgstr "En ny profil er et utkast: oppgi punktene, og sett den så aktiv."
+
 msgid "A new protocol is a draft: fill in its feeding table, then set it active."
 msgstr "En ny protokoll er et utkast: fyll ut fôringstabellen, og gjør den deretter aktiv."
 
@@ -2778,6 +2797,12 @@ msgstr "En produksjonsavdeling blir værende på lokaliteten den ble opprettet p
 
 msgid "A production plan looks ahead (days)"
 msgstr "En produksjonsplan ser framover (dager)"
+
+#, python-format
+msgid "A profile has at most %(num)d point."
+msgid_plural "A profile has at most %(num)d points."
+msgstr[0] "En profil har høyst %(num)d punkt."
+msgstr[1] "En profil har høyst %(num)d punkter."
 
 #, python-format
 msgid ""
@@ -3053,6 +3078,30 @@ msgstr "En temperaturkolonne har høyst én desimal: %(value)s."
 #, python-format
 msgid "A temperature column is between %(low)s and %(high)s °C."
 msgstr "En temperaturkolonne er mellom %(low)s og %(high)s °C."
+
+msgid ""
+"A temperature profile gives the water temperature the fish are expected to be kept at as they "
+"grow: points of fish weight and temperature, read in between (smooth) or from each point on "
+"(step), the first point’s before it and the last point’s after it. A production plan reads it for"
+" the days ahead, at the fish’s projected weight each day; the past keeps the temperatures "
+"measured. It is assigned to units, batches or a batch in a unit as a feeding protocol is."
+msgstr ""
+"En temperaturprofil gir vanntemperaturen fisken forventes å holdes i mens den vokser: punkter av "
+"fiskevekt og temperatur, lest imellom (jevnt) eller fra hvert punkt og videre (trinn), det første"
+" punktets før det og det siste punktets etter det. En produksjonsplan leser den for dagene "
+"framover, ved fiskens beregnede vekt hver dag; det som er gått beholder de målte temperaturene. "
+"Den tildeles enheter, fiskegrupper eller en fiskegruppe i en enhet slik en fôringsprotokoll gjør."
+
+msgid ""
+"A temperature profile is assigned as a feeding protocol is: to units (it applies to whatever is "
+"in them), to a whole batch (it follows the batch into every unit it is moved to) or to a batch in"
+" chosen units. For a batch in a unit the most specific row in force applies: batch in unit, then "
+"unit, then whole batch. A production plan reads it for the days ahead."
+msgstr ""
+"En temperaturprofil tildeles slik en fôringsprotokoll gjør: til enheter (den gjelder det som er i"
+" dem), til en hel fiskegruppe (den følger gruppen inn i hver enhet den flyttes til) eller til en "
+"fiskegruppe i valgte enheter. For en fiskegruppe i en enhet gjelder den mest spesifikke raden: "
+"gruppe i enhet, så enhet, så hel gruppe. En produksjonsplan leser den for dagene framover."
 
 msgid "A template"
 msgstr "En mal"
@@ -3384,6 +3433,9 @@ msgstr "Legg til notat"
 msgid "Add person"
 msgstr "Legg til person"
 
+msgid "Add point"
+msgstr "Legg til punkt"
+
 msgid "Add species"
 msgstr "Legg til art"
 
@@ -3673,6 +3725,9 @@ msgstr "Hele produksjonen"
 
 msgid "All production departments"
 msgstr "Alle produksjonsavdelinger"
+
+msgid "All profiles"
+msgstr "Alle profiler"
 
 msgid "All protocols"
 msgstr "Alle protokoller"
@@ -3997,6 +4052,9 @@ msgstr "Et annet meldingsformat har allerede dette navnet."
 msgid "Another production department already uses this code."
 msgstr "Denne koden brukes allerede av en annen produksjonsavdeling."
 
+msgid "Another profile was assigned to these fish meanwhile: look at the list and try again."
+msgstr "En annen profil ble tildelt denne fisken imens: se på listen og prøv igjen."
+
 msgid "Another protocol is assigned to this batch in this unit on some of these days."
 msgstr "En annen protokoll er tildelt denne fiskegruppen i denne enheten på noen av disse dagene."
 
@@ -4065,6 +4123,18 @@ msgstr "En annen leverandør har allerede dette organisasjonsnummeret."
 
 msgid "Another supplier already uses this code."
 msgstr "En annen leverandør bruker allerede denne koden."
+
+msgid "Another temperature profile already has this name."
+msgstr "En annen temperaturprofil har allerede dette navnet."
+
+msgid "Another temperature profile is assigned to this batch in this unit on some of these days."
+msgstr "En annen temperaturprofil er tildelt denne fiskegruppen i denne enheten på noen av disse dagene."
+
+msgid "Another temperature profile is assigned to this batch on some of these days."
+msgstr "En annen temperaturprofil er tildelt denne fiskegruppen på noen av disse dagene."
+
+msgid "Another temperature profile is assigned to this unit on some of these days."
+msgstr "En annen temperaturprofil er tildelt denne enheten på noen av disse dagene."
 
 msgid "Another unit already uses this code."
 msgstr "Denne koden brukes allerede av en annen enhet."
@@ -4135,6 +4205,9 @@ msgstr ""
 
 msgid "App"
 msgstr "App"
+
+msgid "Applies now"
+msgstr "Gjelder nå"
 
 msgid "Applies to"
 msgstr "Gjelder for"
@@ -4614,6 +4687,9 @@ msgstr "Mellom 0 og 5000 m: fra havnivå til de høyeste anleggene."
 
 msgid "Between 10 and 600. Empty uses the system’s 15 seconds."
 msgstr "Mellom 10 og 600. Tomt bruker systemets 15 sekunder."
+
+msgid "Between points"
+msgstr "Mellom punktene"
 
 msgid "Between the CO₂ and the NH₃ limit, outside the alkalinity band"
 msgstr "Mellom CO₂- og NH₃-grensen, utenfor alkalitetsbåndet"
@@ -5760,6 +5836,10 @@ msgid "Copied as “%(copy)s”: a draft, to change and start."
 msgstr "Kopiert som «%(copy)s»: et utkast som kan endres og startes."
 
 #, python-format
+msgid "Copied as “%(profile)s”, a draft: change it, set it active and assign it."
+msgstr "Kopiert som «%(profile)s», et utkast: endre den, sett den aktiv og tildel den."
+
+#, python-format
 msgid "Copied as “%(protocol)s”, a draft: change it, set it active and assign it."
 msgstr "Kopiert som «%(protocol)s», et utkast: endre den, gjør den aktiv og tildel den."
 
@@ -6529,6 +6609,13 @@ msgstr ""
 "Utkast: under arbeid. Aktiv: kan tildeles. Utfaset: beholdes for dagene den fôret, tildeles ikke "
 "lenger."
 
+msgid ""
+"Draft: being built. Active: can be assigned. Retired: kept for the days it was read for, assigned"
+" no more."
+msgstr ""
+"Utkast: under arbeid. Aktiv: kan tildeles. Avviklet: beholdt for dagene den ble lest for, "
+"tildeles ikke mer."
+
 msgid "Draw"
 msgstr "Tegn"
 
@@ -6679,6 +6766,9 @@ msgstr ""
 "Hver verdi vurderes ved lesing mot vanngrensene slik de er nå, for fisken i enheten den dagen; en"
 " prøve fra en krets for hver enhet i kretsen. En enhet uten fisk viser verdiene uten grense. Hver"
 " verdi sier hvilket prøvepunkt den ble tatt ved; vannet i en enhet er midtpunktets."
+
+msgid "Each weight is a point once."
+msgstr "Hver vekt er et punkt én gang."
 
 msgid "Each widget needs a short name: a lower-case letter, then up to 15 letters, digits, - or _."
 msgstr ""
@@ -6979,13 +7069,6 @@ msgid_plural "Every %(count)d days"
 msgstr[0] "Hver dag"
 msgstr[1] "Hver %(count)d. dag"
 
-#, python-format
-msgid "Every day at %(temperature)s, the unit’s latest temperature at the start, held."
-msgstr "Hver dag ved %(temperature)s, enhetens siste temperatur ved starten, holdt fast."
-
-msgid "Every day at the site’s water temperature of its month (Setup › Sites)."
-msgstr "Hver dag ved lokalitetens vanntemperatur for måneden (Oppsett › Lokaliteter)."
-
 msgid ""
 "Every day of the plan counts the day’s ration as given. A past day is never planned: the estimate"
 " between weighings grows on the feedings recorded only, and a day without one adds nothing. A "
@@ -6994,6 +7077,14 @@ msgstr ""
 "Hver dag i planen regner dagens rasjon som gitt. En dag som er gått planlegges aldri: estimatet "
 "mellom veiinger vokser bare på registrerte fôringer, og en dag uten fôring legger ingenting til. "
 "En veiing setter estimatet til den målte vekten, og planen framover starter på nytt derfra."
+
+#, python-format
+msgid ""
+"Every day without a temperature profile at %(temperature)s, the unit’s latest measured "
+"temperature at the start, held."
+msgstr ""
+"Hver dag uten temperaturprofil ved %(temperature)s, enhetens siste målte temperatur ved starten, "
+"holdt fast."
 
 msgid "Every department"
 msgstr "Alle avdelinger"
@@ -7698,6 +7789,9 @@ msgstr "Fisk veid"
 msgid "Fish weight"
 msgstr "Fiskevekt"
 
+msgid "Fish weight (g)"
+msgstr "Fiskevekt (g)"
+
 msgid "Fish with no limit"
 msgstr "Fisk uten grense"
 
@@ -7728,6 +7822,9 @@ msgstr "Låst: fisk av denne arten er satt ut, så om den er rensefisk kan ikke 
 
 msgid "Fixed: the experiment has started. Copy it to change the design."
 msgstr "Låst: forsøket er startet. Kopier det for å endre designet."
+
+msgid "Fixed: the profile is assigned. Duplicate it to change it."
+msgstr "Låst: profilen er tildelt. Dupliser den for å endre den."
 
 msgid "Fixed: the protocol is assigned. Duplicate it to change it."
 msgstr "Låst: protokollen er tildelt. Dupliser den for å endre den."
@@ -7826,6 +7923,13 @@ msgid ""
 msgstr ""
 "For eksempel: slaktingen ble ikke gjennomført, eller varselet ble sendt et annet sted. Det lagres"
 " med navnet ditt og dagen."
+
+msgid ""
+"For fish between two points. Smooth: read in between, with no jump. Step: the point’s temperature"
+" from its weight on. Before the first point its temperature, after the last point the last one’s."
+msgstr ""
+"For fisk mellom to punkter. Jevnt: lest imellom, uten hopp. Trinn: punktets temperatur fra dets "
+"vekt og videre. Før det første punktet dets temperatur, etter det siste punktet det sistes."
 
 msgid ""
 "For fish between two weight bands. Smooth: each band’s value sits at the middle of the band and "
@@ -8162,6 +8266,9 @@ msgstr "Oppgi begge eller ingen."
 msgid "Give either the value’s path or the item’s name, one of the two."
 msgstr "Oppgi enten verdiens sti eller elementets navn, bare én av dem."
 
+msgid "Give its points first: a profile without them cannot be active."
+msgstr "Oppgi punktene først: en profil uten dem kan ikke være aktiv."
+
 msgid "Give the TAN to draw the NH₃ it holds."
 msgstr "Oppgi TAN for å tegne NH₃-en den inneholder."
 
@@ -8236,9 +8343,6 @@ msgstr "Oppgi verdiens sti: apparatets meldingsformat er ett objekt."
 
 msgid "Give the volume to follow the amounts."
 msgstr "Oppgi volumet for å følge mengdene."
-
-msgid "Give the water temperature of all twelve months, or of none."
-msgstr "Oppgi vanntemperaturen for alle tolv månedene, eller for ingen."
 
 msgid "Give the withdrawal in degree-days, in days or both, as the SPC states it (0 when it has none)."
 msgstr ""
@@ -9091,6 +9195,9 @@ msgstr "Det er startet: det beholdes som dokumentasjon. Avslutt det i stedet."
 
 msgid "It has started: set its last day instead. The days it fed keep their protocol."
 msgstr "Den har startet: sett siste dag i stedet. Dagene den fôret, beholder protokollen sin."
+
+msgid "It has started: set its last day instead. The days it planned keep their profile."
+msgstr "Den har startet: sett siste dag i stedet. Dagene den planla beholder profilen sin."
 
 msgid "It has stock operations: void them first."
 msgstr "Den har beholdningsoperasjoner: annuller dem først."
@@ -10866,6 +10973,9 @@ msgstr "Ingen overordnet (øverste nivå)"
 msgid "No parent (top-level system)"
 msgstr "Ingen overordnet (system på øverste nivå)"
 
+msgid "No point yet. Use “Add point” to add a row."
+msgstr "Ingen punkter ennå. Bruk «Legg til punkt» for å legge til en rad."
+
 msgid "No production department"
 msgstr "Ingen produksjonsavdeling"
 
@@ -11697,6 +11807,15 @@ msgstr "Ett bestillingspunkt per fôr."
 msgid "One reorder level per item."
 msgstr "Ett bestillingspunkt per vare."
 
+msgid ""
+"One row per fish weight (g) with the water temperature (°C) expected then. Between two points the"
+" profile’s rule applies (smooth or a step); before the first point its temperature, after the "
+"last the last one’s. At most 30 points; saved separately from the profile’s details."
+msgstr ""
+"Én rad per fiskevekt (g) med vanntemperaturen (°C) som forventes da. Mellom to punkter gjelder "
+"profilens regel (jevnt eller trinn); før det første punktet dets temperatur, etter det siste det "
+"sistes. Høyst 30 punkter; lagres separat fra profilens detaljer."
+
 msgid "One row per water parameter is made by the platform; it is changed, never added or deleted."
 msgstr "Plattformen lager én rad per vannparameter; den endres, legges aldri til eller slettes."
 
@@ -11778,6 +11897,10 @@ msgstr "Bare en silo fyller en fôrautomat: fjern fôrautomaten, eller gjør lag
 #, python-format
 msgid "Only an active protocol can be assigned; this one is %(status)s."
 msgstr "Bare en aktiv protokoll kan tildeles; denne har status %(status)s."
+
+#, python-format
+msgid "Only an active temperature profile can be assigned; this one is %(status)s."
+msgstr "Bare en aktiv temperaturprofil kan tildeles; denne er %(status)s."
 
 msgid "Only an open task can be started."
 msgstr "Bare en åpen oppgave kan startes."
@@ -12545,9 +12668,6 @@ msgstr "Plan fra"
 msgid "Plan harvest"
 msgstr "Planlegg høsting"
 
-msgid "Plan temperatures"
-msgstr "Plantemperaturer"
-
 msgid "Plan this day"
 msgstr "Planlegg denne dagen"
 
@@ -12801,6 +12921,9 @@ msgstr "Produksjonsenheter"
 
 msgid "Production units, scrolls sideways"
 msgstr "Produksjonsenheter, rulles sidelengs"
+
+msgid "Profile assignments"
+msgstr "Profiltildelinger"
 
 #, python-format
 msgid ""
@@ -13303,6 +13426,9 @@ msgstr "Fjern"
 msgid "Remove the file"
 msgstr "Fjern filen"
 
+msgid "Rename the profile first: its copies have used every name."
+msgstr "Gi profilen nytt navn først: kopiene har brukt opp alle navn."
+
 msgid "Rename the protocol first: its copies have used every name."
 msgstr "Gi protokollen nytt navn først: kopiene har brukt opp alle navnene."
 
@@ -13715,6 +13841,9 @@ msgstr "Lagre passord"
 msgid "Save places"
 msgstr "Lagre plasseringene"
 
+msgid "Save points"
+msgstr "Lagre punkter"
+
 msgid "Save reorder levels"
 msgstr "Lagre bestillingspunkter"
 
@@ -13983,6 +14112,9 @@ msgstr "Søk på nummer, spørsmål eller svar"
 msgid "Search by point or owner"
 msgstr "Søk etter punkt eller eier"
 
+msgid "Search by profile, unit or batch"
+msgstr "Søk på profil, enhet eller fiskegruppe"
+
 msgid "Search by protocol, unit or batch"
 msgstr "Søk etter protokoll, enhet eller fiskegruppe"
 
@@ -14160,6 +14292,9 @@ msgstr "Velg en vanntype"
 
 msgid "Select a widget to change it."
 msgstr "Velg et element for å endre det."
+
+msgid "Select an active profile"
+msgstr "Velg en aktiv profil"
 
 msgid "Select an active protocol"
 msgstr "Velg en aktiv protokoll"
@@ -15218,8 +15353,20 @@ msgstr "Temperatur (°C)"
 msgid "Temperature and oxygen"
 msgstr "Temperatur og oksygen"
 
+msgid "Temperature between points"
+msgstr "Temperatur mellom punktene"
+
 msgid "Temperature columns (°C)"
 msgstr "Temperaturkolonner (°C)"
+
+msgid "Temperature over the fish’s weight"
+msgstr "Temperatur over fiskens vekt"
+
+msgid "Temperature profile"
+msgstr "Temperaturprofil"
+
+msgid "Temperature profiles"
+msgstr "Temperaturprofiler"
 
 msgid "Temperature sensor"
 msgstr "Temperatursensor"
@@ -15666,6 +15813,9 @@ msgstr "Dagene i året kan ikke være negative."
 msgid "The days are the days the fish leave their units: check they are the slaughter days."
 msgstr "Dagene er dagene fisken forlater enhetene sine: kontroller at de er slaktedagene."
 
+msgid "The days before yesterday keep their profile: the last day is yesterday at the earliest."
+msgstr "Dagene før i går beholder profilen sin: siste dag er tidligst i går."
+
 msgid "The days before yesterday keep their protocol: the last day is yesterday at the earliest."
 msgstr "Dagene før i går beholder protokollen sin: siste dag er tidligst i går."
 
@@ -15931,6 +16081,9 @@ msgstr[1] "Sluttveiingen var for %(days)s dager siden"
 
 msgid "The first day away."
 msgstr "Første dag borte."
+
+msgid "The first day it applies to, on the farm’s clock."
+msgstr "Den første dagen den gjelder, etter anleggets klokke."
 
 msgid "The first day it feeds by, on the farm’s clock."
 msgstr "Første dag det fôres etter den, etter anleggets klokke."
@@ -16526,6 +16679,9 @@ msgstr ""
 "Meldingen om planlagt slakting sendes per anlegg; den krever også at selskapet som melder for "
 "anlegget (operatøren, Innkjøp › Leverandører) har et 9-sifret organisasjonsnummer."
 
+msgid "The points can be given once the profile is created."
+msgstr "Punktene kan oppgis når profilen er opprettet."
+
 #, python-format
 msgid "The points of %(owner)s."
 msgstr "Punktene på %(owner)s."
@@ -16565,6 +16721,13 @@ msgid ""
 msgstr ""
 "Produksjonsfisken eller rensefisken ved siden av: hvert fôr går til sin egen fisk. Står det til "
 "hva fôret passer for, går det til rensefisken når fôret bare passer for den."
+
+msgid ""
+"The profile is assigned, so its points are fixed: the plans of the days it was read for keep "
+"them. To change it, duplicate the profile, change the copy and assign it."
+msgstr ""
+"Profilen er tildelt, så punktene er låst: planene for dagene den ble lest for beholder dem. For å"
+" endre den, dupliser profilen, endre kopien og tildel den."
 
 msgid "The protocol is assigned, so its table is fixed: duplicate it to change it."
 msgstr "Protokollen er tildelt, så tabellen er låst: dupliser den for å endre den."
@@ -16953,6 +17116,9 @@ msgstr "Artene det handler om, om noen."
 msgid "The species it takes. None ticked: it takes every species."
 msgstr "Artene det tar imot. Ingen avkrysset: det tar imot alle arter."
 
+msgid "The species the profile is for: it is assigned only to fish of this species."
+msgstr "Arten profilen er for: den tildeles bare fisk av denne arten."
+
 msgid "The species the table is for: it is assigned only to fish of this species."
 msgstr "Arten tabellen er for: den tildeles bare fisk av denne arten."
 
@@ -17052,16 +17218,17 @@ msgid ""
 "The target weight each batch is grown to for harvest. The estimated weight now is the feeding "
 "protocols’ estimate from the feedings recorded; the plan walks it forward a day at a time, every "
 "day’s ration counted as given: the feed less the protocol’s uneaten share, divided by its FCR, at"
-" the site’s monthly water temperatures or, without them, the unit’s latest temperature held, with"
-" no growth on a fasting day. Growth plan opens the curve, the feed to the target and the measured"
-" weights beside it. The expected harvest is the date given when the batch was stocked."
+" the temperature its temperature profile gives the fish’s weight or, without one, the unit’s "
+"latest measured temperature held, with no growth on a fasting day. Growth plan opens the curve, "
+"the feed to the target and the measured weights beside it. The expected harvest is the date given"
+" when the batch was stocked."
 msgstr ""
 "Målvekten hver fiskegruppe vokses til før høsting. Estimert vekt nå er fôringsprotokollenes "
 "estimat fra de registrerte fôringene; planen regner den framover én dag om gangen, med hver dags "
 "rasjon regnet som gitt: fôret minus protokollens uspiste andel, delt på dens FCR, ved "
-"lokalitetens månedlige vanntemperaturer eller, uten dem, enhetens siste temperatur holdt fast, "
-"uten vekst på en fastedag. Vekstplan åpner kurven, fôret til målet og de målte vektene ved siden "
-"av. Forventet høsting er datoen som ble oppgitt da fiskegruppen ble satt ut."
+"temperaturen temperaturprofilen gir fiskens vekt eller, uten en, enhetens siste målte temperatur "
+"holdt fast, uten vekst på en fastedag. Vekstplan åpner kurven, fôret til målet og de målte "
+"vektene ved siden av. Forventet høsting er datoen som ble oppgitt da fiskegruppen ble satt ut."
 
 #, python-format
 msgid "The task is %(status)s: its checklist can no longer be ticked."
@@ -17079,6 +17246,10 @@ msgstr "Teamet trenger en leder."
 #, python-format
 msgid "The temperature is %(source)s."
 msgstr "Temperaturen er fra %(source)s."
+
+#, python-format
+msgid "The temperature of a day is the temperature profile %(profile)s at the fish’s weight that day."
+msgstr "Temperaturen en dag er temperaturprofilen %(profile)s ved fiskens vekt den dagen."
 
 msgid "The template a card’s flip link shows (Simple flips to Detailed). Empty: no flip link."
 msgstr "Malen et korts byttelenke viser (Enkel bytter til Detaljert). Tomt: ingen byttelenke."
@@ -17310,13 +17481,11 @@ msgid "The water surface when the pond is full."
 msgstr "Vannflaten når dammen er full."
 
 msgid ""
-"The water temperature a production plan reads for each day ahead in that month. Give all twelve, "
-"or none: without them a plan holds the unit’s latest temperature for every day ahead, and says "
-"so."
+"The water temperature the fish are expected to be kept at as they grow, per species: read by the "
+"production plans for the days ahead."
 msgstr ""
-"Vanntemperaturen en produksjonsplan leser for hver dag framover i den måneden. Oppgi alle tolv, "
-"eller ingen: uten dem holder en plan enhetens siste temperatur for hver dag framover, og sier "
-"det."
+"Vanntemperaturen fisken forventes å holdes i mens den vokser, per art: lest av produksjonsplanene"
+" for dagene framover."
 
 msgid "The water the amounts are for: a tank or a loop. Empty: the doses per m³ only."
 msgstr "Vannet mengdene gjelder: et kar eller et kretsløp. Tomt: bare dosene per m³."
@@ -18262,6 +18431,13 @@ msgstr "Enheter fra en annen produksjonsavdeling er i det: %(units)s. Ta dem ut 
 msgid "Units of reduced capacity"
 msgstr "Enheter med redusert kapasitet"
 
+msgid ""
+"Units only: the profile applies to whatever is in them. With a batch: that batch in these units "
+"only."
+msgstr ""
+"Bare enheter: profilen gjelder det som er i dem. Med en fiskegruppe: bare den gruppen i disse "
+"enhetene."
+
 msgid "Units only: the protocol feeds whatever is in them. With a batch: that batch in these units only."
 msgstr ""
 "Bare enheter: protokollen fôrer alt som er i dem. Med en fiskegruppe: bare den fiskegruppen i "
@@ -18596,42 +18772,6 @@ msgstr "Vannprøver, rulles sidelengs"
 
 msgid "Water source"
 msgstr "Vannkilde"
-
-msgid "Water temperature ahead, April (°C)"
-msgstr "Vanntemperatur framover, april (°C)"
-
-msgid "Water temperature ahead, August (°C)"
-msgstr "Vanntemperatur framover, august (°C)"
-
-msgid "Water temperature ahead, December (°C)"
-msgstr "Vanntemperatur framover, desember (°C)"
-
-msgid "Water temperature ahead, February (°C)"
-msgstr "Vanntemperatur framover, februar (°C)"
-
-msgid "Water temperature ahead, January (°C)"
-msgstr "Vanntemperatur framover, januar (°C)"
-
-msgid "Water temperature ahead, July (°C)"
-msgstr "Vanntemperatur framover, juli (°C)"
-
-msgid "Water temperature ahead, June (°C)"
-msgstr "Vanntemperatur framover, juni (°C)"
-
-msgid "Water temperature ahead, March (°C)"
-msgstr "Vanntemperatur framover, mars (°C)"
-
-msgid "Water temperature ahead, May (°C)"
-msgstr "Vanntemperatur framover, mai (°C)"
-
-msgid "Water temperature ahead, November (°C)"
-msgstr "Vanntemperatur framover, november (°C)"
-
-msgid "Water temperature ahead, October (°C)"
-msgstr "Vanntemperatur framover, oktober (°C)"
-
-msgid "Water temperature ahead, September (°C)"
-msgstr "Vanntemperatur framover, september (°C)"
 
 msgid "Water treatment"
 msgstr "Vannbehandling"
@@ -19066,6 +19206,9 @@ msgstr "Hvilke arter hvert dokument i biblioteket handler om."
 
 msgid "Which species each slaughter facility takes."
 msgstr "Hvilke arter hvert slakteri tar imot."
+
+msgid "Which temperature profile applies to which fish, from which day."
+msgstr "Hvilken temperaturprofil som gjelder hvilken fisk, fra hvilken dag."
 
 msgid ""
 "Which template a unit’s card gets: a rule for one unit, system, system type, species or kind of "
@@ -19997,6 +20140,9 @@ msgstr ""
 "f.eks. 10.1016/j.aquaculture.2019.01.001; en lenke til doi.org leses som DOI-en. To dokumenter i "
 "biblioteket kan ikke ha samme DOI."
 
+msgid "e.g. 12"
+msgstr "f.eks. 12"
+
 msgid "e.g. 12345"
 msgstr "f.eks. 12345"
 
@@ -20186,6 +20332,9 @@ msgstr "f.eks. SYS-001"
 msgid "e.g. Salmo salar"
 msgstr "f.eks. Salmo salar"
 
+msgid "e.g. Salmon smolt, RAS hall A"
+msgstr "f.eks. Laksesmolt, RAS hall A"
+
 msgid "e.g. Salmonidae"
 msgstr "f.eks. Salmonidae"
 
@@ -20258,6 +20407,9 @@ msgstr "slutt ukjent"
 
 msgid "ended"
 msgstr "avsluttet"
+
+msgid "entered"
+msgstr "oppgitt"
 
 #, python-format
 msgid "entered as %(value)s mg/L PO₄"
@@ -20471,6 +20623,9 @@ msgstr "gruppenivå"
 msgid "group levels"
 msgstr "gruppenivåer"
 
+msgid "half way"
+msgstr "midt imellom"
+
 msgid "handling acknowledgement"
 msgstr "håndteringsbekreftelse"
 
@@ -20681,6 +20836,9 @@ msgid ""
 "measured before the channel’s pH scale was changed (%(time)s): the scale it was measured on is "
 "not known"
 msgstr "målt før kanalens pH-skala ble endret (%(time)s): skalaen den ble målt på, er ikke kjent"
+
+msgid "measured, held"
+msgstr "målt, holdt fast"
 
 msgid "medicine"
 msgstr "legemiddel"
@@ -21118,6 +21276,12 @@ msgstr "produksjonsplan"
 msgid "production plans"
 msgstr "produksjonsplaner"
 
+msgid "profile assignment"
+msgstr "profiltildeling"
+
+msgid "profile assignments"
+msgstr "profiltildelinger"
+
 msgid "protocol assignment"
 msgstr "protokolltildeling"
 
@@ -21370,8 +21534,8 @@ msgid "target on %(date)s, at %(temperature)s °C held"
 msgstr "målet nås %(date)s, ved %(temperature)s °C holdt fast"
 
 #, python-format
-msgid "target on %(date)s, at the site’s monthly temperatures"
-msgstr "mål %(date)s, ved lokalitetens månedlige temperaturer"
+msgid "target on %(date)s, on the temperature profile %(profile)s"
+msgstr "mål %(date)s, etter temperaturprofilen %(profile)s"
 
 msgid "target reached"
 msgstr "målet er nådd"
@@ -21381,6 +21545,18 @@ msgstr "oppgave"
 
 msgid "tasks"
 msgstr "oppgaver"
+
+msgid "temperature profile"
+msgstr "temperaturprofil"
+
+msgid "temperature profile point"
+msgstr "temperaturprofilpunkt"
+
+msgid "temperature profile points"
+msgstr "temperaturprofilpunkter"
+
+msgid "temperature profiles"
+msgstr "temperaturprofiler"
 
 msgid "the 7th of the next month"
 msgstr "den 7. i neste måned"

@@ -46,6 +46,10 @@ AREAS = [
     # The feeding tables and where they apply (Operations › Feeding › Protocols and Assignments).
     Area(_('Feeding protocols'), 'farm.FeedingProtocol'),
     Area(_('Protocol assignments'), 'farm.ProtocolAssignment'),
+    # The water temperature over the fish's weight and where it applies (Operations › Feeding › Temperature profiles and
+    # Profile assignments), read by the production plans.
+    Area(_('Temperature profiles'), 'farm.TemperatureProfile'),
+    Area(_('Profile assignments'), 'farm.TemperatureProfileAssignment'),
     # Water samples: Read is the Water chemistry page (and a unit's water in the drawer), Create records a
     # sample or a round, Delete voids a sample. Samples are never edited: a correction is a void and a new entry.
     Area(_('Water chemistry'), 'farm.WaterMeasurement', actions=('view', 'add', 'delete')),

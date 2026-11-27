@@ -10,9 +10,10 @@ measured weights beside it, and the plan as it was from any measured point. Comp
   share there. The day's ration counts as given, and the fish grow by the one growth rule (farm/feeding/growth.py):
   the feed given less the uneaten share, ÷ the FCR. Feed above the ration is never growth (owner decision Q4), and
   past days are not planned: the estimate between weighings grows on recorded feedings only.
-- The temperature ahead is the site's water temperature of the day's month when the site has its twelve (Setup ›
-  Sites), else the unit's latest usable one, held constant (from a past start: the unit's as it was that day). The page
-  says which, and how old a temperature held is when it is not fresh.
+- The temperature of a day ahead is the temperature profile's in force for the batch in the unit that day, at the
+  fish's projected weight (decisions 15-17: resolved as a protocol is, so after a grading each part reads its own);
+  without a profile, the unit's latest measured temperature, held (from a past start: the unit's as it was that day).
+  Each day says which (its `temperature_from`), and a temperature held that is not fresh says how old it is.
 - The expected mortality a month of the band (else the protocol's, else none) lowers the fish, so the biomass and the
   feed, never the average weight.
 - A fasting day ahead (a planned harvest or transport, farm/handling/fasting.py) gives no feed and no growth.
@@ -27,7 +28,6 @@ from django.utils.translation import gettext as _
 from core import platform
 from farm.feeding import growth, ration, read as feeding_read
 from farm.feeding.fold import PointKind
-from farm.feeding.ration import PlannedTemperature
 from farm.stock.dates import local_today
 
 HUNDRED = Decimal(100)
@@ -37,12 +37,13 @@ WEEK = 7
 @dataclass(frozen=True)
 class Forecast:
     """The plan of a batch in a unit from `start`: the average and the fish then, the curve ahead (None when no target
-    asked for one) and what its temperature was read from (`monthly`: the site's months; else held)."""
+    asked for one), the temperature profiles its days read (`profiles`, in the order first read) and the measured
+    temperature held on the days without one (`held`)."""
     now_g: Decimal
     fish: Decimal = None
     start: date = None
     curve: growth.Curve = None
-    monthly: bool = False
+    profiles: tuple = ()
     horizon_days: int = None
     held: object = None           # the temperature held (feeding.temperature.Temperature), with its age: never silent
 
@@ -62,8 +63,8 @@ class Forecast:
 
     @property
     def temperature_c(self):
-        """The temperature held over the days ahead; None when the site's months were read, or no day was planned."""
-        return None if self.curve is None or self.monthly else self.curve.temperature_c
+        """The measured temperature held over the days ahead without a profile; None when every day had one."""
+        return self.held.value_c if self.held is not None else None
 
     @property
     def why(self):
@@ -98,17 +99,17 @@ class Forecast:
 def _ahead(policy, unit, batch, start, weight_g, fish, target_g, horizon_days, today):
     """The Forecast from `start`, where the fish weigh `weight_g` and number `fish`. Each day's terms are the policy's
     basis of that day (ration.Policy.basis: the protocol in force, the band, the SFR, the fast a planned harvest or
-    transport asks, read with the walk's own reads). The temperature: the site's month when the site has its twelve;
-    else from today the unit's own as the ration reads it (its latest, held), and from a past start the unit's as it was
-    then, held, so the plan as it stood that day comes out again."""
-    site = unit.production_department.site
-    monthly = site.plan_temperatures() if site is not None else None
-    then = policy.temperature(unit.pk, start) if not monthly and start < today else None
-    held = []                     # the temperature the first day fed read, said when it is not fresh
+    transport asks, read with the walk's own reads) at the day's temperature: the temperature profile in force at the
+    weight reached (Policy.planned_temperature); without one, from today the unit's own as the ration reads it (its
+    latest, held), and from a past start the unit's as it was then, held, so the plan as it stood that day comes out
+    again."""
+    then = policy.temperature(unit.pk, start) if start < today else None
+    held, profiles = [], []
 
     def terms_of(day, weight):
-        if monthly:
-            basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=PlannedTemperature(monthly[day.month - 1]))
+        planned = policy.planned_temperature(unit.pk, batch.pk, day, weight)
+        if planned is not None:
+            basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=planned)
         elif then is not None:
             basis = policy.basis(unit.pk, batch.pk, day, weight, temperature=then)
         else:
@@ -117,14 +118,15 @@ def _ahead(policy, unit, batch, start, weight_g, fish, target_g, horizon_days, t
             return growth.Terms(mortality_pct_month=basis.mortality_pct_month, fasting=True)
         if not basis.has_ration or basis.fcr is None:
             return growth.Stop(basis.why(batch))
-        if not held:
+        if planned is None and not held:
             held.append(basis.temperature)
+        if planned is not None and planned.profile not in profiles:
+            profiles.append(planned.profile)
         return growth.Terms(basis.sfr.value, basis.fcr, basis.uneaten_pct, basis.mortality_pct_month,
-                            basis.temperature.value_c)
+                            basis.temperature.value_c, temperature_from=planned.profile if planned else None)
 
     curve = growth.curve(start, weight_g, Decimal(fish), target_g, horizon_days, terms_of)
-    return Forecast(weight_g, Decimal(fish), start, curve, bool(monthly), horizon_days,
-                    None if monthly or not held else held[0])
+    return Forecast(weight_g, Decimal(fish), start, curve, tuple(profiles), horizon_days, held[0] if held else None)
 
 
 def forecasts(shares, targets):
@@ -180,6 +182,7 @@ class Plan:
     measured: tuple               # Against, oldest first
     chosen: object = None
     today: date = None
+    batch: object = None
 
 
 def plan(unit, share, target_g, start_day=None):
@@ -206,4 +209,31 @@ def plan(unit, share, target_g, start_day=None):
         forecast = _ahead(policy, unit, batch, chosen.day, chosen.avg_weight_g, chosen.fish, target_g, horizon_days,
                           today)
     return Plan(forecast, tuple(Against(point, forecast.weight_on(point.day) if point.day > start else None)
-                                for point in points), chosen, today)
+                                for point in points), chosen, today, batch)
+
+
+def projection(unit_id, batch_id, start_day=None):
+    """THE projection of a batch in a unit, as a service asks it (owner decision 20): the planning tools, and later the
+    AI agents, which interpret and propose but never write a plan (this reads, it writes nothing). In: the unit's and
+    the batch's ids, and optionally a start day (a measured point of the batch's stay there; else today's estimate). The
+    horizon is the platform owner's (Platform settings) and the target the batch's production plan's (none: the whole
+    horizon). Out: a Plan, None when the batch has no fish in the unit today. Its stable parts:
+
+    - Plan.forecast.start, .now_g, .fish: the start day, the average weight (g) and the fish then;
+    - Plan.forecast.curve.points: a growth.Point per day ahead: day, weight_g, fish, biomass_kg, feed_kg, eaten_kg,
+      uneaten_kg, growth_kg, feed_to_date_kg, fcr (biological), uneaten_pct, temperature_c, temperature_from (the
+      temperature profile, None: measured, held), fasting;
+    - Plan.forecast.day (the day the target is reached, or None) and .why (why not); .curve.feed_kg, .economic_fcr;
+    - Plan.measured: each measured point of the stay (feeding.read.Measured) with what the plan said for its day.
+
+    The numbers come from one pure function (growth.curve) fed the day's terms by the ration's policy; nothing is
+    stored."""
+    from farm.models import ProductionPlan, Tank
+    from farm.stock import read as stock_read
+    unit = Tank.objects.select_related('production_department__site').filter(pk=unit_id).first()
+    stock = stock_read.stock_of([unit]).get(unit_id) if unit is not None else None
+    share = next((each for each in (stock.counted if stock is not None else ()) if each.batch.pk == batch_id), None)
+    if share is None:
+        return None
+    target = ProductionPlan.objects.filter(batch=share.batch).first()
+    return plan(unit, share, target.target_weight_g if target is not None else None, start_day)

@@ -1,30 +1,29 @@
 """Operations › Feeding › Protocols and Assignments, two tabs of core.crud. A protocol's feeding table is a grid on
 its own inner tab, saved as a whole (ProtocolTableView, farm/feeding/protocols.py); Duplicate copies a protocol
-into a draft. The assignment dialog writes a row per unit chosen (AssignmentCreateView)."""
+into a draft. The assignment tab is farm/resources/assignment_tab.py's, shared with the temperature profiles."""
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
 from django.urls import path, reverse
-from django.utils.translation import gettext as _, gettext_lazy, ngettext
+from django.utils.translation import gettext as _, gettext_lazy
 
 from core import formpanels, listprops
-from core.crud import DRAFT, CreateView, Resource, ResourceView, UpdateView, done, filter_by
+from core.crud import DRAFT, Resource, ResourceView, UpdateView, done, filter_by
 
 from .. import words
-from ..feeding import assignments, lists, protocols
+from ..feeding import lists, protocols
 from ..feeding.growth import economic_fcr
-from ..feeding.ration import Policy, band_range
+from ..feeding.ration import band_range
 from ..feeding.read import tables
 from ..forms.feeding_protocol import (
     AssignmentForm, NewAssignmentForm, ProtocolForm, column_name, table_forms,
 )
 from ..models import (
-    Batch, FeedingProtocol, ProtocolAssignment, ProtocolBand, Site, Species, Tank,
+    FeedingProtocol, ProtocolAssignment, ProtocolBand, Species,
 )
 from ..models.feeding_protocol import ProtocolStatus
-from ..stock import read as stock_read
 from ..stock.dates import local_today
+from .assignment_tab import AssignmentTab
 
 
 class FeedingProtocolResource(Resource):
@@ -263,103 +262,22 @@ class DuplicateView(ResourceView):
 
 
 # ---- assignments ----------------------------------------------------------------------------------------
-class AssignmentCreateView(CreateView):
-    """The assignment dialog: a row per unit chosen (or one for a whole batch), written together, each logged."""
+class ProtocolAssignmentResource(AssignmentTab, Resource):
+    """Operations › Feeding › Assignments: which protocol feeds which fish from which day (farm/resources/
+    assignment_tab.py, shared with the temperature profiles' assignments)."""
 
-    def post(self, request):
-        r = self.resource
-        form = r.form(request, request.POST)
-        if form.sent_before() is not None:                 # the same dialog sent again (core.models.EntryKey)
-            return done(request, reverse(r.url_name('list')))
-        if not form.is_valid():
-            return self.page(form)
-        try:
-            with transaction.atomic():
-                form.note_sent(assignments.save(request.user, form.rows)[0])
-        except ValidationError as error:                   # its key stands for another record (EntryKey.note)
-            form.add_error(None, error.messages)
-            return self.page(form)
-        except IntegrityError:
-            if form.sent_before() is not None:             # sent twice at once: the other sending wrote them
-                return done(request, reverse(r.url_name('list')))
-            form.add_error(None, _('Another protocol was assigned to these fish meanwhile: look at the list and try '
-                                   'again.'))
-            return self.page(form)
-        messages.success(request, ngettext('%(count)d assignment created.', '%(count)d assignments created.',
-                                           len(form.rows)) % {'count': len(form.rows)})
-        for notice in form.notices():
-            messages.warning(request, notice)
-        return done(request, reverse(r.url_name('list')))
-
-
-IN_FORCE, ENDED, PLANNED = 'now', 'ended', 'planned'
-
-
-class ProtocolAssignmentResource(Resource):
     model = ProtocolAssignment
-    form_class = AssignmentForm
+    subject_model = FeedingProtocol
+    form_class, new_form = AssignmentForm, NewAssignmentForm
     name, plural = gettext_lazy('protocol assignment'), gettext_lazy('protocol assignments')
     url_prefix = 'operations/feeding/assignments'
     search_fields = ['protocol__name', 'unit__code', 'batch__code', 'notes']
-    list_template = 'farm/protocol_assignment_list.html'
-    icon = 'link'
-    create_view = AssignmentCreateView
-    page_size = 50
-    # the new look's list (farm/feeding/lists.py) in the classic list's words (farm/protocol_assignment_list.html)
+    # the new look's list (farm/feeding/lists.py) in the classic list's words (farm/assignment_list.html)
     search_placeholder = gettext_lazy('Search by protocol, unit or batch')
     empty_text = gettext_lazy('Which feeding protocol feeds which fish, from which day.')
     list_rows = staticmethod(lists.assignments)
     list_filters = staticmethod(lists.assignment_filters)
-
-    @classmethod
-    def form(cls, request, *args, **kwargs):
-        return (AssignmentForm if 'instance' in kwargs else NewAssignmentForm)(*args, **kwargs)
-
-    @classmethod
-    def queryset(cls):
-        return (super().queryset().select_related('protocol__species', 'unit__production_department__site',
-                                                  'batch__species')
-                .order_by('-valid_from', 'group_id', 'unit__code'))
-
-    @classmethod
-    def filter_list(cls, request, objects):
-        today = local_today()
-        live = ProtocolAssignment.objects.filter(is_deleted=False)      # those the person may see (core.sealing)
-        sites = Site.objects.filter(pk__in=live.values('unit__production_department__site'))
-        objects, chosen_site = filter_by(request, objects, 'site', sites, 'unit__production_department__site')
-        units = Tank.all_objects.filter(pk__in=live.values('unit')).order_by('code')
-        objects, chosen_unit = filter_by(request, objects, 'unit', units, 'unit_id')
-        batches = Batch.all_objects.filter(pk__in=live.values('batch')).order_by('-code')
-        objects, chosen_batch = filter_by(request, objects, 'batch', batches, 'batch_id')
-        protocol_list = FeedingProtocol.objects.filter(assignments__is_deleted=False).distinct().order_by('name')
-        objects, chosen_protocol = filter_by(request, objects, 'protocol', protocol_list, 'protocol_id')
-        periods = [(IN_FORCE, _('In force today')), (PLANNED, _('Starting later')), (ENDED, _('Ended'))]
-        chosen_period = request.GET.get('period', '')
-        if chosen_period == IN_FORCE:
-            objects = objects.filter(Q(valid_until__isnull=True) | Q(valid_until__gte=today), valid_from__lte=today)
-        elif chosen_period == PLANNED:
-            objects = objects.filter(valid_from__gt=today)
-        elif chosen_period == ENDED:
-            objects = objects.filter(valid_until__lt=today)
-        else:
-            chosen_period = ''
-        return objects, {'sites': sites, 'chosen_site': chosen_site, 'units': units, 'chosen_unit': chosen_unit,
-                         'batches': batches, 'chosen_batch': chosen_batch, 'protocol_list': protocol_list,
-                         'chosen_protocol': chosen_protocol, 'periods': periods, 'chosen_period': chosen_period,
-                         'today': today, 'feeds_now': feeds_now(today)}
-
-
-def feeds_now(today):
-    """{assignment id: fish it feeds today}: for every batch in a unit now, the row that applies to it (batch in
-    unit, then unit, then whole batch; ration.Policy), so a row read past for a more specific one feeds nothing."""
-    present = stock_read.present('unit_id', 'batch_id').values_list('unit_id', 'batch_id', 'fish')
-    rows = list(ProtocolAssignment.objects.filter(valid_from__lte=today)
-                .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=today)))
-    species = dict(Batch.all_objects.values_list('pk', 'species_id'))
-    policy = Policy(rows, tables({row.protocol_id for row in rows}), species, lambda unit_id, day: None)
-    fed = {}
-    for unit_id, batch_id, fish in present:
-        row, _skipped = policy.resolve(unit_id, batch_id, today)
-        if row is not None:
-            fed[row.pk] = fed.get(row.pk, 0) + fish
-    return fed
+    kind_words = {'label': words.PROTOCOL, 'all': words.ALL_PROTOCOLS, 'how': words.A_PROTOCOL_IS_ASSIGNED_TO_UNITS_IT,
+             'now': words.FEEDS_NOW, 'search': search_placeholder, 'empty': empty_text,
+             'meanwhile': gettext_lazy('Another protocol was assigned to these fish meanwhile: look at the list and try '
+                                       'again.')}

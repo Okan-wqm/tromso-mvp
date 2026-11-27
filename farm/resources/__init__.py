@@ -15,6 +15,7 @@ from .system import SystemResource
 from .tank import TankResource
 from .water_freshness import WaterFreshnessResource
 from .water_limit import WaterLimitResource
+from .temperature_profile import ProfileAssignmentResource, TemperatureProfileResource
 from .water_point import SamplingPointResource
 from .weight_source import WeightSourceResource
 
@@ -23,4 +24,4 @@ __all__ = ['EquipmentResource', 'FeedResource', 'FeedingProtocolResource', 'Hand
            'ProductionPlanResource', 'ProtocolAssignmentResource', 'SamplingPointResource', 'SiteResource', 'SlaughterFacilityResource',
            'SpeciesResource',
            'SupplierResource', 'SystemResource', 'TankResource', 'WaterFreshnessResource',
-           'WaterLimitResource', 'WeightSourceResource']
+           'WaterLimitResource', 'WeightSourceResource', 'TemperatureProfileResource', 'ProfileAssignmentResource']

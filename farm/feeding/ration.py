@@ -26,7 +26,6 @@ walk (farm/feeding/fold.py) asks it at every feeding, so the projected growth an
 The feed (its pellet) and the meals a day are the band's own: they change in steps. The SFR is read between two
 temperature columns because a step makes the ration jump by 15–20 % when a reading crosses a column by 0.1 °C, and
 between two bands (when the rule is smooth) for the same reason at a band's edge."""
-from collections import defaultdict
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -35,6 +34,7 @@ from django.utils.translation import gettext as _
 from farm.templatetags.stock import grams, number
 
 from . import growth
+from .resolve import Resolver
 
 HUNDRED = Decimal(100)
 # A protocol's between-band rules (FeedingProtocol.fcr_between, uneaten_between, sfr_between; BetweenBands' values).
@@ -287,53 +287,64 @@ READ = object()     # Policy.basis: read the unit's own temperature of the day
 
 
 @dataclass(frozen=True)
+class Profile:
+    """A temperature profile as the plan ahead reads it: its points ((weight g, temperature °C), in weight order) and
+    its rule between two of them (SMOOTH or STEP; farm/models/temperature_profile.py)."""
+    profile: object
+    points: tuple
+    between: str = SMOOTH
+
+    def at(self, weight_g):
+        """The temperature (°C) the profile gives fish of `weight_g`: `growth.between`, the protocols' own rule."""
+        return growth.between(self.points, weight_g, self.between == STEP)
+
+
+@dataclass(frozen=True)
 class PlannedTemperature:
-    """A temperature a day ahead is planned at, not measured: the site's value for that month (Setup › Sites)."""
+    """A temperature a day ahead is planned at, not measured: a temperature profile's at the fish's weight that day."""
     value_c: Decimal
+    profile: object = None
 
 
 @dataclass
 class Policy:
     """The assignments, tables and temperatures a walk reads, loaded once (read.policy). `temperature(unit id,
-    day)` gives the Temperature of a unit for the ration of that day."""
+    day)` gives the Temperature of a unit for the ration of that day. `profile_rows` and `profiles` (profile id ->
+    Profile): the temperature profiles' rows and points, which the plan ahead reads (`planned_temperature`). Both kinds
+    of rows are resolved by the one resolver (farm/feeding/resolve.py)."""
     assignments: list
     tables: dict                  # protocol id -> Table
     species: dict                 # batch id -> species id
     temperature: object
     fasting: object = None        # (unit id, day) -> the Fast of a planned harvest or transport, or None
     cleaner: frozenset = frozenset()   # the ids of the batches of a cleaner-fish species
-    _rows: dict = field(default_factory=lambda: defaultdict(list))
-    _resolved: dict = field(default_factory=dict)
+    profile_rows: list = field(default_factory=list)
+    profiles: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        for row in self.assignments:
-            self._rows[(row.unit_id, row.batch_id)].append(row)
-
-    def _in_force(self, unit_id, batch_id, day):
-        return next((row for row in self._rows.get((unit_id, batch_id), ()) if row.covers(day)), None)
+        self._protocols = Resolver(self.assignments, 'protocol',
+                                   {pk: table.protocol.species_id for pk, table in self.tables.items()}, self.species)
+        self._profiles = Resolver(self.profile_rows, 'profile',
+                                  {pk: found.profile.species_id for pk, found in self.profiles.items()}, self.species)
 
     def resolve(self, unit_id, batch_id, day):
-        """(the assignment row in force, a unit's row of another species read past): batch in unit, then the
-        unit, then the whole batch (owner decision Q8)."""
-        cached = self._resolved.get((unit_id, batch_id, day))
-        if cached is not None:
-            return cached
-        skipped = None
-        found = self._in_force(unit_id, batch_id, day)
-        if found is None:
-            found = self._in_force(unit_id, None, day)
-            if found is not None and self.tables[found.protocol_id].protocol.species_id != self.species.get(batch_id):
-                skipped, found = found, None
-        if found is None:
-            found = self._in_force(None, batch_id, day)
-        self._resolved[(unit_id, batch_id, day)] = result = (found, skipped)
-        return result
+        """(the protocol's assignment row in force, a unit's row of another species read past)."""
+        return self._protocols.resolve(unit_id, batch_id, day)
+
+    def planned_temperature(self, unit_id, batch_id, day, weight_g):
+        """The PlannedTemperature of a day ahead: the temperature profile in force for the batch in the unit that day
+        at the fish's weight; None without one (the plan then holds the unit's measured temperature, and says so)."""
+        row, _skipped = self._profiles.resolve(unit_id, batch_id, day)
+        if row is None:
+            return None
+        found = self.profiles[row.profile_id]
+        return PlannedTemperature(found.at(weight_g), found.profile)
 
     def basis(self, unit_id, batch_id, day, weight_g, beside=False, temperature=READ):
         """The Basis of the batch's ration in the unit on `day`, for fish of `weight_g` on average. `beside`: the unit
         holds production fish that day, so cleaner fish there are cleaning them (D-1); cleaner fish without production
         fish (a hatchery tank of lumpfish) are that unit's production fish, and a missing table is a gap. `temperature`: the one to read the SFR at
-        instead of the unit's own (the plan ahead: a temperature held, or the site's planned one for that month)."""
+        instead of the unit's own (the plan ahead: a profile's, or a temperature held)."""
         assignment, skipped = self.resolve(unit_id, batch_id, day)
         if assignment is None:
             if batch_id in self.cleaner and beside:

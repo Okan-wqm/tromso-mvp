@@ -61,6 +61,14 @@ def _measured_row(item):
         'fish': L.cell(fish(point.fish)), 'estimated': estimated, 'planned': planned, 'fcr': rates})
 
 
+def temperature_from(point):
+    """What a day's temperature was read from: the temperature profile's name, or measured and held ('' on a fasting
+    day, which reads none)."""
+    if point.fasting:
+        return ''
+    return point.temperature_from.name if point.temperature_from is not None else str(words.MEASURED_HELD)
+
+
 def _plan_row(point):
     if point.fasting:
         rate = L.cell(DASH, sub=[str(words.FASTING_DAY)])
@@ -71,7 +79,7 @@ def _plan_row(point):
         'fish': L.cell(fish(point.fish)), 'biomass': L.cell(kilos(point.biomass_kg)),
         'feed': L.cell(feed_kg(point.feed_kg)), 'to_date': L.cell(feed_kg(point.feed_to_date_kg)),
         'eaten': L.cell(feed_kg(point.eaten_kg)), 'uneaten': L.cell(feed_kg(point.uneaten_kg)), 'fcr': rate,
-        'temperature': L.cell(celsius(point.temperature_c))})
+        'temperature': L.cell(celsius(point.temperature_c), sub=[temperature_from(point)])})
 
 
 def lines(unit, batch, target_g, found):
@@ -97,11 +105,12 @@ def lines(unit, batch, target_g, found):
             'feed': feed_kg(curve.feed_kg), 'eaten': feed_kg(curve.eaten_kg), 'uneaten': feed_kg(curve.uneaten_kg),
             'fcr': fcr(curve.economic_fcr), 'fish': fish(curve.end_fish),
             'biomass': kilos(curve.end_g * curve.end_fish / 1000)})
-        if forecast.monthly:
-            said.append(_('Every day at the site’s water temperature of its month (Setup › Sites).'))
-        else:
-            said.append(_('Every day at %(temperature)s, the unit’s latest temperature at the start, held.') % {
-                'temperature': celsius(forecast.temperature_c)})
+        for profile in forecast.profiles:  # each read on some day ahead
+            said.append(_('The temperature of a day is the temperature profile %(profile)s at the fish’s weight that '
+                          'day.') % {'profile': profile.name})
+        if forecast.held is not None:
+            said.append(_('Every day without a temperature profile at %(temperature)s, the unit’s latest measured '
+                          'temperature at the start, held.') % {'temperature': celsius(forecast.temperature_c)})
             said.append(forecast.stale)             # "Based on the temperature from … (N days old)", or nothing
     return [*(line for line in said if line), str(words.THE_PLAN_AHEAD_COUNTS), str(words.THE_SFR_IS_ITS_BANDS)]
 
@@ -140,7 +149,7 @@ def props(request, context):
 
 # ---- the file -------------------------------------------------------------------------------------------
 COLUMNS = ('date', 'average_weight_g', 'fish', 'biomass_kg', 'feed_kg', 'feed_to_date_kg', 'eaten_kg', 'uneaten_kg',
-           'fcr', 'economic_fcr', 'uneaten_pct', 'temperature_c', 'fasting')
+           'fcr', 'economic_fcr', 'uneaten_pct', 'temperature_c', 'temperature_source', 'fasting')
 
 
 def _plain(value, places):
@@ -157,7 +166,7 @@ def csv_response(unit, batch, found):
     writer = csv.writer(response)
     writer.writerow(COLUMNS)
     writer.writerow([forecast.start.isoformat(), _plain(forecast.now_g, 4), _plain(forecast.fish, 0),
-                     _plain(forecast.now_g * forecast.fish / 1000, 3), '', _plain(0, 3), '', '', '', '', '', '', ''])
+                     _plain(forecast.now_g * forecast.fish / 1000, 3), '', _plain(0, 3), '', '', '', '', '', '', '', ''])
     for point in forecast.curve.points:
         fed = not point.fasting
         writer.writerow([
@@ -165,5 +174,7 @@ def csv_response(unit, batch, found):
             _plain(point.feed_kg, 3), _plain(point.feed_to_date_kg, 3), _plain(point.eaten_kg, 3),
             _plain(point.uneaten_kg, 3), _plain(point.fcr, 3),
             _plain(economic_fcr(point.fcr, point.uneaten_pct) if fed else None, 3),
-            _plain(point.uneaten_pct if fed else None, 2), _plain(point.temperature_c, 1), '' if fed else 'yes'])
+            _plain(point.uneaten_pct if fed else None, 2), _plain(point.temperature_c, 1),
+            ('' if not fed else point.temperature_from.name if point.temperature_from is not None else 'measured, held'),
+            '' if fed else 'yes'])
     return response

@@ -45,6 +45,7 @@ SCREENS = {
         'fasting_amount': 'typed with its unit and stored as hours (min_fasting_hours)',
         'fasting_unit': 'typed with the amount and stored as hours (min_fasting_hours)'}),
     'ProtocolAssignment': Screen(extra_fields={'units': 'a row is written for each unit chosen (the unit column)'}),
+    'TemperatureProfileAssignment': Screen(extra_fields={'units': 'a row is written for each unit chosen (the unit column)'}),
     'HealthEvent': Screen(
         delete=(health.void_event,),
         note='A health event is voided with a reason, not deleted.',

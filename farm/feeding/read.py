@@ -37,7 +37,10 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from farm.handling import fasting
-from farm.models import Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank
+from farm.models import (
+    Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank,
+    TemperatureProfileAssignment, TemperatureProfilePoint,
+)
 from farm.models.feeding import FeedTarget
 from farm.models.site import zone_of
 from farm.models.stock import MovementKind
@@ -47,7 +50,7 @@ from farm.stock.read import Measured as stock_measured, batches_ever_in, how_mea
 
 from .fold import ZERO, Feeding, PointKind, Window, ratio, walk
 from .projection import Projector
-from .ration import Band, Cell, Policy, Table
+from .ration import Band, Cell, Policy, Profile, Table
 from .temperature import TemperatureBook
 
 WEEK = 7          # the days the drawer's feed rate and feed total cover
@@ -119,6 +122,25 @@ def tables(protocol_ids):
     return found
 
 
+
+def profile_assignments(units, batch_ids, first):
+    """The temperature profiles' rows of these units and batches in force on `first` or later."""
+    return list(TemperatureProfileAssignment.objects.filter(Q(unit_id__in=list(units)) | Q(batch_id__in=batch_ids))
+                .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first)))
+
+
+def profiles(profile_ids):
+    """{profile id: ration.Profile} of these temperature profiles, their points in weight order (one query)."""
+    found = {}
+    if not profile_ids:
+        return found
+    for point in (TemperatureProfilePoint.objects.filter(profile_id__in=profile_ids).select_related('profile')
+                  .order_by('weight_g')):
+        found.setdefault(point.profile_id, []).append(point)
+    return {pk: Profile(points[0].profile, tuple((point.weight_g, point.temperature_c) for point in points),
+                        points[0].profile.temperature_between) for pk, points in found.items()}
+
+
 def policy(units, batch_ids, first, now, read=(), ahead_days=0):
     """The ration.Policy of these units (Tank, by id) and batches from the day `first` to now: the assignment rows
     in force over those days, their tables, the batches' species and the units' temperatures, read once. `read`: the
@@ -157,8 +179,11 @@ def policy(units, batch_ids, first, now, read=(), ahead_days=0):
     # The fasts planned harvests and transports ask for, from `first` to the units' today and `ahead_days` past it (a
     # production plan's days ahead), in one query.
     fasts = fasting.fasts(list(units.values()), first, max(today.values(), default=first) + timedelta(days=ahead_days))
+    # The temperature profiles are read for the days ahead only (decision 17): a walk of the past never asks them.
+    profile_rows = profile_assignments(units, batch_ids, first) if ahead_days else []
     return Policy(rows, tables({row.protocol_id for row in rows}), species, temperature,
-                  fasting=lambda unit_id, day: fasts.get((unit_id, day)), cleaner=cleaner)
+                  fasting=lambda unit_id, day: fasts.get((unit_id, day)), cleaner=cleaner, profile_rows=profile_rows,
+                  profiles=profiles({row.profile_id for row in profile_rows}))
 
 
 @dataclass

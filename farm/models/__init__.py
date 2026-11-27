@@ -10,6 +10,7 @@ from .equipment import Equipment, EquipmentSystem, EquipmentType, FeederCalibrat
 from .feed import Feed, FeedSuitability
 from .feeding import FeedingRecord
 from .feeding_protocol import FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate
+from .temperature_profile import TemperatureProfile, TemperatureProfileAssignment, TemperatureProfilePoint
 from .handling import HandlingAcknowledgement, HandlingRule, WithdrawalAcknowledgement
 from .harvest import HandlingPlanItem, HarvestRecord, ProductionPlan, SlaughterFacility
 from .health import HealthEvent, LiceCount, Medicine, MedicineWithdrawal, Treatment
@@ -29,5 +30,6 @@ __all__ = [
     'HealthEvent', 'LiceCount', 'Medicine', 'MedicineWithdrawal', 'OpeningBalance', 'ProductionDepartment', 'ProductionPlan', 'ProtocolAssignment',
     'ProtocolBand', 'ProtocolRate', 'SamplingPoint', 'Site', 'SiteContact', 'SlaughterFacility', 'Species', 'StockMovement',
     'StockOperation', 'Supplier', 'SupplierContact', 'System', 'Tank', 'Treatment', 'WaterFreshness', 'WaterLimit',
-    'WaterMeasurement', 'WeightSource', 'WithdrawalAcknowledgement',
+    'TemperatureProfile', 'TemperatureProfileAssignment', 'TemperatureProfilePoint', 'WaterMeasurement', 'WeightSource',
+    'WithdrawalAcknowledgement',
 ]

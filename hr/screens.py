@@ -5,8 +5,12 @@ from core.datamap import Screen, no, system
 
 from . import views
 
+RESTORE = no('not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, '
+             'where the rules run')
+
 SCREENS = {
     'Employee': Screen(
+        restore=RESTORE,
         delete=no('a person leaves with a last day (left_on); the record and its history stay readable'),
         extra_fields={
             'department': 'chooses the department of the dated placement the Placement tab writes (hr.services.move)',
@@ -17,17 +21,20 @@ SCREENS = {
              'The form saves through hr.services.add_employee and change_employee; a last day is hr.services.leave_company.',
     ),
     'Posting': Screen(
+        restore=RESTORE,
         part_of='hr.Employee',
         columns={'*': system('written by hr.services.move from the Placement tab of the employee form, and closed by a last day')},
         read=(views.organisation_chart,),
         note='One placement covers any day (exclusion constraint); a move closes the open one the day before.',
     ),
     'ShiftAssignment': Screen(
+        restore=RESTORE,
         create=(views.plan,), edit=(views.plan,), delete=(views.plan,),
         note='A cell is planned on its own dialog (hr.services.plan_day) or in a batch (hr.services.plan_shifts): all '
              'cells or none, by the same rules.',
     ),
     'AttendanceRecord': Screen(
+        restore=RESTORE,
         create=(views.punch,), edit=(views.punch,), read=(views.today,),
         columns={'via': system('self for a person\'s own clock-in and out, entered for a lead\'s form and for a stretch '
                                'whose time a lead\'s correction changed (a forgotten clock-out closed by hand)')},
@@ -37,6 +44,7 @@ SCREENS = {
              "void_presence.",
     ),
     'LeaveRequest': Screen(
+        restore=RESTORE,
         edit=(views.approve, views.reject, views.cancel),
         delete=no('a wrong request is cancelled, not deleted'),
         columns={'status': system('moved by approve, reject and cancel (hr.services.decide_leave, cancel_leave)'),

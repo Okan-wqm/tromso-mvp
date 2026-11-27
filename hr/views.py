@@ -58,9 +58,11 @@ def parse_cells(values):
 @require_POST
 def plan(request):
     """Sets one shift, planned off or nothing on every cell sent (`cells`, repeated; `shift`: a shift's id, `off` or
-    `clear`), all or none. A cell whose person the user does not reach on its day (a forged id, a day before a newcomer
-    is theirs: hr.scope.can_reach, asked cell by cell, the rule the service plans by) is a 404 and writes nothing; a blocking finding or one's own cell refuses the batch with the reason; warnings are told after the save.
-    Someone with no right to plan is refused before the request is read."""
+    `clear`), all or none. The service asks the reach of the cells (once, for all of them: hr.scope.cells_reached); a
+    cell of a person the user does not reach at all (a forged id, a day before a newcomer is theirs) is a 404 and
+    writes nothing. A blocking finding, one's own cell or more cells than the platform allows in one go refuses the
+    batch with the reason; warnings are told after the save. Someone with no right to plan is refused before the
+    request is read."""
     if not services.can_plan(request.user):
         raise PermissionDenied
     cells = parse_cells(request.POST.getlist('cells'))
@@ -73,15 +75,17 @@ def plan(request):
         shift = services.CLEAR
     else:
         try:
-            shift = Shift.objects.get(pk=choice, status='active')
+            shift = Shift.objects.get(pk=choice, status=Shift.Status.ACTIVE)
         except (Shift.DoesNotExist, ValueError, ValidationError):
             return HttpResponseBadRequest()
     reachable = {employee.pk: employee for employee in Employee.objects.filter(pk__in=[pk for pk, _day in cells])}
-    if any(pk not in reachable or not scope.can_reach(request.user, reachable[pk], day) for pk, day in set(cells)):
+    if any(pk not in reachable for pk, _day in cells):
         raise Http404
     target = _return(request, _here(request, 'hr:shiftassignment_list'))
     try:
         warnings = services.plan_shifts(request.user, [(reachable[pk], day) for pk, day in cells], shift)
+    except services.NotReached:
+        raise Http404 from None
     except PermissionDenied:
         raise
     except ValidationError as error:

@@ -131,21 +131,23 @@ class LeaveRequestResource(services.PersonFirst, Resource):
         (hr.services.deciders_of), and handed to the questions of each row."""
         sees_types = cls.sees_every_type(request.user)
         decided_here = services.deciders_of(request.user, requests)
-        sites = read.sites_of([(item.employee_id, item.first_day) for item in requests])
         holidays = leave.holiday_table([item.first_day for item in requests], [item.last_day for item in requests])
+        placed = read.placements({item.employee_id for item in requests}, min(
+            (item.first_day for item in requests), default=None), max((item.last_day for item in requests), default=None)
+        ) if requests else {}
         weekdays = SchedulingSettings.get().working_weekdays
         rows = []
         for item in requests:
             own = item.employee.user_id == request.user.pk
             rows.append({
                 'request': item,
-                'days': leave.leave_days(item.first_day, item.last_day, sites[(item.employee_id, item.first_day)],
-                                         weekdays, holidays),
+                'days': leave.leave_days(item.first_day, item.last_day, placed[item.employee_id], weekdays, holidays),
                 'show_reason': scope.sees_reason(request.user, item.employee),
                 'show_type': own or sees_types,
                 'can_decide': services.can_decide(request.user, item, decider=item.pk in decided_here),
-                'can_cancel': services.can_cancel(request.user, item, decider=item.pk in decided_here,
-                                                  today=site_today(sites[(item.employee_id, item.first_day)])),
+                'can_cancel': services.can_cancel(
+                    request.user, item, decider=item.pk in decided_here,
+                    today=site_today(read.site_of_day(placed[item.employee_id], item.first_day))),
                 'can_shorten': item.first_day < item.last_day and services.can_correct(
                     request.user, item, decider=item.pk in decided_here),
                 'shorten_to': item.last_day - timedelta(days=1),          # the latest new last day the service takes

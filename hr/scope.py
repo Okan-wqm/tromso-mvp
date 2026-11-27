@@ -178,6 +178,28 @@ def can_reach(user, employee, day=None):
     return team(user, day).filter(pk=employee.pk).exists()
 
 
+def cells_reached(user, cells):
+    """The (employee id, day) pairs among `cells` on which `user` reaches the person: `can_reach` for many cells at
+    once, in a fixed number of queries whatever the cells (the batch plan), from the intervals of the placements the
+    user manages, never a set of days."""
+    cells = set(cells)
+    if not cells:
+        return set()
+    ids = {pk for pk, _day in cells}
+    if user.has_perm(ALL):
+        live = set(Employee.objects.filter(pk__in=ids).values_list('pk', flat=True))
+        return {(pk, day) for pk, day in cells if pk in live}
+    own = set(Employee.objects.filter(user=user, pk__in=ids).values_list('pk', flat=True))
+    low, high = min(day for _pk, day in cells), max(day for _pk, day in cells)
+    spans = {}
+    for pk, start, end in Posting.objects.filter(managed(user), overlapping(low, high), employee__in=ids,
+                                                 employee__is_deleted=False).values_list(
+            'employee', 'valid_from', 'valid_until'):
+        spans.setdefault(pk, []).append((start, end))
+    return {(pk, day) for pk, day in cells
+            if pk in own or any(start <= day and (end is None or end >= day) for start, end in spans.get(pk, ()))}
+
+
 def _days(first, last):
     return [first + timedelta(days=n) for n in range((last - first).days + 1)]
 

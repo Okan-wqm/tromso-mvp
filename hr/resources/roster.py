@@ -82,7 +82,7 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
     @classmethod
     def shifts(cls):
         from ..models import Shift
-        return Shift.objects.filter(status='active')
+        return Shift.objects.filter(status=Shift.Status.ACTIVE)
 
     @classmethod
     def plan(cls, request, employee, day, values, expected):
@@ -104,7 +104,7 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
 
     @classmethod
     def delete_record(cls, request, record):
-        services.plan_shifts(request.user, [(record.employee, record.day)], services.CLEAR)
+        services.clear_day(request.user, record)
 
     # --- the new look (core.crud.ListView: list_template_next, list_next_props), the words of hr/roster.html ----------
     list_template_next = 'hr/roster_next.html'

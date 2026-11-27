@@ -110,7 +110,7 @@ class OwnershipTests(Clocks):
         # 12:00 UTC on 2 March: 13:00 on the 2nd in Oslo (A governs), 01:00 on the 3rd in Auckland, 04:00 on the 2nd in LA
         moment = datetime(2026, 3, 2, 12, tzinfo=UTC)
         self.assertEqual(self.owners(moment), ['bossa'])
-        with self.assertRaises((PermissionDenied, ValidationError)):
+        with self.assertRaisesMessage(ValidationError, 'You do not see this person on this day.'):   # B's today
             services.enter_presence(self.boss_b, self.in_a, moment + timedelta(hours=1), None, 'Phone was dead')
         entered = services.enter_presence(self.boss_a, self.in_a, moment + timedelta(hours=1), None, 'Phone was dead')
         self.assertEqual(read.governing(self.in_a, entered.clock_in).day, date(2026, 3, 3))    # shown on A's clock
@@ -119,7 +119,7 @@ class OwnershipTests(Clocks):
         # 23:30 UTC on 2 March: 00:30 on the 3rd in Oslo (B governs), 15:30 on the 2nd in LA, 12:30 on the 3rd in Auckland
         moment = datetime(2026, 3, 2, 23, 30, tzinfo=UTC)
         self.assertEqual(self.owners(moment), ['bossb'])
-        with self.assertRaises((PermissionDenied, ValidationError)):
+        with self.assertRaises(PermissionDenied):          # not A's person today: not A's to hear about
             services.enter_presence(self.boss_a, self.in_a, moment + timedelta(hours=1), None, 'Phone was dead')
         services.enter_presence(self.boss_b, self.in_a, moment + timedelta(hours=1), None, 'Phone was dead')
 

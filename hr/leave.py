@@ -2,16 +2,15 @@
 here is stored (the source stored `totalDays` and mutable balance counters, and charged calendar days: HR-07).
 
 A day is charged when its weekday is one of the company's working weekdays (a setting, Monday to Friday by default) and
-it is not a holiday (for every site, or for the site the person works on). The days of a request that crosses New Year
-are split by the year they fall in."""
+it is not a holiday (for every site, or for the site the person is placed on that day). The days of a request that
+crosses New Year are split by the year they fall in."""
 from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Q
-
 from .models import Holiday, LeaveRequest, SchedulingSettings
 from .models.leave import HOLDING, LeaveStatus
+from .placed import placements, site_of_day
 
 
 def each_day(first, last):
@@ -28,20 +27,19 @@ def holiday_table(firsts, lasts):
     return list(Holiday.objects.filter(day__range=(min(firsts), max(lasts))))
 
 
-def holidays_for(first, last, site, table=None):
-    """The days between `first` and `last` that are holidays for `site` (None: only those of every site). `table` is a
-    holiday_table read earlier; without it the holidays are read now."""
-    if table is not None:
-        return {holiday.day for holiday in table if first <= holiday.day <= last
-                and (holiday.site_id is None or (site is not None and holiday.site_id == site.pk))}
-    scope = Q(site__isnull=True) if site is None else Q(site__isnull=True) | Q(site=site)
-    return set(Holiday.objects.filter(scope, day__range=(first, last)).values_list('day', flat=True))
+def holidays_on(table, placed):
+    """{day: Holiday} of the holidays in `table` (`holiday_table`) that hold for a person: those of every site and those
+    of the site they are placed on THAT day (`placed`: their placements, hr.placed; none: the holidays of every site
+    only). The one answer to "is this day a holiday for this person", for leave, the rules of a save and the week."""
+    return {holiday.day: holiday for holiday in table
+            if holiday.site_id in (None, getattr(site_of_day(placed or (), holiday.day), 'pk', None))}
 
 
-def charged_by_year(first, last, site, weekdays=None, holidays=None):
-    """{year: days charged} for a request from `first` to `last` for a person on `site`."""
+def charged_by_year(first, last, placed, weekdays=None, table=None):
+    """{year: days charged} for a request from `first` to `last` of a person placed as `placed` says: each day by the
+    holidays of the site they are placed on that day, so a request across a move between sites is charged right."""
     weekdays = set(weekdays if weekdays is not None else SchedulingSettings.get().working_weekdays)
-    free = holidays_for(first, last, site, holidays)
+    free = holidays_on(table if table is not None else holiday_table([first], [last]), placed)
     charged = defaultdict(Decimal)
     for day in each_day(first, last):
         if day.weekday() in weekdays and day not in free:
@@ -49,26 +47,31 @@ def charged_by_year(first, last, site, weekdays=None, holidays=None):
     return dict(charged)
 
 
-def leave_days(first, last, site, weekdays=None, holidays=None):
+def leave_days(first, last, placed, weekdays=None, table=None):
     """The days a request from `first` to `last` is charged for, as a Decimal."""
-    return sum(charged_by_year(first, last, site, weekdays, holidays).values(), Decimal(0))
+    return sum(charged_by_year(first, last, placed, weekdays, table).values(), Decimal(0))
 
 
-def used(employee, leave_type, year, site=None, exclude=None):
+def used(employee, leave_type, year, exclude=None):
     """The days of `year` the employee's pending and approved requests of this type are charged for."""
     requests = LeaveRequest.objects.filter(employee=employee, leave_type=leave_type, status__in=HOLDING,
                                            first_day__year__lte=year, last_day__year__gte=year)
     if exclude is not None:
         requests = requests.exclude(pk=exclude.pk)
-    return sum((charged_by_year(request.first_day, request.last_day, site).get(year, Decimal(0))
-                for request in requests), Decimal(0))
+    requests = list(requests)
+    if not requests:
+        return Decimal(0)
+    first, last = min(item.first_day for item in requests), max(item.last_day for item in requests)
+    placed, table = placements([employee.pk], first, last)[employee.pk], holiday_table([first], [last])
+    return sum((charged_by_year(item.first_day, item.last_day, placed, table=table).get(year, Decimal(0))
+                for item in requests), Decimal(0))
 
 
-def balance(employee, leave_type, year, site=None):
+def balance(employee, leave_type, year):
     """The days left of the type's yearly allowance, or None when it has no limit."""
     if leave_type.annual_days is None:
         return None
-    return leave_type.annual_days - used(employee, leave_type, year, site)
+    return leave_type.annual_days - used(employee, leave_type, year)
 
 
 def away_on(day, user_ids):

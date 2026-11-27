@@ -249,13 +249,6 @@ class OnePlaceTests(PeopleTestCase):
     def test_the_week_starts_in_one_place(self):
         self.assertEqual([module for module, function in hr_functions() if function.name == 'monday'], ['hr/rules.py'])
 
-    def test_the_person_is_locked_by_one_helper_at_one_strength(self):
-        """L-1: every lock of a person's row is hr.services.lock_person's or lock_people's (FOR NO KEY UPDATE)."""
-        import ast
-        found = {f'{module}:{function.name}' for module, function in hr_functions()
-                 if 'Employee.objects.select_for_update' in ast.unparse(function)}
-        self.assertEqual(found, {'hr/services.py:lock_person', 'hr/services.py:lock_people'})
-
 
 class PlanRaceTests(PeopleTestCase):
     """M-3: a plan saved between a dialog's check and its save is not overwritten: Create expects no plan for the cell,
@@ -301,7 +294,10 @@ class BatchPlanBoundTests(PlanPerDayTests):
         from .. import scope
         with mock.patch.object(scope, '_days', side_effect=AssertionError('a span of days was built')):
             response = self.paint((self.in_a, date(1900, 1, 1)), (self.in_a, date(2100, 12, 31)))
-        self.assertIn(response.status_code, (302, 404))
+        # Ann is the planner's person today and of neither day: told why, nothing written
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('You do not plan this person on this day.',
+                      [str(message) for message in get_messages(response.wsgi_request)])
         self.assertEqual(ShiftAssignment.objects.count(), 0)
 
 

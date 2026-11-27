@@ -16,6 +16,12 @@ class GroupForm(forms.ModelForm):
         fields = ['name', 'permissions']          # a many-to-many field on the form
 
 
+class EverythingForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = '__all__'                       # the many-to-many field too, by '__all__'
+
+
 class NameForm(forms.ModelForm):
     class Meta:
         model = Group
@@ -38,6 +44,7 @@ class ServiceTabTests(SimpleTestCase):
     def test_a_service_tab_with_what_crud_would_drop_is_refused_when_declared(self):
         for name, attributes in (
                 ('a many-to-many field', {'form_class': GroupForm}),
+                ('a many-to-many field by __all__', {'form_class': EverythingForm}),
                 ('a row list', {'row_lists': (RowList,)}),
                 ('a change severity', {'change_severity': classmethod(lambda cls, before, obj: AuditLog.Severity.CRITICAL)}),
                 ('an after_save', {'after_save': classmethod(lambda cls, request, obj, created: None)})):

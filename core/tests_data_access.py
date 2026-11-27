@@ -792,3 +792,43 @@ class OneWriterTests(SimpleTestCase):
                              {'Employee': 1}, spelling)
         other = ast.parse('class Report:' + chr(10) + '    pass' + chr(10) + 'Report()')
         self.assertEqual(models_written('sensors/demo.py', other), Counter())
+
+    def test_the_scan_sees_a_model_through_its_models_module_or_an_alias(self):
+        """N-2 a, b: the spellings a command most likely uses (the seed imports `models`)."""
+        for source in ('from ... import models' + chr(10) + 'models.Posting.objects.create(title="x")',
+                       'from hr import models' + chr(10) + 'models.Posting(title="x")',
+                       'import hr.models as m' + chr(10) + 'm.Posting.objects.filter(pk=1).update(title="x")',
+                       'from hr.models import Employee as Person' + chr(10) + 'Person.objects.create(last_name="x")',
+                       'from hr.models import Employee as Person' + chr(10) + 'Person(last_name="x")'):
+            with self.subTest(source=source):
+                found = {model.__name__ for model in models_written('hr/management/commands/seed_hr_demo.py',
+                                                                    ast.parse(source))}
+                self.assertEqual(len(found), 1, found)
+                self.assertTrue(found <= {'Posting', 'Employee'})
+
+    def test_a_form_of_a_declared_model_is_saved_by_crud_only(self):
+        """N-2 d: `form.save()` of a model form whose model declares service_written, outside core/crud.py."""
+        source = chr(10).join(['from hr.forms.roster import ShiftAssignmentForm', 'def view(request):',
+                               '    form = ShiftAssignmentForm(request.POST)', '    form.save()'])
+        self.assertEqual({model.__name__ for model in models_written('hr/views.py', ast.parse(source))},
+                         {'ShiftAssignment'})
+
+    def test_a_hook_that_asks_a_question_and_saves_the_form_calls_no_writer(self):
+        """N-2 e: a hook passes only by calling one of the service's writers (not a question of NOT_A_WRITER)."""
+        from core.crud import Resource
+        from hr import services
+        from hr.models import ShiftAssignment
+        self.assertTrue(services.own_employee)
+        declared = list(Resource.registry)
+        try:
+            class Probe(Resource):
+                model = ShiftAssignment
+                service_writes = True
+
+                @classmethod
+                def create_record(cls, request, form):
+                    services.own_employee(request.user)
+                    return form.save()
+        finally:
+            Resource.registry[:] = declared
+        self.assertFalse(calls_a_service(Probe, 'create_record'))

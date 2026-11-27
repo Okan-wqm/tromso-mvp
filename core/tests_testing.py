@@ -1,12 +1,16 @@
 """The tests' clock (core/testing.py): FrozenClock holds `timezone.now()` at the class's NOW while its data is made and
-in each of its tests, and gives the real clock back afterwards, also when the class's set-up fails."""
+in each of its tests, and gives the real clock back afterwards, also when the class's set-up fails. And `reads`: what
+each statement of a block read and handed back, counted by the database."""
+import threading
 import unittest
 from datetime import datetime, timedelta, timezone as utc
 
-from django.test import SimpleTestCase
+from django.contrib.auth.models import Group
+from django.db import IntegrityError, connection, connections, transaction
+from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
-from core.testing import FrozenClock
+from core.testing import FrozenClock, Unmeasured, reads
 
 THEN = datetime(2026, 10, 17, tzinfo=utc.utc)
 
@@ -158,3 +162,82 @@ class RunClockTests(SimpleTestCase):
         self.assertLess(first, second)                                   # it runs on: time passes in a run
         self.assertLess(second - start, timedelta(seconds=30))
         self.assertIs(timezone.now, real)
+
+
+class ReadsTests(TestCase):
+    """core.testing.reads: what a block read of each table and what each statement handed back, counted by PostgreSQL;
+    nothing left out on its connection, and what it cannot see (another thread's statements, a server-side cursor's
+    rows) refused, never a silent zero."""
+
+    @classmethod
+    def setUpTestData(cls):
+        Group.objects.bulk_create(Group(name=f'reads {number:04d}') for number in range(2000))
+        with connection.cursor() as cursor:
+            cursor.execute('ANALYZE auth_group')
+        cls.total = Group.objects.count()
+
+    def test_a_lookup_by_key_reads_its_entry_and_a_filter_without_an_index_reads_the_table(self):
+        keys = list(Group.objects.filter(name__startswith='reads').values_list('pk', flat=True)[:3])
+        with reads() as by_key:
+            list(Group.objects.filter(pk__in=keys))
+        with reads() as by_text:
+            list(Group.objects.filter(name__endswith='7'))
+        self.assertEqual(by_key.read('auth_group'), 3, by_key.reads())                  # exactly: no rounding
+        self.assertEqual(by_text.read('auth_group'), self.total, by_text.reads())
+        self.assertEqual(by_text.most_returned('auth_group'), Group.objects.filter(name__endswith='7').count())
+        self.assertEqual(by_text.most_returned('auth_permission'), 0)
+        self.assertRegex(by_text.described('auth_group'), rf'^{self.total:,} rows: SELECT .*"auth_group"')
+
+    def test_every_statement_of_the_connection_is_counted_however_it_is_written(self):
+        with reads() as union:                                          # Django writes "(SELECT ...) UNION (SELECT ...)"
+            list(Group.objects.filter(name__endswith='1').union(Group.objects.filter(name__endswith='2')))
+        with reads() as many, connection.cursor() as cursor:
+            cursor.executemany('SELECT count(*) FROM auth_group WHERE name LIKE %s', [['%3'], ['%4']])
+        with reads() as numbered, connection.cursor() as cursor:
+            cursor.execute("SELECT count(*), nextval('auth_group_id_seq') FROM auth_group WHERE name LIKE '%%5'")
+        self.assertEqual(union.read('auth_group'), 2 * self.total, union.reads())
+        self.assertEqual(many.read('auth_group'), 2 * self.total, many.reads())
+        self.assertEqual(numbered.read('auth_group'), self.total, numbered.reads())
+
+    def test_a_write_is_done_once_and_a_failing_one_fails_as_it_would(self):
+        with reads() as found:
+            Group.objects.create(name='once')
+        self.assertEqual(Group.objects.filter(name='once').count(), 1)
+        self.assertEqual([statement.returned for statement in found], [1])          # (its id, RETURNING)
+        with reads(), self.assertRaises(IntegrityError), transaction.atomic():
+            Group.objects.create(name='once')
+        self.assertEqual(Group.objects.filter(name='once').count(), 1)
+
+    def test_what_it_cannot_see_is_refused_never_a_silent_zero(self):
+        def elsewhere():
+            try:
+                list(Group.objects.filter(name__endswith='9'))       # another thread: its own connection
+            finally:
+                connections.close_all()
+        with reads() as found:
+            thread = threading.Thread(target=elsewhere)
+            thread.start()
+            thread.join(60)
+        with self.assertRaisesMessage(Unmeasured, 'another thread'):
+            found.read('auth_group')
+        with self.assertRaisesMessage(Unmeasured, 'another thread'):
+            found.most_returned('auth_group')
+        self.assertEqual(found.read('auth_permission'), 0)              # a table none of them names: answered
+        with transaction.atomic(), reads() as fetched:
+            for _group in Group.objects.filter(name__endswith='8').iterator(chunk_size=10):   # a server-side cursor
+                pass
+        with self.assertRaisesMessage(Unmeasured, 'server-side cursor'):
+            fetched.most_returned('auth_group')
+        self.assertEqual(fetched.read('auth_group'), self.total)         # its rows are counted all the same
+
+    def test_parallel_workers_are_off_in_the_block_and_given_back(self):
+        """A parallel plan's workers read in processes whose counters are not the transaction's: none in the block."""
+        def workers():
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_setting('max_parallel_workers_per_gather')")
+                return cursor.fetchone()[0]
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT set_config('max_parallel_workers_per_gather', '3', true)")
+        with reads():
+            self.assertEqual(workers(), '0')
+        self.assertEqual(workers(), '3')

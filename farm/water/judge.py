@@ -218,8 +218,8 @@ class PlaceVerdict:
     """What a place's worked-out value takes from its points: the value `held` (or None); whether it needs `attention`;
     its newest `refused` record of the tier read (or None); the value-less newer records to say (`said`); the late
     results judged critical or a warning, the worst first, then the newest, across its points: those that no longer
-    count, each with what superseded it (`late`: ((late, evidence), …)), of which those entered on time (`earlier`, said
-    as earlier results), and those still counted, each with the newer reading of their point beside it (`counted`:
+    count, each with what superseded it (`late`: ((late, evidence), …)), and those still counted, each with the newer
+    reading of their point beside it (`counted`:
     ((value, newer), …)), and the word each of them is said with (`words`: {id(record): COUNTED, LATE, EARLIER or
     UNCHECKED}), all by `PointVerdict.said_as`; the system's stale alerts older than the value shown (`older`, said,
     never held); and the points of the tier read that could not be evaluated whole (`ceiling`)."""
@@ -228,7 +228,6 @@ class PlaceVerdict:
     refused: Record | None
     said: tuple
     late: tuple
-    earlier: tuple
     counted: tuple
     words: dict
     older: tuple
@@ -264,13 +263,12 @@ def place_verdict(shown, points, own_points, entered_late=lambda record: False):
              for record in worst_first(
                  record for verdict in points.values() for record in verdict.late if record.status in ALERTS)]
     late = tuple((record, newer) for record, newer, said in pairs if said != COUNTED)
-    earlier = tuple(record for record, _newer, said in pairs if said == EARLIER)
     counted = tuple((record, newer) for record, newer, said in pairs if said == COUNTED)
     words = {id(record): said for record, _newer, said in pairs}
     attention = (from_system and held is None and shown.status == Status.OK
                  and any(points[point].lacking is not None and points[point].lacking.order > shown.order
                          for point in own_points if point in points))
-    return PlaceVerdict(held, attention, refused, said, late, earlier, counted, words, tuple(worst_first(older)),
+    return PlaceVerdict(held, attention, refused, said, late, counted, words, tuple(worst_first(older)),
                         tuple(point for point, verdict in tier.items() if verdict.ceiling))
 
 

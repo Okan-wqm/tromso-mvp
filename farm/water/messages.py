@@ -449,6 +449,11 @@ def ended_by(code, end, point):
     return f'{said}.'
 
 
+# What a unit's own-water point read on its own says of its live TAN when its unit's place works out the TAN of another of
+# its points (the newest: A9), so nothing is worked out here (read._resolve `worked`).
+WORKED_AT_UNIT = _('Not worked out here: the unit works out its newest TAN at another point (see the unit).')
+
+
 # What a superseded result is said as, by the judge's word (farm/water/judge.py `PointVerdict.said_as`): THE one table,
 # for the page, its history row and the activity log (review 10, F3).
 RESULT_SAID = {

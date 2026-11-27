@@ -1,8 +1,8 @@
 """The degree-days, round 3 (the independent review REVIEW-2 of 6fec0790): what can still end a withdrawal earlier after
 the deploy without a question, what a page costs, and what the records and the words say.
 
-- N-1: the cap of an assumed temperature looks back from the walk's first day (less the cap's days), never from today:
-  the same past days count the same however many days go by.
+- N-1: the cap of an assumed temperature is the coldest of the days before its GAP began, however long before the walk,
+  within a horizon of the walk (never of today): the same past days count the same however many days go by.
 - N-2: a probe is still expected at a place that had a row on any of the last EXPECTED_DAYS closed days of its clock,
   not only on the last one: a silent day does not let the next day count from the samples before it is closed.
 - N-4: the cap is worked out once per gap.
@@ -56,14 +56,47 @@ class CapAnchoredTests(FrozenClock, SourcesCase):
         self.temperature(self.t2, 60, '3')
         self.treat(self.medicine(degree_days=200), 10, 10, units=[self.t2])
 
-    def test_the_end_does_not_move_with_the_days_that_go_by(self):
-        # The sample is 50 days before the course: outside the cap's look-back of the walk (its first day less 7). Every
-        # day counts 10 °C now and in 8 days, when the old read range would have dropped it: the end stays 01.12.2026.
-        [now] = self.held(unit=self.t2)
-        later = self.NOW + 8 * DAY
-        with mock.patch(CLOCK, return_value=later):
-            [then] = withdrawal.of_units([self.t2]).get(self.t2.pk)
-        self.assertEqual((now.until, then.until), (date(2026, 12, 1), date(2026, 12, 1)))
+    def test_the_cap_of_a_gap_begun_before_the_course_holds_and_the_end_does_not_move(self):
+        # The gap began the day after the sample, 50 days before the course: the cap is that sample's 3 °C (the coldest
+        # of the days before the GAP began), now and as the days go by. Today the 9 past days count 27; the rest is
+        # projected at the assumption capped at 3 °C: 173 to go is 58 days, the end 17.01.2027. In 3, 8 and 20 days the
+        # past days are counted, still at 3 °C, and the end does not move.
+        ends = [self.held(unit=self.t2)[0]]
+        for later in (3, 8, 20):
+            with mock.patch(CLOCK, return_value=self.NOW + later * DAY):
+                ends += withdrawal.of_units([self.t2]).get(self.t2.pk)
+        self.assertEqual([held.until for held in ends], [date(2027, 1, 17)] * 4)
+        self.assertEqual([held.accrual.days[degree_days.CAPPED] for held in ends], [9, 12, 17, 29])
+        self.assertEqual(ends[0].accrual.projected_at, D(3))
+
+
+class HorizonTests(SourcesCase):
+    """T-02's own batch, stocked 400 days ago; the species assumed at 10 °C; a walk from 10 days ago: its gap is followed
+    back CAP_HORIZON_DAYS (365) before it, to 375 days ago, and no further."""
+
+    def setUp(self):
+        super().setUp()
+        with correction_window(500):
+            self.fish = self.stock(self.t2, count=500, days_ago=400)
+        self.assume('10.0')
+
+    def counted(self):
+        water = BatchWater({self.fish.pk}, self.today, self.day(10))
+        accrual = water.walk(self.fish.pk, self.day(10), days=1)
+        return accrual
+
+    def test_a_sample_inside_the_horizon_caps_the_gap(self):
+        self.temperature(self.t2, 374, '3')
+        accrual = self.counted()
+        self.assertEqual((accrual.days[degree_days.CAPPED], accrual.total, accrual.uncapped), (1, D(3), 0))
+
+    def test_a_sample_just_outside_the_horizon_does_not_and_the_text_says_so(self):
+        self.temperature(self.t2, 376, '3')
+        accrual = self.counted()
+        self.assertEqual((accrual.days[degree_days.ASSUMED], accrual.total, accrual.uncapped), (1, D('10.0'), 1))
+        self.assertIn('No water temperature was measured in the 365 days before the gap of 1 day counted at the '
+                      'assumed temperature: nothing caps it.', degree_days.accrual_text(accrual))
+        self.assertEqual(degree_days.CAP_HORIZON_DAYS, 365)
 
 
 class ProjectionCapTests(SourcesCase):

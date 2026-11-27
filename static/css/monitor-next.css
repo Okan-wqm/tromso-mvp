@@ -116,6 +116,11 @@ html[data-ui="next"] .is-fit .w-chart .monitor-chart-svg { outline: 1px solid va
 html[data-ui="next"] .is-fit :is(.w-dosing, .w-points, .w-stock) > section { align-content: start; row-gap: 0; padding: .1em .45em; border: 1px solid var(--line-hair); background-color: var(--plate); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-card-head { padding-bottom: calc(var(--u) * .35); border-bottom: 1px solid var(--line-hair); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-card-line { padding-top: calc(var(--u) * .3); }
+/* (drawn at the size of its place, a pane or a wall: the first reasons in sight and "+N" for the rest, whole in its
+   title, for a screen reader and in the band's chips; on the desk the card flows and shows every one) */
+html[data-ui="next"] .monitor-card.is-fit[data-fill] .monitor-reasons-more { display: none; }
+html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .monitor-reasons > [data-more] { display: none; }
+html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .monitor-reasons-more { display: block; align-self: flex-end; }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-cells { margin-top: calc(var(--u) * .45); padding: calc(var(--u) * .35) calc(var(--u) * .5); border: 1px solid var(--line-hair); }
 html[data-ui="next"] .monitor-card.is-fit[data-fill] .card-grid { column-gap: 0; padding-top: calc(var(--u) * .45); border-top: 0; }
 /* (a widget with a widget on its left keeps the gap the grid no longer has; the value tiles share their lines instead) */
@@ -132,7 +137,7 @@ html[data-ui="next"] .monitor-card.is-fit[data-fill] .w-value dd b { font-family
 /* the chart: the regions past a limit in the toxic tone, faint; the one the water is in hatched in the critical colour */
 html[data-ui="next"] .is-fit .monitor-chart-svg :is(.chart-region-co2, .chart-region-nh3) { fill: var(--zone-toxic); fill-opacity: .6; }
 html[data-ui="next"] .is-fit .monitor-chart-svg.in-co2.is-critical .chart-region-co2,
-html[data-ui="next"] .is-fit .monitor-chart-svg.in-nh3.is-critical .chart-region-nh3 { fill: url(#monitor-hatch) var(--zone-toxic); fill-opacity: 1; }
+html[data-ui="next"] .is-fit .monitor-chart-svg.in-nh3.is-critical .chart-region-nh3 { fill: url(#monitor-hatch) var(--zone-toxic); fill-opacity: 1; opacity: 1; }
 html[data-ui="next"] .is-fit .monitor-chart-svg :is(.chart-name-co2, .chart-name-nh3) { fill: var(--crit-text); }
 html[data-ui="next"] .is-fit .monitor-chart-svg.is-critical:not(.is-old) .chart-water { fill: var(--crit); }
 html[data-ui="next"] .is-fit .monitor-chart-svg .chart-iso { stroke: var(--line-control); stroke-dasharray: 4 3; opacity: .7; }
@@ -146,41 +151,54 @@ html[data-ui="next"] .monitor-hatch-line { stroke: var(--crit); stroke-width: 2.
    "pH 8.25" lay over "pH 8.75" and the axis's name) */
 @container (max-width: 30rem) {
   html[data-ui="next"] .is-fit[data-fill] .w-chart .monitor-chart:has(> svg) { overflow-x: auto; overflow-y: hidden; }
-  html[data-ui="next"] .is-fit[data-fill] .w-chart .monitor-chart > svg { flex: none; min-width: 34rem; }
+  html[data-ui="next"] .is-fit[data-fill] .w-chart .monitor-chart > svg { flex: none; min-width: var(--fit-min); }
 }
 /* (a chart that cannot be drawn: the design's dashed box, its reason in it) */
 html[data-ui="next"] .is-fit .monitor-chart > [role="status"] { border: 1px dashed var(--line-control); background-color: transparent; }
 /* the water as the design's tiles, where the server says they fit */
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] > [role="table"] {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] > [role="table"] {
   position: relative; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: none;
   grid-auto-rows: min-content; align-content: start; gap: 0; white-space: normal;
   border-top: 1px solid var(--line-hair); border-left: 1px solid var(--line-hair);
 }
 @container (max-width: 30rem) {
-  html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] > [role="table"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] > [role="table"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] > [role="table"] > [role="row"]:has(> [role="columnheader"]) {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] > [role="table"] > [role="row"]:has(> [role="columnheader"]) {
   position: absolute; display: block; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
 }
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] > [role="table"] > [role="row"]:has(> [role="rowheader"]) {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] > [role="table"] > [role="row"]:has(> [role="rowheader"]) {
   display: grid; grid-template-columns: auto minmax(1.5em, 1fr); grid-template-areas: "name name" "figure strip" "source source" "arrived arrived";
   align-content: start; align-items: center; gap: calc(var(--u) * .08) calc(var(--u) * .4); min-width: 0;
   padding: calc(var(--u) * .2) calc(var(--u) * .45); border-right: 1px solid var(--line-hair); border-bottom: 1px solid var(--line-hair);
   background-color: var(--plate);
 }
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > :is([role="rowheader"], [role="cell"]) {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] [role="row"] > :is([role="rowheader"], [role="cell"]) {
   min-width: 0; border-top: 0; line-height: 1.15; text-align: left; overflow-wrap: break-word;
 }
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > [role="rowheader"] { grid-area: name; }
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > b[role="cell"] {
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] [role="row"] > [role="rowheader"] { grid-area: name; }
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] [role="row"] > b[role="cell"] {
   grid-area: figure; font-family: var(--font-display); font-size: var(--fs-u-l); font-weight: 700; white-space: nowrap;
 }
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > span[role="cell"]:nth-of-type(2) { grid-area: strip; }
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > span[role="cell"]:nth-of-type(3) { grid-area: source; }
-html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles] [role="row"] > span[role="cell"]:nth-of-type(4) { grid-area: arrived; }
-/* the other points: each value with its age beside it, "old" in ink */
-html[data-ui="next"] .monitor-point-age { color: var(--text-3); font-size: var(--fs-u-s); font-style: normal; }
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] [role="row"] > span[role="cell"]:nth-of-type(2) { grid-area: strip; }
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] [role="row"] > span[role="cell"]:nth-of-type(3) { grid-area: source; }
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows[data-tiles="4"] [role="row"] > span[role="cell"]:nth-of-type(4) { grid-area: arrived; }
+/* the water's rows (not tiles): a table is as wide as its rows say, never narrower than its own cells (its frame scrolls
+   sideways on a narrow desk card: monitor.css) */
+html[data-ui="next"] .is-fit[data-fill] .monitor-rows:not([data-tiles]) > [role="table"] { min-width: max-content; }
+/* the other points: each point's age beside its name */
+html[data-ui="next"] .w-points section { column-gap: .5em; }
+/* (a point with no value: its first value's "no data" across the values' place; the others, the same words, are hidden:
+   _points.html) */
+html[data-ui="next"] .w-points section > .monitor-point-none { grid-column: 2 / -1; }
+html[data-ui="next"] .w-points section > span[hidden] { display: none; }
+/* (the code of a Big card: a box of its own type's height, so it never reaches past the card's edge on a wall) */
+html[data-ui="next"] .monitor-card.is-fit[data-fill] h3 a { display: inline-block; line-height: 1; }
+html[data-ui="next"] .monitor-point-head { display: flex; align-items: baseline; gap: .35em; min-width: 0; color: var(--text-3); }
+html[data-ui="next"] .monitor-point-name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-ui="next"] .monitor-point-age { flex: none; color: var(--text-3); font-style: normal; white-space: nowrap; }
 html[data-ui="next"] .monitor-point-age.is-old { color: var(--text-1); font-weight: 600; }
+html[data-ui="next"] .monitor-point-age > .monitor-shape { width: .8em; height: .8em; margin-right: .15em; vertical-align: -.05em; }
 /* ---- every control of the cards, the pane and the band: a target of at least 44 px (the brief's), at every width and
    in every place, without a length of the card's type changing: the link's own box, drawn around it by its ::after,
    from its top down (never above the card's edge, which a fitted card clips), centred across it, over what follows it
@@ -327,10 +345,10 @@ html[data-ui="next"] .is-next .monitor-flip { flex: none; font-weight: 600; whit
    saturation and the bound's "no recent data" were cut; the page test holds each of them). The pH window is not in the
    design's Small card: it stays in the markup (the parity of facts) and is shown on the wall, in the pane's Big card
    (the Deffeyes chart it is a slice of) and on the Big screen. On a wall the card is the fitted one (its cell's size). */
-/* (the Small card's one height, in one place: a grid of Small cards is rows of it, and on a grid with Big cards a Small
-   card keeps it, below) */
+/* (the Small card's one height, in one place: a grid of Small cards alone is rows of it, and on a grid that mixes it
+   with other cards a Small card keeps it, below) */
 html[data-ui="next"]:not([data-wall]) .monitor-grid { --small-h: 11.5em; }
-html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit:not([data-fill])) {
+html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit:not([data-fill])):not(:has(> .monitor-card:not(.is-fit:not([data-fill])))) {
   --card-min: 22em; grid-template-rows: auto; grid-auto-rows: var(--small-h); align-items: stretch;
 }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit:not([data-fill]) {
@@ -375,41 +393,45 @@ html[data-ui="next"]:not([data-wall]) .monitor-grid > .is-fit:not([data-fill]) .
    tall as it), wherever they stand side by side. On a phone (one column) each card is as tall as what it says: an empty
    unit's card the height of the longest one would be a screen of nothing to scroll past. */
 @media (min-width: 640px) {
-  html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .monitor-card:not(.is-fit)) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
+  html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .monitor-card:not(.is-fit)):not(:has(> .is-fit)) { grid-template-rows: auto; grid-auto-rows: 1fr; align-items: stretch; }
 }
 
-/* ---- a grid with Big cards on the desk page (the Big screen, a board that mixes them with other cards): ONE rule
-   whatever else the grid holds, at every width. The design's desk: two Big cards to a row at 1440 px. A Big card's unit
+/* ---- a grid with Big cards, or one that mixes kinds of card, on the desk page (the Big screen; a board of Small cards
+   with Big ones or with cards that flow, Simple, Detailed, Operator view): ONE rule, at every width (review 2, N8:
+   below 640 px the Small rows of 11.5em put a card that flows over the cards under it, above 640 px a row of one
+   fraction stretched the Small cards). The design's desk: two Big cards to a row at 1440 px. A Big card's unit
    is never under the 14 px floor (its smallest text 11 px), and two cards of 1440 px are narrower than the template's
    measure at that unit (48 units: 672 px), so the desk does not hold a card to its measure's proportion (its rows
    would share a height its words do not fit: review of the Big card, 2026-11-27, the dosing box ran into the foot).
-   - the grid: columns of at least the fitted cards' 34 rem (monitor.css; a Small card on such a board is as wide), its
-     rows each as high as their own cards (never a row of Small cards as tall as a Big one, never a Big card squeezed
-     into a Small card's row: review H2);
-   - a Big card of a stocked unit is as tall as the tallest of its row (the cards of a row one size, their feet level);
-     an empty unit's card and a Small card take their own height at the top of the row (the Small card its one size);
+   - the grid: columns of at least the fitted cards' least width (monitor.css --fit-min; a Small card on such a board
+     is as wide), its rows each as high as their own cards (never a row of Small cards as tall as a Big one, never a
+     Big card or a card that flows squeezed into a Small card's row: review H2);
+   - a Big card of a stocked unit and a card that flows are as tall as the tallest of their row (the cards of a row one
+     size, their feet level); an empty unit's Big card and a Small card take their own height at the top of the row
+     (the Small card its one size);
    - in the card the template's columns, rows and spans (a farm's own full-height template keeps its shape: review L3),
      each row as high as what it says, one space between them; the chart at the proportion of its place on the
      template (from the card's own measure, mw x mh, and the place's columns and rows: no number of the sheet's own);
      below 30 rem of card (a phone) one column in reading order.
    The pane and the wall keep the card FITTED to its cell (monitor.css: the slot rule, the pane's width, the wall's
    pages). */
-html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) {
-  --card-min: 34rem; grid-template-rows: auto; grid-auto-rows: auto; align-items: start;
+html[data-ui="next"]:not([data-wall]) .monitor-grid:is(:has(> .is-fit[data-fill]), :has(> .is-fit):has(> .monitor-card:not(.is-fit))) {
+  --card-min: var(--fit-min); grid-template-rows: auto; grid-auto-rows: auto; align-items: start;
 }
-html[data-ui="next"]:not([data-wall]) .monitor-grid:has(> .is-fit[data-fill]) > .is-fit:not([data-fill]) { height: var(--small-h); }
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill]:not([data-state="empty"]) { align-self: stretch; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid:is(:has(> .is-fit[data-fill]), :has(> .is-fit):has(> .monitor-card:not(.is-fit))) > .is-fit:not([data-fill]) { height: var(--small-h); }
+html[data-ui="next"]:not([data-wall]) .monitor-grid:is(:has(> .is-fit[data-fill]), :has(> .is-fit):has(> .monitor-card:not(.is-fit))) > :is(.monitor-card:not(.is-fit), .is-fit[data-fill]:not([data-state="empty"])) { align-self: stretch; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] { display: flex; flex-direction: column; min-width: 0; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] > * { --u: max(14px, min(calc(100cqi / var(--mw)), 30px)); flex: none; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid { flex: 1 0 auto; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: auto; row-gap: 0; align-content: start; }
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid > .w { grid-column: calc(var(--x) + 1) / span var(--w); grid-row: calc(var(--y) + 1) / span var(--h); }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid > .w { grid-column: calc(var(--x) + 1) / span var(--w); grid-row: calc(var(--y) + 1) / span var(--h); min-height: auto; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid > .w:not(.gy-0) { padding-top: calc(var(--u) * .45); }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-chart :is(.monitor-chart-svg, .monitor-chart > [role="status"]) {
   flex: none; height: auto; aspect-ratio: calc(var(--w) * var(--mw)) / calc(var(--h) * var(--mh) * 12 / var(--gr));
 }
 /* (each other point its name over its values: the box's width is the template's, the names whole) */
-html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-points > section { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: .6em; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-points > section { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: .6em; height: auto; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-points > section > :is(h4, span:not([title])) { flex-basis: 100%; overflow: visible; white-space: normal; }
+html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .w-points > section > span[title] { flex: 1 1 0; text-align: left; }
 html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] > .monitor-card-basis { margin-top: auto; overflow: visible; white-space: normal; }
 @container (max-width: 30rem) {
   html[data-ui="next"]:not([data-wall]) .monitor-grid > .monitor-card.is-fit[data-fill] .card-grid { grid-template-columns: minmax(0, 1fr); }
@@ -488,6 +510,7 @@ html[data-ui="next"][data-wall] .monitor-actions .button { border: 1px solid var
   html[data-ui="next"] .is-fit .monitor-chart-svg.in-nh3.is-critical .chart-region-nh3 { fill: url(#monitor-hatch) Canvas; }
   html[data-ui="next"] .monitor-hatch-ground { forced-color-adjust: none; fill: Canvas; }
   html[data-ui="next"] .monitor-hatch-line { forced-color-adjust: none; stroke: CanvasText; }
-  html[data-ui="next"] .is-fit .monitor-chart-svg .chart-water { forced-color-adjust: none; fill: CanvasText; stroke: Canvas; }
+  html[data-ui="next"] .is-fit .monitor-chart-svg .chart-water,
+  html[data-ui="next"] .is-fit .monitor-chart-svg.is-critical:not(.is-old) .chart-water { forced-color-adjust: none; fill: CanvasText; stroke: Canvas; }
   html[data-ui="next"] .is-fit .monitor-chart-svg.is-old .chart-water { fill: Canvas; stroke: CanvasText; }
 }

@@ -61,7 +61,7 @@ html[data-wall] .monitor-units { display: none; }      /* the wall keeps its Ful
    cells keep the room a card needs (frontend/wall.ts measures the grid that is left): at 1920x1080 two notices in the
    page's own size took a seventh of the screen and cut every Big card's foot. */
 html[data-wall] .content > .alarm-watch { flex: none; display: grid; gap: calc(.2 * var(--wu)); margin: 0 0 var(--wall-gap); font-size: var(--wu); line-height: 1.25; }
-html[data-wall] .content > .alarm-watch > p { margin: 0; padding: calc(.15 * var(--wu)) calc(.4 * var(--wu)); }
+html[data-wall] .content > .alarm-watch > p { max-width: none; margin: 0; padding: calc(.15 * var(--wu)) calc(.4 * var(--wu)); font-size: inherit; line-height: inherit; }
 html[data-wall] .content > .alarm-watch .icon { width: 1em; height: 1em; }
 
 /* ---- the movable windows (frontend/windows.ts) --------------------------------------------------------------- */
@@ -232,7 +232,10 @@ html[data-wall] .monitor-card:not(.is-fit) .metrics dd { font-size: 1.25em; font
    On the desk page the unit follows the card's width (never under 14 px: the text of the smallest step is then 11 px);
    on a wall, the card's width AND height, so the card fills its cell and nothing in it is cut. */
 .monitor-card.is-fit { overflow-wrap: normal; }
-.monitor-grid:has(> .is-fit) { --card-min: 34rem; }
+/* (a fitted card's least width on the desk, said once: the grid's columns, and the width a chart keeps where a card is
+   narrower: static/css/monitor-next.css) */
+.monitor-grid { --fit-min: 34rem; }
+.monitor-grid:has(> .is-fit) { --card-min: var(--fit-min); }
 .monitor-card.is-fit > * { --u: clamp(14px, calc(100cqi / var(--mw)), 30px); --space-1: calc(var(--u) / 4); font-size: var(--u); }
 .is-fit .monitor-shape { width: .62em; height: .62em; }
 .is-fit b > .monitor-shape { width: .5em; height: .5em; margin-right: .08em; }

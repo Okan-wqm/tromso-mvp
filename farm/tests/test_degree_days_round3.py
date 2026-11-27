@@ -165,7 +165,7 @@ class OneResolverTests(SourcesCase):
 class WordsTests(SourcesCase):
     def test_the_cap_setting_says_calendar_days(self):
         help_text = str(PlatformSettingsForm.Meta.help_texts['assumption_cap_days'])
-        self.assertIn('days before the gap', help_text)
+        self.assertIn('calendar days before its gap', help_text)
         self.assertNotIn('measured days', help_text)
 
     def test_no_dead_choice_and_no_unused_field(self):

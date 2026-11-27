@@ -1938,12 +1938,10 @@ def latest(points, now=None, at=None, own=None, units=()):
                 found = [each for each in candidates.get(code, []) if each is not resolved[code]]
                 if code in DERIVED:
                     # The judge's verdicts of the place's points (and of its system's own sensors), each value judged
-                    # for the place's fish. Only what they judge takes part in the worst fresh value: a stored value
-                    # superseded by a newer one, an analyser's fresh value among them, is the judge's to say (late,
-                    # held or nothing), never a fresh candidate beside it (review 8).
+                    # for the place's fish. Every candidate still takes part in the worst fresh value: a point's newest
+                    # stored value, fresh, counts beside a newer analyser's value (review 3, N1), even where the judge
+                    # also says it as a late result.
                     verdicts, judged_of = _verdicts(code, resolved[code], found, where, context, judged, moment)
-                    standing = {id(record.key) for verdict in verdicts.values() for record in verdict.judged}
-                    found = [each for each in found if id(each) in standing]
                 point_water.future += [judged(each) for each in found if each.at - moment > MAX_AHEAD]
                 # Fresh, or ahead of the clock within the ingest contract's hour: they take part in the status.
                 deciding = [judged(each) for each in found

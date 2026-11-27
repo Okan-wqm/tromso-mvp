@@ -491,13 +491,23 @@ class AnalyserAtOwnPointTests(WaterTestCase):
         self.assertIn('Late result: critical 0.8924 at Middle on ', note)
 
     def test_the_analysers_fresh_ok_ends_a_level_the_units_own_sample_raised(self):
+        """The unit's own lab critical raises; a day later it is no longer fresh and the analyser bound to the unit's
+        own point reads OK: that is the unit's own evidence (sources.own), and the level ends."""
         self.sample(self.t1, hours=2, source='lab', **BAD)
-        engine_passes = [0, 1, 60]
-        for each in engine_passes:
+        for each in (0, 1, 60):
             ran_clean(self, engine.run_once(self.now + timedelta(minutes=each)))
         self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
-        self.passes(120, 121, 180, 240, 600)
+        self.passes(1800, 1801, 1860, 1920, 2400)
         self.assertEqual(self.outcome(NH3), {'critical': 'returned', 'warning': 'returned'})
+
+    def test_a_fresh_lab_critical_still_counts_beside_the_analyser(self):
+        """Review 3, N1 stands: the lab's critical of an hour ago is fresh, so the unit is critical beside the analyser's
+        newer OK, and the judge also says it as a late result (entered behind the analyser's value)."""
+        self.live()
+        self.sample(self.t1, hours=1, source='lab', **BAD)
+        reading = self.unit_water().get(NH3)
+        self.assertEqual(reading.judged, 'critical')
+        self.assertIn('Late result: critical 0.8924 at Middle on ', reading.note)
 
 
 class SystemSensorTests(WaterTestCase):

@@ -3623,6 +3623,7 @@
         "farm/tests/test_batch_details.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_cleaner_size_limit.py",
+        "farm/tests/test_degree_days_round3.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
         "farm/tests/test_escape_delivery.py",
@@ -15611,6 +15612,7 @@
         "left_out": false
       },
       "tests": [
+        "farm/tests/test_degree_days_round3.py",
         "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_withdrawal_gate.py"
       ]
@@ -15938,6 +15940,7 @@
         "left_out": false
       },
       "tests": [
+        "farm/tests/test_degree_days_round3.py",
         "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_withdrawal_gate.py",
         "farm/tests/test_withdrawal_gate_coverage.py"
@@ -16338,6 +16341,7 @@
         "farm/tests/test_calculator.py",
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_company_overview.py",
+        "farm/tests/test_degree_days_round3.py",
         "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",
@@ -18064,6 +18068,7 @@
         "farm/tests/test_cleaner_fish.py",
         "farm/tests/test_clocks.py",
         "farm/tests/test_company_overview.py",
+        "farm/tests/test_degree_days_round3.py",
         "farm/tests/test_degree_days_sources.py",
         "farm/tests/test_delete_plan.py",
         "farm/tests/test_equipment.py",

@@ -31,7 +31,7 @@ from ..models import (Batch, Feed, HandlingAcknowledgement, Medicine, MedicineWi
                       WithdrawalAcknowledgement)
 from ..stock import services as stock_services
 from ..stock.dates import shown_date
-from .helpers import going_on, may_record
+from .helpers import going_on, may_record, point_of
 from .test_harvest_inside_withdrawal import HarvestInsideTestCase
 from .test_stock import make_unit
 from .test_withdrawal_cleaner_fish import CleanerWithdrawalTestCase
@@ -524,6 +524,9 @@ class BudgetTests(LotsTestCase):
         """`count` units in a chain: each holds its own batch, and 100 fish of the unit before it (so a hold of the
         first travels through all of them); the first is bathed."""
         units = [self.t1, *(make_unit(f'U-{number:02d}', self.hall) for number in range(1, count))]
+        if getattr(self, 'with_points', False):
+            for unit in units:
+                point_of(unit)
         batches = [self.a, *(self.stock(unit, count=1000, days_ago=9) for unit in units[1:])]
         self.treat(self.bath, 6, 6)
         for index in range(1, count):
@@ -556,9 +559,22 @@ class BudgetTests(LotsTestCase):
     def test_twenty_four_units_cost_what_six_do(self):
         self.assertEqual(self.measure(24), RECORDED)
 
+    def test_with_sampling_points_six_units_cost_what_twenty_four_do(self):
+        # Every unit with its points (review N-14): the closed probe days and the last closings are read too, two
+        # queries whatever the number of units.
+        self.with_points = True
+        self.assertEqual(self.measure(6), RECORDED_WITH_POINTS)
+
+    def test_with_sampling_points_twenty_four_units_cost_what_six_do(self):
+        self.with_points = True
+        self.assertEqual(self.measure(24), RECORDED_WITH_POINTS)
+
 
 # The queries of each reader, whatever the number of units or batches (measured at 6 and at 24 units). One more each
 # since 2026-11-26: the degree-days' rules, the platform's settings read once per water read (outside a request, where
 # the row is not memoised); these units have no sampling point, so no probe day is read.
 RECORDED = {'of_units': 11, 'in_force_of': 12, 'of_treatments': 15, 'blockers': 19, 'snapshot': 17,
             'harvests_inside': 1}
+# The same with every unit's sampling points: the closings of the clocks and the closed probe days, two more.
+RECORDED_WITH_POINTS = {name: count + 2 for name, count in RECORDED.items() if name != 'harvests_inside'} | {
+    'harvests_inside': RECORDED['harvests_inside']}

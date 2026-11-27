@@ -284,6 +284,8 @@ class RegistryCoverageTests(LoopTestCase):
         with CaptureQueriesContext(connection) as queries:
             withdrawal.snapshot({self.batch.pk}, self.today)
             withdrawal.harvests_inside()
+        # the closed probe day is what the readers read of the probe (review N-14)
+        self.assertTrue(any('"probe_days"' in query['sql'] for query in queries.captured_queries))
         tables = {model._meta.db_table: model for model in apps.get_models(include_auto_created=True)}
         registered = {(model._meta.db_table, model._meta.get_field(name).column)
                       for model, fields in gate.REGISTRY.items() for name in (fields or ())}

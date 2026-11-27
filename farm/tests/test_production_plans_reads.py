@@ -345,11 +345,13 @@ class BudgetTests(Fixtures, FeedingTestCase):
         self.purge(72, Decimal(30))
         self.slow = self.medicine('Slow vet.', degree_days=150)
 
-    def farm_of(self, count):
+    def farm_of(self, count, mixed=False):
+        """`count` units more, each with its batch: stocked 12 days ago, or with `mixed` each on a day of its own (a
+        real farm's batches came on different days: the water of each is still read with the others)."""
         units = [make_unit(f'B-{len(self.made) + n:02d}', self.hall) for n in range(count)]
         self.made += units
         for unit in units:
-            batch = self.stock(unit, count=500, weight='100', days_ago=12)
+            batch = self.stock(unit, count=500, weight='100', days_ago=12 + (len(self.made) % 9 if mixed else 0))
             ProductionPlan.objects.create(batch=batch, target_weight_g=Decimal(4000))
             self.record(kilos='0.2', unit=unit, days_ago=2, time=time(18))
             self.warm(unit, 1, 2, 3)
@@ -360,6 +362,16 @@ class BudgetTests(Fixtures, FeedingTestCase):
             response = self.client.get(reverse('farm:productionplan_list'))
         self.assertEqual(response.status_code, 200)
         return len(log), len(response.context['objects'])
+
+    def test_batches_stocked_on_different_days_cost_what_batches_of_one_day_do(self):
+        # The earliest dates read the water of every batch together, whatever day each came (review N-3).
+        self.made = []
+        self.farm_of(3, mixed=True)
+        self.count()
+        small, rows = self.count()
+        self.farm_of(6, mixed=True)
+        large, more = self.count()
+        self.assertEqual((more - rows, small), (6, large))
 
     def test_the_queries_are_the_same_at_three_and_at_nine_units(self):
         self.made = []

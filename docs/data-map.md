@@ -419,7 +419,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 127 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 128 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1569,7 +1569,7 @@ A day the daily job has closed for every place on one clock (a time zone): the p
 - **how it works**: A day the daily job has closed for every place on one clock.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › probe_day_closings
 - **constraints**: uq_probe_day_closings (unique: timezone, day)
-- **tests that mention it**: `farm/tests/test_degree_days_sources.py`, `farm/tests/test_withdrawal_gate.py`
+- **tests that mention it**: `farm/tests/test_degree_days_round3.py`, `farm/tests/test_degree_days_sources.py`, `farm/tests/test_withdrawal_gate.py`
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1593,7 +1593,7 @@ One CLOSED day of one temperature probe at one place: a stored fact, like a wate
 - **how it works**: One closed day of one temperature probe at one place: what the degree-days read of the sensors.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Facility › probe_days
 - **constraints**: chk_probe_days_place (check); chk_probe_days_how (check); chk_probe_days_void (check); uq_probe_days_point_live (unique: point, day, channel_no); uq_probe_days_system_live (unique: system, day, channel_no)
-- **tests that mention it**: `farm/tests/test_degree_days_sources.py`, `farm/tests/test_withdrawal_gate.py`, `farm/tests/test_withdrawal_gate_coverage.py`
+- **tests that mention it**: `farm/tests/test_degree_days_round3.py`, `farm/tests/test_degree_days_sources.py`, `farm/tests/test_withdrawal_gate.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1630,7 +1630,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 71 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 72 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1753,7 +1753,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 94 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 95 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

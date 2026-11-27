@@ -300,21 +300,38 @@ class ClosedDayTests(SourcesCase):
                          (self.user, 'the late readings belong to the day', 'corrected', D('6.00'), self.user))
         self.assertEqual(self.measured(3).value, D('6.00'))            # (22 x 4 + 2 x 28) / 24
 
-    def test_a_closed_day_that_would_move_an_end_earlier_is_floored_and_the_floor_is_lifted_through_the_guard(self):
+    def test_a_closing_that_meets_a_projection_with_warmer_water_frees_the_fish_on_time_without_a_floor(self):
         # 30 degree-days; 4 °C on four closed days (16); yesterday not closed, projected at 4 °C with today and the two
-        # days after: about 3 days from now. Yesterday really was 10 °C: closed, the end would be tomorrow. Nobody is
-        # there to be asked, so the end that was shown stays as a floor.
+        # days after: about 3 days from now. Yesterday really was 10 °C: closed, the end is tomorrow. Only a projection
+        # met the water (no day counted before moved): no floor (the coordinator's decision N-5), the fish wait to
+        # tomorrow as the closed days say.
         self.probed('4', 5, 4, 3, 2)
         self.probed('10', 1)
         self.job(5)
         self.job(2)
-        treatment = self.treat(self.medicine(degree_days=30), 6, 6)
+        self.treat(self.medicine(degree_days=30), 6, 6)
         self.assertEqual(self.held()[0].settled, self.day(-3))
+        _rows, _closings, floors = self.job(1)
+        self.assertEqual(floors, [])
+        [held] = self.held()
+        self.assertEqual((held.until, held.floor), (self.day(-1), None))
+
+    def test_a_closing_that_raises_a_day_already_counted_is_floored_and_the_floor_is_lifted_through_the_guard(self):
+        # Assumed 10 °C; a sample of 3 °C 3 days ago, nothing measured since: the two days after count at 3 °C (the
+        # cap), 9 by yesterday; 15 asked, the 6 left projected at 3 °C: 2 days, about 2 days from now. The probe read
+        # 10 °C yesterday and the job, run for the first time, closes it: yesterday counted at 3 °C before, at 10 °C
+        # now, a day already counted moved (N-5): the end that was shown stays as a floor, which names the day.
+        self.assume('10.0')
+        self.temperature(self.t1, 3, '3')
+        self.probed('10', 2, 1)
+        treatment = self.treat(self.medicine(degree_days=15), 4, 4)
+        self.assertEqual(self.held()[0].settled, self.day(-2))
         _rows, _closings, [floor] = self.job(1)
         self.assertEqual((floor.treatment, floor.batch, floor.not_before, floor.origin, floor.created_by),
-                         (treatment, self.batch, self.day(-3), 'closing', None))
+                         (treatment, self.batch, self.day(-2), 'closing', None))
+        self.assertIn(self.day(1).isoformat(), floor.reason)
         [held] = self.held()
-        self.assertEqual((held.until, held.worked_out, held.floor), (self.day(-3), self.day(-1), floor))
+        self.assertEqual((held.until, held.worked_out, held.floor), (self.day(-2), self.today, floor))
         self.assertIn('by a floor', withdrawal.describe(held))
         with self.assertRaises(withdrawal.WithdrawalChanged) as asked:
             health_services.lift_floor(self.user, floor, 'the vet read the probe')
@@ -322,7 +339,7 @@ class ClosedDayTests(SourcesCase):
         going_on(health_services.lift_floor, self.user, floor, 'the vet read the probe')
         floor.refresh_from_db()
         self.assertEqual((floor.lifted_by, floor.lift_reason), (self.user, 'the vet read the probe'))
-        self.assertEqual(self.held()[0].until, self.day(-1))
+        self.assertEqual(self.held(), [])
 
     def test_the_job_writes_nothing_when_the_sensors_cannot_be_read(self):
         self.probed('4', 1)

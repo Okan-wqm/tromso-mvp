@@ -1190,24 +1190,21 @@ class SendTimeTests(AccountMailCase):
             'host': '127.0.0.1', 'port': server.server_address[1], 'username': None, 'password': None,
             'use_tls': False, 'use_ssl': False, 'timeout': 1}}}
         Tarpit.answered.clear()
-        send, took = accountmail._send, []
+        send, sends = accountmail._send, []
 
-        def timed(mail):
-            start = time.perf_counter()
-            try:
-                return send(mail)
-            finally:
-                took.append(time.perf_counter() - start)
+        def counted(mail):
+            sends.append(mail)
+            return send(mail)
 
         with override_settings(MAILERS=mailers, MAIL_SEND_SECONDS=1, DEFAULT_FROM_EMAIL='console@farm.example'), \
-                mock.patch.object(accountmail, '_send', timed), self.assertLogs('core.accountmail', 'ERROR'):
+                mock.patch.object(accountmail, '_send', counted), self.assertLogs('core.accountmail', 'ERROR'):
             self.client.post(reverse('core:user_create'), user_data())
         # Seven steps of 0.6 s are over four seconds of the server's own waiting; the limit is one. Asked of the
-        # conversation, not of the clock around the request (2.5 s for the whole request was the machine's time as
-        # much as the mail's): the send itself took less than the conversation needs, the server got through at most
-        # three of its seven answers (a cut at the limit comes during the second), and it never took the mail.
-        [sending] = took
-        self.assertLess(sending, 7 * Tarpit.delay)
+        # conversation, never of a clock (2.5 s for the whole request, then the send's own time, were the machine's
+        # time as much as the mail's): the mail was tried once, the server got through at most three of its seven
+        # answers (a cut at the limit comes during the second; a limit for each step would let all seven through),
+        # and it never took the mail.
+        self.assertEqual(len(sends), 1)
         self.assertLessEqual(len(Tarpit.answered), 3, Tarpit.answered)
         self.assertNotIn(b'250 queued\r\n', Tarpit.answered)
         # (S4) a server may have taken the mail and only its answer came late: the words do not say it was not sent

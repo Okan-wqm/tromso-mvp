@@ -18,6 +18,7 @@ test that fails without its fix:
 - F10: a critical's retry time and flood window are bounded tighter; each failed step is its own flood kind.
 - F11: the dead man is not asked while something it vouches for does not hold (the ingest dead, notifications
   undeliverable), nor after a failed pass outside its throttle."""
+import sys
 import threading
 import time
 from datetime import timedelta
@@ -31,6 +32,7 @@ from django.test import TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from core.testing import plans
 from farm.tests.helpers import may_record, role
 from sensors.models import Connection, IngestStatus
 from sensors.tests import make_connection
@@ -127,19 +129,30 @@ class CriticalNeverGivenUpTests(Case):
 
 # ---- F5, F6 ------------------------------------------------------------------------------------------------------------
 class SlowTransport(RecordingTransport):
+    """A push service that takes 0.2 s for every send, of the round's clock: `clock` is the one the tests give the round
+    (outbox.send_due's `clock`), so where a round's deadline falls is the same on any machine."""
+    elapsed = 0.0
+
+    @classmethod
+    def clock(cls):
+        return cls.elapsed
+
     def send(self, notification, flood=None):
-        time.sleep(0.2)
+        type(self).elapsed += 0.2
         return super().send(notification, flood)
 
 
 @override_settings(ALARM_TRANSPORTS={'push': 'alarms.tests.test_review_fixes.SlowTransport'})
 class RoundTests(Case):
+    def setUp(self):
+        super().setUp()
+        SlowTransport.elapsed = 0.0
+
     def test_a_round_ends_at_its_deadline_and_the_rest_goes_next(self):
         for number in range(12):                                  # each its own kind: no flood message
             self.system(1, 'warning', parameter=f'p{number}')
-        found = outbox.send_due(self.now, round_seconds=0.3)
-        self.assertLess(found.sent, 12)
-        self.assertGreater(found.deferred, 0)
+        found = outbox.send_due(self.now, round_seconds=0.3, clock=SlowTransport.clock)
+        self.assertEqual((found.sent, found.deferred), (2, 10))  # sent at 0 s and 0.2 s; at 0.4 s its deadline is past
         self.assertEqual(outbox.send_due(self.now).sent + found.sent, 12)
 
     def test_a_critical_queued_during_a_round_of_warnings_ends_it_and_goes_first(self):
@@ -160,24 +173,33 @@ class RoundTests(Case):
 
 
 class QueueTests(Case):
+    HISTORY = 100_000
+    HISTORY_TABLES = ('alarms', 'alarm_notifications', 'alarm_delivery_attempts')
+
     def test_a_round_reads_the_queue_never_the_whole_history(self):
         with connection.cursor() as cursor:                       # 100,000 alarms, notified and sent long ago
             cursor.execute("INSERT INTO alarms (source, parameter, severity, opened_at, summary) SELECT 'system', 'old', "
-                           "'warning', now() - interval '30 days', 'old ' || n FROM generate_series(1, 100000) n")
+                           "'warning', now() - interval '30 days', 'old ' || n FROM generate_series(1, %s) n",
+                           [self.HISTORY])
             cursor.execute('INSERT INTO alarm_notifications (alarm_id, recipient_id, channel, level, queued_at, kind) '
                            "SELECT id, %s, 'push', 0, opened_at, 'alarm' FROM alarms WHERE parameter = 'old'",
                            [self.operator.pk])
             cursor.execute("INSERT INTO alarm_delivery_attempts (notification_id, attempted_at, outcome, detail, "
                            "flood_key) SELECT id, queued_at, 'sent', '', '' FROM alarm_notifications")
-            cursor.execute('ANALYZE alarm_notifications; ANALYZE alarm_delivery_attempts; ANALYZE alarm_outbox')
-        self.system(3, 'critical')
-        started = time.monotonic()
-        rows = outbox.backlog()
-        took = time.monotonic() - started
-        self.assertEqual(len(rows), 3)
-        import sys
-        sys.stderr.write(f'\n[alarm outbox] backlog() with 100,000 notifications in the history: {took * 1000:.0f} ms\n')
-        self.assertLess(took, 0.5)
+            cursor.execute('ANALYZE alarms; ANALYZE alarm_notifications; ANALYZE alarm_delivery_attempts; '
+                           'ANALYZE alarm_outbox')
+        queued = self.system(3, 'critical')
+        with plans() as found:
+            rows = outbox.backlog()
+        self.assertEqual(sorted(row.pk for row in rows), sorted(row.pk for row in queued))
+        sys.stderr.write(f'\n[alarm outbox] backlog() with {self.HISTORY:,} notifications in the history, rows read: '
+                         f'{found.reads()}\n')
+        # What it reads of each history table, counted by the database: a few rows for each of the three queued (its
+        # notification, its alarm, its attempts by index), never a scan of the hundred thousand. A tenth of a percent
+        # of the history is far above the first and far below the second.
+        for table in self.HISTORY_TABLES:
+            with self.subTest(table=table):
+                self.assertLess(found.read(table), self.HISTORY // 1000, found.reads())
 
 
 # ---- F9 ----------------------------------------------------------------------------------------------------------------
@@ -347,17 +369,20 @@ class WorkerTests(Case):
         self.assertEqual([call.kwargs.get('unchecked') for call in calls], [('from', 'to'), ('from', 'to'), None])
 
     def test_the_watchdog_thread_ends_a_hung_pass(self):
-        release = threading.Event()
+        release, ended = threading.Event(), []
         self.addCleanup(release.set)
+
+        def hung_pass():
+            ended.append(release.wait(20))         # True: the process's end let it go; False: it gave up waiting
+            return engine.Summary()
         made = worker.Worker('alarms', worker.Timing(**{**TIMING, 'tick': 0.05, 'hang_exit': 0.5,
                                                         'statement_timeout': 0.2}),
-                             run_pass=lambda: release.wait(20) and engine.Summary(),
-                             send=False, exit_now=mock.Mock(side_effect=lambda code: (release.set(), made.stop.set())))
+                             run_pass=hung_pass, send=False,
+                             exit_now=mock.Mock(side_effect=lambda code: (release.set(), made.stop.set())))
         made._session = lambda: None              # (its idle-transaction limit would end the test's own session)
         with mock.patch('logging.shutdown') as shutdown, self.assertLogs('alarms.worker', level='CRITICAL'):
-            started = time.monotonic()
             made.run()
-        self.assertLess(time.monotonic() - started, 10)
+        self.assertEqual(ended, [True])           # one pass, ended by the watchdog while it hung
         made.exit_now.assert_called_with(1)
         shutdown.assert_not_called()
 
@@ -368,17 +393,19 @@ class WorkerTests(Case):
             self.assertTrue(made.check_hang())
 
     def test_a_sender_that_hangs_does_not_hold_the_stop(self):
-        release = threading.Event()
+        release, senders = threading.Event(), []
         self.addCleanup(release.set)
+
+        def hanging(stop):
+            senders.append(threading.current_thread())
+            return release.wait(30) and outbox.Delivery()
         made = worker.Worker('alarms', worker.Timing(**{**TIMING, 'tick': 0.05, 'send_timeout': 0.3}),
-                             run_pass=mock.Mock(return_value=engine.Summary()),
-                             send=lambda stop: release.wait(30) and outbox.Delivery(),
-                             exit_now=mock.Mock())
+                             run_pass=mock.Mock(return_value=engine.Summary()), send=hanging, exit_now=mock.Mock())
         threading.Timer(0.5, made.stop.set).start()
         with self.assertLogs('alarms.worker', level='ERROR') as logged:
-            started = time.monotonic()
             made.run()
-        self.assertLess(time.monotonic() - started, 5)
+        self.assertTrue(senders)
+        self.assertTrue(senders[0].is_alive())    # the worker stopped while its sender still hung in the send
         self.assertIn('leaves its thread', '\n'.join(logged.output))
 
     def test_the_database_settings_bound_a_connect_and_find_a_dead_peer(self):

@@ -392,3 +392,105 @@ class OneTierRuleTests(SourcesCase):
     def test_the_sensors_trail_takes_a_units_tiers_from_the_one_resolver(self):
         from sensors import read as sensors_read
         self.assertIn('water_read.tiers(', inspect.getsource(sensors_read.tiers))
+
+    def test_a_units_chart_reads_its_water_by_the_one_rule(self):
+        # A unit's chart (sensors/read.py `places`) reads the bindings of its tiers in their order, and the samples of
+        # its nearest tier with points: a unit without points of its own in a loop shows the loop's (REVIEW-4, R4-4).
+        from sensors import read as sensors_read
+        system = System.objects.create(site=self.bergen, name='Loop B', code='LB', production_department=self.hall)
+        loop = point_of(system)
+        unit = make_unit('C-01', self.hall)
+        with gate.opened('test fixture: the unit in a loop'):
+            Tank.objects.filter(pk=unit.pk).update(system=system)
+        unit.refresh_from_db()
+        for each, points in ((unit, [loop]), (self.t1, read.own_water([self.t1.pk])[self.t1.pk])):
+            with self.subTest(unit=each.code):
+                tiers = sensors_read.tiers(each)
+                self.assertEqual(sensors_read.places(each),
+                                 ([binding for bindings, _points in tiers for binding in bindings], points))
+
+
+# ---- REVIEW-4 -------------------------------------------------------------------------------------------------------
+class SearchMemoryTests(SourcesCase):
+    """R4-1: what a gap search found empty is remembered as intervals of days, and a search asks only the days of its
+    range not yet proven empty: a memory never changes an answer, and never recurses."""
+
+    def temperatures(self):
+        return degree_days.Temperatures([self.t1], self.day(5), self.today, D(1))
+
+    def test_an_empty_search_then_one_from_a_lower_floor_asks_once_more(self):
+        temperatures = self.temperatures()
+        self.assertIsNone(temperatures.last_measured(self.day(30), self.day(5)))
+        with CaptureQueriesContext(connection) as queries:
+            self.assertIsNone(temperatures.last_measured(self.day(60), self.day(5)))
+        self.assertLessEqual(len(queries), 2)
+        with CaptureQueriesContext(connection) as queries:
+            self.assertIsNone(temperatures.last_measured(self.day(60), self.day(5)))
+            self.assertIsNone(temperatures.last_measured(self.day(50), self.day(10)))
+        self.assertEqual(len(queries), 0)
+
+    def test_a_sample_below_the_first_floor_is_still_found_after_the_empty_search(self):
+        self.temperature(self.t1, 45, '4.0')
+        temperatures = self.temperatures()
+        self.assertIsNone(temperatures.last_measured(self.day(30), self.day(5)))
+        self.assertEqual(temperatures.last_measured(self.day(60), self.day(5)), self.day(45))
+        self.assertIsNone(temperatures.last_measured(self.day(60), self.day(45)))
+        self.assertEqual(temperatures.last_measured(self.day(45), self.day(44)), self.day(45))
+
+    def test_two_courses_the_first_started_ending_last_through_the_withdrawal(self):
+        # The species assumed at 10 °C, nothing measured: the course started first (and read first) ends 3 days after
+        # the other, so its walk's horizon is the higher; the second walk's search reaches below the first's.
+        self.assume('10.0')
+        medicine = self.medicine(degree_days=200)
+        self.treat(medicine, 8, 2)
+        self.treat(medicine, 6, 5)
+        self.assertTrue(self.held())                                   # withdrawal.of_units, the guard's read
+        ends = sorted(each.until for each in withdrawal.Reader({self.batch.pk}, self.today).withdrawals())
+        self.assertEqual(len(ends), 2)
+        self.assertEqual(ends[1] - ends[0], 3 * DAY)
+
+    def test_the_memory_never_changes_an_answer(self):
+        # Random sequences of searches over 130 days with samples on some of them: each answer of one Temperatures
+        # (remembering what it found empty) equals that of a fresh one (remembering nothing).
+        import random
+        for days_ago in (100, 71, 41, 12):
+            self.temperature(self.t1, days_ago, '6.0')
+        for seed in range(12):
+            draw = random.Random(seed)
+            remembering = self.temperatures()
+            for _ in range(8):
+                floor, before = sorted(draw.sample(range(131), 2), reverse=True)
+                floor, before = self.day(floor), self.day(before)
+                with self.subTest(seed=seed, floor=floor, before=before):
+                    self.assertEqual(remembering.last_measured(floor, before),
+                                     self.temperatures().last_measured(floor, before))
+
+
+class ScriptEdgeTests(SourcesCase):
+    """R4-3: the landing script refuses unless git says OUT lies in no repository, and a migration against the
+    development database's host or port whatever the network (LANDING_OLD an existing folder: a script that let either
+    through stops there, before it makes anything)."""
+
+    run_script = ScriptTests.run_script
+
+    def test_a_git_error_other_than_no_repository_refuses(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as fake, tempfile.TemporaryDirectory() as out:
+            git = Path(fake) / 'git'
+            git.write_text('#!/bin/sh\necho "fatal: detected dubious ownership in repository" >&2\nexit 128\n')
+            git.chmod(0o755)
+            done = self.run_script(f'{out}/ends.json', PATH=f'{fake}:{os.environ["PATH"]}',
+                                   LANDING_OLD='/tmp')
+        self.assertEqual(done.returncode, 2, done.stderr)
+        self.assertIn('refused', done.stderr)
+        self.assertIn('dubious ownership', done.stderr)
+
+    def test_a_migration_against_the_development_databases_host_or_port_refuses(self):
+        for options in ('-e DB_HOST=host.docker.internal -e DB_PORT=5433', '-e DB_HOST=db -e DB_PORT=5432',
+                        '-e DB_HOST=balik-ciftligi-db-1'):
+            with self.subTest(options=options):
+                done = self.run_script('/tmp/ends.json', WITHDRAWAL_ENDS_MIGRATE='1',
+                                       WITHDRAWAL_ENDS_NETWORK='bridge', WITHDRAWAL_ENDS_DB=options,
+                                       LANDING_OLD='/tmp')
+                self.assertEqual(done.returncode, 2, done.stderr)
+                self.assertIn('development database', done.stderr)

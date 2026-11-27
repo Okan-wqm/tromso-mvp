@@ -177,8 +177,10 @@ function uncut(tab: Page): Promise<string[]> {
       // (a Big card of a stocked unit is as tall as the tallest of its ROW, its rows each as high as their own cards;
       // an empty unit's Big card takes its own height: review H2, the coordinator's item 4)
       const fill = card.hasAttribute('data-fill');
+      // (on a grid that mixes kinds of card, the cards that flow of a row one size: review 2, N8)
+      const mixed = Boolean(card.parentElement?.querySelector(':scope > .is-fit'));
       const kind = fill ? (card.dataset.state === 'empty' ? '' : `a row of Big cards at ${Math.round(box.top)}`)
-        : card.className.includes('is-fit') ? 'fit' : 'flow';
+        : card.className.includes('is-fit') ? 'fit' : mixed ? `a row of cards that flow at ${Math.round(box.top)}` : 'flow';
       if (kind && !sizes.has(kind)) sizes.set(kind, new Set());
       sizes.get(kind)?.add(`${Math.round(box.width)}x${Math.round(box.height)}`);
       const code = card.querySelector('h3')?.textContent?.trim() ?? '?';
@@ -296,9 +298,28 @@ function bigCards(tab: Page, root = '.monitor-grid'): Promise<string[]> {
       for (const box of Array.from(card.querySelectorAll<HTMLElement>(':is(.w-dosing, .w-points, .w-stock) > section'))) {
         if (line(box, 'Top') < 1 || line(box, 'Left') < 1) wrong.push(`${code}: a box without its hairline`);
       }
-      for (const value of Array.from(card.querySelectorAll<HTMLElement>('.w-points section > span[title]'))) {
-        // (a figure, in any language: a value said in words, "no data", has no age)
-        if (/\d/.test(value.textContent ?? '') && !value.querySelector('.monitor-point-age')?.textContent?.trim()) wrong.push(`${code}: an other point's value without its age`);
+      for (const section of Array.from(card.querySelectorAll<HTMLElement>('.w-points > section'))) {
+        const box = section.getBoundingClientRect();
+        // each point: its name (it gives way first, whole in its title, but never to nothing), its age when it has a
+        // value (said once, beside the name), its values, all whole and inside the box
+        for (const head of Array.from(section.querySelectorAll<HTMLElement>(':scope > .monitor-point-head'))) {
+          const name = head.querySelector<HTMLElement>('.monitor-point-name');
+          const age = head.querySelector<HTMLElement>('.monitor-point-age');
+          const values = [];
+          for (let next = head.nextElementSibling; next && next.matches('span[title]') && !next.matches('.monitor-point-head'); next = next.nextElementSibling) {
+            if (!next.hasAttribute('hidden')) values.push(next as HTMLElement);       // (a point with no value says it once)
+          }
+          const said = values.some((value) => /\d/.test(value.textContent ?? ''));
+          // (a name that gives way keeps at least three letters of room: a short one is whole)
+          if (!name || name.clientWidth < Math.min(name.scrollWidth, 3 * Number.parseFloat(getComputedStyle(name).fontSize))) wrong.push(`${code}: the point "${name?.textContent?.trim()}" has no room for its name`);
+          if (said && !age?.textContent?.trim()) wrong.push(`${code}: the point "${name?.textContent?.trim()}" says no age`);
+          for (const part of [head, ...(age ? [age] : []), ...values]) {
+            if (!inside(part, box)) wrong.push(`${code}: "${(part.textContent ?? '').trim()}" runs out of the other points' box`);
+          }
+          for (const part of [...(age ? [age] : []), ...values]) {
+            if (part.scrollWidth > part.clientWidth + 1 && getComputedStyle(part).overflowX !== 'visible') wrong.push(`${code}: "${(part.textContent ?? '').trim()}" is cut`);
+          }
+        }
       }
       if (card.dataset.state === 'empty') {
         for (const part of ['.monitor-cells', '.w-chart', '.w-dosing', '.w-points', '.w-stock']) {
@@ -337,11 +358,53 @@ function bigCards(tab: Page, root = '.monitor-grid'): Promise<string[]> {
           if (values.length > 1 && most < 2) wrong.push(`${code}: the water tiles stand one to a line`);
         }
       }
+      for (const rows of Array.from(card.querySelectorAll<HTMLElement>('.w-water_table .monitor-rows'))) {
+        const tables = Array.from(rows.querySelectorAll<HTMLElement>(':scope > [role="table"]'));
+        tables.forEach((table, index) => {
+          const own = table.getBoundingClientRect();
+          for (const cell of Array.from(table.querySelectorAll<HTMLElement>('[role="rowheader"], [role="cell"], [role="columnheader"]'))) {
+            if (!cell.getBoundingClientRect().width || cell.closest('[role="row"]')?.getBoundingClientRect().width === 1) continue;
+            if (!inside(cell, own)) wrong.push(`${code}: "${(cell.textContent ?? '').trim().slice(0, 24)}" outside its water table`);
+          }
+          for (const other of tables.slice(index + 1)) if (meets(own, other.getBoundingClientRect())) wrong.push(`${code}: two water tables lie over each other`);
+        });
+      }
       if (place) {
         const room = place.getBoundingClientRect();
         for (const row of Array.from(place.querySelectorAll<HTMLElement>('[role="row"]'))) {
           const box = row.getBoundingClientRect();
           if (box.height > 2 && box.bottom > room.bottom + 1.5) wrong.push(`${code}: "${(row.textContent ?? '').trim().slice(0, 30)}" below the water's place`);
+        }
+      }
+    }
+    return wrong;
+  }, root);
+}
+
+/** Every word of a card that lies outside the card (content running out of its card: review H2, review 2 N10), or
+ *  outside the frame that holds it; a word in a frame that scrolls is that frame's (it is reached by scrolling). [] when
+ *  every word is inside its card. */
+function spills(tab: Page, root = '.monitor-grid'): Promise<string[]> {
+  return tab.evaluate((selector) => {
+    const wrong: string[] = [];
+    for (const card of Array.from(document.querySelectorAll<HTMLElement>(`${selector} .monitor-card`))) {
+      const frame = card.getBoundingClientRect();
+      if (!frame.height) continue;
+      const code = card.querySelector('h3')?.textContent?.trim() ?? '?';
+      for (const node of Array.from(card.querySelectorAll<HTMLElement>('*'))) {
+        if (node.closest('svg, .sr-only, [hidden]')) continue;
+        const own = Array.from(node.childNodes).some((child) => child.nodeType === 3 && (child.textContent ?? '').trim());
+        if (!own) continue;
+        const box = node.getBoundingClientRect();
+        if (!box.width || !box.height) continue;
+        let scrolled = false;
+        for (let up = node.parentElement; up && up !== card; up = up.parentElement) {
+          const style = getComputedStyle(up);
+          if (/(auto|scroll)/.test(style.overflowX + style.overflowY)) scrolled = true;
+        }
+        if (scrolled) continue;
+        if (box.left < frame.left - 1.5 || box.right > frame.right + 1.5 || box.top < frame.top - 1.5 || box.bottom > frame.bottom + 1.5) {
+          wrong.push(`${code}: "${(node.textContent ?? '').trim().slice(0, 30)}" outside its card`);
         }
       }
     }
@@ -470,7 +533,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
         // every language: Small, Simple and Big (the Big card's tiles hold the longest words: Norwegian, Turkish)
         if (language !== 'en' && !['small', 'simple', 'big'].includes(screen)) continue;
         // (the board that mixes Small and Big cards at a tablet's width too: review H2)
-        for (const width of screen === 'mixed' ? [1440, 1920, 1024, 390] : [1440, 1920, 390]) {
+        for (const width of screen === 'mixed' ? [1440, 1920, 1024, 640, 390] : [1440, 1920, 390]) {
           await t.test(`${screen} ${language} at ${width} px: the cards, their links and glyphs, CSP, axe, 4.5:1`, async () => {
             mode = 'cards';
             const key = `${screen}-${language}`;
@@ -498,6 +561,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
             if (screen === 'big' || screen === 'mixed') {
               assert.deepEqual(await bigCards(tab), [], 'the Big card of the design, nothing of it cut');
               assert.deepEqual(await overlapping(tab), [], 'no card lies over another');
+              assert.deepEqual(await spills(tab), [], 'nothing of a card runs out of it');
               if (width === 1440) assert.deepEqual(await lowInThemes(tab), [], 'Big card text under 4.5:1 in a theme');
             }
             if (screen === 'mixed') {
@@ -507,6 +571,16 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
               assert.ok(small.length >= 5 && new Set(small).size === 1, `Small card heights ${small}`);
             }
             if (['small', 'big', 'mixed'].includes(screen)) assert.deepEqual(await smallTargets(tab), [], 'every control a 44 px target');
+            if (screen === 'big' && width < 640) {
+              // on a phone the chart's frame scrolls: the water's mark is in sight in it (frontend/chartframe.ts)
+              const hidden = await tab.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('.monitor-chart[tabindex]'))
+                .filter((frame) => frame.scrollWidth > frame.clientWidth + 1).flatMap((frame) => {
+                  const box = frame.getBoundingClientRect();
+                  const mark = frame.querySelector('.chart-water')?.getBoundingClientRect();
+                  return mark && (mark.left < box.left || mark.right > box.right) ? [frame.closest('article')?.querySelector('h3')?.textContent?.trim() ?? '?'] : [];
+                }));
+              assert.deepEqual(hidden, [], 'the water\u2019s mark in sight in a chart that scrolls');
+            }
             assert.ok(seen.glyphs > 0, 'the state glyphs are drawn');
             assert.equal(seen.bare, 0, 'no glyph is a speck');
             assert.deepEqual(seen.sideways ? await sideways(tab) : [], [], `nothing scrolls sideways (${seen.sideways} px)`);
@@ -622,6 +696,28 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
       await tab.close();
     });
 
+    await t.test('high contrast (forced colours): the chart\u2019s mark in the system\u2019s text colour, an old one hollow', async () => {
+      mode = 'cards';
+      const { tab } = await open('big-en', 1440, 900);
+      await tab.emulateMedia({ forcedColors: 'active' });
+      await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
+      const marks = await tab.evaluate(() => {
+        const probe = document.createElement('i');
+        document.body.append(probe);
+        probe.style.color = 'CanvasText';
+        const text = getComputedStyle(probe).color;
+        probe.style.color = 'Canvas';
+        const ground = getComputedStyle(probe).color;
+        probe.remove();
+        return Array.from(document.querySelectorAll<SVGElement>('.monitor-grid svg.monitor-chart-svg.is-critical')).map((chart) => ({
+          code: chart.closest('article')?.querySelector('h3')?.textContent?.trim(), old: chart.classList.contains('is-old'),
+          fill: getComputedStyle(chart.querySelector('.chart-water') as Element).fill, text, ground }));
+      });
+      assert.ok(marks.some((mark) => mark.old) && marks.some((mark) => !mark.old), JSON.stringify(marks));
+      for (const mark of marks) assert.equal(mark.fill, mark.old ? mark.ground : mark.text, `${mark.code}: ${JSON.stringify(mark)}`);
+      await tab.close();
+    });
+
     await t.test('the pane: the Big card of the unit gone into, beside the Small cards', async () => {
       mode = 'cards';
       for (const [width, height] of [[1440, 900], [1920, 1080]] as const) {
@@ -645,13 +741,14 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
     });
 
     for (const language of LANGUAGES) {
-      for (const name of ['pane-tw08', 'pane-tw09', 'pane-tw12']) {
+      for (const name of ['pane-tw08', 'pane-tw09', 'pane-tw12', 'pane-tw10', 'pane-tw11', 'pane-tw01']) {
         await t.test(`${name} ${language}: the pane's Big card of an old, a many-valued and an old acid water`, async () => {
           mode = 'cards';
           const { tab, violations } = await open(`${name}-${language}`, 1440, 900);
           await tab.waitForSelector('.monitor-dock [data-poll-state="live"] .monitor-card.is-fit');
           await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
           assert.deepEqual(await bigCards(tab, '.monitor-dock'), [], 'the pane\u2019s Big card, nothing of it cut');
+          assert.deepEqual(await spills(tab, '.monitor-dock'), [], 'nothing of the pane\u2019s card runs out of it');
           assert.deepEqual(await besideTheCards(tab), [], 'beside the cards');
           assert.deepEqual(await smallTargets(tab), [], 'every control a 44 px target');
           assert.deepEqual(await lowContrast(tab), [], 'card text under 4.5:1');
@@ -666,6 +763,16 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
           const { tab, violations } = await open(`wall-big-${language}`, width, height);
           await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
           await tab.waitForFunction(() => document.querySelector('.monitor-grid')?.hasAttribute('data-page'));
+          // every page of the wall (it opens on the page of its worst card): to the first, then each in turn
+          const pages = Number(await tab.evaluate(() => document.querySelector<HTMLElement>('.monitor-grid')?.dataset.pageCount ?? '1'));
+          const at = (): Promise<number> => tab.evaluate(() => Number(document.querySelector<HTMLElement>('.monitor-grid')?.dataset.page ?? '1'));
+          for (let guard = 0; guard < pages && (await at()) > 1; guard += 1) await tab.keyboard.press('PageUp');
+          assert.equal(await at(), 1);
+          for (let page = 1; page <= pages; page += 1) {
+            if (page > 1) {
+              await tab.keyboard.press('PageDown');
+              await tab.waitForFunction((wanted) => document.querySelector<HTMLElement>('.monitor-grid')?.dataset.page === String(wanted), page);
+            }
           const seen = await tab.evaluate(() => {
             const grid = document.querySelector('.monitor-grid') as HTMLElement;
             const notices = Array.from(document.querySelectorAll<HTMLElement>('.content > .alarm-watch > p'));
@@ -687,8 +794,10 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
           assert.equal(seen.scrolls, false, 'the wall is one screen');
           assert.deepEqual(seen.cut, [], 'the cards of the page shown are whole in the grid’s room');
           assert.ok(seen.shown >= 1, `${seen.shown} cards on the screen`);
-          assert.deepEqual(await bigCards(tab), [], 'every Big card on the screen whole, its foot in sight');
+          assert.deepEqual(await bigCards(tab), [], `page ${page}: every Big card whole, its foot in sight`);
+          assert.deepEqual(await spills(tab), [], `page ${page}: nothing of a card runs out of it`);
           assert.deepEqual(await covered(tab), [], 'nothing lies over the band, a state word or the buttons of the wall');
+          }
           assert.deepEqual(violations, [], 'CSP violations');
           if (language === 'en') await shot(tab, `wall-big-en-${width}`, false);
           await tab.close();

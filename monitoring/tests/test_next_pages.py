@@ -26,7 +26,7 @@ from django.urls import reverse
 
 from core import ui
 from core.language import save_account_language
-from core.test_world import (MIXED_BIG, MIXED_OWN, MOMENT, MONITORING_UNITS, TEST_MIXED_BOARD, TEST_OPERATOR_BOARD,
+from core.test_world import (MIXED_BIG, MIXED_FLOW, MIXED_OWN, MOMENT, MONITORING_UNITS, TEST_MIXED_BOARD, TEST_OPERATOR_BOARD,
                               TEST_WALL, monitoring_world, world)
 from core.testing import FrozenClock
 from farm.models import Tank
@@ -50,17 +50,26 @@ FLOWING = ('simple', 'detailed', 'operator')
 BIG_SCREENS = ('big', 'wall-big')
 # The units whose Big card the browser test opens in the pane too (beside TW-02): an old critical, many values, and an
 # old sample in the CO2 region of its chart.
-PANES = ('TW-08', 'TW-09', 'TW-12')
+PANES = ('TW-08', 'TW-09', 'TW-12', 'TW-10', 'TW-11', 'TW-01')
 # What the design's Big card of an empty unit says that the classic one does not: the unit, the chart's place and why it
 # is empty, what to dose, the other points, the stock (in English).
 EMPTY_BIG = ('Status', 'Volume', 'Max density', 'Max biomass', 'No chart: there is no fish in this unit.', 'Dosing advice',
-             'No dosing advice', 'Other sampling points', 'Stock', 'No fish')
+             'No fish: nothing to dose.', 'Other sampling points', 'Stock', 'No fish')
 
 
 def _articles(html):
     """{the card's key (data-key): its markup} of the cards of a fragment, in its order."""
     return {re.search(r'data-key="([^"]+)"', article).group(1): article
             for article in re.findall(r'<article .*?</article>', html, re.S)}
+
+
+def _visible(node):
+    """The texts a node shows (not its screen reader's own words, .sr-only)."""
+    for child in node.children:
+        if isinstance(child, str):
+            yield child
+        elif 'sr-only' not in child.classes:
+            yield from _visible(child)
 
 
 def _stocked(html):
@@ -71,11 +80,18 @@ def _stocked(html):
 # What the new look adds to a Big card's chart: its frame is a stop of the keyboard with an id of its own (on a phone the
 # picture scrolls sideways in it: templates/monitoring/widgets/_chart.html); the classic card's never scrolls.
 CHART_STOP = re.compile(r'(<figure class="monitor-chart [^"]*") id="[^"]*chart-[^"]*" tabindex="0"')
+# ... and to its other points (each point's age beside its name, a point with no value said once:
+# templates/monitoring/widgets/_points.html), and to its reasons where it is drawn at the size of its place (the first
+# FIT_REASONS in sight, "+N" for the rest: _card_fit.html).
+POINTS_BOX = re.compile(r'<section class="tw:grid tw:grid-cols-\[minmax\(0,1fr\)_auto_auto_auto\].*?</section>', re.S)
+REASONS_MORE = re.compile(r'<p class="monitor-reasons-more .*?</p>', re.S)
 
 
 def _fitted(html):
-    """The new look's markup of fitted cards without what only the new look adds to every Big card (CHART_STOP)."""
-    return CHART_STOP.sub(r'\1', html)
+    """The markup of fitted cards without what each look says its own way on a Big card: CHART_STOP, the other points'
+    box, REASONS_MORE and the reasons it folds (the classic markup passes through unchanged but for the points' box)."""
+    html = REASONS_MORE.sub('', CHART_STOP.sub(r'\1', html)).replace(' data-more>', '>')
+    return POINTS_BOX.sub('<section points>', html)
 
 
 class NextPagesTests(FrozenClock, TestCase):
@@ -122,7 +138,8 @@ class NextPagesTests(FrozenClock, TestCase):
         self.assertEqual({card['state'] for card in said.values()}, STATES)
         expected = {'TW-01': 'OK', 'TW-02': 'Critical', 'TW-03': 'Warning', 'TW-04': 'No recent data',
                     'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty', 'TW-08': 'Critical',
-                    'TW-09': 'No limit', 'TW-10': 'No limit', 'TW-11': 'No limit', 'TW-12': 'Critical'}
+                    'TW-09': 'No limit', 'TW-10': 'No limit', 'TW-11': 'No limit', 'TW-12': 'Critical',
+                    'TW-13': 'Critical'}
         self.assertEqual({code: said[code]['state'] for code in expected}, expected)
         self.assertEqual(len(MONITORING_UNITS), len(expected))
 
@@ -215,14 +232,18 @@ class NextPagesTests(FrozenClock, TestCase):
             self.assertNotIn(' is-next"', classic, name)
             if name in FLOWING:
                 self.assertEqual(new.count(' is-next"'), cards, name)
+            elif name == 'mixed':
+                fitted = {key: article for key, article in _articles(classic).items() if ' is-fit ' in article}
+                self.assertEqual({key: _fitted(article) for key, article in _articles(new).items() if key in fitted},
+                                 {key: _fitted(article) for key, article in fitted.items()})
             elif name in BIG_SCREENS:
-                self.assertEqual(_fitted(_stocked(new)), _stocked(classic), name)
+                self.assertEqual(_fitted(_stocked(new)), _fitted(_stocked(classic)), name)
                 self.assertEqual(len(CHART_STOP.findall(new)), len(re.findall(r'<svg class="monitor-chart-svg', new)), name)
                 self.assertGreaterEqual(cards - _stocked(classic).count('<article class="monitor-card '), 2, name)
             else:
-                self.assertEqual(_fitted(new), classic, name)
+                self.assertEqual(_fitted(new), _fitted(classic), name)
         focus = {**SCREENS['small'], 'focus': str(self.units['TW-02'].pk)}
-        self.assertEqual(_fitted(self.ask(PANE, focus).content.decode()), self.ask(PANE, focus, look='').content.decode())
+        self.assertEqual(_fitted(self.ask(PANE, focus).content.decode()), _fitted(self.ask(PANE, focus, look='').content.decode()))
 
     def test_an_empty_units_big_card_says_the_unit_in_the_new_look(self):
         """The design's Big card of a unit with no fish says the unit itself, as the overview's Small card of an empty
@@ -256,16 +277,22 @@ class NextPagesTests(FrozenClock, TestCase):
         self.assertEqual(said['state'], 'Empty')
         for words in EMPTY_BIG:
             self.assertIn(words, ' '.join(said['texts']))
+        # (review 2, N6) nothing about fish it has not, and the chart's place says why once
+        self.assertNotIn('for these fish', ' '.join(said['texts']))
+        self.assertEqual(said['texts'].count('No chart: there is no fish in this unit.'), 1, said['texts'])
 
     def test_the_big_cards_water_says_whether_its_tiles_hold_it(self):
         """Whether a Big card's water is drawn as the design's tiles is the server's one answer (monitoring/cards/render.py
         tiled: one column of at most eight values, in a place of the template that holds two lines of four tiles), said
-        on the rows' frame as `data-tiles` in both looks, which the new look's sheet draws from (never a count of a
-        table's children). Five and eight values on the built-in Big card: tiles; ten (TW-09), fifteen and seventeen
-        (TW-10, TW-11: two columns of rows): none; five values on a farm's full-height template whose water's place is
-        low (the mixed board's TW-06): none. On the Big screen, its wall, the mixed board and in the pane."""
+        on the rows' frame as `data-tiles="4"` (the tiles to a line) in both looks, which the new look's sheet draws
+        from (never a count of a table's children). Five and eight values on the built-in Big card: tiles; ten (TW-09),
+        fifteen and seventeen (TW-10, TW-11): none, ONE column of rows (two columns of rows do not fit side by side in
+        the Big card's water place: render.water_rows; review 2, N1, they lay over each other); five values on a farm's
+        full-height template whose water's place is low (the mixed board's TW-06): none. On the Big screen, its wall,
+        the mixed board and in the pane."""
+        from monitoring.cards import catalogue
         from monitoring.cards.render import WATER_TILES
-        self.assertEqual(WATER_TILES, 8)
+        self.assertEqual(WATER_TILES, catalogue.WIDGETS['water_table'].tiles[0] * catalogue.WIDGETS['water_table'].tiles[1])
         built_in = {'TT-01': True, 'TW-01': True, 'TW-04': True, 'TW-09': False, 'TW-10': False, 'TW-11': False}
         for name, expected in (('big', built_in), ('wall-big', built_in),
                                ('mixed', {**{code: True for code in MIXED_BIG}, MIXED_OWN: False})):
@@ -276,26 +303,61 @@ class NextPagesTests(FrozenClock, TestCase):
                     frames = re.findall(r'<div class="monitor-rows[^"]*"([^>]*)>', articles[code])
                     with self.subTest(screen=name, look=look or 'classic', card=code):
                         self.assertTrue(frames)
-                        self.assertEqual([' data-tiles' in frame for frame in frames], [tiles] * len(frames))
+                        self.assertEqual([' data-tiles="4"' in frame for frame in frames], [tiles] * len(frames))
                         values = len(re.findall(r'role="rowheader"', articles[code]))
                         if code in ('TW-10', 'TW-11'):
                             self.assertEqual((values, articles[code].count('role="table"')),
-                                             (15 if code == 'TW-10' else 17, 2))
+                                             (15 if code == 'TW-10' else 17, 1))
         for code, tiles in (('TW-02', True), ('TW-09', False)):
             pane = self.ask(PANE, {**SCREENS['small'], 'focus': str(self.units[code].pk)}).content.decode()
-            self.assertEqual(' data-tiles' in pane, tiles, code)
+            self.assertEqual(' data-tiles="4"' in pane, tiles, code)
 
     def test_a_fitted_cards_markup_is_the_same_on_a_board_that_mixes_them(self):
-        """The mixed board (core/test_world.py mixed_board): Small cards, two Big ones and one drawn with a farm's own
-        full-height template, in the farm's one order; every card the same markup in both looks (none of them empty), but
-        the Big cards' chart frames, a stop of the keyboard in the new look (CHART_STOP)."""
+        """The mixed board (core/test_world.py mixed_board): Small cards, two Big ones, one drawn with a farm's own
+        full-height template and Simple cards that flow, in the farm's one order; every fitted card the same markup in
+        both looks (none of them empty), but the Big cards' chart frames, a stop of the keyboard in the new look
+        (CHART_STOP); the cards that flow are the design's card in the new look."""
         new, classic = self.fragment(self.screens['mixed']), self.fragment(self.screens['mixed'], look='')
-        self.assertEqual(_fitted(new), classic)
         articles = {self.norm(key[len('card:'):]): article for key, article in _articles(new).items()}
+        before = {self.norm(key[len('card:'):]): article for key, article in _articles(classic).items()}
+        self.assertEqual(list(articles), list(before))
         for code, article in articles.items():
             with self.subTest(card=code):
                 self.assertEqual(' data-fill' in article, code in (*MIXED_BIG, MIXED_OWN))
-                self.assertIn(' is-fit ', article)
+                self.assertEqual(' is-fit ' in article, code not in MIXED_FLOW)
+                self.assertEqual(' is-next"' in article, code in MIXED_FLOW)
+                if code not in MIXED_FLOW:
+                    self.assertEqual(_fitted(article), _fitted(before[code]))
+
+    def test_a_reasons_short_form_is_never_said_twice_on_a_card(self):
+        """A reason's short form (the value against the bound it is past) is said once on a card: a % of saturation judged
+        through its mg/L row is the same crossing, so that reason is said whole (monitoring/read.py _alerts; review 2,
+        N10: TT-01 said "O2 (mg/L) 5.00 · critical limit 6.00" twice). Every card of the Small, Big and wall screens."""
+        from monitoring.tests.golden import Tree
+        for name in ('small', 'big', 'wall-big'):
+            for node in Tree(self.fragment(SCREENS[name])).root.walk():
+                if node.tag != 'ul' or 'monitor-reasons' not in node.classes:
+                    continue
+                shown = [' '.join(' '.join(text for text in _visible(item)).split()) for item in node.children
+                         if not isinstance(item, str) and item.tag == 'li']
+                with self.subTest(screen=name, reasons=shown):
+                    self.assertEqual(len(shown), len(set(shown)))
+
+    def test_the_other_points_say_each_values_age_in_the_new_look(self):
+        """The box of a Big card's other sampling points says each point's age beside its name in the new look (the
+        oldest of its values: render.other_points), an old one with the clock (and "old" for a screen reader), the
+        point's name whole in its title; the classic box keeps the age in each value's title (OTHER_POINTS: TW-01's
+        inlet fresh, TW-08's bottom drain 30 hours old)."""
+        for look in (ui.NEXT, ''):
+            articles = {self.norm(key[len('card:'):]): article
+                        for key, article in _articles(self.fragment(SCREENS['big'], look=look)).items()}
+            for code, old in (('TW-01', False), ('TW-08', True)):
+                box = re.search(r'<div class="w w-points [^"]*">(.*?)</section>', articles[code], re.S).group(1)
+                with self.subTest(look=look or 'classic', card=code):
+                    # one age, the point's (its values' oldest), for the one point with values
+                    self.assertEqual(box.count('class="monitor-point-age'), 1 if look else 0)
+                    self.assertEqual('monitor-shape-blind' in box, bool(look) and old)
+                    self.assertEqual(box.count('class="monitor-point-name" title="'), 3 if look else 0)
 
     def test_a_screens_change_token_is_its_looks_own(self):
         """The cards of a screen are other markup in each look, so the token a poll of one look carries never answers

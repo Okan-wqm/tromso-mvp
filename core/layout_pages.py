@@ -373,11 +373,20 @@ def _shell_next():
         return page.render(context)
 
 
+def _alarm_watch():
+    """The alarms' notices as the monitoring wall prints them (templates/alarms/_watch.html with `live` and `sent_note`,
+    the tag {% alarm_watch %}'s template): nothing is checked (no worker has run) and nothing is sent (no transport),
+    the two notices a wall shows at once. frontend/test/wall.browser.test.ts sets them above the wall in both looks."""
+    watch = N(checked=False, reason='never', since=None, last_pass_at=None, failed_steps='', row=None)
+    return render_to_string('alarms/_watch.html', {'watch': watch, 'promise': False, 'sent_note': True,
+                                                   'connected': False, 'live': True, 'poll_seconds': 30})
+
+
 PAGES = {'meal': _meal, 'stock': _stock, 'water': _water, 'card-en': lambda: _card('en'), 'card-nb': lambda: _card('nb'),
          'matrix': _matrix, 'approve': _approve, 'tabs': _tabs, 'report-tabs': _report_tabs, 'overview': _overview,
          'wall-small-en': lambda: _wall('en'), 'wall-small-tr': lambda: _wall('tr'),
          'dock-big-tr': lambda: _wall('tr', pane='HA-R02'), 'shell-next': _shell_next,
-         'strip-units': _strip, 'strip-split': lambda: _strip(alarms=1)}
+         'strip-units': _strip, 'strip-split': lambda: _strip(alarms=1), 'alarm-watch': _alarm_watch}
 
 
 def rendered():

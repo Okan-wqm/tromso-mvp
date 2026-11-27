@@ -35,7 +35,7 @@ built and read.
     water_page_world(admin)           after world(), for Water chemistry's tests only: a sample on TM-01 voided
     sensors_world(admin)            after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat
-    monitoring_world(admin)           twelve more units of Test Hall A, one in each state a monitoring card can be in
+    monitoring_world(admin)           thirteen more units of Test Hall A, one in each state a monitoring card can be in
                                       (OK, critical, warning, no recent data, no limit, note, empty, an old critical, many values,
                                       an old sample in the CO2 region),
                                       and a wall board of the hall's units on a 55" TV read from 2 m (wall_board), a board
@@ -784,8 +784,9 @@ MONITORING_UNITS = (
     ('TW-09', 'Test tank many values', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2',
                                                        'alkalinity_mg_l': '85', 'tan_mg_l': '0.4',
                                                        'nitrite_n_mg_l': '0.05', 'nitrate_n_mg_l': '20'}),
-    # more values than a fitted card's water stands in one column (render.WATER_ROWS, fourteen): two columns of rows,
-    # 15 and 17 values (with the oxygen's saturation and the NH3-N and NH4-N the TAN gives), never tiles (no limit)
+    # more values than WATER_ROWS (fourteen), 15 and 17 (with the oxygen's saturation and the NH3-N and NH4-N the TAN
+    # gives): two columns of rows only where two fit side by side (render.columns_for; the Big card's water holds one),
+    # never tiles (no limit)
     ('TW-10', 'Test tank fifteen values', True, True, 1, {
         'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85', 'tan_mg_l': '0.4',
         'nitrite_n_mg_l': '0.05', 'nitrate_n_mg_l': '20', 'hardness_mg_l': '60', 'co2_mg_l': '8',
@@ -800,9 +801,17 @@ MONITORING_UNITS = (
     # with no fresh value)
     ('TW-12', 'Test tank old acid water', True, True, 30, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '6.3',
                                                            'alkalinity_mg_l': '85'}),
+    # the same water, fresh: the chart's mark in the CO2 region, critical and not old (high contrast draws it in the
+    # system's text colour)
+    ('TW-13', 'Test tank acid water', True, True, 1, {'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '6.3',
+                                                      'alkalinity_mg_l': '85'}),
 )
 # A unit's second sample, an hour before MOMENT: what stays fresh beside its old values.
 FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
+# Samples at a unit's OTHER sampling points (point kind, hours back, values): fresh at TW-01's inlet, old at TW-08's
+# bottom drain, so a card's box of the other points says values with their ages, a fresh one and an old one.
+OTHER_POINTS = {'TW-01': ('inlet', 1, {'temperature_c': '12.8', 'oxygen_mg_l': '9.4', 'ph': '7.15'}),
+                'TW-08': ('bottom_drain', 30, {'temperature_c': '13.2', 'oxygen_mg_l': '8.6', 'ph': '7.05'})}
 
 
 TEST_WALL = 'Test wall, Hall A'
@@ -812,16 +821,19 @@ TEST_MIXED_BOARD = 'Test mixed board, Hall A'
 # drawn there with a farm's own full-height template whose water has a low place (TEST_LOW_WATER).
 MIXED_BIG = ('TW-02', 'TW-03')
 MIXED_OWN = 'TW-06'
+# ... and the ones drawn there with a template that flows (Simple): a board that mixes all three kinds of card.
+MIXED_FLOW = ('TW-05', 'TW-09')
 TEST_LOW_WATER = 'Test big, low water'
 
 
 def monitoring_world(admin):
-    """Twelve more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
+    """Thirteen more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
     and its warning limit), no recent data (its temperature 30 hours old, its oxygen fresh), no limit (a nitrite no
     limit row judges), a note (no feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours
     old (critical, and stale), units with more values at their middle point than the Big card's tiles hold (10, 15
-    and 17: no limit), and an old sample in the CO2 region of its chart (critical).
+    and 17: no limit), an old sample in the CO2 region of its chart and a fresh one (critical), and samples at two
+    units' other sampling points (OTHER_POINTS: a fresh one and an old one).
     1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where
@@ -858,6 +870,10 @@ def monitoring_world(admin):
         if code in FRESH_TOO:
             water.record(admin, point=point_of(unit), measured_at=MOMENT - timedelta(hours=1), source='manual',
                          values={key: D(value) for key, value in FRESH_TOO[code].items()})
+        if code in OTHER_POINTS:
+            kind, back, other = OTHER_POINTS[code]
+            water.record(admin, point=point_of(unit, kind), measured_at=MOMENT - timedelta(hours=back),
+                         source='manual', values={key: D(value) for key, value in other.items()})
     wall_board(hall)
     operator_board(hall)
     mixed_board(admin, hall)
@@ -886,29 +902,37 @@ def water_page_world(admin):
                           source='manual', values={'temperature_c': D('11.5')}, notes='Test entered on the wrong unit')
     water.void(admin, sample, 'Test sample of another unit')
     return sample
-def mixed_board(admin, hall):
-    """A desk board of Test Hall A's units (TEST_MIXED_BOARD) whose cards are Small by default and Big for MIXED_BIG (each
-    of those rows names the Big template): a board that mixes the overview's small cards with the card of one tank, so
-    the monitoring pages and their browser test draw both side by side (a Small card keeps its one size beside a Big
-    one), and one unit drawn with a farm's own full-height template whose water's place is low (TEST_LOW_WATER)."""
-    from farm.models import Tank
-    from monitoring.cards import builtin
-    from monitoring.models import MonitorBoard, MonitorBoardUnit
 
-    from monitoring.models import CardTemplate
+
+def mixed_board(admin, hall):
+    """A desk board of Test Hall A's units (TEST_MIXED_BOARD) whose cards are Small by default, Big for MIXED_BIG and
+    Simple, a card that flows, for MIXED_FLOW (each of those rows names its template): a board that mixes the overview's
+    small cards with the card of one tank and with cards that flow, so the monitoring pages and their browser test draw
+    them side by side (a Small card keeps its one size beside the others), and one unit drawn with a farm's own
+    full-height template whose water's place is low (TEST_LOW_WATER)."""
+    from farm.models import Tank
+    from monitoring.cards import builtin, validate
+    from monitoring.models import CardTemplate, MonitorBoard, MonitorBoardUnit
     from monitoring.services import copy_template
 
     # a farm's own full-height template (a copy of Big, through the service that copies one) whose water has three of
-    # its 21 rows, not six (the chart one more, two left empty): a place too low for two lines of tiles (a row a value)
+    # its 21 rows, not six (the chart one more, two left empty): a place too low for two lines of tiles (a row a value).
+    # Its layout is the validator's to accept (the Design tab's check): an error stops the world, never a template that
+    # draws as Detailed
     own = copy_template(admin, CardTemplate.objects.get(pk=builtin.BIG))
     layout = {**own.layout, 'widgets': [
         {**widget, **({'h': 12} if widget['id'] == 'w5' else {'y': 14, 'h': 3} if widget['id'] == 'w6' else {})}
         for widget in own.layout['widgets']]}
-    CardTemplate.objects.filter(pk=own.pk).update(name=TEST_LOW_WATER, layout=layout)
+    errors = [problem for problem in validate.validate(layout, own.measure) if problem.severity == validate.ERROR]
+    if errors:
+        raise AssertionError(f'{TEST_LOW_WATER}: the validator refuses its layout: {errors}')
+    own.name, own.layout = TEST_LOW_WATER, layout
+    own.save(update_fields=['name', 'layout'])
     board = MonitorBoard.objects.create(name=TEST_MIXED_BOARD, default_template_id=builtin.SMALL)
     for unit in Tank.objects.filter(production_department=hall).order_by('code'):
         MonitorBoardUnit.objects.create(board=board, unit=unit, template_id=(
-            builtin.BIG if unit.code in MIXED_BIG else own.pk if unit.code == MIXED_OWN else None))
+            builtin.BIG if unit.code in MIXED_BIG else own.pk if unit.code == MIXED_OWN
+            else builtin.SIMPLE if unit.code in MIXED_FLOW else None))
     return board
 
 

@@ -29,15 +29,17 @@ const SHEETS = linksOf('app_base.html', ['monitor', 'card-grid']);
 const SHEETS_NEXT = linksOf('app_base.html', ['monitor', 'card-grid', 'glyphs', 'monitor-next']);
 
 /** The wall's page; `pane`: with the pane of a unit gone into in its dock (frontend/test/pages/dock-big-tr.html, the
- *  dock's own markup around the unit's Big card). */
-function page(language: string, pane = false, next = false): string {
+ *  dock's own markup around the unit's Big card); `notices`: with the alarms' two notices above the grid, as the page
+ *  prints them (frontend/test/pages/alarm-watch.html, templates/alarms/_watch.html: nothing checked, nothing sent). */
+function page(language: string, pane = false, next = false, notices = false): string {
   const part = readFileSync(join(PAGES, `wall-small-${language}.html`), 'utf8');
   const docked = pane ? readFileSync(join(PAGES, 'dock-big-tr.html'), 'utf8') : '';
+  const said = notices ? readFileSync(join(PAGES, 'alarm-watch.html'), 'utf8') : '';
   const look = next ? 'data-theme="industry" data-ui="next"' : 'data-theme="fjord"';
   return `<!doctype html><html lang="${language}" ${look} data-wall><head><meta charset="utf-8"><title>wall</title>
 ${next ? SHEETS_NEXT : SHEETS}<script type="module" src="/js/wall.js"></script></head>
 <body><div class="shell"><aside class="rail" id="rail"></aside><div class="console"><header class="topbar"></header><main class="content" data-measure="wall">
-<aside class="monitor-dock" id="monitor-dock" data-mw="48" data-mh="61">${docked}</aside>
+${said}<aside class="monitor-dock" id="monitor-dock" data-mw="48" data-mh="61">${docked}</aside>
 <div class="monitor-grid" data-card-width="2">${part}</div>
 <div id="monitor-announce" data-states="critical warning blind unjudged note ok empty"></div></main></div></div></body></html>`;
 }
@@ -45,10 +47,10 @@ ${next ? SHEETS_NEXT : SHEETS}<script type="module" src="/js/wall.js"></script><
 function serve(): Promise<Server> {
   const server = createServer((request, response) => {
     const url = (request.url ?? '').split('?')[0] ?? '';
-    const language = /^\/(next-)?(en|tr)(-pane)?$/.exec(url);
+    const language = /^\/(next-)?(en|tr)(-pane)?(-notices)?$/.exec(url);
     if (language) {
       return void response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-        .end(page(language[2] ?? 'en', language[3] !== undefined, language[1] !== undefined));
+        .end(page(language[2] ?? 'en', language[3] !== undefined, language[1] !== undefined, language[4] !== undefined));
     }
     for (const [prefix, root, type] of SERVED) {
       const file = join(root, url.slice(prefix.length));
@@ -292,6 +294,28 @@ for (const [name, prefix] of [['', ''], [' in the new look', 'next-']] as const)
         assert.deepEqual(seen.tallyCut, [], 'the band\'s clock and tally are whole');
         assert.deepEqual(await ages(tab), [], 'where it came from and how old it is stand under every figure');
         assert.deepEqual(await touching(tab), [], 'the words of a pH window never touch one another or the mark');
+      });
+    }
+
+    for (const [width, height] of [[1920, 1080], [3440, 1440]] as const) {
+      await t.test(`the alarms' notices at ${width}x${height}: a row of their own above the grid, one line each, the wall one screen`, async () => {
+        await open(tab, origin, prefix + 'en-notices', width, height);
+        const seen = await look(tab);
+        const notices = await tab.evaluate(() => {
+          const grid = (document.querySelector('.monitor-grid') as HTMLElement).getBoundingClientRect();
+          return Array.from(document.querySelectorAll<HTMLElement>('.content > .alarm-watch > p')).map((notice) => {
+            const box = notice.getBoundingClientRect();
+            const line = Number.parseFloat(getComputedStyle(notice).lineHeight) || Number.parseFloat(getComputedStyle(notice).fontSize) * 1.3;
+            const pad = Number.parseFloat(getComputedStyle(notice).paddingTop) + Number.parseFloat(getComputedStyle(notice).paddingBottom);
+            return { above: box.bottom <= grid.top + 0.5, lines: Math.round((box.height - pad) / line), size: Number.parseFloat(getComputedStyle(notice).fontSize) };
+          });
+        });
+        assert.equal(notices.length, 2, 'two notices');
+        assert.ok(notices.every((notice) => notice.above), 'the notices stand above the grid');
+        assert.ok(notices.every((notice) => notice.lines === 1 && notice.size >= 14), JSON.stringify(notices));
+        assert.equal(seen.pageScrolls, false, 'the page itself never scrolls');
+        assert.deepEqual(seen.spills, [], 'nothing of a card lies outside it');
+        assert.deepEqual(seen.never, [], 'a code, a label, a figure and a state word are never cut');
       });
     }
 

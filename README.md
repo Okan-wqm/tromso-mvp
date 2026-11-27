@@ -793,7 +793,8 @@ data share one, and those with a value no limit judges another. The server caps 
 silently. The short form of a reason is its `Brief` (`read.brief_of`): the water's own answer to "which value is past
 which bound" (`farm.water.read.crossed`, `evaluate.crossed`: the bound `judge` judged it by, the worse fresh value when
 that decided the status, the oxygen's other unit when a row on that unit judged it), never a second judgement; a reason
-that is not a value against a bound is said whole. A value worked out (the oxygen in its other unit, the NH₃-N) is judged
+that is not a value against a bound is said whole. A reason whose short form would repeat another's word for word (the oxygen's % judged through its mg/L
+row: one quantity, the same crossing) is said whole, so a card never says one figure and bound twice (`read._alerts`). A value worked out (the oxygen in its other unit, the NH₃-N) is judged
 unrounded (`Reading.exact`) and shown at its parameter's decimals, so a true 59.988 % of saturation, critical against 60.0,
 is shown 60.0; a sentence that sets such a value beside its bound never reads as on it or inside it: where the shown value
 would, it says the exact value with the fewest extra decimals that read past ("O₂ (%) 59.99 < critical limit 60.0"; at
@@ -944,35 +945,56 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
   code), the reasons under it with the state's glyph in the state's tone; its four first values as the design's hairline
   tiles sharing their lines; the chart on the sheet in a hairline frame, a region past a limit in the design's toxic tone
   (`--zone-toxic`), faint, the region the water is in HATCHED in the critical colour (one pattern for the page,
-  `#monitor-hatch` in `templates/monitoring/monitor.html`; its stripe at 3:1 or more on its ground in the six themes),
-  its border and the water's mark critical, but an OLD mark stays hollow and dashed, the last known position, in a region
-  or not (TW-12: an old sample in the CO₂ region); in high contrast the classic look's Canvas and CanvasText; the pH lines
-  dashed, a chart that cannot be drawn a dashed box with its reason. The sheet judges and counts nothing: it reads the
+  `#monitor-hatch` in `templates/monitoring/monitor.html`, its stripes upright, so their angle is the same whatever the
+  shape the plot is stretched to; at its full tone on an old chart too; its stripe at 3:1 or more on its ground in the
+  six themes), its border and the water's mark critical, but an OLD mark stays hollow and dashed, the last known
+  position, in a region or not (TW-12: an old sample in the CO₂ region; TW-13: the same water fresh); in high contrast
+  (forced colours) the classic look's Canvas and CanvasText, a fresh critical mark in the system's text colour and an
+  old one hollow (a browser test emulates forced colours); the pH lines dashed, a chart that cannot be drawn a dashed
+  box with its reason. The sheet judges and counts nothing: it reads the
   server's `in-co2`, `in-nh3`, `is-critical`, `is-old`, `data-fill`, `data-state` and `data-tiles`.
   - **Its water** is the design's tiles where the server says they fit: `monitoring/cards/render.py tiled` (the one rule:
-    ONE column of at most `WATER_TILES`, eight, values, on a full-height card whose template gives the water a place that
-    holds two lines of four tiles, the water's `tile_units` in the catalogue, measured as the validator measures a place,
-    `fitted_place`), said on the rows' frame as `data-tiles` in both looks (the classic HTML gains that attribute, its
-    sheet reads nothing of it). Four tiles to a line (two on a phone), each its name, its figure in the display face beside
-    its strip against the limits, where it came from and when it arrived with its age, whole (it wraps, never cut); the
-    table's head, wherever it stands, for a screen reader. Else a row a value, as classic: more than eight values (TW-09),
-    more than fourteen in two columns of rows (TW-10, TW-11: 15 and 17), a farm's own full-height template with a low
-    water place (`TEST_LOW_WATER` on the mixed board).
-  - What to dose, the other points (each value with its age beside it, "old" in words: `_points.html`, the new look's
-    only) and the stock in three hairline boxes with their names (`render._titled`).
+    ONE column of at most `WATER_TILES` values, on a full-height card whose template gives the water a place that holds
+    the lines of tiles; the water's `tiles` (4 to a line, 2 lines) and `tile_units` (one tile's least width and height)
+    in the catalogue, stated there once, `WATER_TILES` their product, the place measured as the validator measures one,
+    `fitted_place`; `monitoring/tests/test_tiles.py` holds each threshold on either side), said on the rows' frame as
+    `data-tiles="4"` in both looks (the classic HTML gains that attribute, its sheet reads nothing of it; the new look's
+    sheet has a rule for that count only, any other is drawn as rows). Four tiles to a line (two on a phone), each its
+    name, its figure in the display face beside its strip against the limits, where it came from and when it arrived
+    with its age, whole (it wraps, never cut); the table's head, wherever it stands, for a screen reader. Else a row a
+    value, as classic: more than eight values (TW-09), a farm's own full-height template with a low water place
+    (`TEST_LOW_WATER` on the mixed board). **One column of rows or two** is the server's answer too
+    (`render.columns_for`): two only for more than fourteen values AND where the place holds two side by side (the
+    water's `rows_units`, one column's least width); the Big card's water holds one, so 15 and 17 values (TW-10, TW-11)
+    stand in one column of rows, in both looks (two columns there lay over each other, ages under names and cut at the
+    card's edge: review 2, N1). A table of rows is as wide as its rows (its frame scrolls on a narrow desk card).
+  - What to dose, the other points and the stock in three hairline boxes with their names (`render._titled`). Each
+    other point says its age beside its name, once: the oldest of its values (`render.other_points`, never fresher
+    than any of them), an old one with the clock ("old" for a screen reader), the name giving way first, whole in its
+    title, a point with no value "no data" once across its values' place (`_points.html`, the new look's only; three ages
+    beside a point's name do not fit the box on a wall or in the pane). OTHER_POINTS in the test world: TW-01's inlet
+    fresh, TW-08's bottom drain 30 hours old.
+  - **Its reasons where it is drawn at the size of its place** (the pane, a wall): the first `FIT_REASONS` (three) in
+    sight and "+N" for the rest, whole in its title, for a screen reader and in the band's chips (`_card_fit.html`, the
+    new look's only: a unit with ten values no limit judges said ten lines and pushed its water and boxes out of the
+    card); on the desk the card flows and shows every one.
   - **The chart on a phone** (a card narrower than 30 rem): the picture keeps the width at which the server's labels stand
-    apart (34 rem, a desk Big card's) and scrolls sideways in its own frame, which is a stop of the keyboard with an id
-    of its own in the new look (`_chart.html`); at 390 px "pH 8.25" lay over "pH 8.75" and the axis's name.
+    apart (`--fit-min`) and scrolls sideways in its own frame, which is a stop of the keyboard with an id of its own in
+    the new look (`_chart.html`), scrolled on load so the water's mark stands in its middle (`frontend/chartframe.ts`);
+    at 390 px "pH 8.25" lay over "pH 8.75" and the axis's name.
   - **An empty unit's Big card** says the unit in four cells, as the Small card of an empty unit does, then what the
-    design draws on it with the template's own widgets (`render.shown`, the new look's only: `EMPTY_NEXT`): the chart's
-    place saying "No chart: there is no fish in this unit." (no chart is drawn: `render.chart`), what to dose, the other
-    sampling points (their water as the card read it: no read is added) and the stock ("No fish"). On the desk it is as
+    design draws on it with the template's own widgets (`render.shown`, the new look's only: the catalogue's
+    `on_empty_next`): the chart's place saying "No chart: there is no fish in this unit." once (no chart is drawn:
+    `render.chart`), what to dose ("No fish: nothing to dose."), the other sampling points (their water as the card
+    read it: no read is added) and the stock ("No fish"). On the desk it is as
     tall as what it says, never a screen of blank. The classic Big card of an empty unit is as it was.
-  - **On the desk, at every width**, one rule for any grid that holds Big cards, whatever else it holds (the Big screen, a
-    board that mixes Small and Big cards: `TEST_MIXED_BOARD`): columns of at least the fitted cards' 34 rem, rows each as
-    high as their own cards (never a row of Small cards as tall as a Big one, never a Big card squeezed into a Small
-    card's row), a stocked unit's Big cards of a row one size, an empty unit's card and a Small card at their own height
-    at the top of the row (the Small card its one height, `--small-h`, written once). In the card the template's
+  - **On the desk, at every width**, one rule for any grid that holds Big cards or mixes kinds of card (the Big screen, a
+    board of Small, Big and Simple cards: `TEST_MIXED_BOARD`; review 2, N8: a Simple card in a Small card's 11.5em row
+    ran over the cards under it below 640 px): columns of at least the fitted cards' least width (`--fit-min`, written
+    once in monitor.css), rows each as high as their own cards, a stocked unit's Big cards and the cards that flow of a
+    row one size, an empty unit's card and a Small card at their own height at the top of the row (the Small card its
+    one height, `--small-h`, written once). A grid of Small cards alone is rows of that height; of cards that flow
+    alone, rows of one fraction, as before. In the card the template's
     columns, rows and spans (a farm's own full-height template keeps its shape), each row as high as what it says; the
     chart at the proportion of its place on the template (from the card's measure and the place's columns and rows,
     no number of the sheet's own); below 30 rem of card one column in reading order. Two Big cards of a 1440 px window
@@ -1010,8 +1032,9 @@ reader, name the unit. Tank › Water in the new look, the unit's history on Wat
 redirects there).
 
 Held by `monitoring/tests/test_next_pages.py` on THE test world (`core/test_world.py` `monitoring_world`: a unit in each
-of the seven states, an old critical one, units of 10, 15 and 17 values and an old sample in the CO₂ region, a wall board
-read from 2 m, and a board that mixes Small and Big cards with a farm's own full-height template: `mixed_board`): each card says in the new look what it says
+of the seven states, an old critical one, units of 10, 15 and 17 values, an old and a fresh sample in the CO₂ region,
+samples at two units' other points, a wall board read from 2 m, and a board that mixes Small, Big and Simple cards with
+a farm's own full-height template, made through the template service and checked by the validator: `mixed_board`): each card says in the new look what it says
 in the classic one (the golden extractor: state, reasons, every labelled figure and link equal, no text or title gone) on
 the Small, Simple, Detailed, Big and Operator view cards (`operator_board`, a board whose default template is the
 Operator view) and in the pane, in English, Norwegian and Turkish; the cards that flow are the design's card in the new
@@ -1027,11 +1050,14 @@ the rail at its width beside a long strip), each state's edge style, the stale s
 shapes without `glyphs.css`, the hatch in six themes, the Big screen in the three languages as the design's Big card
 (`bigCards`: the hairlines, the tiles four to a line, nothing of a tile cut or out of its place, its text at 4.5:1 in the six
 themes, its foot inside the card, the region the water is in hatched and an old mark hollow, an empty unit's card no
-taller than what it says, the tiles what the server said with the table's head last or missing), the mixed board at 390,
-1024, 1440 and 1920 px (no card over another, the Small cards one size), every control a 44 px target (found as a tap
-finds it), the pane beside the cards at 1440 and 1920 px and the panes of TW-08, TW-09 and TW-12 in the three languages,
-the wall of Big cards with the alarms' notices (1920×1080 in the three languages and 3840×2160: the notices a row above
-the grid, nothing scrolls, every card's foot in sight), the wall at 1920×1080 and 3840×2160 and a board's wall
+taller than what it says, the tiles what the server said with the table's head last or missing, every water cell inside
+its table and two tables never over each other, each other point's name, age and values whole in their box), no word
+of a card outside it (`spills`), the mixed board at 390, 640, 1024, 1440 and 1920 px (no card over another, the Small
+cards one size), every control a 44 px target (found as a tap finds it), forced colours emulated (the fresh critical
+mark CanvasText, the old one Canvas), on a phone the chart's mark in sight in its scrolled frame, the pane beside the
+cards at 1440 and 1920 px and the panes of TW-01, TW-08 to TW-12 in the three languages, the wall of Big cards with the
+alarms' notices (1920×1080 in the three languages and 3840×2160, every page turned: the notices a row above the grid,
+nothing scrolls, every card of every page whole, its foot in sight), the wall at 1920×1080 and 3840×2160 and a board's wall
 read from 2 m, a card that gets worse said aloud, a failed poll marked and "Updated again." after it, a first answer that
 fails said as "cannot be read".
 
@@ -1049,9 +1075,10 @@ polls keep the session alive once a day (the default session is two weeks and a 
 large notice from `data-poll-state` when the server cannot be reached or cannot read the cards, or the person is signed out,
 and the announcer says it aloud (and says when the grid is updated again). A wall of cards that flow (Simple, Detailed, a
 template without a measure) is as it was: larger figures, and the page scrolls. The alarms' notices (whether they are
-checked and sent) are a row of their own above the grid, each one line at the band's size (`monitor.css`): at 1920×1080
-two notices at the page's own size took a seventh of the screen and cut every Big card's foot (both looks: a fix of the
-wall, not of a look).
+checked and sent) are a row of their own above the grid, each one line at the band's size, as wide as the screen
+(`monitor.css`): at 1920×1080 two notices at the page's own size took a seventh of the screen and cut every Big card's
+foot (both looks: a fix of the wall, not of a look; `frontend/test/wall.browser.test.ts` sets the real notices,
+`frontend/test/pages/alarm-watch.html` from `templates/alarms/_watch.html`, above the wall in both looks).
 
 **The wall of fitted cards** (`?wall=1&mode=small`; `static/css/monitor.css`, `frontend/wall.ts`). A template with a
 **measure** (its card's width and height in the card's own unit: Small is 31 by 10) is FITTED: the card is drawn at the
@@ -5939,6 +5966,10 @@ compiled by `npm run build` into `static/js/`, which is not committed:
   band's buttons, "2 / 3"; it opens on the page of the worst card), laid out again after a poll or a resize. It sets
   custom properties and attributes on the grid through the CSSOM (`--cols`, `--rows`, `--mh`, `data-page`),
   never on a card. A wall of cards that flow is left alone.
+- `chartframe.ts` the new look's Big card on a phone: its Deffeyes chart keeps the width at which its labels stand apart
+  and scrolls sideways in its own frame (`.monitor-chart[tabindex]`); this scrolls each such frame so the water's mark
+  stands in its middle, once per frame the server drew (on the first paint and after a poll's `poll:merged`), never
+  again on one the person scrolled; `centred` is the arithmetic (`chartframe.test.ts`).
 - `windows.ts` movable, non-modal windows (the monitoring cards' Deffeyes chart) and the full-screen button
   of a wall: `<button data-window="<url>" data-window-title>` opens the fragment in a `section[role=dialog]`
   made from the server-rendered `#monitor-window-template` (templates/monitoring/_windows.html, in the

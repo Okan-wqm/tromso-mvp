@@ -18,8 +18,10 @@ bound, so a system's analyser is the system's, never a unit's own point's):
 - the newest refused sample newer than the evidence is "cannot be evaluated" until an evidence value is newer than it;
 - a stored value measured before the minute of the point's evidence (a live analyser's included: review 8, N1) is a LATE
   result when it was not already superseded when it was entered: entered after the newest stored evidence, or itself of
-  that evidence's minute or newer (it only stood until the live value came). It is said with what superseded it, never
-  an alarm. A live value is never late;
+  that evidence's minute or newer (it only stood until the live value came). A live value is never late. One that is
+  still COUNTED (fresh now, behind a live value only: the worst fresh value still takes it, review 3, N1) is never
+  called superseded: it is said as still counted beside the newer reading (`still_counted`); once it no longer counts
+  it is said as superseded. Never an alarm of its own;
 - a point the shell stopped looking back at before it found evidence (`complete` False: the ceiling) cannot be evaluated:
   what was fetched is judged, and is never taken for the whole (`ceiling`).
 Per place (`place_verdict`: the unit's own points and its system's, or one point read on its own):
@@ -114,6 +116,13 @@ class PointVerdict:
         stored = self.superseded_by
         return stored if stored is not None and stored.minute > late.minute else self.evidence
 
+    def still_counted(self, late):
+        """Whether a `late` result still counts in the place's status (the coordinator's decision on review 8): it is
+        fresh now and only a live value is newer than it (no stored evidence of a newer minute: it is still the point's
+        newest stored value of its minute, which the worst fresh value takes, review 3, N1). Such a value is never said as
+        superseded."""
+        return _fresh_now(late) and self.superseded(late) is not self.superseded_by
+
 
 def newest_first(records):
     return sorted(records, key=lambda record: record.order, reverse=True)
@@ -184,14 +193,17 @@ def shown_without_value(tiers):
 class PlaceVerdict:
     """What a place's worked-out value takes from its points: the value `held` (or None); whether it needs `attention`;
     its newest `refused` record of the tier read (or None); the value-less newer records to say (`said`); the late
-    results judged critical or a warning, the worst first, then the newest, across its points, each with what
-    superseded it (`late`: ((late, evidence), …)); the system's stale alerts older than the value shown (`older`, said, never held); and the
-    points of the tier read that could not be evaluated whole (`ceiling`)."""
+    results judged critical or a warning, the worst first, then the newest, across its points: those that no longer
+    count, each with what superseded it (`late`: ((late, evidence), …)), and those still counted, each with the newer
+    reading beside it (`counted`: ((value, newer), …), `PointVerdict.still_counted`); the system's stale alerts older
+    than the value shown (`older`, said, never held); and the points of the tier read that could not be evaluated whole
+    (`ceiling`)."""
     held: Record | None
     attention: bool
     refused: Record | None
     said: tuple
     late: tuple
+    counted: tuple
     older: tuple
     ceiling: tuple
 
@@ -218,13 +230,15 @@ def place_verdict(shown, points, own_points):
                   key=lambda record: record.order, default=None)
     said = tuple(record for verdict in points.values() for record in (verdict.lacking, verdict.refused)
                  if record is not None and not record.value and record.key is not shown.key)
-    superseded = {id(record): verdict.superseded(record) for verdict in points.values() for record in verdict.late}
-    late = tuple((record, superseded[id(record)]) for record in worst_first(
-        record for verdict in points.values() for record in verdict.late if record.status in ALERTS))
+    of = {id(record): verdict for verdict in points.values() for record in verdict.late}
+    pairs = [(record, of[id(record)].superseded(record), of[id(record)].still_counted(record)) for record in worst_first(
+        record for verdict in points.values() for record in verdict.late if record.status in ALERTS)]
+    late = tuple((record, newer) for record, newer, counted in pairs if not counted)
+    counted = tuple((record, newer) for record, newer, counted in pairs if counted)
     attention = (from_system and held is None and shown.status == Status.OK
                  and any(points[point].lacking is not None and points[point].lacking.order > shown.order
                          for point in own_points if point in points))
-    return PlaceVerdict(held, attention, refused, said, late, tuple(worst_first(older)),
+    return PlaceVerdict(held, attention, refused, said, late, counted, tuple(worst_first(older)),
                         tuple(point for point, verdict in tier.items() if verdict.ceiling))
 
 

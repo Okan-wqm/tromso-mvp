@@ -462,6 +462,21 @@ def late_result(late, evidence):
         'newer_time': local_time(evidence.at, evidence.point).strftime('%d.%m.%Y %H:%M')}
 
 
+def still_counted(value, newer):
+    """A result entered behind a newer live reading at its point that is still fresh, so the place's status still counts
+    it (review 3, N1; the coordinator's decision on review 8): never called superseded. "Result of 27.11.2026 09:00:
+    critical 0.8924 at Middle, still counted until 27.11.2026 21:00; the analyser reads 0.0011 on 27.11.2026 10:00." """
+    from ..models.water_point import local_time
+    from .evaluate import Status
+    from .read import said_value
+    return _('Result of %(time)s: %(status)s %(value)s at %(point)s, still counted until %(until)s; the analyser reads '
+             '%(newer)s on %(newer_time)s.') % {
+        'time': local_time(value.at, value.point).strftime('%d.%m.%Y %H:%M'),
+        'status': str(Status(value.judged).label).lower(), 'value': said_value(value), 'point': value.point.name,
+        'until': local_time(value.fresh_until, value.point).strftime('%d.%m.%Y %H:%M'), 'newer': said_value(newer),
+        'newer_time': local_time(newer.at, newer.point).strftime('%d.%m.%Y %H:%M')}
+
+
 def late_more(count):
     """What a place says of its late results judged critical or a warning that it does not say one by one (read.LATE_SAID
     are said, the worst first): exactly how many more there are (review 8, N6)."""

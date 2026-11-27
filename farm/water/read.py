@@ -2141,6 +2141,8 @@ def _worked_said(reading, shown, verdicts, judged_of, where, own_ids, point_wate
         _say(reading, messages.lacking_newer(record.key))
     if verdict.refused is not None and code not in point_water.refused_newer:
         point_water.refused_newer[code] = judged_of(verdict.refused.key)
+    for value, newer in verdict.counted:         # still counted: never called superseded
+        _say(reading, messages.still_counted(judged_of(value.key), newer.key))
     for late, newer in verdict.late[:LATE_SAID]:
         _say(reading, messages.late_result(judged_of(late.key), newer.key))
     if verdict.late[LATE_SAID:]:                 # late alerts judged and not said one by one: counted exactly
@@ -2194,7 +2196,8 @@ def late_results_of(samples):
         for record in verdict.late:
             if record.id in mine and record.status in ALERTS:
                 late = context.judge(replace(record.key), _local_day(mine[record.id]))
-                found[mine[record.id].pk] = str(messages.late_result(late, verdict.superseded(record).key))
+                said = messages.still_counted if verdict.still_counted(record) else messages.late_result
+                found[mine[record.id].pk] = str(said(late, verdict.superseded(record).key))
     return found
 
 

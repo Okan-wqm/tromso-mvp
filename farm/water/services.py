@@ -37,7 +37,7 @@ from farm.stock import dates
 from farm.stock.services import AlreadyRecorded, lock_fish
 
 from . import messages, parameters
-from .read import POINT_RELATED, Context, late_results_of, oxygen_basis, ph_on_nbs, scale_origin
+from .read import POINT_RELATED, Context, gives_value, late_results_of, oxygen_basis, ph_on_nbs, scale_origin
 
 logger = logging.getLogger(__name__)
 
@@ -232,7 +232,7 @@ def _late_words(samples):
             logger.exception('The late results of the water samples at %s could not be worked out.', group[0].point)
             with audit.source_language():
                 found.update({sample.pk: str(messages.LATE_UNCHECKED) for sample in group
-                              if sample.tan_mg_l is not None})
+                              if gives_value(lambda code, sample=sample: getattr(sample, code))})
     return found
 
 

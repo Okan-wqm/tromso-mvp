@@ -16,8 +16,10 @@ bound, so a system's analyser is the system's, never a unit's own point's):
   entered in, and the value it SHOWS is that worst (else its newest record);
 - a newer sample that gives no value never takes the slot: it is said (`lacking`, a value-less `refused`);
 - the newest refused sample newer than the evidence is "cannot be evaluated" until an evidence value is newer than it;
-- a stored value measured before the minute of the newest STORED evidence but entered after it is a LATE result: said,
-  never an alarm (a live value takes no part in what is late: review 7, L5);
+- a stored value measured before the minute of the point's evidence (a live analyser's included: review 8, N1) is a LATE
+  result when it was not already superseded when it was entered: entered after the newest stored evidence, or itself of
+  that evidence's minute or newer (it only stood until the live value came). It is said with what superseded it, never
+  an alarm. A live value is never late;
 - a point the shell stopped looking back at before it found evidence (`complete` False: the ceiling) cannot be evaluated:
   what was fetched is judged, and is never taken for the whole (`ceiling`).
 Per place (`place_verdict`: the unit's own points and its system's, or one point read on its own):
@@ -93,8 +95,9 @@ class PointVerdict:
     """What a point's values say: its `evidence` value (or None); the `judged` set, newest first; its `worst` (the most
     severe of the judged set, an evidence value before another, then the newest); the record it `shown` (its worst, else
     its newest); its newest `lacking` sample (no value for want of an input) and newest `refused` one, each newer than
-    the evidence or of its minute (or None); its `late` results, the worst first, then the newest, and the stored
-    evidence they are late against (`superseded_by`); `ceiling`: the shell stopped before it found evidence."""
+    the evidence or of its minute (or None); its `late` results, the worst first, then the newest (what superseded
+    each: `superseded`); its newest stored evidence (`superseded_by`, what the shell's late query is bounded by);
+    `ceiling`: the shell stopped before it found evidence."""
     evidence: Record | None
     judged: tuple
     worst: Record | None
@@ -104,6 +107,12 @@ class PointVerdict:
     late: tuple
     superseded_by: Record | None
     ceiling: bool
+
+    def superseded(self, late):
+        """What superseded a `late` result: the newest stored evidence where it is of a newer minute, else the point's
+        evidence (a live value)."""
+        stored = self.superseded_by
+        return stored if stored is not None and stored.minute > late.minute else self.evidence
 
 
 def newest_first(records):
@@ -123,9 +132,10 @@ def point_verdict(records, complete=True):
     newer = ordered if evidence is None else [
         record for record in ordered if record.order > evidence.order or record.minute == evidence.minute]
     stored = next((record for record in ordered if record.evidence and record.stored), None)
-    late = () if stored is None else tuple(worst_first(
-        record for record in ordered if record.stored and record.minute < stored.minute
-        and record.created_at > stored.created_at and record.value and not record.refused))
+    late = () if evidence is None else tuple(worst_first(
+        record for record in ordered if record.stored and record.value and not record.refused
+        and record.minute < evidence.minute
+        and (stored is None or record.minute >= stored.minute or record.created_at > stored.created_at)))
     judged = tuple(record for record in newer if record.value)
     worst = worst_of(judged)
     return PointVerdict(evidence, judged, worst, worst or (ordered[0] if ordered else None),
@@ -150,9 +160,11 @@ def settled(candidates, exhausted):
 
 
 # How many candidates of one point the shell looks back at before it stops without evidence (`over_ceiling`). A point
-# sampled every hour for the 30 days of the read's window has 720; 512 is the round of the doubling fetch (2, 4, … 256)
-# that ends past two weeks of hourly samples. A point with that many samples and not one evaluable value is not a water
-# that can be judged from its list: it "cannot be evaluated", said so, and what was fetched is still judged.
+# sampled every hour for the 30 days of the read's window has 720; 512 is past three weeks of hourly samples. The
+# shell's doubling rounds (2, 4, … 256: 510) end with a round of the 2 left, so it reads EXACTLY 512 candidates before it
+# stops (farm/water/read.py prefetch_newest_worked; a test counts them at this value). A point with that many samples and
+# not one evaluable value is not a water that can be judged from its list: it "cannot be evaluated", said so, and what
+# was fetched is still judged.
 CEILING = 512
 
 
@@ -172,8 +184,8 @@ def shown_without_value(tiers):
 class PlaceVerdict:
     """What a place's worked-out value takes from its points: the value `held` (or None); whether it needs `attention`;
     its newest `refused` record of the tier read (or None); the value-less newer records to say (`said`); the late
-    results judged critical or a warning, the worst first, each with the stored evidence that superseded it (`late`:
-    ((late, evidence), …)); the system's stale alerts older than the value shown (`older`, said, never held); and the
+    results judged critical or a warning, the worst first, then the newest, across its points, each with what
+    superseded it (`late`: ((late, evidence), …)); the system's stale alerts older than the value shown (`older`, said, never held); and the
     points of the tier read that could not be evaluated whole (`ceiling`)."""
     held: Record | None
     attention: bool
@@ -206,8 +218,9 @@ def place_verdict(shown, points, own_points):
                   key=lambda record: record.order, default=None)
     said = tuple(record for verdict in points.values() for record in (verdict.lacking, verdict.refused)
                  if record is not None and not record.value and record.key is not shown.key)
-    late = tuple(sorted(((record, verdict.superseded_by) for verdict in points.values() for record in verdict.late
-                         if record.status in ALERTS), key=lambda pair: RANK[pair[0].status]))
+    superseded = {id(record): verdict.superseded(record) for verdict in points.values() for record in verdict.late}
+    late = tuple((record, superseded[id(record)]) for record in worst_first(
+        record for verdict in points.values() for record in verdict.late if record.status in ALERTS))
     attention = (from_system and held is None and shown.status == Status.OK
                  and any(points[point].lacking is not None and points[point].lacking.order > shown.order
                          for point in own_points if point in points))

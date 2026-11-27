@@ -5,7 +5,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.utils.formats import number_format
 from django.utils.timesince import timesince
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, ngettext
 
 from . import native, parameters
 
@@ -463,9 +463,17 @@ def late_result(late, evidence):
 
 
 def late_more(count):
-    """What a place says of the late results it does not say one by one (read.LATE_SAID are said; review 7, M1: a cap
-    that says it cut hides nothing)."""
-    return _('And %(count)d more late results: see the history.') % {'count': count}
+    """What a place says of its late results judged critical or a warning that it does not say one by one (read.LATE_SAID
+    are said, the worst first): exactly how many more there are (review 8, N6)."""
+    return ngettext('And %(count)d more late critical or warning result: see the history.',
+                    'And %(count)d more late critical or warning results: see the history.', count) % {'count': count}
+
+
+def late_unread(count):
+    """What a place says of the late results past read.LATE_READ: never read, so never judged: how many, and where they
+    are (they may hold a critical)."""
+    return ngettext('%(count)d older late result was not read: see the history.',
+                    '%(count)d older late results were not read: see the history.', count) % {'count': count}
 
 
 def older_at_system(older, shown):

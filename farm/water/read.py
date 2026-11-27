@@ -1313,7 +1313,12 @@ class Context:
                     worked.complete = False
                     continue
                 still.append(pk)
-            pending, offset, size = still, offset + size, size * 2
+            # Rounds double (2, 4, … 256) and the one that reaches judge.CEILING is cut to it, so a point without
+            # evidence stops at EXACTLY CEILING candidates (512, not the next doubling's 1022: review 8, N4). A point
+            # past it WITH evidence (only peers of its minute so far) keeps doubling until it is settled.
+            offset += size
+            size = min(size * 2, judge.CEILING - offset) if offset < judge.CEILING else size * 2
+            pending = still
         for sample in self._fetch(self._ranked(self._window(ids).filter(CANNOT_GIVE), 0, 1)):
             self._newest[sample.point_id].lacking.append(self._derived(sample))
         if late:
@@ -2135,10 +2140,11 @@ def _worked_said(reading, shown, verdicts, judged_of, where, own_ids, point_wate
         point_water.refused_newer[code] = judged_of(verdict.refused.key)
     for late, newer in verdict.late[:LATE_SAID]:
         _say(reading, messages.late_result(judged_of(late.key), newer.key))
-    more = len(verdict.late[LATE_SAID:]) + sum(context.worked_at(point).late_more
-                                               for point in (*where.own, *where.system))
-    if more:
-        _say(reading, messages.late_more(more))
+    if verdict.late[LATE_SAID:]:                 # late alerts judged and not said one by one: counted exactly
+        _say(reading, messages.late_more(len(verdict.late[LATE_SAID:])))
+    unread = sum(context.worked_at(point).late_more for point in (*where.own, *where.system))
+    if unread:                                   # late results past LATE_READ: never judged, so said as not read
+        _say(reading, messages.late_unread(unread))
     for record in verdict.older:
         _say(reading, messages.older_at_system(judged_of(record.key), shown))
     names = {point.pk: point.name for point in (*where.own, *where.system)}
@@ -2166,22 +2172,42 @@ def late_results_of(samples):
     samples = [sample for sample in samples if gives_value(lambda code, sample=sample: getattr(sample, code))]
     if not samples:
         return {}
+    now = timezone.now()
     points = list({sample.point_id: sample.point for sample in samples}.values())
-    context = Context(points, timezone.now() - WINDOW)
+    context = Context(points, now - WINDOW)
     context.prefetch_newest_worked(points, late=False)
+    live = live_worked_at(points, context, now)
     found = {}
     for point in points:
         mine = {str(sample.pk): sample for sample in samples if sample.point_id == point.pk}
 
         def status_of(reading):
-            return context.judge(replace(reading), _local_day(reading.sample.sample)).judged
+            day = _local_day(reading.sample.sample) if reading.sample.sample is not None else local_time(
+                reading.at, point).date()
+            return context.judge(replace(reading), day).judged
 
         more = [context._derived(sample)[1][NH3_N.code] for sample in mine.values()]
-        verdict = context.verdict(point, NH3_N.code, status_of=status_of, more=more)
+        verdict = context.verdict(point, NH3_N.code, now, status_of, live.get(point.pk, ()), more)
         for record in verdict.late:
             if record.id in mine and record.status in ALERTS:
                 late = context.judge(replace(record.key), _local_day(mine[record.id]))
-                found[mine[record.id].pk] = str(messages.late_result(late, verdict.superseded_by.key))
+                found[mine[record.id].pk] = str(messages.late_result(late, verdict.superseded(record).key))
+    return found
+
+
+def live_worked_at(points, context, now):
+    """{point id: [Reading]} of the fresh live NH₃ BOUND at each point now (`bound_at`): the value worked out from its own
+    sensors' fresh TAN, as the latest read works it (`_resolve`, its own tier alone). What a late result entered at the
+    point is judged against beside its stored samples (review 8, N1). One read of the sensors for all of them."""
+    places = {point.pk: Places([point], _observed(point)) for point in points}
+    answer = sources.latest([target for where in places.values() for target, _origin, _at in where.own_targets], now)
+    found = {}
+    for point in points:
+        where = places[point.pk]
+        _chosen, candidates = _resolve(_live(where.own_targets, answer), [], {}, [], context, now,
+                                       partial(_at_moment, where))
+        found[point.pk] = [reading for reading in candidates.get(NH3_N.code, []) if reading.sample.live
+                           and reading.value is not None and reading.fresh(now) and bound_at(reading) == point.pk]
     return found
 
 

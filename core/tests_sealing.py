@@ -216,6 +216,9 @@ RAW_SQL = {
     'core/database.py:Table.structure': 'the catalogue of a table (columns, constraints, indexes)',
     'core/database.py:hypertables': 'the names of the hypertables',
     'core/erasure.py:_attempt': 'the erasure of a person’s data by the platform admin’s command, as the system',
+    'core/testing.py:plans.explain': 'the tests only: EXPLAIN ANALYZE of the statement the code under test runs next '
+                                     '(sealed as that code made it), in a savepoint rolled back at once: its plan, no '
+                                     'rows',
     'core/rev.py:drop_hypertable_triggers': 'the revision counters’ triggers taken off the hypertables: schema '
                                              'statements, no row',
     'core/rev.py:ensure': 'the revision counters of core_rev: a scope, a key and a number, no row of a record',

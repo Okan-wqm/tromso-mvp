@@ -4,14 +4,18 @@ the rule is tested on its own, exhaustively (farm/tests/test_growth.py). Nothing
 weight.
 
 - `step(feed, fcr, uneaten_pct)`: of the feed given, the uneaten share is not eaten; the fish grow by the feed eaten
-  ÷ the FCR. The FCR is the biological one (on feed eaten); the economic one (on feed given) is
-  `economic_fcr(fcr, uneaten_pct)` = FCR ÷ (1 − uneaten), computed and shown, never entered.
+  ÷ the FCR. The FCR is the biological one (on feed eaten); the FCR on the feed given is
+  `fcr_on_feed_given(fcr, uneaten_pct)` = FCR ÷ (1 − uneaten), computed and shown, never entered. The economic FCR
+  as the industry says it (feed given ÷ the biomass gained, the fish that died taking their weight with them) is a
+  curve's (`Curve.economic_fcr`).
 - `between(points, at, step)`: a temperature profile's reading, smooth (`interpolate`) or a step at each point.
-- `interpolate(anchors, at)`: a value that changes over the fish's weight without a jump. Each band's value sits at
-  the band's anchor weight (`anchor`: the middle of the band; a band without an upper weight has no middle, so its
-  lower weight); between two neighbouring anchors the value is linear, before the first and after the last it is
-  constant. Used for the FCR and for the uneaten share, and by nothing else: the SFR keeps its own rule (the band's
-  row, interpolated over the temperature: farm/feeding/ration.py).
+- `interpolate(anchors, at)` and `interpolate_at(weights, at, value_of)`: a value that changes over the fish's weight
+  without a jump, the one interpolation of the code. Each band's value sits at the band's anchor weight (`anchor`:
+  the middle of the band; a band without an upper weight has no middle, so its lower weight); between two
+  neighbouring anchors the value is linear, before the first and after the last it is constant. A feeding table's
+  FCR, uneaten share and SFR over the weight (owner decisions 2 and 13; the SFR is read over the temperature first,
+  farm/feeding/ration.py) and a temperature profile's points read it. `interpolate_at` asks only the one or two
+  anchors the weight lies between (a table of many bands is not read whole every day).
 - `survival_a_day(mortality_pct_month)`: the share of the fish still alive after a day at an expected mortality in %
   a month (30 days, compounded: after 30 days exactly that share has died). Mortality lowers the count, never the
   average weight: the fish that die are taken to weigh the average.
@@ -19,9 +23,11 @@ weight.
 
 The arithmetic uses only the inputs' own number type and whole numbers, so exact types (Decimal, Fraction) stay exact:
 with no uneaten feed a step is feed ÷ FCR to the last digit."""
+from bisect import bisect_left
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
+from functools import lru_cache
 
 MONTH_DAYS = 30
 
@@ -41,7 +47,7 @@ def step(feed, fcr, uneaten_pct=0):
     return Step(feed, eaten, feed - eaten, eaten / fcr)
 
 
-def economic_fcr(fcr, uneaten_pct=0):
+def fcr_on_feed_given(fcr, uneaten_pct=0):
     """Feed given per growth: the biological FCR ÷ the share eaten."""
     return fcr * 100 / (100 - uneaten_pct)
 
@@ -51,18 +57,27 @@ def anchor(lower, upper):
     return lower if upper is None else (lower + upper) / 2
 
 
+def interpolate_at(weights, at, value_of):
+    """The value at `at` of anchors at `weights` (in rising order, at least one) whose values `value_of(index)` gives,
+    asked only for the one or two anchors `at` lies between: linear between two neighbours, the first value before the
+    first and the last after the last. None when a value asked is None (a band without a cell at that temperature)."""
+    if at <= weights[0]:
+        return value_of(0)
+    index = bisect_left(weights, at)
+    if index == len(weights):
+        return value_of(index - 1)
+    if weights[index] == at:
+        return value_of(index)
+    low, high = value_of(index - 1), value_of(index)
+    if low is None or high is None:
+        return None
+    low_at, high_at = weights[index - 1], weights[index]
+    return low + (high - low) * (at - low_at) / (high_at - low_at)
+
+
 def interpolate(anchors, at):
-    """The value at `at` of `anchors` ((weight, value) pairs in weight order, at least one): linear between two
-    neighbours, the first value before the first and the last after the last."""
-    first_at, first = anchors[0]
-    if at <= first_at:
-        return first
-    for (low_at, low), (high_at, high) in zip(anchors, anchors[1:]):
-        if at == high_at:
-            return high
-        if at < high_at:
-            return low + (high - low) * (at - low_at) / (high_at - low_at)
-    return anchors[-1][1]
+    """The value at `at` of `anchors` ((weight, value) pairs in weight order, at least one): `interpolate_at`."""
+    return interpolate_at([weight for weight, _value in anchors], at, lambda index: anchors[index][1])
 
 
 def between(points, at, step=False):
@@ -79,6 +94,7 @@ def between(points, at, step=False):
     return found
 
 
+@lru_cache(maxsize=256)
 def survival_a_day(mortality_pct_month):
     """The share of the fish alive after one day; 1 without an expected mortality."""
     if not mortality_pct_month:
@@ -163,10 +179,18 @@ class Curve:
         return self._sum('growth_kg')
 
     @property
-    def economic_fcr(self):
-        """Feed given ÷ growth over the whole curve; None when nothing grew."""
+    def fcr_on_feed_given(self):
+        """Feed given ÷ the growth of the fish fed over the whole curve; None when nothing grew."""
         growth = self.growth_kg
         return self.feed_kg / growth if growth else None
+
+    @property
+    def economic_fcr(self):
+        """The economic FCR as the industry says it: feed given ÷ the biomass gained (the biomass at the end less the
+        biomass at the start), so the weight of the fish that died is not gained; above `fcr_on_feed_given` whenever
+        fish die. None when no biomass was gained."""
+        gained = self.end_g * self.end_fish / 1000 - self.start_g * self.start_fish / 1000
+        return self.feed_kg / gained if gained > 0 else None
 
     @property
     def end_g(self):

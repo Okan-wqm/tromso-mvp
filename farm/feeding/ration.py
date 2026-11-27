@@ -26,8 +26,9 @@ walk (farm/feeding/fold.py) asks it at every feeding, so the projected growth an
 The feed (its pellet) and the meals a day are the band's own: they change in steps. The SFR is read between two
 temperature columns because a step makes the ration jump by 15–20 % when a reading crosses a column by 0.1 °C, and
 between two bands (when the rule is smooth) for the same reason at a band's edge."""
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
+from functools import cached_property
 
 from django.utils.translation import gettext as _
 
@@ -97,8 +98,12 @@ class Table:
             return None
         if rule == STEP:
             return value_of(band)
-        return growth.interpolate(tuple((growth.anchor(each.min_weight_g, each.max_weight_g), value_of(each))
-                                        for each in self.bands), weight_g)
+        return growth.interpolate_at(self.anchor_weights, weight_g, lambda index: value_of(self.bands[index]))
+
+    @cached_property
+    def anchor_weights(self):
+        """The weight each band's values sit at, in band order (growth.anchor)."""
+        return tuple(growth.anchor(band.min_weight_g, band.max_weight_g) for band in self.bands)
 
     def fcr_at(self, weight_g):
         """The expected FCR of fish of `weight_g`; None outside the bands."""
@@ -111,13 +116,19 @@ class Table:
     def sfr_at(self, weight_g, temperature_c):
         """The Sfr of fish of `weight_g` at a temperature: each band's SFR there (read between its two columns, never
         outside the first and last: `sfr_at`) and, over the weight, the between-band rule of the SFR. `low` and `high`
-        are the cells of the fish's own band; `banded` its own band's SFR there. None outside the bands or the columns."""
+        are the cells of the fish's own band; `banded` its own band's SFR there. None outside the bands or the columns, and
+        when a neighbouring band read has no cell at that temperature (a table stored with columns that differ between
+        its bands: refused when it is saved, never a crash when it is read)."""
         band = self.band_for(weight_g)
         own = sfr_at(band.cells, temperature_c) if band is not None else None
         if own is None:
             return None
-        value = self._between(weight_g, lambda each: sfr_at(each.cells, temperature_c).value,
-                              self.protocol.sfr_between)
+        def value_of(each):
+            found = sfr_at(each.cells, temperature_c)
+            return found.value if found is not None else None
+        value = self._between(weight_g, value_of, self.protocol.sfr_between)
+        if value is None:
+            return None
         return Sfr(value, temperature_c, own.low, own.high, own.value)
 
     def columns(self):
@@ -219,9 +230,9 @@ class Basis:
         return self.table.uneaten_at(self.weight_g) if self.band is not None else None
 
     @property
-    def economic_fcr(self):
+    def fcr_on_feed_given(self):
         """Feed given per growth: the expected FCR ÷ the share eaten; None without a band."""
-        return growth.economic_fcr(self.fcr, self.uneaten_pct) if self.band is not None else None
+        return growth.fcr_on_feed_given(self.fcr, self.uneaten_pct) if self.band is not None else None
 
     @property
     def mortality_pct_month(self):
@@ -269,6 +280,12 @@ class Basis:
             return _('No temperature recorded here yet: record one.')
         if self.missing == OUTSIDE_TABLE:
             cells = self.band.cells
+            profile = getattr(self.temperature, 'profile', None)
+            if profile is not None:
+                return _('%(temperature)s °C, the temperature profile %(profile)s’s at this weight, is outside this table '
+                         '(%(low)s–%(high)s °C).') % {
+                    'temperature': number(self.temperature.value_c, 1), 'profile': profile.name,
+                    'low': number(cells[0].temperature_c, 1), 'high': number(cells[-1].temperature_c, 1)}
             return _('%(temperature)s °C is outside this table (%(low)s–%(high)s °C).') % {
                 'temperature': number(self.temperature.value_c, 1), 'low': number(cells[0].temperature_c, 1),
                 'high': number(cells[-1].temperature_c, 1)}
@@ -295,8 +312,9 @@ class Profile:
     between: str = SMOOTH
 
     def at(self, weight_g):
-        """The temperature (°C) the profile gives fish of `weight_g`: `growth.between`, the protocols' own rule."""
-        return growth.between(self.points, weight_g, self.between == STEP)
+        """The temperature (°C) the profile gives fish of `weight_g`: `growth.between`, the protocols' own rule; None
+        for a profile without points (stored by some other path than its form, which refuses it: never a crash)."""
+        return growth.between(self.points, weight_g, self.between == STEP) if self.points else None
 
 
 @dataclass(frozen=True)
@@ -304,6 +322,16 @@ class PlannedTemperature:
     """A temperature a day ahead is planned at, not measured: a temperature profile's at the fish's weight that day."""
     value_c: Decimal
     profile: object = None
+
+
+@dataclass(frozen=True)
+class ProfileGap:
+    """A temperature profile in force that gives no temperature (it has no points): the plan stops and says so."""
+    profile: object
+
+    def why(self):
+        return _('The temperature profile %(profile)s has no points: give its points (Operations › Feeding › '
+                 'Temperature profiles).') % {'profile': self.profile.name}
 
 
 @dataclass
@@ -327,18 +355,27 @@ class Policy:
         self._profiles = Resolver(self.profile_rows, 'profile',
                                   {pk: found.profile.species_id for pk, found in self.profiles.items()}, self.species)
 
+    def recorded(self, rows, tables, profile_rows, profiles):
+        """The same policy over other rows: the assignments as they were recorded on a past day (read.as_recorded), with
+        their tables and profiles. The temperatures, the fasts and the species stay this policy's."""
+        return replace(self, assignments=rows, tables=tables, profile_rows=profile_rows, profiles=profiles)
+
     def resolve(self, unit_id, batch_id, day):
         """(the protocol's assignment row in force, a unit's row of another species read past)."""
         return self._protocols.resolve(unit_id, batch_id, day)
 
     def planned_temperature(self, unit_id, batch_id, day, weight_g):
         """The PlannedTemperature of a day ahead: the temperature profile in force for the batch in the unit that day
-        at the fish's weight; None without one (the plan then holds the unit's measured temperature, and says so)."""
+        at the fish's weight; None without one (the plan then holds the unit's measured temperature, and says so); a
+        ProfileGap when the profile gives none."""
         row, _skipped = self._profiles.resolve(unit_id, batch_id, day)
         if row is None:
             return None
-        found = self.profiles[row.profile_id]
-        return PlannedTemperature(found.at(weight_g), found.profile)
+        found = self.profiles.get(row.profile_id)
+        value = found.at(weight_g) if found is not None else None
+        if value is None:
+            return ProfileGap(found.profile if found is not None else row.profile)
+        return PlannedTemperature(value, found.profile)
 
     def basis(self, unit_id, batch_id, day, weight_g, beside=False, temperature=READ):
         """The Basis of the batch's ration in the unit on `day`, for fish of `weight_g` on average. `beside`: the unit

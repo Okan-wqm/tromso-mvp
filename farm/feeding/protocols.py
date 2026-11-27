@@ -44,6 +44,10 @@ def describe(protocol):
 
 
 def _write(protocol, columns, rows, column_name):
+    """Every band gets a cell in every column (review 1, L2): a table whose bands have other columns is refused, so
+    the SFR between two bands always has both neighbours' cells."""
+    if any(row.get(column_name(temperature)) is None for row in rows for temperature in columns):
+        raise ValidationError({NON_FIELD_ERRORS: _('Every band has an SFR in every temperature column.')})
     for row in rows:
         band = ProtocolBand.objects.create(
             protocol=protocol, min_weight_g=row['min_weight_g'], max_weight_g=row['max_weight_g'], feed=row['feed'],

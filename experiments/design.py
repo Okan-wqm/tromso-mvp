@@ -187,15 +187,21 @@ def check_protocols(design):
         shapes = {pk: _shape_without_feed(found[pk]) for pk in used if pk in found}
         if len(set(shapes.values())) > 1:
             yield Finding(WARNING, 'tables_differ', _('The diets’ feeding tables differ in more than the feed (weight '
-                                                      'bands, meals, expected FCR or feeding rates): the groups would '
+                                                      'bands, meals, expected FCR, uneaten feed, mortality, feeding rates or how '
+                                                      'they are read between the bands): the groups would '
                                                       'differ in more than the diet.'))
 
 
 def _shape_without_feed(table):
-    """A protocol's table as the ration reads it, the feed of each band left out."""
-    return tuple((band.min_weight_g, band.max_weight_g, band.meals, band.fcr, band.uneaten_pct,
-                  band.mortality_pct_month,
-                  tuple((cell.temperature_c, cell.sfr_pct) for cell in band.cells)) for band in table.bands)
+    """A protocol's table as the ration reads it, the feed of each band left out (review 1, M4): each band's weights and
+    meals with the expected FCR, uneaten share and expected mortality in force in it (its own, else the protocol's:
+    ration.Table), its SFR cells, and the protocol's three between-band rules. Two diets that differ only in a value
+    the protocol gives every band, or in how a value is read between the bands, differ here."""
+    protocol = table.protocol
+    return ((protocol.fcr_between, protocol.uneaten_between, protocol.sfr_between),
+            tuple((band.min_weight_g, band.max_weight_g, band.meals, table.fcr_of(band), table.uneaten_of(band),
+                   table.mortality_of(band), tuple((cell.temperature_c, cell.sfr_pct) for cell in band.cells))
+                  for band in table.bands))
 
 
 def check_balance(design):

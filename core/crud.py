@@ -47,6 +47,7 @@ from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
 from . import audit, formpanels, formpayload, formprops, listprops, navigation, softdelete
+from .confirmed import ChangedMeanwhile, NotConfirmed, as_confirmed, changed_meanwhile, unchanged
 from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
 from .ui import is_next
@@ -294,26 +295,6 @@ def tab_fields(tabs):
     """Every field name of the tabs, the ones inside a Fieldset too."""
     return [name for _, _, names in tabs for item in names
             for name in (item.names if isinstance(item, Fieldset) else [item])]
-
-
-def unchanged(seen, record):
-    """Whether `record` (as read now, locked or not) is still the one the person saw: its version is the one their page
-    carried (`seen`, posted as text or cleaned as a number). A record without a version (not an AuditedModel) has
-    nothing to compare. The one comparison of an edit, a row list and a delete."""
-    return not isinstance(record, AuditedModel) or str(seen) == str(record.version)
-
-
-def changed_meanwhile(name, deleting=False):
-    """The sentence of a record changed since the person read it: for an edit or a row list, the form shows their
-    version; for a delete, the confirmation showed another record than the one now there. The one place of both
-    sentences (hr.services says the delete's when it compares under its lock)."""
-    if deleting:
-        # Translators: %(name)s is the kind of record in lower case (e.g. site).
-        return _('This %(name)s was changed while you were looking at it: check it and delete it again.') % {
-            'name': name}
-    # Translators: %(name)s is the kind of record in lower case (e.g. site).
-    return _('Someone else changed this %(name)s while you were editing it. The form now shows their version; make '
-             'your changes again.') % {'name': name}
 
 
 def refusal_on_form(form, error):
@@ -665,8 +646,11 @@ class Resource:
         raise NotImplementedError(f'{cls.__name__} has service_writes and offers Edit: say which service writes it')
 
     @classmethod
-    def delete_record(cls, request, record):
-        """Deletes (voids) `record`, as the person reached it, through the service."""
+    def delete_record(cls, request, record, seen):
+        """Deletes (voids) `record`, as the person reached it, through the service. `seen` is the version the
+        confirmation posted ('' when none): the service asks its own rules first (the record's, the reach of its day)
+        and then, last and under its own lock, whether the record is still the one confirmed
+        (core.confirmed.as_confirmed)."""
         raise NotImplementedError(f'{cls.__name__} has service_writes and offers Delete: say which service deletes it')
 
     @classmethod
@@ -1090,36 +1074,34 @@ class DeleteView(ResourceView):
         return render_page(request, 'crud/confirm_delete.html', self.context(
             object=obj, plan=plan, outcome=formpayload.delete_outcome(obj, plan), version=getattr(obj, 'version', None)))
 
-    def not_as_confirmed(self, request, obj, pk):
-        """The answer when `obj` (as read now) is not the record the person confirmed, else None. The confirmation of a
-        versioned record (an AuditedModel) posts the version it showed (`version`): a post without it confirmed nothing
-        and is refused (400, said); a record changed since is not deleted, said, back on the confirmation. A record
-        without a version (a hard-deleted one) has nothing to confirm and deletes. Asked after the scope and the
-        record's own refusal, so a record the person may not reach stays a 404 or a 403."""
-        if not isinstance(obj, AuditedModel):
-            return None
-        confirmed = request.POST.get('version', '')
-        if confirmed == '':
+    def post(self, request, pk):
+        """The delete, refused in one order on every tab: the scope (a record the person does not reach is a 404), the
+        record's own rule (`Resource.allowed`, a 403), a service's own refusals (HR: the reach of the day, under its
+        lock), and last whether it is the record the confirmation showed (core.confirmed.as_confirmed, on the version
+        it posted: none is a 400, said; a record changed since is not deleted, said, back on the confirmation). A record
+        without a version (a hard-deleted one) has nothing to confirm and deletes."""
+        try:
+            return self.deleted(request, pk, request.POST.get('version', ''))
+        except NotConfirmed:
             return HttpResponseBadRequest(_('This delete was not confirmed: open the delete of this %(name)s again and '
                                             'confirm it there.') % {'name': self.resource.name})
-        if unchanged(confirmed, obj):
-            return None
-        messages.error(request, changed_meanwhile(self.resource.name, deleting=True))
-        return done(request, self.url('delete', pk))
+        except ChangedMeanwhile as error:
+            messages.error(request, ' '.join(error.messages))
+            return done(request, self.url('delete', pk))
 
-    def post(self, request, pk):
+    def deleted(self, request, pk, seen):
         r = self.resource
         if r.service_writes:
-            # The service locks in its own order (HR: the person before the record) and logs; a refusal is said.
+            # The service locks in its own order (HR: the person before the record), asks its own rules and then the
+            # version under that lock (as_confirmed, last), and logs; a refusal is said.
             try:
                 with transaction.atomic():
                     obj = self.get_object(pk)
-                    refused = self.not_as_confirmed(request, obj, pk)
-                    if refused is not None:
-                        return refused
-                    # obj is the version confirmed (checked just now, unlocked); the service compares it again under
-                    # its own lock (hr.services.as_confirmed)
-                    r.delete_record(request, obj)
+                    if not r.allowed(request, obj, 'delete'):
+                        raise PermissionDenied
+                    r.delete_record(request, obj, seen)
+            except ChangedMeanwhile:
+                raise
             except ValidationError as error:
                 messages.error(request, ' '.join(error.messages))
                 return done(request, self.url('list'))
@@ -1135,9 +1117,7 @@ class DeleteView(ResourceView):
             obj = self.locked_object(pk)
             if not r.allowed(request, obj, 'delete'):
                 raise PermissionDenied
-            refused = self.not_as_confirmed(request, obj, pk)
-            if refused is not None:
-                return refused
+            as_confirmed(obj, seen, r.name)
             if isinstance(obj, AuditedModel):
                 plan = plan_delete(obj)
                 if not plan.can_delete:

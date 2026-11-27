@@ -62,8 +62,8 @@ class AttendanceRecordResource(services.PersonFirst, Resource):
         return services.correct_presence(request.user, current, values['clock_in'], values['clock_out'], values['note'])
 
     @classmethod
-    def delete_record(cls, request, record):
-        services.void_presence(request.user, record)
+    def delete_record(cls, request, record, seen):
+        services.void_presence(request.user, record, seen)
 
     @classmethod
     def allowed(cls, request, obj, action):

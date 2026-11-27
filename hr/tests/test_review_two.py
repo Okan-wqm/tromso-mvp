@@ -155,7 +155,7 @@ class HooksCallAWriterTests(PeopleTestCase):
                 with self.subTest(tab=tab.__name__, hook=hook), mock.patch.multiple(
                         services, **{name: mock.MagicMock(return_value=(mock.MagicMock(), [])) for name in named}):
                     arguments = (form,) if hook == 'create_record' else (form, record) if hook == 'change_record' \
-                        else (record,)
+                        else (record, '1')
                     getattr(tab, hook)(mock.MagicMock(), *arguments)
                     self.assertTrue(any(getattr(services, name).called for name in named))
 
@@ -175,9 +175,9 @@ class ClearConfirmedTests(PeopleTestCase):
         row = ShiftAssignment.objects.create(employee=self.in_a, day=date(2026, 3, 2), shift=self.early)
         delete = ShiftAssignmentResource.delete_record.__func__
 
-        def raced(cls, request, record):
+        def raced(cls, request, *given):
             ShiftAssignment.objects.filter(pk=row.pk).update(shift=self.late, version=2)      # another lead's change
-            return delete(cls, request, record)
+            return delete(cls, request, *given)
         self.client.force_login(self.planner)
         with mock.patch.object(ShiftAssignmentResource, 'delete_record', classmethod(raced)):
             response = delete_confirmed(self.client, reverse('hr:production_shiftassignment_delete', args=[row.pk]))
@@ -301,7 +301,7 @@ class OneRefusalOfADayTests(PeopleTestCase):
 
 class VoidConfirmedTests(PeopleTestCase):
     """R4-3 (review 4): Attendance's void is of the stretch as confirmed: one corrected between crud's read and the
-    service's lock is not voided, with the reason (services.as_confirmed, as the plan's delete)."""
+    service's lock is not voided, with the reason (core.confirmed.as_confirmed, as the plan's delete)."""
 
     def test_a_stretch_corrected_after_its_void_was_confirmed_is_not_voided(self):
         from ..resources.attendance import AttendanceRecordResource
@@ -311,9 +311,9 @@ class VoidConfirmedTests(PeopleTestCase):
                                                  clock_out=datetime(2026, 3, 2, 14, tzinfo=UTC), via='entered', note='x')
         delete = AttendanceRecordResource.delete_record.__func__
 
-        def raced(cls, request, confirmed):
+        def raced(cls, request, *given):
             AttendanceRecord.objects.filter(pk=record.pk).update(note='corrected', version=2)   # another lead's
-            return delete(cls, request, confirmed)
+            return delete(cls, request, *given)
         self.client.force_login(lead)
         with mock.patch.object(AttendanceRecordResource, 'delete_record', classmethod(raced)):
             response = delete_confirmed(self.client, reverse('hr:production_attendancerecord_delete', args=[record.pk]))

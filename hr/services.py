@@ -18,7 +18,7 @@ from django.utils.formats import date_format
 from django.utils.translation import gettext as _
 
 from core import audit, softdelete
-from core.crud import changed_meanwhile
+from core.confirmed import as_confirmed
 from core.models import AuditLog
 from core.platform import correction_window_days, plan_batch_cells
 from farm.stock.dates import site_today
@@ -50,14 +50,6 @@ def _allowed(user, employee, perms=EMPLOYEE_VERBS):
     _verb(user, perms)
     if not scope.can_reach(user, employee) or own_record(user, employee):
         raise PermissionDenied
-
-
-def as_confirmed(current, confirmed):
-    """The record a delete confirmed (`confirmed`, crud's read at the version the person confirmed) is still the one
-    locked now (`current`, read again under the person's lock: None when it is gone), else refused with the sentence
-    of a record changed while the person looked at it. The one step of HR's deletes (clear_day, void_presence)."""
-    if current is None or current.pk != confirmed.pk or current.version != confirmed.version:
-        raise ValidationError(changed_meanwhile(confirmed._meta.verbose_name, deleting=True))
 
 
 class NotReached(PermissionDenied):
@@ -406,12 +398,12 @@ def plan_shifts(user, cells, shift):
     return _plan(user, cells, shift, most=plan_batch_cells)[1]
 
 
-def clear_day(user, record):
-    """Clears the plan `record` as the person confirmed it (its dialog's Delete: crud has refused a record whose version
-    moved since the confirmation, core.crud.DeleteView): that row at that version, read again under the person's lock. A
-    cell cleared, replanned or changed meanwhile is left as it is, with the reason."""
+def clear_day(user, record, seen):
+    """Clears the plan `record` as the person confirmed it (its dialog's Delete): that row at the version its
+    confirmation showed (`seen`), read again under the person's lock, asked after the user's own days and the reach
+    (core.confirmed.as_confirmed). A cell cleared, replanned or changed meanwhile is left as it is, with the reason."""
     _verb(user, PLAN_PERMISSIONS)              # before the record is read (core/tests_service_rights.py)
-    _plan(user, [(record.employee, record.day)], CLEAR, expected=record)
+    _plan(user, [(record.employee, record.day)], CLEAR, expected=record, seen=seen)
 
 
 def plan_day(user, employee, day, shift, note, expected=None):
@@ -429,7 +421,7 @@ ONE_PLAN = next(constraint for constraint in ShiftAssignment._meta.constraints
                 if constraint.name == 'uq_shift_assignments_employee_day')
 
 
-def _plan(user, cells, shift, note=KEEP, expected=WHATEVER, most=None):
+def _plan(user, cells, shift, note=KEEP, expected=WHATEVER, most=None, seen=None):
     _verb(user, PLAN_PERMISSIONS)              # who may plan no cell at all is refused before the cells are read
     bound = most() if most is not None else None
     if bound is not None and len(cells) > bound:
@@ -441,22 +433,25 @@ def _plan(user, cells, shift, note=KEEP, expected=WHATEVER, most=None):
     with transaction.atomic():
         warnings, blocking, writes = [], [], []
         lock_people(by_person)
-        # the reach of every cell, asked once for all of them (a fixed number of queries)
+        # the user's own days, then the reach of every cell (asked once for all of them: a fixed number of queries),
+        # then, for a clear, the version confirmed: one order for every refusal (core.crud.DeleteView)
+        if any(own_record(user, employee) for employee, _changes in by_person.values()):
+            raise ValidationError(_('You do not plan your own days.'))
         reached(user, [(employee, day) for employee, changes in by_person.values() for day in changes],
                 _('You do not plan this person on this day.'))
         for employee, changes in by_person.values():
-            if own_record(user, employee):
-                raise ValidationError(_('You do not plan your own days.'))
             existing = {row.day: row for row in ShiftAssignment.objects.select_for_update().filter(
                 employee=employee, day__in=list(changes))}
             for day in changes:
                 row = existing.get(day)
+                if not user.has_perm(_cell_permission(row, shift)):
+                    raise PermissionDenied
                 if expected is not WHATEVER and shift is CLEAR:
-                    as_confirmed(row, expected)
+                    # the row confirmed, at the version confirmed; another row on its day is a cell replanned meanwhile
+                    as_confirmed(row if row is not None and row.pk == expected.pk else None, seen,
+                                 ShiftAssignment._meta.verbose_name)
                 elif expected is not WHATEVER and row is not None and row.pk != getattr(expected, 'pk', None):
                     raise ValidationError({'day': ONE_PLAN.violation_error_message})
-                if not user.has_perm(_cell_permission(existing.get(day), shift)):
-                    raise PermissionDenied
                 if shift is not CLEAR:
                     check_employed(employee, day)
             if shift is CLEAR:
@@ -859,10 +854,9 @@ def _keeps_attendance(user, employee, moment, still_open=False):
     stretch still open, today (scope.reaches_stretch); never their own attendance."""
     if own_record(user, employee):
         raise ValidationError(_('You do not enter or correct your own attendance.'))
-    if still_open and scope.can_reach(user, employee):
-        return                                  # an open stretch is today's lead's too (scope.reaches_stretch)
-    reached(user, [(employee, read.governing(employee, moment).company_day)],
-            _('You do not see this person on this day.'))
+    day = read.governing(employee, moment).company_day
+    if not scope.reaches_stretch(user, employee, day, still_open):
+        reached(user, [(employee, day)], _('You do not see this person on this day.'))
 
 
 def _note(note, needed):
@@ -916,20 +910,20 @@ def correct_presence(user, record, clock_in_at, clock_out_at, note):
         return current
 
 
-def void_presence(user, record):
-    """Voids a stretch (the Attendance page's delete) as the person confirmed it (`record`, at its version:
-    `as_confirmed`): Delete on Attendance and the stretch the user's to correct (`correct_presence`'s reach), never their
-    own; the person is locked before the stretch; logged by the delete plan."""
+def void_presence(user, record, seen):
+    """Voids a stretch (the Attendance page's delete) as the person confirmed it: Delete on Attendance, never their own
+    (a 403), the stretch the user's to correct (`_keeps_attendance`, the reach of `correct_presence` and
+    `enter_presence`), and last the version its confirmation showed (`seen`: core.confirmed.as_confirmed; voided or
+    corrected since, said and nothing voided). The person is locked before the stretch; logged by the delete plan."""
     _verb(user, ('hr.delete_attendancerecord',))
     with transaction.atomic():
         employee = lock_person(record.employee_id)
-        current = AttendanceRecord.objects.select_for_update(of=('self',)).filter(pk=record.pk).first()
-        as_confirmed(current, record)           # voided or corrected since the confirmation: said, nothing voided
         if own_record(user, employee):
             raise PermissionDenied
-        if not scope.reaches_stretch(user, employee, read.governing(employee, current.clock_in).company_day,
-                                     current.clock_out is None):
-            raise PermissionDenied
+        current = AttendanceRecord.objects.select_for_update(of=('self',)).filter(pk=record.pk).first()
+        stretch = current or record             # gone meanwhile: the reach is asked of the stretch as confirmed
+        _keeps_attendance(user, employee, stretch.clock_in, stretch.clock_out is None)
+        as_confirmed(current, seen, AttendanceRecord._meta.verbose_name)
         plan = softdelete.plan_delete(current)
         if not plan.can_delete:
             raise ValidationError(plan.blockers)

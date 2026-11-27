@@ -103,8 +103,8 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
         return cls.plan(request, current.employee, current.day, form.cleaned_data, current)
 
     @classmethod
-    def delete_record(cls, request, record):
-        services.clear_day(request.user, record)
+    def delete_record(cls, request, record, seen):
+        services.clear_day(request.user, record, seen)
 
     # --- the new look (core.crud.ListView: list_template_next, list_next_props), the words of hr/roster.html ----------
     list_template_next = 'hr/roster_next.html'

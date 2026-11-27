@@ -38,7 +38,7 @@ from farm.models.water import NBS
 from farm.water import calculation, deffeyes, messages, parameters, read as water_read
 from farm.water.evaluate import is_fresh
 from farm.water.parameters import PH
-from farm.water.read import (OWN_WATER_KINDS, WINDOW, Series as WaterSeries, as_parameter, assumed_salinity, choose,
+from farm.water.read import (WINDOW, Series as WaterSeries, as_parameter, assumed_salinity, choose,
                              ph_on_nbs)
 
 from . import quantities
@@ -153,22 +153,22 @@ def places(target):
 
 def tiers(target):
     """[([(Q over bindings, origin)], [SamplingPoint])]: the tiers of owner rule A9 (`farm.water.read.choose`) for a
-    target's water, in the order they count, each with the bindings and the points whose samples are in it, exactly
-    the places the live view reads (farm/water/read.py `_places`): a unit's own-water points (middle first; never the
-    inlet), then its system's (the system's sensors, those on its loop point, the loop's samples); a system's loop and
-    its sensors; any other point or a piece of equipment its own alone."""
+    target's water, in the order they count, each with the bindings and the points whose samples are in it. A unit's
+    tiers are the one resolver's (`farm.water.read.tiers`, what the water page, the ration and the degree-days read:
+    REVIEW-3, R3-10): its own-water points (middle first; never the inlet), then its system's (the system's sensors,
+    those on its loop point, the loop's samples). A system's loop and its sensors; any other point or a piece of
+    equipment its own alone."""
     if isinstance(target, SamplingPoint) and target.unit_id and target.kind == PointKind.MIDDLE:
         target = target.unit
     if isinstance(target, Tank):
-        own = list(SamplingPoint.objects.filter(unit=target, is_active=True,
-                                                kind__in=[PointKind.MIDDLE, *OWN_WATER_KINDS]).with_owners())
-        own.sort(key=lambda point: (point.kind != PointKind.MIDDLE, point.name))
-        found = [([(Q(point__in=own), SENSOR)] if own else [], own)]
-        if target.system_id:
-            loop = SamplingPoint.objects.filter(system_id=target.system_id, kind=PointKind.MIDDLE,
-                                                is_active=True).with_owners().first()
-            found.append(([(Q(system_id=target.system_id), SYSTEM_SENSOR),
-                           *([(Q(point=loop), SYSTEM_SENSOR)] if loop else [])], [loop] if loop else []))
+        found = [([], [])]                                 # the own tier, empty when the unit has no point
+        for tier in water_read.tiers([target], nested=False, sites=False)[target.pk]:
+            points = list(tier.points)
+            if tier.via == water_read.UNIT:
+                found[0] = ([(Q(point__in=points), SENSOR)], points)
+            else:
+                found.append(([(Q(system_id=tier.owner.pk), SYSTEM_SENSOR),
+                               *([(Q(point=points[0]), SYSTEM_SENSOR)] if points else [])], points))
         return found
     return [places(target)]
 

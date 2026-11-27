@@ -327,7 +327,11 @@ class BudgetTests(Fixtures, FeedingTestCase):
     and with a target, so each row reads every part (the withdrawal, the purge in degree-days, the last feeding, the
     forecast)."""
 
-    CEILING = 60          # measured 55 at 3 and at 9 units (2026-11-22), a small margin; never raised without a review
+    # measured 55 at 3 and at 9 units (2026-11-22), a small margin; never raised without a review. 61 from 2026-11-27:
+    # main's own page reached 60, and the production plan's temperature profiles add one read, their assignment rows
+    # (owner decision 17; the plan's horizon read is paid for by the one read of the fasts it saved). Review: the
+    # coordinator's, before landing.
+    CEILING = 61
 
     def setUp(self):
         super().setUp()

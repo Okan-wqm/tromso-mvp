@@ -62,7 +62,8 @@ class PanelSwitcherTests(WorkspaceTestCase):
         production = self.page(reverse('farm:system_list'))
         self.assertEqual(production.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(production), ['Overview', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
-                                        'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments', 'Harvested',
+                                        'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
+                                        'Temperature profiles', 'Profile assignments', 'Harvested',
                                         'Harvest plan', 'Production plans', 'Treatments', 'Health events', 'Sea-lice counts',
                                         'Experiments', 'Regulatory reports', 'Questions for the authority', 'Messages',
                                         'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
@@ -125,7 +126,8 @@ class PanelMemoryTests(WorkspaceTestCase):
         response = self.page(reverse('password_change'))
         self.assertEqual(response.context['workspace']['key'], 'production')
         self.assertEqual(self.labels(response), ['Overview', 'Production units', 'Monitoring', 'Water chemistry', 'Storage', 'Tasks',
-                                        'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments', 'Harvested',
+                                        'Recurring tasks', 'Meal board', 'Records', 'Protocols', 'Assignments',
+                                        'Temperature profiles', 'Profile assignments', 'Harvested',
                                         'Harvest plan', 'Production plans', 'Treatments', 'Health events', 'Sea-lice counts',
                                         'Experiments', 'Regulatory reports', 'Questions for the authority', 'Messages',
                                         'Today & attendance', 'Shift schedule', 'Leave requests', 'Attendance', 'Team overview',
@@ -226,6 +228,8 @@ class MenuPlacementTests(TestCase):
             'farm.StockOperation': 'Production · Operations',
             'farm.FeedingRecord': 'Production · Operations · Feeding',
             'farm.FeedingProtocol': 'Production · Operations · Feeding',
+            'farm.TemperatureProfile': 'Production · Operations · Feeding',
+            'farm.TemperatureProfileAssignment': 'Production · Operations · Feeding',
             'farm.ProtocolAssignment': 'Production · Operations · Feeding',
             'farm.WaterMeasurement': 'Production · Operations',
             'inventory.InventoryOperation': 'Production · Operations',

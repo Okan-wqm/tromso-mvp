@@ -50,7 +50,7 @@ class ProductionPlanMigrationTests(TransactionTestCase):
                                       batch=batch, unit=unit, kind='weighing', count_delta=0, avg_weight_g=D(60))
         return protocol, stocked, weighed
 
-    def test_old_protocols_get_their_day_and_old_weighings_their_source(self):
+    def test_old_protocols_keep_their_step_and_old_weighings_get_their_source(self):
         protocol, stocked, weighed = self.rows(self.old)
         new = self.migrate(AFTER)
         Protocol, Line = new.get_model('farm', 'FeedingProtocol'), new.get_model('farm', 'StockMovement')
@@ -78,17 +78,6 @@ class ProductionPlanMigrationTests(TransactionTestCase):
         for field, value in (('uneaten_pct', D('50.1')), ('mortality_pct_month', D('30.01'))):
             with self.assertRaises(IntegrityError), transaction.atomic():
                 Protocol.objects.filter(pk=kept.pk).update(**{field: value})
-
-    def test_the_sites_months_are_all_or_none_and_within_the_range(self):
-        self.migrate(AFTER)
-        from farm.models import Site
-        site = Site.objects.create(name='Bergen', code='BG')
-        months = {f'plan_temperature_{month:02d}': D('8.0') for month in range(1, 13)}
-        Site.objects.filter(pk=site.pk).update(**months)
-        with self.assertRaises(IntegrityError), transaction.atomic():
-            Site.objects.filter(pk=site.pk).update(plan_temperature_06=None)
-        with self.assertRaises(IntegrityError), transaction.atomic():
-            Site.objects.filter(pk=site.pk).update(plan_temperature_06=D('40.1'))
 
     def test_going_back_keeps_the_protocols_and_the_weighings(self):
         protocol, _stocked, weighed = self.rows(self.old)

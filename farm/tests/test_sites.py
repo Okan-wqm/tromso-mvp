@@ -301,7 +301,7 @@ class SiteCreateTests(SiteTestCase):
     def test_errors_mark_their_tab(self):
         response = self.client.post(reverse('farm:site_create'), site_data(type='sea_cage'))
         tabs = {tab['key']: tab['has_errors'] for tab in response.context['form'].tab_list()}
-        self.assertEqual(tabs, {'basic': False, 'location': True, 'contact': False, 'reports': False, 'plan': False})
+        self.assertEqual(tabs, {'basic': False, 'location': True, 'contact': False, 'reports': False})
 
 
 class SiteTimeZoneTests(SiteTestCase):

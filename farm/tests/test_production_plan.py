@@ -23,19 +23,23 @@ from core.models import AuditLog, PlatformSettings
 from ..feeding import read as feeding_read
 from ..harvest import forecast
 from ..models import (
-    FeedingProtocol, HandlingPlanItem, ProtocolAssignment, ProtocolBand, Site, StockMovement,
+    FeedingProtocol, HandlingPlanItem, ProtocolAssignment, ProtocolBand, StockMovement, TemperatureProfile,
     WeightSource,
 )
 from ..stock import read as stock_read, services as stock_services
-from .helpers import role, site_data
+from .helpers import role, rows_data
 from .test_harvest import HarvestTestCase
 from .test_protocols import PROTOCOL_KEEPER, ProtocolTestCase, table_data
+from .test_stock import make_unit
 
 D = Decimal
 # the new look's pages are drawn with the islands' manifest the other page tests use (no browser build in a test run)
 MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
-SETUP = ('view_site', 'change_site', 'view_platformsettings', 'change_platformsettings', 'view_weightsource',
-         'add_weightsource', 'change_weightsource', 'delete_weightsource')
+SETUP = ('view_platformsettings', 'change_platformsettings', 'view_weightsource', 'add_weightsource',
+         'change_weightsource', 'delete_weightsource', 'view_temperatureprofile', 'add_temperatureprofile',
+         'change_temperatureprofile', 'delete_temperatureprofile', 'view_temperatureprofileassignment',
+         'add_temperatureprofileassignment', 'change_temperatureprofileassignment',
+         'delete_temperatureprofileassignment')
 
 
 def shown(day):
@@ -92,6 +96,33 @@ class PlanTestCase(HarvestTestCase):
             'valid_from': self.day(15).isoformat(), 'valid_until': '', 'notes': ''}, headers={'X-Modal': '1'})
         self.assertEqual(response.status_code, 204)
 
+    def profile_through_its_pages(self, name, points, between='smooth', look=None):
+        """A temperature profile created (a draft), its points saved and set active, each through its address, in the
+        classic look or (`look`='?ui=next') the new one. `points`: [(weight g, temperature °C)] as typed."""
+        look = self.look if look is None else look
+        general = {'name': name, 'species': str(self.salmon.pk), 'status': 'draft', 'temperature_between': between,
+                   'notes': ''}
+        created = self.client.post(reverse('farm:temperatureprofile_create') + look, general)
+        self.assertEqual(created.status_code, 302)
+        profile = TemperatureProfile.objects.get(name=name)
+        saved = self.client.post(reverse('farm:temperatureprofile_points', args=[profile.pk]) + look, rows_data(
+            'points', [{'weight_g': weight, 'temperature_c': temperature} for weight, temperature in points],
+            record=profile))
+        self.assertEqual(saved.status_code, 302)
+        active = self.client.post(reverse('farm:temperatureprofile_edit', args=[profile.pk]) + look,
+                                  {**general, 'status': 'active', 'version': str(TemperatureProfile.objects.get(
+                                      pk=profile.pk).version)})
+        self.assertEqual(active.status_code, 302)
+        profile.refresh_from_db()
+        self.assertEqual(profile.status, 'active')
+        return profile
+
+    def assign_profile(self, profile, unit=None, batch=None, days_ago=15):
+        response = self.client.post(reverse('farm:temperatureprofileassignment_create'), {
+            'profile': str(profile.pk), 'units': [str(unit.pk)] if unit else [], 'batch': str(batch.pk) if batch else '',
+            'valid_from': self.day(days_ago).isoformat(), 'valid_until': '', 'notes': ''}, headers={'X-Modal': '1'})
+        self.assertEqual(response.status_code, 204)
+
     def set_target(self, grams, batch=None):
         response = self.client.post(reverse('farm:productionplan_create'), {
             'batch': str((batch or self.batch).pk), 'target_weight_g': grams, 'notes': ''})
@@ -104,8 +135,8 @@ class PlanTestCase(HarvestTestCase):
     def growth_url(self, unit=None, batch=None):
         return reverse('farm:production_plan', args=[(unit or self.t1).pk, (batch or self.batch).pk])
 
-    def file(self, **query):
-        response = self.client.get(self.growth_url(), {**query, 'format': 'csv'})
+    def file(self, unit=None, **query):
+        response = self.client.get(self.growth_url(unit), {**query, 'format': 'csv'})
         self.assertEqual(response['Content-Type'], 'text/csv; charset=utf-8')
         return list(csv.reader(io.StringIO(response.content.decode())))
 
@@ -164,22 +195,23 @@ class GrowthPlanTests(PlanTestCase):
         rows = self.file()
         self.assertEqual(rows[0], ['date', 'average_weight_g', 'fish', 'biomass_kg', 'feed_kg', 'feed_to_date_kg',
                                    'eaten_kg', 'uneaten_kg', 'fcr', 'economic_fcr', 'uneaten_pct', 'temperature_c',
-                                   'fasting'])
+                                   'temperature_source', 'fasting'])
         # the start, then the three days worked out above (biomass = weight × 10,000 ÷ 1000; uneaten = a fifth of the feed)
         self.assertEqual(rows[1:], [
-            [today.isoformat(), '60.8000', '10000', '608.000', '', '0.000', '', '', '', '', '', '', ''],
+            [today.isoformat(), '60.8000', '10000', '608.000', '', '0.000', '', '', '', '', '', '', '', ''],
             [(today + timedelta(days=1)).isoformat(), '61.2864', '10000', '612.864', '6.080', '6.080', '4.864', '1.216',
-             '1.000', '1.250', '20.00', '10.0', ''],
+             '1.000', '1.250', '20.00', '10.0', 'measured, held', ''],
             [(today + timedelta(days=2)).isoformat(), '61.7767', '10000', '617.767', '6.129', '12.209', '4.903', '1.226',
-             '1.000', '1.250', '20.00', '10.0', ''],
+             '1.000', '1.250', '20.00', '10.0', 'measured, held', ''],
             [(today + timedelta(days=3)).isoformat(), '62.2709', '10000', '622.709', '6.178', '18.386', '4.942', '1.236',
-             '1.000', '1.250', '20.00', '10.0', ''],
+             '1.000', '1.250', '20.00', '10.0', 'measured, held', ''],
         ])
         page = self.client.get(self.growth_url())
         for text in (f'Growth plan · T-01 · {self.batch.code}', f'Target 62.0 g: reached on {shown(self.day(-3))}.',
                      'Feed over these days: 18.39 kg given, 14.71 kg eaten, 3.68 kg uneaten; economic FCR of the period '
                      '1.25; 10,000 fish and 623 kg at the end.',
-                     'Every day at 10.0 °C, the unit’s latest temperature at the start, held.',
+                     'Every day without a temperature profile at 10.0 °C, the unit’s latest measured temperature at '
+                     'the start, held.',
                      'Today’s estimate', f'Stocked {shown(self.day(20))}', f'Weighed {shown(self.day(10))}',
                      'Manual sample', '50 fish weighed, 3.00 kg', 'Download every day (CSV)'):
             self.assertContains(page, text)
@@ -228,7 +260,7 @@ class GrowthPlanTests(PlanTestCase):
         self.assertEqual(self.row()['forecast'].day, self.day(-6))
         HandlingPlanItem.objects.create(kind='transport', date=self.day(-5), unit=self.t1, batch=self.batch)
         self.assertEqual(self.row()['forecast'].day, self.day(-8))
-        fasted = [row for row in self.file()[2:] if row[12] == 'yes']
+        fasted = [row for row in self.file()[2:] if row[13] == 'yes']
         self.assertEqual([row[0] for row in fasted], [self.day(-4).isoformat(), self.day(-5).isoformat()])
         # nothing fed, nothing grown: the weight of day 3 (62.2709 g) stands, the feed to date too (18.386 kg)
         self.assertEqual([(row[1], row[4], row[5], row[8]) for row in fasted],
@@ -259,7 +291,7 @@ class GrowthPlanTests(PlanTestCase):
         found = self.row()['forecast']
         self.assertEqual((found.now_g, found.why), (D(60), 'No protocol is assigned to these fish.'))
         self.assertEqual(self.file()[1:], [[self.today.isoformat(), '60.0000', '10000', '600.000', '', '0.000', '', '',
-                                            '', '', '', '', '']])
+                                            '', '', '', '', '', '']])
 
     def test_an_assigned_protocol_is_fixed(self):
         # Proves decision 9: the new fields follow the rule of an assigned protocol.
@@ -398,7 +430,7 @@ class BetweenBandsTests(PlanTestCase):
         self.assertEqual((shown['fcr']['text'], shown['t0']['text']), ('1.25', '2.000 %'))     # at 100 g: its own band's SFR
 
 
-class MortalityAndTemperatureTests(PlanTestCase):
+class MortalityTests(PlanTestCase):
     def test_expected_mortality_lowers_the_fish_and_the_feed_never_the_average_weight(self):
         # Proves decision 6. A second protocol like the first with 10 % mortality a month on its band, made through the
         # pages, assigned to the batch in T-01 (the more specific row wins). 30 days ahead: 10,000 × 0.9 = 9,000 fish;
@@ -418,42 +450,158 @@ class MortalityAndTemperatureTests(PlanTestCase):
         log = AuditLog.objects.filter(entity_type='feeding protocol', action='update')
         self.assertTrue(any('mortality 10 % a month' in str(row.changes.get('Feeding table')) for row in log))
 
-    def test_the_sites_monthly_temperatures_are_read_when_all_twelve_are_set(self):
-        # Proves decision 7: the default is today's temperature held, and said; a site's twelve monthly temperatures are
-        # used when set, and the page says which. All twelve at 11 °C (between the 10 and 12 °C columns: SFR 1 %).
-        self.set_target('62')
-        site = self.t1.production_department.site
-        url = reverse('farm:site_edit', args=[site.pk])
-        data = site_data(name=site.name, code=site.code, timezone=site.timezone, country='', region='',
-                         version=site.version)
-        months = {f'plan_temperature_{month:02d}': '11' for month in range(1, 13)}
-        half = self.client.post(url, {**data, **dict(list(months.items())[:6])})
-        self.assertEqual(half.context['form'].errors['plan_temperature_07'],
-                         ['Give the water temperature of all twelve months, or of none.'])
-        hot = self.client.post(url, {**data, **months, 'plan_temperature_03': '41'})
-        self.assertIn('plan_temperature_03', hot.context['form'].errors)
-        self.assertContains(self.client.get(reverse('farm:productionplan_list')), 'at 10.0 °C held')
-        self.assertEqual(self.client.post(url, {**data, **months}).status_code, 302)
-        self.assertEqual(Site.objects.get(pk=site.pk).plan_temperatures(), (D('11.0'),) * 12)
-        found = self.row()['forecast']
-        self.assertEqual((found.day, found.monthly, found.temperature_c), (self.day(-3), True, None))
-        self.assertContains(self.client.get(reverse('farm:productionplan_list')),
-                            f'target on {shown(self.day(-3))}, at the site’s monthly temperatures')
-        self.assertContains(self.client.get(self.growth_url()),
-                            'Every day at the site’s water temperature of its month (Setup › Sites).')
-        self.assertEqual(self.file()[2][11], '11.0')
+
+
+class TemperatureProfileTests(PlanTestCase):
+    """Owner decisions 15–19, end to end. The 10,000 fish of 50 g in T-01 are graded five days ago: 4,000 of 60 g go to
+    T-02, the 6,000 that stay weigh 40 g. One protocol feeds the whole batch wherever it is ("Two-column plan": one band,
+    SFR 1 % at 10 °C and 2 % at 12 °C, FCR 1.00, nothing uneaten), so the SFR rises 0.5 % a degree. Two profiles: "Hall
+    A" (0 g 10 °C, 100 g 12 °C, smooth: 10 + 0.02 × weight) on unit T-01, made in the classic look; "Batch plan" (0 g
+    10 °C, 50 g 12 °C, a step) on the whole batch, made in the new look. T-02 has no water sample at all."""
+
+    def setUp(self):
+        HarvestTestCase.setUp(self)                     # not the base case's protocol on T-01: this one's own
+        self.user.groups.add(role('Protocol keeper', *PROTOCOL_KEEPER), role('Setup keeper', *SETUP))
+        self.user = type(self.user).objects.get(pk=self.user.pk)
+        self.protocol = self.protocol_through_its_pages(name='Two-column plan', uneaten_pct='', rows=[
+            self.band(sfr_100='1', sfr_120='2')])
+        response = self.client.post(reverse('farm:protocolassignment_create'), {
+            'protocol': str(self.protocol.pk), 'batch': str(self.batch.pk), 'valid_from': self.day(15).isoformat(),
+            'valid_until': '', 'notes': ''}, headers={'X-Modal': '1'})
+        self.assertEqual(response.status_code, 204)
+        stock_services.record_grading(self.user, source=self.t1, batch=self.batch, day=self.day(5),
+                                      outputs=[(self.t2, 4000, D(60), 'Large')], remainder_avg_weight_g=D(40))
+        PlatformSettings.objects.update(plan_horizon_days=7)
+
+    def profiles(self):
+        hall = self.profile_through_its_pages('Hall A', [('0', '10'), ('100', '12')])
+        planned = self.profile_through_its_pages('Batch plan', [('0', '10'), ('50', '12')], between='step',
+                                                 look='?ui=next')
+        self.assign_profile(hall, unit=self.t1)
+        self.assign_profile(planned, batch=self.batch)
+        return hall, planned
+
+    def test_after_a_grading_each_part_follows_its_own_profile_by_hand(self):
+        # Proves decisions 15 (a profile made in both looks), 16 (assigned to a unit and to a batch, the most specific
+        # row wins), 17 (the temperature of a day ahead is the profile's at the projected weight), 18 (SFR bilinear,
+        # feed, eaten, growth), 19 (each part of the graded batch follows the row resolved for its own place) and 20
+        # (the service's projection gives the same days).
+        # Before any profile: T-02 holds no temperature measured, so its plan stops and says why.
+        self.assertContains(self.client.get(self.growth_url(self.t2)),
+                            'No temperature recorded here yet: record one.')
+        hall, planned = self.profiles()
+        self.assertEqual((hall.temperature_between, planned.temperature_between), ('smooth', 'step'))
+        # T-01, 6,000 fish of 40 g, read by Hall A (its unit's row beats the batch's):
+        #   day 1: 10 + 0.02 × 40 = 10.8 °C; SFR 1 + 0.8 × 0.5 = 1.4 %; 40 × 0.014 = 0.56 g a fish, 3.36 kg;
+        #          growth 0.56 g → 40.56 g; biomass 6,000 × 40.56 g = 243.36 kg
+        #   day 2: 10 + 0.02 × 40.56 = 10.8112 °C; SFR 1.4056 %; 40.56 × 0.014056 = 0.57011136 g, 3.42066816 kg;
+        #          → 41.13011136 g, 246.78066816 kg; feed to date 6.78066816 kg
+        rows = self.file(unit=self.t1)
+        self.assertEqual(rows[1][:3], [self.today.isoformat(), '40.0000', '6000'])
+        self.assertEqual(rows[2], [self.day(-1).isoformat(), '40.5600', '6000', '243.360', '3.360', '3.360', '3.360',
+                                   '0.000', '1.000', '1.000', '0.00', '10.8', 'Hall A', ''])
+        self.assertEqual(rows[3], [self.day(-2).isoformat(), '41.1301', '6000', '246.781', '3.421', '6.781', '3.421',
+                                   '0.000', '1.000', '1.000', '0.00', '10.8', 'Hall A', ''])
+        # T-02, 4,000 fish of 60 g, graded in: no unit row there, so the whole batch's: Batch plan, a step at 50 g:
+        #   12 °C from 50 g on; SFR 2 %; day 1: 1.2 g a fish, 4.8 kg → 61.2 g, 244.8 kg;
+        #   day 2: 1.224 g, 4.896 kg → 62.424 g, 249.696 kg; feed to date 9.696 kg
+        rows = self.file(unit=self.t2)
+        self.assertEqual(rows[1][:3], [self.today.isoformat(), '60.0000', '4000'])
+        self.assertEqual(rows[2], [self.day(-1).isoformat(), '61.2000', '4000', '244.800', '4.800', '4.800', '4.800',
+                                   '0.000', '1.000', '1.000', '0.00', '12.0', 'Batch plan', ''])
+        self.assertEqual(rows[3], [self.day(-2).isoformat(), '62.4240', '4000', '249.696', '4.896', '9.696', '4.896',
+                                   '0.000', '1.000', '1.000', '0.00', '12.0', 'Batch plan', ''])
+        # the service's projection (decision 20) gives the same days, read only (no target yet: the whole horizon)
+        found = forecast.projection(self.t2.pk, self.batch.pk)
+        self.assertEqual([(point.weight_g, point.temperature_c, point.temperature_from) for point in
+                          found.forecast.curve.points[:2]], [(D('61.2'), D('12.0'), planned),
+                                                             (D('62.424'), D('12.0'), planned)])
+        empty = make_unit('T-09', self.hall)
+        self.assertIsNone(forecast.projection(empty.pk, self.batch.pk))
+        # the pages say it: the profile of the days, and the target day of the part that reaches it
+        self.set_target('41.1')                         # T-01 reaches it on day 2 (41.13 g), T-02 is there already
+        for look in ('classic', 'next'):
+            page = self.client.get(reverse('farm:productionplan_list'), {'ui': look}).content.decode()
+            self.assertIn(f'target on {shown(self.day(-2))}, on the temperature profile Hall A', page, look)
+        plan = self.client.get(self.growth_url(self.t1), {'ui': 'classic'})
+        self.assertContains(plan, 'The temperature of a day is the temperature profile Hall A at the fish’s weight '
+                                  'that day.')
+        self.assertEqual(plan.context['props']['table']['rows'][-1]['cells']['temperature']['sub'], ['Hall A'])
+
+    def test_a_profile_is_shown_over_the_weight_fixed_once_assigned_and_changed_on_a_copy(self):
+        # Proves decision 15 (visible in both looks; assigned: fixed; a copy is changed) for the profile, as decision 14
+        # for the protocol. Hall A: 0 g 10 °C, half way 50 g 11 °C, 100 g 12 °C.
+        hall, _planned = self.profiles()
+        url = reverse('farm:temperatureprofile_edit', args=[hall.pk])
+        classic = self.client.get(url, {'ui': 'classic'})
+        self.assertEqual([(row['cells']['point']['text'], row['cells']['temperature']['text'])
+                          for row in classic.context['used']['rows']],
+                         [('entered', '10.0 °C'), ('half way', '11.0 °C'), ('entered', '12.0 °C')])
+        new = self.client.get(url, {'ui': 'next'}).content.decode().replace('\\u2019', '’').replace('\\u00b0', '°')
+        for text in ('Temperature over the fish', 'half way', '11.0 °C', 'Smooth between bands'):
+            self.assertIn(text, new)
+        self.assertContains(classic, 'The profile is assigned, so its points are fixed')
+        refused = self.client.post(reverse('farm:temperatureprofile_points', args=[hall.pk]), rows_data(
+            'points', [{'weight_g': '0', 'temperature_c': '15'}], record=hall))
+        self.assertEqual(refused.status_code, 404)
+        self.assertEqual(sorted(hall.points.values_list('temperature_c', flat=True)), [D('10.0'), D('12.0')])
+        self.client.post(url, {'name': 'Hall A', 'species': str(self.salmon.pk), 'status': 'active',
+                               'temperature_between': 'step', 'notes': '', 'version': str(hall.version)})
+        hall.refresh_from_db()
+        self.assertEqual(hall.temperature_between, 'smooth')
+        copied = self.client.post(reverse('farm:temperatureprofile_duplicate', args=[hall.pk]))
+        self.assertEqual(copied.status_code, 302)
+        copy = TemperatureProfile.objects.get(name='Hall A (copy)')
+        self.assertEqual((copy.status, sorted(copy.points.values_list('weight_g', 'temperature_c'))),
+                         ('draft', [(D('0.00'), D('10.0')), (D('100.00'), D('12.0'))]))
+        twice = self.client.post(reverse('farm:temperatureprofile_points', args=[copy.pk]), rows_data(
+            'points', [{'weight_g': '0', 'temperature_c': '9'}, {'weight_g': '0', 'temperature_c': '11'}],
+            record=copy))
+        self.assertEqual(twice.status_code, 200)                    # each weight a point once: the page again
+        too_hot = self.client.post(reverse('farm:temperatureprofile_points', args=[copy.pk]), rows_data(
+            'points', [{'weight_g': '0', 'temperature_c': '41'}], record=copy))
+        self.assertEqual(too_hot.status_code, 200)
+        self.assertEqual(copy.points.count(), 2)
+        log = AuditLog.objects.filter(entity_type='temperature profile', action='update')
+        self.assertTrue(any('0 g 10 °C; 100 g 12 °C' in str(row.changes.get('Points')) for row in log))
+
+    def test_an_assignment_of_a_profile_follows_the_protocols_rules(self):
+        # Proves decision 16: the same rules as a protocol's rows (one in force per target, the species, active only),
+        # and the one resolver counting the fish each row applies to now.
+        hall, _planned = self.profiles()
+        twice = self.client.post(reverse('farm:temperatureprofileassignment_create'), {
+            'profile': str(hall.pk), 'units': [str(self.t1.pk)], 'batch': '', 'valid_from': self.day(3).isoformat(),
+            'valid_until': '', 'notes': ''}, headers={'X-Modal': '1'})
+        self.assertIn('T-01: Another temperature profile is assigned to this unit on some of these days.',
+                      twice.context['form'].errors['units'])
+        trout = TemperatureProfile.objects.create(name='Trout', species=self.trout, status='active')
+        other = self.client.post(reverse('farm:temperatureprofileassignment_create'), {
+            'profile': str(trout.pk), 'units': [str(self.t2.pk)], 'batch': str(self.batch.pk),
+            'valid_from': self.day(1).isoformat(), 'valid_until': '', 'notes': ''}, headers={'X-Modal': '1'})
+        self.assertEqual(other.context['form'].errors['batch'],
+                         [f'{self.batch.code} is {self.salmon}; the profile is for {self.trout}.'])
+        draft = TemperatureProfile.objects.create(name='Draft', species=self.salmon)
+        refused = self.client.post(reverse('farm:temperatureprofileassignment_create'), {
+            'profile': str(draft.pk), 'units': [str(self.t2.pk)], 'batch': '', 'valid_from': self.today.isoformat(),
+            'valid_until': '', 'notes': ''}, headers={'X-Modal': '1'})
+        self.assertIn('profile', refused.context['form'].errors)
+        listing = self.client.get(reverse('farm:temperatureprofileassignment_list'))
+        # Hall A applies to the 6,000 fish in T-01; Batch plan, read past there, to the 4,000 in T-02
+        self.assertEqual(sorted(listing.context['feeds_now'].values()), [4000, 6000])
+        for text in ('Hall A', 'Batch plan', 'Applies now', 'Whole batch'):
+            self.assertContains(listing, text)
 
 
 class PlannedAgainstActualTests(PlanTestCase):
     """Decisions 10–12. Beside the base case: 5 kg fed seven days ago and a second weighing five days ago at 62 g; the
-    site's months all at 10 °C, so the plan from a past start reads a temperature whatever was sampled then."""
+    unit's temperature profile at 10 °C over every weight, so the plan from a past start reads a temperature whatever
+    was sampled then (a profile is read for the days ahead of any start)."""
 
     def setUp(self):
         super().setUp()
         self.record(kilos='5', days_ago=7)
         stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(5), avg_weight_g=D(62))
-        Site.objects.filter(pk=self.t1.production_department.site_id).update(
-            **{f'plan_temperature_{month:02d}': D('10.0') for month in range(1, 13)})
+        self.assign_profile(self.profile_through_its_pages('Hall at 10', [('0', '10'), ('1000', '10')]), unit=self.t1)
 
     def plan(self, start=None):
         unit = type(self.t1).objects.select_related('production_department__site').get(pk=self.t1.pk)

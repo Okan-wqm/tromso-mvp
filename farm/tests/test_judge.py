@@ -449,6 +449,27 @@ class PlaceExamplesTests(SimpleTestCase):
                                             'o1': judge.point_verdict([shown])}, {'o1'})
         self.assertEqual(([each.key for each in place.older], place.held), (['critical', 'warning'], None))
 
+    def test_a_late_alert_still_counted_is_never_called_superseded(self):
+        """The coordinator's decision on review 8: a lab critical behind a fresh analyser value, still fresh itself, still
+        counts (review 3, N1): it is `counted`, never `late`. Once it is no longer fresh it is late, superseded by the
+        analyser. Behind a newer STORED value it never counts, fresh or not: late."""
+        live = record('live', 'ok', 10, 20, point='o1', stored=False, fresh_now=True)
+        for fresh, expected in ((True, 'counted'), (False, 'late')):
+            lab = record('lab', 'critical', 0, 3, point='o1', fresh_now=fresh)
+            verdict = judge.point_verdict([lab, live])
+            self.assertEqual(verdict.still_counted(lab), fresh)
+            place = judge.place_verdict(live, {'o1': verdict}, {'o1'})
+            said = {'counted': [(each.key, newer.key) for each, newer in place.counted],
+                    'late': [(each.key, newer.key) for each, newer in place.late]}
+            self.assertEqual(said[expected], [('lab', 'live')], fresh)
+            self.assertEqual(said['late' if expected == 'counted' else 'counted'], [], fresh)
+        stored = record('kit', 'ok', 5, 0, point='o1', fresh_now=True)
+        lab = record('lab', 'critical', 0, 3, point='o1', fresh_now=True)
+        verdict = judge.point_verdict([stored, lab, live])
+        self.assertFalse(verdict.still_counted(lab))
+        place = judge.place_verdict(live, {'o1': verdict}, {'o1'})
+        self.assertEqual(([each.key for each, _newer in place.late], place.counted), (['lab'], ()))
+
     def test_a_point_read_on_its_own_holds_as_the_point_shown(self):
         """Review 7, M5: an outlet's own row: the lab's critical and the kit's OK of one minute, both stale now, the kit
         shown: the critical is held."""

@@ -500,14 +500,38 @@ class AnalyserAtOwnPointTests(WaterTestCase):
         self.passes(1800, 1801, 1860, 1920, 2400)
         self.assertEqual(self.outcome(NH3), {'critical': 'returned', 'warning': 'returned'})
 
-    def test_a_fresh_lab_critical_still_counts_beside_the_analyser(self):
-        """Review 3, N1 stands: the lab's critical of an hour ago is fresh, so the unit is critical beside the analyser's
-        newer OK, and the judge also says it as a late result (entered behind the analyser's value)."""
+    def test_review_3_n1_a_fresh_lab_critical_is_never_hidden_by_the_analysers_newer_ok(self):
+        """REVIEW 3, N1 (farm/tests/test_water_review3.py DerivedWorstFreshTests): a fresh manual NH₃ critical counts
+        beside a newer sensor OK at the same point. Behind the analyser bound to T-01's middle, the lab's critical of an
+        hour ago keeps the unit critical, in the page and in the alarms. A change that lets the judge's late rule hide
+        it fails here by name (82143de0 did, taken back in e71b72e5)."""
         self.live()
         self.sample(self.t1, hours=1, source='lab', **BAD)
         reading = self.unit_water().get(NH3)
+        self.assertTrue(reading.sample.live)
         self.assertEqual(reading.judged, 'critical')
-        self.assertIn('Late result: critical 0.8924 at Middle on ', reading.note)
+        self.passes(1, 2, 60)
+        self.assertEqual(self.outcome(NH3), {'critical': OPEN, 'warning': OPEN})
+
+    def test_a_fresh_lab_critical_behind_the_analyser_is_said_as_still_counted_never_superseded(self):
+        """The coordinator's decision on review 8: while it counts it is "still counted", on the page and in its log
+        entry; never "superseded"."""
+        self.live()
+        lab = self.sample(self.t1, hours=1, source='lab', **BAD)
+        note = self.unit_water().get(NH3).note
+        self.assertIn(': critical 0.8924 at Middle, still counted until ', note)
+        self.assertIn('; the analyser reads ', note)
+        self.assertNotIn('superseded', note)
+        self.assertTrue(self.logged(lab)[1].startswith('Result of '), self.logged(lab))
+        self.assertIn('still counted until', self.logged(lab)[1])
+
+    def test_a_lab_critical_no_longer_fresh_behind_the_analyser_is_said_as_superseded(self):
+        """The other state: a day old, it no longer counts, so it is "Late result … superseded by" the analyser."""
+        self.live()
+        self.sample(self.t1, hours=24, source='lab', **BAD)
+        note = self.unit_water().get(NH3).note
+        self.assertIn('Late result: critical 0.8924 at Middle on ', note)
+        self.assertNotIn('still counted', note)
 
 
 class SystemSensorTests(WaterTestCase):

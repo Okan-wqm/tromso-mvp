@@ -27,6 +27,7 @@ from alarms.models import Alarm
 from alarms.tests import farm_alarms
 from core.island_props import props_of
 from core.pagesays import unsaid
+from core.testing import one_moment
 from farm.models import SamplingPoint, System, Tank
 from farm.stock import services as stock_services
 from farm.tests.helpers import point_of, stock_fish
@@ -634,8 +635,9 @@ class CardHasItsAlarmTests(SilentOxygenCase):
         department and site, saying why it is critical, and says all the classic page says (core.pagesays)."""
         from farm.tests.test_production_overview_next import as_next, figures, said_another_way
         unit, _none = self.bare('Q6', system=False)
-        old = as_next(self.client.get(reverse('production_home'), {'ui': 'classic'}).content.decode())
-        new = self.client.get(reverse('production_home'), {'ui': 'next'}).content.decode()
+        with one_moment():                    # both looks say the same time ("Stock records at 21:59")
+            old = as_next(self.client.get(reverse('production_home'), {'ui': 'classic'}).content.decode())
+            new = self.client.get(reverse('production_home'), {'ui': 'next'}).content.decode()
         props = props_of(new, 'production')
         self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old), once=figures(old)), [])
         [row] = [row for row in props['attention']['rows'] if row['title'] == unit.code and row['kind'] == 'water']

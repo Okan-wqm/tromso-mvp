@@ -276,3 +276,15 @@ class ReadsTests(TestCase):
         self.assertEqual(by_key.failed, [])
         self.assertEqual(len(by_text.failed), 1)
         self.assertIn('rows of auth_group, then', by_text.failed[0])
+
+
+class OneMomentTests(SimpleTestCase):
+    def test_the_clock_stands_for_the_block_and_is_given_back(self):
+        import time
+
+        from core.testing import one_moment
+        with one_moment() as moment:
+            first = timezone.now()
+            time.sleep(0.002)
+            self.assertEqual((first, timezone.now()), (moment, moment))
+        self.assertIs(timezone.now, GIVEN)

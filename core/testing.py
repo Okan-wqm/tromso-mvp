@@ -102,6 +102,18 @@ def run_clock(text=None):
     return clock
 
 
+@contextmanager
+def one_moment():
+    """`timezone.now()` held at the moment the block starts, for the whole block: for a test that renders two things and
+    compares what they say (a page in its two looks), when what they say has the time on it (the Production overview's
+    "Stock records at 21:59"). Two renders on either side of a minute's edge said two different times (CI run
+    46062378753, monitoring.tests.test_silent_oxygen); held, both say the same. Yields the moment."""
+    from django.utils import timezone
+    moment = timezone.now()
+    with mock.patch(CLOCK, return_value=moment):
+        yield moment
+
+
 # ---- What a block reads ----------------------------------------------------------------------------------------------
 # Transaction control: run as it is, never counted around (after a failed statement only a rollback may run).
 CONTROL = re.compile(r'\s*(savepoint|rollback|release|begin|commit|start transaction)\b', re.IGNORECASE)

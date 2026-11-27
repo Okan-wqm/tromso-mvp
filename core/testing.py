@@ -11,10 +11,21 @@ Nor must a test read the hour it runs at. The server's day (UTC) and the company
 differ for an hour or two before every UTC midnight, and a site on a third zone differs for longer: a test that says
 "today" on one clock while the code reads another passes all day and fails in those hours. `BAD_HOURS` are moments
 inside them; core/tests_day_boundary.py runs the tests that count days again at each (`at_bad_hours`), and
-`TEST_CLOCK` starts a whole run's clock at any moment (`run_clock`: scripts/test.sh passes it on), to look for more."""
+`TEST_CLOCK` starts a whole run's clock at any moment (`run_clock`: scripts/test.sh passes it on), to look for more.
+
+Nor must a test time the machine it runs on. A wall-clock bound ("this took under half a second") passes on a quiet
+machine and fails on a loaded one, and says nothing of why the code is quick: what keeps a round, a page or a lookup
+cheap is what it reads, and that the database tells exactly. `plans` explains each statement a block runs, as it runs,
+and gives the rows it read from each table and the rows it handed back: the same on any machine.
+core/tests_wall_clock.py refuses a test that asserts on a time it measured."""
 import os
+import re
+from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone as dt_timezone
 from unittest import mock
+
+from django.db import DEFAULT_DB_ALIAS, connections
 
 CLOCK = 'django.utils.timezone.now'
 
@@ -88,3 +99,91 @@ def run_clock(text=None):
     clock = mock.patch(CLOCK, side_effect=lambda: start + (datetime.now(dt_timezone.utc) - began))
     clock.start()
     return clock
+
+
+# ---- What a statement reads ------------------------------------------------------------------------------------------
+EXPLAINED = re.compile(r'\s*(select|with|insert|update|delete)\b', re.IGNORECASE)
+# What a rolled-back savepoint does not undo: a session's advisory lock taken or let go, a sequence moved by hand, a
+# notification sent, another session ended. A statement that calls one is run, never explained.
+NOT_UNDONE = re.compile(r'\b(pg_\w*advisory\w*|nextval|setval|pg_notify|pg_terminate_backend|pg_cancel_backend)\s*\(',
+                        re.IGNORECASE)
+
+
+@dataclass(frozen=True)
+class Scan:
+    relation: str
+    node: str                # the plan's node: 'Seq Scan', 'Index Scan', 'Bitmap Heap Scan', ...
+    rows: int                # the rows it read: those it passed on and those its filter or recheck removed, all loops
+
+
+@dataclass(frozen=True)
+class Statement:
+    sql: str
+    returned: int            # the rows it handed back to Python
+    scans: tuple
+
+
+class Plans(list):
+    """The statements a `plans` block ran (each a Statement), in order; `skipped`: those run without being explained."""
+
+    def __init__(self):
+        super().__init__()
+        self.skipped = []
+
+    def read(self, relation):
+        """The rows the block read from `relation`, all its statements together."""
+        return sum(scan.rows for statement in self for scan in statement.scans if scan.relation == relation)
+
+    def most_returned(self, relation=None):
+        """The most rows one statement handed back (of those that read `relation`, if given); 0 when none did."""
+        return max((statement.returned for statement in self
+                    if relation is None or any(scan.relation == relation for scan in statement.scans)), default=0)
+
+    def reads(self):
+        """{relation: rows read}, for a test's message and its measurement line."""
+        found = {}
+        for scan in (scan for statement in self for scan in statement.scans):
+            found[scan.relation] = found.get(scan.relation, 0) + scan.rows
+        return dict(sorted(found.items()))
+
+
+def _scans(node):
+    if 'Relation Name' in node and node['Node Type'] != 'ModifyTable':            # (a write's target is not read by it)
+        read = (node.get('Actual Rows', 0) + node.get('Rows Removed by Filter', 0)
+                + node.get('Rows Removed by Index Recheck', 0))
+        yield Scan(node['Relation Name'], node['Node Type'], round(read * node.get('Actual Loops', 1)))
+    for child in node.get('Plans', ()):
+        yield from _scans(child)
+
+
+@contextmanager
+def plans(using=DEFAULT_DB_ALIAS):
+    """Each statement the block runs on the database `using`, explained as it runs: EXPLAIN ANALYZE of it in a savepoint
+    rolled back at once, then the statement itself, so each is measured on the rows it finds then and nothing is done
+    twice. Yields the Plans, filled as the block runs. Inside a transaction only (a TestCase's test). A statement that
+    fails fails in its explaining, with the same error; one that calls what a rollback does not undo (NOT_UNDONE), and
+    one run for many parameter sets, is run without it (`skipped`). An explained insert draws its ids twice."""
+    connection = connections[using]
+    if not connection.in_atomic_block:
+        raise RuntimeError('plans() explains each statement in a savepoint: run it inside a transaction (a TestCase).')
+    found = Plans()
+
+    def explain(execute, sql, params, many, context):
+        if many or not EXPLAINED.match(sql) or NOT_UNDONE.search(sql):
+            found.skipped.append(sql)
+            return execute(sql, params, many, context)
+        wrapper = context['connection']
+        with wrapper.wrap_database_errors, wrapper.connection.cursor() as cursor:
+            cursor.execute('SAVEPOINT plans_explain')
+            try:
+                cursor.execute(f'EXPLAIN (ANALYZE, FORMAT JSON) {sql}', params)
+                plan = cursor.fetchone()[0][0]['Plan']
+            finally:
+                cursor.execute('ROLLBACK TO SAVEPOINT plans_explain')
+                cursor.execute('RELEASE SAVEPOINT plans_explain')
+        returned = round(plan.get('Actual Rows', 0) * plan.get('Actual Loops', 1))
+        found.append(Statement(sql, returned, tuple(_scans(plan))))
+        return execute(sql, params, many, context)
+
+    with connection.execute_wrapper(explain):
+        yield found

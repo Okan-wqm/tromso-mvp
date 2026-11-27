@@ -1,12 +1,15 @@
 """The tests' clock (core/testing.py): FrozenClock holds `timezone.now()` at the class's NOW while its data is made and
-in each of its tests, and gives the real clock back afterwards, also when the class's set-up fails."""
+in each of its tests, and gives the real clock back afterwards, also when the class's set-up fails. And `plans`: what
+each statement of a block read and handed back, counted by the database."""
 import unittest
 from datetime import datetime, timedelta, timezone as utc
 
-from django.test import SimpleTestCase
+from django.contrib.auth.models import Group
+from django.db import IntegrityError, connection, transaction
+from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
-from core.testing import FrozenClock
+from core.testing import FrozenClock, plans
 
 THEN = datetime(2026, 10, 17, tzinfo=utc.utc)
 
@@ -158,3 +161,43 @@ class RunClockTests(SimpleTestCase):
         self.assertLess(first, second)                                   # it runs on: time passes in a run
         self.assertLess(second - start, timedelta(seconds=30))
         self.assertIs(timezone.now, real)
+
+
+class PlansTests(TestCase):
+    """core.testing.plans: what each statement of a block read and handed back, counted by the database."""
+
+    @classmethod
+    def setUpTestData(cls):
+        Group.objects.bulk_create(Group(name=f'plans {number:04d}') for number in range(2000))
+        with connection.cursor() as cursor:
+            cursor.execute('ANALYZE auth_group')
+
+    def test_a_lookup_by_key_reads_its_row_and_a_filter_without_an_index_reads_the_table(self):
+        one = Group.objects.filter(name__startswith='plans').first()
+        with plans() as by_key:
+            list(Group.objects.filter(pk=one.pk))
+        with plans() as by_text:
+            list(Group.objects.filter(name__endswith='7'))
+        self.assertEqual(by_key.read('auth_group'), 1, by_key.reads())
+        self.assertEqual(by_text.read('auth_group'), Group.objects.count(), by_text.reads())
+        self.assertEqual(by_text.most_returned('auth_group'), Group.objects.filter(name__endswith='7').count())
+        self.assertEqual(by_text.most_returned('auth_permission'), 0)
+
+    def test_a_write_is_done_once_and_a_failing_one_fails_as_it_would(self):
+        with plans() as found:
+            Group.objects.create(name='once')
+        self.assertEqual(Group.objects.filter(name='once').count(), 1)
+        self.assertEqual([statement.returned for statement in found], [1])          # (its id, RETURNING)
+        with plans(), self.assertRaises(IntegrityError), transaction.atomic():
+            Group.objects.create(name='once')
+        self.assertEqual(Group.objects.filter(name='once').count(), 1)
+
+    def test_what_a_rollback_does_not_undo_is_run_never_explained(self):
+        with plans() as found, connection.cursor() as cursor:
+            cursor.execute('SELECT pg_try_advisory_lock(%s)', [4711])
+            cursor.execute('SELECT pg_advisory_unlock(%s)', [4711])
+        self.assertEqual((len(found), len(found.skipped)), (0, 2))
+        with connection.cursor() as cursor:                     # taken once and let go once: no longer held
+            cursor.execute("SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND objid = %s "
+                           "AND pid = pg_backend_pid()", [4711])
+            self.assertEqual(cursor.fetchone()[0], 0)

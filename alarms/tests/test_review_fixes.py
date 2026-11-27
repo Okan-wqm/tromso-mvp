@@ -176,11 +176,13 @@ class QueueTests(Case):
     HISTORY = 100_000
     HISTORY_TABLES = ('alarms', 'alarm_notifications', 'alarm_delivery_attempts')
 
-    def test_a_round_reads_the_queue_never_the_whole_history(self):
-        with connection.cursor() as cursor:                       # 100,000 alarms, notified and sent long ago
+    def history(self):
+        """100,000 alarms, each notified to the operator and sent 30 days before the test's moment; then three
+        criticals queued now, each its own kind (sent on its own, never as a follow-up)."""
+        with connection.cursor() as cursor:
             cursor.execute("INSERT INTO alarms (source, parameter, severity, opened_at, summary) SELECT 'system', 'old', "
-                           "'warning', now() - interval '30 days', 'old ' || n FROM generate_series(1, %s) n",
-                           [self.HISTORY])
+                           "'warning', %s::timestamptz - interval '30 days', 'old ' || n FROM generate_series(1, %s) n",
+                           [self.now, self.HISTORY])
             cursor.execute('INSERT INTO alarm_notifications (alarm_id, recipient_id, channel, level, queued_at, kind) '
                            "SELECT id, %s, 'push', 0, opened_at, 'alarm' FROM alarms WHERE parameter = 'old'",
                            [self.operator.pk])
@@ -188,18 +190,35 @@ class QueueTests(Case):
                            "flood_key) SELECT id, queued_at, 'sent', '', '' FROM alarm_notifications")
             cursor.execute('ANALYZE alarms; ANALYZE alarm_notifications; ANALYZE alarm_delivery_attempts; '
                            'ANALYZE alarm_outbox')
-        queued = self.system(3, 'critical')
-        with plans() as found:
-            rows = outbox.backlog()
-        self.assertEqual(sorted(row.pk for row in rows), sorted(row.pk for row in queued))
-        sys.stderr.write(f'\n[alarm outbox] backlog() with {self.HISTORY:,} notifications in the history, rows read: '
+        return [row for number in range(3) for row in self.system(1, 'critical', parameter=f'queued{number}')]
+
+    def assert_bounded(self, found, what):
+        """What `found` read of each history table, counted by the database: a few rows for each of the three queued
+        (its notification, its alarm, its attempts by index, the attempts of its flood window by time), never a scan
+        of the hundred thousand. A tenth of a percent of the history is far above the first and far below the second."""
+        sys.stderr.write(f'\n[alarm outbox] {what} with {self.HISTORY:,} notifications in the history, rows read: '
                          f'{found.reads()}\n')
-        # What it reads of each history table, counted by the database: a few rows for each of the three queued (its
-        # notification, its alarm, its attempts by index), never a scan of the hundred thousand. A tenth of a percent
-        # of the history is far above the first and far below the second.
         for table in self.HISTORY_TABLES:
             with self.subTest(table=table):
                 self.assertLess(found.read(table), self.HISTORY // 1000, found.reads())
+
+    def test_a_round_reads_the_queue_never_the_whole_history(self):
+        queued = self.history()
+        with plans() as found:
+            rows = outbox.backlog()
+        self.assertEqual(sorted(row.pk for row in rows), sorted(row.pk for row in queued))
+        self.assert_bounded(found, 'backlog()')
+
+    @override_settings(ALARM_TRANSPORTS=RECORDING)
+    def test_a_sending_round_reads_the_recent_attempts_never_the_whole_history(self):
+        """The whole round as the worker's sender runs it, sending: its flood check reads the attempts of the flood
+        window by their time (alarms 0024), never all of them."""
+        queued = self.history()
+        with plans() as found:
+            delivery = outbox.send_due(self.now)
+        self.assertEqual((delivery.sent, sorted(row.pk for row in RecordingTransport.sent)),
+                         (3, sorted(row.pk for row in queued)))
+        self.assert_bounded(found, 'a sending round')
 
 
 # ---- F9 ----------------------------------------------------------------------------------------------------------------

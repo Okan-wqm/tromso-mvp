@@ -361,6 +361,12 @@ class DeliveryAttempt(models.Model):
             models.UniqueConstraint(fields=['notification'], condition=Q(outcome__in=[Outcome.SENT, Outcome.GROUPED]),
                                     name='uq_alarm_delivery_attempts_sent_once'),
         ]
+        indexes = [
+            # A sending round's flood check (alarms/floods.py `recent`): the attempts sent or covered within the last
+            # window, found by their time, never by reading the whole history (alarms 0024).
+            models.Index(fields=['attempted_at'], condition=Q(outcome__in=[Outcome.SENT, Outcome.GROUPED]),
+                         name='alarm_attempts_sent_at_idx'),
+        ]
 
     def __str__(self):
         return f'{self.notification} · {self.outcome}'

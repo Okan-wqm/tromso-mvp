@@ -224,6 +224,24 @@ class QueueTests(Case):
             return found
         self.assert_independent_of_the_history(backlog, 'backlog()')
 
+    @override_settings(ALARM_TRANSPORTS=RECORDING)
+    def test_a_sending_round_reads_the_recent_attempts_never_the_whole_history(self):
+        """The whole round as the worker's sender runs it, sending three criticals (each its own kind, so each goes on
+        its own): its flood check reads the attempts of the flood window by their time (alarms 0024), never all."""
+        rounds = []
+
+        def round_():
+            queued = [row for number in range(3)
+                      for row in self.system(1, 'critical', parameter=f'queued{len(rounds)}{number}')]
+            RecordingTransport.sent.clear()
+            with reads() as found:
+                delivery = outbox.send_due(self.now)
+            self.assertEqual((delivery.sent, sorted(row.pk for row in RecordingTransport.sent)),
+                             (3, sorted(row.pk for row in queued)))
+            rounds.append(found)
+            return found
+        self.assert_independent_of_the_history(round_, 'a sending round')
+
 
 # ---- F9 ----------------------------------------------------------------------------------------------------------------
 class SnoozeRuleTests(Case):

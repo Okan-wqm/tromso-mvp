@@ -189,7 +189,20 @@ except OSError as error:                                  # no name, no route, n
   uplink=$(ip -4 route show default | awk '{print $5; exit}')
   front=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_front)
   edge=$(docker network inspect -f '{{(index .IPAM.Config 0).Subnet}}' farm-ci_mqtt-edge)
-  if sudo sh deploy/scripts/docker-user-rules.sh --check "$ENV_FILE"; then echo "FAIL: --check passed with no rule"; exit 1; fi
+  # A fresh runner has neither rule, so --check must fail here and name both subnets: its "FAIL" lines are the
+  # expected outcome, printed as such; a --check that passes, or names other than these two, fails the step.
+  say "--check before the rules are in: refused, naming both networks (expected)"
+  local before
+  if before=$(sudo sh deploy/scripts/docker-user-rules.sh --check "$ENV_FILE" 2>&1); then
+    echo "$before"; echo "FAIL: --check passed with no rule"; exit 1
+  fi
+  echo "$before" | sed 's/^/expected: /'
+  local missing="FAIL  DOCKER-USER has no rule for %s: the way out of its network is open"
+  # compared as text, word for word (no pattern): exactly these two lines, in the script's order (front, then edge)
+  [ "$before" = "$(printf "$missing\n$missing" "$front" "$edge")" ] \
+    || { echo "FAIL: --check did not name exactly $front and $edge"; exit 1; }
+  echo "ok    --check refused with no rule in, naming $front and $edge"
+  say "the rules put in twice (as every Docker start does), then --check passes"
   sudo sh deploy/scripts/docker-user-rules.sh "$ENV_FILE"
   sudo sh deploy/scripts/docker-user-rules.sh "$ENV_FILE"
   sudo sh deploy/scripts/docker-user-rules.sh --check "$ENV_FILE"
@@ -324,7 +337,10 @@ heartbeat() {
   if COMPOSE="${DC[*]}" ENV_FILE="$ENV_FILE" sh deploy/scripts/heartbeat.sh > "$T/heartbeat.out"; then
     cat "$T/heartbeat.out"; echo "FAIL: the heartbeat passed with a failing archiver"; exit 1
   fi
-  grep FAIL "$T/heartbeat.out"
+  # the red heartbeat is the expected outcome here: its FAIL lines printed as such, and the archiver must be among them
+  grep FAIL "$T/heartbeat.out" | sed "s/^/expected: /"
+  grep -q "^FAIL  backup: the WAL archiver is failing" "$T/heartbeat.out" \
+    || { cat "$T/heartbeat.out"; echo "FAIL: the heartbeat was red, but not for the archiver"; exit 1; }
   say "the archive writable again: the archiver catches up and the heartbeat is green"
   "${DC[@]}" exec -T -u root db chmod 0700 /wal-archive
   for _ in $(seq 1 60); do

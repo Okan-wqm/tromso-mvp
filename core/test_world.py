@@ -35,7 +35,7 @@ built and read.
     water_page_world(admin)           after world(), for Water chemistry's tests only: a sample on TM-01 voided
     sensors_world(admin)            after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat
-    monitoring_world(admin)           fourteen more units of Test Hall A, one in each state a monitoring card can be in
+    monitoring_world(admin)           fifteen more units of Test Hall A, one in each state a monitoring card can be in
                                       (OK, critical, warning, no recent data, no limit, note, empty, an old critical, many values,
                                       an old sample in the CO2 region),
                                       and a wall board of the hall's units on a 55" TV read from 2 m (wall_board), a board
@@ -809,7 +809,26 @@ MONITORING_UNITS = (
     # the TAN gives, the CO2 of a probe): every one of them is said on a Big card wherever it is drawn, never folded
     ('TW-14', 'Test tank many alarms', True, True, 1, {'temperature_c': '20', 'oxygen_mg_l': '4.5', 'ph': '8.5',
                                                        'alkalinity_mg_l': '85', 'tan_mg_l': '3', 'co2_mg_l': '20'}),
+    # more values past their critical limits than a Big card in a pane or on a wall holds (eight: MANY_ALERTS's
+    # limits): the card says the first ones and, in words, how many more there are ("2 more alerts, see the band"); a
+    # Small card says the worst and "7 more alerts" (monitoring/cards/render.py fold)
+    ('TW-15', 'Test tank more alarms than a card holds', True, False, 1, {
+        'temperature_c': '20', 'oxygen_mg_l': '4.5', 'ph': '8.5', 'alkalinity_mg_l': '85', 'tan_mg_l': '3',
+        'co2_mg_l': '20', 'nitrite_n_mg_l': '0.5', 'nitrate_n_mg_l': '80', 'tgp_pct': '106'}),
 )
+# The units stocked with a second species of their own (Test char), whose limits judge more of the water than the
+# salmon's (the salmon's leave the nitrite, the nitrate and the TGP to "no limit", which TW-05, TW-09 and TW-11 need):
+# every value of TW-15 past its critical limit.
+MANY_ALERTS = ('TW-15',)
+CHAR_LIMITS = (('temperature_c', {'warning_high': '15', 'critical_high': '18'}),
+               ('oxygen_mg_l', {'critical_low': '6', 'warning_low': '7'}),
+               ('ph', {'critical_low': '6.5', 'warning_low': '6.8', 'warning_high': '7.8', 'critical_high': '8.2'}),
+               ('alkalinity_mg_l', {'warning_low': '70', 'warning_high': '150'}),
+               ('nh3_n_mg_l', {'warning_high': '0.01', 'critical_high': '0.0125'}),
+               ('co2_mg_l', {'warning_high': '10', 'critical_high': '15'}),
+               ('nitrite_n_mg_l', {'warning_high': '0.05', 'critical_high': '0.1'}),
+               ('nitrate_n_mg_l', {'warning_high': '30', 'critical_high': '50'}),
+               ('tgp_pct', {'warning_high': '101', 'critical_high': '103'}))
 # A unit's second sample, an hour before MOMENT: what stays fresh beside its old values.
 FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
 # Samples at a unit's OTHER sampling points (point kind, hours back, values): fresh at TW-01's inlet, old at TW-08's
@@ -831,21 +850,21 @@ TEST_LOW_WATER = 'Test big, low water'
 
 
 def monitoring_world(admin):
-    """Fourteen more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
+    """Fifteen more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
     and its warning limit), no recent data (its temperature 30 hours old, its oxygen fresh), no limit (a nitrite no
     limit row judges), a note (no feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours
     old (critical, and stale), units with more values at their middle point than the Big card's tiles hold (10, 15
     and 17: no limit), an old sample in the CO2 region of its chart and a fresh one (critical), and samples at two
     units' other sampling points (OTHER_POINTS: a fresh one and an old one), and one with many values past their critical
-    limits at once (TW-14).
+    limits at once (TW-14), and one with more of them than a card holds (TW-15, Test char: MANY_ALERTS).
     1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where
     the record has one (stocking, the samples), straight into the tables otherwise (the protocol), as the tests do."""
     from farm.models import (Feed, FeedingProtocol, ProtocolAssignment, ProtocolBand, ProtocolRate,
                              ProductionDepartment, WaterLimit)
-    from farm.tests.helpers import point_of, stock_fish
+    from farm.tests.helpers import make_species, point_of, stock_fish
     from farm.tests.test_stock import make_unit
     from farm.water import services as water
 
@@ -853,6 +872,12 @@ def monitoring_world(admin):
     salmon = WaterLimit.objects.filter(parameter='oxygen_mg_l').first().species
     WaterLimit.objects.create(species=salmon, parameter='alkalinity_mg_l', water_type='any', warning_low=D(70),
                               warning_high=D(150))
+    # (its common name sorts after the salmon's: the worlds' `WaterLimit ... .first().species` stays the salmon)
+    char = make_species(code='TCH', common_name='Test char', scientific_name='Salvelinus testus',
+                        local_name='Test char')
+    for parameter, bounds in CHAR_LIMITS:
+        WaterLimit.objects.create(species=char, parameter=parameter, water_type='any',
+                                  **{key: D(value) for key, value in bounds.items()})
     feed, _ = Feed.objects.get_or_create(code='TF-3', defaults={'name': 'Test Feed 3 mm', 'feed_type': 'grower',
                                                                 'pellet_size_mm': D(3)})
     protocol = FeedingProtocol.objects.create(name='Test salmon table', species=salmon, expected_fcr=D('1.00'),
@@ -866,7 +891,7 @@ def monitoring_world(admin):
         unit.name = name
         unit.save(update_fields=['name'])
         if fish:
-            stock_fish(admin, unit, 1000, '50', 10, species=salmon)
+            stock_fish(admin, unit, 1000, '50', 10, species=char if code in MANY_ALERTS else salmon)
         if fed:
             ProtocolAssignment.objects.create(protocol=protocol, unit=unit, valid_from=_days_back(unit, 10))
         if values:

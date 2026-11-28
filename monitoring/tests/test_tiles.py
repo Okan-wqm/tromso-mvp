@@ -54,10 +54,18 @@ class TilesTests(SimpleTestCase):
 
 
 class FoldTests(SimpleTestCase):
-    """What a Big card drawn at the size of its place folds of its reasons (render.fold): notes past FIT_NOTES; an alert
-    (critical, warning, no recent data) only past what the card holds, FIT_ALERTS, and then said in words."""
+    """What a fitted card shows of its reasons (render.fold), one rule for every size of card: notes past what it holds
+    fold into "+N"; an alert (critical, warning, no recent data) only past what the card holds, and then said in words.
+    A Big card drawn at the size of its place (the pane, a wall) holds FIT_ALERTS alerts (measured by the browser test:
+    frontend/test/monitoring.pages.ts, TW-15 in the pane and on the walls, 1080p and 4K, three languages) and FIT_NOTES
+    notes; a Small card's one line the worst one."""
     def state(self, key, count):
         return N(key=key, reasons=tuple(f'reason {number}' for number in range(count)))
+
+    def test_what_each_size_holds(self):
+        self.assertEqual(render.HOLDS, {'big': (render.FIT_ALERTS, render.FIT_NOTES), 'small': (1, 1)})
+        # (measured: six alerts and the notice overflow the Big card's value tiles at 4K, in the pane and on a wall)
+        self.assertEqual(render.FIT_ALERTS, 5)
 
     def test_notes_fold_past_the_first_few(self):
         for key in ('unjudged', 'note', 'ok'):
@@ -72,6 +80,14 @@ class FoldTests(SimpleTestCase):
             past = render.fold(self.state(key, render.FIT_ALERTS + 2))
             self.assertEqual((len(past.rest), past.alerts), (2, True), key)
         self.assertGreater(render.FIT_ALERTS, render.FIT_NOTES)
+
+    def test_a_small_card_says_its_worst_and_never_hides_that_there_are_more(self):
+        for key in ('critical', 'warning', 'blind'):
+            folded = render.fold(self.state(key, 8), 'small')
+            self.assertEqual((folded.shown, len(folded.rest), folded.alerts), (1, 7, True), key)
+            self.assertEqual(render.fold(self.state(key, 1), 'small').rest, (), key)
+        notes = render.fold(self.state('unjudged', 4), 'small')
+        self.assertEqual((notes.shown, len(notes.rest), notes.alerts), (1, 3, False))
 
 
 class ColumnsTests(SimpleTestCase):

@@ -333,6 +333,28 @@ function bigCards(tab: Page, root = '.monitor-grid'): Promise<string[]> {
         const said = card.querySelector<HTMLElement>('.monitor-reasons-more');
         // (said in words, as alerts, never a bare "+N": .is-alert carries the words "N more alerts, see the band")
         if (hidden && !(said?.offsetParent && said.classList.contains('is-alert') && said.textContent?.includes(String(hidden)))) wrong.push(`${code}: ${hidden} alerts folded away`);
+        if (hidden && said?.offsetParent && !inside(said, frame)) wrong.push(`${code}: "${(said.textContent ?? '').trim()}" is not inside the card`);
+      }
+      // nothing of a widget runs out of its place (a value's tile squeezed over its hairline by the reasons above the
+      // grid: what FIT_ALERTS is measured by, monitoring/cards/render.py fold); a frame that scrolls is its own
+      for (const widget of Array.from(card.querySelectorAll<HTMLElement>('.card-grid > .w'))) {
+        const room = widget.getBoundingClientRect();
+        if (!room.height) continue;
+        for (const node of Array.from(widget.querySelectorAll<HTMLElement>('*'))) {
+          if (node.closest('svg, .sr-only, [hidden]')) continue;
+          if (!Array.from(node.childNodes).some((child) => child.nodeType === 3 && (child.textContent ?? '').trim())) continue;
+          let scrolled = false;
+          for (let up = node.parentElement; up && up !== widget; up = up.parentElement) {
+            const style = getComputedStyle(up);
+            if (/(auto|scroll)/.test(style.overflowX + style.overflowY)) scrolled = true;
+          }
+          const box = node.getBoundingClientRect();
+          if (scrolled || !box.width || !box.height) continue;
+          if (box.top < room.top - 1 || box.bottom > room.bottom + 1) {
+            wrong.push(`${code}: "${(node.textContent ?? '').trim().slice(0, 24)}" runs out of its ${widget.classList[1] ?? 'widget'}`);
+            break;
+          }
+        }
       }
       const basis = card.querySelector('[data-basis]');
       if (basis && !inside(basis, frame)) wrong.push(`${code}: its foot ("State from") is not inside the card`);
@@ -415,6 +437,45 @@ function spills(tab: Page, root = '.monitor-grid'): Promise<string[]> {
           wrong.push(`${code}: "${(node.textContent ?? '').trim().slice(0, 30)}" outside its card`);
         }
       }
+    }
+    return wrong;
+  }, root);
+}
+
+/** Every Small card that folds its alerts without saying so (the coordinator's rule of 2026-11-28: a Small card stays
+ *  one line, but never hides that alerts exist): a card in an alert state (critical, warning, no recent data) whose
+ *  reasons are more than its line says ends in "N more alerts", N the folded ones (its title), in the card's tone, bold,
+ *  whole and in sight in its line; a bare "+N" is for notes only. The cards on the screen (a wall's page). [] when every
+ *  Small card says it. */
+function smallSaid(tab: Page, root = '.monitor-grid'): Promise<string[]> {
+  return tab.evaluate((selector) => {
+    const wrong: string[] = [];
+    for (const card of Array.from(document.querySelectorAll<HTMLElement>(`${selector} .monitor-card.is-fit:not([data-fill])`))) {
+      const frame = card.getBoundingClientRect();
+      if (!frame.height || frame.bottom <= 0 || frame.top >= innerHeight) continue;
+      const code = card.querySelector('h3')?.textContent?.trim() ?? '?';
+      const items = Array.from(card.querySelectorAll<HTMLElement>('.monitor-reasons > li'));
+      const last = items.at(-1);
+      if (items.length < 2 || !last) continue;
+      const folded = (last.title || '').split(' · ').length;
+      const said = (last.querySelector('[aria-hidden="true"]')?.textContent ?? '').trim();
+      if (!['critical', 'warning', 'blind'].includes(card.dataset.state ?? '')) {
+        if (last.classList.contains('is-alert')) wrong.push(`${code}: its notes said as alerts ("${said}")`);
+        continue;
+      }
+      if (!last.classList.contains('is-alert') || !said.includes(String(folded)) || /^\+/.test(said)) {
+        wrong.push(`${code}: ${folded} alerts folded into "${said}"`);
+        continue;
+      }
+      const box = last.getBoundingClientRect();
+      const line = (last.closest('.monitor-card-line') ?? card).getBoundingClientRect();
+      const list = (last.closest('.monitor-reasons') ?? card).getBoundingClientRect();
+      const out = (outer: DOMRect): boolean => box.left < outer.left - 1 || box.right > outer.right + 1 || box.top < outer.top - 1 || box.bottom > outer.bottom + 1;
+      if (!box.width || out(line) || out(list) || out(frame) || last.scrollWidth > last.clientWidth + 1) wrong.push(`${code}: "${said}" is not whole in sight`);
+      const style = getComputedStyle(last);
+      if (Number.parseInt(style.fontWeight, 10) < 600) wrong.push(`${code}: "${said}" is not bold`);
+      const first = items[0];
+      if (first && card.dataset.state !== 'blind' && style.color !== getComputedStyle(first).color) wrong.push(`${code}: "${said}" is not in the card's tone (${style.color})`);
     }
     return wrong;
   }, root);
@@ -579,6 +640,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
               assert.ok(small.length >= 5 && new Set(small).size === 1, `Small card heights ${small}`);
             }
             if (['small', 'big', 'mixed'].includes(screen)) assert.deepEqual(await smallTargets(tab), [], 'every control a 44 px target');
+            if (['small', 'mixed'].includes(screen)) assert.deepEqual(await smallSaid(tab), [], 'a Small card never hides that alerts exist');
             if (screen === 'big' && width < 640) {
               // on a phone the chart's frame scrolls: the water's mark is in sight in it (frontend/chartframe.ts)
               const hidden = await tab.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('.monitor-chart[tabindex]'))
@@ -749,10 +811,11 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
     });
 
     for (const language of LANGUAGES) {
-      for (const name of ['pane-tw08', 'pane-tw09', 'pane-tw12', 'pane-tw10', 'pane-tw11', 'pane-tw01', 'pane-tw14']) {
-        await t.test(`${name} ${language}: the pane's Big card of an old, a many-valued and an old acid water`, async () => {
+      for (const [name, width, height] of [...['pane-tw08', 'pane-tw09', 'pane-tw12', 'pane-tw10', 'pane-tw11', 'pane-tw01', 'pane-tw14', 'pane-tw15']
+        .map((each) => [each, 1440, 900] as const), ['pane-tw15', 1920, 1080] as const, ['pane-tw15', 3840, 2160] as const]) {
+        await t.test(`${name} ${language} at ${width}x${height}: the pane's Big card of an old, a many-valued, an old acid water, many alerts`, async () => {
           mode = 'cards';
-          const { tab, violations } = await open(`${name}-${language}`, 1440, 900);
+          const { tab, violations } = await open(`${name}-${language}`, width, height);
           await tab.waitForSelector('.monitor-dock [data-poll-state="live"] .monitor-card.is-fit');
           await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
           assert.deepEqual(await bigCards(tab, '.monitor-dock'), [], 'the pane\u2019s Big card, nothing of it cut');
@@ -761,11 +824,11 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
           assert.deepEqual(await smallTargets(tab), [], 'every control a 44 px target');
           assert.deepEqual(await lowContrast(tab), [], 'card text under 4.5:1');
           assert.deepEqual(violations, [], 'CSP violations');
-          if (language === 'en') await shot(tab, `${name}-en-1440`);
+          if (language === 'en') await shot(tab, `${name}-en-${width}`);
           await tab.close();
         });
       }
-      for (const [width, height] of language === 'en' ? [[1920, 1080], [3840, 2160]] as const : [[1920, 1080]] as const) {
+      for (const [width, height] of [[1920, 1080], [3840, 2160]] as const) {
         await t.test(`the wall of Big cards ${language} at ${width}x${height}: its notices a row of their own, every card whole`, async () => {
           mode = 'cards';
           const { tab, violations } = await open(`wall-big-${language}`, width, height);
@@ -813,12 +876,30 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
       }
     }
 
-    for (const [width, height] of [[1920, 1080], [3840, 2160]] as const) {
-      await t.test(`the wall of Small cards at ${width}x${height}: one screen, nothing scrolls, no text under 11 px`, async () => {
+    for (const [language, width, height] of [['en', 1920, 1080], ['en', 3840, 2160], ['nb', 1920, 1080], ['tr', 1920, 1080]] as const) {
+      await t.test(`the wall of Small cards ${language} at ${width}x${height}: one screen, nothing scrolls, no text under 11 px, no alert hidden`, async () => {
         mode = 'cards';
-        const { tab, violations } = await open('wall-en', width, height);
+        const { tab, violations } = await open(`wall-${language}`, width, height);
         await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
         await tab.waitForFunction(() => document.querySelector('.monitor-grid')?.hasAttribute('data-page'));
+        // every page of the wall: no Small card on it hides that it has more alerts (a wall nobody can hover)
+        const pages = Number(await tab.evaluate(() => document.querySelector<HTMLElement>('.monitor-grid')?.dataset.pageCount ?? '1'));
+        const at = (): Promise<number> => tab.evaluate(() => Number(document.querySelector<HTMLElement>('.monitor-grid')?.dataset.page ?? '1'));
+        for (let guard = 0; guard < pages && (await at()) > 1; guard += 1) await tab.keyboard.press('PageUp');
+        const codes = new Set<string>();
+        for (let page = 1; page <= pages; page += 1) {
+          if (page > 1) {
+            await tab.keyboard.press('PageDown');
+            await tab.waitForFunction((wanted) => document.querySelector<HTMLElement>('.monitor-grid')?.dataset.page === String(wanted), page);
+          }
+          assert.deepEqual(await smallSaid(tab), [], `page ${page}: a Small card never hides that alerts exist`);
+          for (const code of await tab.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card')).filter((card) => {
+            const box = card.getBoundingClientRect();
+            return box.height > 0 && box.bottom > 0 && box.top < innerHeight;
+          }).map((card) => card.querySelector('h3')?.textContent?.trim() ?? ''))) codes.add(code);
+        }
+        assert.ok(codes.has('TW-14') && codes.has('TW-15'), `the walls' pages show TW-14 and TW-15: ${[...codes]}`);
+        for (let guard = 0; guard < pages && (await at()) > 1; guard += 1) await tab.keyboard.press('PageUp');
         const seen = await tab.evaluate(() => {
           const cards = Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card'));
           let smallest = 1000;
@@ -838,7 +919,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
         assert.equal(seen.links, seen.cards);
         assert.deepEqual(await covered(tab), [], 'nothing lies over the band, a state word or the buttons of the wall');
         assert.deepEqual(violations, [], 'CSP violations');
-        await shot(tab, `wall-en-${width}`, false);
+        if (language === 'en') await shot(tab, `wall-en-${width}`, false);
         await tab.close();
       });
     }

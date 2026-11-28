@@ -48,9 +48,9 @@ FLOWING = ('simple', 'detailed', 'operator')
 # The screens of Big cards: an empty unit's Big card says more in the new look (the design's), every other card is the
 # same markup in both looks.
 BIG_SCREENS = ('big', 'wall-big')
-# The units whose Big card the browser test opens in the pane too (beside TW-02): an old critical, many values, and an
-# old sample in the CO2 region of its chart.
-PANES = ('TW-08', 'TW-09', 'TW-12', 'TW-10', 'TW-11', 'TW-01', 'TW-14')
+# The units whose Big card the browser test opens in the pane too (beside TW-02): an old critical, many values, an
+# old sample in the CO2 region of its chart, many criticals and more of them than a card holds.
+PANES = ('TW-08', 'TW-09', 'TW-12', 'TW-10', 'TW-11', 'TW-01', 'TW-14', 'TW-15')
 # What the design's Big card of an empty unit says that the classic one does not: the unit, the chart's place and why it
 # is empty, what to dose, the other points, the stock (in English).
 EMPTY_BIG = ('Status', 'Volume', 'Max density', 'Max biomass', 'No chart: there is no fish in this unit.', 'Dosing advice',
@@ -85,13 +85,40 @@ CHART_STOP = re.compile(r'(<figure class="monitor-chart [^"]*") id="[^"]*chart-[
 # FIT_REASONS in sight, "+N" for the rest: _card_fit.html).
 POINTS_BOX = re.compile(r'<section class="tw:grid tw:grid-cols-\[minmax\(0,1fr\)_auto_auto_auto\].*?</section>', re.S)
 REASONS_MORE = re.compile(r'<p class="monitor-reasons-more .*?</p>', re.S)
+# ... and a Small card's last reason, the ones it folds: "+N" in the classic look (and for notes in both), the alerts
+# said in words in the new look ("7 more alerts": render.fold); either is the folded reasons, whole in its title.
+SMALL_MORE = re.compile(r'<li class="(?:tw:shrink-0 tw:text-ink-2|monitor-reasons-more is-alert [^"]*)"( title="[^"]*">'
+                        r'<span aria-hidden="true">)[^<]*</span>')
 
 
 def _fitted(html):
-    """The markup of fitted cards without what each look says its own way on a Big card: CHART_STOP, the other points'
-    box, REASONS_MORE and the reasons it folds (the classic markup passes through unchanged but for the points' box)."""
+    """The markup of fitted cards without what each look says its own way: CHART_STOP, the other points' box,
+    REASONS_MORE and the reasons a Big card folds, SMALL_MORE (the classic markup passes through unchanged but for the
+    points' box and the Small card's "+N")."""
     html = REASONS_MORE.sub('', CHART_STOP.sub(r'\1', html)).replace(' data-more>', '>')
-    return POINTS_BOX.sub('<section points>', html)
+    return SMALL_MORE.sub(r'<li more\1</span>', POINTS_BOX.sub('<section points>', html))
+
+
+def _more_alerts(count, language, band=False):
+    """What a card says of the `count` alerts it folds, in `language` ("7 more alerts" on a Small card; "3 more alerts,
+    see the band" on a Big one)."""
+    from django.utils import translation
+    with translation.override(language):
+        if band:
+            return translation.ngettext('%(count)s more alert, see the band', '%(count)s more alerts, see the band',
+                                        count) % {'count': count}
+        return translation.ngettext('%(count)s more alert', '%(count)s more alerts', count) % {'count': count}
+
+
+def _as_classic(reasons, language):
+    """A card's reasons (golden.card_says) with a Small card's alerts said in words ("7 more alerts ...") as the
+    classic look says them ("+7 ..."): what is folded is the same; the new look says how many in words."""
+    said = []
+    for reason in reasons:
+        count = re.match(r'(\d+) ', reason)
+        words = _more_alerts(int(count.group(1)), language) if count else None
+        said.append(f'+{count.group(1)}{reason[len(words):]}' if words and reason.startswith(words) else reason)
+    return said
 
 
 class NextPagesTests(FrozenClock, TestCase):
@@ -139,7 +166,7 @@ class NextPagesTests(FrozenClock, TestCase):
         expected = {'TW-01': 'OK', 'TW-02': 'Critical', 'TW-03': 'Warning', 'TW-04': 'No recent data',
                     'TW-05': 'No limit', 'TW-06': 'Note', 'TW-07': 'Empty', 'TW-08': 'Critical',
                     'TW-09': 'No limit', 'TW-10': 'No limit', 'TW-11': 'No limit', 'TW-12': 'Critical',
-                    'TW-13': 'Critical', 'TW-14': 'Critical'}
+                    'TW-13': 'Critical', 'TW-14': 'Critical', 'TW-15': 'Critical'}
         self.assertEqual({code: said[code]['state'] for code in expected}, expected)
         self.assertEqual(len(MONITORING_UNITS), len(expected))
 
@@ -152,8 +179,10 @@ class NextPagesTests(FrozenClock, TestCase):
                 for code, was in classic.items():
                     now = new[code]
                     with self.subTest(screen=name, language=language, card=code):
-                        for part in ('state', 'reasons', 'pairs', 'links'):
+                        for part in ('state', 'pairs', 'links'):
                             self.assertEqual(now[part], was[part], f'{name} {language} {code}: {part}')
+                        self.assertEqual(_as_classic(now['reasons'], language), was['reasons'],
+                                         f'{name} {language} {code}: reasons')
                         self.assertEqual(multiset_missing(was['texts'], now['texts']), [], 'texts that are gone')
                         self.assertEqual(multiset_missing(was['titles'], now['titles']), [], 'titles that are gone')
 
@@ -329,25 +358,75 @@ class NextPagesTests(FrozenClock, TestCase):
                 if code not in MIXED_FLOW:
                     self.assertEqual(_fitted(article), _fitted(before[code]))
 
+    def big_card(self, surface, code, language):
+        """The markup of `code`'s Big card on a surface: the pane, a wall of Big cards, the desk's Big screen."""
+        if surface == 'pane':
+            return self.ask(PANE, {**SCREENS['small'], 'focus': str(self.units[code].pk)}, language=language).content.decode()
+        articles = _articles(self.fragment(SCREENS['wall-big' if surface == 'wall' else 'big'], language=language))
+        return next(article for key, article in articles.items() if self.norm(key[len('card:'):]) == code)
+
     def test_a_big_card_folds_only_its_notes_never_an_alert(self):
         """Where a Big card is drawn at the size of its place (the pane, a wall), its reasons that are notes (no limit,
-        informational) fold past the first few into "+N"; a critical, warning or no-recent-data reason is never folded:
-        every one is in sight (TW-14: many criticals, none folded; TW-11: ten values no limit judges, folded). Only past
-        what the card can hold would the rest be folded, and then the card says so in words ("N more alerts, see the
-        band": monitoring/cards/render.py fold, its own test)."""
+        informational) fold past the first few into "+N"; a critical, warning or no-recent-data reason is never folded
+        while the card holds it (FIT_ALERTS, measured: monitoring/tests/test_tiles.py), and past that the card says in
+        words how many more there are and where they are ("3 more alerts, see the band": monitoring/cards/render.py
+        fold). TW-11: ten values no limit judges, folded; TW-14: five criticals, none folded; TW-15: eight criticals,
+        three said in words. In the pane, on a wall and on the desk (whose card flows and shows every one: the words are
+        there for the sheet to show where the card is fitted), in the three languages."""
         from monitoring.cards import render
-        for code, folds in (('TW-11', True), ('TW-14', False)):
-            pane = self.ask(PANE, {**SCREENS['small'], 'focus': str(self.units[code].pk)}).content.decode()
-            reasons = re.search(r'<ul class="monitor-reasons [^"]*"[^>]*>(.*?)</ul>', pane, re.S).group(1)
-            items = reasons.count('<li ')
-            with self.subTest(card=code):
-                if folds:
-                    self.assertEqual(reasons.count(' data-more'), items - render.FIT_NOTES)
-                    self.assertIn('class="monitor-reasons-more', pane)
-                else:
-                    self.assertGreater(items, 3)
-                    self.assertNotIn(' data-more', reasons)
-                    self.assertNotIn('class="monitor-reasons-more', pane)
+        for surface in ('pane', 'wall', 'desk'):
+            for language in ('en', 'nb', 'tr'):
+                for code in ('TW-11', 'TW-14', 'TW-15'):
+                    card = self.big_card(surface, code, language)
+                    reasons = re.search(r'<ul class="monitor-reasons [^"]*"[^>]*>(.*?)</ul>', card, re.S).group(1)
+                    items = reasons.count('<li ')
+                    more = re.search(r'<p class="monitor-reasons-more([^"]*)"[^>]*><span aria-hidden="true">([^<]*)</span>',
+                                     card)
+                    with self.subTest(surface=surface, language=language, card=code):
+                        if code == 'TW-11':
+                            self.assertEqual(reasons.count(' data-more'), items - render.FIT_NOTES)
+                            self.assertNotIn('is-alert', more.group(1))
+                            self.assertEqual(more.group(2), f'+{items - render.FIT_NOTES}')
+                        elif code == 'TW-14':
+                            self.assertEqual(items, 5)
+                            self.assertNotIn(' data-more', reasons)
+                            self.assertIsNone(more)
+                        else:
+                            self.assertEqual(items, 8)
+                            self.assertEqual(reasons.count(' data-more'), items - render.FIT_ALERTS)
+                            self.assertIn(' is-alert', more.group(1))
+                            self.assertEqual(more.group(2), _more_alerts(items - render.FIT_ALERTS, language, band=True))
+
+    def test_a_small_card_says_its_worst_alert_and_how_many_more(self):
+        """A Small card stays one line (render.fold, 'small'): its worst reason by name and, when there are more alerts,
+        how many in words in the card's tone ("4 more alerts"), never a bare "+N" (the coordinator's rule of 2026-11-28:
+        a Small card never hides that alerts exist); its notes still fold into "+N" (TW-11), one reason is said alone
+        (TW-02). On a wall of Small cards and the desk's, in the three languages; the classic card is as it was ("+N")."""
+        for name in ('wall', 'small'):
+            for language in ('en', 'nb', 'tr'):
+                for look in (ui.NEXT, ''):
+                    fragment = self.fragment(SCREENS[name], look=look, language=language)
+                    articles = {self.norm(key[len('card:'):]): article for key, article in _articles(fragment).items()}
+                    for code, count in (('TW-14', 4), ('TW-15', 7), ('TW-11', None), ('TW-02', 0)):
+                        reasons = re.search(r'<ul class="monitor-reasons [^"]*"[^>]*>(.*?)</ul>', articles[code], re.S).group(1)
+                        items = re.findall(r'<li class="([^"]*)"[^>]*>(?:<span aria-hidden="true">([^<]*)</span>)?', reasons)
+                        with self.subTest(screen=name, language=language, look=look or 'classic', card=code):
+                            if count == 0:                               # one reason: nothing folded
+                                self.assertEqual(len(items), 1)
+                                continue
+                            self.assertEqual(len(items), 2)
+                            (first, _), (last, said) = items
+                            if count is None:                            # notes: "+N" in both looks
+                                self.assertNotIn('is-alert', last)
+                                self.assertRegex(said, r'^\+\d+$')
+                                continue
+                            self.assertIn('tw:text-crit-text', first)    # the worst first, a critical
+                            if look:
+                                self.assertTrue(last.startswith('monitor-reasons-more is-alert '), last)
+                                self.assertEqual(said, _more_alerts(count, language))
+                            else:
+                                self.assertNotIn('is-alert', last)
+                                self.assertEqual(said, f'+{count}')
 
     def test_a_reasons_short_form_is_never_said_twice_on_a_card(self):
         """A reason's short form (the value against the bound it is past) is said once on a card: a % of saturation judged

@@ -135,3 +135,16 @@ def delete_confirmed(client, url, data=None, **extra):
         if version is not None:
             data['version'] = version
     return client.post(url, data, **extra)
+
+
+def mark_database(text=None):
+    """The test database's comment set to `text` (the go-live stack's mark, core.management.stackproof.MARK, unless
+    another is given) for the running test's transaction, which a TestCase rolls back: as deploy/ci/stack.sh marks the
+    stack's database before its seeder runs."""
+    from django.db import connection
+
+    from core.management.stackproof import MARK
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT current_database()')
+        name = cursor.fetchone()[0]
+        cursor.execute(f'COMMENT ON DATABASE {connection.ops.quote_name(name)} IS %s', [MARK if text is None else text])

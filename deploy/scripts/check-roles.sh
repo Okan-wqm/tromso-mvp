@@ -72,13 +72,15 @@ refused balik_app "DELETE FROM audit_log WHERE false"
 refused balik_app "DELETE FROM alarms WHERE false"
 refused balik_app "DELETE FROM alarm_open WHERE false"
 refused balik_app "INSERT INTO alarm_open (alarm_id) SELECT id FROM alarms WHERE false"
-# The two attacks on a SECURITY DEFINER trigger (core.operations.DefinerTrigger): a trigger of the app's own on a
-# temporary table, calling the function, is refused; a temporary table named like the queue is never written by it.
-equals balik_app "SELECT count(*) FROM pg_default_acl WHERE defaclrole = 'balik_owner'::regrole AND defaclobjtype = 'f' AND defaclnamespace = 0" 1
+# A SECURITY DEFINER function (core.operations.DefinerTrigger) is called by its own trigger only: neither runtime role
+# may call one, nor make the temporary table a trigger of its own would need to hand it a table of its choosing.
+equals balik_app "SELECT count(*) FROM pg_proc p WHERE p.pronamespace = 'public'::regnamespace AND p.prosecdef AND (has_function_privilege('balik_app', p.oid, 'EXECUTE') OR has_function_privilege('sensors_ingest', p.oid, 'EXECUTE'))" 0
+refused balik_app "CREATE TEMP TABLE check_roles (id int)"
+refused sensors_ingest "CREATE TEMP TABLE check_roles (id int)"
 refused balik_app "BEGIN; CREATE TEMP TABLE alarms (LIKE public.alarms INCLUDING DEFAULTS); CREATE TRIGGER forged AFTER INSERT ON pg_temp.alarms REFERENCING NEW TABLE AS opened FOR EACH STATEMENT EXECUTE FUNCTION public.alarm_open_opened(); ROLLBACK"
-shadow=$(as balik_app "BEGIN; CREATE TEMP TABLE alarm_open (alarm_id bigint); INSERT INTO public.alarms (source, parameter, severity, opened_at, summary) VALUES ('system', 'check_roles', 'warning', now(), 'check-roles'); SELECT (SELECT count(*) FROM public.alarm_open WHERE alarm_id = currval(pg_get_serial_sequence('public.alarms', 'id'))) || '/' || (SELECT count(*) FROM pg_temp.alarm_open)" | tail -n 1 || true)   # (psql prints each statement's tag first)
-if [ "$shadow" = "1/0" ]; then echo "ok    balik_app: a temporary alarm_open is never the queue written"
-else echo "FAIL  balik_app: with a temporary alarm_open, an alarm gave '$shadow' (public/temporary), not '1/0'"; failures=$((failures + 1)); fi
+# Every other function stays the app's to call, as its triggers do (core_rev_note and the rest, deferred until the
+# commit): a tracked table written as the app, its deferred triggers run at once (rolled back).
+allowed balik_app "BEGIN; UPDATE platform_settings SET id = id; SET CONSTRAINTS ALL IMMEDIATE; SELECT 1 / count(*) FROM platform_settings; ROLLBACK"
 allowed balik_app "BEGIN; INSERT INTO alarms (source, parameter, severity, opened_at, summary) VALUES ('system', 'check_roles', 'warning', now(), 'check-roles'); ROLLBACK"
 refused balik_app "UPDATE alarm_acknowledgements SET id = id WHERE false"
 refused balik_app "DELETE FROM withdrawal_acknowledgements WHERE false"

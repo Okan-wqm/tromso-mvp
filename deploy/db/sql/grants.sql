@@ -17,6 +17,9 @@ REVOKE DELETE ON alarms FROM balik_app;
 -- DEFINER): the app may read it, never write it, so no code can drop a live alarm from it or keep a cleared one in it
 -- (review 2, H2). `manage.py check --database default` compares it with the clearances (alarms.W001).
 REVOKE INSERT, UPDATE, DELETE ON alarm_open FROM balik_app;
--- (roles.sql runs once: a farm made before it gets the same default here) A function the owner makes is not
--- everyone's to call; firing a trigger needs no EXECUTE (core.operations.DefinerTrigger).
-ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+-- No temporary tables for the app (roles.sql; a farm made before it was granted TEMPORARY, taken back here): no code
+-- makes one, and a trigger of its own on one could hand a SECURITY DEFINER trigger function a table of its choosing
+-- (core.operations.DefinerTrigger, which also takes each such function's EXECUTE from PUBLIC).
+DO $$ BEGIN
+    EXECUTE 'REVOKE TEMPORARY ON DATABASE ' || quote_ident(current_database()) || ' FROM balik_app';
+END $$;

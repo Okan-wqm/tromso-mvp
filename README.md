@@ -5051,9 +5051,9 @@ from which device, how late) is logged. The server side is built; the push trans
   the attempts). The open alarms are read the same way: from their own queue (`alarm_open`, alarms 0025, kept by
   database triggers on `alarms` and `alarm_clearances`, whoever writes and in whatever order; the triggers run as their
   owner and the app role may not write the table, `deploy/db/sql/grants.sql`; `core.operations.DefinerTrigger` makes
-  them so that no role but the owner can hang their functions on a trigger of its own temporary table, they run for
-  their own table only, and a temporary table of the queue's name is never the one written, `check-roles.sh` trying
-  both as the app role, docs/ops/database-roles.md), so the whole pass (its notify step,
+  them so that no role but the owner may call their functions, which run for their own tables only and name every
+  table with its schema, and the app role may make no temporary table, `check-roles.sh` proving it as the app role,
+  docs/ops/database-roles.md), so the whole pass (its notify step,
   the sensor events' mirror, the supervision of criticals told to nobody), the pages' floods, the open list and the
   overview read what is open, never every alarm, clearance and acknowledgement ever recorded. `manage.py check
   --database default` compares the queue with the alarms that have no clearance, both ways (alarms.W001).

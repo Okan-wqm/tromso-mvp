@@ -42,7 +42,10 @@ ALTER DATABASE :"dbname" SET timescaledb.telemetry_level = off;
 ALTER DATABASE :"dbname" OWNER TO balik_owner;
 ALTER SCHEMA public OWNER TO balik_owner;
 REVOKE ALL ON DATABASE :"dbname" FROM PUBLIC;
-GRANT CONNECT, TEMPORARY ON DATABASE :"dbname" TO balik_app;
+-- No temporary tables for any role but the owner: no code makes one, and one is where a trigger of the app's own could
+-- hand a SECURITY DEFINER trigger function a table of its choosing (core.operations.DefinerTrigger; grants.sql takes
+-- TEMPORARY back from a farm made before).
+GRANT CONNECT ON DATABASE :"dbname" TO balik_app;
 GRANT CONNECT ON DATABASE :"dbname" TO sensors_ingest, balik_backup;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO balik_app, sensors_ingest;
@@ -52,7 +55,3 @@ ALTER DEFAULT PRIVILEGES FOR ROLE balik_owner IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO balik_app;
 ALTER DEFAULT PRIVILEGES FOR ROLE balik_owner IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO balik_app;
--- A function the owner makes is not everyone's to call: a SECURITY DEFINER trigger function would otherwise be one any
--- role could hang on a trigger of its own temporary table (core.operations.DefinerTrigger). Firing a trigger needs no
--- EXECUTE.
-ALTER DEFAULT PRIVILEGES FOR ROLE balik_owner REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;

@@ -31,9 +31,11 @@ What follows from it:
   exception: `alarms` keeps `UPDATE`, because the alarm service locks an alarm's row (`SELECT ... FOR UPDATE`, which
   needs it); its trigger still refuses every change. `check-roles.sh` tries them.
 - **The open alarms' queue** (`alarm_open`) is written only by its two triggers, whose functions run as the owner
-  (SECURITY DEFINER, `core.operations.DefinerTrigger`); the app role may read it, never write it (grants.sql). The app
-  may make temporary tables (`TEMPORARY`, for no code of its own today), and so a trigger on one of them: such a
-  function's EXECUTE is taken from PUBLIC (and from every function the owner makes, by default: roles.sql, grants.sql),
-  so it cannot hang one on a trigger of its own; the function runs for its own table only and names every table with
-  its schema, with the temporary schema last in its search path, so a temporary table named like the queue is never
-  the one written. `check-roles.sh` tries both. A function the app is to call itself needs its own GRANT EXECUTE.
+  (SECURITY DEFINER, `core.operations.DefinerTrigger`); the app role may read it, never write it (grants.sql). So that
+  no other role can call such a function with a table of its choosing, the operation that makes one takes its EXECUTE
+  from PUBLIC (firing a trigger needs none), the app role may not make temporary tables (no `TEMPORARY`: roles.sql,
+  grants.sql), and the function refuses to run for any table but its own and names every table with its schema, with
+  the temporary schema last in its search path. Every other function keeps PUBLIC's EXECUTE: the app calls them,
+  itself (`core_rev_flush`) or through its own triggers (`core_rev_note`), with its own rights. `check-roles.sh` proves
+  that neither runtime role may call a SECURITY DEFINER function or make a temporary table, and that the app writes a
+  tracked table with its deferred triggers run.

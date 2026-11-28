@@ -649,3 +649,23 @@ class PointOwnStatusTests(WaterTestCase):
         self.assertFalse(water.for_unit)
         self.assertEqual(water.point_status, Status.CRITICAL)
         self.assertEqual(water.get(NH3).judged, Status.CRITICAL)
+
+
+class PlaceKeyTests(WaterTestCase):
+    """A sampling point and a unit read without a point of its own share no key in a read's maps (the places, the
+    water, the units a place's water concerns). Ids are UUID4 (core.models.AuditedModel), so no real write makes a unit
+    and a point with one id; the collision is forced here, so the read's keys are proved apart, not assumed."""
+
+    def test_a_point_less_unit_with_a_points_id_never_takes_its_water(self):
+        from .test_stock import make_unit
+        bare = make_unit('T-09', self.hall, system=self.ras, id=self.mid1.pk)
+        self.assertEqual(bare.pk, self.mid1.pk)
+        self.sample(self.mid1, hours=1, ph='7.10')
+        self.sample(self.loop, hours=1, ph='6.50')
+        found = read.points_water([self.t1, bare])
+        self.assertEqual(found[self.t1.pk][0].point, self.mid1)
+        self.assertEqual((found[self.t1.pk][0].get('ph').value, found[bare.pk][0].get('ph').value),
+                         (D('7.10'), D('6.50')))
+        water = read.unit_water([self.t1, bare])
+        self.assertEqual((water[self.t1.pk].get('ph').value, water[bare.pk].get('ph').value), (D('7.10'), D('6.50')))
+        self.assertIsNone(water[bare.pk].point)

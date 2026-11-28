@@ -7,6 +7,7 @@ from datetime import timedelta
 from unittest import mock
 
 from farm.tests.test_water import WaterTestCase
+from farm.models import Tank
 from farm.water import read as read_water
 
 from .. import engine
@@ -754,6 +755,52 @@ class OutletPageTests(WaterTestCase):
 
     def outlet_nh3(self):
         return read_water.latest([self.outlet])[self.outlet.pk].get(NH3)
+
+    logged = AnalyserAtOwnPointTests.logged
+
+    def test_the_log_converts_the_ph_with_the_samples_temperature_as_the_page_does(self):
+        """Review 13, R13-1: sea water, the outlet's TAN analyser, a total-scale pH probe on the middle, no temperature
+        probe, the middle's fresh sample temperature. The pages put the pH on the NBS scale with the sample's
+        temperature and work the analyser's NH₃ out; the log does the same (one source of the place's samples), so the
+        lab's critical keyed in behind it is a late result there too."""
+        Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater', water_origin='seawater')
+        self.t1.refresh_from_db()
+        self.bind('tan_mg_l', 0.5, self.outlet, 'A1')
+        self.bind('ph', 7.6, self.mid1, 'P1', ph_scale='total')
+        self.sample(self.mid1, hours=0.5, temperature_c='12.0', salinity_ppt='30.0')
+        self.live()
+        nh3 = self.outlet_nh3()
+        self.assertTrue(nh3.sample.live)
+        self.assertIsNotNone(nh3.value)
+        lab = self.sample(self.outlet, hours=24, source='lab', **{**BAD, 'salinity_ppt': '30.0'})
+        said = self.logged(lab)
+        self.assertIsNotNone(said)
+        self.assertTrue(said[1].startswith('Late result: critical '), said)
+        self.assertIn(' at Outlet on ', said[1])
+
+    def test_a_systems_own_probe_is_named_as_the_systems(self):
+        """Review 13, R13-2: a system without a loop point, its pH and temperature probes on the system: the outlet's
+        worked-out value names the system they belong to, never the middle point they are observed at."""
+        from farm.models import SamplingPoint, System
+        from farm.tests.helpers import point_of
+        from farm.tests.test_stock import make_unit
+        from sensors import bindings
+        from sensors.tests import make_channel
+        ras2 = System.objects.create(name='RAS 2', code='R2', site=self.bergen, production_department=self.hall)
+        t3 = make_unit('T-03', self.hall, system=ras2)
+        point_of(t3)
+        self.stock(t3)
+        outlet = SamplingPoint.objects.create(unit=t3, name='Outlet', kind='outlet')
+        self.bind('tan_mg_l', 0.5, outlet, 'A3')
+        for quantity, value in (('ph', 7.0), ('temperature_c', 12.0)):
+            channel = make_channel(self.device, quantity, code=f'S2-{quantity.upper()}')
+            bindings.move(self.user, channel, system=ras2, at=self.now - timedelta(days=5))
+            self.channels[channel] = value
+        self.live()
+        nh3 = read_water.latest([outlet])[outlet.pk].get(NH3)
+        self.assertIsNotNone(nh3.value)
+        self.assertIn('Worked out with the pH and temperature of its system, RAS 2.', nh3.note)
+        self.assertNotIn('of Middle', nh3.note)
 
     def test_the_outlets_analyser_with_its_ph_on_the_middle(self):
         self.bind('tan_mg_l', 0.5, self.outlet, 'A1')

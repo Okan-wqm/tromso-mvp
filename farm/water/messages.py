@@ -454,6 +454,21 @@ def ended_by(code, end, point):
 WORKED_AT_UNIT = _('Not worked out here: the unit works out its newest TAN at another point (see the unit).')
 
 
+# What an outlet read on its own says of its worked-out value when its unit's sensors, which work it out, could not be read
+# (read.latest; review 12, R12-4): its own sensors' failure is its own `sensors_failed`.
+UNIT_SENSORS_FAILED = _('Not known here: the unit’s sensors that work this value out could not be read.')
+
+
+def worked_with(elsewhere):
+    """Which pH and temperature a value worked out in its unit's place used, when not its own point's (review 12, R12-3):
+    "Worked out with the pH and temperature of Middle." `elsewhere`: {input code: the point}."""
+    points = {getattr(point, 'pk', point): point for point in elsewhere.values()}
+    if len(points) == 1 and len(elsewhere) == 2:
+        return _('Worked out with the pH and temperature of %(point)s.') % {'point': next(iter(points.values())).name}
+    return ' '.join(str(_('Worked out with the %(input)s of %(point)s.') % {
+        'input': INPUT_WORDS.get(code, code), 'point': point.name}) for code, point in sorted(elsewhere.items()))
+
+
 # What a superseded result is said as, by the judge's word (farm/water/judge.py `PointVerdict.said_as`): THE one table,
 # for the page, its history row and the activity log (review 10, F3).
 RESULT_SAID = {

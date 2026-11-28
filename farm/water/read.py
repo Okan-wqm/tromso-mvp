@@ -1712,16 +1712,10 @@ def _candidates(code, live, fresh_live, manuals, context):
     return found
 
 
-def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_moment=None, worked=None):
-    """{code: Reading} of one place's water, each parameter on its own, by owner rule A9 (`choose`): the newest of its OWN
-    fresh values (`own_live`, its points' sensors, and `own_manual`, its points' latest samples, whatever the origin);
-    only when it has none, the newest fresh value of its system (`system_live`, the system's sensors and those on its loop
-    point, and `system_manual`, the loop's samples); else the newest of its own values, stale, else the system's, stale
-    (shown with its age, never used as fresh). A worked-out value (NH3, NH4) the same way among every point's newest
-    worked-out value and the one worked out from a tier's fresh live TAN (review 4 of the branch). Returns (chosen, {code: every candidate of both
-    tiers, fresh, stale or ahead of the clock, derived ones too}): what the worst fresh value and the point's own status
-    read. `at_moment(moment)` gives the place's sensor values fresh at a past moment (`_at_moment`), what a sensor pH no
-    longer fresh is put on the NBS scale with."""
+def _place_live(own_live, own_manual, system_live, system_manual, context, now, at_moment):
+    """(own_live, system_live, fresh_own, fresh_system, fresh_live) of a place: its tiers' live values, a sensor pH on
+    another scale than NBS put on it first, the newest fresh of each tier, and the place's (own, else system). THE one
+    reading of a place's live inputs, for `_resolve` and `_standing_worked`."""
     fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
     fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
     if any(each.ph is not None for live in (own_live, system_live) for each in live.get(parameters.PH, [])):
@@ -1737,6 +1731,36 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
                                  for live in (own_live, system_live))
         fresh_own, fresh_system = _fresh_live(own_live, now), _fresh_live(system_live, now)
         fresh_live = {code: fresh_own.get(code) or fresh_system.get(code) for code in {*own_live, *system_live}}
+    return own_live, system_live, fresh_own, fresh_system, fresh_live
+
+
+def _live_worked(fresh_own, fresh_system, fresh_live, context):
+    """{tier: ({worked-out code: Reading}, {input code: Observation})}: what each tier's fresh live TAN is worked out to,
+    with the place's fresh pH, temperature and salinity (own, else system), value or not (a reading without one says
+    why, refused or not), and the inputs it was combined with. THE one work-out of a place's analyser."""
+    found = {}
+    for tier, fresh_tier in enumerate((fresh_own, fresh_system)):
+        if fresh_tier.get(TAN) is not None:
+            inputs = {code: fresh_live[code] for code in (parameters.PH, parameters.TEMPERATURE, parameters.SALINITY)
+                      if fresh_live.get(code) is not None}
+            together = Observation.combined([fresh_tier[TAN], *inputs.values()])
+            found[tier] = (context._ammonia(together, *context.salinity_found(together), context.temperature_of(together)),
+                           inputs)
+    return found
+
+
+def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_moment=None, worked=None):
+    """{code: Reading} of one place's water, each parameter on its own, by owner rule A9 (`choose`): the newest of its OWN
+    fresh values (`own_live`, its points' sensors, and `own_manual`, its points' latest samples, whatever the origin);
+    only when it has none, the newest fresh value of its system (`system_live`, the system's sensors and those on its loop
+    point, and `system_manual`, the loop's samples); else the newest of its own values, stale, else the system's, stale
+    (shown with its age, never used as fresh). A worked-out value (NH3, NH4) the same way among every point's newest
+    worked-out value and the one worked out from a tier's fresh live TAN (review 4 of the branch). Returns (chosen, {code: every candidate of both
+    tiers, fresh, stale or ahead of the clock, derived ones too}): what the worst fresh value and the point's own status
+    read. `at_moment(moment)` gives the place's sensor values fresh at a past moment (`_at_moment`), what a sensor pH no
+    longer fresh is put on the NBS scale with."""
+    own_live, system_live, fresh_own, fresh_system, fresh_live = _place_live(
+        own_live, own_manual, system_live, system_manual, context, now, at_moment)
     chosen, candidates = {}, {}
     for code in parameters.COLUMNS:
         tiers = [_candidates(code, own_live, fresh_own, own_manual, context),
@@ -1748,13 +1772,8 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
     # The worked-out values (review 4 of the branch, H1, H2): in each tier, every point's NEWEST WORKED-OUT value (its
     # manual readings, `_manual`) and the value worked out from the tier's fresh live TAN. Chosen by A9 as every value
     # is; every worked-out candidate of both tiers takes part in the worst fresh value (third cross review, N1/N2).
-    live_worked = {}
-    for tier, fresh_tier in enumerate((fresh_own, fresh_system) if worked is None else ()):
-        if fresh_tier.get(TAN) is not None:
-            together = Observation.combined([fresh_tier[TAN], *(fresh_live[code] for code in (
-                parameters.PH, parameters.TEMPERATURE, parameters.SALINITY) if fresh_live.get(code) is not None)])
-            live_worked[tier] = context._ammonia(together, *context.salinity_found(together),
-                                                 context.temperature_of(together))
+    live_worked = {} if worked is not None else {
+        tier: found for tier, (found, _inputs) in _live_worked(fresh_own, fresh_system, fresh_live, context).items()}
     if worked is not None:
         # A unit's own-water point read on its own (an outlet's page): its live worked-out values are the ones its
         # unit's standing place works out and files at it (`_standing_worked`; the coordinator's decision on review 11,
@@ -1774,7 +1793,11 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
         # Nothing worked out in any tier: the TAN shown says why.
         if tan.sample.live and tan.fresh(now):
             # The live NH₃ already worked out from that TAN's tier (`live_worked`, once: review 5, L2).
-            if worked is not None:
+            if worked:
+                # Its unit's place worked its TAN out and got no value: its own words and state (a refusal stays
+                # "cannot be evaluated"; review 12, R12-1).
+                chosen.update(worked)
+            elif worked is not None:
                 # Its unit's place works out the TAN of another of its points, the newest (A9): said, never silent.
                 chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, str(messages.WORKED_AT_UNIT),
                                              inputs_until={**dict.fromkeys(NH3_N.inputs), TAN: tan.fresh_until})
@@ -1846,14 +1869,12 @@ def anchors(units, own=None):
     return {unit.pk: own[unit.pk][0] for unit in units if own.get(unit.pk)}
 
 
-def _places(points, own=None, units=()):
-    """{point id: Places} of the points given: one query for the other points of their units (none when the caller hands
-    in their `own_water`), one for their loops. A point stands for its unit (`for_unit`) when it is the unit's middle
+def _places(points, own, units=()):
+    """{point id: Places} of the points given, from their units' `own_water` (`own`, read once by its one caller,
+    `reading_places`), one query for their loops. A point stands for its unit (`for_unit`) when it is the unit's middle
     point, or, for a unit without one, the unit's anchor (`anchors`): it then reads the unit's tiers (`tiers`, the one
     resolver of owner rule A9), its own-water points and its system's."""
     unit_ids = {point.unit_id for point in points if point.unit_id}
-    if own is None or not unit_ids <= set(own):         # a unit the caller did not read: read them all here
-        own = own_water(unit_ids)
     standing = {unit_id: own[unit_id][0].pk for unit_id in unit_ids if own[unit_id]}
     unit_points = [point for point in points if point.unit_id and standing.get(point.unit_id) == point.pk]
     unit_tiers = tiers([point.unit for point in unit_points], nested=False, own=own, sites=False) if unit_points else {}
@@ -1920,9 +1941,21 @@ def latest(points, now=None, at=None, own=None, units=()):
     # Every point's worked-out values, looked back at in batches for the judge (Context.prefetch_newest_worked).
     context.until = at
     context.prefetch_newest_worked(everything)
-    wanted = [target for each in places.values()
-              for target, _origin, _point in (*each.own_targets, *each.system_targets)]
-    answer = sources.latest(wanted, moment) if at is None else _values_at(wanted, at)
+    # The live values of the places asked for, and apart, of the standing places only added for an outlet's live
+    # worked-out values (review 12, R12-4: a point's `sensors_failed` is of its own sources; an outlet whose unit's
+    # sensors could not be read says so on its worked-out value, `worked_here`).
+    asked = {point.pk for point in points} | {unit.pk for unit in units}
+    own_targets, added_targets = ([target for key, each in places.items() if (key in asked) is mine
+                                   for target, _origin, _point in (*each.own_targets, *each.system_targets)]
+                                  for mine in (True, False))
+    added_targets = [target for target in added_targets if target not in set(own_targets)]
+
+    def ask(targets):
+        return sources.latest(targets, moment) if at is None else _values_at(targets, at)
+
+    answer = ask(own_targets)
+    added = ask(added_targets) if added_targets else sources.Answer({})
+    answer = sources.Answer({**added.values, **answer.values}, answer.failed)
     manuals = {}
 
     def manual(point):
@@ -1938,8 +1971,13 @@ def latest(points, now=None, at=None, own=None, units=()):
         anchor = standing.get(point.pk)
         if anchor is None:
             return None
+        if added.failed and anchor.pk not in asked:
+            return {NH3_N.code: Reading(NH3_N, None, Observation(point, moment, Origin.SENSOR, {}), True,
+                                        str(messages.UNIT_SENSORS_FAILED), inputs_until=dict.fromkeys(NH3_N.inputs))}
         if anchor.pk not in stood:
-            stood[anchor.pk] = _standing_worked(places[anchor.pk], answer, context, moment)
+            where = places[anchor.pk]
+            stood[anchor.pk] = _standing_worked(where, answer, context, moment, [manual(each) for each in where.own],
+                                                [manual(each) for each in where.system])
         return stood[anchor.pk].get(point.pk, {})
 
     water = {}
@@ -2260,8 +2298,11 @@ def reading_places(points, own=None, units=()):
     point of each unit one of them is an own-water point of (`anchors`: its middle, else its first own-water point),
     every one through `_places`, so through the one tier resolver read.tiers; `standing`: {point id: its unit's standing
     point} of the given points that are a unit's own-water point but not its standing one (an outlet, a depth: read on
-    their own, their live worked-out values worked out in their unit's place, `_standing_worked`); `everything`: every
-    point of every place, the given ones first, what a Context of the read is built over."""
+    their own, their live worked-out values worked out in their unit's place, `_standing_worked`: ONLY the live
+    worked-out NH₃ and NH₄ follow that place; their own TAN, pH, temperature and their samples' worked-out values stay
+    their own); `everything`: every point of every place, the given ones first, what a Context of the read is built
+    over. `own` is read here once when the caller did not hand in the units' `own_water` (`_places` takes it as
+    given)."""
     points = list(points)
     unit_ids = {point.unit_id for point in points if point.unit_id}
     if own is None or not unit_ids <= set(own):
@@ -2280,20 +2321,28 @@ def reading_places(points, own=None, units=()):
     return places, standing, list(everything.values())
 
 
-def _standing_worked(where, answer, context, now):
-    """{point id: {worked-out code: Reading}} of the live worked-out values a place works out (`_resolve`: the place's
-    newest fresh TAN with the pH, temperature and salinity fresh in its own tier, else its system's), each filed where its
-    sensor is bound (`bound_at`). What a unit's own-water point read on its own takes as its own (`latest`) and what a
-    result entered at a point is judged against (`live_worked_at`)."""
-    _chosen, candidates = _resolve(_live(where.own_targets, answer), [], _live(where.system_targets, answer), [],
-                                   context, now, partial(_at_moment, where))
+def _standing_worked(where, answer, context, now, own_manual=(), system_manual=()):
+    """{point id: {worked-out code: Reading}} of the live worked-out values a place works out (`_place_live`,
+    `_live_worked`: each tier's newest fresh TAN with the pH, temperature and salinity fresh in its own tier, else its
+    system's), each filed where its sensor is bound (`bound_at`), WHATEVER its value: one without a value keeps its
+    reason and its refusal (review 12, R12-1). A value worked out with a pH or temperature of another point than its own
+    says whose (`messages.worked_with`). What a unit's own-water point read on its own takes as its own (`latest`) and
+    what a result entered at a point is judged against (`live_worked_at`, valued and fresh ones only)."""
+    _own, _system, fresh_own, fresh_system, fresh_live = _place_live(
+        _live(where.own_targets, answer), list(own_manual), _live(where.system_targets, answer), list(system_manual),
+        context, now, partial(_at_moment, where))
     found = defaultdict(dict)
-    for code in DERIVED:
-        for reading in candidates.get(code, []):
-            if reading.sample.live and reading.value is not None:
-                found[bound_at(reading)].setdefault(code, reading)
+    for _tier, (worked, inputs) in sorted(_live_worked(fresh_own, fresh_system, fresh_live, context).items()):
+        for code, reading in worked.items():
+            if code not in DERIVED:
+                continue
+            here = bound_at(reading)
+            elsewhere = {code: each.point for code, each in inputs.items()
+                         if code in (parameters.PH, parameters.TEMPERATURE) and getattr(each.point, 'pk', None) != here}
+            if elsewhere and reading.value is not None:
+                _say(reading, messages.worked_with(elsewhere))
+            found[here].setdefault(code, reading)
     return found
-
 
 def live_worked_at(points, places, standing, context, now):
     """{point id: [Reading]} of the fresh live NH₃ BOUND at each point now, worked out as every page works it (reviews
@@ -2309,7 +2358,7 @@ def live_worked_at(points, places, standing, context, now):
         if anchor.pk not in worked:
             worked[anchor.pk] = _standing_worked(places[anchor.pk], answer, context, now)
         reading = worked[anchor.pk].get(point.pk, {}).get(NH3_N.code)
-        found[point.pk] = [reading] if reading is not None and reading.fresh(now) else []
+        found[point.pk] = [reading] if reading is not None and reading.value is not None and reading.fresh(now) else []
     return found
 
 def worst_fresh(reading, others, now=None):

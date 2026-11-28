@@ -35,7 +35,7 @@ from sensors import alarms, bindings, quantities
 from sensors.models import AlarmEvent, AlarmRule, Channel, ChannelState
 
 from . import SensorsCase, make_channel
-from core.testing import delete_confirmed
+from core.testing import delete_confirmed, one_moment
 
 KEEPER = ('view_alarmrule', 'change_alarmrule', 'view_channel')
 MANIFEST = str(Path(__file__).resolve().parents[2] / 'core' / 'testdata' / 'islands-prodrest-manifest.json')
@@ -438,6 +438,7 @@ class PageTests(FreshRuleCase):
         self.assertContains(page, 'PROBE-1 › PH')
 
     @override_settings(ISLANDS_MANIFEST=MANIFEST)
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_new_look_says_it_all_as_the_classic_list_does(self):
         """The new look's list (sensors/lists.py alarm_rules) says what the classic list says (core.pagesays): the rule
         marked Default, its time as the channel's freshness, no Delete, why it is switched off, and the channels left

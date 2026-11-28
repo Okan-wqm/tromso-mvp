@@ -17,6 +17,7 @@ from config.company import overview
 from config.company_props import overview_props
 from core.ui import alarms_item, attention_said
 from core.pagesays import unsaid
+from core.testing import one_moment
 from farm.stock.views import overview_tiles
 from farm.water.views import overview as water_overview
 from sensors.models.alarm import Severity
@@ -215,6 +216,7 @@ class CompanyOverviewPageTests(CompanyFixture):
         self.assertIn('data-island="company"', page)
         self.assertIsNotNone(props_of(page, 'company'))
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_new_look_says_everything_the_classic_page_says(self):
         for language in ('en', 'nb', 'tr'):
             with self.subTest(language=language):

@@ -105,6 +105,19 @@ def strings(payload, keys=True):
     return found
 
 
+def clock_held():
+    """Whether `timezone.now()` stands still here: it is replaced by a stand-in that gives one moment
+    (core.testing.one_moment, a FrozenClock class that does not run on, a test's own patch with a return value), never
+    a clock that runs (the run's TEST_CLOCK, a StartedClock). `unsaid` asks it, and so does
+    monitoring.tests.golden.says_missing (through core.testing, which hands it on as `held`): two renders on either side
+    of a minute's edge say two different times (CI runs 46062378753 and 46117946195), so no comparison of two looks
+    runs on a moving clock."""
+    from unittest import mock
+
+    from django.utils import timezone
+    return isinstance(timezone.now, mock.NonCallableMock) and timezone.now.side_effect is None
+
+
 def unsaid(old_html, payload, ignore=(), new_html=None, once=(), said_as=None):
     """The items of the old page that the new page does not carry: [] when the new page can say all the old one said.
     The new page is its island's payload and, given `new_html`, what its own server-rendered <main> says around the island
@@ -113,7 +126,11 @@ def unsaid(old_html, payload, ignore=(), new_html=None, once=(), said_as=None):
     as its panel's heading) that the new page must say, once at least. A control's name is one control, however many
     boxes carry it (a group of boxes): it must be carried, not counted. `said_as` ({old text: new text}) are facts the new
     page says another way by design (a duration in minutes there, "37 h 30 min" here: core.durations): the old text is
-    carried when the new one is, word for word."""
+    carried when the new one is, word for word. Asked with the clock held only (`clock_held`), the two pages rendered
+    with it held too."""
+    if not clock_held():
+        raise AssertionError('unsaid compares two renders: render both, and compare them, with the clock held '
+                             '(core.testing.one_moment(), or a FrozenClock class), or it may move between them.')
     carried = strings(payload) + ([value for _kind, value in says(new_html)] if new_html is not None else [])
     left = Counter(carried)
     # a control's name is carried as a value of the payload (a widget's name) or a control of the new page's own markup,

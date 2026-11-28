@@ -13,6 +13,7 @@ from farm.resources.site import SiteResource
 from .formpayload import delete_payload
 from .pagesays import unsaid
 from .softdelete import plan_delete
+from .testing import one_moment
 
 
 class DeletePayloadTests(TestCase):
@@ -33,12 +34,14 @@ class DeletePayloadTests(TestCase):
         old = self.client.get(url).content.decode()
         return old, payload, head
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_payload_says_everything_the_old_confirmation_says(self):
         old, payload, head = self.said(self.site)
         self.assertTrue(payload['groups'])
         self.assertEqual(unsaid(old, payload, ignore=head), [])
         self.assertTrue(payload['canDelete'])
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_same_in_norwegian_and_turkish(self):
         for language in ('nb', 'tr'):
             with self.subTest(language=language):

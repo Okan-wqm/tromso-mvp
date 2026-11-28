@@ -13,6 +13,7 @@ from django.urls import reverse
 
 from core import listprops
 from core.pagesays import unsaid
+from core.testing import one_moment
 
 from ..resources.employee import EmployeeResource
 from .helpers_people import PeopleTestCase, employee
@@ -40,6 +41,7 @@ class TeamListNextTests(PeopleTestCase):
         new = self.client.get(url, {**query, 'ui': 'next'}).content.decode()
         return old, new, props_of(new)
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_new_list_says_everything_the_classic_list_says_in_three_languages_and_both_mounts(self):
         for name in ('hr:employee_list', 'hr:production_employee_list'):
             for language in ('en', 'nb', 'tr'):
@@ -65,6 +67,7 @@ class TeamListNextTests(PeopleTestCase):
         self.assertEqual(rows['Dag Delta']['cells']['status']['chip']['kind'], 'neutral')
         self.assertEqual(rows['Dag Delta']['cells']['department']['chip']['kind'], 'warning')
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_search_and_the_filters_are_the_addresss_read_by_the_server(self):
         old, new, props = self.pages(reverse('hr:employee_list'), q='e', status='current', tab='x')
         self.assertEqual(sorted(row['cells']['employee']['text'] for row in props['table']['rows']), ['Cy Charlie', 'Eve Echo'])
@@ -79,6 +82,7 @@ class TeamListNextTests(PeopleTestCase):
         self.assertEqual(props['empty']['link']['href'], reverse('hr:employee_list'))
         self.assertEqual(unsaid(old, props, new_html=new), [])
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_pager_keeps_the_search_and_the_filters(self):
         with mock.patch.object(EmployeeResource, 'page_size', 1):
             old, new, props = self.pages(reverse('hr:employee_list'), q='e', page='2')
@@ -193,6 +197,7 @@ class AttendanceActionsTests(PeopleTestCase):
                                                     note='Entered for the lead')
         self.client.force_login(self.lead)
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_correct_and_void_only_where_the_person_may_do_them(self):
         url = reverse('hr:production_attendancerecord_list')
         new = self.client.get(url, {'ui': 'next'}).content.decode()

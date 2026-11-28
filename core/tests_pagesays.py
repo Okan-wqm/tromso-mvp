@@ -1,8 +1,11 @@
 """The page characterisation (core/pagesays.py): what it reads from an old page, and what it counts as carried by a
 new page's payload."""
+from datetime import datetime, timezone as utc
+
 from django.test import SimpleTestCase
 
-from .pagesays import says, unsaid
+from .pagesays import clock_held, says, unsaid
+from .testing import FrozenClock, StartedClock, one_moment
 
 OLD = """<html><body><nav><a href="/menu/">Menu</a></nav>
 <main class="content"><h1>Storage locations</h1>
@@ -14,7 +17,9 @@ OLD = """<html><body><nav><a href="/menu/">Menu</a></nav>
 </form></main><footer>Not content</footer></body></html>"""
 
 
-class SaysTests(SimpleTestCase):
+class SaysTests(FrozenClock, SimpleTestCase):
+    NOW = datetime(2026, 11, 28, 7, 58, tzinfo=utc.utc)          # (unsaid asks for a held clock)
+
     def test_only_the_main_is_read_its_runs_links_and_controls_never_scripts_or_hidden_fields(self):
         items = says(OLD)
         self.assertIn(('text', 'Storage locations'), items)
@@ -90,3 +95,24 @@ class SaysTests(SimpleTestCase):
         declared = {'2250': '37 h 30 min', 'Standard week (minutes)': 'Standard week'}
         self.assertEqual(unsaid(old, new, said_as=declared), [])
         self.assertEqual(unsaid(old, {'label': 'Standard week', 'value': '37 h'}, said_as=declared), [('text', '2250')])
+
+
+class HeldClockTests(SimpleTestCase):
+    """unsaid compares two renders, so it asks for a clock that stands still (CI runs 46062378753, 46117946195: two
+    looks on either side of a minute's edge said two different times)."""
+
+    def test_unsaid_refuses_a_moving_clock_and_takes_a_held_one(self):
+        self.assertFalse(clock_held())
+        with self.assertRaisesMessage(AssertionError, 'with the clock held'):
+            unsaid(OLD, {})
+        with one_moment():
+            self.assertTrue(clock_held())
+            self.assertEqual(unsaid('<main><p>Silo 2</p></main>', {'name': 'Silo 2'}), [])
+        self.assertFalse(clock_held())
+
+
+class RunningClockTests(StartedClock, SimpleTestCase):
+    NOW = datetime(2026, 11, 28, 7, 58, tzinfo=utc.utc)
+
+    def test_a_clock_that_runs_on_is_not_held(self):
+        self.assertFalse(clock_held())

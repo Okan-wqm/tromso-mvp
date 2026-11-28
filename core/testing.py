@@ -29,9 +29,9 @@ from unittest import mock
 from django.db import DEFAULT_DB_ALIAS, connections
 
 from core.modules import is_test_module  # noqa: F401  a re-export: production imports core.modules, never this module
+from core.pagesays import clock_held as held  # noqa: F401  a re-export: whether timezone.now() stands still
 
 CLOCK = 'django.utils.timezone.now'
-_held = []     # the moments timezone.now() is held at (one_moment, a FrozenClock class), innermost last
 
 
 # Moments at which the UTC day is not the company's (Europe/Oslo unless the environment names another). The first is
@@ -60,8 +60,6 @@ class FrozenClock:
             clock = mock.patch(CLOCK, side_effect=lambda: cls.NOW + (datetime.now(dt_timezone.utc) - began))
         else:
             clock = mock.patch(CLOCK, return_value=cls.NOW)
-            _held.append(cls.NOW)
-            cls.addClassCleanup(_held.remove, cls.NOW)
         clock.start()
         cls.addClassCleanup(clock.stop)
         super().setUpClass()
@@ -80,10 +78,10 @@ def at_bad_hours(namespace, *cases, moments=BAD_HOURS):
     modules (`test_pages.WallTests`): a class imported by name would be collected a second time where it is imported."""
     for case in cases:
         for name, moment in moments.items():
-            held = type(f'{case.__name__}At{name}', (FrozenClock, case), {
+            frozen = type(f'{case.__name__}At{name}', (FrozenClock, case), {
                 'NOW': moment, '__module__': namespace['__name__'],
                 '__doc__': f'{case.__module__}.{case.__name__} with the clock held at {moment.isoformat()}.'})
-            namespace[held.__name__] = held
+            namespace[frozen.__name__] = frozen
 
 
 def run_clock(text=None):
@@ -118,18 +116,7 @@ def one_moment():
     from django.utils import timezone
     moment = timezone.now()
     with mock.patch(CLOCK, return_value=moment):
-        _held.append(moment)
-        try:
-            yield moment
-        finally:
-            _held.pop()
-
-
-def held():
-    """Whether `timezone.now()` stands still here (inside one_moment, or a test of a FrozenClock class that does not
-    run on): what compares two renders asks it
-    (monitoring.tests.golden.says_missing), so no comparison of two looks runs on a moving clock."""
-    return bool(_held)
+        yield moment
 
 
 # ---- What a block reads ----------------------------------------------------------------------------------------------

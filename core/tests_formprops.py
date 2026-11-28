@@ -17,7 +17,7 @@ from core.models import AuditLog
 
 from .pagesays import unsaid
 from .test_world import record_of
-from core.testing import delete_confirmed
+from core.testing import delete_confirmed, one_moment
 
 MANIFEST = str(Path(__file__).resolve().parent / 'testdata' / 'islands-company-manifest.json')
 CREATE, LIST = reverse('alarms:parameterdeadband_create'), reverse('alarms:parameterdeadband_list')
@@ -37,6 +37,7 @@ class RecordFormNextTests(TestCase):
     def page(self, url, look, **extra):
         return self.client.get(url, {'ui': look}, **extra).content.decode()
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_new_form_says_everything_the_classic_form_says_in_three_languages(self):
         for language in ('en', 'nb', 'tr'):
             with self.subTest(language=language):
@@ -64,6 +65,7 @@ class RecordFormNextTests(TestCase):
         self.assertTrue(fields['deadband']['errors'])
         self.assertEqual(ParameterDeadband.objects.count(), before)
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_a_good_form_saves_through_the_same_view_and_is_logged(self):
         self.client.get(LIST, {'ui': 'next'})
         url = self.edit_url()
@@ -106,6 +108,7 @@ class RecordFormNextTests(TestCase):
         self.assertIn('class="record-form"', designer)
         self.assertIsNone(props_of(designer, 'record-form'))
 
+    @one_moment()                     # the two looks rendered and compared on one moment (core.pagesays.clock_held)
     def test_the_delete_confirmation_says_what_the_classic_one_says_and_deletes_through_the_same_view(self):
         record = ParameterDeadband.objects.get(parameter='ph')
         url = reverse('alarms:parameterdeadband_delete', args=[record.pk])

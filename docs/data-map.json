@@ -2564,6 +2564,68 @@
     },
     {
       "app": "alarms",
+      "model": "UnmirroredEvent",
+      "table": "alarm_unmirrored_events",
+      "description": "A sensor rule's event that no alarm mirrors yet: the mirror's own queue, one row each, kept by the database (alarms 0026: a trigger adds the events written that no alarm names, one removes them when their alarm is written, one when an event is deleted, whoever writes), so the pass's mirror (alarms/sources.py `sensor_events`) reads the events still to mirror, never every sensor event and every alarm ever recorded (review 3, M1).",
+      "columns": [
+        {
+          "name": "event_id",
+          "field": "event",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": {
+            "table": "sensors_alarm_event",
+            "model": "sensors.AlarmEvent",
+            "on_delete": "DO_NOTHING"
+          },
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        }
+      ],
+      "constraints": [],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "made by a database trigger when a sensor event is written that no alarm mirrors (alarms 0026)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "a row is the event itself, never changed"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "removed by a database trigger when the alarm mirroring its event is written"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "the mirror's own queue (alarms/sources.py sensor_events); the events are on the Alarm events page"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_open_alarms.py"
+      ]
+    },
+    {
+      "app": "alarms",
       "model": "AlarmWorkerStatus",
       "table": "alarm_worker_status",
       "description": "The alarm worker's own row (alarms/worker.py; one per worker name, written only by the worker that holds the lock): whether it runs, when it last looked (`heartbeat_at`), when it last finished a pass and a pass with no failed step, how long that took, what failed, and the age after which the pages and the health check call the alarms unchecked (`stale_after_seconds`, the worker's own setting, so a reader needs no setting of its own).",
@@ -39121,6 +39183,7 @@
         "alarms/tests/test_floods.py",
         "alarms/tests/test_migration_open.py",
         "alarms/tests/test_migration_place.py",
+        "alarms/tests/test_open_alarms.py",
         "alarms/tests/test_pages.py"
       ]
     },
@@ -39570,6 +39633,7 @@
         "alarms/tests/test_migration_open.py",
         "alarms/tests/test_migration_place.py",
         "alarms/tests/test_migration_reverse.py",
+        "alarms/tests/test_open_alarms.py",
         "alarms/tests/test_pages.py"
       ]
     },

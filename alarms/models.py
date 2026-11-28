@@ -138,6 +138,28 @@ class OpenAlarm(models.Model):
 OPEN = Q(open_entry__isnull=False)
 
 
+class UnmirroredEvent(models.Model):
+    """A sensor rule's event that no alarm mirrors yet: the mirror's own queue, one row each, kept by the database
+    (alarms 0026: a trigger adds the events written that no alarm names, one removes them when their alarm is written,
+    one when an event is deleted, whoever writes), so the pass's mirror (alarms/sources.py `sensor_events`) reads the
+    events still to mirror, never every sensor event and every alarm ever recorded (review 3, M1). Mutable, like the
+    open alarms' queue: not history (the events and their alarms are). The database removes its rows, so the link does
+    nothing of its own."""
+
+    event = models.OneToOneField(AlarmEvent, primary_key=True, on_delete=models.DO_NOTHING, related_name='unmirrored',
+                                 verbose_name=_('Sensor alarm event'))
+
+    objects = SealedManager()      # sealed with its event (alarms/sealing.py)
+
+    class Meta:
+        db_table = 'alarm_unmirrored_events'
+        verbose_name = _('sensor event to mirror')
+        verbose_name_plural = _('sensor events to mirror')
+
+    def __str__(self):
+        return str(self.event_id)
+
+
 class AlarmClearance(models.Model):
     """When an alarm stopped holding: the sensor rule's event closed, or a fresh water value is back inside the limits
     (a value that only goes stale never clears it). An alarm is open while it has none."""

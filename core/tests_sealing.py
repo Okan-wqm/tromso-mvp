@@ -201,8 +201,9 @@ SYSTEM_CALLS = {
 # Reading with SQL of its own (a cursor, raw(), RawSQL), which the managers' seal does not reach: each reads nothing
 # sealed or only what the seal already let through. Management commands read as the system and are not listed.
 RAW_SQL = {
-    'alarms/checks.py:open_alarms_hold': "a database check of the open alarms' queue against the clearances: alarm ids "
-                                         'only, no row of a record',
+    'alarms/checks.py:_queue_holds': "the database checks of the alarms' queues (the open alarms against the "
+                                     'clearances, the events to mirror against the alarms): ids only, no row of a '
+                                     'record',
     'alarms/changes.py:token': 'the count and the sum of the transaction ids of sensors_channel_state: two numbers, no '
                                'row (the alarm worker’s look, as the system)',
     'alarms/engine.py:_lock': 'an advisory lock, no rows',

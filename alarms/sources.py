@@ -99,9 +99,13 @@ def mirror(event):
 
 
 def sensor_events():
-    """Mirrors the sensor rules' events: (alarms opened, alarms cleared)."""
+    """Mirrors the sensor rules' events: (alarms opened, alarms cleared). The events to mirror are read from their own
+    queue (alarms.UnmirroredEvent, alarms 0026), the alarms to clear from the open ones (OPEN): never every event and
+    every alarm ever recorded (review 3, M1). An event the queue still holds although its alarm is written (what
+    alarms.W002 names) is passed over, never mirrored twice."""
     opened = cleared = 0
-    for event in AlarmEvent.objects.filter(alarm__isnull=True).select_related('rule').order_by('opened_at', 'pk'):
+    for event in (AlarmEvent.objects.filter(unmirrored__isnull=False, alarm__isnull=True).select_related('rule')
+                  .order_by('opened_at', 'pk')):
         mirror(event)
         opened += 1
         cleared += event.closed_at is not None

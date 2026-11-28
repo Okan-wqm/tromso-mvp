@@ -5051,12 +5051,14 @@ from which device, how late) is logged. The server side is built; the push trans
   the attempts). The open alarms are read the same way: from their own queue (`alarm_open`, alarms 0025, kept by
   database triggers on `alarms` and `alarm_clearances`, whoever writes and in whatever order; the triggers run as their
   owner and the app role may not write the table, `deploy/db/sql/grants.sql`; `core.operations.DefinerTrigger` makes
-  them so that no role but the owner may call their functions, which run for their own tables only and name every
-  table with its schema, and the app role may make no temporary table, `check-roles.sh` proving it as the app role,
-  docs/ops/database-roles.md), so the whole pass (its notify step,
-  the sensor events' mirror, the supervision of criticals told to nobody), the pages' floods, the open list and the
-  overview read what is open, never every alarm, clearance and acknowledgement ever recorded. `manage.py check
-  --database default` compares the queue with the alarms that have no clearance, both ways (alarms.W001).
+  them so that no role but the owner may call their functions, which run for their own tables only, and the app role
+  may make no temporary table, `check-roles.sh` proving it as the app role, docs/ops/database-roles.md), and the sensor
+  events no alarm mirrors yet from theirs (`alarm_unmirrored_events`, alarms 0026, kept the same way by triggers on
+  `sensors_alarm_event` and `alarms`), so the whole pass (its notify step, the sensor events' mirror, the supervision
+  of criticals told to nobody), the pages' floods, the open list and the overview read what is open and what is still
+  to mirror, never every alarm, clearance, acknowledgement and sensor event ever recorded (measured beside 50,000 and
+  100,000 of each: `alarms/tests/test_open_alarms.py`). `manage.py check --database default` compares each queue with
+  what it stands for, both ways (alarms.W001: the alarms that have no clearance; W002: the events no alarm mirrors).
   **A critical is never given up until someone has seen it** (the review, F1; N7 of the
   last recheck): a critical alarm's notification is tried again until it is sent or its alarm is acknowledged, the wait
   doubling from the severity's retry time up to its escalation time; clearing does not end it (a critical that came and

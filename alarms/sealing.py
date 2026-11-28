@@ -2,7 +2,7 @@
 mirror of a sensor alarm event on a sealed channel, does not exist for someone the cell's owner has not granted; its
 clearance, its row among the open ones, notifications, their delivery attempts and outbox entries, escalations,
 acknowledgements and snoozes (and their ends) go with it, and so does the subject whose open alarm it is. An alarm of the
-alarm system itself (a device's clock) lies on no cell."""
+alarm system itself (a device's clock) lies on no cell. A sensor event still to mirror goes with its event."""
 from core.sealing import declare
 
 
@@ -20,3 +20,5 @@ def declare_all():
         declare(model, part='water', via=('notification',))
     declare(m.AlarmShelveEnd, part='water', via=('shelve',))
     declare(m.AlarmSubjectState, part='water', via=('open_alarm',))
+    # A sensor event still to mirror is its event's (sensors/sealing.py: by its place and day).
+    declare(m.UnmirroredEvent, part='water', via=('event',))

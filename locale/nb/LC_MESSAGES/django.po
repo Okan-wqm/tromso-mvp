@@ -21265,6 +21265,12 @@ msgstr "sensorlegitimasjon"
 msgid "sensor credentials"
 msgstr "sensorlegitimasjoner"
 
+msgid "sensor event to mirror"
+msgstr "sensorhendelse som skal speiles"
+
+msgid "sensor events to mirror"
+msgstr "sensorhendelser som skal speiles"
+
 msgid "sensor reading"
 msgstr "sensoravlesning"
 

@@ -32,6 +32,11 @@ SCREENS = {
         edit=no('a row is the alarm itself, never changed'),
         delete=no("removed by a database trigger when its alarm's clearance is written"),
         read=no("the open alarms' own queue (alarms.models OPEN); the alarms are on the Alarms page")),
+    'UnmirroredEvent': Screen(
+        create=no('made by a database trigger when a sensor event is written that no alarm mirrors (alarms 0026)'),
+        edit=no('a row is the event itself, never changed'),
+        delete=no('removed by a database trigger when the alarm mirroring its event is written'),
+        read=no("the mirror's own queue (alarms/sources.py sensor_events); the events are on the Alarm events page")),
     'SeverityPolicy': Screen(create=no('migration 0002 makes one row per severity'),
                              delete=no('there is always one row per severity')),
     'Alarm': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),

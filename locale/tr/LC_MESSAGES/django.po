@@ -21310,6 +21310,12 @@ msgstr "sensör kimlik bilgisi"
 msgid "sensor credentials"
 msgstr "sensör kimlik bilgileri"
 
+msgid "sensor event to mirror"
+msgstr "yansıtılacak sensör olayı"
+
+msgid "sensor events to mirror"
+msgstr "yansıtılacak sensör olayları"
+
 msgid "sensor reading"
 msgstr "sensör okuması"
 

@@ -7,8 +7,8 @@ night).
 A deployment check only, never an ordinary one: Django runs the ordinary checks before every management command, so one
 wrong transport setting at Error level would stop `manage.py run_alarm_worker`, and no alarm would be checked at all.
 
-And one database check (`manage.py check --database default`, never on its own): alarms.W001, the open alarms' queue
-against the clearances."""
+And two database checks (`manage.py check --database default`, never on their own): alarms.W001, the open alarms'
+queue against the clearances, and alarms.W002, the sensor events' queue still to mirror against the alarms."""
 from django.conf import settings
 from django.core.checks import Error, Tags, Warning, register
 from django.utils.module_loading import import_string
@@ -16,7 +16,7 @@ from django.utils.module_loading import import_string
 from .models import Channel
 from .transports import Transport
 
-SHOWN = 20         # alarm ids a warning of alarms.W001 names; the rest are counted
+SHOWN = 20         # ids a warning of alarms.W001 or W002 names; the rest are counted
 
 
 @register(deploy=True)
@@ -54,42 +54,67 @@ def transports_declare_limits(app_configs, **kwargs):
 def open_alarms_hold(app_configs, **kwargs):
     """The open alarms' queue (`alarm_open`, alarms 0025) is exactly the alarms without a clearance, both ways: an open
     alarm missing from it is never notified, escalated or listed; a cleared one left in it is reminded after it
-    cleared. The triggers keep it so whoever writes; what passes them by is a superuser's (a TRUNCATE of one table,
-    `session_replication_role = replica`, a trigger disabled, a hand repair), and this finds it. Read-only, a scan at
-    check time, never in a pass. Run with `manage.py check --database default` (after migrate, after a restore); quiet
-    until 0025 has run."""
+    cleared."""
+    def scan(cursor):
+        cursor.execute('SELECT a.id FROM public.alarms a WHERE NOT EXISTS (SELECT 1 FROM public.alarm_clearances c '
+                       'WHERE c.alarm_id = a.id) AND NOT EXISTS (SELECT 1 FROM public.alarm_open o WHERE '
+                       'o.alarm_id = a.id) ORDER BY a.id')
+        missing = [row[0] for row in cursor.fetchall()]
+        cursor.execute('SELECT o.alarm_id FROM public.alarm_open o JOIN public.alarm_clearances c ON c.alarm_id = '
+                       'o.alarm_id ORDER BY o.alarm_id')
+        return missing, [row[0] for row in cursor.fetchall()]
+    return _queue_holds('0025_open_alarms', scan, 'alarms.W001', missing=(
+        "open alarm(s) are missing from the open alarms' queue (alarm_open), so they are never notified, escalated or "
+        'listed',
+        'INSERT INTO alarm_open (alarm_id) SELECT a.id FROM alarms a WHERE NOT EXISTS (SELECT 1 FROM alarm_clearances c '
+        'WHERE c.alarm_id = a.id) ON CONFLICT DO NOTHING;'), stale=(
+        "cleared alarm(s) are still in the open alarms' queue (alarm_open), so they are reminded and escalated after "
+        'they cleared',
+        'DELETE FROM alarm_open o USING alarm_clearances c WHERE c.alarm_id = o.alarm_id;'))
+
+
+@register(Tags.database)
+def unmirrored_events_hold(app_configs, **kwargs):
+    """The sensor events' queue still to mirror (`alarm_unmirrored_events`, alarms 0026) is exactly the sensor alarm
+    events no alarm mirrors, both ways: an event missing from it never becomes an alarm, so nobody is told of it; a
+    mirrored one left in it is read by every pass and passed over (alarms/sources.py `sensor_events`)."""
+    def scan(cursor):
+        cursor.execute('SELECT e.id FROM public.sensors_alarm_event e WHERE NOT EXISTS (SELECT 1 FROM public.alarms a '
+                       'WHERE a.sensor_event_id = e.id) AND NOT EXISTS (SELECT 1 FROM public.alarm_unmirrored_events u '
+                       'WHERE u.event_id = e.id) ORDER BY e.id')
+        missing = [row[0] for row in cursor.fetchall()]
+        cursor.execute('SELECT u.event_id FROM public.alarm_unmirrored_events u JOIN public.alarms a ON '
+                       'a.sensor_event_id = u.event_id ORDER BY u.event_id')
+        return missing, [row[0] for row in cursor.fetchall()]
+    return _queue_holds('0026_unmirrored_events', scan, 'alarms.W002', missing=(
+        'sensor alarm event(s) without an alarm are missing from the queue of events to mirror '
+        '(alarm_unmirrored_events), so they never become alarms and nobody is told',
+        'INSERT INTO alarm_unmirrored_events (event_id) SELECT e.id FROM sensors_alarm_event e WHERE NOT EXISTS (SELECT '
+        '1 FROM alarms a WHERE a.sensor_event_id = e.id) ON CONFLICT DO NOTHING;'), stale=(
+        'sensor alarm event(s) an alarm mirrors already are still in the queue of events to mirror '
+        '(alarm_unmirrored_events), read by every pass of the alarm worker',
+        'DELETE FROM alarm_unmirrored_events u USING alarms a WHERE a.sensor_event_id = u.event_id;'))
+
+
+def _queue_holds(migration, scan, check, missing, stale):
+    """A queue the database keeps by its triggers (core.operations.DefinerTrigger) against what it stands for, both
+    ways: `scan(cursor)` gives (the ids missing from it, the ids it holds wrongly); `missing` and `stale` are each
+    (what the warning says, the repair). The triggers keep it whoever writes; what passes them by is a superuser's (a
+    TRUNCATE of one table, `session_replication_role = replica`, a trigger disabled, a hand repair) or raw SQL by an
+    explicit id while the row it names is uncommitted (alarms 0025), and this finds it. Read-only, a scan at check time,
+    never in a pass. Run with `manage.py check --database default` (after migrate, after a restore); quiet until the
+    queue's `migration` has run."""
     from django.db import DatabaseError, connection
     from django.db.migrations.recorder import MigrationRecorder
     try:
-        if ('alarms', '0025_open_alarms') not in MigrationRecorder(connection).applied_migrations():
+        if ('alarms', migration) not in MigrationRecorder(connection).applied_migrations():
             return []
         with connection.cursor() as cursor:
-            cursor.execute('SELECT a.id FROM public.alarms a WHERE NOT EXISTS (SELECT 1 FROM public.alarm_clearances c '
-                           'WHERE c.alarm_id = a.id) AND NOT EXISTS (SELECT 1 FROM public.alarm_open o WHERE '
-                           'o.alarm_id = a.id) '
-                           'ORDER BY a.id')
-            missing = [row[0] for row in cursor.fetchall()]
-            cursor.execute('SELECT o.alarm_id FROM public.alarm_open o JOIN public.alarm_clearances c ON c.alarm_id = '
-                           'o.alarm_id '
-                           'ORDER BY o.alarm_id')
-            cleared = [row[0] for row in cursor.fetchall()]
+            found = scan(cursor)
     except DatabaseError:
         return []
-    found = []
-    if missing:
-        found.append(Warning(
-            f'{len(missing)} open alarm(s) are missing from the open alarms\' queue (alarm_open), so they are never '
-            f'notified, escalated or listed: {_ids(missing)}.',
-            hint='As the database\'s owner role: INSERT INTO alarm_open (alarm_id) SELECT a.id FROM alarms a WHERE NOT '
-                 'EXISTS (SELECT 1 FROM alarm_clearances c WHERE c.alarm_id = a.id) ON CONFLICT DO NOTHING;',
-            id='alarms.W001'))
-    if cleared:
-        found.append(Warning(
-            f'{len(cleared)} cleared alarm(s) are still in the open alarms\' queue (alarm_open), so they are reminded and '
-            f'escalated after they cleared: {_ids(cleared)}.',
-            hint='As the database\'s owner role: DELETE FROM alarm_open o USING alarm_clearances c WHERE c.alarm_id = '
-                 'o.alarm_id;', id='alarms.W001'))
-    return found
+    return [Warning(f'{len(ids)} {said}: {_ids(ids)}.', hint=f"As the database's owner role: {repair}", id=check)
+            for ids, (said, repair) in zip(found, (missing, stale)) if ids]
 
 
 def _ids(ids):

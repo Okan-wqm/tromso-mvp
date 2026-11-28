@@ -30,13 +30,15 @@ dc up -d                                                           # 6. release 
 dc logs release                                                    #    "release: done"
 dc ps                                                              # 7. every service healthy
 sh scripts/check-roles.sh                                          # 8. the roles hold on the new tables
-dc run --rm manage python manage.py check --database default   #  quiet: core.W003 to core.W006, alarms.W001
+dc run --rm manage python manage.py check --database default   #  quiet: core.W003 to core.W006, alarms.W001, W002
 ```
 
 `check --database default` also compares the open alarms' queue (`alarm_open`, kept by database triggers) with the
 alarms that have no clearance, both ways (alarms.W001): an open alarm missing from it would never be notified,
-escalated or listed. It names the alarms and gives the one statement that repairs the queue, run as the database's
-owner role (the app role may not write that table).
+escalated or listed. It compares the queue of sensor events still to mirror (`alarm_unmirrored_events`) with the
+events no alarm mirrors the same way (alarms.W002): an event missing from it would never become an alarm. Each names
+the rows and gives the one statement that repairs its queue, run as the database's owner role (the app role may not
+write those tables).
 
 Then sign in, open the pages of what the release changed, record one thing and look at it, and check that new sensor
 readings arrive (Sensors). Write the release and the date in the farm's record.

@@ -30,16 +30,18 @@ What follows from it:
   snapshots) are refused `UPDATE` and `DELETE` by the app role's rights as well as by their triggers (grants.sql). One
   exception: `alarms` keeps `UPDATE`, because the alarm service locks an alarm's row (`SELECT ... FOR UPDATE`, which
   needs it); its trigger still refuses every change. `check-roles.sh` tries them.
-- **The open alarms' queue** (`alarm_open`) is written only by its two triggers, whose functions run as the owner
-  (SECURITY DEFINER, `core.operations.DefinerTrigger`); the app role may read it, never write it (grants.sql). So that
+- **The alarms' queues** (`alarm_open`, the open alarms; `alarm_unmirrored_events`, the sensor events still to mirror)
+  are written only by their triggers, whose functions run as the owner (SECURITY DEFINER,
+  `core.operations.DefinerTrigger`); the app role may read them, never write them (grants.sql). So that
   no other role can call such a function with a table of its choosing, the operation that makes one takes its EXECUTE
   from PUBLIC (firing a trigger needs none), the app role may not make temporary tables (no `TEMPORARY`: roles.sql,
   grants.sql), and the function refuses to run for any table but its own, with the temporary schema last in its search
   path, so a table it names is always the public one. Every other function keeps PUBLIC's EXECUTE: the app calls them,
   itself (`core_rev_flush`) or through its own triggers (`core_rev_note`), with its own rights. `check-roles.sh` proves
   that neither runtime role may call a SECURITY DEFINER function or make a temporary table, and that the app writes a
-  tracked table with its deferred triggers run.
-  Raw SQL that writes alarms or clearances by an explicit id (a repair, a hand-made restore) runs with the alarm worker
-  stopped: a clearance written while the alarm it names is still uncommitted in another transaction (the foreign keys
-  are checked only at the commit) leaves that alarm in the queue (alarms 0025). `manage.py check --database default`
-  names such an alarm, with its repair (alarms.W001).
+  tracked table with its deferred triggers run, and that a sensor event the app writes is queued to be mirrored.
+  Raw SQL that writes alarms, clearances or sensor events by an explicit id (a repair, a hand-made restore) runs with
+  the alarm worker stopped: a row written while the one it names is still uncommitted in another transaction (the
+  foreign keys are checked only at the commit) is not seen by that one's trigger, so a cleared alarm stays in the open
+  alarms' queue (alarms 0025), and a mirrored event in the queue to mirror (0026). `manage.py check --database default`
+  names such a row, with its repair (alarms.W001, W002).

@@ -3,7 +3,8 @@ reads the open alarms (the pass's notify step, its supervision of the criticals 
 mirror closing the alarms of closed events, the pages' floods, the open list, the overview's attention) reads what is
 open, however long the history. Before it each of them asked "every alarm without a clearance", which reads every
 alarm and every clearance ever recorded, on every pass of the worker with the owner's 10 s (review 1, F1;
-core.testing.reads, alarms/tests/test_open_alarms.py).
+core.testing.reads, alarms/tests/test_open_alarms.py). The mirror's other read, the sensor events no alarm mirrors
+yet, has its own queue (alarms 0026).
 
 The database keeps it, whoever writes (review 2, H2): a statement trigger on `alarms` adds the alarms it inserted that
 have no clearance (a clearance may come first in one transaction: the keys are checked at its end), one on

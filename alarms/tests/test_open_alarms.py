@@ -2,22 +2,27 @@
 writes and in whatever order, a check finds it out of step, and what reads the open alarms reads it, never every
 alarm, clearance, acknowledgement, notification, escalation and snooze ever recorded. Measured beside 50,000 and again
 beside 100,000 alarms of history (each with its notification, escalation, clearance, acknowledgement and an ended
-snooze), counted by PostgreSQL (core.testing.reads): a whole pass of the alarm worker (`engine.run_once`), its notify
-step, the pages' floods, the open list and the overview's open alarms read no more of each history table beside the
-one than beside the other (core.testing.assert_reads_do_not_grow)."""
+snooze) and as many sensor rule events (each closed, its alarm cleared), counted by PostgreSQL (core.testing.reads): a
+whole pass of the alarm worker (`engine.run_once`, its sensor events' mirror included: review 3, M1), its notify step,
+the pages' floods, the open list and the overview's open alarms read no more of each history table beside the one than
+beside the other (core.testing.assert_reads_do_not_grow)."""
+from datetime import timedelta
+
 from django.db import DatabaseError, connection, transaction
 from django.test import TransactionTestCase, override_settings
 
 from core.testing import assert_reads_do_not_grow, reads
+from sensors.models import AlarmEvent, AlarmRule
+from sensors.tests import make_channel, make_connection, make_device, make_format
 
-from .. import checks, engine, floods, read, services
+from .. import checks, engine, floods, read, services, sources
 from ..models import OPEN, Alarm, AlarmClearance
 from ..rules import current
 from . import RECORDING, AlarmsCase, AlarmsWorld
 
 STEP = 50_000
 HISTORY_TABLES = ('alarms', 'alarm_clearances', 'alarm_acknowledgements', 'alarm_notifications', 'alarm_escalations',
-                  'alarm_shelves', 'alarm_shelve_ends')
+                  'alarm_shelves', 'alarm_shelve_ends', 'sensors_alarm_event')
 
 
 def rows(sql, params=None):
@@ -103,6 +108,69 @@ class OpenQueueTests(OpenWorld, AlarmsCase):
         self.assertEqual(self.queue(), {made[1].pk})
 
 
+class MirrorQueueTests(OpenWorld, AlarmsCase):
+    """The sensor events still to mirror (alarms.UnmirroredEvent, alarms 0026; review 3, M1)."""
+
+    def setUp(self):
+        super().setUp()
+        self.channel = make_channel(make_device(make_connection(), make_format(), self.bergen), 'flow_m3_h')
+        self.rule = AlarmRule.objects.create(kind='low', severity='warning', channel=self.channel, threshold=10)
+
+    def event(self, closed=True):
+        return AlarmEvent.objects.create(rule=self.rule, channel_no=self.channel.channel_no, opened_at=self.now,
+                                         closed_at=self.now if closed else None, peak=4)
+
+    def queue(self):
+        return {event_id for (event_id,) in rows('SELECT event_id FROM alarm_unmirrored_events')}
+
+    def test_the_database_keeps_the_events_to_mirror_whoever_writes(self):
+        written = self.event()
+        (raw,) = rows("INSERT INTO sensors_alarm_event (rule_id, channel_no, opened_at, closed_at) VALUES (%s, %s, %s, "
+                      '%s) RETURNING id', [self.rule.pk, self.channel.channel_no, self.now, self.now])[0]
+        self.assertEqual(self.queue(), {written.pk, raw})
+        self.assertEqual(sources.sensor_events(), (2, 2))                        # mirrored, and cleared at once
+        self.assertEqual(self.queue(), set())
+        self.assertEqual(sources.sensor_events(), (0, 0))
+        gone = self.event()
+        rows('DELETE FROM sensors_alarm_event WHERE id = %s', [gone.pk])         # (no code deletes one; a repair may)
+        self.assertEqual(self.queue(), set())
+
+    def test_an_alarm_written_before_its_event_keeps_it_out_of_the_queue(self):
+        """The keys are checked at the transaction's end, so a fixture, a repair or a restore may write an alarm before
+        its event: the event's trigger leaves an event that has its alarm out."""
+        (event,) = rows("SELECT nextval(pg_get_serial_sequence('sensors_alarm_event', 'id'))")[0]
+        rows("INSERT INTO alarms (source, sensor_event_id, parameter, severity, opened_at, summary) VALUES "
+             "('sensor_rule', %s, '', 'warning', %s, 'early')", [event, self.now])
+        rows('INSERT INTO sensors_alarm_event (id, rule_id, channel_no, opened_at) VALUES (%s, %s, %s, %s)',
+             [event, self.rule.pk, self.channel.channel_no, self.now])
+        self.assertEqual(self.queue(), set())
+        self.assertEqual(checks.unmirrored_events_hold(None), [])
+
+    def test_a_queue_out_of_step_with_the_alarms_is_named_both_ways(self):
+        made = [self.event() for _ in range(2)]
+        self.assertEqual(checks.unmirrored_events_hold(None), [])
+        rows('SET CONSTRAINTS ALL IMMEDIATE')         # (the test's own pending key checks, or TRUNCATE and ALTER wait)
+        rows('TRUNCATE alarm_unmirrored_events')                          # what a superuser's TRUNCATE leaves
+        (missing,) = checks.unmirrored_events_hold(None)
+        self.assertEqual(missing.id, 'alarms.W002')
+        self.assertIn('2 sensor alarm event(s) without an alarm are missing', missing.msg)
+        self.assertIn(f'{made[0].pk}, {made[1].pk}', missing.msg)
+        rows(missing.hint.split(': ', 1)[1])                              # the repair, as the hint says it
+        self.assertEqual(checks.unmirrored_events_hold(None), [])
+        rows('SET CONSTRAINTS ALL IMMEDIATE')
+        rows('ALTER TABLE alarms DISABLE TRIGGER trg_alarms_mirrored')    # a trigger set aside
+        sources.mirror(made[0])
+        rows('SET CONSTRAINTS ALL IMMEDIATE')
+        rows('ALTER TABLE alarms ENABLE TRIGGER trg_alarms_mirrored')
+        (stale,) = checks.unmirrored_events_hold(None)
+        self.assertEqual(stale.id, 'alarms.W002')
+        self.assertIn('1 sensor alarm event(s) an alarm mirrors already are still in', stale.msg)
+        self.assertEqual(sources.sensor_events(), (1, 1))                 # the stale one passed over, never twice
+        rows(stale.hint.split(': ', 1)[1])
+        self.assertEqual(checks.unmirrored_events_hold(None), [])
+        self.assertEqual(self.queue(), set())
+
+
 @override_settings(ALARM_TRANSPORTS=RECORDING)
 class OpenHistoryTests(OpenWorld, TransactionTestCase):
     """What the readers read beside a growing history, committed and vacuumed as a farm's is (written in the measuring
@@ -112,8 +180,22 @@ class OpenHistoryTests(OpenWorld, TransactionTestCase):
 
     def grow(self):
         """STEP more alarms opened 30 days before the test's moment, each notified, escalated, snoozed (the snooze
-        ended), acknowledged and cleared, committed and vacuumed. Returns STEP: the rows each history table gained."""
+        ended), acknowledged and cleared, and STEP more sensor rule events of then, each closed and mirrored by its
+        alarm, cleared (review 3, M1); committed and vacuumed. Returns STEP: the fewest rows a history table gained."""
+        if not hasattr(self, 'sensor_rule'):
+            channel = make_channel(make_device(make_connection(), make_format(), self.bergen), 'flow_m3_h')
+            self.sensor_rule = AlarmRule.objects.create(kind='low', severity='warning', channel=channel, threshold=10)
         steps = [
+            ("INSERT INTO sensors_alarm_event (rule_id, channel_no, opened_at, closed_at, peak) SELECT %s, %s, "
+             "%s::timestamptz - interval '30 days' + n * interval '1 second', %s::timestamptz - interval '30 days' + "
+             "n * interval '1 second' + interval '1 minute', 4 FROM generate_series(1, %s) n",
+             [self.sensor_rule.pk, self.sensor_rule.channel.channel_no, self.now, self.now, STEP]),
+            ("INSERT INTO alarms (source, sensor_event_id, parameter, severity, opened_at, summary) SELECT "
+             "'sensor_rule', e.id, '', 'warning', e.opened_at, 'old event' FROM sensors_alarm_event e WHERE NOT "
+             'EXISTS (SELECT 1 FROM alarms a WHERE a.sensor_event_id = e.id)', None),
+            ("INSERT INTO alarm_clearances (alarm_id, cleared_at, cause) SELECT a.id, e.closed_at, 'event_closed' "
+             "FROM alarms a JOIN sensors_alarm_event e ON e.id = a.sensor_event_id WHERE NOT EXISTS (SELECT 1 FROM "
+             'alarm_clearances c WHERE c.alarm_id = a.id)', None),
             ("INSERT INTO alarms (source, parameter, severity, opened_at, summary) SELECT 'system', 'old', 'warning', "
              "%s::timestamptz - interval '30 days', 'old ' || n FROM generate_series(1, %s) n", [self.now, STEP]),
             ('INSERT INTO alarm_notifications (alarm_id, recipient_id, channel, level, queued_at, kind) SELECT a.id, %s, '
@@ -137,7 +219,7 @@ class OpenHistoryTests(OpenWorld, TransactionTestCase):
         ]
         for sql, params in steps:
             rows(sql, params)
-        rows('VACUUM ANALYZE ' + ', '.join(HISTORY_TABLES) + ', alarm_open')
+        rows('VACUUM ANALYZE ' + ', '.join(HISTORY_TABLES) + ', alarm_open, alarm_unmirrored_events')
         return STEP
 
     def fresh(self, opened, name):
@@ -148,15 +230,19 @@ class OpenHistoryTests(OpenWorld, TransactionTestCase):
         self.looks.append(1)
 
     def test_a_whole_pass_reads_the_open_alarms_never_the_history(self):
-        """engine.run_once, every step of it: the notify step, the sensor events' mirror and the supervision of the
-        criticals told to nobody included (review 2, M1)."""
+        """engine.run_once, every step of it: the notify step, the sensor events' mirror (a new event to mirror at
+        each look, among the history's mirrored ones; review 3, M1) and the supervision of the criticals told to
+        nobody included (review 2, M1)."""
         self.looks, opened = [], []
 
         def run_once():
             self.fresh(opened, 'pass')
+            event = AlarmEvent.objects.create(rule=self.sensor_rule, channel_no=self.sensor_rule.channel.channel_no,
+                                              opened_at=self.now - timedelta(minutes=2), closed_at=self.now, peak=4)
             with transaction.atomic(), reads() as found:
                 summary = engine.run_once(self.now)
             self.assertFalse(summary.failed_steps)
+            self.assertTrue(Alarm.objects.filter(sensor_event=event).exists())         # the new one was mirrored
             return found
         assert_reads_do_not_grow(self, self.grow, run_once, HISTORY_TABLES, 'a whole pass')
 

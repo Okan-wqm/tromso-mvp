@@ -37,6 +37,13 @@ SCREENS = {
         edit=no('a row is the event itself, never changed'),
         delete=no('removed by a database trigger when the alarm mirroring its event is written'),
         read=no("the mirror's own queue (alarms/sources.py sensor_events); the events are on the Alarm events page")),
+    'AlarmQueueRepair': Screen(
+        create=no("written by the alarm worker's scheduled check of the queues when one is out of step "
+                  '(alarms/services.py repair_queues); its trigger repairs them (alarms 0027)'),
+        edit=no('history of what passed the triggers by: the app role may not change it'),
+        delete=no('history of what passed the triggers by: the app role may not delete it'),
+        read=no("the activity log has each repair, and the alarm system's own critical alarm says it"),
+        columns={'*': system("the alarm worker's check of the queues")}),
     'SeverityPolicy': Screen(create=no('migration 0002 makes one row per severity'),
                              delete=no('there is always one row per severity')),
     'Alarm': Screen(create=no(LOOP), edit=no(APPEND_ONLY), delete=no(APPEND_ONLY), read=(alarm_list, alarm_detail),

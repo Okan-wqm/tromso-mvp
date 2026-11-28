@@ -5058,7 +5058,14 @@ from which device, how late) is logged. The server side is built; the push trans
   of criticals told to nobody), the pages' floods, the open list and the overview read what is open and what is still
   to mirror, never every alarm, clearance, acknowledgement and sensor event ever recorded (measured beside 50,000 and
   100,000 of each: `alarms/tests/test_open_alarms.py`). `manage.py check --database default` compares each queue with
-  what it stands for, both ways (alarms.W001: the alarms that have no clearance; W002: the events no alarm mirrors).
+  what it stands for, both ways (alarms.W001: the alarms that have no clearance; W002: the events no alarm mirrors),
+  and the alarm worker runs the same check itself, at its first pass and once an hour (`alarms/worker.py`
+  `QUEUE_CHECK_EVERY`; every pass while it fails), never needing a person: a queue out of step (what passed the
+  triggers by: a superuser's TRUNCATE, a disabled trigger) is repaired at the start of that pass with the statements
+  W001 and W002 print, by writing a repair row (`alarm_queue_repairs`, alarms 0027) whose trigger runs them as the
+  database's owner, logged, and the alarm system's own critical alarm "The alarm queues were out of step" goes to the
+  rules and to every holder of Oversee (`alarms/tests/test_queue_repair.py`). The check reads each table it compares
+  twice at most, the whole history, so it is not in every pass.
   **A critical is never given up until someone has seen it** (the review, F1; N7 of the
   last recheck): a critical alarm's notification is tried again until it is sent or its alarm is acknowledged, the wait
   doubling from the severity's retry time up to its escalation time; clearing does not end it (a critical that came and

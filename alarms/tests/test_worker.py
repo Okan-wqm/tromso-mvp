@@ -199,7 +199,7 @@ class LoopTests(WorkerCase):
         self.assertEqual(self.row().state, 'stopped')
 
     def test_stopped_during_a_pass_the_pass_finishes_its_row_says_stopped_and_the_lock_is_let_go(self):
-        def pass_then_signal():
+        def pass_then_signal(**kwargs):
             made.stop.set()                                   # SIGTERM while the pass runs
             return engine.Summary()
         made = make(100, run_pass=mock.Mock(side_effect=pass_then_signal))

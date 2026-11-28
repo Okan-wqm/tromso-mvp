@@ -56,6 +56,11 @@ logger = logging.getLogger(__name__)
 LOCK = 4_261_607_202          # the worker's session-level advisory lock (one active worker); engine.LOCK is the steps'
 DEFAULT_NAME = 'alarms'
 MS = 1000                     # milliseconds in a second: the database's settings are in ms
+# How often the worker checks the alarms' two queues against what they stand for and repairs them (alarms/services.py
+# repair_queues; also at its first pass, and on every pass while the check fails): the check reads each table it
+# compares twice at most, the whole history, so not every pass; an hour bounds how long an alarm a superuser's write
+# kept out of a queue goes untold (review 3 follow-up).
+QUEUE_CHECK_EVERY = 3600       # seconds
 # The TCP keepalives of the worker's session, as shares of its stale_after: the first probe after a third of it idle, then
 # one every ninth, three of them; so the database ends a dead worker's session, and lets its lock go to a standby,
 # within two thirds of stale_after: before the pages call the alarms unchecked.
@@ -160,6 +165,7 @@ class Worker:
         self._done = threading.Event()         # the watchdog's and the sender's: set when the loop ends
         self._send_failing = False             # the sender's last round failed: the pass supervises it as 'send'
         self._unchecked = None                 # (from, to) of the stretch with no pass before this worker took over
+        self._queues_checked = None            # when the queues' check last passed (the monotonic clock): never yet
         self.ping = ping or _ping
         self._pinged = None                    # when the dead man was last asked (the monotonic clock)
         self.spawn = lambda target, args: threading.Thread(target=target, args=args, daemon=True,
@@ -230,7 +236,12 @@ class Worker:
             extra = {'outside': {'send': self._send_failing}} if self.send else {}
             if self._unchecked is not None:
                 extra['unchecked'] = self._unchecked
+            due = self._queues_checked is None or self._pass_started - self._queues_checked >= QUEUE_CHECK_EVERY
+            if due:
+                extra['check_queues'] = True
             summary = self.run_pass(**extra)
+            if due and 'queues' not in summary.failed_steps:
+                self._queues_checked = self._pass_started
             if 'supervision' not in summary.failed_steps:
                 self._unchecked = None             # said: the supervision step that raises it passed
         finally:
@@ -291,6 +302,7 @@ class Worker:
             self.name, host=_fit('host', socket.gethostname()), pid=os.getpid(), started_at=Now(), heartbeat_at=Now(),
             consecutive_failures=0, last_error='', stale_after_seconds=self.timing.stale_after)
         self.leading, self._standby_said, self._pid = True, False, pid
+        self._queues_checked = None            # a worker that takes the lead checks the queues at its first pass
         logger.info('The alarm worker %r checks the alarms (pid %d).', self.name, os.getpid())
         return True
 

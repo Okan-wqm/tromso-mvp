@@ -1287,6 +1287,104 @@
     },
     {
       "app": "alarms",
+      "model": "AlarmQueueRepair",
+      "table": "alarm_queue_repairs",
+      "description": "A repair of the alarms' two queues (OpenAlarm, UnmirroredEvent), found out of step with what they stand for by the alarm worker's scheduled check (alarms/services.py `repair_queues`, the check of alarms.W001 and W002): what it found, by queue and kind, and when.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "repaired_at",
+          "field": "repaired_at",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker's check of the queues"
+        },
+        {
+          "name": "rows_repaired",
+          "field": "rows_repaired",
+          "type": "integer",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker's check of the queues"
+        },
+        {
+          "name": "found",
+          "field": "found",
+          "type": "varchar(300)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "the alarm worker's check of the queues"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_alarm_queue_repairs_rows",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the alarm worker's scheduled check of the queues when one is out of step (alarms/services.py repair_queues); its trigger repairs them (alarms 0027)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "history of what passed the triggers by: the app role may not change it"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "history of what passed the triggers by: the app role may not delete it"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "the activity log has each repair, and the alarm system's own critical alarm says it"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Alarms",
+        "masked": [],
+        "left_out": false
+      },
+      "tests": [
+        "alarms/tests/test_queue_repair.py"
+      ]
+    },
+    {
+      "app": "alarms",
       "model": "RecipientRule",
       "table": "alarm_recipient_rules",
       "description": "Who is notified of which alarms: on a site (or every site) and a production department (or every one), of at least a severity, at a level (0 is notified when the alarm opens; level 1 when nobody acknowledged level 0 in the platform owner's escalation time, and so on), one role or one person, through a channel, and only while on shift when ticked (the HR roster: a person without an employee record is never on shift).",
@@ -3297,6 +3395,7 @@
         "alarms/tests/test_open_alarms.py",
         "alarms/tests/test_outbox.py",
         "alarms/tests/test_pages.py",
+        "alarms/tests/test_queue_repair.py",
         "alarms/tests/test_reaction.py",
         "alarms/tests/test_reference.py",
         "alarms/tests/test_refused_sensor_ph.py",
@@ -3865,6 +3964,7 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_pages.py",
+        "alarms/tests/test_queue_repair.py",
         "alarms/tests/test_reference.py",
         "alarms/tests/test_snooze.py"
       ]
@@ -39184,7 +39284,8 @@
         "alarms/tests/test_migration_open.py",
         "alarms/tests/test_migration_place.py",
         "alarms/tests/test_open_alarms.py",
-        "alarms/tests/test_pages.py"
+        "alarms/tests/test_pages.py",
+        "alarms/tests/test_queue_repair.py"
       ]
     },
     {
@@ -39634,7 +39735,8 @@
         "alarms/tests/test_migration_place.py",
         "alarms/tests/test_migration_reverse.py",
         "alarms/tests/test_open_alarms.py",
-        "alarms/tests/test_pages.py"
+        "alarms/tests/test_pages.py",
+        "alarms/tests/test_queue_repair.py"
       ]
     },
     {

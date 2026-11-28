@@ -15,9 +15,9 @@ from sensors.models.alarm import Severity
 
 from . import place
 from .health import OWN_HEALTH
-from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmShelve, AlarmShelveEnd, AlarmSubjectState,
-                     AlarmWorkerStatus, DeliveryAttempt, Escalation, Notification, NotificationKind, Outcome,
-                     OutboxEntry, Source, WorkerState)
+from .models import (Acknowledgement, Alarm, AlarmClearance, AlarmQueueRepair, AlarmShelve, AlarmShelveEnd,
+                     AlarmSubjectState, AlarmWorkerStatus, DeliveryAttempt, Escalation, Notification, NotificationKind,
+                     Outcome, OutboxEntry, Source, WorkerState)
 
 
 def _fit(model, field, text):
@@ -189,6 +189,31 @@ def escalate(alarm, level, now):
     """The alarm goes on to `level`: nobody acknowledged it in time at the level before (or nobody could be notified
     there)."""
     return escalate_many([Escalation(alarm=alarm, level=level, escalated_at=now)])[0]
+
+
+# ---- the queues the database keeps -------------------------------------------------------------------------------------
+def repair_queues(now):
+    """The alarm worker's scheduled check of the alarms' two queues (alarms.checks QUEUES, the check of alarms.W001 and
+    W002): when one is out of step, a repair row (alarms.AlarmQueueRepair, logged as critical) whose trigger repairs
+    both from what they stand for, as the database's owner; then the check again, which must find nothing (else this
+    raises, and the failed step is the alarm system's own critical alarm). Returns the rows repaired (0: both held)."""
+    from .checks import QUEUES, _queue_holds
+    found = [(queue, held) for queue in QUEUES if (held := _queue_holds(queue))]
+    said = [f'{queue.table}: {len(ids)} {kind}' for queue, held in found
+            for kind, ids in zip(('missing', 'wrong'), held) if ids]
+    rows = sum(len(ids) for _queue, held in found for ids in held)
+    if not rows:
+        return 0
+    repair = AlarmQueueRepair.objects.create(repaired_at=now, rows_repaired=rows,
+                                             found=_fit(AlarmQueueRepair, 'found', '; '.join(said)))
+    left = [queue.table for queue in QUEUES if any(_queue_holds(queue) or ())]
+    if left:
+        raise RuntimeError(f'The alarm queues are still out of step after their repair: {", ".join(left)}.')
+    with audit.source_language():
+        _log([audit.created(None, repair, {str(_('Rows repaired')): str(rows),
+                                           str(_('What was out of step')): repair.found},
+                            label=str(_('Alarm queues repaired')), severity=AuditLog.Severity.CRITICAL)])
+    return rows
 
 
 # ---- delivery and acknowledgement --------------------------------------------------------------------------------------

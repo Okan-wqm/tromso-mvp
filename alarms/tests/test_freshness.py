@@ -93,6 +93,8 @@ NAMED = {
     ('alarms/worker.py', 'MS'): 'milliseconds in a second: a unit, not a threshold',
     ('alarms/worker.py', 'KEEPALIVE'): "shares of the worker's own stale_after (settings.ALARM_WORKER, the "
                                        "deployment's): how fast a dead worker's lock is let go, not a farm rule",
+    ('alarms/worker.py', 'QUEUE_CHECK_EVERY'): "how often the worker checks and repairs its own queues: a bound on "
+                                               "a superuser's mistake and on the check's cost, not a farm rule",
     ('alarms/models.py', 'LEVEL_BOUNDS'): 'the escalation levels a rule may name (0 to 9): a schema limit of the rule '
                                           'rows, checked by the database, not a value in force',
     ('alarms/models.py', 'DELAY_BOUNDS'): "the refusal of nonsense of a clear delay (§7c), never the delay in force",

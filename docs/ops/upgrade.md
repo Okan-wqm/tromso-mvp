@@ -38,7 +38,9 @@ alarms that have no clearance, both ways (alarms.W001): an open alarm missing fr
 escalated or listed. It compares the queue of sensor events still to mirror (`alarm_unmirrored_events`) with the
 events no alarm mirrors the same way (alarms.W002): an event missing from it would never become an alarm. Each names
 the rows and gives the one statement that repairs its queue, run as the database's owner role (the app role may not
-write those tables).
+write those tables). The alarm worker runs the same check at its first pass and once an hour, repairs what it finds and
+raises a critical alarm "The alarm queues were out of step" when it had to: a warning here that the worker has not yet
+repaired is repaired within the hour; run the statements by hand only with the worker stopped.
 
 Then sign in, open the pages of what the release changed, record one thing and look at it, and check that new sensor
 readings arrive (Sensors). Write the release and the date in the farm's record.

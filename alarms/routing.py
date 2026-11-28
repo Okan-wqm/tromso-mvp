@@ -30,8 +30,11 @@ UNREACHED = 'alarms_unreached'
 NO_RULES = 'alarm_rules_none'
 # The alarm system's own alarm that no notification channel is connected (review 4, R3): no alarm leaves the system.
 NO_CHANNEL = 'alarm_channels_none'
+# The alarm system's own alarm that its queues were found out of step and repaired (alarms/services.py repair_queues):
+# an alarm may have gone untold, and the holders of Oversee see every alarm.
+QUEUES_REPAIRED = 'alarm_queues_repaired'
 # The alarm system's own alarms that go to every holder of Oversee besides the rules.
-TO_OVERSEERS = (UNREACHED, NO_RULES, NO_CHANNEL)
+TO_OVERSEERS = (UNREACHED, NO_RULES, NO_CHANNEL, QUEUES_REPAIRED)
 
 
 class Router:

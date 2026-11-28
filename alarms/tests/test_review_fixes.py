@@ -406,7 +406,7 @@ class WorkerTests(Case):
         release, ended, moment, looks = threading.Event(), [], [0.0], []
         self.addCleanup(release.set)
 
-        def hung_pass():
+        def hung_pass(**kwargs):
             ended.append(release.wait(20))         # True: the process's end let it go (20 s: a ceiling, never a measure)
             return engine.Summary()
         made = worker.Worker('alarms', worker.Timing(**{**TIMING, 'tick': 0.05, 'hang_exit': 0.5,

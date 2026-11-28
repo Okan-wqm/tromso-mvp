@@ -99,7 +99,7 @@ class GapTests(DeadManCase):
             prepare()
             made = make(1, run_pass=mock.Mock(return_value=engine.Summary()))
             made.run()
-            made.run_pass.assert_called_once_with()
+            made.run_pass.assert_called_once_with(check_queues=True)    # a first pass checks the queues
             unlock_all()
         self.assertFalse(Alarm.objects.filter(parameter='alarms_unchecked').exists())
 

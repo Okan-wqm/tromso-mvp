@@ -36,6 +36,7 @@ class Summary:
     cleared: int = 0
     queued: int = 0
     escalated: int = 0
+    repaired: int = 0                  # rows of the alarms' queues the scheduled check repaired (services.repair_queues)
     failed_steps: list = field(default_factory=list)
 
     def __str__(self):
@@ -163,11 +164,13 @@ def notify(now, summary, rules):
     _remind(told, now, summary, ended)
 
 
-def run_once(now=None, outside=None, unchecked=None):
+def run_once(now=None, outside=None, unchecked=None, check_queues=False):
     """One pass at `now`; returns its Summary. `outside`: {name: whether it failed} of the alarm system's steps that run
     outside the pass (the worker's sender, 'send'): supervised with the pass's own, and a failed one is in the
     Summary's failed steps. `unchecked` (from, to): the worker's first pass after a stretch with none (sources.supervise
-    raises it)."""
+    raises it). `check_queues`: the worker's scheduled check of the alarms' queues is due (alarms/worker.py
+    QUEUE_CHECK_EVERY): the pass begins with it, so a queue it repairs is read whole by the steps after it, and a repair
+    is the alarm system's own critical alarm (sources.supervise)."""
     now = now or timezone.now()
     summary = Summary()
     freshness.forget()          # the water's staleness rules as they are now (farm/water/freshness.py)
@@ -180,18 +183,23 @@ def run_once(now=None, outside=None, unchecked=None):
     # The silent oxygen probes and where the oxygen is known all the same: read once, for the sensor rules and the
     # alarm system's warnings of this pass (sensors.alarms.OxygenPass).
     oxygen = sensor_alarms.OxygenPass(now)
-    steps = [('sensor rules', lambda: sensor_alarms.evaluate(now, oxygen)),
-             ('sensor events', lambda: count(sources.sensor_events())),
-             ('water', lambda: count(sources.water(now, rules, oxygen))),
-             ('device clocks', lambda: count(sources.device_clocks(now, rules))),
-             ('notify', lambda: notify(now, summary, rules))]
+
+    def repair():
+        summary.repaired = services.repair_queues(now)
+    steps = [('queues', repair)] if check_queues else []
+    steps += [('sensor rules', lambda: sensor_alarms.evaluate(now, oxygen)),
+              ('sensor events', lambda: count(sources.sensor_events())),
+              ('water', lambda: count(sources.water(now, rules, oxygen))),
+              ('device clocks', lambda: count(sources.device_clocks(now, rules))),
+              ('notify', lambda: notify(now, summary, rules))]
     for name, work in steps:
         _step(name, summary, work)
     # Last, after the steps whose failure it alarms: a failed step's alarm is on the page at once, and notified on the
     # next pass (this pass's notify step has run).
     outside = outside or {}
     summary.failed_steps += [name for name, failed in outside.items() if failed]
-    _step('supervision', summary, lambda: count(sources.supervise(now, rules, [name for name, _work in steps]
-                                                                  + list(outside), list(summary.failed_steps),
-                                                                  unchecked)))
+    # The queues' step is supervised on every pass: the worker runs it again on each pass while it fails.
+    names = list(dict.fromkeys(['queues'] + [name for name, _work in steps] + list(outside)))
+    _step('supervision', summary, lambda: count(sources.supervise(now, rules, names, list(summary.failed_steps),
+                                                                  unchecked, summary.repaired)))
     return summary

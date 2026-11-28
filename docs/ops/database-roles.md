@@ -40,8 +40,12 @@ What follows from it:
   itself (`core_rev_flush`) or through its own triggers (`core_rev_note`), with its own rights. `check-roles.sh` proves
   that neither runtime role may call a SECURITY DEFINER function or make a temporary table, and that the app writes a
   tracked table with its deferred triggers run, and that a sensor event the app writes is queued to be mirrored.
+  The alarm worker repairs the queues itself (at its first pass and once an hour) without a right on them: it writes a
+  row of `alarm_queue_repairs`, whose trigger (the same kind of function) repairs both from what they stand for; the
+  app may add such a row, never change or delete one (grants.sql), and `check-roles.sh` tries all three.
   Raw SQL that writes alarms, clearances or sensor events by an explicit id (a repair, a hand-made restore) runs with
   the alarm worker stopped: a row written while the one it names is still uncommitted in another transaction (the
   foreign keys are checked only at the commit) is not seen by that one's trigger, so a cleared alarm stays in the open
   alarms' queue (alarms 0025), and a mirrored event in the queue to mirror (0026). `manage.py check --database default`
-  names such a row, with its repair (alarms.W001, W002).
+  names such a row, with its repair (alarms.W001, W002), and the alarm worker repairs it at its next check and says so
+  by a critical alarm.

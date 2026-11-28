@@ -160,6 +160,30 @@ class UnmirroredEvent(models.Model):
         return str(self.event_id)
 
 
+class AlarmQueueRepair(models.Model):
+    """A repair of the alarms' two queues (OpenAlarm, UnmirroredEvent), found out of step with what they stand for by
+    the alarm worker's scheduled check (alarms/services.py `repair_queues`, the check of alarms.W001 and W002): what it
+    found, by queue and kind, and when. Writing the row repairs them: its trigger (alarms 0027, a
+    core.operations.DefinerTrigger, so as the database's owner) runs the statements W001 and W002 print, and the app
+    role, which may not write the queues, may write this row and nothing else of them. History: never changed or
+    deleted (deploy/db/sql/grants.sql). The alarm system's own critical alarm says each repair to the holders of
+    Oversee (alarms/sources.py `supervise`)."""
+
+    id = models.BigAutoField(primary_key=True)
+    repaired_at = models.DateTimeField(_('Repaired at'))
+    rows_repaired = models.PositiveIntegerField(_('Rows repaired'))
+    found = models.CharField(_('What was out of step'), max_length=300)
+
+    class Meta:
+        db_table = 'alarm_queue_repairs'
+        verbose_name = _('alarm queue repair')
+        verbose_name_plural = _('alarm queue repairs')
+        constraints = [models.CheckConstraint(condition=Q(rows_repaired__gte=1), name='chk_alarm_queue_repairs_rows')]
+
+    def __str__(self):
+        return f'{self.repaired_at:%Y-%m-%d %H:%M} {self.found}'
+
+
 class AlarmClearance(models.Model):
     """When an alarm stopped holding: the sensor rule's event closed, or a fresh water value is back inside the limits
     (a value that only goes stale never clears it). An alarm is open while it has none."""

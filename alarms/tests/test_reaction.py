@@ -196,7 +196,7 @@ class LookTests(WorkerCase):
     def test_the_token_is_read_before_the_pass_so_a_change_during_it_gets_a_pass_more(self):
         state = {'token': 'a'}
 
-        def a_pass_during_which_a_value_lands():
+        def a_pass_during_which_a_value_lands(**kwargs):
             state['token'] = 'b'
             return engine.Summary()
         made = make(5, run_pass=mock.Mock(side_effect=a_pass_during_which_a_value_lands),

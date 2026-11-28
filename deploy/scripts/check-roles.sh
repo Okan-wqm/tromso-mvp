@@ -77,6 +77,11 @@ refused balik_app "INSERT INTO alarm_unmirrored_events (event_id) SELECT id FROM
 # The queues are kept by their triggers whoever writes, the app included: a sensor event the app writes is queued to
 # be mirrored, in a table the app may not write (rolled back).
 allowed balik_app "BEGIN; INSERT INTO sensors_alarm_event (rule_id, channel_no, opened_at) SELECT id, -1, now() FROM sensors_alarm_rule ORDER BY id LIMIT 1; SELECT 1 / count(*) FROM alarm_unmirrored_events WHERE event_id = currval(pg_get_serial_sequence('sensors_alarm_event', 'id')); ROLLBACK"
+# The worker's repair of the queues (alarms 0027): the app writes a repair row, whose trigger repairs the queues as their
+# owner (rolled back); it never changes or removes one.
+allowed balik_app "BEGIN; INSERT INTO alarm_queue_repairs (repaired_at, rows_repaired, found) VALUES (now(), 1, 'check-roles'); ROLLBACK"
+refused balik_app "UPDATE alarm_queue_repairs SET found = found WHERE false"
+refused balik_app "DELETE FROM alarm_queue_repairs WHERE false"
 # A SECURITY DEFINER function (core.operations.DefinerTrigger) is called by its own trigger only: neither runtime role
 # may call one, nor make the temporary table a trigger of its own would need to hand it a table of its choosing.
 equals balik_app "SELECT count(*) FROM pg_proc p WHERE p.pronamespace = 'public'::regnamespace AND p.prosecdef AND (has_function_privilege('balik_app', p.oid, 'EXECUTE') OR has_function_privilege('sensors_ingest', p.oid, 'EXECUTE'))" 0

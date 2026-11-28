@@ -258,6 +258,20 @@ class OpenHistoryTests(OpenWorld, TransactionTestCase):
             return found
         assert_reads_do_not_grow(self, self.grow, notify, HISTORY_TABLES, 'the notify step')
 
+    def test_the_scheduled_check_of_the_queues_reads_each_table_it_compares_at_most_twice(self):
+        """The worker's check of both queues (alarms.checks._queue_holds, once every worker.QUEUE_CHECK_EVERY) reads the
+        history, by design, never in every pass: its cost is bounded by two scans of each table it compares (each of
+        its two queries one at most), beside 50,000 and beside 100,000 rows of each, never a scan per row."""
+        compared = ('alarms', 'alarm_clearances', 'sensors_alarm_event', 'alarm_open', 'alarm_unmirrored_events')
+        for _grow in range(2):
+            self.grow()
+            sizes = {table: rows(f'SELECT count(*) FROM {table}')[0][0] for table in compared}
+            with transaction.atomic(), reads() as found:
+                self.assertEqual([checks._queue_holds(queue) for queue in checks.QUEUES], [([], []), ([], [])])
+            for table in compared:
+                with self.subTest(table=table, alarms=sizes['alarms']):
+                    self.assertLessEqual(found.read(table), 2 * sizes[table] + 100, found.described(table))
+
     def test_the_pages_read_the_open_alarms_never_the_history(self):
         opened = {self.open(f'open{number}').pk for number in range(3)}
 

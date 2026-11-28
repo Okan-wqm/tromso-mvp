@@ -54,7 +54,7 @@ from sensors.models import AlarmEvent, Binding, Channel, Device
 
 from . import clock, services
 from .place import UNIT_PREFIXES, bound, names_unit, unit_of_key, unit_subject, water_key, water_key_parts
-from .routing import NO_CHANNEL, NO_RULES, TO_OVERSEERS, UNREACHED
+from .routing import NO_CHANNEL, NO_RULES, QUEUES_REPAIRED, TO_OVERSEERS, UNREACHED
 from .models import OPEN, Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
 logger = logging.getLogger(__name__)
@@ -760,7 +760,7 @@ def _clock(moment):
     return on(moment, zone_for(None)).strftime('%d.%m.%Y %H:%M')
 
 
-def supervise(now, rules, steps, failed_steps, unchecked=None):
+def supervise(now, rules, steps, failed_steps, unchecked=None, repaired=0):
     """The alarm system's own subjects at the end of a pass (EEMUA 191: the alarm system supervises itself):
     - a step of the pass that failed (`steps`, their names; `failed_steps`, those that failed) is a critical system alarm
       from the pass it fails in until it passes again (cross review F3);
@@ -769,6 +769,9 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
     - `unchecked` (from, to): the alarm worker's first pass after a stretch with no pass (it was stopped, killed or could
       not reach the database: alarms/worker.py) is a critical alarm of the alarm system, so the people are told what
       nobody checked; it clears after its off-delay on the passes that follow.
+    - `repaired`: rows of the alarms' queues the scheduled check found out of step and repaired on this pass
+      (services.repair_queues) is a critical alarm of the alarm system to the holders of Oversee (routing.TO_OVERSEERS):
+      what passed the database's triggers by may have kept an alarm from being told; it clears after its off-delay.
     (opened, cleared)"""
     missing = ', '.join(sorted(rules.missing))
     subjects = [system_subject(ALARM_RULES, bool(rules.missing), Severity.CRITICAL, _text(_(
@@ -801,6 +804,12 @@ def supervise(now, rules, steps, failed_steps, unchecked=None):
         'The alarms were not checked from %(start)s to %(end)s (the alarm worker was not running): no alarm was raised '
         'and nobody was told in that time. Look at the farm\'s values of that time.'), start=_clock(start),
         end=_clock(end)), now, farm_wide=True))
+    said = system_subject(QUEUES_REPAIRED, repaired > 0, Severity.CRITICAL, _text(_(
+        'The alarm queues were out of step: %(count)d row(s) repaired. An open alarm or a sensor event may have gone '
+        'untold since the last check: look at the alarms of that time, and find what wrote past the database\'s '
+        'triggers (the activity log has the repair).'), count=repaired), now, farm_wide=True)
+    said.on_delay = timedelta(0)           # it held already, before the repair: told at once whatever the on-delay
+    subjects.append(said)
     subjects += [system_subject(f'step:{name.replace(" ", "_")}', name in failed_steps, Severity.CRITICAL, _text(_(
         'The alarm step "%(step)s" failed: what it does (raising, clearing, notifying or sending alarms) is not done '
         'until it passes again.'), step=name), now, parameter=STEP_FAILED, farm_wide=True) for name in steps]

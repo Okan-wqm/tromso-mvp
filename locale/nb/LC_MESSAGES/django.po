@@ -3606,6 +3606,9 @@ msgstr ""
 "Alarmflom: %(size)s åpne alarmer (%(severity)s) av samme slag siden %(since)s, den første: "
 "%(example)s. Hver er oppført nedenfor; en person får én melding for dem."
 
+msgid "Alarm queues repaired"
+msgstr "Alarmkøene reparert"
+
 msgid "Alarm recipients"
 msgstr "Alarmmottakere"
 
@@ -13414,6 +13417,9 @@ msgstr "Bestillingspunkter kan settes når lagerplassen er opprettet."
 msgid "Repair"
 msgstr "Reparasjon"
 
+msgid "Repaired at"
+msgstr "Reparert"
+
 msgid "Repeats"
 msgstr "Gjentas"
 
@@ -13648,6 +13654,9 @@ msgstr "Rader %(first)s–%(last)s av %(total)s"
 #, python-format
 msgid "Rows %(first)s–%(last)s of %(total)s match"
 msgstr "Rader %(first)s–%(last)s av %(total)s samsvarer"
+
+msgid "Rows repaired"
+msgstr "Rader reparert"
 
 msgid "Rule"
 msgstr "Regel"
@@ -15428,6 +15437,16 @@ msgid ""
 msgstr ""
 "Alarmvarslene blir IKKE sendt siden %(since)s: alarmtjenestens avsender svarer ikke. Alarmene "
 "utløses og listes, men ingen får beskjed."
+
+#, python-format
+msgid ""
+"The alarm queues were out of step: %(count)d row(s) repaired. An open alarm or a sensor event may"
+" have gone untold since the last check: look at the alarms of that time, and find what wrote past"
+" the database's triggers (the activity log has the repair)."
+msgstr ""
+"Alarmkøene stemte ikke: %(count)d rad(er) reparert. En åpen alarm eller en sensorhendelse kan ha "
+"gått uvarslet siden forrige kontroll: se på alarmene fra den tiden, og finn hva som skrev forbi "
+"databasens triggere (aktivitetsloggen har reparasjonen)."
 
 #, python-format
 msgid ""
@@ -18869,6 +18888,9 @@ msgstr "Det som ble levert"
 msgid "What was given"
 msgstr "Hva som ble gitt"
 
+msgid "What was out of step"
+msgstr "Hva som ikke stemte"
+
 msgid ""
 "What was seen, found or advised about the fish's health: observations, vet and fish-health "
 "visits, lab results and rises in mortality."
@@ -19595,6 +19617,12 @@ msgstr "oppføringer i alarmutboksen"
 
 msgid "alarm outbox entry"
 msgstr "oppføring i alarmutboksen"
+
+msgid "alarm queue repair"
+msgstr "reparasjon av alarmkø"
+
+msgid "alarm queue repairs"
+msgstr "reparasjoner av alarmkøer"
 
 msgid "alarm recipient rule"
 msgstr "alarmmottakerregel"

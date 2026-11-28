@@ -3614,6 +3614,9 @@ msgstr ""
 "Alarm seli: %(since)s itibarıyla aynı türden %(size)s açık alarm (%(severity)s), ilki: "
 "%(example)s. Her biri aşağıda listelenir; bir kişi bunlar için tek bir mesaj alır."
 
+msgid "Alarm queues repaired"
+msgstr "Alarm kuyrukları onarıldı"
+
 msgid "Alarm recipients"
 msgstr "Alarm alıcıları"
 
@@ -13444,6 +13447,9 @@ msgstr "Yeniden sipariş seviyeleri yer oluşturulduktan sonra belirlenebilir."
 msgid "Repair"
 msgstr "Onarımda"
 
+msgid "Repaired at"
+msgstr "Onarıldığı zaman"
+
 msgid "Repeats"
 msgstr "Yinelenme"
 
@@ -13679,6 +13685,9 @@ msgstr "Satır %(first)s–%(last)s / %(total)s"
 #, python-format
 msgid "Rows %(first)s–%(last)s of %(total)s match"
 msgstr "Satır %(first)s–%(last)s / %(total)s eşleşiyor"
+
+msgid "Rows repaired"
+msgstr "Onarılan satır"
 
 msgid "Rule"
 msgstr "Kural"
@@ -15462,6 +15471,16 @@ msgid ""
 msgstr ""
 "Alarm bildirimleri %(since)s itibarıyla GÖNDERİLMİYOR: alarm servisinin göndericisi yanıt "
 "vermiyor. Alarmlar açılır ve listelenir, ama kimseye haber verilmez."
+
+#, python-format
+msgid ""
+"The alarm queues were out of step: %(count)d row(s) repaired. An open alarm or a sensor event may"
+" have gone untold since the last check: look at the alarms of that time, and find what wrote past"
+" the database's triggers (the activity log has the repair)."
+msgstr ""
+"Alarm kuyrukları uyuşmuyordu: %(count)d satır onarıldı. Son denetimden bu yana açık bir alarm "
+"veya bir sensör olayı bildirilmemiş olabilir: o zamanın alarmlarına bakın ve veritabanı "
+"tetikleyicilerini atlayarak yazanı bulun (onarım etkinlik günlüğünde)."
 
 #, python-format
 msgid ""
@@ -18913,6 +18932,9 @@ msgstr "Teslim edilen"
 msgid "What was given"
 msgstr "Ne verildi"
 
+msgid "What was out of step"
+msgstr "Uyuşmayan"
+
 msgid ""
 "What was seen, found or advised about the fish's health: observations, vet and fish-health "
 "visits, lab results and rises in mortality."
@@ -19638,6 +19660,12 @@ msgstr "alarm giden kutusu kayıtları"
 
 msgid "alarm outbox entry"
 msgstr "alarm giden kutusu kaydı"
+
+msgid "alarm queue repair"
+msgstr "alarm kuyruğu onarımı"
+
+msgid "alarm queue repairs"
+msgstr "alarm kuyruğu onarımları"
 
 msgid "alarm recipient rule"
 msgstr "alarm alıcı kuralı"

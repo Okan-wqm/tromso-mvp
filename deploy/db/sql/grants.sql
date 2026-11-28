@@ -20,6 +20,9 @@ REVOKE INSERT, UPDATE, DELETE ON alarm_open FROM balik_app;
 -- The same for the sensor events still to mirror (alarms 0026, review 3, M1): written by its triggers only, so no code
 -- can drop an event no alarm mirrors yet; compared with the alarms by alarms.W002.
 REVOKE INSERT, UPDATE, DELETE ON alarm_unmirrored_events FROM balik_app;
+-- The repairs of those queues (alarms 0027): the app writes one, whose trigger repairs the queues as their owner, and
+-- never changes or removes one: they are the history of what passed the triggers by.
+REVOKE UPDATE, DELETE ON alarm_queue_repairs FROM balik_app;
 -- No temporary tables for the app (roles.sql; a farm made before it was granted TEMPORARY, taken back here): no code
 -- makes one, and a trigger of its own on one could hand a SECURITY DEFINER trigger function a table of its choosing
 -- (core.operations.DefinerTrigger, which also takes each such function's EXECUTE from PUBLIC).

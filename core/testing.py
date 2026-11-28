@@ -288,6 +288,8 @@ def assert_reads_do_not_grow(test, grow, measure, tables, what, more_than=100):
                     f'first: {first.described(table)}\nthen: {second.described(table)}')
             test.assertLessEqual(abs(second.read(table) - first.read(table)), more_than, said)
             test.assertLess(first.read(table), added, said)
+
+
 def platform_settings_data(**overrides):
     """What the Platform settings form posts for the row as stored, with `overrides`: every field the form has (a new
     setting is taken along without touching the tests that post it), a ticked box as 'on' and an unticked one left out,

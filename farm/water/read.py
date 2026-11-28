@@ -1776,7 +1776,8 @@ def _resolve(own_live, own_manual, system_live, system_manual, context, now, at_
             # The live NH₃ already worked out from that TAN's tier (`live_worked`, once: review 5, L2).
             if worked is not None:
                 # Its unit's place works out the TAN of another of its points, the newest (A9): said, never silent.
-                chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, str(messages.WORKED_AT_UNIT))
+                chosen[NH3_N.code] = Reading(NH3_N, None, tan.sample, True, str(messages.WORKED_AT_UNIT),
+                                             inputs_until={**dict.fromkeys(NH3_N.inputs), TAN: tan.fresh_until})
             else:
                 chosen.update(next((live_worked[tier] for tier, fresh_tier in enumerate((fresh_own, fresh_system))
                                     if tier in live_worked and fresh_tier.get(TAN) is tan.sample), {}))

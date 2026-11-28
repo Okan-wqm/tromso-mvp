@@ -287,7 +287,7 @@ class SendSupervisionTests(OutboxCase):
             thread.join(10)
         self.assertTrue(made._send_failing)
         made._pass()
-        made.run_pass.assert_called_once_with(outside={'send': True})
+        made.run_pass.assert_called_once_with(outside={'send': True}, check_queues=True)   # its first pass checks the queues
 
     def test_the_pass_raises_the_step_alarm_and_ends_it(self):
         summary = engine.run_once(self.now, outside={'send': True})

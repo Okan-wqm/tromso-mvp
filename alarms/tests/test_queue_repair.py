@@ -66,7 +66,7 @@ class QueueRepairTests(AlarmsCase):
         repair = AlarmQueueRepair.objects.get()
         self.assertEqual((repair.rows_repaired, repair.found), (2, 'alarm_open: 2 missing'))
         alarm = self.said().get()
-        self.assertEqual((alarm.severity, alarm.farm_wide), ('critical', True))
+        self.assertEqual((alarm.severity, alarm.unit_id, alarm.system_id), ('critical', None, None))   # farm-wide
         self.assertIn('2 row(s) repaired', alarm.summary)
         self.assertIn(REPAIRED, routing.TO_OVERSEERS)                    # to every holder of Oversee besides the rules
         self.assertIn(REPAIRED, OWN_HEALTH)                              # never snoozed

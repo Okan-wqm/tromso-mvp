@@ -638,8 +638,8 @@ class CardHasItsAlarmTests(SilentOxygenCase):
         with one_moment():                    # both looks say the same time ("Stock records at 21:59")
             old = as_next(self.client.get(reverse('production_home'), {'ui': 'classic'}).content.decode())
             new = self.client.get(reverse('production_home'), {'ui': 'next'}).content.decode()
-        props = props_of(new, 'production')
-        self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old), once=figures(old)), [])
+            props = props_of(new, 'production')
+            self.assertEqual(unsaid(old, props, new_html=new, ignore=said_another_way(old), once=figures(old)), [])
         [row] = [row for row in props['attention']['rows'] if row['title'] == unit.code and row['kind'] == 'water']
         self.assertEqual((row['key'], row['kind'], row['status']), (f'water-unit-{unit.pk}', 'water', 'critical'))
         self.assertTrue(row['sub'].startswith(f'{self.hall.name}, '), row['sub'])

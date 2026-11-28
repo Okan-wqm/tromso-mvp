@@ -131,12 +131,15 @@ class Statement:
 
 
 def _counters(connection):
-    """{table: rows read} by this connection in this transaction, from PostgreSQL's own counters (the
-    pg_stat_xact_user_tables figures, by function): the rows sequential scans read of the table, and the entries its
-    indexes handed out (an index scan, an index-only scan, a bitmap). Exact integers, never a plan's rounded average."""
+    """{schema.table: rows read} by this connection in this transaction, from PostgreSQL's own counters (the
+    pg_stat_xact_user_tables figures, by function): the live rows sequential scans of the table handed up, and the
+    entries its indexes handed out (an index scan, an index-only scan, a bitmap). Exact integers, never a plan's rounded
+    average. Not in them: the dead rows a sequential scan steps over, the pages it reads to find them, TOAST: a table
+    churned between vacuums (a queue: alarm_outbox, alarm_open) reads as cheaper than its pages are. An index scan's
+    dead entries are in them, until the scan marks them dead. Keyed by schema, so a name two schemas have is two."""
     with connection.wrap_database_errors, connection.connection.cursor() as cursor:
         cursor.execute(r"""
-            SELECT c.relname, pg_stat_get_xact_tuples_returned(c.oid)
+            SELECT n.nspname || '.' || c.relname, pg_stat_get_xact_tuples_returned(c.oid)
                    + COALESCE((SELECT sum(pg_stat_get_xact_tuples_returned(i.indexrelid)) FROM pg_index i
                                WHERE i.indrelid = c.oid), 0)
             FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -149,8 +152,14 @@ def _difference(after, before):
     return {name: count - before.get(name, 0) for name, count in after.items() if count != before.get(name, 0)}
 
 
+def _qualified(relation):
+    """`alarms` is public's; `_timescaledb_internal._hyper_1_1_chunk` is as given."""
+    return relation if '.' in relation else f'public.{relation}'
+
+
 def _names(sql, relation):
-    return re.search(rf'(?<![\w$]){re.escape(relation)}(?![\w$])', sql) is not None
+    name = _qualified(relation).split('.', 1)[1]
+    return re.search(rf'(?<![\w$]){re.escape(name)}(?![\w$])', sql) is not None
 
 
 class Reads(list):
@@ -173,16 +182,16 @@ class Reads(list):
     def read(self, relation):
         """The rows the block read of `relation` (sequentially, or as its indexes' entries)."""
         self._measured(relation)
-        return self.counted.get(relation, 0)
+        return self.counted.get(_qualified(relation), 0)
 
     def most_returned(self, relation=None):
         """The most rows one statement handed back (of those that read `relation`, if given); 0 when none did."""
         if relation is not None:
             self._measured(relation)
-        found = [statement for statement in self if relation is None or relation in statement.read]
+        found = [statement for statement in self if relation is None or _qualified(relation) in statement.read]
         # A server-side cursor reads its rows when they are fetched, after its statement: asked of its text.
         unknown = [statement.sql for statement in self if statement.returned is None
-                   and (relation is None or relation in statement.read or _names(statement.sql, relation))]
+                   and (relation is None or _qualified(relation) in statement.read or _names(statement.sql, relation))]
         if unknown:
             raise Unmeasured(f'{len(unknown)} statement(s) reading {relation or "anything"} handed their rows back '
                              f'through a server-side cursor, after they ran: {unknown[0][:300]}')
@@ -195,6 +204,7 @@ class Reads(list):
     def described(self, relation, more_than=100):
         """The statements that read more than `more_than` rows of `relation`, most first, with what they read: for a
         bound's message, so a failure names the statement to look at."""
+        relation = _qualified(relation)
         heavy = sorted((statement for statement in self if statement.read.get(relation, 0) > more_than),
                        key=lambda statement: -statement.read[relation])
         return '\n'.join(f'{statement.read[relation]:,} rows: {statement.sql[:400]}' for statement in heavy) or (
@@ -254,21 +264,24 @@ def reads(using=DEFAULT_DB_ALIAS):
 
 def assert_reads_do_not_grow(test, grow, measure, tables, what, more_than=100):
     """That what `measure()` (a block's Reads) reads of each of `tables` does not grow with the history: `grow()` adds
-    to the history, then measure() runs twice and the second counts (the first warms the session: the planner's first
-    looks at indexes fresh rows filled, which no vacuum has seen); again after a second grow(). The second count of each
-    table must be no more than `more_than` rows above the first, where a scan of the history adds all that grow() added.
-    A difference, so what does not depend on the history counts alike on both sides. Writes both counts to stderr."""
+    to the history and returns the rows it added to each table, then measure() runs twice and the second counts (the
+    first warms the session: the planner's first looks at indexes fresh rows filled, which no vacuum has seen); again
+    after a second grow(). The two counts of each table may differ by at most `more_than` rows either way, where a scan
+    of the history adds all that grow() added; and the first must be below what grow() added, or a scan in it could
+    hide one in the second behind a small difference (review 2, M2). A difference, so what does not depend on the
+    history counts alike on both sides. Writes both counts to stderr."""
     import sys
 
     found = []
     for _grow in range(2):
-        grow()
+        added = grow()
         measure()
         found.append(measure())
     first, second = found
     sys.stderr.write(f'\n[reads] {what}, beside the history and beside it grown: {first.reads()}, {second.reads()}\n')
     for table in tables:
         with test.subTest(what=what, table=table):
-            test.assertLessEqual(second.read(table) - first.read(table), more_than,
-                                 f'{what}: {first.read(table):,} rows of {table}, then {second.read(table):,}\n'
-                                 f'{second.described(table)}')
+            said = (f'{what}: {first.read(table):,} rows of {table}, then {second.read(table):,}\n'
+                    f'first: {first.described(table)}\nthen: {second.described(table)}')
+            test.assertLessEqual(abs(second.read(table) - first.read(table)), more_than, said)
+            test.assertLess(first.read(table), added, said)

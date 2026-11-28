@@ -38,7 +38,7 @@ from sensors.tests import make_connection
 
 from .. import engine, floods, models, outbox, read, services, watch, worker
 from ..models import Alarm, AlarmWorkerStatus, DeliveryAttempt, Notification, SeverityPolicy
-from . import NOTHING_CONNECTED, AlarmsCase
+from . import NOTHING_CONNECTED, AlarmsCase, AlarmsWorld
 from .doubles import RecordingTransport
 from .test_worker import TIMING, make, unlock_all
 
@@ -46,7 +46,7 @@ FAILING = {'push': 'alarms.tests.doubles.FailingTransport'}
 RECORDING = {'push': 'alarms.tests.doubles.RecordingTransport'}
 
 
-class Case(AlarmsCase):
+class CaseWorld(AlarmsWorld):
     def setUp(self):
         super().setUp()
         RecordingTransport.sent.clear()
@@ -65,6 +65,10 @@ class Case(AlarmsCase):
             made += services.queue_many([Notification(alarm=alarm, recipient=to or self.operator, channel='push',
                                                       level=0, queued_at=at)])
         return made
+
+
+class Case(CaseWorld, AlarmsCase):
+    pass
 
 
 # ---- F1 --------------------------------------------------------------------------------------------------------------
@@ -171,18 +175,21 @@ class RoundTests(Case):
         self.assertEqual(RecordingTransport.sent[1].pk, made[0].pk)
 
 
-class QueueTests(Case):
+@override_settings(ALARM_TRANSPORTS=RECORDING)
+class QueueTests(CaseWorld, TransactionTestCase):
     """F6: what a round reads of each history table does not grow with the history. Measured beside 50,000 and again
     beside 100,000 notifications of history (each sent 30 days before the test's moment), counted by PostgreSQL
-    (core.testing.reads): the 50,000 more must add fewer than a hundred rows read, where a scan of the history adds
-    them all. A difference, so what does not depend on the history counts alike on both sides: the queue's own rows,
-    and the planner's look at an index's ends (at most a hundred heap pages of rows this transaction wrote and no
-    vacuum has seen)."""
+    (core.testing.reads): the two counts of each table may differ by at most a hundred rows, where a scan of the
+    history adds the 50,000. The history is committed and vacuumed, as a farm's is (a TransactionTestCase): written in
+    the measuring transaction, its rows are not all-visible, and the planner's looks at the ends of indexes over them
+    read thousands of rows each, a cost of the test's own making (review 2, M2: run 46078949779)."""
+    serialized_rollback = True
     STEP = 50_000
     HISTORY_TABLES = ('alarms', 'alarm_notifications', 'alarm_delivery_attempts')
 
     def grow(self):
-        """STEP more alarms, each notified to the operator and sent 30 days before the test's moment."""
+        """STEP more alarms, each notified to the operator and sent 30 days before the test's moment, committed and
+        vacuumed. Returns STEP."""
         with connection.cursor() as cursor:
             cursor.execute("INSERT INTO alarms (source, parameter, severity, opened_at, summary) SELECT 'system', 'old', "
                            "'warning', %s::timestamptz - interval '30 days', 'old ' || n FROM generate_series(1, %s) n",
@@ -195,20 +202,19 @@ class QueueTests(Case):
                            "flood_key) SELECT n.id, n.queued_at, 'sent', '', '' FROM alarm_notifications n JOIN alarms a "
                            "ON a.id = n.alarm_id WHERE a.parameter = 'old' AND NOT EXISTS (SELECT 1 FROM "
                            'alarm_delivery_attempts d WHERE d.notification_id = n.id)')
-            cursor.execute('ANALYZE alarms; ANALYZE alarm_notifications; ANALYZE alarm_delivery_attempts; '
-                           'ANALYZE alarm_outbox')
+            cursor.execute('VACUUM ANALYZE alarms, alarm_notifications, alarm_delivery_attempts, alarm_outbox, alarm_open')
+        return self.STEP
 
     def test_a_round_reads_the_queue_never_the_whole_history(self):
         queued = sorted(row.pk for row in self.system(3, 'critical'))
 
         def backlog():
-            with reads() as found:
+            with transaction.atomic(), reads() as found:
                 rows = outbox.backlog()
             self.assertEqual(sorted(row.pk for row in rows), queued)
             return found
         assert_reads_do_not_grow(self, self.grow, backlog, self.HISTORY_TABLES, 'backlog()')
 
-    @override_settings(ALARM_TRANSPORTS=RECORDING)
     def test_a_sending_round_reads_the_recent_attempts_never_the_whole_history(self):
         """The whole round as the worker's sender runs it, sending three criticals (each its own kind, so each goes on
         its own): its flood check reads the attempts of the flood window by their time (alarms 0024), never all."""
@@ -218,7 +224,7 @@ class QueueTests(Case):
             queued = [row for number in range(3)
                       for row in self.system(1, 'critical', parameter=f'queued{len(rounds)}{number}')]
             RecordingTransport.sent.clear()
-            with reads() as found:
+            with transaction.atomic(), reads() as found:
                 delivery = outbox.send_due(self.now)
             self.assertEqual((delivery.sent, sorted(row.pk for row in RecordingTransport.sent)),
                              (3, sorted(row.pk for row in queued)))

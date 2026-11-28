@@ -39,8 +39,9 @@ def farm_alarms(alarms=None):
     return (Alarm.objects.all() if alarms is None else alarms).exclude(source='system', parameter__in=TO_OVERSEERS)
 
 
-@override_settings(ALARM_TRANSPORTS=RECORDING)
-class AlarmsCase(TestCase):
+class AlarmsWorld:
+    """The world of the alarm tests (setUp and its helpers), for a TestCase (AlarmsCase) or, where a test needs its
+    rows committed (a history vacuumed as a farm's is), a TransactionTestCase."""
     # A test whose world tells nobody of a critical alarm on purpose (a rule of another site, a level nobody is on, the
     # sender failing) says so here, with its reason; every other test that has made a rule asserts the watch is quiet.
     reaches_nobody = ''
@@ -103,3 +104,8 @@ class AlarmsCase(TestCase):
     def critical(self):
         """The one critical water alarm (a critical value holds the warning level too: its alarm opens beside it)."""
         return Alarm.objects.get(severity='critical', source='water_limit')
+
+
+@override_settings(ALARM_TRANSPORTS=RECORDING)
+class AlarmsCase(AlarmsWorld, TestCase):
+    pass

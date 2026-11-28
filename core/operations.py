@@ -244,7 +244,13 @@ class DefinerTrigger(Statements):
       is always the public one, never a temporary table of the same name (core/tests_definer_trigger.py proves it).
     `body` is plpgsql run before `RETURN NULL` (they are AFTER triggers), `declare` its variables. Going back drops the
     triggers and the function. deploy/scripts/check-roles.sh proves on a server that neither runtime role may call a
-    SECURITY DEFINER function."""
+    SECURITY DEFINER function.
+
+    The tables a function serves are written into it (its check of TG_TABLE_NAME): a later migration that adds a table
+    to an existing function (production-plan's row versions, a newly kept table) recreates it, by a migration operation
+    that runs this one's `sql_backwards()` and then the `sql_forwards()` of one naming every table, old and new; a
+    trigger of the new table on the old function would be refused at its first write. One operation per function, so
+    the function and every trigger on it are made, and dropped, together."""
 
     def __init__(self, function, body, on, declare=''):
         on = tuple(on)

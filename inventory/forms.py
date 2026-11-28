@@ -11,7 +11,7 @@ from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
-from core.crud import CodedFormMixin, Fieldset, RowFormSet, TabbedForm, tab_fields
+from core.crud import BoundedModelForm, CodedFormMixin, Fieldset, RowFormSet, TabbedForm, tab_fields
 from core.widgets import DependentSelect
 from farm.forms.stock import DATE, DECIMAL, NOTES, ServiceErrors
 from farm.models import Equipment, EquipmentType, Feed, Site, Supplier
@@ -82,7 +82,7 @@ class StorageLocationForm(CodedFormMixin, TabbedForm):
                                                for item in feeders})
 
 
-class ReorderLevelForm(forms.ModelForm):
+class ReorderLevelForm(BoundedModelForm):
     """A row of a location's reorder levels: a feed and the quantity below which it is low there. The row
     stores the feed's item of the store (RowList.values)."""
 

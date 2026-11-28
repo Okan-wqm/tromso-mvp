@@ -71,8 +71,9 @@ delete is a soft delete. Differences from the source:
   server's `TIME_ZONE` (UTC): a place without a site (a person not posted, a record or a form over sites of several
   zones, the activity log, a record's history, the messages) reads it (`zone_of(None)`, `core.dates.company_zone`), and a
   test reads the code so nothing falls back to the server's clock or day (`core/tests_company_clock.py`: also `date.today()`,
-  `now().date()`, `Trunc*` without `tzinfo`, a `__date` lookup on a moment; the attendance list's day of a stretch is the
-  company's, `hr.read.local_day` the site's for a person's placement). The server refuses to
+  `now().date()`, `Trunc*` without `tzinfo`, a `__date` lookup on a moment; a person's moment is governed by
+  `hr.read.governing`: the placement of the company's day gives the site and says whose the moment is, and the day
+  shown is the moment's on that site's clock, the rule the HR services, the attendance list and the board read). The server refuses to
   start on a zone that is not one a site may have (system check `farm.E001`). Migration `farm/0028_site_timezone_required`
   gives every site without a zone the company's, and refuses such a zone rather than write it.
 - The Location tab has the sea-lice limit area (Nord-Trøndelag and southwards, or Nordland, Troms and Finnmark),
@@ -4532,6 +4533,28 @@ built by reading the source platform's HR service and listing what was wrong wit
   counts and the department of a past day are worked out on the site's clock when a page is read.
 - **The law is owner data.** Limits (rest, weekly hours, days in a row) are settings that warn by default and may only be
   stricter than the statute; none is a database constraint.
+- **One writer, one rule** (the architecture audit of 26.11.2026, H-5 and M-6). `hr.services` is the only writer of the
+  people, their placements, plans, leave requests and attendance: the tabs of those records hand every save to it
+  (`Resource.service_writes`, One format for every tab), so a rule is written once and a page, a command and a later caller
+  run the same one; the forms only read what was typed. The five models say so (`service_written = True`), and rule S
+  of `core/tests_data_access.py` reads the code for a second writer (One format for every tab › One writer, which says
+  what it sees and what it does not).
+  The demonstration's seed calls the services as its own people, and the admin offers no Restore of these records (a
+  stretch or a plan brought back there would skip the lead's reach, the employment and the plan's rules): one voided or
+  removed is entered again on its page. Each question has one answer:
+  - which placement governs a person's moment (`hr.read.governing`, with `governed` its SQL form): the placement of the
+    moment's day on the company's clock. It gives the site and its clock (the day and the time shown, the employment
+    rule) AND says whose the moment is (reach and realm are read on that same company's day, `company_day`), so the
+    lead and the clock never come from two placements, also on a move day between sites on different clocks;
+  - on which clock a planned day is read (`hr.read.planned_shifts`, `holidays_on`): the site the person is placed on
+    that day, for the rules of a save and for the week's grid alike;
+  - who reaches a stretch (`hr.scope.reaches_stretch`, `stretches`), who decides a leave request
+    (`hr.scope.deciding`), who reads its reason (`hr.scope.sees_reason`), when a week starts and what it totals
+    (`hr.rules.monday`, `week_minutes`), and how long a correction is allowed (the platform's correction window,
+    `core.platform.correction_window_days`).
+
+  `hr/tests/test_governing.py` holds each SQL form to its rule and says which lead owns a stretch around midnight on a
+  move day between an Auckland and a Los Angeles site.
 
 The team lead is the **Manager** of a production department (chosen on the production department's form, shown in its
 list and logged) or of an office department, plus a role with the HR areas. The Manager field has no other effect.
@@ -4561,7 +4584,9 @@ department or an office department (a database check, as a task's place is), a t
 while open). One placement covers any day (an exclusion constraint), so the department of a past day is read, not
 overwritten. The form's Placement tab shows the current one; changing the department or the title needs the day the
 change counts from, and `hr.services.move` closes the open placement the day before and opens the next (one transaction,
-both logged; a change dated the first day of the current placement corrects it in place). A department with people placed
+both logged; a change dated the first day of the current placement corrects it in place). The form's save is
+`hr.services.add_employee` or `change_employee` (the person's columns, logged), which hands a last day to
+`hr.services.leave_company` (logged as its own entry) and a placement to `move`, in one transaction. A department with people placed
 in it is made inactive, not deleted (both links are PROTECT; the delete plan says so).
 
 **The team** (`hr.scope.team(user, day)`) is the one place that says who may reach whom: the person themselves, the people
@@ -4634,8 +4659,22 @@ real gap, across a week's border and for a night shift (the source computed 1920
 always block; a rest shorter than the minimum warns or blocks by the setting; more hours than the standard week, more days in a
 row than the maximum and work on a holiday warn. They run on every save: a blocking finding is an error on the form and a
 warning is told after the save and written into the audit row. `hr.services.plan_shifts` sets a shift, planned off or nothing on
-a batch of cells, all or none (the verb each cell needs, the person in the user's team on that day, the rules for each person;
-a person outside the team is a 404 and writes nothing); the page's batch route is `/hr/schedule/plan/` (POST).
+a batch of cells, all or none (the verb each cell needs, the person in the user's team on that day, never one's own days, the
+rules for each person); the page's batch route is `/hr/schedule/plan/` (POST). The service asks the reach of all the cells
+at once (`hr.scope.cells_reached`, from the intervals of the placements the viewer manages, in a fixed number of queries
+whatever the cells; never a span of days), so next week's newcomer is planned from the grid; a cell of a person the
+viewer does not reach at all is a 404 and writes nothing, one of their person on another lead's day is refused with the
+reason, as is one's own cell. One paint plans at most the platform owner's number of days (Platform settings › Shift
+schedule, 500 until they set another: `core.platform.plan_batch_cells`); more is refused with the reason. A cell's dialog saves through `hr.services.plan_day` (the same rules, with the lead's note), which is
+told the cell as the dialog knows it (empty for a new plan, the plan being edited): a plan saved there meanwhile by
+another lead or a batch is not overwritten ("This person already has a plan for this day."); the batch sets whatever is
+in a cell, as it always did. A cell's delete is `hr.services.clear_day`: it clears the plan the person confirmed, at
+the version they confirmed (every tab's delete confirmation carries the record's version, and a record changed since is
+not deleted: core.crud.DeleteView, core.confirmed), and refuses with the reason when the cell was cleared, replanned or
+changed between the click and the service's lock. The version is asked last, under the lock, after the lead's own days
+and the reach of the day, so a lead's delete of their own plan is a 403 however it is posted. A
+planned day is read on the clock, and with
+the holidays, of the site the person is placed on that day (`hr.read.planned_shifts`), in the save and in the grid.
 
 ### Time & shifts › Leave requests (`/hr/leave/`) and Leave types
 
@@ -4654,19 +4693,23 @@ and **nobody decides their own leave**, by the service and by a trigger whatever
 What a request costs is read, never stored (`hr.leave`): the days whose weekday is a working weekday (a setting, Monday to Friday
 by default) minus the holidays of every site and of the person's site, split by year for a request that crosses New Year (the
 source charged calendar days, HR-07); the balance of a type with a yearly allowance is the allowance less the days of the year
-that pending and approved requests are charged for, and a request over it is refused on the form. `away_on(day, user_ids)` is the
+that pending and approved requests are charged for, and a request over it is refused (`hr.services.file_leave` and
+`change_leave`, the leave form's save, say it on the type's field). A request is filed, and a pending one moved, only to a first day on which the
+person is the user's (the day a request is listed and decided by; one's own always), said on the first day's field. `away_on(day, user_ids)` is the
 interface for the places that may only learn that someone is away, never why.
 
 **One approval step.** Staff hold Read and Create (they file for themselves and cancel their own); a lead holds Edit as well,
 and **Edit also approves, rejects and cancels** (the matrix has no extra column, as for a knowledge entry's review). The decider
-is someone with Edit whose team holds the person and who is not the person; a lead's own request therefore reaches whoever has
-them in their team, or a holder of Everyone. A type that needs no approval is granted the moment it is filed, with no decider. A
+is someone with Edit whose team holds the person on the request's first day and who is not the person (`hr.scope.deciding`, the
+one rule: the buttons, the services and the menu's count ask it); a lead's own request therefore reaches whoever has them in their
+team, or a holder of Everyone. A type that needs no approval is granted the moment it is filed, with no decider. A
 pending request is cancelled by the person or a decider at any time, an approved one by the person only while its first day
 has not started on the site's clock. Once it has begun, a decider (never the person, never on their own leave:
 `hr.services.can_correct`) still puts it right: **ends it earlier** (`shorten_leave`, a new last day from its first day to the
 day before its last: the person came back early; the request's page has the field) or cancels it (it was never taken). Only
-within the correction window after the leave's last day (`hr.services.correction_window_days`, the platform owner's
-correction-window setting, 31 days by default): an older leave is history and is refused with the reason. The
+within the correction window after the leave's last day (`core.platform.correction_window_days`, the platform owner's
+setting, 31 days until they set another; HR kept a fixed 31 of its own until the architecture audit of 26.11.2026, H-1): an
+older leave is history and is refused with the reason, which names the setting's days. The
 decisions are `hr.services.decide_leave`, `cancel_leave` and `shorten_leave` (POST routes, a dialog for the rejection
 note), each in one transaction with its audit row, and every refusal leaves rows and log unchanged.
 
@@ -4674,22 +4717,22 @@ note), each in one transaction with its audit row, and every refusal leaves rows
 joined or after their last day (`hr.services.check_employed`, the one rule for the plan, the punch, the entered presence, the
 attendance form and the leave form; clearing a planned day is always allowed). A lead was already held to it by the
 placements, which end on the last day; a holder of Everyone and the person themselves are held by this rule. Every path
-reads it with the person's row locked (`lock_employed`: the forms check it first for the sentence, the save checks it
-again under the lock in the tab's `after_save`, which rolls the save back onto the form; `enter_presence`, the punch and
-approving a pending leave lock first), so a last day committed meanwhile is never passed. HR's lock order: the person
-first (`hr.services.lock_person`, FOR NO KEY UPDATE, so a record being added for them does not wait on it), then their
-records; an edit of a plan, a punch or a leave request locks the person before the record (`PersonFirst`, through
-`Resource.edited`), as the batch plan, the punch and `leave_company` do. It holds the other way too: a
-first or last day that would leave plans, held leave or punches outside is refused on the person form and by
-`leave_company`, naming what to correct first (`employment_conflicts`; later plans and later pending leave go with the
-last day as before). The database backs it (`hr/0011_employment_bounds`: constraint triggers deferred to the commit on
+reads it with the person's row locked (`lock_employed`), in the service the tab hands its save to, so a last day committed
+meanwhile is never passed and a refusal is put back on the form. HR's lock order: the person first
+(`hr.services.lock_person`, and `lock_people` for a batch in primary-key order: FOR NO KEY UPDATE, so a record being
+added for them does not wait on it), then their records. Every service locks a person through these two and no other
+way (one strength; a test reads the code for it), and an edit through a tab locks the person before crud locks the
+record (`PersonFirst`, through `Resource.edited`). It holds the other way too: a first or last day that would leave plans, held leave or punches outside
+is refused (`change_employee`, `leave_company`), naming what to correct first on its field (`employment_conflicts`; later
+plans and later pending leave go with the last day as before). The database backs it (`hr/0011_employment_bounds`: constraint triggers deferred to the commit on
 plans, leave, punches and the person's dates; a punch is checked on the UTC day with a day of slack, its exact day is
 the site's).
 
 **Privacy.** A lead sees the person and the days; the **type** (sick, annual) only the person, who may decide the request (Edit) and the
 holders of Everyone see: in the list, on the read page and in the search (the scope marks each request `type_shown` and a search for a
 type reads the mark, so a search for "sick" tells nothing). The reason is the person's own words, shown to them and to the holders
-of Everyone only (the list, the read page and the edit form leave it out for anyone else, and a lead cannot overwrite it). The reason
+of Everyone only (`hr.scope.sees_reason`: the list, the read page and the edit form leave it out for anyone else, and a lead
+cannot overwrite it; what anyone but the person types as the reason of a request they file for them is dropped). The reason
 and the decision note are masked in the activity log ("Private text") and in the database viewer, and leave requests appear in the log
 only for holders of Everyone. Approved leave is read over the roster: planning a shift on a day of approved leave is refused, and
 the week shows the cell as on leave. When a person leaves, their later pending requests are cancelled and later plans removed.
@@ -4751,21 +4794,23 @@ left, so nothing is assumed in either direction and no hours are invented:
   and the log row says who closed it, the clock-out, that it was entered by hand and that a reason was given (never its
   words). Then the person clocks in again.
 - **Never ahead of now** (`hr.services.check_times`, the one rule of a stretch's two typed times, on the form and in
-  `enter_presence`): the clock-out after the clock-in, and neither later than the server's now, each refused with its
-  sentence on the field. A clock-out typed days ahead would close the stretch with hours nobody has worked, keep the person
+  `enter_presence` and `correct_presence`): the clock-out after the clock-in, and neither later than the server's now, each
+  refused with its sentence on the field. A clock-out typed days ahead would close the stretch with hours nobody has worked, keep the person
   from clocking in and take them out of the emergency count while the record says they are in.
 - **The limit counts elapsed hours** (`hr.rules.forgotten_before` works in UTC), also on the night the clocks change.
 - **Totals.** Nothing in the code sums worked time yet (state is read, not stored); the rule for whatever does is the same: a
   forgotten stretch has no end and counts for nothing until it is closed.
 
-**The Attendance page** lists the stretches of the viewer's team over the last fortnight or the days asked for, times on the site's clock,
-with **Mark present** (Create: a person of the team, the times, the reason), a correction (Edit, logged with what it was before) and a
-void (Delete). A stretch still open is listed whenever it began (it runs on through the days asked for), so a forgotten
+**The Attendance page** lists the stretches of the viewer's team over the last fortnight or the days asked for, times on the clock
+that governs each (`hr.read.governed`: a stretch belongs to the lead of the placement that governs its clock-in, the
+placement of the company's day, which the services check and whose site gives the clock), with **Mark present** (Create: a person of the team, the times, the reason: `hr.services.enter_presence`), a correction
+(Edit, logged with what it was before: `correct_presence`) and a void (Delete: `void_presence`); each service locks the person
+before the stretch and checks the lead's reach, never their own attendance, the employment and the reason itself. A time is
+typed on the clock that governs it (`hr.read.typed_moment`), so it is shown again as it was typed. A stretch still open is listed whenever it began (it runs on through the days asked for), so a forgotten
 clock-out is always there to close, marked "Clock-out forgotten". **A time typed by hand needs its reason, whoever clocked
 in:** a correction that changes the clock-in or clock-out of a stretch the person clocked themselves makes it an entered
 stretch (the table's own check then holds the reason); an edit that leaves both times alone leaves it the person's own. The
-log keeps what the person's own clock-in keeps, so also who made the stretch (`AttendanceRecordResource.snapshot`,
-`hr.services.PUNCH_FIELDS`). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
+log keeps what the person's own clock-in keeps, so also who made the stretch (`hr.services.PUNCH_FIELDS`). The page's heading is Attendance though it shares its permission with Today (the role matrix places the area under
 HR dashboard, where its Read page first sits).
 
 ### HR dashboard › Organization chart (`/hr/organization/`) and Time & shifts › Team overview (`/hr/overview/`)
@@ -4860,8 +4905,11 @@ production people in Production, with the same permission.
   department with people. It changes nothing; a person decides.
 - **`manage.py seed_hr_demo`** (only with `DEBUG` on, idempotent) makes a small company for a walk-through in a browser: a site on
   Oslo time, two production departments with managers, an office department, nine people placed in them, three shifts, a week of
-  plans, a holiday, leave types, a pending leave request, a punch, and four roles made like any role (Demo lead, Demo staff, Demo
+  plans, a holiday, leave types, a pending leave request, a stretch a lead entered, and four roles made like any role (Demo lead, Demo staff, Demo
   HR admin, Demo auditor) with a sign-in each (`demo_lead_hatchery`, `demo_lead_nursery`, `demo_staff`, `demo_hr`, `demo_auditor`).
+  The people, their placements, plans, leave and attendance are written through `hr.services` as the demonstration's own
+  people (the HR administrator takes people on and plans, the staff member files their leave, a lead marks someone
+  present), so every rule runs and every record is in the activity log.
 - **Browser code** (`frontend/roster.ts`, TypeScript only): on the Shift schedule the arrow keys move between cells, and the paint
   form (hidden without the script) picks a shift, selects cells and posts them to the batch route, which plans all or none; the page's
   Print button is the shared `data-print`. The script has no text of its own.
@@ -4872,7 +4920,9 @@ production people in Production, with the same permission.
   exclusions; the team scope by function and by URL for every actor (404 on every verb outside it, nothing written or logged, every
   route needs a row in the matrix or the suite fails); the boundary (no pay, bank, tax or identity column, form field, template word
   or import, and every free-text column named and masked); derived state at a fixed `now` for sites ahead of and behind UTC and the
-  7 and 9 hour nights; the rules as pure functions; the services' refusals leaving rows and log unchanged; query budgets (the same
+  7 and 9 hour nights; the rules as pure functions; the services' refusals leaving rows and log unchanged; one writer per record
+  and one rule per question, read from the code and held to their SQL forms (`core/tests_data_access.py` rule S,
+  `test_one_path`, `test_governing`, the architecture audit of 26.11.2026 and the review of its branch); query budgets (the same
   number of queries for few and many people) on the Team list, Departments, the week, the overview, the chart, the board and the leave
   list; and the migrations back to nothing and forward again.
 
@@ -5170,11 +5220,15 @@ The rules the platform owner (the customer the platform is given to) sets for th
 
 - **Correction window (days)**, 1 to 3650, 31 until the owner sets another (owner decisions Q3 and Q-F4, F-243): how far
   back a daily record (a stock operation, a feeding, a water sample, a movement of the store, a plan, a treatment, a protocol
-  assignment, an experiment's day 0) may be dated, and how old a record may be voided. Older records stay as they are;
+  assignment, an experiment's day 0) may be dated, how old a record may be voided, and how long after its last day an
+  approved leave may still be shortened or cancelled (HR). Older records stay as they are;
   inside the window every record is logged as before. `core.platform.correction_window_days()` is its one reader; the
   messages name the days it says. The regulatory reports re-read a filed report for changes only inside it.
   (Not this window: the fast's 31-day look-back for the last feeding, longer than the longest handling rule, and the
   31 days one page of feeding records covers.)
+- **Days planned in one go on the shift schedule**, 1 to 5000, 500 until the owner sets another (the review of the HR
+  branch, N-5): how many cells one paint of the week's grid may plan (`core.platform.plan_batch_cells`, asked by
+  `hr.services.plan_shifts`); more is refused with the reason. It bounds what one request may ask of the server.
 - **A second person approves a withdrawal warning acknowledgement** (F-164): `core.platform.second_approval_required(
   'withdrawal')` is asked by the one hook (`farm/handling/check.py` `second_person_must_approve`); an unknown kind is an
   error, never a quiet no. The second person's approval flow is not built yet, so the setting FAILS CLOSED (cross review
@@ -6488,6 +6542,82 @@ Team); the request carries the mount (`mount_of`), `scoped` narrows the rows to 
 A tab can also refuse a verb on a record it reaches (`Resource.allowed`: HR
 refuses editing, voiding and planning one's own attendance and plan).
 
+A delete is refused in one order on every tab (`DeleteView.post`): the scope (a record the person does not reach is a
+404), the record's own rule (`Resource.allowed`, a 403), a service's own refusals (HR: the reach of the day, under its
+lock), and last whether it is the record the confirmation showed. Both looks of the confirmation post the version they
+showed; `core.confirmed.as_confirmed` compares it with the record as read now (`unchanged`, the one comparison of an
+edit, a row list and a delete, below the views, so a service that locks in its own order asks the same): a versioned
+record posted without one confirmed nothing and is refused (400, said), one changed since is not deleted (said, back on
+the confirmation), a record without a version (a hard-deleted one) has nothing to confirm.
+
+Every model form class of the project derives from `core.crud.BoundedModelForm` (`TabbedForm` too;
+`core/tests_forms_bounded.py` holds it; the one form built by Django's `modelform_factory`, a link list's details in
+`core/links.py`, is not, and its only use, an equipment's systems with their role and criticality, has no number field): each number input the form takes from its model says the bounds of the field's MinValueValidator and
+MaxValueValidator (`bounded_inputs`, the same figures as the database's check), so no form sets them by hand. A field
+the form declares itself says its own (`min_value`, `max_value`); a localised decimal typed as text has none. The pH
+window scale's two ends are bounded by a check on the table, not by validators on the fields, and its form says them
+from the same constants (`monitoring.models.PH_SCALE_BOUNDS`).
+
+**One writer.** A tab whose records its area's service writes says so (`Resource.service_writes`) and hands every write to it:
+`create_record(request, form)`, `change_record(request, form, current)` and `delete_record(request, record, seen)` (`seen`:
+the version the confirmation posted, which the service asks last, under its own lock) call the service,
+which checks its own rules, locks in its own order and writes its own audit row; crud keeps the form (fields, parsing, the
+model's own checks), the verb, the scope, the record's lock, the version and the pages. crud saves nothing beside the record
+for such a tab: a tab that sets the flag and has a many-to-many field on its form, a row list, a `change_severity` or an
+`after_save` is refused when it is declared (`Resource.left_to_crud`, `core/tests_service_tab.py`). A refusal at the save
+(by the service, by the database, by a rule under a lock) is put on the form, each message on its field when the form has
+it, and answers 422 on Create and on Edit alike, on every tab; a form that is not valid is the page again (200), and a
+PermissionDenied is a 403.
+
+A model says who writes it: `service_written = True` (`core.models.AuditedModel`; HR's people, placements, plans, leave
+requests and attendance) means its app's `services.py` and nothing else. **Rule S** of `core/tests_data_access.py` reads
+the code for it, project-wide:
+
+- The models every `services.py` writes are found from the code (what it logs, builds and writes through a manager).
+- A declared model's tabs hand every write to the service: each hook is read and must call one of the service's writers
+  (a function `core/tests_service_rights.py` holds as one, never a question) and never save the form; a hook is also run
+  with the service's writers replaced, and must call one (`hr/tests/test_review_two.py`).
+- No other production module builds or writes a declared model. The scan names a model when the module imports it (an
+  alias too), defines it, or reaches it through a module it imports (`models.Posting`, `m.Posting`,
+  `hr.models.Posting`, `posting.Posting`). It counts `Model(...)`; a write through any manager of a named model
+  (`objects`, `all_objects`, `_base_manager`, `_default_manager`, and Django's public `_meta.base_manager` and
+  `_meta.default_manager`), through `QuerySet(Model)`, `QuerySet(model=Model)` or `sealing.unsealed(Model)`; a write
+  through a queryset, a manager or a row read from one of those and held (`rows = Posting.objects.filter(...)`, then
+  `rows.update(...)`; `one = Posting.objects.get(...)`, then `one.save()` or `one._meta.base_manager...`), held by an
+  assignment to a name (plain, annotated `rows: T = ...`, a walrus, a pair of names given a pair of values), by a `for`
+  or a comprehension over it (each row), or by `self.<name> = ...` in any method of its class (read in all of them);
+  and the `save()` of a model form of a declared model held so.
+- No production module writes a model it cannot name, which could be a declared one: a write through a manager,
+  `QuerySet(...)` or `unsealed(...)` whose model is not named as above (`type(row).objects...`,
+  `row.__class__.all_objects...`, `self.model.objects...`, `Model = type(row); Model._base_manager...`,
+  `row._meta.base_manager...` of a row not held as above, `QuerySet(model)`), a model reached through `getattr` or
+  `apps.get_model(...)` and written through a manager (`apps.get_model('hr', 'Posting').objects.update(...)`,
+  `M = apps.get_model(...)`, then `M.objects.update(...)`), a queryset held from such a source, and `save_base(...)`. It
+  is decided by whether the model is named, never by how a name is spelled. The ones that exist are listed each with its count and reason
+  (`LOW_LEVEL_ALLOWED`, a ratchet): the delete plan's own columns and the form key's row (core), a row list's rows
+  (crud), an experiment's design rows (`_park`, `_touch`), the equipment types' migration, the withdrawal guard's
+  what-ifs in a savepoint always rolled back, the demonstration's accounts, and two report rows given by model.
+
+What it does not see: a row or a queryset that comes from anything else and is written: one handed in as a parameter
+(`def f(rows): rows.update(...)`, `row.save()`, `row.delete()`, `row.soft_delete(user)`), what a helper returns
+(`placements(person).update(...)`; `row = first(...)`, then `row.save()`), a pair of names given one value
+(`rows, n = helper()`), a starred target (`rows, *rest = ...`), a `with ... as`, a queryset held at module level or in a
+class body and written in a function or a method, one held as `cls.<name>`, a walrus written at once
+(`(rows := Posting.objects...).update(...)`); a manager reached through `_meta.managers[...]` or
+`_meta.managers_map[...]`; a related manager (`person.postings.create()`, `person.assignments.filter(...)
+.update(...)`); a model built through `getattr` or `apps.get_model(...)` (`M = apps.get_model(...)`, then `M(...)`); and
+raw SQL (rule W reads the code for that). A write is any of Django's write calls, the async ones (`aupdate`, `asave`,
+`acreate`, ...) too. `core/tests_data_access.py` holds one case of each spelling named here:
+counted, flagged, or not seen. Those are the code review's until the one write gate in core (the withdrawal gate's hook layer,
+`farm/withdrawal_gate.py`, made the gate of every rule) holds the model itself at run time: the follow-up listed in the
+plan.
+
+What is not yet one writer is a ratchet that may only shrink: the six tabs crud still saves beside a service that writes
+their model too (Regulatory reports, Tasks, Experiments, Card templates, Handling plan items, Knowledge entries:
+`SECOND_WRITER_TABS`, each with what the two writers are) and the rows other modules build for their service to write (`BUILT_ELSEWHERE`); they are closed by the
+follow-up listed in the plan. The admin offers no Restore of a declared model (`core.admin.register_audited`), and the
+delete plan's restore refuses one a parent's restore would bring along.
+
 ### The delete plan
 
 Records are soft-deleted, so the database's own `on_delete` never runs. `core/softdelete.py` reads
@@ -6528,7 +6658,11 @@ writes only their deletion's columns, counting the version up in the database (`
 `detach`): an edit saved meanwhile is kept and its editor's outdated version refused (F-065, F-079, F-190). The delete
 locks the records it takes along and takes each only as it still is: one moved to another parent meanwhile stays
 there with what hangs under it, one deleted on its own meanwhile keeps its own moment (cross review F2). Deletes
-made before this stamped each record with its own moment: restoring one of those brings back the record alone.
+made before this stamped each record with its own moment: restoring one of those brings back the record alone. A
+record its service alone writes (`service_written`: HR's people, placements, plans, leave requests and attendance) has no
+Restore action: brought back by the admin it would skip the service's rules, so a voided or removed one is entered again
+on its page (the data map says so for each), and `core.softdelete.restore` refuses one a parent's restore would bring
+along.
 
 ### Shared form parts
 
@@ -6652,7 +6786,11 @@ shows the current tab, the charts' text size):
 A deleted record stays in the database. In `/admin/` (platform admin) every farm record type lists its
 records including deleted ones, and the "Restore" action brings them back: refused when a record it
 points at is deleted too (bring that back first) or its code was taken meanwhile, and logged. What its
-delete took along comes back with it (see the delete plan: restoring). The admin edits nothing, and users and roles
+delete took along comes back with it (see the delete plan: restoring). A record its service alone writes
+(`service_written`: HR's people, placements, plans, leave requests and attendance) is listed with no Restore action
+(`core.admin.register_audited`): brought back there it would skip the service's rules, so one deleted by mistake is
+entered again on its page, and its delete confirmation says so instead of promising a restore
+(`core.formpayload.delete_outcome`, both looks). The admin edits nothing, and users and roles
 are not in it: they are changed on their own screens, where every change is logged.
 
 ### Adding a tab
@@ -7113,7 +7251,9 @@ runs the server:
 | `tsconfig.test.json`, `scripts/mark-esm.mjs` | The TypeScript unit tests' build (`npm test`) |
 | `scripts/test.sh`, `scripts/testrunner/` | The whole suite in Docker, in parallel, on a database server of its own (Tests); `in-container.sh` the checks and the run inside the container, deprecations as errors; `prune.sh` removes the test runner's old image tags |
 | `config/test_runner.py`, `config/tests.py` | The test runner: the parallel suite, fast password hashing, warnings as errors (Tests) |
-| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on; `reads`, the rows a block read of each table by PostgreSQL's counters and what each statement handed back, so a test of what is cheap counts rows instead of timing the machine (Tests) |
+| `core/testing.py` | The tests' clock: `FrozenClock` holds `timezone.now()` at a class's `NOW`, so a test dated on fixed days does not read the day it runs on; `reads`, the rows a block read of each table by PostgreSQL's counters and what each statement handed back, so a test of what is cheap counts rows instead of timing the machine (Tests); `delete_confirmed`, a tab's delete posted as its confirmation does |
+| `core/modules.py` | `is_test_module`: the one predicate that tells test code from production, for every reader of the code (rule S, the data map, the layering, clock, date-input, escaping and lean-endpoint guards); production may import it, never `core/testing.py` |
+| `core/confirmed.py` | Whether a record is still the one the person saw (`unchanged`), its sentences (`changed_meanwhile`) and a delete's last step (`as_confirmed`), for crud and the services alike |
 | `.github/workflows/ci.yml`, `.github/dependabot.yml`, `sensors-ingest/rust-toolchain.toml`, `scripts/testrunner/image.sh` | CI, dependency updates and the ingest's pinned toolchain (CI and dependency updates) |
 | `deploy/`, `docs/ops/`, `.github/workflows/go-live-stack.yml` | The go-live package: the production stack (`compose.yml`, the proxy, the broker's TLS listener, the database image with its roles, the backup agent, `web/` the server's start, jobs and release step), the scripts (secrets, certificates, role checks, password rotation), the access templates (Cloudflare, WireGuard), the stack's proof (`ci/`); the runbooks and the go-live checklist (Starting a production server) |
 

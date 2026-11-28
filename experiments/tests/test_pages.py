@@ -13,6 +13,7 @@ from farm.tests.helpers import make_species, role, rows_data
 
 from ..models import Experiment, ExperimentGroup, Factor, Level, Member, Replicate, ReplicateUnit
 from . import ExperimentTestCase
+from core.testing import delete_confirmed
 
 RESEARCHER = ('view_experiment', 'add_experiment', 'change_experiment', 'delete_experiment', 'view_auditlog')
 STUDENT = ('view_experiment', 'add_experiment', 'change_experiment')
@@ -311,7 +312,7 @@ class DeleteTests(PageTestCase):
         page = self.client.get(reverse('experiments:experiment_delete', args=[trial.pk]))
         for text in ('Experiment factors', 'Experiment groups', 'Replicates', 'Experiment placements', 'Factor levels'):
             self.assertContains(page, text)
-        self.client.post(reverse('experiments:experiment_delete', args=[trial.pk]))
+        delete_confirmed(self.client, reverse('experiments:experiment_delete', args=[trial.pk]))
         self.assertTrue(Experiment.all_objects.get(pk=trial.pk).is_deleted)
         self.assertEqual((Factor.objects.count(), Level.objects.count(), ExperimentGroup.objects.count(),
                           Replicate.objects.count(), ReplicateUnit.objects.count()), (0, 0, 0, 0, 0))
@@ -327,7 +328,7 @@ class DeleteTests(PageTestCase):
         trial = self.started(Experiment.objects.get())
         page = self.client.get(reverse('experiments:experiment_delete', args=[trial.pk]))
         self.assertContains(page, 'It has started: it is kept as a record. Close it instead.')
-        self.client.post(reverse('experiments:experiment_delete', args=[trial.pk]))
+        delete_confirmed(self.client, reverse('experiments:experiment_delete', args=[trial.pk]))
         self.assertFalse(Experiment.all_objects.get(pk=trial.pk).is_deleted)
         self.assertFalse(AuditLog.objects.filter(action='delete').exists())
 
@@ -363,7 +364,7 @@ class DeleteTests(PageTestCase):
         self.assertEqual(dict(plan.kept), {Experiment: 1})
         self.assertContains(self.client.get(reverse('experiments:experiment_delete', args=[source.pk])),
                             'They stay as they are.')
-        self.client.post(reverse('experiments:experiment_delete', args=[source.pk]))
+        delete_confirmed(self.client, reverse('experiments:experiment_delete', args=[source.pk]))
         copy.refresh_from_db()
         self.assertEqual(copy.copied_from_id, source.pk)
 
@@ -417,12 +418,13 @@ class PermissionTests(PageTestCase):
             'create post': ('post', reverse('experiments:experiment_create')),
             'edit post': ('post', reverse('experiments:experiment_edit', args=[self.trial.pk])),
             'team post': ('post', reverse('experiments:experiment_team', args=[self.trial.pk])),
-            'delete post': ('post', reverse('experiments:experiment_delete', args=[self.trial.pk])),
+            'delete post': ('confirmed', reverse('experiments:experiment_delete', args=[self.trial.pk])),
         }
 
     def statuses(self, user):
         self.client.force_login(user) if user else self.client.logout()
-        return {name: getattr(self.client, method)(url).status_code for name, (method, url) in self.urls.items()}
+        return {name: (delete_confirmed(self.client, url) if method == 'confirmed' else
+                       getattr(self.client, method)(url)).status_code for name, (method, url) in self.urls.items()}
 
     def test_what_each_role_may_do_on_each_page(self):
         read = {'list': 200, 'detail': 200}

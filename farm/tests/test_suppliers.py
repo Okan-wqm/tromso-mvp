@@ -15,6 +15,7 @@ from ..models import Equipment, EquipmentSystem, EquipmentType, ProductionDepart
 from ..resources import SupplierResource
 from .helpers import contacts_data, role
 from .test_equipment import equipment_data, link
+from core.testing import delete_confirmed
 
 SUPPLIER_MANAGER = ('view_supplier', 'add_supplier', 'change_supplier', 'delete_supplier', 'view_site',
                     'delete_site', 'view_auditlog')
@@ -104,7 +105,7 @@ class SupplierRoundTripTests(SupplierTestCase):
         self.assertEqual(list(supplier.sites.all()), [self.tromso])
 
         # Delete: hidden, not erased
-        self.client.post(reverse('farm:supplier_delete', args=[supplier.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[supplier.pk]))
         self.assertFalse(Supplier.objects.exists())
         self.assertEqual(stored(Supplier.all_objects.get(), 'is_deleted', 'deleted_by'), (True, self.user))
         self.assertEqual(list(self.client.get(reverse('farm:supplier_list')).context['objects']), [])
@@ -371,7 +372,7 @@ class SupplierSitesTests(SupplierTestCase):
         page = self.client.get(reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertContains(page, 'Suppliers linked to it')
         self.assertContains(page, 'Fjord Feed AS (FJF)')
-        self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertEqual(list(supplier.sites.all()), [self.tromso])
         # Saving the supplier keeps the link to the deleted site for its restore.
         self.edit(supplier, sites=[str(self.tromso.pk)], notes='edited')
@@ -466,7 +467,7 @@ class EquipmentSupplierTests(TestCase):
         self.assertContains(page, 'Pump (P1)')
         (group,) = plan_delete(self.vendor).detached_groups()
         self.assertEqual((group['label'], group['link'], group['records']), ('Equipment', 'supplier', [pump]))
-        self.client.post(reverse('farm:supplier_delete', args=[self.vendor.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[self.vendor.pk]))
         pump.refresh_from_db()
         self.assertEqual((pump.supplier, pump.version, pump.updated_by, pump.is_deleted), (None, 2, self.user, False))
         self.assertEqual(sorted(AuditLog.objects.values_list('action', 'entity_type', 'entity_label', 'changes')), [
@@ -494,7 +495,7 @@ class SupplierDeleteAndRestoreTests(SupplierTestCase):
         self.assertEqual((plan.cascade, plan.detach, plan.unlinked), ([], [], []))
         page = self.client.get(reverse('farm:supplier_delete', args=[supplier.pk]))
         self.assertContains(page, 'Delete “Fjord Feed AS (FJF)”?')
-        self.client.post(reverse('farm:supplier_delete', args=[supplier.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[supplier.pk]))
         self.assertEqual(list(AuditLog.objects.values_list('action', 'entity_type', 'entity_label')),
                          [('delete', 'supplier', 'Fjord Feed AS (FJF)')])
         self.assertEqual(Supplier.all_objects.get().contacts.count(), 1)
@@ -542,7 +543,7 @@ class SupplierAuditTests(SupplierTestCase):
         supplier = Supplier.objects.get()
         self.edit(supplier, supplies=['feed', 'live_fish'], rating='3', status='blocked',
                   sites=[str(self.bergen.pk), str(self.tromso.pk)])
-        self.client.post(reverse('farm:supplier_delete', args=[supplier.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[supplier.pk]))
         created, edited, deleted = AuditLog.objects.order_by('created_at')
         self.assertEqual((created.action, created.entity_type, created.entity_label),
                          ('create', 'supplier', 'Fjord Feed AS (FJF)'))
@@ -603,7 +604,7 @@ class SupplierPermissionTests(SupplierTestCase):
         self.assertEqual(self.create(code='NEW').status_code, 403)
         self.edit(supplier, name='Changed')
         self.assertEqual(stored(supplier, 'name'), ('Changed',))
-        self.client.post(reverse('farm:supplier_delete', args=[supplier.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[supplier.pk]))
         self.assertTrue(Supplier.all_objects.get(pk=supplier.pk).is_deleted)
 
     def test_no_view_permission_no_tab_and_no_menu_entry(self):

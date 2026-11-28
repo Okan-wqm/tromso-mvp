@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from django.conf import settings
+from core.testing import is_test_module
 from django.test import SimpleTestCase
 
 from ..water import chemistry, native
@@ -196,8 +197,8 @@ class RetirementTests(SimpleTestCase):
         # installed packages or the core's own module.
         skip = {'tests', 'migrations', 'node_modules', 'target', '.venv', 'staticfiles', '__pycache__', '.git'}
         callers = [path for pattern in ('*.py', '*.html', '*.ts', '*.js') for path in ROOT.rglob(pattern)
-                   if not skip & set(path.relative_to(ROOT).parts) and path.name != 'test_one_formula.py'
-                   and not path.name.startswith('test_') and path != ROOT / 'farm' / 'water' / 'native.py']
+                   if not skip & set(path.relative_to(ROOT).parts) and not is_test_module(path.relative_to(ROOT))
+                   and path != ROOT / 'farm' / 'water' / 'native.py']
         text = {path: path.read_text(encoding='utf-8', errors='replace') for path in callers}
         for name in DOORS:
             tree = ast.parse((ROOT / name).read_text(encoding='utf-8'))

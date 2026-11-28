@@ -12,6 +12,7 @@ from .. import roles
 from ..models import Employee
 from .helpers_people import PeopleTestCase
 from .helpers import user
+from core.testing import delete_confirmed
 
 
 def run():
@@ -139,8 +140,8 @@ class WalkTests(PeopleTestCase):
         self.assertEqual(record.clock_out, datetime(2026, 3, 2, 14, tzinfo=utc.utc))
         self.assertEqual(list(AuditLog.objects.filter(entity_id=str(record.pk)).order_by('created_at')
                               .values_list('action', 'user__username')), [('create', 'manager'), ('update', 'manager')])
-        self.assertEqual(self.client.post(reverse('hr:production_attendancerecord_delete', args=[record.pk])).status_code,
-                         403)                                                     # voiding is not in the preset
+        voiding = reverse('hr:production_attendancerecord_delete', args=[record.pk])
+        self.assertEqual(delete_confirmed(self.client, voiding).status_code, 403)         # voiding is not in the preset
         self.assertFalse(AttendanceRecord.all_objects.get().is_deleted)
 
     def test_the_production_worker_has_their_own_pages_and_nothing_else(self):

@@ -4,7 +4,7 @@ from django.db.models import Prefetch
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from core.crud import RowFormSet, TabbedForm, tab_fields
+from core.crud import BoundedModelForm, RowFormSet, TabbedForm, tab_fields
 from farm.forms.water import SiteClockField
 from farm.models import EscapeRecord, HealthEvent, SlaughterFacility, Site, StockMovement, Tank
 from farm.models.harvest import FacilityStatus
@@ -203,13 +203,13 @@ class SubmitForm(forms.Form):
         self.fields['acknowledged'].choices = [(code, code) for code in OpenQuestion.objects.values_list('code', flat=True)]
 
 
-class ResistanceSuspicionForm(forms.ModelForm):
+class ResistanceSuspicionForm(BoundedModelForm):
     class Meta:
         model = ResistanceSuspicion
         fields = ['substance', 'other_substance', 'cause', 'other_cause']
 
 
-class SensitivityTestForm(forms.ModelForm):
+class SensitivityTestForm(BoundedModelForm):
     class Meta:
         model = SensitivityTest
         fields = ['tested_on', 'laboratory', 'substance', 'other_substance', 'result']
@@ -222,7 +222,7 @@ class SensitivityTestForm(forms.ModelForm):
         return day
 
 
-class TreatmentAnswerForm(forms.ModelForm):
+class TreatmentAnswerForm(BoundedModelForm):
     class Meta:
         model = TreatmentAnswer
         fields = ['treatment', 'done_before_count', 'combination']
@@ -248,7 +248,7 @@ class TreatmentAnswerFormSet(RowFormSet):
                                         'two.') % {'number': number})
 
 
-class UnitAnswerForm(forms.ModelForm):
+class UnitAnswerForm(BoundedModelForm):
     class Meta:
         model = UnitAnswer
         fields = ['unit', 'reduced_capacity']

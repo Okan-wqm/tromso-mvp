@@ -323,6 +323,13 @@ def restore(record, user):
         # restore meanwhile took it back).
         records = [row for row in (rows.get((type(item), item.pk)) for item in collected)
                    if row is not None and row.is_deleted and row.deleted_at == read.deleted_at]
+        for item in records:
+            if item.service_written:
+                # Its service is its one writer (AuditedModel.service_written): brought back here it would skip the
+                # service's rules (who may, the person's employment, the plan's rules).
+                raise ValidationError(_('%(kind)s “%(record)s” is written on its own page only, by the rules of that '
+                                        'page: it is not restored here; enter it again there.'),
+                                      params={'kind': capfirst(item._meta.verbose_name), 'record': item})
         coming = {(type(item), item.pk) for item in records}
         for item in records:
             for link in item._meta.concrete_fields:

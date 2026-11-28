@@ -17,11 +17,10 @@ from core import navigation, query, stack
 from core.crud import done, mount_of, mounted_name, render_page
 from core.dates import read_day
 from core.ui import is_next
-from farm.models.site import zone_of
 from farm.stock.dates import site_today
 
 from . import read, rules, scope, services, units
-from .models import Shift
+from .models import Employee, Shift
 
 OFF, CLEAR = 'off', 'clear'
 
@@ -59,9 +58,11 @@ def parse_cells(values):
 @require_POST
 def plan(request):
     """Sets one shift, planned off or nothing on every cell sent (`cells`, repeated; `shift`: a shift's id, `off` or
-    `clear`), all or none. A person the user does not reach (a forged id) is a 404 and writes nothing; a blocking finding
-    refuses the batch with its first conflicts; warnings are told after the save. Someone with no right to plan is
-    refused before the request is read."""
+    `clear`), all or none. The service asks the reach of the cells (once, for all of them: hr.scope.cells_reached); a
+    cell of a person the user does not reach at all (a forged id, a day before a newcomer is theirs) is a 404 and
+    writes nothing. A blocking finding, one's own cell or more cells than the platform allows in one go refuses the
+    batch with the reason; warnings are told after the save. Someone with no right to plan is refused before the
+    request is read."""
     if not services.can_plan(request.user):
         raise PermissionDenied
     cells = parse_cells(request.POST.getlist('cells'))
@@ -74,15 +75,17 @@ def plan(request):
         shift = services.CLEAR
     else:
         try:
-            shift = Shift.objects.get(pk=choice, status='active')
+            shift = Shift.objects.get(pk=choice, status=Shift.Status.ACTIVE)
         except (Shift.DoesNotExist, ValueError, ValidationError):
             return HttpResponseBadRequest()
-    reachable = {employee.pk: employee for employee in scope.team(request.user).filter(pk__in=[pk for pk, _day in cells])}
+    reachable = {employee.pk: employee for employee in Employee.objects.filter(pk__in=[pk for pk, _day in cells])}
     if any(pk not in reachable for pk, _day in cells):
         raise Http404
     target = _return(request, _here(request, 'hr:shiftassignment_list'))
     try:
         warnings = services.plan_shifts(request.user, [(reachable[pk], day) for pk, day in cells], shift)
+    except services.NotReached:
+        raise Http404 from None
     except PermissionDenied:
         raise
     except ValidationError as error:
@@ -173,7 +176,7 @@ def _today_context(request):
     buttons (services.forgotten_refusal); a forgotten row carries the address of its stretch for who may correct it."""
     own = services.own_employee(request.user)
     open_punch = services.open_stretch(own) if own else None
-    open_zone = zone_of(read.site_on(own, site_today(None))) if open_punch else None
+    open_zone = read.governing(own, open_punch.clock_in).zone if open_punch else None
     refusal = services.forgotten_refusal(open_punch)
     board = read.board(request.user, realm=scope.realm_for(request))
     if request.user.has_perm('hr.change_attendancerecord'):

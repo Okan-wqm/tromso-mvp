@@ -1104,6 +1104,14 @@ msgid "%(kind)s form sections"
 msgstr "%(kind)s formu bölümleri"
 
 #, python-format
+msgid ""
+"%(kind)s “%(record)s” is written on its own page only, by the rules of that page: it is not "
+"restored here; enter it again there."
+msgstr ""
+"%(kind)s “%(record)s” yalnızca kendi sayfasında, o sayfanın kurallarıyla yazılır: burada geri "
+"yüklenmez; orada yeniden girin."
+
+#, python-format
 msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
 msgstr "%(label)s %(value)s, %(status)s; sınırlar: %(limits)s"
 
@@ -4388,6 +4396,10 @@ msgstr ""
 "En çok %(minutes)s dakika. Ertelendiği sürece bu alarm kimseye bildirilmez ve üst kademeye "
 "iletilmez; yine açılır, saklanır ve kapanır."
 
+#, python-format
+msgid "At most %(most)s days can be planned at once: select fewer and repeat."
+msgstr "Bir seferde en fazla %(most)s gün planlanabilir: daha azını seçip tekrarlayın."
+
 msgid "At most 720 hours (30 days)."
 msgstr "En fazla 720 saat (30 gün)."
 
@@ -6177,6 +6189,9 @@ msgid ""
 "Days of cover: what is on hand at the site divided by the kilos fed a day there over the last 7 "
 "days."
 msgstr "Yeterlilik: sahadaki eldeki stok, son 7 günde orada günde verilen kiloya bölünür."
+
+msgid "Days planned in one go on the shift schedule"
+msgstr "Vardiya planında bir seferde planlanan gün sayısı"
 
 msgid "Days that are not working days, for every site or for one."
 msgstr "Çalışma günü olmayan günler, tüm sahalar ya da bir saha için."
@@ -8747,12 +8762,24 @@ msgstr ""
 
 msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
-"the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
-"stay as they are. 1 to 3650; 31 until you set another."
+"the store, a plan, a treatment) may be dated, how old a record may be voided, and how long after "
+"its last day an approved leave may still be shortened or cancelled. Older records stay as they "
+"are. 1 to 3650; 31 until you set another."
 msgstr ""
 "Günlük bir kaydın (bir stok işlemi, bir yemleme, bir su numunesi, bir depo hareketi, bir plan, "
-"bir tedavi) kaç gün geriye tarihlenebileceği ve bir kaydın ne kadar eskiyken iptal edilebileceği."
-" Daha eski kayıtlar olduğu gibi kalır. 1 ile 3650 arası; siz başka bir değer verene kadar 31."
+"bir tedavi) kaç gün geriye tarihlenebileceği, bir kaydın ne kadar eskiyken iptal edilebileceği ve"
+" onaylanmış bir iznin son gününden sonra ne kadar süre daha kısaltılabileceği ya da iptal "
+"edilebileceği. Daha eski kayıtlar olduğu gibi kalır. 1 ile 3650 arası; siz başka bir değer verene"
+" kadar 31."
+
+msgid ""
+"How many days of the shift schedule may be planned in one go (a paint over the week’s grid: "
+"people times days). More than this is refused, and the person paints fewer and repeats. 1 to "
+"5000; 500 until you set another."
+msgstr ""
+"Vardiya planında bir seferde kaç günün planlanabileceği (haftanın tablosunda bir boyama: kişi "
+"sayısı çarpı gün). Bundan fazlası reddedilir; kişi daha azını boyayıp tekrarlar. 1 ile 5000 "
+"arası; siz başka bir değer verene kadar 500."
 
 msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
 msgstr ""
@@ -9106,6 +9133,15 @@ msgid "It carried %(count)d harvest: keep “%(category)s” ticked."
 msgid_plural "It carried %(count)d harvests: keep “%(category)s” ticked."
 msgstr[0] "%(count)d hasadı taşıdı: “%(category)s” işaretli kalsın."
 msgstr[1] "%(count)d hasadı taşıdı: “%(category)s” işaretli kalsın."
+
+msgid ""
+"It disappears from every list but is not erased: the record stays in the database and the "
+"activity log keeps its history. It is not restored from the admin: one deleted by mistake is "
+"entered again on its page."
+msgstr ""
+"Tüm listelerden kalkar ama silinmez: kayıt veritabanında kalır ve etkinlik günlüğü geçmişini "
+"saklar. Yönetim panelinden geri yüklenmez: yanlışlıkla silinen bir kayıt kendi sayfasında yeniden"
+" girilir."
 
 msgid ""
 "It disappears from every list but is not erased: the record stays in the database, the activity "
@@ -17625,6 +17661,11 @@ msgstr ""
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Bu kayıt (%(name)s) henüz silinemez."
 
+#. Translators: %(name)s is the kind of record in lower case (e.g. site).
+#, python-format
+msgid "This %(name)s was changed while you were looking at it: check it and delete it again."
+msgstr "Bu %(name)s siz bakarken değiştirildi: kontrol edip yeniden silin."
+
 msgid "This account already belongs to another employee."
 msgstr "Bu hesap zaten başka bir çalışana ait."
 
@@ -17656,6 +17697,10 @@ msgstr "Bu parti iptal edildi."
 
 msgid "This day is already a holiday for this site."
 msgstr "Bu gün bu saha için zaten tatil."
+
+#, python-format
+msgid "This delete was not confirmed: open the delete of this %(name)s again and confirm it there."
+msgstr "Bu silme onaylanmadı: bu %(name)s silme sayfasını yeniden açıp orada onaylayın."
 
 msgid "This department already has a department with this name."
 msgstr "Bu departmanın altında aynı adlı bir departman zaten var."
@@ -17721,6 +17766,9 @@ msgstr "Bu yerleşim kaydedilemeyecek kadar büyük."
 #, python-format
 msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
 msgstr "Bu izin %(day)s tarihinde, %(days)s günden daha önce bitti: artık düzeltilemez."
+
+msgid "This leave type is no longer offered."
+msgstr "Bu izin türü artık sunulmuyor."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."

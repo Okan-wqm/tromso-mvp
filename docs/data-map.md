@@ -128,7 +128,7 @@ The alarm went on to `level` because nobody had acknowledged it in the platform 
 - **read**: alarms.views.alarm_list (`/alarms/`); alarms.views.alarm_detail (`/alarms/<int:pk>/`)
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_escalations
 - **constraints**: uq_alarm_escalations_level (unique: alarm, level); chk_alarm_escalations_level (check)
-- **tests that mention it**: `experiments/tests/test_review.py`, `alarms/tests/test_alarms.py`, `alarms/tests/test_defects.py` and 1 more
+- **tests that mention it**: `core/tests_data_access.py`, `experiments/tests/test_review.py`, `alarms/tests/test_alarms.py` and 2 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -318,7 +318,7 @@ The one mutable row of an alarm subject (a unit's parameter at a level: `water:u
 - **delete**: none, by design: a subject's row is kept: its timers survive a restart
 - **read**: none, by design: the loop's own memory; the alarms it opened are on the Alarms page
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Alarms › alarm_subject_state
-- **tests that mention it**: `alarms/tests/test_cross_review.py`, `alarms/tests/test_defects.py`, `alarms/tests/test_who_ends_a_level.py`
+- **tests that mention it**: `core/tests_data_access.py`, `alarms/tests/test_cross_review.py`, `alarms/tests/test_defects.py` and 1 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -435,7 +435,7 @@ Who did what to which record, with old and new values.
 - **how it works**: A record's own rows are also shown on the History tab of its edit page.
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Administration › audit_log (never shown: changes)
 - **constraints**: chk_audit_log_severity (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 128 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/tests.py` and 131 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -530,8 +530,8 @@ The rules the platform owner (the customer the platform is given to) sets for th
 - **how it works**: The platform owner's rules, read by core.platform only.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Administration › platform_settings
 - **forms**: `PlatformSettingsForm`
-- **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check); chk_platform_settings_sensor_day_hours (check); chk_platform_settings_sensor_hold (check); chk_platform_settings_cap_days (check); chk_platform_settings_probe_tolerance (check); chk_platform_settings_kept (check)
-- **tests that mention it**: `core/tests_kept_rows.py`, `core/tests_platform.py`, `core/tests_rev.py` and 12 more
+- **constraints**: uq_platform_settings_singleton (unique: singleton); chk_platform_settings_singleton (check); chk_platform_settings_window (check); chk_platform_settings_clock_tolerance (check); chk_platform_settings_unknown_withdrawal (check); chk_platform_settings_sensor_day_hours (check); chk_platform_settings_sensor_hold (check); chk_platform_settings_cap_days (check); chk_platform_settings_probe_tolerance (check); chk_platform_settings_plan_batch (check); chk_platform_settings_kept (check)
+- **tests that mention it**: `core/testing.py`, `core/tests_kept_rows.py`, `core/tests_platform.py` and 15 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -553,6 +553,7 @@ The rules the platform owner (the customer the platform is given to) sets for th
 | sensor_hold_seconds | integer |  |  | PlatformSettingsForm › Degree-days |
 | assumption_cap_days | smallint |  |  | PlatformSettingsForm › Degree-days |
 | probe_sample_tolerance_c | numeric(3, 1) |  |  | PlatformSettingsForm › Degree-days |
+| plan_batch_cells | smallint |  |  | PlatformSettingsForm › Shift schedule |
 
 <a id="coreprofile"></a>
 ### core.Profile (`profiles`)
@@ -1646,7 +1647,7 @@ A production unit within a site: a hatchery hall, a nursery, a grow-out unit.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › production_departments
 - **forms**: `ProductionDepartmentForm`
 - **constraints**: uq_production_departments_code_live (unique: code); uq_production_departments_site_name_live (unique: site, name); chk_production_departments_capacity (check); chk_production_departments_live_on_a_site (check)
-- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 72 more
+- **tests that mention it**: `core/test_database.py`, `core/test_languages.py`, `core/test_world.py` and 76 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -1769,7 +1770,7 @@ A physical facility (locality).
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Facility › sites
 - **forms**: `SiteForm`
 - **constraints**: uq_sites_code_live (unique: code); uq_sites_name_live (unique: name); uq_sites_lokalitetsnummer_live (unique: lokalitetsnummer); chk_sites_lokalitetsnummer_range (check); chk_sites_organisation_number (check); chk_sites_production_form (check); chk_sites_latitude_range (check); chk_sites_longitude_range (check); chk_sites_altitude_range (check); chk_sites_coordinates_paired (check); chk_sites_sea_cage_location (check); chk_sites_timezone_given (check); chk_sites_lice_area (check)
-- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 96 more
+- **tests that mention it**: `core/test_catalogs.py`, `core/test_codes.py`, `core/test_database.py` and 99 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2445,11 +2446,11 @@ One stretch of a person’s presence: from a clock-in to a clock-out, by the per
 - **edit**: attendance records tab (`/hr/time/attendance/<uuid:pk>/`); hr.views.punch (`/production/team/today/clock-<str:direction>/`, `/hr/today/clock-<str:direction>/`)
 - **delete**: attendance records tab (`/hr/time/attendance/<uuid:pk>/delete/`)
 - **read**: attendance records tab (`/hr/time/attendance/`); hr.views.today (`/production/team/`, `/hr/`)
-- **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › attendance_records (never shown: note)
+- **how it works**: A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page. The Attendance page's entries, corrections and voids are hr.services.enter_presence, correct_presence and void_presence.
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › attendance_records (never shown: note)
 - **forms**: `AttendanceRecordForm`
 - **constraints**: chk_attendance_records_order (check); chk_attendance_records_via (check); chk_attendance_records_note (check); excl_attendance_employee_span (exclusion: employee, clock_in, clock_out)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 11 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 16 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2477,11 +2478,11 @@ The people of the company for HR: number, name (or the account that names them),
 - **edit**: employees tab (`/hr/team/<uuid:pk>/`)
 - **delete**: none, by design: a person leaves with a last day (left_on); the record and its history stay readable
 - **read**: employees tab (`/hr/team/`, `/hr/team/<uuid:pk>/view/`)
-- **how it works**: Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › employees
+- **how it works**: Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move. The form saves through hr.services.add_employee and change_employee; a last day is hr.services.leave_company.
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › employees
 - **forms**: `EmployeeForm`
 - **constraints**: uq_employees_number_live (unique: employee_number); uq_employees_user_live (unique: user); chk_employees_identity (check); chk_employees_period (check); chk_employees_type (check); chk_employees_number (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 24 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 29 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2514,7 +2515,7 @@ Days that are not working days, for every site or for one.
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › holidays
 - **forms**: `HolidayForm`
 - **constraints**: uq_holidays_day_site_live (unique: day, site)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_boundary.py` and 3 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_boundary.py` and 4 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2540,11 +2541,11 @@ A person’s request to be away from a first to a last day, and how it was decid
 - **edit**: leave requests tab (`/hr/leave/<uuid:pk>/`); hr.views.approve (`/hr/leave/<uuid:pk>/approve/`, `/production/team/leave/<uuid:pk>/approve/`); hr.views.reject (`/hr/leave/<uuid:pk>/reject/`, `/production/team/leave/<uuid:pk>/reject/`); hr.views.cancel (`/hr/leave/<uuid:pk>/cancel/`, `/production/team/leave/<uuid:pk>/cancel/`)
 - **delete**: none, by design: a wrong request is cancelled, not deleted
 - **read**: leave requests tab (`/hr/leave/`, `/hr/leave/<uuid:pk>/view/`)
-- **how it works**: One approval step: Edit also approves, rejects and cancels; nobody decides their own request.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_requests (never shown: decision_note, reason)
+- **how it works**: One approval step: Edit also approves, rejects and cancels; nobody decides their own request. Filed and changed through hr.services.file_leave and change_leave.
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › leave_requests (never shown: decision_note, reason)
 - **forms**: `LeaveRequestForm`
 - **constraints**: chk_leave_requests_days (check); chk_leave_requests_status (check); chk_leave_requests_decided (check); chk_leave_requests_pending_undecided (check); excl_leave_requests_employee_days (exclusion: employee, first_day, last_day)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_after_create.py` and 17 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 19 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2579,7 +2580,7 @@ The kinds of leave the company grants (annual, sick, parental), with the days a 
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › leave_types
 - **forms**: `LeaveTypeForm`
 - **constraints**: uq_leave_types_code_live (unique: code); chk_leave_types_code (check); chk_leave_types_days (check); chk_leave_types_status (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 16 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 18 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2610,7 +2611,7 @@ The company’s office departments (finance, administration), nested under one a
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › office_departments
 - **forms**: `OfficeDepartmentForm`
 - **constraints**: uq_office_departments_code_live (unique: code); uq_office_departments_parent_name_live (unique: parent, name); chk_office_departments_parent_not_self (check); chk_office_departments_code (check); chk_office_departments_status (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 7 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/helpers_people.py` and 8 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2641,9 +2642,9 @@ Where each person works from a day: one department, production or office, and th
 - **delete**: none, by design: a person leaves with a last day (left_on); the record and its history stay readable
 - **read**: hr.views.organisation_chart (`/hr/organization/`, `/production/team/organization/`)
 - **how it works**: One placement covers any day (exclusion constraint); a move closes the open one the day before.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › postings
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › postings
 - **constraints**: chk_postings_one_department (check); chk_postings_period (check); excl_postings_employee_period (exclusion: employee, valid_from, valid_until)
-- **tests that mention it**: `farm/tests/test_systems.py`, `hr/tests/helpers_people.py`, `hr/tests/test_attendance.py` and 8 more
+- **tests that mention it**: `core/tests_data_access.py`, `farm/tests/test_systems.py`, `hr/tests/helpers_people.py` and 12 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2707,11 +2708,11 @@ One person’s plan for one day: the shift they start that day, or none for plan
 - **edit**: plans tab (`/hr/schedule/<uuid:pk>/`); hr.views.plan (`/production/team/schedule/plan/`, `/hr/schedule/plan/`)
 - **delete**: plans tab (`/hr/schedule/<uuid:pk>/delete/`); hr.views.plan (`/production/team/schedule/plan/`, `/hr/schedule/plan/`)
 - **read**: plans tab (`/hr/schedule/`)
-- **how it works**: A cell is planned on its own dialog or in a batch (hr.services.plan_shifts): all cells or none.
-- **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shift_assignments (never shown: note)
+- **how it works**: A cell is planned on its own dialog (hr.services.plan_day) or in a batch (hr.services.plan_shifts): all cells or none, by the same rules.
+- **delete kind**: soft delete through the delete plan; not restored: not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run; **database viewer**: People › shift_assignments (never shown: note)
 - **forms**: `ShiftAssignmentForm`
 - **constraints**: uq_shift_assignments_employee_day (unique: employee, day)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `hr/tests/test_attendance.py` and 18 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 24 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -2741,7 +2742,7 @@ The shift patterns of the roster: a start and an end on the wall clock of the si
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: People › shifts
 - **forms**: `ShiftForm`
 - **constraints**: uq_shifts_code_live (unique: code); chk_shifts_code (check); chk_shifts_span (check); chk_shifts_break (check); chk_shifts_grace (check); chk_shifts_tone (check); chk_shifts_status (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 23 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_private_log.py`, `core/tests_workspaces.py` and 28 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3591,7 +3592,7 @@ A report to an authority for a site (a slaughter facility for the planned slaugh
 - **delete kind**: soft delete through the delete plan; restored in the admin; **database viewer**: Reports › regulatory_reports
 - **forms**: `ReportForm`, `SubmitForm`
 - **constraints**: chk_regulatory_reports_kind (check); chk_regulatory_reports_scope (check); chk_regulatory_reports_when (check); chk_regulatory_reports_week (check); chk_regulatory_reports_month (check); chk_regulatory_reports_year (check); chk_regulatory_reports_site_notice (check); chk_regulatory_reports_escape (check); chk_regulatory_reports_no_cleaner_feed (check); chk_regulatory_reports_authority_id_when_filed (check); chk_regulatory_reports_late_when_filed (check); chk_regulatory_reports_health_event (check); chk_regulatory_reports_narrative (check); chk_regulatory_reports_channel (check); chk_regulatory_reports_submission (check); chk_regulatory_reports_kept (check); chk_regulatory_reports_not_itself (check); uq_regulatory_reports_period (unique: kind, site, facility, period_start); uq_regulatory_reports_site_notice (unique: kind, site, occurred_on); uq_regulatory_reports_event_notice (unique: kind, health_event); uq_regulatory_reports_escape_notice (unique: kind, escape); uq_regulatory_reports_correction (unique: corrects)
-- **tests that mention it**: `core/test_world.py`, `core/tests_panel_next.py`, `core/tests_sealing.py` and 22 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_panel_next.py` and 23 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|
@@ -3935,7 +3936,7 @@ Messages the ingest service could not store, kept as evidence and counted.
 - **how it works**: The message is evidence: only its resolution is set, by a person (logged).
 - **delete kind**: no soft-delete column: a row goes, or stays, with what owns it; **database viewer**: Sensors › sensors_dead_letter (never shown: payload)
 - **constraints**: uq_sensors_dead_letter_message (unique: connection_id, topic, reason, payload_sha256); chk_sensors_dead_letter_reason (check); chk_sensors_dead_letter_hash (check); chk_sensors_dead_letter_payload (check); chk_sensors_dead_letter_len (check); chk_sensors_dead_letter_count (check); chk_sensors_dead_letter_times (check); chk_sensors_dead_letter_resolved (check)
-- **tests that mention it**: `core/test_world.py`, `core/tests_workspaces.py`, `sensors/tests/test_contract.py` and 2 more
+- **tests that mention it**: `core/test_world.py`, `core/tests_data_access.py`, `core/tests_workspaces.py` and 3 more
 
 | Column | Type | Null | Link (on delete) | On a form / why not |
 |---|---|---|---|---|

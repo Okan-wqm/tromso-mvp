@@ -1,5 +1,7 @@
 """The platform owner's settings (Company › Administration › Platform settings): one row, bounded by database checks,
 read through core.platform only, changed on its page by who holds Platform settings: Edit, every change logged."""
+import ast
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
@@ -10,8 +12,10 @@ from django.urls import reverse
 from farm.tests.helpers import role
 
 from . import access, navigation, platform
+from .testing import platform_settings_data
 from .middleware import PlatformSettingsMiddleware
 from .models import AuditLog, PlatformSettings
+from core.testing import delete_confirmed
 
 
 class RowTests(TestCase):
@@ -45,6 +49,14 @@ class ReaderTests(TestCase):
 
     def test_the_old_constant_is_gone(self):
         self.assertFalse(hasattr(settings, 'STOCK_BACKDATE_DAYS'))
+
+    def test_the_window_is_defined_here_only(self):
+        """No area keeps a window of its own beside the setting (HR kept a fixed 31 days: the architecture audit of
+        26.11.2026, H-1): every function of that name in the production code is this module's."""
+        from .tests_data_access import production_modules
+        found = [path for path, tree in production_modules() for node in ast.walk(tree)
+                 if isinstance(node, ast.FunctionDef) and node.name == 'correction_window_days']
+        self.assertEqual(found, ['core/platform.py'])
 
     def test_second_approval_follows_the_setting(self):
         self.assertFalse(platform.second_approval_required('withdrawal'))
@@ -105,12 +117,8 @@ class PageTests(TestCase):
         self.row = PlatformSettings.get()
 
     def edit(self, **values):
-        data = {'correction_window_days': 31, 'clock_tolerance_seconds': 300, 'unknown_withdrawal_days': 180,
-                'sensor_day_hours': 20, 'sensor_hold_seconds': 3600, 'assumption_cap_days': 7, 'probe_sample_tolerance_c': '1.0',
-                'version': self.row.version, **values}
-        if data.pop('second_approval_withdrawal', False):
-            data['second_approval_withdrawal'] = 'on'
-        return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]), data)
+        return self.client.post(reverse('core:platformsettings_edit', args=[self.row.pk]),
+                                platform_settings_data(**values))
 
     def test_it_sits_under_company_administration_and_in_the_matrix(self):
         place = navigation.place('core.view_platformsettings')
@@ -145,7 +153,18 @@ class PageTests(TestCase):
                 self.assertTrue(response.context['form'].errors['correction_window_days'])
         self.assertEqual(PlatformSettings.get().correction_window_days, 31)
 
+    def test_every_number_says_the_bounds_the_database_holds(self):
+        """Review 4, R4-7: each number input carries its model field's bounds, one rule for all of them."""
+        from .forms import PlatformSettingsForm
+        form = PlatformSettingsForm(instance=self.row)
+        self.assertEqual({name: (form.fields[name].widget.attrs.get('min'), form.fields[name].widget.attrs.get('max'))
+                          for name in ('correction_window_days', 'unknown_withdrawal_days', 'clock_tolerance_seconds',
+                                       'plan_batch_cells')},
+                         {'correction_window_days': (1, 3650), 'unknown_withdrawal_days': (1, 3650),
+                          'clock_tolerance_seconds': (0, 3600), 'plan_batch_cells': (1, 5000)})
+
     def test_nobody_adds_or_deletes_it(self):
         self.client.force_login(self.owner)
         self.assertEqual(self.client.get('/administration/platform-settings/new/').status_code, 404)
-        self.assertEqual(self.client.post(f'/administration/platform-settings/{self.row.pk}/delete/').status_code, 404)
+        self.assertEqual(delete_confirmed(self.client,
+                                          f'/administration/platform-settings/{self.row.pk}/delete/').status_code, 404)

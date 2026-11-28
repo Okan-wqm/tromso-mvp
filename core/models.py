@@ -54,6 +54,13 @@ class AuditedModel(models.Model):
     objects = ActiveManager()
     all_objects = SealedManager()
 
+    # One writer per record (core/tests_data_access.py, rule S): True on a model its area's services.py writes and
+    # nothing else does. Every tab of it hands its writes to the service (core.crud.Resource.service_writes), no other
+    # module builds or writes it by name, and the admin offers no restore of it (core.admin; core.softdelete.restore
+    # refuses one a parent's restore would bring along). A check at run time is to come with the one write gate in core
+    # (the follow-up listed in the plan, F:/dev/balik-notes/NEXT.md).
+    service_written = False
+
     # What a delete's confirmation says of the records of this model that keep pointing at the deleted one
     # (their link is DO_NOTHING, core.softdelete): where they are while it is deleted.
     kept_note = _('They stay as they are, out of sight while this is deleted, and come back when it is restored.')
@@ -365,6 +372,7 @@ SENSOR_DAY_HOURS = (12, 24)          # the hours of a day with a good reading be
 SENSOR_HOLD_SECONDS = (60, 3600)     # how long one reading stands for the water without a next one: an hour at most
 ASSUMPTION_CAP_DAYS = (1, 30)        # the measured days before a gap that cap an assumed temperature
 PROBE_SAMPLE_TOLERANCE = (0, 10)     # °C a probe's day and the day's samples may differ before it is said
+PLAN_BATCH_CELLS = (1, 5000)         # days of the shift schedule planned in one go: one at least; a bound on one request
 
 
 class PlatformSettings(AuditedModel):
@@ -388,6 +396,8 @@ class PlatformSettings(AuditedModel):
       more), and how many measured days before a gap cap the species' assumed temperature (7). A closed probe day
       keeps the hours and the hold it was closed with. And how far a probe's day and the day's water samples may
       differ before the withdrawal's text says so (1.0 °C; said only, the lower always counts).
+    - How many days of the shift schedule one paint may plan (hr.services.plan_shifts): 500 until the owner sets
+      another, which is a full page of fifty people for a week and some more. It bounds what one request may ask.
     The alarms' rules (delays, escalation, deadbands) are the alarms app's own reference data, per severity and per
     parameter (alarms.SeverityPolicy, alarms.ParameterDeadband)."""
 
@@ -417,6 +427,10 @@ class PlatformSettings(AuditedModel):
     probe_sample_tolerance_c = models.DecimalField(
         _('Probe and samples may differ by (°C)'), max_digits=3, decimal_places=1, default=Decimal('1.0'),
         validators=[MinValueValidator(PROBE_SAMPLE_TOLERANCE[0]), MaxValueValidator(PROBE_SAMPLE_TOLERANCE[1])])
+
+    plan_batch_cells = models.PositiveSmallIntegerField(
+        _('Days planned in one go on the shift schedule'), default=500,
+        validators=[MinValueValidator(PLAN_BATCH_CELLS[0]), MaxValueValidator(PLAN_BATCH_CELLS[1])])
 
     class Meta:
         db_table = 'platform_settings'
@@ -451,6 +465,9 @@ class PlatformSettings(AuditedModel):
                 condition=models.Q(probe_sample_tolerance_c__gte=PROBE_SAMPLE_TOLERANCE[0],
                                    probe_sample_tolerance_c__lte=PROBE_SAMPLE_TOLERANCE[1]),
                 name='chk_platform_settings_probe_tolerance'),
+            models.CheckConstraint(
+                condition=models.Q(plan_batch_cells__gte=PLAN_BATCH_CELLS[0], plan_batch_cells__lte=PLAN_BATCH_CELLS[1]),
+                name='chk_platform_settings_plan_batch'),
             # Changed, never deleted: a DELETE is refused by the database too (core 0015, KeepRows).
             models.CheckConstraint(condition=models.Q(is_deleted=False), name='chk_platform_settings_kept'),
         ]

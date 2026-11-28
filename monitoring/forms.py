@@ -8,11 +8,11 @@ from django.urls import reverse
 from django.utils.text import get_text_list
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
-from core.crud import RowFormSet, TabbedForm, tab_fields
+from core.crud import BoundedModelForm, RowFormSet, TabbedForm, tab_fields
 from farm.models import Species, System, Tank
 
 from .cards import catalogue, validate
-from .models import (DISTANCE_M, PH_SCALE_BOUNDS, PH_SCALE_SPAN, REFRESH_MAX, REFRESH_MIN, SCOPES, SCREEN_INCHES, CardTemplate,
+from .models import (PH_SCALE_BOUNDS, PH_SCALE_SPAN, SCOPES, CardTemplate,
                      CardTemplateAssignment, MonitorBoard, MonitorBoardUnit, PhWindowScale)
 
 BOARD_TABS = [
@@ -56,14 +56,11 @@ class MonitorBoardForm(TabbedForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['refresh_seconds'].widget.attrs.update({'min': REFRESH_MIN, 'max': REFRESH_MAX})
-        self.fields['screen_inches'].widget.attrs.update({'min': str(SCREEN_INCHES[0]), 'max': str(SCREEN_INCHES[1]), 'step': '0.1'})
-        self.fields['distance_m'].widget.attrs.update({'min': str(DISTANCE_M[0]), 'max': str(DISTANCE_M[1]), 'step': '0.1'})
         self.fields['screen'].choices = [('', _('Not set'))] + list(self.fields['screen'].choices)[1:]
         templates(self.fields['default_template'], _('As the rules say'))
 
 
-class BoardUnitForm(forms.ModelForm):
+class BoardUnitForm(BoundedModelForm):
     """A row of a board's Units list: a unit and how its card is drawn. Only live units are offered."""
 
     class Meta:

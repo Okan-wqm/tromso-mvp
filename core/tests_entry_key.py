@@ -114,7 +114,7 @@ class KeyOfAnotherRecordTests(TestCase):
             'signs': [], 'diagnosis': '', 'confirmation': '', 'examined_by': '', 'vet': '', 'lab': '',
             'lab_reference': '', 'findings': 'Pale gills', 'recommendations': '', 'closed_on': '', 'outcome': '',
             ENTRY_KEY: str(self.key)})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 422)
         self.assertEqual(response.context['form'].non_field_errors(),
                          ['This form was sent before for another record: open it again and send it anew.'])
         self.assertFalse(HealthEvent.objects.exists())

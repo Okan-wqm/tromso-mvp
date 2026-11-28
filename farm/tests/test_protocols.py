@@ -41,6 +41,7 @@ from .helpers import WINDOW_WAY_OUT, correction_window, make_facility, may_recor
 from .test_feeding import FeedingTestCase
 from .test_stock import make_unit
 from farm import withdrawal_gate
+from core.testing import delete_confirmed
 
 D = Decimal
 
@@ -735,10 +736,10 @@ class AssignmentPageTests(ProtocolTestCase):
         self.assertEqual(row.valid_until, self.day(1))
         self.assertContains(self.client.get(reverse('farm:protocolassignment_delete', args=[row.pk])),
                             'It has started: set its last day instead.')
-        self.client.post(reverse('farm:protocolassignment_delete', args=[row.pk]))
+        delete_confirmed(self.client, reverse('farm:protocolassignment_delete', args=[row.pk]))
         self.assertTrue(ProtocolAssignment.objects.filter(pk=row.pk).exists())
         later = self.assign(self.protocol, unit=self.t1, days_ago=-3)
-        self.client.post(reverse('farm:protocolassignment_delete', args=[later.pk]))
+        delete_confirmed(self.client, reverse('farm:protocolassignment_delete', args=[later.pk]))
         self.assertTrue(ProtocolAssignment.all_objects.get(pk=later.pk).is_deleted)
         # A row that overlaps another once changed is refused by the constraint, on its last field.
         overlapping = {**data, 'valid_until': ''}
@@ -753,7 +754,7 @@ class DeletePlanAndAccessTests(ProtocolTestCase):
         protocol = self.make_protocol()
         self.assertContains(self.client.get(reverse('farm:feed_delete', args=[self.feed.pk])),
                             'The feeding table of 1 feeding protocol uses it: Salmon grow-out.')
-        self.client.post(reverse('farm:feed_delete', args=[self.feed.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[self.feed.pk]))
         self.assertFalse(Feed.all_objects.get(pk=self.feed.pk).is_deleted)
         self.assertContains(self.client.get(reverse('farm:species_delete', args=[self.salmon.pk])),
                             '1 feeding protocol still belongs to it.')
@@ -761,7 +762,7 @@ class DeletePlanAndAccessTests(ProtocolTestCase):
         self.assertContains(self.client.get(reverse('farm:feedingprotocol_delete', args=[protocol.pk])),
                             '1 protocol assignment still belongs to it.')
         row.soft_delete(self.user)
-        self.client.post(reverse('farm:feedingprotocol_delete', args=[protocol.pk]))
+        delete_confirmed(self.client, reverse('farm:feedingprotocol_delete', args=[protocol.pk]))
         self.assertTrue(FeedingProtocol.all_objects.get(pk=protocol.pk).is_deleted)
         self.assertEqual(Feed.objects.get(pk=self.feed.pk).delete_blockers(), [])    # a deleted protocol lets go
 
@@ -769,7 +770,7 @@ class DeletePlanAndAccessTests(ProtocolTestCase):
         protocol = self.make_protocol()
         row = self.assign(protocol, unit=self.t2)
         self.assertContains(self.client.get(reverse('farm:tank_delete', args=[self.t2.pk])), 'Protocol assignments')
-        self.client.post(reverse('farm:tank_delete', args=[self.t2.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[self.t2.pk]))
         self.assertTrue(Tank.all_objects.get(pk=self.t2.pk).is_deleted)
         self.assertTrue(ProtocolAssignment.objects.filter(pk=row.pk).exists())
         self.assertContains(self.client.get(reverse('farm:protocolassignment_list')), 'Deleted')

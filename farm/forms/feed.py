@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
-from core.crud import CodedFormMixin, Fieldset, RowFormSet, TabbedForm, tab_fields
+from core.crud import BoundedModelForm, CodedFormMixin, Fieldset, RowFormSet, TabbedForm, tab_fields
 
 from ..models import Feed, FeedSuitability, Supplier
 from ..models.feed import ENERGIES, PERCENTAGES, SAME_STAGE_MESSAGE
@@ -73,7 +73,7 @@ class FeedForm(CodedFormMixin, TabbedForm):
         return self.cleaned_data['currency'].strip().upper()
 
 
-class FeedSuitabilityForm(forms.ModelForm):
+class FeedSuitabilityForm(BoundedModelForm):
     class Meta:
         model = FeedSuitability
         fields = ['species', 'growth_stage', 'min_weight_g', 'max_weight_g', 'notes']

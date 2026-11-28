@@ -20,6 +20,7 @@ from ..stock import integrity, services
 from .helpers import leave_without_site, make_species, stock_fish
 from .test_production_departments import production_department_data
 from .test_stock import make_unit
+from core.testing import delete_confirmed
 
 
 class SiteStructureTestCase(TestCase):
@@ -35,7 +36,7 @@ class SiteDeleteTests(SiteStructureTestCase):
     def test_a_site_with_a_live_unit_cannot_be_deleted(self):
         make_unit('T-01', self.hall)
         self.assertEqual(plan_delete(self.bergen).blockers, ['1 unit still belongs to it.'])
-        self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertTrue(Site.objects.filter(pk=self.bergen.pk).exists())
         self.assertEqual(ProductionDepartment.objects.get().site, self.bergen)
 
@@ -44,7 +45,7 @@ class SiteDeleteTests(SiteStructureTestCase):
         self.assertTrue(plan_delete(self.bergen).can_delete)
 
     def test_its_production_departments_are_deleted_with_it_none_is_left_without_a_site(self):
-        self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertFalse(Site.objects.exists())
         self.assertFalse(ProductionDepartment.objects.exists())
         self.assertTrue(ProductionDepartment.all_objects.get().is_deleted)

@@ -18,6 +18,7 @@ from farm.tests.helpers import contacts_data, site_data
 from .crud import Mount, Resource, mount_of, mounted_name
 from .models import AuditLog
 from .navigation import Entry, Group as MenuGroup, Section, Workspace
+from core.testing import delete_confirmed
 
 LAB = Mount('lab', 'lab/sites')
 
@@ -129,7 +130,7 @@ class MountedPagesTests(TestCase):
         self.assertEqual(self.client.post(self.url('edit', self.outside), {
             **site_data(name='Taken over', code='BBB'), 'version': before.version}).status_code, 404)
         self.assertEqual(self.client.get(self.url('delete', self.outside)).status_code, 404)
-        self.assertEqual(self.client.post(self.url('delete', self.outside)).status_code, 404)
+        self.assertEqual(delete_confirmed(self.client, self.url('delete', self.outside)).status_code, 404)
         self.assertEqual(self.client.post(self.url('contacts', self.outside),
                                           {'version': before.version}).status_code, 404)
         after = Site.objects.get(pk=self.outside.pk)
@@ -156,7 +157,7 @@ class MountedPagesTests(TestCase):
         self.assertRedirects(response, self.url('edit', self.inside), fetch_redirect_response=False)
 
     def test_a_delete_on_the_mount_returns_to_the_mounted_list(self):
-        response = self.client.post(self.url('delete', self.inside))
+        response = delete_confirmed(self.client, self.url('delete', self.inside))
         self.assertRedirects(response, self.url('list'), fetch_redirect_response=False)
         self.assertTrue(Site.all_objects.get(pk=self.inside.pk).is_deleted)
 

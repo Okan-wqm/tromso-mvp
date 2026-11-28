@@ -29,6 +29,7 @@ from .helpers import may_record, point_of, role
 from .test_stock import make_unit
 from .test_water import WaterTestCase
 from farm import withdrawal_gate
+from core.testing import delete_confirmed, is_test_module
 
 D = Decimal
 POINT_MANAGER = ('view_samplingpoint', 'add_samplingpoint', 'change_samplingpoint', 'delete_samplingpoint',
@@ -326,7 +327,7 @@ class PointPageTests(PointTestCase):
         self.assertEqual((point.name, point.kind, point.flow_m3_h, point.flow_share_pct, point.description,
                           point.is_active, point.unit, point.version, point.updated_by),
                          ('Filter outlet', 'outlet', D('40.00'), D('5.00'), '', False, self.t1, 2, self.manager))
-        self.client.post(reverse('farm:samplingpoint_delete', args=[point.pk]))
+        delete_confirmed(self.client, reverse('farm:samplingpoint_delete', args=[point.pk]))
         self.assertTrue(SamplingPoint.all_objects.get(pk=point.pk).is_deleted)
         self.assertEqual(list(AuditLog.objects.filter(entity_type='sampling point', entity_id=str(point.pk))
                               .order_by('created_at').values_list('action', flat=True)),
@@ -503,10 +504,10 @@ class PointPermissionTests(PointTestCase):
             self.assertEqual(self.client.post(url, {}).status_code, 403, url)
         self.as_role('view_samplingpoint', 'change_samplingpoint')
         self.assertEqual(self.client.get(urls['edit']).status_code, 200)
-        self.assertEqual(self.client.post(urls['delete']).status_code, 403)
+        self.assertEqual(delete_confirmed(self.client, urls['delete']).status_code, 403)
         self.as_role('view_samplingpoint', 'delete_samplingpoint')
         self.assertEqual(self.client.get(urls['edit']).status_code, 403)
-        self.client.post(urls['delete'])
+        delete_confirmed(self.client, urls['delete'])
         self.assertTrue(SamplingPoint.all_objects.get(pk=point.pk).is_deleted)
 
     def test_a_person_without_read_has_no_menu_entry(self):
@@ -530,7 +531,7 @@ class DeleteTests(PointTestCase):
         self.assertEqual(plan.blockers, ['It has 2 water samples in the history: make it inactive instead.'])
         page = self.client.get(reverse('farm:samplingpoint_delete', args=[inlet.pk]))
         self.assertContains(page, 'It has 2 water samples in the history: make it inactive instead.')
-        response = self.client.post(reverse('farm:samplingpoint_delete', args=[inlet.pk]), follow=True)
+        response = delete_confirmed(self.client, reverse('farm:samplingpoint_delete', args=[inlet.pk]), follow=True)
         self.assertContains(response, 'cannot be deleted: It has 2 water samples in the history')
         self.assertFalse(SamplingPoint.all_objects.get(pk=inlet.pk).is_deleted)
         self.assertEqual(WaterMeasurement.all_objects.filter(point=inlet).count(), 2)
@@ -549,7 +550,7 @@ class DeleteTests(PointTestCase):
         outlet = self.named(self.t1, 'side_outlet')['Side outlet']
         plan = plan_delete(outlet)
         self.assertEqual((plan.can_delete, plan.blockers, plan.kept_groups()), (True, [], []))
-        self.client.post(reverse('farm:samplingpoint_delete', args=[outlet.pk]))
+        delete_confirmed(self.client, reverse('farm:samplingpoint_delete', args=[outlet.pk]))
         self.assertTrue(SamplingPoint.all_objects.get(pk=outlet.pk).is_deleted)
         self.assertNotIn(outlet, SamplingPoint.objects.all())
         self.assertTrue(AuditLog.objects.filter(entity_type='sampling point', action='delete',
@@ -701,7 +702,8 @@ class ReadTests(PointTestCase):
             self.assertIn('tiers(', source, module)
             self.assertNotIn('water_sources(', source, module)          # no second resolver beside it
         readers = sorted(path.relative_to(root).as_posix() for path in root.rglob('*.py')
-                         if not {'water', 'tests', 'migrations'} & set(path.relative_to(root).parts)
+                         if not {'water', 'migrations'} & set(path.relative_to(root).parts)
+                         and not is_test_module(path.relative_to(root.parent))
                          and 'WaterMeasurement' in path.read_text(encoding='utf-8'))
         self.assertEqual(readers, ['admin.py', 'apps.py', 'forms/water.py', 'models/__init__.py', 'models/water.py',
                                    'models/water_point.py', 'screens.py', 'sealing.py'])

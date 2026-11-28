@@ -14,6 +14,7 @@ from farm.tests.helpers import make_species, role
 
 from ..models import Document, KnowledgeEntry
 from .helpers import KnowledgeTestCase, entry_data
+from core.testing import delete_confirmed
 
 SOURCE = ('source_kind', 'document', 'pages', 'section', 'quote', 'citation', 'url', 'expert', 'observed_on')
 
@@ -93,7 +94,7 @@ class EntryRoundTripTests(EntryTestCase):
                             'Kari Nordmann, fish health vet')
 
         # Delete: hidden, not erased
-        self.client.post(reverse('knowledge:knowledgeentry_delete', args=[entry.pk]))
+        delete_confirmed(self.client, reverse('knowledge:knowledgeentry_delete', args=[entry.pk]))
         self.assertFalse(KnowledgeEntry.objects.exists())
         self.assertEqual(stored(entry, 'is_deleted', 'deleted_by'), (True, self.user))
         self.assertEqual(list(self.client.get(reverse('knowledge:knowledgeentry_list')).context['objects']), [])

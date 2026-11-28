@@ -16,6 +16,7 @@ from sensors.tests import make_channel, make_connection, make_device, make_forma
 
 from ..models import Acknowledgement, RecipientRule
 from . import NOTHING_CONNECTED, AlarmsCase
+from core.testing import delete_confirmed
 
 READER = ('view_alarm',)
 DESK = ('view_alarm', 'change_alarm', 'view_recipientrule', 'add_recipientrule', 'change_recipientrule',
@@ -127,7 +128,7 @@ class RoleDeleteTests(AlarmsCase):
         self.rule()
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin)
-        response = self.client.post(reverse('core:group_delete', args=[self.operators.pk]), follow=True)
+        response = delete_confirmed(self.client, reverse('core:group_delete', args=[self.operators.pk]), follow=True)
         self.assertContains(response, 'cannot be deleted')
         self.assertTrue(type(self.operators).objects.filter(pk=self.operators.pk).exists())
         self.assertEqual(RecipientRule.objects.count(), 1)

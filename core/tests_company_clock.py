@@ -23,6 +23,8 @@ from pathlib import Path
 from django.conf import settings
 from django.test import SimpleTestCase
 
+from .testing import is_test_module
+
 APPS = ('alarms', 'config', 'core', 'experiments', 'farm', 'hr', 'inventory', 'knowledge', 'messaging', 'monitoring',
         'reports', 'sensors', 'tasks')
 # A benchmark that writes made-up readings: no farm's day is read.
@@ -104,17 +106,14 @@ def server_clock_reads_in(tree):
     return found
 
 
-def is_test(relative, name):
-    return '/tests' in relative or name.startswith('test')
-
-
 def modules(tests):
     """(relative path, parsed module) of every Python file of APPS: the tests' when `tests`, else the code's (the
-    migrations left out). The one walk of the project's files that the guards of the clock share."""
+    migrations left out), told apart by core.modules.is_test_module. The one walk of the project's files that the guards
+    of the clock share."""
     for app in APPS:
         for path in sorted(Path(settings.BASE_DIR, app).rglob('*.py')):
             relative = path.relative_to(settings.BASE_DIR).as_posix()
-            if is_test(relative, path.name) == tests and (tests or '/migrations/' not in relative):
+            if is_test_module(relative) == tests and (tests or '/migrations/' not in relative):
                 yield relative, ast.parse(path.read_text(encoding='utf-8'))
 
 

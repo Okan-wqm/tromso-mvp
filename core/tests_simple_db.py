@@ -7,6 +7,7 @@ the session's role, each listed here with its reason."""
 import ast
 from pathlib import Path
 
+from core.testing import is_test_module
 from django.test import SimpleTestCase
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -38,8 +39,7 @@ def test_classes():
     """[(module, ClassDef)] of every test module."""
     for path in sorted(ROOT.rglob('*.py')):
         relative = path.relative_to(ROOT)
-        if set(relative.parts) & SKIP or not (relative.name.startswith(('test_', 'tests_')) or relative.name == 'tests.py'
-                                              or 'tests' in relative.parts):
+        if set(relative.parts) & SKIP or not is_test_module(relative):
             continue
         for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
             if isinstance(node, ast.ClassDef):

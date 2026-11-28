@@ -8,7 +8,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
-from core.crud import RowFormSet, TabbedForm, tab_fields
+from core.crud import BoundedModelForm, RowFormSet, TabbedForm, tab_fields
 
 from ..health import read as health_read, services
 from ..health.withdrawal import rules_text
@@ -93,7 +93,7 @@ class MedicineForm(TabbedForm):
         manufacturer.label_from_instance = supplier_label
 
 
-class MedicineWithdrawalForm(forms.ModelForm):
+class MedicineWithdrawalForm(BoundedModelForm):
     """One row of a medicine's withdrawal: the species (empty: every species without a row of its own), the
     degree-days and the days as the SPC states them, the farm's safety margin on top and a note."""
 
@@ -103,7 +103,7 @@ class MedicineWithdrawalForm(forms.ModelForm):
         localized_fields = ['degree_days', 'safety_margin_pct']
         widgets = {
             'degree_days': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('e.g. 150')}),
-            'days': forms.NumberInput(attrs={'min': 0, 'placeholder': _('e.g. 7')}),
+            'days': forms.NumberInput(attrs={'placeholder': _('e.g. 7')}),
             'safety_margin_pct': forms.TextInput(attrs={**DECIMAL, 'placeholder': _('e.g. 20')}),
             'note': forms.TextInput(),
         }
@@ -225,7 +225,7 @@ class MedicineChoice(forms.ModelChoiceField):
                            str(medicine.get_administration_display()).lower(), rules_text(medicine)])
 
 
-class TreatmentForm(ServiceErrors, forms.ModelForm):
+class TreatmentForm(ServiceErrors, BoundedModelForm):
     """A treatment: the units (those with fish now or on a day that may still be dated, of one site), how and with what, its first and last day,
     the dose and the amount used, the prescription and the vet, the health event it answers, notes."""
 
@@ -332,7 +332,7 @@ class LastDayForm(ServiceErrors, forms.Form):
 
 
 # ---- sea-lice counts ----------------------------------------------------------------------------------
-class LiceCountForm(ServiceErrors, forms.ModelForm):
+class LiceCountForm(ServiceErrors, BoundedModelForm):
     """A sea-lice count: the unit (with fish), the day, the fish examined and the lice of each stage found on
     them, in total; the averages per fish are worked out."""
 

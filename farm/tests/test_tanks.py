@@ -18,6 +18,7 @@ from ..models import ProductionDepartment, Site, System, Tank
 from ..models.tank import NEEDS_FISH, STARTING_STATUSES, TRANSITIONS
 from ..stock import services
 from .helpers import leave_without_site, role, stock_fish
+from core.testing import delete_confirmed
 
 Status = Tank.Status
 UNIT_MANAGER = (
@@ -132,7 +133,7 @@ class TankRoundTripTests(TankTestCase):
                          (Decimal('8.000'), None, Decimal('400.00')))
 
         # Delete: hidden, kept for a restore
-        self.client.post(reverse('farm:tank_delete', args=[tank.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[tank.pk]))
         self.assertFalse(Tank.objects.exists())
         self.assertTrue(Tank.all_objects.get().is_deleted)
 
@@ -160,7 +161,7 @@ class TankRoundTripTests(TankTestCase):
         self.assertEqual((pond.pond_type, pond.liner_type, pond.liner_thickness_mm, pond.water_source,
                           pond.max_depth, pond.water_volume_m3),
                          ('earthen', 'clay', None, '', None, None))
-        self.client.post(reverse('farm:tank_delete', args=[pond.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[pond.pk]))
         self.assertTrue(Tank.all_objects.get().is_deleted)
 
     def test_a_cage_create_read_edit_delete(self):
@@ -188,7 +189,7 @@ class TankRoundTripTests(TankTestCase):
         self.assertEqual((cage.cage_type, cage.shape, cage.diameter, cage.length, cage.width,
                           cage.max_submersion_depth, cage.net_material, cage.system),
                          ('floating', 'circular', Decimal('50.93'), None, None, None, '', None))
-        self.client.post(reverse('farm:tank_delete', args=[cage.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[cage.pk]))
         self.assertTrue(Tank.all_objects.get().is_deleted)
 
     def test_every_optional_field_can_be_cleared(self):
@@ -657,8 +658,8 @@ class StockGuardTests(TankTestCase):
         self.stock(unit)
         page = self.client.get(reverse('farm:tank_delete', args=[unit.pk]))
         self.assertContains(page, 'It holds fish: move or harvest them first.')
-        self.client.post(reverse('farm:tank_delete', args=[unit.pk]))
-        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[unit.pk]))
+        delete_confirmed(self.client, reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.assertTrue(Tank.objects.filter(pk=unit.pk).exists())
         self.assertTrue(ProductionDepartment.objects.filter(pk=self.hall.pk).exists())
 
@@ -687,7 +688,7 @@ class TankDeletePlanTests(TankTestCase):
         self.make('pond', name='Pond', code='P1')
         page = self.client.get(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.assertContains(page, 'Units deleted with it')
-        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
+        delete_confirmed(self.client, reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.assertFalse(Tank.objects.exists())
         # Its system RAS A leaves it (core.softdelete), as before units existed.
         self.assertEqual(self.log(), [('delete', 'production department', 'Hall A (HA)'), ('delete', 'unit', 'Pond (P1)'),
@@ -697,7 +698,7 @@ class TankDeletePlanTests(TankTestCase):
         unit = self.make(system=self.ras)
         page = self.client.get(reverse('farm:system_delete', args=[self.ras.pk]))
         self.assertContains(page, 'Units that lose their system')
-        self.client.post(reverse('farm:system_delete', args=[self.ras.pk]))
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[self.ras.pk]))
         unit.refresh_from_db()
         self.assertEqual((unit.is_deleted, unit.system, unit.version), (False, None, 2))
         entry = AuditLog.objects.get(entity_type='unit')
@@ -705,13 +706,13 @@ class TankDeletePlanTests(TankTestCase):
 
     def test_a_site_with_units_stays_and_its_units_keep_their_department_and_system(self):
         unit = self.make(system=self.ras)
-        self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.bergen.pk]))
         unit.refresh_from_db()
         self.assertEqual((unit.is_deleted, unit.system, unit.production_department.site), (False, self.ras, self.bergen))
 
     def test_a_restored_unit_is_checked_like_a_new_one(self):
         unit = self.make()
-        self.client.post(reverse('farm:tank_delete', args=[unit.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[unit.pk]))
         self.make(name='New', code='T1')
         with self.assertRaisesMessage(ValidationError, 'Another unit already uses this code.'):
             softdelete.restore(Tank.all_objects.get(pk=unit.pk), self.user)

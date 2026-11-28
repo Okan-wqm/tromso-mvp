@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.translation import gettext, gettext_lazy as _, ngettext_lazy
 
-from core.crud import CodedFormMixin, Fieldset, RowFormSet, TabbedForm
+from core.crud import BoundedModelForm, CodedFormMixin, Fieldset, RowFormSet, TabbedForm
 from core.links import LinkList
 from core.widgets import DayInput, DependentSelect
 
@@ -190,7 +190,7 @@ class EquipmentForm(CodedFormMixin, TabbedForm):
         EquipmentSystem.objects.bulk_create(links)
 
 
-class FeederCalibrationForm(forms.ModelForm):
+class FeederCalibrationForm(BoundedModelForm):
     class Meta:
         model = FeederCalibration
         fields = ['feed_size_mm', 'label', 'grams_per_dispensing', 'silo_capacity_kg', 'notes']

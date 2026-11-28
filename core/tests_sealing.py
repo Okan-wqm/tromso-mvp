@@ -4,6 +4,7 @@ sealed (filtered by the cells, following its parent, or exempt with a written re
 link and no declaration fails here and in the system check, so no new table can read past the seal."""
 from django.apps import apps
 from django.db import models
+from core.testing import is_test_module
 from django.test import SimpleTestCase, TestCase
 from django.test.utils import isolate_apps
 
@@ -262,8 +263,8 @@ def call_sites(found, skip_management=False):
     sites = set()
     for path in root.rglob('*.py'):
         relative = path.relative_to(root).as_posix()
-        if ('/tests' in f'/{relative}' or relative.startswith(('node_modules', '.venv', 'static', 'scripts'))
-                or '/migrations/' in relative or relative.split('/')[-1].startswith(('test_', 'tests_'))
+        if (is_test_module(relative) or relative.startswith(('node_modules', '.venv', 'static', 'scripts'))
+                or '/migrations/' in relative
                 or relative == 'core/sealing.py' or (skip_management and '/management/' in relative)):
             continue
         tree = ast.parse(path.read_text(encoding='utf-8'))

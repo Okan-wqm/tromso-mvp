@@ -17,6 +17,7 @@ from farm.tests.helpers import rows_data
 from .. import places, services
 from ..models import Frequency, Status, Task, TaskChecklistItem, TaskNote, TaskSeries
 from . import TasksTestCase, form_data
+from core.testing import delete_confirmed
 
 LIST = reverse('tasks:taskseries_list')
 NEW = reverse('tasks:taskseries_create')
@@ -78,7 +79,7 @@ class SeriesPagesTests(TasksTestCase):
                 delete = reverse('tasks:taskseries_delete', args=[series.pk])
                 plan = self.client.get(delete).context['plan']
                 self.assertEqual(sum(len(group['records']) for group in plan.deleted_groups()), moved.count())
-                self.client.post(delete)
+                delete_confirmed(self.client, delete)
                 self.assertTrue(TaskSeries.all_objects.get(pk=series.pk).is_deleted)
                 self.assertFalse(Task.objects.filter(series=series).exists())
 
@@ -227,7 +228,7 @@ class MaterialiseTests(TasksTestCase):
         series = self.series()
         services.materialise(series)
         task = Task.objects.get(series=series, occurrence_date=self.day(3))
-        self.client.post(reverse('tasks:task_delete', args=[task.pk]))
+        delete_confirmed(self.client, reverse('tasks:task_delete', args=[task.pk]))
         TaskSeries.objects.filter(pk=series.pk).update(generated_until=None)
         services.materialise(series)
         self.assertFalse(Task.objects.filter(series=series, occurrence_date=self.day(3)).exists())
@@ -260,9 +261,9 @@ class MaterialiseTests(TasksTestCase):
         # F-029: the planned tasks went with it and, deleted, still held their days, so none was made again.
         series = self.series()
         services.materialise(series)
-        self.client.post(reverse('tasks:task_delete', args=[Task.objects.get(series=series,
+        delete_confirmed(self.client, reverse('tasks:task_delete', args=[Task.objects.get(series=series,
                                                                             occurrence_date=self.day(3)).pk]))
-        self.client.post(reverse('tasks:taskseries_delete', args=[series.pk]))
+        delete_confirmed(self.client, reverse('tasks:taskseries_delete', args=[series.pk]))
         self.assertFalse(Task.objects.filter(series=series).exists())
         softdelete.restore(TaskSeries.all_objects.get(pk=series.pk), self.boss)
         services.materialise_due()

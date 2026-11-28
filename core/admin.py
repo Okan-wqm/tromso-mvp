@@ -54,12 +54,15 @@ class AuditedModelAdmin(ReadOnlyAdmin):
 
 
 def register_audited(app_label):
-    """Registers every farm record of an app (an AuditedModel) with the admin."""
+    """Registers every farm record of an app (an AuditedModel) with the admin. A model its service alone writes
+    (`service_written`) is listed read-only with no Restore action: brought back here it would skip the service's
+    rules, so a voided record of it is entered again on its page (core.softdelete.restore refuses one all the same)."""
     for model in apps.get_app_config(app_label).get_models():
         if issubclass(model, AuditedModel):
             fields = {field.name for field in model._meta.concrete_fields}
             name = getattr(model, 'name_field', 'name')    # a species is named by its common name
             admin.site.register(model, type(f'{model.__name__}Admin', (AuditedModelAdmin,), {
+                **({'actions': []} if model.service_written else {}),
                 'list_display': [
                     field for field in (name, 'code', 'type', 'status', 'is_deleted') if field in fields
                 ] or ['__str__', 'is_deleted'],

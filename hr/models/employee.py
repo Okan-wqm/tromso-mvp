@@ -32,6 +32,8 @@ class Employee(AuditedModel):
 
     A person who leaves is not deleted: `left_on` closes the record, the history stays readable."""
 
+    service_written = True       # hr.services is its one writer (core.models.AuditedModel)
+
     # Defined outside the class so that its Meta can name their values in the constraint.
     Type = EmploymentType
 

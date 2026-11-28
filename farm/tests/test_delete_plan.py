@@ -11,6 +11,7 @@ from core.softdelete import execute, plan_delete, restore
 
 from ..models import ProductionDepartment, Site, System
 from .helpers import role
+from core.testing import delete_confirmed
 
 DEPARTMENT_SITE_LINK = ProductionDepartment._meta.get_field('site').remote_field
 
@@ -55,7 +56,7 @@ class SetNullTests(DeletePlanTestCase):
         self.assertNotContains(response, 'disabled')
 
     def test_delete_detaches_every_system_and_logs_each_record(self):
-        self.client.post(self.url)
+        delete_confirmed(self.client, self.url)
         self.assertFalse(ProductionDepartment.objects.filter(pk=self.hall_a.pk).exists())
         for system in (self.ras, self.loop):
             system.refresh_from_db()
@@ -70,7 +71,7 @@ class SetNullTests(DeletePlanTestCase):
         self.assertEqual(entry.changes, {'Production department': ['Hall A (HA)', None]})
 
     def test_a_record_nothing_points_at_deletes_plainly(self):
-        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall_b.pk]))
+        delete_confirmed(self.client, reverse('farm:productiondepartment_delete', args=[self.hall_b.pk]))
         self.assertEqual(self.log(), [('delete', 'production department', 'Hall B (HB)')])
 
 
@@ -85,7 +86,7 @@ class CascadeTests(DeletePlanTestCase):
         self.assertContains(self.client.get(self.url), 'Production departments deleted with it')
 
     def test_delete_soft_deletes_the_whole_tree_and_logs_each_record(self):
-        self.client.post(self.url)
+        delete_confirmed(self.client, self.url)
         self.assertFalse(Site.objects.exists())
         self.assertFalse(ProductionDepartment.objects.exists())
         self.assertEqual({d.is_deleted for d in ProductionDepartment.all_objects.all()}, {True})
@@ -106,7 +107,7 @@ class ProtectTests(DeletePlanTestCase):
             self.assertEqual(plan_delete(self.site).blockers, ['2 production departments still belong to it.'])
             self.assertContains(self.client.get(self.url), 'cannot be deleted yet')
             self.assertContains(self.client.get(self.url), 'disabled')
-            response = self.client.post(self.url, follow=True)
+            response = delete_confirmed(self.client, self.url, follow=True)
         self.assertContains(response, 'cannot be deleted: 2 production departments still belong to it.')
         self.assertTrue(Site.objects.exists())
         self.assertEqual(self.log(), [])
@@ -118,7 +119,7 @@ class ProtectTests(DeletePlanTestCase):
 
     def test_a_model_can_block_with_its_own_condition(self):
         with mock.patch.object(Site, 'delete_blockers', return_value=['Fish are still in tank 3.']):
-            self.client.post(self.url)
+            delete_confirmed(self.client, self.url)
             self.assertTrue(Site.objects.exists())
             self.assertContains(self.client.get(self.url), 'Fish are still in tank 3.')
 

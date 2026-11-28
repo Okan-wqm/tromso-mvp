@@ -8,6 +8,7 @@ from farm.models import Site
 
 from ..models import Holiday, SchedulingSettings, Shift
 from .helpers import HrTestCase, fields_of, user
+from core.testing import delete_confirmed
 
 
 def shift_data(**overrides):
@@ -43,7 +44,7 @@ class ShiftTests(SettingsTestCase):
         shift.refresh_from_db()
         self.assertEqual((shift.name, shift.starts_at, shift.ends_at, shift.span_minutes, shift.tone, shift.status,
                           shift.version), ('Night', time(22, 0), time(6, 0), 480, 8, 'inactive', 2))
-        self.client.post(reverse('hr:shift_delete', args=[shift.pk]))
+        delete_confirmed(self.client, reverse('hr:shift_delete', args=[shift.pk]))
         self.assertTrue(Shift.all_objects.get().is_deleted)
         self.assertEqual(list(AuditLog.objects.order_by('created_at').values_list('action', flat=True)),
                          ['create', 'update', 'delete'])
@@ -95,7 +96,7 @@ class HolidayTests(SettingsTestCase):
                          {'day': '2026-12-26', 'name': 'Boxing Day', 'site': '', 'version': '1'})
         every.refresh_from_db()
         self.assertEqual((every.day, every.name, every.version), (date(2026, 12, 26), 'Boxing Day', 2))
-        self.client.post(reverse('hr:holiday_delete', args=[every.pk]))
+        delete_confirmed(self.client, reverse('hr:holiday_delete', args=[every.pk]))
         self.assertEqual(Holiday.objects.count(), 1)
 
     def test_one_holiday_a_day_for_every_site_and_one_per_site(self):
@@ -150,7 +151,7 @@ class SettingsRowTests(SettingsTestCase):
                           row.forgotten_after_hours, row.version),
                          (2250, 720, 5, 'block', [0, 1, 2, 3, 4, 5], 60, 15, 20, 2))
         self.assertEqual(self.client.get('/hr/settings/scheduling/new/').status_code, 404)
-        self.assertEqual(self.client.post(f'/hr/settings/scheduling/{row.pk}/delete/').status_code, 404)
+        self.assertEqual(delete_confirmed(self.client, f'/hr/settings/scheduling/{row.pk}/delete/').status_code, 404)
 
     def test_the_form_and_the_database_hold_every_limit(self):
         row = SchedulingSettings.objects.get()

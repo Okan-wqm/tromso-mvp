@@ -1,0 +1,19 @@
+[package]
+name = "chemcore-experimental"
+description = "Chemistry not yet cleared for use: provisional constants, never a dependency of the Python binding"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "chemcore_experimental"
+
+# The core only: everything transcendental comes through chemcore_core::num (libm). chemcore/scripts/test.sh holds
+# this crate to the core and libm, and holds chemcore-py to never depending on it.
+[dependencies]
+chemcore-core = { path = "../core" }
+
+[lints]
+workspace = true

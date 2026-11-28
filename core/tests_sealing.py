@@ -367,6 +367,8 @@ SEALED_PAST_THE_SEAL = {
     'core/dbview.py:export': 'the database viewer’s export’s read log: narrowed (sealing.narrow) first',
     'core/models.py:EntryKey.record_of': 'the record a form key stands for, by the key’s own id: the form’s '
                                          'own record, sent twice',
+    'core/versions.py:as_of': 'a kept row as it was, by its id: of a sealed model only the rows its sealed manager '
+                              'returns now (the manager’s own query, compiled into the read)',
     'experiments/sealing.py:holders': 'the people who hold Oversee (a user model, not a sealed one)',
     'farm/health/withdrawal.py:blockers_while_live': 'the what-if of a record the caller holds, by its own id, rolled '
                                                      'back',

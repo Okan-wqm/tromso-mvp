@@ -271,7 +271,7 @@ LEDGER_COLUMNS = {'count_delta': 'present', 'amount_kg': 'given'}
 NON_LITERAL_SQL = {
     'alarms/changes.py': (1, "the worker's look at the sensors' state (CHANNELS: a SELECT)"),
     'core/database.py': (3, "the database viewer's catalogue reads (COLUMNS_SQL, CONSTRAINTS_SQL, INDEXES_SQL)"),
-    'core/operations.py': (4, "the migration operations' own DDL (TrackRev, KeepRows), run by migrate"),
+    'core/operations.py': (6, "the migration operations' own DDL (TrackRev, KeepRows, KeepVersions), run by migrate"),
     'core/rev.py': (2, "the revision triggers' repair replaying the migration's DDL (manage.py core_rev_*), and the "
                        "TimescaleDB update's look for constraint triggers on hypertables (a SELECT)"),
     'sensors/management/commands/sensors_ingest_role.py': (2, "the ingest role's ALTER ROLE through psycopg's sql "

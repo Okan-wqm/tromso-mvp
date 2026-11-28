@@ -76,10 +76,10 @@ class VersionsTests(TestCase):
     def test_a_deleted_row_is_read_before_its_delete_and_not_after(self):
         profile = self.profile()
         point = TemperatureProfilePoint.objects.create(profile=profile, weight_g=0, temperature_c=D(10))
-        before = moment()
+        before, made = moment(), point.pk
         point.delete()
         self.assertEqual([row.pk for row in versions.as_of(TemperatureProfilePoint, before, profile=[profile.pk])],
-                         [point.pk])
+                         [made])
         self.assertEqual(versions.as_of(TemperatureProfilePoint, moment(), profile=[profile.pk]), [])
 
     def test_a_soft_deleted_row_is_left_out_unless_asked_for(self):
@@ -96,6 +96,7 @@ class VersionsTests(TestCase):
         profile = self.profile()
         TemperatureProfilePoint.objects.create(profile=profile, weight_g=0, temperature_c=D(10))
         with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')       # the pending deferred checks first
             cursor.execute('TRUNCATE temperature_profile_points')
         self.assertFalse(RowVersion.objects.filter(table_name='temperature_profile_points', valid_to__isnull=True)
                          .exists())

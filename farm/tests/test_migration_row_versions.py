@@ -83,8 +83,9 @@ class RowVersionsMigrationTests(TransactionTestCase):
         protocol, *_rest = self.rows(self.old)
         self.migrate(AFTER)
         old = self.migrate(BEFORE)
-        self.assertFalse(old.get_model('core', 'RowVersion').objects.filter(table_name='feeding_protocols').exists())
         with connection.cursor() as cursor:
+            cursor.execute("SELECT count(*) FROM core_row_versions WHERE table_name = 'feeding_protocols'")
+            self.assertEqual(cursor.fetchone()[0], 0)
             cursor.execute("SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'core\\_versions\\_%%'")
             self.assertEqual(cursor.fetchone()[0], 0)
         old.get_model('farm', 'FeedingProtocol').objects.filter(pk=protocol.pk).update(name='Changed meanwhile')

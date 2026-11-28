@@ -7524,8 +7524,8 @@ mail server is still shut, with the same statements for an address that has an a
 
 `core/tests_wall_clock.py` reads every test module (functions and methods, classes nested to any depth) and refuses a
 check on a measured value: a reading of `time.monotonic`, `perf_counter`, `time`, `process_time`, `thread_time` or
-`clock_gettime` (and each `_ns`), `timeit.default_timer`, `timeit.timeit` or `timeit.repeat`, or an event loop's
-`loop.time()`, however imported and through any name bound to one of those functions (`clock = time.monotonic`,
+`clock_gettime` (and each `_ns`), `timeit.default_timer`, `timeit.timeit` or `timeit.repeat`, `os.times` or
+`resource.getrusage` (a process's CPU and elapsed times), or an event loop's `loop.time()`, however imported and through any name bound to one of those functions (`clock = time.monotonic`,
 `functools.partial(time.monotonic)`); the difference of two moments of the calendar clock (`datetime.now()`,
 `utcnow()`, `timezone.now()`, also as `timezone as tz`); and whatever the same function computes from one (a name, a
 list or dict it is put in, a part of a tuple, a helper of the same module that returns one), or another method of the

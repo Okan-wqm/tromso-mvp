@@ -7,7 +7,8 @@ waits (a join's timeout), and that a thing did not wait is asked of the thing (s
 Read from every test module (each function and method, in classes nested to any depth, with the functions they
 define), a measured value is:
 - a reading of time.monotonic, perf_counter, time, process_time, thread_time or clock_gettime (each also as _ns),
-  timeit.default_timer, timeit.timeit or timeit.repeat, or an event loop's .time(), however imported, and through any
+  timeit.default_timer, timeit.timeit or timeit.repeat, os.times or resource.getrusage (a process's CPU and elapsed
+  times; review 3, L6), or an event loop's .time(), however imported, and through any
   name bound to one of those functions (`clock = time.monotonic`, `self.clock = ...`, functools.partial of one);
 - the difference of two moments of the real calendar clock: datetime.now(), datetime.utcnow(), timezone.now() (also
   as `timezone as tz`, or a name holding one) on both sides of a minus;
@@ -29,7 +30,9 @@ from .tests_company_clock import _name, _owner, modules
 
 CLOCK_FUNCTIONS = ('monotonic', 'perf_counter', 'time', 'process_time', 'thread_time', 'clock_gettime')
 CLOCKS = ({('time', name) for name in CLOCK_FUNCTIONS} | {('time', f'{name}_ns') for name in CLOCK_FUNCTIONS}
-          | {('timeit', 'default_timer'), ('timeit', 'timeit'), ('timeit', 'repeat')})
+          | {('timeit', 'default_timer'), ('timeit', 'timeit'), ('timeit', 'repeat')}
+          | {('os', 'times'), ('resource', 'getrusage')})                 # the CPU and elapsed times of a process
+CLOCK_MODULES = ('time', 'timeit', 'os', 'resource')
 NOWS = {('datetime', 'now'), ('datetime', 'utcnow'), ('timezone', 'now')}
 GROWS = {'append', 'extend', 'insert', 'add', 'update', 'setdefault'}      # a container a measured value is put in
 LOOPS = {'get_event_loop', 'get_running_loop', 'new_event_loop'}              # an event loop, whose .time() is a clock
@@ -86,11 +89,11 @@ class _Reader:
     """Which names of a module's functions hold a wall-clock reading (their shape), and which checks use one."""
 
     def __init__(self, tree):
-        self.modules = {'time': 'time', 'timeit': 'timeit'}
+        self.modules = {name: name for name in CLOCK_MODULES}
         self.clocks, self.nows = set(), set()       # bare names that are a clock / a calendar clock
         self.owners = {owner for owner, _name in NOWS}   # the names `timezone` and `datetime` go by (`timezone as tz`)
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module in ('time', 'timeit', 'django.utils.timezone'):
+            if isinstance(node, ast.ImportFrom) and node.module in (*CLOCK_MODULES, 'django.utils.timezone'):
                 for alias in node.names:
                     if (node.module, alias.name) in CLOCKS:
                         self.clocks.add(alias.asname or alias.name)
@@ -102,7 +105,7 @@ class _Reader:
                         self.owners.add(alias.asname)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name in ('time', 'timeit'):
+                    if alias.name in CLOCK_MODULES:
                         self.modules[alias.asname or alias.name] = alias.name
         for node in ast.walk(tree):                 # names bound to a clock function: `clock = time.monotonic`
             if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None and self.is_clock_function(
@@ -288,9 +291,12 @@ def wall_clock_assertions():
 PROBE = '''
 import asyncio
 import functools
+import os
+import resource
 import time
 import timeit
 from datetime import datetime
+from os import times
 from time import perf_counter as pc
 
 from django.utils import timezone
@@ -329,6 +335,9 @@ class Probe:
         self.assertLess(tick() - started, 1)  # caught
         self.assertLess(loop.time() - started, 1)  # caught
         self.assertLess(asyncio.get_event_loop().time() - started, 1)  # caught
+        self.assertLess(os.times().elapsed - started, 1)  # caught
+        self.assertLess(resource.getrusage(resource.RUSAGE_SELF).ru_utime, 1)  # caught
+        self.assertLess(times().user, 1)  # caught
 
     def test_elsewhere(self):
         self.assertLess(self.spent, 1)  # caught

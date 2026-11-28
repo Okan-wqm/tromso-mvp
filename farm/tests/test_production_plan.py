@@ -23,8 +23,8 @@ from core.models import AuditLog, PlatformSettings
 from ..feeding import read as feeding_read
 from ..harvest import forecast
 from ..models import (
-    FeedingProtocol, HandlingPlanItem, ProtocolAssignment, ProtocolBand, StockMovement, TemperatureProfile,
-    TemperatureProfileAssignment, WeightSource,
+    FeedingProtocol, HandlingPlanItem, ProtocolAssignment, ProtocolBand, ProtocolRate, StockMovement,
+    TemperatureProfile, TemperatureProfileAssignment, TemperatureProfilePoint, WeightSource,
 )
 from ..stock import read as stock_read, services as stock_services
 from .helpers import role, rows_data
@@ -876,3 +876,76 @@ class ReviewOneTests(PlanTestCase):
             assignments.save(self.user, made)
         self.assertEqual(caught.exception.message_dict['profile'], ['Hall C is no longer active: it was changed meanwhile.'])
         self.assertFalse(TemperatureProfileAssignment.objects.exists())
+
+    def test_a_past_start_reads_its_protocol_by_identity_never_by_name(self):
+        # M1 by identity (the coordinator's round after review 1): the plan from the weighing ten days ago reads the
+        # protocol row and its table as they were at the end of that day, found by the row's own id. Since then the
+        # protocol was renamed through its page, a new protocol was given its old name, the row on T-01 was pointed at
+        # the new one by a script, and the old table's cells were raised by a script. The plan from then still reads
+        # 'Salmon plan' as it was: SFR 1 % at 12 °C, 20 % uneaten, FCR 1.00: 60 g × 1.008^5 = 62.43870843076608 g on
+        # the fifth day. The new 'Salmon plan' (SFR 2 %) would give 60 × 1.016^5 = 64.93… g.
+        stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(5), avg_weight_g=D(62))
+        self.recorded_back(16)
+        self.water_on(self.t1, 11, '12')
+        start, first = self.day(10), self.protocol.pk
+        renamed = self.client.post(reverse('farm:feedingprotocol_edit', args=[first]), {
+            **self.general(name='Salmon plan 2025'), 'status': 'active',
+            'version': str(FeedingProtocol.objects.get(pk=first).version)})
+        self.assertEqual(renamed.status_code, 302)
+        new = self.protocol_through_its_pages(rows=[self.band(sfr_100='2', sfr_120='2')])
+        self.assertEqual(new.name, 'Salmon plan')
+        ProtocolAssignment.objects.filter(unit=self.t1).update(protocol=new)            # a script, not the form
+        ProtocolRate.objects.filter(band__protocol_id=first).update(sfr_pct=D(3))         # a script, not the form
+        then = self.past_plan(start)
+        self.assertEqual([(protocol.pk, protocol.name) for protocol in then.forecast.protocols], [(first, 'Salmon plan')])
+        self.assertEqual(then.forecast.weight_on(self.day(5)), D('62.43870843076608'))
+        found = forecast.projection(self.t1.pk, self.batch.pk, start)
+        self.assertEqual(found['protocols'], ['Salmon plan'])
+        self.assertEqual(found['days'][4]['weight_g'], D('62.43870843076608'))
+        # today's plan reads the rows as they are now: the new protocol
+        self.assertEqual([protocol.pk for protocol in self.past_plan(None).forecast.protocols], [new.pk])
+
+    def test_a_past_start_reads_its_temperature_profile_by_identity_never_by_name(self):
+        # The same for the temperature profile: 'Hall at 10' (10 °C at every weight) on T-01 from fifteen days ago. Since
+        # the start it was renamed through its page, its points were warmed to 11 °C by a script, a new profile was
+        # given its old name at 12 °C and the row was pointed at it by a script. The plan from ten days ago reads 10 °C
+        # every day, under the name it had: 60 × 1.008^5 = 62.43870843076608 g on the fifth day (SFR 1 % at 10 °C).
+        old = self.profile_through_its_pages('Hall at 10', [('0', '10'), ('1000', '10')])
+        self.assign_profile(old, unit=self.t1)
+        stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(5), avg_weight_g=D(62))
+        self.recorded_back(16)
+        start = self.day(10)
+        renamed = self.client.post(reverse('farm:temperatureprofile_edit', args=[old.pk]), {
+            'name': 'Hall old', 'species': str(self.salmon.pk), 'status': 'active', 'temperature_between': 'smooth',
+            'notes': '', 'version': str(TemperatureProfile.objects.get(pk=old.pk).version)})
+        self.assertEqual(renamed.status_code, 302)
+        TemperatureProfilePoint.objects.filter(profile=old).update(temperature_c=D(11))      # a script
+        new = self.profile_through_its_pages('Hall at 10', [('0', '12'), ('1000', '12')])
+        TemperatureProfileAssignment.objects.filter(unit=self.t1).update(profile=new)       # a script
+        found = forecast.projection(self.t1.pk, self.batch.pk, start)
+        self.assertEqual(found['temperature_profiles'], ['Hall at 10'])
+        self.assertEqual({day['temperature_c'] for day in found['days']}, {D('10.0')})
+        self.assertEqual(found['days'][4]['weight_g'], D('62.43870843076608'))
+        self.assertEqual([profile.pk for profile in self.past_plan(start).forecast.profiles], [old.pk])
+
+    def test_a_past_start_reads_the_fasts_planned_by_then_and_none_planned_since(self):
+        # Decision 12 for the fasts: a transport planned by the end of the start day (seven days ago, the rule's 24 h:
+        # its day and the day before fast) asks its fast in the plan from then, though it was cancelled since; a
+        # transport planned since (four days ago) asks none there. Today's plan reads neither: the one is cancelled,
+        # the other is in the past.
+        stock_services.record_weighing(self.user, unit=self.t1, batch=self.batch, day=self.day(5), avg_weight_g=D(62))
+        planned = HandlingPlanItem.objects.create(kind='transport', date=self.day(7), unit=self.t1, batch=self.batch)
+        self.recorded_back(16)
+        self.water_on(self.t1, 11, '12')
+        HandlingPlanItem.objects.filter(pk=planned.pk).update(cancelled_reason='Weather')
+        HandlingPlanItem.objects.create(kind='transport', date=self.day(4), unit=self.t1, batch=self.batch)
+        found = forecast.projection(self.t1.pk, self.batch.pk, self.day(10))
+        self.assertEqual([day['day'] for day in found['days'] if day['fasting']], [self.day(8), self.day(7)])
+        # nothing fed on the fasting days: the weight of the day before them (60 × 1.008 = 60.48 g) stands
+        self.assertEqual([day['weight_g'] for day in found['days'][:3]], [D('60.48'), D('60.48'), D('60.48')])
+        self.assertFalse(any(day['fasting'] for day in forecast.projection(self.t1.pk, self.batch.pk)['days']))
+
+    def past_plan(self, start):
+        unit = type(self.t1).objects.select_related('production_department__site').get(pk=self.t1.pk)
+        share = stock_read.stock_of([unit])[unit.pk].counted[0]
+        return forecast.plan(unit, share, D(70), start)

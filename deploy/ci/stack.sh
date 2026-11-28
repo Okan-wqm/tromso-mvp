@@ -337,7 +337,8 @@ heartbeat() {
   fi
   # the red heartbeat is the expected outcome here: its FAIL lines printed as such, and the archiver must be among them
   grep FAIL "$T/heartbeat.out" | sed "s/^/expected: /"
-  grep -q "^FAIL  backup: the WAL archiver is failing" "$T/heartbeat.out" \n    || { cat "$T/heartbeat.out"; echo "FAIL: the heartbeat was red, but not for the archiver"; exit 1; }
+  grep -q "^FAIL  backup: the WAL archiver is failing" "$T/heartbeat.out" \
+    || { cat "$T/heartbeat.out"; echo "FAIL: the heartbeat was red, but not for the archiver"; exit 1; }
   say "the archive writable again: the archiver catches up and the heartbeat is green"
   "${DC[@]}" exec -T -u root db chmod 0700 /wal-archive
   for _ in $(seq 1 60); do

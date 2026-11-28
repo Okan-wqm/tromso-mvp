@@ -169,7 +169,8 @@ Onto a new or rebuilt server, or into a throwaway server to test (do this at ins
      'cp -a /backups/restore/media-ro/. /srv/media/ && chown -R 10002:10002 /srv/media'
    ```
 6. Start everything: `dc up -d`. The release step finds every migration applied (or applies the newer release's).
-   Then `sh scripts/check-roles.sh`, sign in, look at the newest records.
+   Then `sh scripts/check-roles.sh`, `dc run --rm manage python manage.py check --database default` (quiet: the
+   open alarms' queue against the clearances, alarms.W001, among the others), sign in, look at the newest records.
 
 On a busy database the counts were taken a moment before the dump: a few rows of the busiest tables may differ, and
 the differences are printed. A restore test on a quiet copy must show none.

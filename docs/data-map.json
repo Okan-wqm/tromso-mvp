@@ -18200,6 +18200,7 @@
         "sensors/tests/test_read.py",
         "alarms/tests/__init__.py",
         "alarms/tests/test_migration.py",
+        "alarms/tests/test_migration_open.py",
         "alarms/tests/test_migration_place.py",
         "alarms/tests/test_migration_reverse.py",
         "alarms/tests/test_migration_subjects.py",
@@ -39051,6 +39052,7 @@
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
+        "alarms/tests/test_migration_open.py",
         "alarms/tests/test_migration_place.py",
         "alarms/tests/test_pages.py"
       ]
@@ -39498,6 +39500,7 @@
         "alarms/tests/test_defects.py",
         "alarms/tests/test_floods.py",
         "alarms/tests/test_migration.py",
+        "alarms/tests/test_migration_open.py",
         "alarms/tests/test_migration_place.py",
         "alarms/tests/test_migration_reverse.py",
         "alarms/tests/test_pages.py"

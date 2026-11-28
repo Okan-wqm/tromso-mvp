@@ -4999,8 +4999,11 @@ from which device, how late) is logged. The server side is built; the push trans
   found by `core.testing.reads` on 27.11.2026), and a sending round's flood check finds the attempts of its window by
   their time (`alarm_attempts_sent_at_idx`, alarms 0024; before it, every sending round read all
   the attempts). The open alarms are read the same way: from their own queue (`alarm_open`, alarms 0025, kept by
-  database triggers on `alarms` and `alarm_clearances`, whoever writes), so the pass's notify step, the pages' floods,
-  the open list and the overview read what is open, never every alarm, clearance and acknowledgement ever recorded.
+  database triggers on `alarms` and `alarm_clearances`, whoever writes and in whatever order; the triggers run as their
+  owner and the app role may not write the table, `deploy/db/sql/grants.sql`), so the whole pass (its notify step,
+  the sensor events' mirror, the supervision of criticals told to nobody), the pages' floods, the open list and the
+  overview read what is open, never every alarm, clearance and acknowledgement ever recorded. `manage.py check
+  --database default` compares the queue with the alarms that have no clearance, both ways (alarms.W001).
   **A critical is never given up until someone has seen it** (the review, F1; N7 of the
   last recheck): a critical alarm's notification is tried again until it is sent or its alarm is acknowledged, the wait
   doubling from the severity's retry time up to its escalation time; clearing does not end it (a critical that came and
@@ -5501,9 +5504,10 @@ there was then (`core_rev_ensure`). A reader ensures its keys, then stamps them,
   TimescaleDB refuses to disable a trigger on a hypertable or a chunk; a chunk's trigger can still be dropped.
 - `manage.py check --database default` also names (core.W006) every index PostgreSQL marks invalid, what a
   CREATE INDEX CONCURRENTLY or REINDEX CONCURRENTLY that failed part-way leaves (written on every change, never read,
-  and the next run of the migration that makes it stops at "already exists"), with the `DROP INDEX CONCURRENTLY IF
-  EXISTS ...` that removes each (docs/ops/upgrade.md, When it fails). The migrations here build their indexes in
-  their own transaction (alarms 0024), so a failed one leaves none.
+  and a migration that makes an index of that name stops at "already exists"), with the `DROP INDEX ... IF EXISTS
+  ...` that removes each (CONCURRENTLY, except on a partitioned table's index, where PostgreSQL refuses it;
+  docs/ops/upgrade.md, When it fails). An index being built at that moment is left out. The migrations here build
+  their indexes in their own transaction (alarms 0024), so a failed one leaves none.
 - `manage.py core_rev_repair` (the warning's hint) makes the missing triggers again exactly as their migrations made
   them (`core.rev.operations()`), then rebuilds every revision, since changes may have passed unseen meanwhile. It does
   nothing when none is missing.
@@ -7324,19 +7328,25 @@ test's back.
 and fails on a loaded one: the outbox's "a round reads the queue, never the whole history" took 0.585 s for a bound of
 0.5 on a shared CI runner (nightly run 45865365125 on 7a299319), and had failed so once before. What keeps a round, a
 page or a lookup cheap is what it reads, and the database counts that exactly. `core.testing.reads()` takes
-PostgreSQL's own counters of the transaction (`pg_stat_get_xact_tuples_returned`: the rows sequential scans read of a
-table, and the entries its indexes handed out) around the block and around each statement, and gives the rows the
-block read of each table (`read('alarm_notifications')`, exact integers, every statement of the connection included
-however it is written) and the most rows one statement handed back (`most_returned()`, from its cursor). What it cannot
-see it refuses (`Unmeasured`) rather than answer zero: a statement another thread ran that names the table asked about,
-the rows of a server-side cursor. Parallel workers are off in the block (their reads are other processes'). That a
-read does not grow with the history is asked as a difference (`core.testing.assert_reads_do_not_grow`): the history
-grown, a look to warm the session, the measured look; grown again, warmed, measured again; the second may read at
-most a hundred rows more of each history table, where a scan reads all that was added. What does not depend on the
-history counts alike on both sides, the planner's first looks at the ends of indexes over rows no vacuum has seen
-among them. The outbox's tests ask it so: `backlog()` and a whole sending round beside 50,000 and 100,000
-notifications of history; the open alarms' readers (the pass's notify step, the floods, the open list, the overview)
-beside 50,000 and 100,000 alarms of history, each cleared and acknowledged. A round with
+PostgreSQL's own counters of the transaction (`pg_stat_get_xact_tuples_returned`: the live rows sequential scans of a
+table handed up, and the entries its indexes handed out) around the block and around each statement, and gives the
+rows the block read of each table, keyed by schema (`read('alarm_notifications')` is public's; exact integers, every
+statement of the connection included however it is written) and the most rows one statement handed back
+(`most_returned()`, from its cursor). Not counted: the dead rows a sequential scan steps over and the pages it reads to
+find them, and TOAST, so a queue churned between vacuums (`alarm_outbox`, `alarm_open`) reads as cheaper than its pages
+are; an index scan's dead entries are counted until it marks them dead. What it cannot see it refuses (`Unmeasured`)
+rather than answer zero: a statement another thread ran that names the table asked about, the rows of a server-side
+cursor. Parallel workers are off in the block (their reads are other processes'). That a read does not grow with the
+history is asked as a difference (`core.testing.assert_reads_do_not_grow`): the history grown, a look to warm the
+session, the measured look; grown again, warmed, measured again; the two counts of each history table may differ by
+at most a hundred rows either way, where a scan reads all that was added, and the first must be below what was added
+(a scan in the first could otherwise hide one in the second). The history is committed and vacuumed first, as a
+farm's is (those tests are TransactionTestCases): rows the measuring transaction wrote itself are not all-visible, and
+the planner's looks at the ends of indexes over them read thousands of rows a statement, a cost of the test's own
+making that hid in a one-sided difference (run 46078949779). The outbox's tests ask it so: `backlog()` and a whole sending round beside 50,000 and 100,000 notifications of history; a whole
+pass of the alarm worker (`engine.run_once`) and the open alarms' readers (its notify step, the floods, the open list,
+the overview) beside 50,000 and 100,000 alarms of history, each notified, escalated, snoozed, acknowledged and
+cleared. A round with
 20,000 cleared warnings waiting gives up one chunk and no statement of it hands Python more than a chunk; 20,000
 waiting without a transport are counted in the database, never fetched. A deadline is driven by a clock the test
 holds (`outbox.send_due(clock=...)`: the round's deadline falls after the second send of 0.2 s; the worker's watchdog
@@ -7348,13 +7358,15 @@ mail server is still shut, with the same statements for an address that has an a
 
 `core/tests_wall_clock.py` reads every test module (functions and methods, classes nested to any depth) and refuses a
 check on a measured value: a reading of `time.monotonic`, `perf_counter`, `time`, `process_time`, `thread_time` or
-`clock_gettime` (and each `_ns`) or `timeit.default_timer`, however imported and through any name bound to one of those
-functions (`clock = time.monotonic`); the difference of two moments of the calendar clock (`datetime.now()`,
-`utcnow()`, `timezone.now()`); and whatever the same function computes from one (a name, a list or dict it is put in,
-a part of a tuple, a helper of the same module that returns one). A check is an `assert...` or `fail...` call (its
+`clock_gettime` (and each `_ns`), `timeit.default_timer`, `timeit.timeit` or `timeit.repeat`, or an event loop's
+`loop.time()`, however imported and through any name bound to one of those functions (`clock = time.monotonic`,
+`functools.partial(time.monotonic)`); the difference of two moments of the calendar clock (`datetime.now()`,
+`utcnow()`, `timezone.now()`, also as `timezone as tz`); and whatever the same function computes from one (a name, a
+list or dict it is put in, a part of a tuple, a helper of the same module that returns one), or another method of the
+same class holds in `self.` (measured in `setUp`, asserted in a test). A check is an `assert...` or `fail...` call (its
 arguments by position or keyword), an `assert` statement, or an `if` whose body fails or raises. A wait with a ceiling
-(`until`) and a measurement written out pass. It does not follow a value into another module, nor a clock handed in as
-an argument. What must stay on the wall clock is listed there with why, exactly as written: a killed worker process
+(`until`) and a measurement written out pass. It does not follow a value into another module, through a class
+attribute or a base class, nor a clock handed in as an argument. What must stay on the wall clock is listed there with why, exactly as written: a killed worker process
 said unchecked within `stale_after`, a standby process taking over within seconds (real processes, which no clock of
 the test reaches), and the monitoring load check, run only when asked. The owner's 10 s from a value to its open alarm
 is the ceiling of the wait for it (`until(..., TARGET, ...)`), asked once.

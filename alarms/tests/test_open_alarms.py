@@ -1,15 +1,16 @@
-"""The open alarms' own queue (alarms.OpenAlarm, alarms 0025; review 1, F1): the database keeps it, whoever writes, and
-what reads the open alarms reads it, never every alarm, clearance, acknowledgement, notification, escalation and snooze
-ever recorded. Measured beside 50,000 and again beside 100,000 alarms of history (each with its notification,
-escalation, clearance, acknowledgement and an ended snooze), counted by PostgreSQL (core.testing.reads): the pass's
-notify step, the pages' floods, the open list and the overview's open alarms read no more of each history table beside
-the one than beside the other (core.testing.assert_reads_do_not_grow)."""
+"""The open alarms' own queue (alarms.OpenAlarm, alarms 0025; review 1, F1; review 2, H2): the database keeps it, whoever
+writes and in whatever order, a check finds it out of step, and what reads the open alarms reads it, never every
+alarm, clearance, acknowledgement, notification, escalation and snooze ever recorded. Measured beside 50,000 and again
+beside 100,000 alarms of history (each with its notification, escalation, clearance, acknowledgement and an ended
+snooze), counted by PostgreSQL (core.testing.reads): a whole pass of the alarm worker (`engine.run_once`), its notify
+step, the pages' floods, the open list and the overview's open alarms read no more of each history table beside the
+one than beside the other (core.testing.assert_reads_do_not_grow)."""
 from django.db import connection, transaction
 from django.test import TransactionTestCase, override_settings
 
 from core.testing import assert_reads_do_not_grow, reads
 
-from .. import engine, floods, read, services
+from .. import checks, engine, floods, read, services
 from ..models import OPEN, Alarm, AlarmClearance
 from ..rules import current
 from . import RECORDING, AlarmsCase, AlarmsWorld
@@ -47,6 +48,38 @@ class OpenQueueTests(OpenWorld, AlarmsCase):
         self.assertEqual(set(Alarm.objects.filter(OPEN).values_list('pk', flat=True)), unclear)
         rows("INSERT INTO alarm_clearances (alarm_id, cleared_at, cause) VALUES (%s, %s, 'restored')", [raw, self.now])
         self.assertEqual(self.queue(), {made[1].pk, made[2].pk})
+
+    def test_a_clearance_written_before_its_alarm_keeps_it_out_of_the_queue(self):
+        """The keys are checked at the transaction's end, so a fixture, a repair or a restore may write a clearance
+        before its alarm (H2 a): the alarm's trigger leaves an alarm that has its clearance out."""
+        (alarm,) = rows("SELECT nextval(pg_get_serial_sequence('alarms', 'id'))")[0]
+        rows("INSERT INTO alarm_clearances (alarm_id, cleared_at, cause) VALUES (%s, %s, 'restored')", [alarm, self.now])
+        rows("INSERT INTO alarms (id, source, parameter, severity, opened_at, summary) VALUES (%s, 'system', 'early', "
+             "'warning', %s, 'early')", [alarm, self.now])
+        self.assertNotIn(alarm, self.queue())
+        self.assertEqual(checks.open_alarms_hold(None), [])
+
+    def test_a_queue_out_of_step_with_the_clearances_is_named_both_ways(self):
+        made = [self.open(f'open{number}') for number in range(2)]
+        self.assertEqual(checks.open_alarms_hold(None), [])
+        rows('SET CONSTRAINTS ALL IMMEDIATE')         # (the test's own pending key checks, or TRUNCATE and ALTER wait)
+        rows('TRUNCATE alarm_open')                                       # what a superuser's TRUNCATE leaves
+        (missing,) = checks.open_alarms_hold(None)
+        self.assertEqual(missing.id, 'alarms.W001')
+        self.assertIn('2 open alarm(s) are missing', missing.msg)
+        self.assertIn(f'{made[0].pk}, {made[1].pk}', missing.msg)
+        rows(missing.hint.split(': ', 1)[1])                              # the repair, as the hint says it
+        self.assertEqual(checks.open_alarms_hold(None), [])
+        rows('SET CONSTRAINTS ALL IMMEDIATE')
+        rows('ALTER TABLE alarm_clearances DISABLE TRIGGER trg_alarm_clearances_open')   # a trigger set aside
+        services.clear(made[0], self.now, 'returned')
+        rows('SET CONSTRAINTS ALL IMMEDIATE')
+        rows('ALTER TABLE alarm_clearances ENABLE TRIGGER trg_alarm_clearances_open')
+        (cleared,) = checks.open_alarms_hold(None)
+        self.assertIn('1 cleared alarm(s) are still in', cleared.msg)
+        rows(cleared.hint.split(': ', 1)[1])
+        self.assertEqual(checks.open_alarms_hold(None), [])
+        self.assertEqual(self.queue(), {made[1].pk})
 
 
 @override_settings(ALARM_TRANSPORTS=RECORDING)
@@ -92,6 +125,19 @@ class OpenHistoryTests(OpenWorld, TransactionTestCase):
             services.clear(alarm, self.now, 'returned')
         opened[:] = [self.open(f'{name}{len(self.looks)}{number}') for number in range(3)]
         self.looks.append(1)
+
+    def test_a_whole_pass_reads_the_open_alarms_never_the_history(self):
+        """engine.run_once, every step of it: the notify step, the sensor events' mirror and the supervision of the
+        criticals told to nobody included (review 2, M1)."""
+        self.looks, opened = [], []
+
+        def run_once():
+            self.fresh(opened, 'pass')
+            with transaction.atomic(), reads() as found:
+                summary = engine.run_once(self.now)
+            self.assertFalse(summary.failed_steps)
+            return found
+        assert_reads_do_not_grow(self, self.grow, run_once, HISTORY_TABLES, 'a whole pass')
 
     def test_the_pass_notify_step_reads_the_open_alarms_never_the_history(self):
         self.looks, opened = [], []

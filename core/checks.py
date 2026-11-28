@@ -290,23 +290,28 @@ def plain_private_values(app_configs, **kwargs):
 @register(Tags.database)
 def invalid_indexes(app_configs, **kwargs):
     """Indexes the database keeps but cannot use: what a CREATE INDEX CONCURRENTLY or REINDEX CONCURRENTLY that failed
-    part-way leaves behind (a migration that is not atomic, an administrator's rebuild). Such an index is written on
-    every change and never read, and the next migration that makes it again stops at "already exists", so the release
-    stops with it (docs/ops/upgrade.md, When it fails). Named with the command that removes each; nothing is changed
-    here. Run with `manage.py check --database default`."""
+    part-way leaves behind (an administrator's rebuild; no migration here builds one so). Such an index is written on
+    every change and never read, and a migration that makes it again stops at "already exists", so the release stops
+    with it (docs/ops/upgrade.md, When it fails). One being built at this moment is invalid too until its build ends:
+    it is left out (pg_stat_progress_create_index lists it). Named with the command that removes each, a partitioned
+    table's index without CONCURRENTLY (PostgreSQL refuses it there); nothing is changed here. Run with `manage.py
+    check --database default`."""
     from django.db import DatabaseError, connection
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT format('%I.%I', n.nspname, c.relname) FROM pg_index i "
+            cursor.execute("SELECT format('%I.%I', n.nspname, c.relname), c.relkind = 'I' FROM pg_index i "
                            "JOIN pg_class c ON c.oid = i.indexrelid JOIN pg_namespace n ON n.oid = c.relnamespace "
-                           "WHERE NOT i.indisvalid ORDER BY 1")
-            found = [row[0] for row in cursor.fetchall()]
+                           "WHERE NOT i.indisvalid AND NOT EXISTS (SELECT 1 FROM pg_stat_progress_create_index p "
+                           "WHERE p.index_relid = i.indexrelid) ORDER BY 1")
+            found = cursor.fetchall()
     except DatabaseError:
         return []
     if not found:
         return []
     return [Warning(
-        f'{len(found)} index(es) are invalid, left by a concurrent build that failed: {", ".join(found)}. They are '
-        f'never read, and a migration that makes one again stops at "already exists".',
-        hint=' '.join(f'DROP INDEX CONCURRENTLY IF EXISTS {name};' for name in found)
+        f'{len(found)} index(es) are invalid, left by a concurrent build that failed: '
+        f'{", ".join(name for name, _partitioned in found)}. They are never read, and a migration that makes one again '
+        f'stops at "already exists".',
+        hint=' '.join(f'DROP INDEX {"" if partitioned else "CONCURRENTLY "}IF EXISTS {name};'
+                      for name, partitioned in found)
         + ' Then run the release again (docs/ops/upgrade.md, When it fails).', id='core.W006')]

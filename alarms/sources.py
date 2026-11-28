@@ -55,7 +55,7 @@ from sensors.models import AlarmEvent, Binding, Channel, Device
 from . import clock, services
 from .place import UNIT_PREFIXES, bound, names_unit, unit_of_key, unit_subject, water_key, water_key_parts
 from .routing import NO_CHANNEL, NO_RULES, TO_OVERSEERS, UNREACHED
-from .models import Alarm, AlarmSubjectState, ClearCause, Severity, Source
+from .models import OPEN, Alarm, AlarmSubjectState, ClearCause, Severity, Source
 
 logger = logging.getLogger(__name__)
 SUMMARY_LENGTH = Alarm._meta.get_field('summary').max_length
@@ -105,8 +105,8 @@ def sensor_events():
         mirror(event)
         opened += 1
         cleared += event.closed_at is not None
-    for alarm in (Alarm.objects.filter(source=Source.SENSOR_RULE, clearance__isnull=True,
-                                       sensor_event__closed_at__isnull=False).select_related('sensor_event__rule')):
+    for alarm in (Alarm.objects.filter(OPEN, source=Source.SENSOR_RULE, sensor_event__closed_at__isnull=False)
+                  .select_related('sensor_event__rule')):
         services.clear_many([(alarm, alarm.sensor_event.closed_at, ClearCause.EVENT_CLOSED,
                               _rule_off(alarm.sensor_event.rule))])
         cleared += 1
@@ -346,7 +346,7 @@ def _unreached():
     from django.db.models import Exists, Max, OuterRef, Subquery
     from django.db.models.functions import Coalesce
 
-    from .models import Acknowledgement, AlarmClearance, Escalation, Notification
+    from .models import Acknowledgement, Escalation, Notification
     from .transports import connected_channels
     connected = connected_channels()
     with sealing.system('the alarm system supervises itself: the critical alarms told to nobody'):
@@ -355,8 +355,7 @@ def _unreached():
         told = Notification.objects.filter(alarm=OuterRef('pk'), level=OuterRef('current'))
         if connected:
             told = told.filter(channel__in=connected)
-        return (Alarm.objects.filter(severity=Severity.CRITICAL).exclude(parameter__in=TO_OVERSEERS)
-                .exclude(Exists(AlarmClearance.objects.filter(alarm=OuterRef('pk'))))
+        return (Alarm.objects.filter(OPEN, severity=Severity.CRITICAL).exclude(parameter__in=TO_OVERSEERS)
                 .exclude(Exists(Acknowledgement.objects.filter(alarm=OuterRef('pk'))))
                 .annotate(current=level).exclude(Exists(told)).count())
 

@@ -31,6 +31,7 @@ from django.db import DEFAULT_DB_ALIAS, connections
 from core.modules import is_test_module  # noqa: F401  a re-export: production imports core.modules, never this module
 
 CLOCK = 'django.utils.timezone.now'
+_held = []     # the moments timezone.now() is held at (one_moment, a FrozenClock class), innermost last
 
 
 # Moments at which the UTC day is not the company's (Europe/Oslo unless the environment names another). The first is
@@ -59,6 +60,8 @@ class FrozenClock:
             clock = mock.patch(CLOCK, side_effect=lambda: cls.NOW + (datetime.now(dt_timezone.utc) - began))
         else:
             clock = mock.patch(CLOCK, return_value=cls.NOW)
+            _held.append(cls.NOW)
+            cls.addClassCleanup(_held.remove, cls.NOW)
         clock.start()
         cls.addClassCleanup(clock.stop)
         super().setUpClass()
@@ -110,11 +113,23 @@ def one_moment():
     """`timezone.now()` held at the moment the block starts, for the whole block: for a test that renders two things and
     compares what they say (a page in its two looks), when what they say has the time on it (the Production overview's
     "Stock records at 21:59"). Two renders on either side of a minute's edge said two different times (CI run
-    46062378753, monitoring.tests.test_silent_oxygen); held, both say the same. Yields the moment."""
+    46062378753, monitoring.tests.test_silent_oxygen; 46117946195, the calculator's report); held, both say the same.
+    Yields the moment."""
     from django.utils import timezone
     moment = timezone.now()
     with mock.patch(CLOCK, return_value=moment):
-        yield moment
+        _held.append(moment)
+        try:
+            yield moment
+        finally:
+            _held.pop()
+
+
+def held():
+    """Whether `timezone.now()` stands still here (inside one_moment, or a test of a FrozenClock class that does not
+    run on): what compares two renders asks it
+    (monitoring.tests.golden.says_missing), so no comparison of two looks runs on a moving clock."""
+    return bool(_held)
 
 
 # ---- What a block reads ----------------------------------------------------------------------------------------------

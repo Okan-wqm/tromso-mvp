@@ -214,7 +214,14 @@ def page_says(html, norm, scope=''):
 
 
 def says_missing(old, new):
-    """{part: items} of what `old` (page_says) says that `new` does not: empty when the new page says it all."""
+    """{part: items} of what `old` (page_says) says that `new` does not: empty when the new page says it all. Asked
+    inside core.testing.one_moment() only, the two pages rendered in it too: what a page says may have the time on it
+    (the calculator's report, "28.11.2026 07:58"), and two renders on either side of a minute's edge differ (CI run
+    46117946195)."""
+    from core.testing import held
+    if not held():
+        raise AssertionError('says_missing compares two renders: render both, and compare them, inside '
+                             'core.testing.one_moment(), or the clock may move between them.')
     return {part: missing for part in old if (missing := multiset_missing(old[part], new.get(part, [])))}
 
 

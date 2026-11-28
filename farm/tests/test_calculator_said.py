@@ -13,6 +13,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core import ui
+from core.testing import one_moment
 from monitoring.tests.golden import page_says, says_missing, squash
 
 from .helpers import role
@@ -88,8 +89,9 @@ class CalculatorSaysTests(TestCase):
         for name, query in CASES.items():
             for url in (PAGE, PARTS, REPORT):
                 with self.subTest(case=name, url=url):
-                    old, new = self.said(url, query), self.said(url, query, look=ui.NEXT)
-                    self.assertEqual(says_missing(old, new), {})
+                    with one_moment():           # the report has the time on it: both looks say the same
+                        old, new = self.said(url, query), self.said(url, query, look=ui.NEXT)
+                        self.assertEqual(says_missing(old, new), {})
 
     def test_the_new_look_is_drawn_in_the_new_look(self):
         """The new look's marks are there (the plates' titles, data-ui on the report's own page), and the classic look has

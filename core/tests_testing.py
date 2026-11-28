@@ -292,9 +292,20 @@ class OneMomentTests(SimpleTestCase):
     def test_the_clock_stands_for_the_block_and_is_given_back(self):
         import time
 
-        from core.testing import one_moment
+        from core.testing import held, one_moment
+        self.assertFalse(held())
         with one_moment() as moment:
             first = timezone.now()
             time.sleep(0.002)
             self.assertEqual((first, timezone.now()), (moment, moment))
+            self.assertTrue(held())
         self.assertIs(timezone.now, GIVEN)
+        self.assertFalse(held())
+
+
+class HeldByAFrozenClockTests(FrozenClock, SimpleTestCase):
+    NOW = datetime(2026, 11, 28, 7, 58, tzinfo=utc.utc)
+
+    def test_a_frozen_clock_holds_the_moment(self):
+        from core.testing import held
+        self.assertTrue(held())

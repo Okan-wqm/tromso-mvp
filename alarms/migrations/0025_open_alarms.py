@@ -8,9 +8,11 @@ alarms/tests/test_open_alarms.py).
 The database keeps it, whoever writes (review 2, H2): a statement trigger on `alarms` adds the alarms it inserted that
 have no clearance (a clearance may come first in one transaction: the keys are checked at its end), one on
 `alarm_clearances` removes the alarms it cleared; both tables are append-only, so nothing else changes openness, and
-raw SQL, a bulk insert or a fixture keep it as the services do. The two functions run as their owner (SECURITY
-DEFINER), so the app role needs no right on the table and has none (deploy/db/sql/grants.sql): only they write it.
-`manage.py check --database default` compares it with "no clearance" both ways (alarms.W001).
+raw SQL, a bulk insert or a fixture keep it as the services do. Both are core.operations.DefinerTrigger: their
+functions run as their owner, so the app role needs no right on the table and has none (deploy/db/sql/grants.sql);
+nobody but their owner may make a trigger call them, they run for their own table only, and they name every table
+with its schema, so a temporary table of the same name can neither call them nor be written by them.
+`manage.py check --database default` compares the queue with "no clearance" both ways (alarms.W001).
 
 The triggers are made first, then the queue is filled (review 2, H1): CREATE TRIGGER waits for the writers of `alarms`
 and `alarm_clearances` under way and keeps every later one out until this migration commits, so the fill sees every
@@ -19,37 +21,12 @@ the table."""
 import django.db.models.deletion
 from django.db import migrations, models
 
-TRIGGERS = """
-CREATE FUNCTION alarm_open_opened() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path = public, pg_catalog AS $$
-BEGIN
-    INSERT INTO alarm_open (alarm_id) SELECT o.id FROM opened o
-    WHERE NOT EXISTS (SELECT 1 FROM alarm_clearances c WHERE c.alarm_id = o.id);
-    RETURN NULL;
-END $$;
-CREATE TRIGGER trg_alarms_open AFTER INSERT ON alarms REFERENCING NEW TABLE AS opened
-    FOR EACH STATEMENT EXECUTE FUNCTION alarm_open_opened();
-CREATE FUNCTION alarm_open_cleared() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path = public, pg_catalog AS $$
-BEGIN
-    DELETE FROM alarm_open o USING cleared c WHERE o.alarm_id = c.alarm_id;
-    RETURN NULL;
-END $$;
-CREATE TRIGGER trg_alarm_clearances_open AFTER INSERT ON alarm_clearances REFERENCING NEW TABLE AS cleared
-    FOR EACH STATEMENT EXECUTE FUNCTION alarm_open_cleared();
-"""
-
-DROP = """
-DROP TRIGGER IF EXISTS trg_alarm_clearances_open ON alarm_clearances;
-DROP FUNCTION IF EXISTS alarm_open_cleared();
-DROP TRIGGER IF EXISTS trg_alarms_open ON alarms;
-DROP FUNCTION IF EXISTS alarm_open_opened();
-"""
+from core.operations import DefinerTrigger
 
 # After the triggers: every alarm without a clearance. ON CONFLICT: one the trigger has added since is not added twice.
 FILL = """
-INSERT INTO alarm_open (alarm_id)
-SELECT a.id FROM alarms a WHERE NOT EXISTS (SELECT 1 FROM alarm_clearances c WHERE c.alarm_id = a.id)
+INSERT INTO public.alarm_open (alarm_id)
+SELECT a.id FROM public.alarms a WHERE NOT EXISTS (SELECT 1 FROM public.alarm_clearances c WHERE c.alarm_id = a.id)
 ON CONFLICT DO NOTHING
 """
 
@@ -72,6 +49,11 @@ class Migration(migrations.Migration):
                 'db_table': 'alarm_open',
             },
         ),
-        migrations.RunSQL(TRIGGERS, DROP),
+        DefinerTrigger('alarms', 'trg_alarms_open', 'alarm_open_opened', new_table='opened', body="""
+    INSERT INTO public.alarm_open (alarm_id) SELECT o.id FROM opened o
+    WHERE NOT EXISTS (SELECT 1 FROM public.alarm_clearances c WHERE c.alarm_id = o.id);"""),
+        DefinerTrigger('alarm_clearances', 'trg_alarm_clearances_open', 'alarm_open_cleared', new_table='cleared',
+                       body="""
+    DELETE FROM public.alarm_open o USING cleared c WHERE o.alarm_id = c.alarm_id;"""),
         migrations.RunSQL(FILL, migrations.RunSQL.noop),
     ]

@@ -75,9 +75,12 @@ class OpenAlarmsMigrationTests(TransactionTestCase):
         """CREATE TRIGGER waits for the writers under way and holds the later ones out until the migration commits:
         made first, the fill sees every alarm and clearance there is, and none is written between the two (H1)."""
         from importlib import import_module
+
+        from core.operations import DefinerTrigger
         operations = import_module('alarms.migrations.0025_open_alarms').Migration.operations
-        sql = [str(getattr(operation, 'sql', '')) for operation in operations]
-        triggers = next(index for index, text in enumerate(sql) if 'CREATE TRIGGER trg_alarms_open' in text)
-        fill = next(index for index, text in enumerate(sql) if 'INSERT INTO alarm_open' in text and 'opened' not in text)
-        self.assertLess(triggers, fill)
-        self.assertIn('ON CONFLICT DO NOTHING', sql[fill])
+        triggers = [index for index, operation in enumerate(operations) if isinstance(operation, DefinerTrigger)]
+        fill = next(index for index, operation in enumerate(operations)
+                    if 'INSERT INTO public.alarm_open' in str(getattr(operation, 'sql', '')))
+        self.assertEqual(len(triggers), 2)
+        self.assertLess(max(triggers), fill)
+        self.assertIn('ON CONFLICT DO NOTHING', operations[fill].sql)

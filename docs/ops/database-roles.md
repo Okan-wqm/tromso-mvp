@@ -30,3 +30,10 @@ What follows from it:
   snapshots) are refused `UPDATE` and `DELETE` by the app role's rights as well as by their triggers (grants.sql). One
   exception: `alarms` keeps `UPDATE`, because the alarm service locks an alarm's row (`SELECT ... FOR UPDATE`, which
   needs it); its trigger still refuses every change. `check-roles.sh` tries them.
+- **The open alarms' queue** (`alarm_open`) is written only by its two triggers, whose functions run as the owner
+  (SECURITY DEFINER, `core.operations.DefinerTrigger`); the app role may read it, never write it (grants.sql). The app
+  may make temporary tables (`TEMPORARY`, for no code of its own today), and so a trigger on one of them: such a
+  function's EXECUTE is taken from PUBLIC (and from every function the owner makes, by default: roles.sql, grants.sql),
+  so it cannot hang one on a trigger of its own; the function runs for its own table only and names every table with
+  its schema, with the temporary schema last in its search path, so a temporary table named like the queue is never
+  the one written. `check-roles.sh` tries both. A function the app is to call itself needs its own GRANT EXECUTE.

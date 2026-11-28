@@ -64,11 +64,13 @@ def open_alarms_hold(app_configs, **kwargs):
         if ('alarms', '0025_open_alarms') not in MigrationRecorder(connection).applied_migrations():
             return []
         with connection.cursor() as cursor:
-            cursor.execute('SELECT a.id FROM alarms a WHERE NOT EXISTS (SELECT 1 FROM alarm_clearances c '
-                           'WHERE c.alarm_id = a.id) AND NOT EXISTS (SELECT 1 FROM alarm_open o WHERE o.alarm_id = a.id) '
+            cursor.execute('SELECT a.id FROM public.alarms a WHERE NOT EXISTS (SELECT 1 FROM public.alarm_clearances c '
+                           'WHERE c.alarm_id = a.id) AND NOT EXISTS (SELECT 1 FROM public.alarm_open o WHERE '
+                           'o.alarm_id = a.id) '
                            'ORDER BY a.id')
             missing = [row[0] for row in cursor.fetchall()]
-            cursor.execute('SELECT o.alarm_id FROM alarm_open o JOIN alarm_clearances c ON c.alarm_id = o.alarm_id '
+            cursor.execute('SELECT o.alarm_id FROM public.alarm_open o JOIN public.alarm_clearances c ON c.alarm_id = '
+                           'o.alarm_id '
                            'ORDER BY o.alarm_id')
             cleared = [row[0] for row in cursor.fetchall()]
     except DatabaseError:

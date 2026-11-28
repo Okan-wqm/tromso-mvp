@@ -741,13 +741,14 @@ class OutletPageTests(WaterTestCase):
         self.limit(NH3, critical_high='0.025', warning_high='0.0125')
         self.outlet = SamplingPoint.objects.create(unit=self.t1, name='Outlet', kind='outlet')
         may_record(self.user, 'add_binding')
+        from sensors.tests import make_connection, make_device, make_format
+        self.device = make_device(make_connection(), make_format(), self.bergen, code='ANALYSERS')
         self.channels = {}
 
     def bind(self, quantity, value, point, code):
         from sensors import bindings
-        from sensors.tests import make_channel, make_connection, make_device, make_format
-        device = make_device(make_connection(), make_format(), self.bergen, code=code)
-        channel = make_channel(device, quantity, code=f'{code}-{quantity.upper()}')
+        from sensors.tests import make_channel
+        channel = make_channel(self.device, quantity, code=f'{code}-{quantity.upper()}')
         bindings.move(self.user, channel, point=point, at=self.now - timedelta(days=5))
         self.channels[channel] = value
 

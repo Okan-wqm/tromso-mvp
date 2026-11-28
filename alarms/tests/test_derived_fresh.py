@@ -745,10 +745,10 @@ class OutletPageTests(WaterTestCase):
         self.device = make_device(make_connection(), make_format(), self.bergen, code='ANALYSERS')
         self.channels = {}
 
-    def bind(self, quantity, value, point, code):
+    def bind(self, quantity, value, point, code, **fields):
         from sensors import bindings
         from sensors.tests import make_channel
-        channel = make_channel(self.device, quantity, code=f'{code}-{quantity.upper()}')
+        channel = make_channel(self.device, quantity, code=f'{code}-{quantity.upper()}', **fields)
         bindings.move(self.user, channel, point=point, at=self.now - timedelta(days=5))
         self.channels[channel] = value
 
@@ -767,6 +767,73 @@ class OutletPageTests(WaterTestCase):
         said = 'Late result: critical 0.8924 at Outlet on '
         self.assertIn(said, self.outlet_nh3().note)
         self.assertIn(said, self.unit_water().get(NH3).note)
+
+    def test_its_value_says_whose_ph_and_temperature_it_used(self):
+        """Review 12, R12-3: a value worked out in the unit's place with the middle's pH and temperature says so."""
+        self.bind('tan_mg_l', 0.5, self.outlet, 'A1')
+        self.bind('ph', 7.0, self.mid1, 'P1')
+        self.bind('temperature_c', 12.0, self.mid1, 'T1')
+        self.live()
+        self.assertIn('Worked out with the pH and temperature of Middle.', self.outlet_nh3().note)
+
+    def same_words_as_the_unit(self):
+        """The outlet's TAN is the unit's only one and gets no value: the outlet says the unit's own words for it, never
+        that the unit works out a TAN elsewhere (review 12, R12-1)."""
+        outlet, unit = self.outlet_nh3(), self.unit_water().get(NH3)
+        self.assertIsNone(outlet.value)
+        self.assertNotIn('Not worked out here', outlet.note)
+        self.assertIn(outlet.note, unit.note)
+        self.assertEqual((outlet.status, bool(outlet.refused)), (unit.status, bool(unit.refused)))
+        return outlet
+
+    def test_the_outlets_analyser_without_a_ph(self):
+        self.bind('tan_mg_l', 0.5, self.outlet, 'A1')
+        self.bind('temperature_c', 12.0, self.mid1, 'T1')
+        self.live()
+        self.same_words_as_the_unit()
+
+    def test_the_outlets_analyser_with_a_ph_the_nbs_conversion_refuses(self):
+        """A total-scale pH probe on a fresh-water unit is not put on the NBS scale: the NH₃ cannot be evaluated, on the
+        outlet's page as on the unit's (it showed so before this round; never "not measured")."""
+        self.bind('tan_mg_l', 0.5, self.outlet, 'A1')
+        self.bind('ph', 7.0, self.mid1, 'P1', ph_scale='total')
+        self.bind('temperature_c', 12.0, self.mid1, 'T1')
+        self.live()
+        outlet = self.same_words_as_the_unit()
+        self.assertTrue(outlet.refused)
+        self.assertEqual(outlet.status, 'unevaluated')
+
+    def test_the_outlets_analyser_the_core_refuses_without_a_basis(self):
+        self.bind('tan_mg_l', 0.5, self.outlet, 'A1')
+        self.bind('ph', 7.0, self.mid1, 'P1')
+        self.bind('temperature_c', 12.0, self.mid1, 'T1')
+        self.sample(self.outlet, hours=0.5, conductivity_25_us_cm='40000')    # past the Davies range
+        self.live()
+        with mock.patch.object(read_water.Context, 'nh3_basis_share', return_value=None):
+            outlet = self.same_words_as_the_unit()
+        self.assertTrue(outlet.refused)
+        self.assertEqual(outlet.status, 'unevaluated')
+
+    def test_the_units_sensors_failing_are_said_on_the_value_never_as_the_outlets(self):
+        """Review 12, R12-4: the outlet's own sensors are read; only the unit's (asked apart) fail: the outlet's
+        `sensors_failed` stays False and its worked-out value says the unit's sensors could not be read."""
+        from farm.water import sources as water_sources
+        self.bind('tan_mg_l', 0.5, self.outlet, 'A1')
+        self.bind('ph', 7.0, self.mid1, 'P1')
+        self.bind('temperature_c', 12.0, self.mid1, 'T1')
+        self.live()
+        real = read_water.sources.latest
+        middle = (water_sources.POINT, self.mid1.pk)
+
+        def unit_failing(targets, now):
+            targets = list(targets)
+            return water_sources.Answer({}, True) if middle in targets else real(targets, now)
+
+        with mock.patch.object(read_water.sources, 'latest', side_effect=unit_failing):
+            water = read_water.latest([self.outlet])[self.outlet.pk]
+        self.assertFalse(water.sensors_failed)
+        self.assertIn('Not known here: the unit’s sensors that work this value out could not be read.',
+                      water.get(NH3).note)
 
     def test_the_unit_works_out_its_newest_tan_elsewhere(self):
         """Two analysers: the unit's place works out its tier's newest TAN, the middle's; the outlet's page says so."""

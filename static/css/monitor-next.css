@@ -120,7 +120,13 @@ html[data-ui="next"] .monitor-card.is-fit[data-fill] > .monitor-card-line { padd
    it, the notes past the first few "+N" (render.fold); on the desk the card flows and shows every one) */
 html[data-ui="next"] .monitor-card.is-fit[data-fill] .monitor-reasons-more { display: none; }
 html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .monitor-reasons > [data-more] { display: none; }
-html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .monitor-reasons-more { display: block; align-self: flex-end; }
+html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .monitor-reasons-more { display: block; flex-basis: 100%; text-align: end; }
+/* (its reasons a region of their own, as many lines as the server's fold shows, rl-N: render.fold; what they take the
+   CHART gives first: every row of the grid keeps what its widgets need and they share the rest, the chart's size
+   contained down to its least height, cm-N (WidgetSpec.give_units): a value's tile and a reason are never cut) */
+html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .monitor-reasons { min-height: calc(var(--rl, 1) * 1lh); align-content: start; }
+html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .card-grid { grid-template-rows: repeat(var(--gr), minmax(min-content, 1fr)); }
+html[data-ui="next"] :is([data-wall] .monitor-grid, .monitor-dock) .monitor-card.is-fit[data-fill] .card-grid > .w-chart { contain: size; min-height: calc(var(--u) * var(--cm, 0)); }
 /* (alerts past what the card holds: said in words, in the card's tone, never folded silently) */
 html[data-ui="next"] .monitor-card.is-fit[data-fill] .monitor-reasons-more.is-alert { font-weight: 600; color: var(--text-1); }
 html[data-ui="next"] .monitor-critical.is-fit[data-fill] .monitor-reasons-more.is-alert { color: var(--crit-text); }

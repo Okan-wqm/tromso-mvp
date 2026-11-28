@@ -83,6 +83,8 @@ class WidgetSpec:
     tile_units: tuple = None
     rows_units: float = None    # the least width, in card units, of one column of the widget's rows (name, figure,
                                 # strip, source, arrival and age on one line): two columns only where two fit
+    give_units: float = None    # on a full-height card, the least height in card units it gives way to when the
+                                # reasons need the room (the chart: its words still stand apart there; render._gives)
 
     @property
     def renderer(self):
@@ -121,7 +123,7 @@ WIDGETS = {spec.type: spec for spec in (
     # size, in the screen's or the card's view (close or full scale); what to dose (Phase 1: no advice, and why); the
     # unit's other sampling points; its stock in one line.
     _spec('chart', _('Deffeyes chart, drawn'), (6, 4), (12, 12), (12, 8), ('water', 'chart'), looks=(FIT,),
-          fit_units=(24.0, 14.0), on_empty_next=True),
+          fit_units=(24.0, 14.0), on_empty_next=True, give_units=22.0),
     _spec('dosing', _('Dosing advice'), (3, 1), (12, 3), (4, 2), ('water', 'chart'), looks=(FIT,),
           fit_units=(10.0, 2.4), on_empty_next=True),
     _spec('points', _('Other sampling points'), (3, 1), (12, 4), (4, 2), ('water',), looks=(FIT,),

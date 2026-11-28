@@ -888,13 +888,16 @@ updated), an optional one says "Could not be read: Tasks" on the frame, where no
 **In the new look** (`?ui=next`, see The new look; 2026-11-24). The same page, the same card read (`read.cards`,
 `_ladder`, `water_rungs`), the same templates, fragment, pane and polls (poll.ts's start-up gate, the merge by key, the
 announcer). A fitted card (Small, Big, the pane's, a wall's) is the same markup in both looks, byte for byte (but an empty
-unit's Big card, which says more in the new look, the other points' ages, and the chart's frame, a stop of the
-keyboard: below); a card that
+unit's Big card, which says more in the new look, the other points' ages, the chart's frame, a stop of the keyboard,
+and a full-height card's region of reasons and the chart's least height: below); a card that
 FLOWS (Simple, every unit's default; Detailed; Operator view; a farm's template without a measure) is the design's card
 in the new look (2026-11-25: the owner saw "the old cards"): `templates/monitoring/_card.html` includes
 `monitoring/_card_next.html` in its place when `UI_NEXT` (`core.ui.is_next`, which `monitoring/views.py` gives the
-fragment and the pane; the page has it from the context processor), and the classic card is untouched by it
-(`scripts/classic_snapshot.py --monitoring` renders every screen's classic cards, the page and the pane in three languages
+fragment and the pane; the page has it from the context processor), and the classic card is untouched by it, but for
+ONE deliberate change for safety (the coordinator's rule of 2026-11-28, which beats "classic unchanged"): a Small card
+that folds alerts says "N more alerts" in words, bold and in the card's tone, where it said a grey "+N", in both looks
+(the classic look is the default, and a wall nobody can hover is one; `monitoring/tests/golden_cards.json` was recorded
+again for it, those lines only) (`scripts/classic_snapshot.py --monitoring` renders every screen's classic cards, the page and the pane in three languages
 to compare before and after a change; `monitoring/tests/test_golden.py` holds the classic card to its golden file). The
 design's card is the same frame and the same widgets in the same reading order on the same grid; a widget keeps its
 classic markup there, restyled, unless the design draws it otherwise (`render.WidgetView.next_renderer`, `render.NEXT_LOOK`:
@@ -927,8 +930,8 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
   label was cut; four at 1920), with fixed slots: the head (the code, the name cut with an ellipsis and whole in its
   title, the state's glyph and word, never cut), TWO lines of reason (the worst first in short, then how many more:
   "4 more alerts" in words, bold, in the card's tone, for a critical, warning or no-recent-data card (the coordinator's
-  rule of 2026-11-28: a Small card never hides that alerts exist; `render.fold`, the same rule as the Big card's), "+N"
-  for notes; the reason's figure
+  rules of 2026-11-28: a Small card never hides that alerts exist, IN BOTH LOOKS: the classic look is the default and a
+  wall nobody can hover is one; `render.fold`, the same rule as the Big card's), "+N" for notes; the reason's figure
   and the bound it is past never cut, its own words past two lines end in an ellipsis; every reason in full in its title,
   for a screen reader, in the band's chips and on the pane's card; the fish line where there is no reason), the link to
   the water at its end, then the four cells (a label of two lines, its name and "old" then the oxygen's saturation, a
@@ -980,17 +983,25 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
     beside a point's name do not fit the box on a wall or in the pane). OTHER_POINTS in the test world: TW-01's inlet
     fresh, TW-08's bottom drain 30 hours old.
   - **Its reasons where it is drawn at the size of its place** (the pane, a wall), where nobody can hover
-    (`render.fold`, `_card_fit.html`, the new look's only; one rule for every size of card, `HOLDS`; the coordinator's
-    rule of 2026-11-27): an ALERT (a reason of a critical, warning or no-recent-data card) is never folded while the
-    card holds it (`FIT_ALERTS`, five: TW-14's five criticals all in sight), and past that the rest are said in words
-    in the card's tone ("3 more alerts, see the band": TW-15, eight criticals), never hidden silently; NOTES (no limit,
-    a note) fold past `FIT_NOTES` (three) into "+N", whole in its title and for a screen reader (a unit with ten values
-    no limit judges, TW-11, said ten lines and pushed its water and boxes out of the card). On the desk the card flows
-    and shows every one. `FIT_ALERTS` is MEASURED: each line of reasons takes its share from every row of the card's
-    grid, and the first thing to run out of its place is a value's tile; with TW-15 six lines and the notice overflow
-    the tiles at 4K in the pane and on a wall (by 0.01 to 0.05 of a line), five fit everywhere. The browser test holds
-    it: nothing of a Big card's widget runs out of its place, the pane at 1440, 1920 and 3840 px and the walls at 1080p
-    and 4K, in the three languages.
+    (`render.fold`, `_card_fit.html`, the new look's; one rule for every size of card, `HOLDS`; the coordinator's rules
+    of 2026-11-27 and -28): an ALERT (a reason of a critical, warning or no-recent-data card) is never folded while the
+    card holds it, and past that the rest are said in words in the card's tone ("7 more alerts, see the band"), never
+    hidden silently; NOTES (no limit, a note) fold into "+N", whole in its title and for a screen reader. What the card
+    holds is LINES, not reasons: a reason's lines are counted from its words and the card's measure
+    (`render.reason_lines`: a long point's name makes two), `FIT_ALERTS` (eight) of an alert card's and `FIT_NOTES`
+    (three) of a note card's, the line that says how many more among them, and fewer by what the card's water takes
+    beyond its place (`render.water_lines`: rows past what two lines of tiles need). The reasons are a REGION of their
+    own, as many lines as the fold shows (the class `rl-N`), and what they take the CHART gives first: every row of the
+    card's grid keeps what its widgets need and they share the rest, the chart's size contained down to its least
+    height (`cm-N`, the catalogue's `give_units`, 22 card units: its words still stand apart there), so a value's tile
+    and a reason are never cut (round 5's tiles ran over their hairline at 4K by a hundredth of a line). `FIT_ALERTS` is
+    MEASURED: at eight lines the chart keeps half a line above its least height in the pane and on a wall, 1080p and
+    4K, en, nb and tr; at nine it is at it. The browser test holds every Big card there to a quarter of a line, the
+    reasons' region to the lines the server said, every widget's words in its place, and the chart at its least height
+    still reading. TW-14: five criticals, all; TW-15: ten, its fourteen water rows leave three ("7 more alerts");
+    TW-16: five of two lines (its side outlet's long name), three ("2 more alerts"); TW-11: notes, its seventeen rows
+    leave one ("+8"). On the desk the card flows and shows every one. Where a card is wider than its measure (a wall's
+    cell wider than the Big card's proportion) a two-line reason fits one line, and its region keeps the second blank.
   - **The chart on a phone** (a card narrower than 30 rem): the picture keeps the width at which the server's labels stand
     apart (`--fit-min`) and scrolls sideways in its own frame, which is a stop of the keyboard with an id of its own in
     the new look (`_chart.html`), scrolled on load so the water's mark stands in its middle (`frontend/chartframe.ts`);

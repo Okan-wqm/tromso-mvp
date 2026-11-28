@@ -47,11 +47,17 @@ class WidgetView:
     failed: bool         # a source of it could not be read: it says "no data"
     dom_id: str          # w-<unit>-<widget id>: what a focusable element in it is called (poll.ts restores focus by id)
     titled: bool = False  # it says its name over what it shows (a box of the Big card), where its place has the room
+    gives: int = 0       # on a full-height card, the least height in card units it gives way to (WidgetSpec.give_units)
 
     @property
     def place(self):
         """The classes of its cell and size: 'gx-0 gy-3 gw-6 gh-2' (static/css/card-grid.css)."""
         return f'gx-{self.x} gy-{self.y} gw-{self.w} gh-{self.h}'
+
+    @property
+    def give(self):
+        """The class of the least height it gives way to on a full-height card ('cm-22'), '' when it never gives way."""
+        return f'cm-{self.gives}' if self.gives else ''
 
     @property
     def large(self):
@@ -122,8 +128,17 @@ def _views(card, drawn):
             widget['id'], spec.type, widget['x'], widget['y'], widget['w'], widget['h'], spec.renderer,
             widget.get('opts', {}), widget.get('bind', {}), hidden,
             any(source in card.failed for source in spec.sources), f'w-{card.unit.pk}-{widget["id"]}',
-            _titled(spec, widget, rows, measure)))
+            _titled(spec, widget, rows, measure), _gives(spec, widget, rows, measure, card.template)))
     return tuple(views)
+
+
+def _gives(spec, widget, rows, measure, template):
+    """The least height, in whole card units, a widget gives way to on a full-height card (WidgetSpec.give_units, never
+    more than its place: validate.fitted_place), 0 when it never gives way."""
+    if not spec.give_units or not measure or not getattr(template, 'fill', False):
+        return 0
+    from .validate import fitted_place
+    return int(min(spec.give_units, fitted_place(widget, rows, measure)[1]))
 
 
 def shown(card, next_look):
@@ -777,39 +792,99 @@ class WaterRow:
     alert: str
 
 
-# The reasons a fitted card shows (templates/monitoring/_card_fit.html), one rule for every size of card: an ALERT, a
-# reason of a critical, warning or no-recent-data card, is never folded away while the card holds it, and what it cannot
-# hold is said in words in the card's tone ("3 more alerts, see the band" on a Big card, "7 more alerts" on a Small
-# one), never a bare "+N" and never hidden silently; NOTES (no limit, a note) fold into "+N", whole in its title, for a
-# screen reader and in the band's chips (a unit with ten values no limit judges said ten lines and pushed its water and
-# boxes out of the card). The coordinator's rules of 2026-11-27 and -28: a critical or a warning is never folded away
-# where nobody can hover, and a Small card never hides that there are more.
-# HOLDS, (alerts, notes) by the card's size: a Big card drawn at the size of its place (the pane, a wall; on the desk
-# it flows and shows every one) FIT_ALERTS and FIT_NOTES; a Small card's one line the worst one. FIT_ALERTS is measured,
-# not guessed: each line of reasons takes its share from every row of the card's grid, and the first to run out of its
-# place is a value's tile; with TW-15's eight criticals six lines and the notice overflow the tiles at 4K in the pane
-# and on a wall (by 0.01 to 0.05 of a line), five fit on every surface in the three languages (the browser test,
-# frontend/test/monitoring.pages.ts: the pane at 1440, 1920 and 3840 px, the walls at 1080p and 4K).
+# The reasons a fitted card shows (templates/monitoring/_card_fit.html), one rule for every size of card and both looks:
+# an ALERT, a reason of a critical, warning or no-recent-data card, is never folded away while the card holds it, and
+# what it cannot hold is said in words in the card's tone ("3 more alerts, see the band" on a Big card, "7 more alerts"
+# on a Small one), never a bare "+N" and never hidden silently; NOTES (no limit, a note) fold into "+N", whole in its
+# title, for a screen reader and in the band's chips. The coordinator's rules of 2026-11-27 and -28: a critical or a
+# warning is never folded away where nobody can hover, and a Small card never hides that there are more, in the classic
+# look (the default) too.
+# A Small card's one line holds the worst reason. A Big card drawn at the size of its place (the pane, a wall; on the
+# desk it flows and shows every one) holds LINES of reasons: FIT_ALERTS of an alert card's, FIT_NOTES of a note card's,
+# the line that says how many more among them. Its reasons are a region of their own, as high as the lines the fold
+# shows (`Folded.lines`, the class rl-N: static/css/monitor-next.css), and what they take the CHART gives (it gives way
+# first, down to WidgetSpec.give_units; a value's tile and a reason are never cut). A reason's lines are counted from
+# its words and the card's measure (`reason_lines`). FIT_ALERTS is MEASURED, not guessed: the most lines with which the
+# chart keeps a quarter of a line above its least height in the pane and on a wall, at 1080p and 4K, in en, nb and tr
+# (frontend/test/monitoring.pages.ts holds every card to it; TW-15 eight criticals, TW-16 five of two lines).
 FIT_NOTES = 3
-FIT_ALERTS = 5
+FIT_ALERTS = 8
 HOLDS = {'big': (FIT_ALERTS, FIT_NOTES), 'small': (1, 1)}
 ALERT_STATES = frozenset({'critical', 'warning', 'blind'})
+# A reason's line on a Big card: what its shape and gap take, in card units, and the widest its words run, in em of its
+# text (measured on the test world's reasons in en, nb and tr: 0.54 at most); a line's height in card units.
+REASON_INSET = 1.2
+REASON_CHAR_EM = 0.56
+LINE_UNITS = 1.3
+# What the card's water needs of the grid, in card units (measured: two lines of tiles 9.9, a row of the rows 1.06,
+# their head a row), and the room its place still has when the reasons fill FIT_ALERTS lines on the built-in Big card
+# (11.0): a water that needs more takes it from the chart, so the card's reasons hold that many lines fewer
+# (`water_lines`; TW-15's fourteen rows, TW-10's fifteen and TW-11's seventeen).
+WATER_TILES_UNITS = 9.9
+WATER_ROW_UNITS = 1.06
+WATER_AT_LIMIT = 11.0
+
+
+def reason_lines(reason, width):
+    """How many lines a reason takes on a Big card `width` card units wide: its short form (a value against the bound
+    it is past) or its whole sentence, in lines of the card's width."""
+    from .. import read
+    short = read.brief_of(reason)
+    words = short.figure + (f'· {short.bound}' if short.bound else '')
+    per_line = max(int((width - REASON_INSET) / REASON_CHAR_EM), 1)
+    return max(1, -(-len(words) // per_line))
 
 
 @dataclass(frozen=True)
 class Folded:
     """What a fitted card shows of its state's reasons: the first `shown`, and `rest` folded; `alerts`: they are alerts
-    (the card's state is critical, a warning or no recent data), said in words when folded."""
+    (the card's state is critical, a warning or no recent data), said in words when folded; `lines`: the lines the
+    shown ones take on a Big card (its reasons' region)."""
     shown: int
     rest: tuple
     alerts: bool
+    lines: int = 1
 
 
-def fold(state, size='big'):
-    """The Folded of a card's state on a card of that size ('big' or 'small': HOLDS)."""
+def water_lines(card):
+    """How many lines of reasons a full-height card holds fewer for its water: what its rows need beyond the room their
+    place has when the reasons fill FIT_ALERTS lines (WATER_AT_LIMIT, in proportion to the place), in lines."""
+    view = next((each for each in getattr(card, 'widgets', ()) if each.type == 'water_table'), None)
+    if view is None or not card.template.fill:
+        return 0
+    columns = water_rows(card, view)
+    if not columns:
+        return 0
+    need = (WATER_TILES_UNITS if tiled(card, view, columns)
+            else (max(len(column) for column in columns) + 1) * WATER_ROW_UNITS)
+    from .builtin import BIG_LAYOUT, BIG_MEASURE
+    from .validate import fitted_place
+    rows = max(widget['y'] + widget['h'] for widget in BIG_LAYOUT['widgets'])
+    built_in = next(widget for widget in BIG_LAYOUT['widgets'] if widget['type'] == 'water_table')
+    room = WATER_AT_LIMIT * _place(card, view)[1] / fitted_place(built_in, rows, BIG_MEASURE)[1]
+    return max(0, -int(-(need - room) // LINE_UNITS))
+
+
+def fold(state, size='big', card=None):
+    """The Folded of a card's state on a card of that size ('big' or 'small': HOLDS); a Big card's lines are its
+    template's width's (`reason_lines`), fewer by what its water takes (`water_lines`); without a card, the built-in
+    Big card's with a water that fits its place."""
     alerts = state.key in ALERT_STATES
-    shown = HOLDS[size][0 if alerts else 1]
-    return Folded(shown, tuple(state.reasons[shown:]), alerts)
+    held = HOLDS[size][0 if alerts else 1]
+    if size == 'small':
+        return Folded(held, tuple(state.reasons[held:]), alerts, held)
+    from .builtin import BIG_MEASURE
+    measure = getattr(getattr(card, 'template', None), 'measure', None) or BIG_MEASURE
+    held = max(1, min(held, FIT_ALERTS - (water_lines(card) if card is not None else 0)))
+    lines = [reason_lines(reason, measure[0]) for reason in state.reasons]
+    if sum(lines) <= held:
+        return Folded(len(lines), (), alerts, sum(lines))
+    shown = used = 0
+    for each in lines:                       # (one line of the held is the words that say how many more)
+        if shown and used + each > held - 1:
+            break
+        shown, used = shown + 1, used + each
+    return Folded(shown, tuple(state.reasons[shown:]), alerts, used)
 
 
 # More rows than this stand in two columns where two fit side by side (the water's rows_units): a row is never lower
@@ -908,4 +983,8 @@ def grid_css():
     lines += [f'.gr-{rows}{{--gr:{rows}}}' for rows in range(1, catalogue.FIT_ROWS + 1)]
     lines += [f'.mw-{width}{{--mw:{width}}}' for width in range(catalogue.MEASURE_W[0], catalogue.MEASURE_W[1] + 1)]
     lines += [f'.mh-{height}{{--mh:{height}}}' for height in range(catalogue.MEASURE_H[0], catalogue.MEASURE_H[1] + 1)]
+    # A full-height card's reasons: the lines their region takes (render.fold), and the least height in card units a
+    # widget gives way to (WidgetSpec.give_units).
+    lines += [f'.rl-{count}{{--rl:{count}}}' for count in range(1, catalogue.FIT_ROWS + 1)]
+    lines += [f'.cm-{units}{{--cm:{units}}}' for units in range(1, catalogue.MEASURE_H[1] + 1)]
     return '\n'.join(lines) + '\n'

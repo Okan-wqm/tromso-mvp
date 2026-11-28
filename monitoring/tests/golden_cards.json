@@ -13989,7 +13989,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data, <age> old (Temperature (°C): no recent data, <age> old)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data, <age> old"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data, <age> old"
    ],
    "pairs": [
     [
@@ -14048,7 +14048,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data (Temperature (°C): no recent data)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data"
    ],
    "pairs": [
     [
@@ -14864,7 +14864,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data (Temperature (°C): no recent data)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data"
    ],
    "pairs": [
     [
@@ -15179,7 +15179,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data, <age> old (Temperature (°C): no recent data, <age> old)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data, <age> old"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data, <age> old"
    ],
    "pairs": [
     [
@@ -15238,7 +15238,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data (Temperature (°C): no recent data)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data"
    ],
    "pairs": [
     [
@@ -16054,7 +16054,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data (Temperature (°C): no recent data)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data"
    ],
    "pairs": [
     [
@@ -16435,7 +16435,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data, <age> old (Temperature (°C): no recent data, <age> old)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data, <age> old"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data, <age> old"
    ],
    "pairs": [
     [
@@ -16494,7 +16494,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data (Temperature (°C): no recent data)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data"
    ],
    "pairs": [
     [
@@ -17310,7 +17310,7 @@
    "state": "No recent data",
    "reasons": [
     "Temperature (°C): no recent data (Temperature (°C): no recent data)",
-    "+1Dissolved oxygen (mg/L O₂): no recent data"
+    "1 more alertDissolved oxygen (mg/L O₂): no recent data"
    ],
    "pairs": [
     [

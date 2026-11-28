@@ -612,6 +612,12 @@ msgstr[0] "%(count)s üye"
 msgstr[1] "%(count)s üye"
 
 #, python-format
+msgid "%(count)s more alert"
+msgid_plural "%(count)s more alerts"
+msgstr[0] "%(count)s uyarı daha"
+msgstr[1] "%(count)s uyarı daha"
+
+#, python-format
 msgid "%(count)s more alert, see the band"
 msgid_plural "%(count)s more alerts, see the band"
 msgstr[0] "%(count)s uyarı daha, banda bakın"

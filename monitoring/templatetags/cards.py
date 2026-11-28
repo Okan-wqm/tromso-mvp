@@ -74,9 +74,9 @@ def water_rows(card, view=None):
 
 
 @register.simple_tag
-def fold_reasons(state):
-    """What a full-height card drawn at the size of its place folds of its reasons (render.fold)."""
-    return render.fold(state)
+def fold_reasons(state, fill=True):
+    """What a fitted card folds of its reasons: a full-height card's (`fill`) or a Small card's (render.fold)."""
+    return render.fold(state, 'big' if fill else 'small')
 
 
 @register.simple_tag

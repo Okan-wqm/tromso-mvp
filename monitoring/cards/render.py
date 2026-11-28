@@ -777,31 +777,38 @@ class WaterRow:
     alert: str
 
 
-# The reasons a full-height card shows where it is drawn at the size of its place (the pane, a wall), where nobody can
-# hover (templates/monitoring/_card_fit.html, the new look's): an ALERT, a reason of a critical, warning or no-recent-data
-# card, is never folded while the card holds it (FIT_ALERTS of them; past that the rest are said in words, "2 more
-# alerts, see the band", never hidden silently); NOTES (no limit, a note) fold past FIT_NOTES into "+N", whole in its
-# title, for a screen reader and in the band's chips (a unit with ten values no limit judges said ten lines and pushed
-# its water and boxes out of the card). The coordinator's rule of 2026-11-27: a critical or a warning is never folded
-# away where nobody can hover.
+# The reasons a fitted card shows (templates/monitoring/_card_fit.html), one rule for every size of card: an ALERT, a
+# reason of a critical, warning or no-recent-data card, is never folded away while the card holds it, and what it cannot
+# hold is said in words in the card's tone ("3 more alerts, see the band" on a Big card, "7 more alerts" on a Small
+# one), never a bare "+N" and never hidden silently; NOTES (no limit, a note) fold into "+N", whole in its title, for a
+# screen reader and in the band's chips (a unit with ten values no limit judges said ten lines and pushed its water and
+# boxes out of the card). The coordinator's rules of 2026-11-27 and -28: a critical or a warning is never folded away
+# where nobody can hover, and a Small card never hides that there are more.
+# HOLDS, (alerts, notes) by the card's size: a Big card drawn at the size of its place (the pane, a wall; on the desk
+# it flows and shows every one) FIT_ALERTS and FIT_NOTES; a Small card's one line the worst one. FIT_ALERTS is measured,
+# not guessed: each line of reasons takes its share from every row of the card's grid, and the first to run out of its
+# place is a value's tile; with TW-15's eight criticals six lines and the notice overflow the tiles at 4K in the pane
+# and on a wall (by 0.01 to 0.05 of a line), five fit on every surface in the three languages (the browser test,
+# frontend/test/monitoring.pages.ts: the pane at 1440, 1920 and 3840 px, the walls at 1080p and 4K).
 FIT_NOTES = 3
-FIT_ALERTS = 6
+FIT_ALERTS = 5
+HOLDS = {'big': (FIT_ALERTS, FIT_NOTES), 'small': (1, 1)}
 ALERT_STATES = frozenset({'critical', 'warning', 'blind'})
 
 
 @dataclass(frozen=True)
 class Folded:
-    """What a fitted full-height card shows of its state's reasons: the first `shown`, and `rest` folded; `alerts`:
-    they are alerts (the card's state is critical, a warning or no recent data), said in words when folded."""
+    """What a fitted card shows of its state's reasons: the first `shown`, and `rest` folded; `alerts`: they are alerts
+    (the card's state is critical, a warning or no recent data), said in words when folded."""
     shown: int
     rest: tuple
     alerts: bool
 
 
-def fold(state):
-    """The Folded of a card's state (FIT_ALERTS or FIT_NOTES)."""
+def fold(state, size='big'):
+    """The Folded of a card's state on a card of that size ('big' or 'small': HOLDS)."""
     alerts = state.key in ALERT_STATES
-    shown = FIT_ALERTS if alerts else FIT_NOTES
+    shown = HOLDS[size][0 if alerts else 1]
     return Folded(shown, tuple(state.reasons[shown:]), alerts)
 
 

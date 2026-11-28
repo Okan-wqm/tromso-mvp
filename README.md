@@ -925,7 +925,10 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
 - **One size per mode** (owner, 2026-11-24: "a card grows taller when a warning appears"). The Small card on the desk page
   is the design's: a regular grid of equal cards (three to a row at 1440 px: at four the oxygen's saturation beside its
   label was cut; four at 1920), with fixed slots: the head (the code, the name cut with an ellipsis and whole in its
-  title, the state's glyph and word, never cut), TWO lines of reason (the first in short and "+N"; the reason's figure
+  title, the state's glyph and word, never cut), TWO lines of reason (the worst first in short, then how many more:
+  "4 more alerts" in words, bold, in the card's tone, for a critical, warning or no-recent-data card (the coordinator's
+  rule of 2026-11-28: a Small card never hides that alerts exist; `render.fold`, the same rule as the Big card's), "+N"
+  for notes; the reason's figure
   and the bound it is past never cut, its own words past two lines end in an ellipsis; every reason in full in its title,
   for a screen reader, in the band's chips and on the pane's card; the fish line where there is no reason), the link to
   the water at its end, then the four cells (a label of two lines, its name and "old" then the oxygen's saturation, a
@@ -977,12 +980,17 @@ loads `static/css/glyphs.css` and `static/css/monitor-next.css` only in the new 
     beside a point's name do not fit the box on a wall or in the pane). OTHER_POINTS in the test world: TW-01's inlet
     fresh, TW-08's bottom drain 30 hours old.
   - **Its reasons where it is drawn at the size of its place** (the pane, a wall), where nobody can hover
-    (`render.fold`, `_card_fit.html`, the new look's only; the coordinator's rule of 2026-11-27): an ALERT (a reason of
-    a critical, warning or no-recent-data card) is never folded while the card holds it (`FIT_ALERTS`, six: TW-14's
-    six criticals all in sight), and past that the rest are said in words in the card's tone ("2 more alerts, see the
-    band"), never hidden silently; NOTES (no limit, a note) fold past `FIT_NOTES` (three) into "+N", whole in its title
-    and for a screen reader (a unit with ten values no limit judges, TW-11, said ten lines and pushed its water and
-    boxes out of the card). On the desk the card flows and shows every one.
+    (`render.fold`, `_card_fit.html`, the new look's only; one rule for every size of card, `HOLDS`; the coordinator's
+    rule of 2026-11-27): an ALERT (a reason of a critical, warning or no-recent-data card) is never folded while the
+    card holds it (`FIT_ALERTS`, five: TW-14's five criticals all in sight), and past that the rest are said in words
+    in the card's tone ("3 more alerts, see the band": TW-15, eight criticals), never hidden silently; NOTES (no limit,
+    a note) fold past `FIT_NOTES` (three) into "+N", whole in its title and for a screen reader (a unit with ten values
+    no limit judges, TW-11, said ten lines and pushed its water and boxes out of the card). On the desk the card flows
+    and shows every one. `FIT_ALERTS` is MEASURED: each line of reasons takes its share from every row of the card's
+    grid, and the first thing to run out of its place is a value's tile; with TW-15 six lines and the notice overflow
+    the tiles at 4K in the pane and on a wall (by 0.01 to 0.05 of a line), five fit everywhere. The browser test holds
+    it: nothing of a Big card's widget runs out of its place, the pane at 1440, 1920 and 3840 px and the walls at 1080p
+    and 4K, in the three languages.
   - **The chart on a phone** (a card narrower than 30 rem): the picture keeps the width at which the server's labels stand
     apart (`--fit-min`) and scrolls sideways in its own frame, which is a stop of the keyboard with an id of its own in
     the new look (`_chart.html`), scrolled on load so the water's mark stands in its middle (`frontend/chartframe.ts`);
@@ -1025,7 +1033,7 @@ first reason's figure and bound whole (en, nb, tr at 390, 1440 and 1920 px), the
 browser test runs every case again in the new look (`frontend/test/wall.browser.test.ts`, the parts of `manage.py
 layout_pages` under the new look's sheets). What the desk's Small card does NOT show, by the design (owner, 2026-11-24):
 the flip link to the other card, the pH window and its sentences ("The pH window cannot be drawn: ...", "no CO₂ limit"),
-the second and later reasons but for their count ("+N"), and the end of a long name, source line or reason sentence: they
+the second and later reasons but for their count ("+N" for notes, "N more alerts" for alerts), and the end of a long name, source line or reason sentence: they
 stay in the markup (so for a screen reader too, but for the flip link and the pH window, which are not displayed), in the
 titles, on the pane's Big card and on the wall.
 

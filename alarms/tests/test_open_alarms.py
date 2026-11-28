@@ -62,15 +62,18 @@ class OpenQueueTests(OpenWorld, AlarmsCase):
     def test_a_queue_out_of_step_with_the_clearances_is_named_both_ways(self):
         made = [self.open(f'open{number}') for number in range(2)]
         self.assertEqual(checks.open_alarms_hold(None), [])
-        rows('DELETE FROM alarm_open')                                    # what a hand repair or a TRUNCATE leaves
+        rows('SET CONSTRAINTS ALL IMMEDIATE')         # (the test's own pending key checks, or TRUNCATE and ALTER wait)
+        rows('TRUNCATE alarm_open')                                       # what a superuser's TRUNCATE leaves
         (missing,) = checks.open_alarms_hold(None)
         self.assertEqual(missing.id, 'alarms.W001')
         self.assertIn('2 open alarm(s) are missing', missing.msg)
         self.assertIn(f'{made[0].pk}, {made[1].pk}', missing.msg)
         rows(missing.hint.split(': ', 1)[1])                              # the repair, as the hint says it
         self.assertEqual(checks.open_alarms_hold(None), [])
+        rows('SET CONSTRAINTS ALL IMMEDIATE')
         rows('ALTER TABLE alarm_clearances DISABLE TRIGGER trg_alarm_clearances_open')   # a trigger set aside
         services.clear(made[0], self.now, 'returned')
+        rows('SET CONSTRAINTS ALL IMMEDIATE')
         rows('ALTER TABLE alarm_clearances ENABLE TRIGGER trg_alarm_clearances_open')
         (cleared,) = checks.open_alarms_hold(None)
         self.assertIn('1 cleared alarm(s) are still in', cleared.msg)

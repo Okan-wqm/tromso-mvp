@@ -9,9 +9,10 @@ no database, about a second.
   `.update_or_create()`, `.delete()`, a queryset's `.update()`) or a `cursor.execute` / `schema_editor.execute` of a
   literal that starts with INSERT, UPDATE, DELETE, TRUNCATE, ALTER, CREATE, DROP or GRANT stands only in (a) an area's
   `services.py` or a declared write-path module (WRITE_PATHS); (b) a model's own `save`/`delete` and the base class's
-  soft delete (a model module's method of that name); (c) a management command (each is in the README's table, held by
-  core/tests_commands.py); (d) WRITES_ALLOWED, a ceiling and a reason per module. A write in a `read.py`, a `fold.py`,
-  a template tag or a view not in (d) fails, naming the call, the line and where the area's writes belong.
+  soft delete (a model module's method of that name); (c) a management command as Django lists one (`is_command`:
+  each is in the README's table, held by core/tests_commands.py; a `_` helper or a sub-folder beside the commands is
+  not one); (d) WRITES_ALLOWED, a ceiling and a reason per module. A write in a `read.py`, a `fold.py`, a template tag
+  or a view not in (d) fails, naming the call, the line and where the area's writes belong.
 - **Rule R, reads of the safety data.** A query of an owned model (OWNED: `Model.objects`, `.all_objects`,
   `._base_manager`) outside its owner's package stands only in READS_ALLOWED, a ceiling per (module, model): a pure
   ratchet over what the audit found; any new module or a higher count fails.
@@ -92,6 +93,9 @@ WRITES_ALLOWED = {
                        '(L-3)'),
     'sensors/demo.py': (7, "the development tool's demo configuration (core/management/devtool.py: refused outside "
                             'development)'),
+    'hr/demo_company.py': (8, "the demonstration company's reference rows (site, departments, shifts, holiday, leave "
+                           "types: get_or_create) and its departments' managers, for seed_hr_demo (devtool) and "
+                           'seed_stack_proof (core/management/stackproof.py) only; its people through hr.services'),
     # Write paths of their own, counted rather than exempted whole (the landing review, M-2): a new write in the module
     # that answers "may these fish be harvested" fails here until it is reviewed.
     'farm/health/withdrawal.py': (4, 'the withdrawal acknowledgements and their approvals (2), and the what-if of a '
@@ -754,10 +758,17 @@ def scan():
     return found
 
 
-def write_allowed(module):
+def is_command(module):
+    """(c): a management command as Django finds one, a module directly in an app's `management/commands/` whose name
+    does not start with an underscore (django.core.management.find_commands skips those). A helper beside the commands
+    (`_name.py`, a sub-folder) is no command and in no README table, so its writes count like any other module's (the
+    review of wip/stack-seed, M-1: a shared demo builder put there would have left the audit unseen)."""
     parts = module.split('/')
-    return (parts[-1] == 'services.py' or module in WRITE_PATHS or 'management' in parts
-            and 'commands' in parts)
+    return len(parts) >= 3 and parts[-3:-1] == ['management', 'commands'] and not parts[-1].startswith('_')
+
+
+def write_allowed(module):
+    return module.split('/')[-1] == 'services.py' or module in WRITE_PATHS or is_command(module)
 
 
 def outside(found):
@@ -798,6 +809,26 @@ class WriteLayerTests(SimpleTestCase):
             with self.subTest(module=module):
                 self.assertTrue((ROOT / module).is_file())
                 self.assertTrue(reason.strip())
+
+    def test_only_a_command_django_lists_is_exempt_as_a_command(self):
+        """(c) is a command as Django finds one, so each is in the README's table (core/tests_commands.py); a helper
+        beside the commands is counted like any module (the review of wip/stack-seed, M-1)."""
+        self.assertTrue(write_allowed('hr/management/commands/seed_hr_demo.py'))
+        for module in ('hr/management/commands/_demo_company.py', 'hr/management/commands/__init__.py',
+                       'hr/management/commands/helpers/build.py', 'hr/management/demo.py', 'core/management/devtool.py'):
+            with self.subTest(module=module):
+                self.assertFalse(write_allowed(module))
+        helper = ast.parse('from hr.models import Shift' + chr(10) + 'Shift.objects.get_or_create(code="X")')
+        visitor = _Scan('hr/management/commands/_helper.py')
+        visitor.visit(helper)
+        self.assertEqual(outside({'hr/management/commands/_helper.py': {'writes': visitor.writes}}),
+                         {'hr/management/commands/_helper.py': 1})
+        from django.core.management import get_commands
+        listed = set(get_commands())
+        for module, _tree in production_modules():
+            if is_command(module):
+                with self.subTest(command=module):
+                    self.assertIn(module.rsplit('/', 1)[-1].removesuffix('.py'), listed)
 
 
 class ReadLayerTests(SimpleTestCase):

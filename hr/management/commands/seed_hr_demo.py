@@ -1,16 +1,10 @@
-from datetime import date, time, timedelta
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.db import transaction
-from django.utils import timezone
 
 from core.management.devtool import DevCommand
-from farm.models import ProductionDepartment, Site
-from farm.stock.dates import site_today
 
-from ... import models, services
-from ...models import Holiday, LeaveType, OfficeDepartment, Shift
+from hr import demo_company
 
 PASSWORD = 'demo-password-1'
 
@@ -47,9 +41,7 @@ class Command(DevCommand):
         with transaction.atomic():
             groups = self.roles()
             users = self.users(groups)
-            site = self.company()
-            people = self.people(users, site)
-            self.time(users, people)
+            demo_company.build(users['demo_hr'], users)       # the company (hr/demo_company.py)
         self.stdout.write(f'HR demo ready. Sign in as demo_lead_hatchery, demo_lead_nursery, demo_staff, demo_hr or demo_auditor '
                           f'with the password {PASSWORD}.')
 
@@ -76,71 +68,3 @@ class Command(DevCommand):
             user.groups.set([groups[role]])
             users[username] = user
         return users
-
-    def company(self):
-        site, _ = Site.objects.get_or_create(code='DEMO-FJORD', defaults={'name': 'Demo Fjord', 'timezone': 'Europe/Oslo'})
-        return site
-
-    def department(self, site, code, name, manager):
-        department, _ = ProductionDepartment.objects.get_or_create(code=code, defaults={'site': site, 'name': name})
-        ProductionDepartment.objects.filter(pk=department.pk).update(manager=manager)
-        department.refresh_from_db()
-        return department
-
-    def people(self, users, site):
-        hatchery = self.department(site, 'DEMO-HAT', 'Demo Hatchery', users['demo_lead_hatchery'])
-        nursery = self.department(site, 'DEMO-NUR', 'Demo Nursery', users['demo_lead_nursery'])
-        finance, _ = OfficeDepartment.objects.get_or_create(code='DEMO-FIN', defaults={'name': 'Demo Finance', 'site': site})
-        start = date(2026, 1, 1)
-        roster = [
-            ('D-01', users['demo_lead_hatchery'], '', '', hatchery, 'Hatchery lead'),
-            ('D-02', users['demo_lead_nursery'], '', '', nursery, 'Nursery lead'),
-            ('D-03', users['demo_staff'], '', '', hatchery, 'Technician'),
-            ('D-04', None, 'Bjorn', 'Brekke', hatchery, 'Feeder'),
-            ('D-05', None, 'Marte', 'Moe', hatchery, 'Feeder'),
-            ('D-06', None, 'Nora', 'Nilsen', nursery, 'Technician'),
-            ('D-07', None, 'Olav', 'Opsahl', nursery, 'Student helper'),
-            ('D-08', users['demo_hr'], '', '', finance, 'HR officer'),
-            ('D-09', None, 'Frida', 'Foss', finance, 'Accountant'),
-        ]
-        # The people and what follows are written as the demonstration's own people would write them, through
-        # hr.services (the one writer of these records: every rule runs and every record is logged): the HR
-        # administrator takes people on and plans, a person files their own leave, a lead marks someone present.
-        hr_admin = users['demo_hr']
-        people = {}
-        for number, account, first, last, department, title in roster:
-            kind = 'student' if title == 'Student helper' else 'staff'
-            person = models.Employee.objects.filter(employee_number=number).first()
-            if person is None:
-                person = services.add_employee(hr_admin, {
-                    'employee_number': number, 'user': account, 'first_name': first, 'last_name': last,
-                    'joined_on': start, 'employment_type': kind}, (department, title, start))
-            elif not person.postings.exists():
-                services.move(hr_admin, person, department, title, start)
-            people[number] = person
-        return people
-
-    def time(self, users, people):
-        today = site_today(None)
-        monday = today - timedelta(days=today.weekday())
-        shifts = {}
-        for code, name, start, end, tone in (('EARLY', 'Early', time(6), time(14), 2), ('LATE', 'Late', time(14), time(22), 3),
-                                             ('NIGHT', 'Night', time(22), time(6), 4)):
-            shifts[code], _ = Shift.objects.get_or_create(code=code, defaults={
-                'name': name, 'starts_at': start, 'ends_at': end, 'break_minutes': 30 if code != 'NIGHT' else 0, 'tone': tone})
-        week = [monday + timedelta(days=n) for n in range(5)]
-        for number, code in (('D-03', 'EARLY'), ('D-04', 'EARLY'), ('D-05', 'LATE'), ('D-06', 'EARLY'), ('D-07', 'LATE')):
-            planned = set(people[number].assignments.filter(day__in=week).values_list('day', flat=True))
-            cells = [(people[number], day) for day in week if day not in planned]
-            if cells:
-                services.plan_shifts(users['demo_hr'], cells, shifts[code])
-        Holiday.objects.get_or_create(day=date(today.year, 12, 25), site=None, defaults={'name': 'Christmas Day'})
-        annual, _ = LeaveType.objects.get_or_create(code='DEMO-ANNUAL', defaults={'name': 'Annual leave'})
-        LeaveType.objects.get_or_create(code='DEMO-SICK', defaults={'name': 'Sick leave', 'needs_approval': False})
-        first = monday + timedelta(days=21)
-        if not people['D-03'].leave_requests.exists():
-            services.file_leave(users['demo_staff'], people['D-03'], annual, first, first + timedelta(days=3),
-                                'Visiting family')
-        if not people['D-04'].attendance.exists():
-            services.enter_presence(users['demo_lead_hatchery'], people['D-04'], timezone.now() - timedelta(minutes=5),
-                                    None, 'Demonstration: came in through the gate without a phone')

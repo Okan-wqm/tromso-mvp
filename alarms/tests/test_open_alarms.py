@@ -64,7 +64,7 @@ class OpenQueueTests(OpenWorld, AlarmsCase):
         may: deploy/scripts/check-roles.sh makes them as the app role, who may not even make the forged trigger."""
         rows('SET CONSTRAINTS ALL IMMEDIATE')
         with self.assertRaisesMessage(DatabaseError, 'runs for public.alarms only'), transaction.atomic():
-            rows('CREATE TEMP TABLE alarms (LIKE public.alarms INCLUDING DEFAULTS)')       # forged: a trigger of its own
+            rows('CREATE TEMP TABLE alarms (LIKE public.alarms INCLUDING DEFAULTS INCLUDING IDENTITY)')   # forged
             rows('CREATE TRIGGER forged AFTER INSERT ON pg_temp.alarms REFERENCING NEW TABLE AS opened '
                  'FOR EACH STATEMENT EXECUTE FUNCTION public.alarm_open_opened()')
             rows("INSERT INTO pg_temp.alarms (source, parameter, severity, opened_at, summary) VALUES ('system', "

@@ -16,6 +16,14 @@ echo "== the chemistry depends on libm only"
 deps=$(cargo tree --locked -p chemcore-core --edges normal --prefix none --format '{p}' | sed 's/ (.*//' | sort -u | tr '\n' ' ')
 [ "$deps" = "chemcore-core v0.1.0 libm v0.2.16 " ] || fail "chemcore-core depends on: $deps"
 
+echo "== the experimental chemistry depends on the core only, and the application never on it"
+deps=$(cargo tree --locked -p chemcore-experimental --edges normal --prefix none --format '{p}' | sed 's/ (.*//' | sort -u | tr '\n' ' ')
+[ "$deps" = "chemcore-core v0.1.0 chemcore-experimental v0.1.0 libm v0.2.16 " ] || fail "chemcore-experimental depends on: $deps"
+py_tree=$(cargo tree --locked -p chemcore-py --edges all --prefix none --format '{p}') || fail "cargo tree of chemcore-py"
+case "$py_tree" in
+  *chemcore-experimental*) fail "chemcore-py (the application's only way to the chemistry) reaches chemcore-experimental";;
+esac
+
 echo "== no WebAssembly anywhere (owner amendment B2)"
 if cargo metadata --locked --format-version 1 | grep -qE '"name":"(wasm-bindgen|js-sys|web-sys)"'; then fail "a wasm crate is in the graph"; fi
 if grep -qiE 'wasm' rust-toolchain.toml; then fail "a wasm target in rust-toolchain.toml"; fi

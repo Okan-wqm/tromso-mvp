@@ -82,10 +82,9 @@ class OneOrderOfADeleteTests(PeopleTestCase):
     def test_the_version_is_asked_last_and_a_bare_one_is_refused(self):
         """Each HR delete asks the version itself, last: none confirmed nothing, another is a record changed since,
         the one shown deletes."""
-        from django.utils import timezone
-
         from core.confirmed import ChangedMeanwhile, NotConfirmed
-        yesterday = timezone.localdate() - timedelta(days=1)
+        from farm.stock.dates import site_today
+        yesterday = site_today(self.site) - timedelta(days=1)          # the site's day: inside the correction window
         early = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
         deletes = {
             'void_presence': (self.stretch(self.in_a, yesterday), services.void_presence),

@@ -1,8 +1,10 @@
-//! The gas equilibration module against an independent implementation: the science review's of 2026-11-27
-//! (reference/independent_check.py, written from the equations; it solves the vessel for its pH where the module solves
-//! for its DIC), with the review's corrections C1 to C4, the second review's F3 and the cold-water decision applied as
-//! reference/expected_values.py says, which printed every number here. Formula 1's equilibria (golden v1) unless a
-//! test says formula 4 (golden v4's constants, the review's finding F1).
+//! The gas equilibration module against an independent implementation, the science reviewer's: reference/
+//! independent_check.py (written from the equations; it solves the vessel for its pH where the module solves for its
+//! DIC) with the corrections of the three reviews as reference/independent_check_3.py applies them, which prints every
+//! long number here and matches each to 1e-9 (72 of 72 at the third review). The one reference: the module goes further
+//! than it only where no number is involved (it refuses a contact below the water's freezing point and says CO₂'s
+//! validity, the third review's G1). Formula 1's equilibria (golden v1) unless a test says formula 4 (golden v4's
+//! constants, finding F1).
 use chemcore_core::chemistry::{self as c, MG_CACO3_PER_MEQ};
 use chemcore_core::fresh::{Ions, water_equilibria};
 use chemcore_core::num::ChemError;
@@ -172,7 +174,7 @@ fn the_co2_conversion_takes_the_fugacity() {
     assert!(close(g::co2_fugacity_coefficient(12.0, 1.0), 0.9962480968397126));
     assert!(close(g::co2_fugacity_coefficient(20.0, 1.0), 0.9966083945861017));
     assert!(close(g::co2_fugacity_coefficient(12.0, 2.0), 0.9925102704567494));
-    let with = g::co2_from_gas(3852.0, 12.0, 35.0, 1.0);
+    let with = g::co2_from_gas(3852.0, 12.0, 35.0, 1.0).map(|x| x.value);
     assert!(close(with, 7.1306839373666)); // mg/L
     // the partial pressure alone gave 7.1575: 0.37 % more
     let effect = with.unwrap_or(f64::NAN) / 7.157538328039449 - 1.0;
@@ -345,12 +347,35 @@ fn the_co2_side_never_waits_on_h2s() {
         0.004067955419458513,
         0.9899172253638129
     ));
-    assert!(warm.is_some_and(|x| x.h2s_ratio.is_none()));
-    let ice = contact_at(1, -2.5, 0.01, 1.0, 1.0);
+    assert!(warm.is_some_and(|x| x.h2s_ratio.is_none() && x.co2_validity == Measured));
+    assert!(cold.is_some_and(|x| x.co2_validity == Measured));
+    // between the freezing point of sea water and Weiss's −1 °C: both extrapolated, the contact given
+    let colder = contact_at(1, -1.5, 0.01, 1.0, 1.0);
     assert!(
-        ice.is_some_and(|x| x.h2s_ratio.is_none() && x.co2_ratio < 1.0),
-        "{ice:?}"
+        colder
+            .is_some_and(|x| x.co2_validity == Extrapolated && x.h2s_ratio.is_some_and(|h| h.validity == Extrapolated)),
+        "{colder:?}"
     );
+    // below the water's freezing point there is no liquid water: no contact at all (third review, G1)
+    let ice = c::equilibria(-2.5, 35.0).and_then(|eq| g::mixed_contact(&eq, 2.0, 7.2, 0.01, c::AIR_CO2, 1.0, 1.0, 1.0));
+    assert_eq!(ice, Err(ChemError::OutOfRange));
+}
+
+/// CO₂'s solubility carries its own validity, as H₂S's does: Weiss (1974) from −1 to 40 °C and 0 to 40, extrapolated
+/// from the water's freezing point to −1 °C, refused below freezing and outside (third review, G1).
+#[test]
+fn the_co2_solubility_says_its_validity() {
+    assert_eq!(g::co2_validity(-1.0, 35.0), Ok(Measured));
+    assert_eq!(g::co2_validity(40.0, 40.0), Ok(Measured));
+    assert_eq!(g::co2_validity(-1.5, 35.0), Ok(Extrapolated));
+    assert_eq!(g::co2_validity(-1.93, 35.0), Err(ChemError::OutOfRange));
+    assert_eq!(g::co2_validity(-0.5, 0.0), Err(ChemError::OutOfRange));
+    assert_eq!(g::co2_validity(40.1, 35.0), Err(ChemError::OutOfRange));
+    assert_eq!(g::co2_validity(12.0, 40.01), Err(ChemError::OutOfRange));
+    assert!(g::co2_from_gas(3852.0, -1.5, 35.0, 1.0).is_ok_and(|x| x.validity == Extrapolated));
+    assert!(g::co2_from_gas(3852.0, 12.0, 35.0, 1.0).is_ok_and(|x| x.validity == Measured));
+    assert!(g::ph_rise_bound(-1.5, 35.0, 0.01, 1.0).is_ok_and(|x| x.validity == Extrapolated));
+    assert_eq!(g::co2_from_gas(3852.0, -2.0, 35.0, 1.0), Err(ChemError::OutOfRange));
 }
 
 #[test]
@@ -375,7 +400,10 @@ fn a_contact_refuses_what_cannot_be() {
 
 #[test]
 fn the_bounds_need_no_ph() {
-    assert!(close(g::ph_rise_bound(12.0, 35.0, 0.01, 1.0), 0.004390337131769065));
+    assert!(close(
+        g::ph_rise_bound(12.0, 35.0, 0.01, 1.0).map(|x| x.value),
+        0.004390337131769065
+    ));
     // the vessel's own rise stays under the bound
     assert!(contact(1, 0.01, 1.0, 1.0).is_some_and(|x| x.ph - 7.2 < 0.004390337131769065));
     // the whole worst case of the H₂S reading at saturations of 1, air 10 % of the water

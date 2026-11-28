@@ -91,7 +91,7 @@ impl Water<'_> {
         };
         let (Ok(dic_in), Ok(per_atm), Ok(k0_h2s)) = (
             eq.dic(alkalinity, ph),
-            g::co2_per_partial_pressure(temp_c, salinity, 1.0),
+            g::co2_per_partial_pressure(temp_c, salinity, 1.0).map(|x| x.value),
             g::k0_h2s(temp_c, salinity).map(|x| x.value),
         ) else {
             failures.push(format!("{}: not a water of the grid", what(0.0)));
@@ -121,12 +121,16 @@ impl Water<'_> {
             };
             checked += 1;
             let rise = contact.ph - ph;
-            let bound = g::ph_rise_bound(temp_c, salinity, air, 1.0).unwrap_or(f64::NAN);
+            let bound = g::ph_rise_bound(temp_c, salinity, air, 1.0).map_or(f64::NAN, |x| x.value);
             let mut fail = |holds: bool, property: &str| {
                 if !holds {
                     failures.push(format!("{}: {property}: {contact:?}", what(air)));
                 }
             };
+            fail(
+                Ok(contact.co2_validity) == g::co2_validity(temp_c, salinity),
+                "the CO₂ ratio without the validity of its water",
+            );
             fail(
                 contact.h2s_ratio.map(|x| x.validity) == g::h2s_validity(temp_c, salinity).ok(),
                 "the H₂S ratio without the validity of its water",
@@ -223,17 +227,18 @@ fn the_conversions_are_linear() {
     for temp_c in [0.0, 2.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0] {
         for salinity in [0.0, 5.0, 20.0, 35.0, 40.0] {
             let h2s_unit = g::h2s_from_gas(1.0, temp_c, salinity, 1.0).map_or(f64::NAN, |x| x.value);
-            let co2_unit = g::co2_from_gas(1.0, temp_c, salinity, 1.0).unwrap_or(f64::NAN)
+            let co2_unit = g::co2_from_gas(1.0, temp_c, salinity, 1.0).map_or(f64::NAN, |x| x.value)
                 / g::co2_fugacity_coefficient(temp_c, 1.0).unwrap_or(f64::NAN);
             for reading in READINGS {
                 for pressure in PRESSURES {
                     checked += 1;
                     let h2s = g::h2s_from_gas(reading, temp_c, salinity, pressure).map_or(f64::NAN, |x| x.value);
-                    let co2 = g::co2_from_gas(reading, temp_c, salinity, pressure).unwrap_or(f64::NAN);
+                    let co2 = g::co2_from_gas(reading, temp_c, salinity, pressure).map_or(f64::NAN, |x| x.value);
                     let fugacity = g::co2_fugacity_coefficient(temp_c, pressure).unwrap_or(f64::NAN);
                     let twice_h2s =
                         g::h2s_from_gas(2.0 * reading, temp_c, salinity, pressure).map_or(f64::NAN, |x| x.value);
-                    let twice_co2 = g::co2_from_gas(2.0 * reading, temp_c, salinity, pressure).unwrap_or(f64::NAN);
+                    let twice_co2 =
+                        g::co2_from_gas(2.0 * reading, temp_c, salinity, pressure).map_or(f64::NAN, |x| x.value);
                     if !(near(h2s, reading * pressure * h2s_unit)
                         && near(co2, reading * pressure * fugacity * co2_unit)
                         && twice_h2s == 2.0 * h2s
@@ -246,7 +251,7 @@ fn the_conversions_are_linear() {
                 }
             }
             if g::h2s_from_gas(0.0, temp_c, salinity, 1.0).map(|x| x.value) != Ok(0.0)
-                || g::co2_from_gas(0.0, temp_c, salinity, 1.0) != Ok(0.0)
+                || g::co2_from_gas(0.0, temp_c, salinity, 1.0).map(|x| x.value) != Ok(0.0)
             {
                 failures.push(format!("{temp_c} °C S {salinity}: no gas, yet not 0"));
             }
@@ -281,17 +286,21 @@ fn the_factors_lie_between_0_and_1() {
     report(&failures, checked);
 }
 
-/// The depth test: both saturations in [0, 1], rising with the ratio, H₂S's never below CO₂'s (its exponent over 2,
+/// The depth test, from the water's freezing point to 30 °C (every tenth of a degree from −2.2 °C where the water is
+/// liquid): both saturations in [0, 1], rising with the ratio, H₂S's never below CO₂'s (its exponent over 2,
 /// whatever the provisional diffusivity factor within its stated range).
 #[test]
 fn the_depth_test_saturations_are_ordered() {
     let (mut failures, mut checked) = (Vec::new(), 0_usize);
     let (mut least, mut most) = (f64::INFINITY, 0.0_f64);
-    for step in 2..=30 {
-        let temp_c = f64::from(step);
+    for tenth_degree in -22..=300 {
+        let temp_c = f64::from(tenth_degree) / 10.0;
         for salinity in [0.0, 5.0, 10.0, 20.0, 30.0, 35.0, 40.0] {
+            if g::h2s_validity(temp_c, salinity).is_err() {
+                continue;
+            }
             let solubility = g::k0_h2s(temp_c, salinity).map_or(f64::NAN, |x| x.value)
-                / g::co2_per_partial_pressure(temp_c, salinity, 1.0).unwrap_or(f64::NAN);
+                / g::co2_per_partial_pressure(temp_c, salinity, 1.0).map_or(f64::NAN, |x| x.value);
             // the stated ranges: D ratio 0.71 to 0.80, n 1/2 to 2/3
             for factor in [0.71_f64.powf(2.0 / 3.0), 0.80_f64.powf(0.5)] {
                 let exponent = solubility * factor;
@@ -386,7 +395,7 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
             let at = |j: usize| a.get(j).copied().unwrap_or(1.0);
             refused(
                 format!("co2_per_partial_pressure {a:?}"),
-                g::co2_per_partial_pressure(at(0), at(1), at(2)),
+                g::co2_per_partial_pressure(at(0), at(1), at(2)).map(|x| x.value),
             );
         }
         for i in 0..4 {
@@ -405,10 +414,13 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
                     g::saturation_from_depths(0.8, t, s, p).map(|x| x.0),
                 );
             }
-            refused(format!("co2_from_gas {reading:?}"), g::co2_from_gas(r, t, s, p));
+            refused(
+                format!("co2_from_gas {reading:?}"),
+                g::co2_from_gas(r, t, s, p).map(|x| x.value),
+            );
             refused(
                 format!("ph_rise_bound {a:?}"),
-                g::ph_rise_bound(at(0), at(1), at(2) * 0.01, at(3)),
+                g::ph_rise_bound(at(0), at(1), at(2) * 0.01, at(3)).map(|x| x.value),
             );
         }
         for i in 0..7 {
@@ -453,15 +465,36 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
             "saturation_from_depths at no pressure",
             g::saturation_from_depths(0.8, 12.0, 35.0, 0.0).map(|x| x.0),
         ),
-        ("co2_from_gas at no pressure", g::co2_from_gas(3852.0, 12.0, 35.0, 0.0)),
-        ("co2_from_gas below 0 atm", g::co2_from_gas(3852.0, 12.0, 35.0, -1.0)),
+        (
+            "co2_from_gas at no pressure",
+            g::co2_from_gas(3852.0, 12.0, 35.0, 0.0).map(|x| x.value),
+        ),
+        (
+            "co2_from_gas below 0 atm",
+            g::co2_from_gas(3852.0, 12.0, 35.0, -1.0).map(|x| x.value),
+        ),
+        (
+            "co2_from_gas below the freezing point",
+            g::co2_from_gas(3852.0, -2.0, 35.0, 1.0).map(|x| x.value),
+        ),
+        (
+            "co2_from_gas above 40 °C",
+            g::co2_from_gas(3852.0, 40.1, 35.0, 1.0).map(|x| x.value),
+        ),
+        ("mixed_contact below the freezing point", c_below_freezing()),
         ("dried_gas_factor below 0 atm", g::dried_gas_factor(12.0, -1.0)),
         (
             "dried_gas_factor under the vapour pressure",
             g::dried_gas_factor(12.0, 0.01),
         ),
-        ("ph_rise_bound a negative air", g::ph_rise_bound(12.0, 35.0, -0.01, 1.0)),
-        ("ph_rise_bound at no pressure", g::ph_rise_bound(12.0, 35.0, 0.01, 0.0)),
+        (
+            "ph_rise_bound a negative air",
+            g::ph_rise_bound(12.0, 35.0, -0.01, 1.0).map(|x| x.value),
+        ),
+        (
+            "ph_rise_bound at no pressure",
+            g::ph_rise_bound(12.0, 35.0, 0.01, 0.0).map(|x| x.value),
+        ),
         (
             "saturation_from_depths below 0.5",
             g::saturation_from_depths(0.49, 12.0, 35.0, 1.0).map(|x| x.0),
@@ -500,6 +533,11 @@ fn the_functions_refuse_what_is_not_a_number_or_out_of_domain() {
     report(&failures, 0);
 }
 
+fn c_below_freezing() -> Result<f64, ChemError> {
+    let eq = water_equilibria(4, -2.5, 35.0, Some(200.0), Ions::default())?;
+    contact_of(&eq, [2.0, 0.01, AIR_CO2, 1.0, 1.0, 1.0])
+}
+
 fn contact_of(eq: &Equilibria, [alkalinity, air, air_co2, pressure, s_co2, s_h2s]: [f64; 6]) -> Result<f64, ChemError> {
     g::mixed_contact(eq, alkalinity, 7.2, air, air_co2, pressure, s_co2, s_h2s).map(|x| x.map_or(f64::NAN, |x| x.ph))
 }
@@ -510,7 +548,7 @@ fn contact_of(eq: &Equilibria, [alkalinity, air, air_co2, pressure, s_co2, s_h2s
 #[test]
 fn a_reading_below_0_stays_signed() {
     assert!(g::h2s_from_gas(-1.0, 12.0, 35.0, 1.0).is_ok_and(|x| x.value < 0.0));
-    assert!(g::co2_from_gas(-1.0, 12.0, 35.0, 1.0).is_ok_and(|x| x < 0.0));
+    assert!(g::co2_from_gas(-1.0, 12.0, 35.0, 1.0).is_ok_and(|x| x.value < 0.0));
     let eq = water_equilibria(4, 12.0, 35.0, Some(200.0), Ions::default());
     assert!(
         eq.and_then(|eq| g::total_sulfide(-1.0, &eq, 7.2))

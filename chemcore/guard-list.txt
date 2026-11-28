@@ -9,7 +9,9 @@ name BISULFATE_SHARE
 name BOUND_OVER_ESTIMATE
 name BY_KEY
 name CARD_LAYERS
+name CO2_SALINITY
 name CO2_SPOTS
+name CO2_TEMP_C
 name CONDUCTIVITY_ABOVE_IONS
 name CONDUCTIVITY_BELOW_IONS
 name CONDUCTIVITY_SALINITY
@@ -85,6 +87,7 @@ name co2_from_gas
 name co2_fugacity_coefficient
 name co2_judged
 name co2_per_partial_pressure
+name co2_validity
 name core_hash
 name counter_productive
 name davies_log_gamma

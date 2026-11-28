@@ -5599,8 +5599,10 @@ steps are in the scratchpad plan `chemcore/PLAN.md`; the state of each step is b
   a second (2026-11-28) confirmed them and led to the rest: H₂S's solubility measured from 2 to 30 °C, extrapolated
   from the water's freezing point to 2 °C and said so with every H₂S result (`h2s_validity`), refused below freezing
   and above 30 °C, the CO₂ side of a contact given wherever H₂S's is not; a reading below 0 kept signed (the display
-  will say "< LOD" and flag a zero fault). All applied, every expected value of its tests printed by the reviewers'
-  own implementations (`chemcore/experimental/reference/`, never run by the server). What keeps it out of the core: the B
+  will say "< LOD" and flag a zero fault). A third (2026-11-28) confirmed those and led to CO₂'s own validity (Weiss,
+  −1 to 40 °C, `co2_validity`) and no contact at all below the water's freezing point. All applied, every expected
+  value of its tests printed and matched by the reviewer's own implementation (`chemcore/experimental/reference/
+  independent_check_3.py`, never run by the server). What keeps it out of the core: the B
   digits of Douabul & Riley's fit, restored by the review and confirmed against their 42 measurements, are still to be
   read in the paper; the depth test's diffusivity factor is PROVISIONAL; H₂S's fugacity is taken as its pressure.
 - The handshake: `chemcore/EXPECTED` names the build the server accepts (version, formula version, a digest of the

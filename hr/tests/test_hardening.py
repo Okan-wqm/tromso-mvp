@@ -147,6 +147,59 @@ class SeedTests(TestCase):
         self.assertNotIn('change_schedulingsettings', lead)
 
 
+class StackSeedTests(TestCase):
+    """seed_stack_proof (the go-live stack's synthetic data, deploy/ci/stack.sh, step data): the demonstration company
+    of seed_hr_demo (one implementation, hr/management/commands/_demo_company.py) with no sign-in and no role, written
+    by the account named, on the stack's marked database only (core/management/stackproof.py)."""
+
+    def setUp(self):
+        self.admin = get_user_model().objects.create_superuser('stack-admin', 'stack-admin@example.com', 'x')
+
+    def seed(self):
+        from core.tests_commands import mark_database
+        mark_database()
+        call_command('seed_stack_proof', by='stack-admin', stdout=StringIO())
+
+    def test_unmarked_it_refuses_and_writes_nothing(self):
+        with override_settings(DEBUG=True), self.assertRaisesMessage(CommandError, "does not carry the stack's mark"):
+            call_command('seed_stack_proof', by='stack-admin', stdout=StringIO())
+        self.assertEqual(Employee.all_objects.count(), 0)
+
+    def test_the_company_without_a_sign_in_idempotent_and_consistent(self):
+        self.seed()
+        first = SeedTests.counts(self)
+        self.seed()
+        self.assertEqual(SeedTests.counts(self), first)
+        self.assertEqual(first['users'], 1)                                    # the admin only: no account made
+        self.assertEqual(first['Employee'], 9)
+        self.assertGreater(first['ShiftAssignment'], 0)
+        self.assertEqual((first['LeaveRequest'], first['AttendanceRecord']), (1, 1))
+        self.assertFalse(Employee.objects.filter(user__isnull=False).exists())
+        self.assertFalse(get_user_model().objects.filter(groups__isnull=False).exists())
+        self.assertFalse(ProductionDepartment.objects.filter(manager__isnull=False).exists())
+        self.assertEqual(checks.problems(), [])
+
+    def test_every_record_is_written_through_the_services_by_the_account_named(self):
+        from core import audit
+        from core.models import AuditLog
+        self.seed()
+        for model in (Employee, Posting, ShiftAssignment, LeaveRequest, AttendanceRecord):
+            logged = AuditLog.objects.filter(entity_type=audit.entity_type_of(model), action='create')
+            with self.subTest(model=model.__name__):
+                self.assertEqual({str(pk) for pk in model.objects.values_list('pk', flat=True)},
+                                 set(logged.values_list('entity_id', flat=True)))
+                self.assertEqual(set(logged.values_list('user_id', flat=True)), {self.admin.pk})
+
+    def test_an_unknown_or_inactive_account_is_refused(self):
+        from core.tests_commands import mark_database
+        mark_database()
+        get_user_model().objects.filter(pk=self.admin.pk).update(is_active=False)
+        for name in ('stack-admin', 'nobody'):
+            with self.subTest(name=name), self.assertRaisesMessage(CommandError, f'No active account is named {name!r}'):
+                call_command('seed_stack_proof', by=name, stdout=StringIO())
+        self.assertEqual(Employee.all_objects.count(), 0)
+
+
 class QueryBudgetTests(PeopleTestCase):
     """The pages that list people run the same number of queries for a few and for many."""
 

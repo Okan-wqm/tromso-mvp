@@ -4909,7 +4909,10 @@ production people in Production, with the same permission.
   HR admin, Demo auditor) with a sign-in each (`demo_lead_hatchery`, `demo_lead_nursery`, `demo_staff`, `demo_hr`, `demo_auditor`).
   The people, their placements, plans, leave and attendance are written through `hr.services` as the demonstration's own
   people (the HR administrator takes people on and plans, the staff member files their leave, a lead marks someone
-  present), so every rule runs and every record is in the activity log.
+  present), so every rule runs and every record is in the activity log. The company itself is
+  `hr/management/commands/_demo_company.py` (not a command), shared with **`manage.py seed_stack_proof --by <username>`**:
+  the same company with no sign-in and no role, every record written by the account named (the go-live stack's first
+  admin), run by `deploy/ci/stack.sh` only, on the stack's own marked database (Management commands, kind stack).
 - **Browser code** (`frontend/roster.ts`, TypeScript only): on the Shift schedule the arrow keys move between cells, and the paint
   form (hidden without the script) picks a shift, selects cells and posts them to the batch route, which plans all or none; the page's
   Print button is the shared `data-print`. The script has no text of its own.
@@ -7257,6 +7260,14 @@ under the wrong kind, fails.
   (its app and owner roles are no superusers), so a process started with `DEBUG` on and pointed at a farm's database is
   stopped as well (each command still has its own check besides: a confirmed database name, a flag, the seed's marker).
   `sensors_demo_setup --remove` logs every row it takes away.
+- **stack**: the go-live stack's synthetic data (`deploy/ci/stack.sh`), written as a farm's server writes (the app
+  role, `DEBUG` off, through the services) so that the backup, the restore and the point-in-time restore are proven on
+  the product's own rows. No development tool: the stack is the production stack, not a developer's database, and the
+  dev guard refuses there (the stack proves that too: `seed_hr_demo` is refused on it). Each is built on
+  `core.management.stackproof.StackProofCommand`: it runs only on a database whose comment is the stack's mark, which
+  the stack writes as the database's owner role before it seeds. No setting, variable or argument stands for the mark,
+  the app role cannot write it, no step of a farm's installation, upgrade or restore writes it and a dump does not
+  carry it (the stack's restore step checks that); there is no `--force`.
 
 | Command | App | Kind | What it does | Who runs it |
 |---|---|---|---|---|
@@ -7298,6 +7309,7 @@ under the wrong kind, fails.
 | `sensors_demo_setup` | sensors | dev | Makes (`--confirm`) or removes (`--remove`) the live demo's sensors for the tanks and systems a database has | A developer; `sensors-ingest/simulator/farm-check.sh` |
 | `bench_sensors` | sensors | dev | Writes synthetic readings into a database named on the command line and prints storage and read figures | A developer, on a copy or a test database (Sensors, Measured figures) |
 | `fix_seed_size_mix` | farm | dev | Separates the batches of very different sizes the development seed stocked together (Production, the development seed's mixed cages) | A developer, once per database restored from a dump older than it |
+| `seed_stack_proof` | hr | stack | The HR demonstration company without any sign-in, written by the account given with `--by` | `deploy/ci/stack.sh`, step data, on the stack's marked database only |
 
 `fix_seed_size_mix` is a finished one-off on a database it has run on (run again it does nothing), and is kept: every
 development dump taken before it holds the mixed cages, and a restore of one needs it again.

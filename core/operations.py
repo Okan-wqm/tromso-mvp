@@ -13,6 +13,7 @@ Because they are triggers, every writer is covered: the services, `bulk_create`,
 import re
 
 from django.db.migrations.operations.base import Operation
+from django.utils.deconstruct import deconstructible
 
 NAME = re.compile(r'^[a-z_][a-z0-9_]*$')
 # A scope is what core_rev_note accepts (migration core/0014): lower-case letters and underscores.
@@ -23,7 +24,24 @@ LONGEST = 63
 SUFFIXES = ('note', 'apply', 'trunc')
 
 
-class TrackRev(Operation):
+class Statements(Operation):
+    """An operation that is its statements: `sql_forwards()` run forwards, `sql_backwards()` back, no model state."""
+    reversible = True
+    reduces_to_sql = True
+
+    def state_forwards(self, app_label, state):
+        pass
+
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+        for statement in self.sql_forwards():
+            schema_editor.execute(statement, params=None)
+
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+        for statement in self.sql_backwards():
+            schema_editor.execute(statement, params=None)
+
+
+class TrackRev(Statements):
     """`keys`: an SQL expression of the row (`{row}.batch_id`) or a SELECT of one column (`SELECT batch_id FROM
     stock_movements WHERE operation_id = {row}.id`) giving the keys of `scope` the row belongs to; None for a table-level
     scope (key '0'). `day`: an SQL expression of the row giving the earliest day the change can affect (a ledger line's
@@ -31,8 +49,6 @@ class TrackRev(Operation):
     day (the expression is NULL, e.g. a line whose operation is gone) counts as the whole history too. `columns`: only
     updates that change one of these columns count (the insert and delete of a row always do, unless `events` leaves
     them out)."""
-    reversible = True
-    reduces_to_sql = True
 
     def __init__(self, table, scope, keys=None, day=None, columns=(), events=('INSERT', 'UPDATE', 'DELETE')):
         if not (NAME.match(table) and SCOPE.match(scope)):
@@ -49,9 +65,6 @@ class TrackRev(Operation):
     def deconstruct(self):
         return self.__class__.__name__, [self.table, self.scope], {
             'keys': self.keys, 'day': self.day, 'columns': self.columns, 'events': self.events}
-
-    def state_forwards(self, app_label, state):
-        pass
 
     @property
     def function(self):
@@ -125,37 +138,12 @@ $f$"""
         return [f'DROP TRIGGER IF EXISTS {trunc} ON {self.table}', f'DROP TRIGGER IF EXISTS {apply} ON {self.table}',
                 f'DROP TRIGGER IF EXISTS {note} ON {self.table}', f'DROP FUNCTION IF EXISTS {self.function}()']
 
-    def database_forwards(self, app_label, schema_editor, from_state, to_state):
-        for statement in self.sql_forwards():
-            schema_editor.execute(statement, params=None)
-
-    def database_backwards(self, app_label, schema_editor, from_state, to_state):
-        for statement in self.sql_backwards():
-            schema_editor.execute(statement, params=None)
-
     def describe(self):
         return f'Track changes of {self.table} in core_rev scope {self.scope}'
 
     @property
     def migration_name_fragment(self):
         return f'track_{self.table}_{self.scope}'
-
-
-class Statements(Operation):
-    """An operation that is its statements: `sql_forwards()` run forwards, `sql_backwards()` back, no model state."""
-    reversible = True
-    reduces_to_sql = True
-
-    def state_forwards(self, app_label, state):
-        pass
-
-    def database_forwards(self, app_label, schema_editor, from_state, to_state):
-        for statement in self.sql_forwards():
-            schema_editor.execute(statement, params=None)
-
-    def database_backwards(self, app_label, schema_editor, from_state, to_state):
-        for statement in self.sql_backwards():
-            schema_editor.execute(statement, params=None)
 
 
 class KeepRows(Statements):
@@ -198,50 +186,96 @@ class KeepRows(Statements):
         return f'keep_{self.table}'
 
 
-class DefinerTrigger(Statements):
-    """A trigger whose function runs as its owner (SECURITY DEFINER), so the app role needs no right on what it writes,
-    made so the app role can neither forge it nor turn it aside (review of production-plan 2, H1; review of the perf
-    tests 2, H2):
-    - EXECUTE on the function is taken from PUBLIC: nobody but its owner can make another trigger call it (a trigger on
-      a temporary table of the same name would make it write the real table); firing needs no EXECUTE;
-    - the function refuses to run for any table but `public.<table>` (TG_TABLE_SCHEMA, TG_TABLE_NAME), the second wall;
-    - its search_path is `pg_catalog, public, pg_temp`, the session's temporary schema last, and `body` names every table
-      it reads or writes with its schema (`public.alarm_open`), so a temporary table of the same name is never the one
-      written; checked here, but for the transition table (`new_table`, `old_table`).
-    `body` is plpgsql run before `RETURN NULL`. Going back drops the trigger and the function."""
-    NAMED = re.compile(r'\b(?:FROM|INTO|UPDATE|JOIN|USING|TABLE)\s+([A-Za-z_][A-Za-z0-9_.]*)', re.IGNORECASE)
+@deconstructible(path='core.operations.On')
+class On:
+    """One trigger of a DefinerTrigger: AFTER `events` on `public.<table>`, named `trigger`, FOR EACH `level` (ROW or
+    STATEMENT; a TRUNCATE is a STATEMENT trigger), with its transition tables (`new_table`, `old_table`: one event
+    only), a `when` condition (an SQL expression of OLD and NEW, ROW triggers) and `args`, the strings the function
+    reads as TG_ARGV."""
+    EVENTS = ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')
 
-    def __init__(self, table, trigger, function, body, events=('INSERT',), level='STATEMENT', new_table=None,
-                 old_table=None):
-        names = [table, trigger, function] + [each for each in (new_table, old_table) if each]
+    def __init__(self, table, trigger, events=('INSERT',), level='STATEMENT', new_table=None, old_table=None,
+                 when=None, args=()):
+        names = [table, trigger] + [each for each in (new_table, old_table) if each]
         if any(not NAME.match(name) or len(name) > LONGEST for name in names):
-            raise ValueError(f'DefinerTrigger: {names!r} must be plain lower-case names of at most {LONGEST} characters.')
-        if level not in ('ROW', 'STATEMENT') or not events or any(
-                event not in ('INSERT', 'UPDATE', 'DELETE') for event in events):
-            raise ValueError(f'DefinerTrigger: events {events!r} and level {level!r}.')
-        if '$f$' in body:
-            raise ValueError('DefinerTrigger: the body may not hold $f$.')
-        own = {new_table, old_table} - {None}
-        loose = [name for name in self.NAMED.findall(body) if '.' not in name and name not in own]
-        if loose:
-            raise ValueError(f'DefinerTrigger: name every table with its schema (public.{loose[0]}): a temporary table '
-                             f'of that name would be the one written.')
-        self.table, self.trigger, self.function, self.body = table, trigger, function, body
-        self.events, self.level, self.new_table, self.old_table = tuple(events), level, new_table, old_table
+            raise ValueError(f'On: {names!r} must be plain lower-case names of at most {LONGEST} characters.')
+        events = tuple(events)
+        if (level not in ('ROW', 'STATEMENT') or not events or len(set(events)) != len(events)
+                or any(event not in self.EVENTS for event in events)):
+            raise ValueError(f'On: events {events!r} and level {level!r}.')
+        if 'TRUNCATE' in events and (level != 'STATEMENT' or new_table or old_table or when):
+            raise ValueError('On: a TRUNCATE trigger is a STATEMENT trigger, with no transition table and no WHEN.')
+        if (new_table or old_table) and len(events) != 1:
+            raise ValueError('On: a transition table is for a trigger of one event (PostgreSQL).')
+        if when is not None and (level != 'ROW' or '$f$' in when):
+            raise ValueError('On: a WHEN condition is for a ROW trigger, and may not hold $f$.')
+        if any(not isinstance(arg, str) or '\x00' in arg for arg in args):
+            raise ValueError(f'On: args {args!r} must be strings.')
+        self.table, self.trigger, self.events, self.level = table, trigger, events, level
+        self.new_table, self.old_table, self.when, self.args = new_table, old_table, when, tuple(args)
 
-    def deconstruct(self):
-        return self.__class__.__name__, [self.table, self.trigger, self.function, self.body], {
-            'events': self.events, 'level': self.level, 'new_table': self.new_table, 'old_table': self.old_table}
+    def __eq__(self, other):
+        return isinstance(other, On) and vars(self) == vars(other)
 
-    def sql_forwards(self):
+    def __hash__(self):
+        return hash((self.table, self.trigger))
+
+    def create(self, function):
         transitions = ' '.join(f'{kind} TABLE AS {name}' for kind, name in (('NEW', self.new_table),
                                                                            ('OLD', self.old_table)) if name)
+        args = ', '.join("'" + arg.replace("'", "''") + "'" for arg in self.args)
+        return (f'CREATE TRIGGER {self.trigger} AFTER {" OR ".join(self.events)} ON public.{self.table} '
+                f'{"REFERENCING " + transitions + " " if transitions else ""}FOR EACH {self.level} '
+                f'{"WHEN (" + self.when + ") " if self.when else ""}EXECUTE FUNCTION public.{function}({args})')
+
+    def drop(self):
+        return f'DROP TRIGGER IF EXISTS {self.trigger} ON public.{self.table}'
+
+
+class DefinerTrigger(Statements):
+    """A trigger function that runs as its owner (SECURITY DEFINER), so the app role needs no right on what it writes,
+    and its triggers (`on`: one or more core.operations.On, on one table or many), made so that no other role can call
+    it with a table of its choosing (review of production-plan 2, H1; review of the perf tests 2, H2, and 3, L2):
+    - EXECUTE on the function is taken from PUBLIC: nobody but its owner may make another trigger call it (firing a
+      trigger needs no EXECUTE); the runtime roles may make no temporary table either (deploy/db/sql/roles.sql);
+    - the function refuses to run for any table but those of `on`, in the public schema (TG_TABLE_SCHEMA,
+      TG_TABLE_NAME);
+    - its search_path is `pg_catalog, public, pg_temp`, the session's temporary schema last, so a table named in `body`
+      is always the public one, never a temporary table of the same name (core/tests_definer_trigger.py proves it).
+    `body` is plpgsql run before `RETURN NULL` (they are AFTER triggers), `declare` its variables. Going back drops the
+    triggers and the function. deploy/scripts/check-roles.sh proves on a server that neither runtime role may call a
+    SECURITY DEFINER function."""
+
+    def __init__(self, function, body, on, declare=''):
+        on = tuple(on)
+        if not NAME.match(function) or len(function) > LONGEST:
+            raise ValueError(f'DefinerTrigger: {function!r} must be a plain lower-case name of at most {LONGEST} '
+                             f'characters.')
+        if not on or any(not isinstance(each, On) for each in on):
+            raise ValueError('DefinerTrigger: `on` is one or more core.operations.On.')
+        if len({(each.table, each.trigger) for each in on}) != len(on):
+            raise ValueError('DefinerTrigger: two triggers of one name on one table.')
+        if '$f$' in body or '$f$' in declare:
+            raise ValueError('DefinerTrigger: the body and the declarations may not hold $f$.')
+        self.function, self.body, self.on, self.declare = function, body, on, declare
+
+    def deconstruct(self):
+        return self.__class__.__name__, [self.function, self.body, list(self.on)], {'declare': self.declare}
+
+    @property
+    def tables(self):
+        return sorted({each.table for each in self.on})
+
+    def sql_forwards(self):
+        tables = ', '.join(f"'{table}'" for table in self.tables)
+        named = ', '.join(f'public.{table}' for table in self.tables)
+        declare = f'DECLARE\n{self.declare}\n' if self.declare.strip() else ''
         return [
             f"""CREATE FUNCTION public.{self.function}() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
     SET search_path = pg_catalog, public, pg_temp AS $f$
-BEGIN
-    IF TG_TABLE_SCHEMA <> 'public' OR TG_TABLE_NAME <> '{self.table}' THEN
-        RAISE EXCEPTION '{self.function} runs for public.{self.table} only, not %.%', TG_TABLE_SCHEMA, TG_TABLE_NAME
+{declare}BEGIN
+    IF TG_TABLE_SCHEMA <> 'public' OR TG_TABLE_NAME <> ALL (ARRAY[{tables}]) THEN
+        RAISE EXCEPTION '{self.function} runs for {named} only, not %.%', TG_TABLE_SCHEMA, TG_TABLE_NAME
             USING ERRCODE = 'insufficient_privilege';
     END IF;
 {self.body}
@@ -249,18 +283,15 @@ BEGIN
 END
 $f$""",
             f'REVOKE EXECUTE ON FUNCTION public.{self.function}() FROM PUBLIC',
-            f'CREATE TRIGGER {self.trigger} AFTER {" OR ".join(self.events)} ON public.{self.table} '
-            f'{"REFERENCING " + transitions + " " if transitions else ""}FOR EACH {self.level} '
-            f'EXECUTE FUNCTION public.{self.function}()',
+            *(each.create(self.function) for each in self.on),
         ]
 
     def sql_backwards(self):
-        return [f'DROP TRIGGER IF EXISTS {self.trigger} ON public.{self.table}',
-                f'DROP FUNCTION IF EXISTS public.{self.function}()']
+        return [*(each.drop() for each in reversed(self.on)), f'DROP FUNCTION IF EXISTS public.{self.function}()']
 
     def describe(self):
-        return f'Trigger {self.trigger} on {self.table}, run as its owner by {self.function}()'
+        return f'Triggers {", ".join(each.trigger for each in self.on)}, run as their owner by {self.function}()'
 
     @property
     def migration_name_fragment(self):
-        return f'definer_{self.trigger}'
+        return f'definer_{self.function}'

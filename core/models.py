@@ -536,6 +536,36 @@ class Rev(models.Model):
         return f'{self.scope}:{self.key}:{self.rev}'
 
 
+class RowVersion(models.Model):
+    """One version of a kept row (core.versions): the row's values, whole, and the moments between which they were the
+    row's. Written by the database only, a trigger of each kept table (core.operations.KeepVersions): the app's role
+    may read these rows, never write them (deploy/db/sql/grants.sql). Read by identity, through core.versions.as_of."""
+
+    id = models.BigAutoField(primary_key=True)
+    table_name = models.CharField(_('Table'), max_length=63)
+    row_id = models.CharField(_('Row'), max_length=64)
+    valid_from = models.DateTimeField(_('Valid from'))
+    valid_to = models.DateTimeField(_('Valid to'), null=True, blank=True)
+    data = models.JSONField(_('Values'))
+
+    class Meta:
+        db_table = 'core_row_versions'
+        verbose_name = _('row version')
+        verbose_name_plural = _('row versions')
+        indexes = [models.Index(fields=['table_name', 'row_id', 'valid_from'], name='idx_core_row_versions_row')]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(valid_to__isnull=True)
+                                   | models.Q(valid_to__gte=models.F('valid_from')),
+                                   name='chk_core_row_versions_span'),
+            # A row has one version open at a time: the one it has now.
+            models.UniqueConstraint(fields=['table_name', 'row_id'], condition=models.Q(valid_to__isnull=True),
+                                    name='uq_core_row_versions_open'),
+        ]
+
+    def __str__(self):
+        return f'{self.table_name}:{self.row_id}@{self.valid_from:%Y-%m-%d %H:%M:%S}'
+
+
 class AccessKind(models.TextChoices):
     """Why a confidential record was read (core.sealing.log_access)."""
     VIEW = 'view', _('Viewed')

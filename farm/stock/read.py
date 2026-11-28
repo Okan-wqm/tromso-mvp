@@ -436,8 +436,7 @@ def left_within(units, first_of, production=False):
             days, counts = presence.timelines[(unit.pk, batch_id)]
             if counts[-1] <= 0 and days[-1] >= first:
                 gone[unit.pk].append((batch_id, days[-1]))
-    batches = Batch.all_objects.select_related('species').in_bulk(
-        {batch_id for found in gone.values() for batch_id, _day in found})
+    batches = batches_of({batch_id for found in gone.values() for batch_id, _day in found})
     shares = {unit_id: sorted((PastShare(batches[batch_id], day) for batch_id, day in found
                                if not (production and batches[batch_id].species.is_cleaner_fish)),
                               key=lambda share: share.batch.code)
@@ -578,6 +577,11 @@ class UnitStock:
         return (today - self.since).days if self.since else None
 
 
+def batches_of(batch_ids):
+    """{batch id: Batch, with its species} of these batches (deleted ones too: a record that names one still names it)."""
+    return Batch.all_objects.select_related('species').in_bulk(batch_ids)
+
+
 def stock_of(units):
     """{unit id: UnitStock} of the units that hold fish now; a unit without fish is left out."""
     batch_ids = {row['batch_id'] for row in present('batch_id', unit_id__in=[unit.pk for unit in units])}
@@ -599,7 +603,7 @@ def stock_on(units, day):
 
 def _unit_stocks(units, shares, batch_ids, lots=None):
     """{unit id: UnitStock} of `units` from the fold's shares: each unit's batches with fish, oldest stay first."""
-    batches = Batch.all_objects.select_related('species').in_bulk(batch_ids)
+    batches = batches_of(batch_ids)
     by_id = {unit.pk: unit for unit in units}
     stock = {}
     for (unit_id, batch_id), share in shares.items():

@@ -18875,6 +18875,12 @@ msgstr "Vaksinasjoner"
 msgid "Vaccine"
 msgstr "Vaksine"
 
+msgid "Valid from"
+msgstr "Gyldig fra"
+
+msgid "Valid to"
+msgstr "Gyldig til"
+
 msgid "Value"
 msgstr "Verdi"
 
@@ -21739,6 +21745,12 @@ msgstr "rolle"
 
 msgid "roles"
 msgstr "roller"
+
+msgid "row version"
+msgstr "radversjon"
+
+msgid "row versions"
+msgstr "radversjoner"
 
 msgid "safe"
 msgstr "trygg"

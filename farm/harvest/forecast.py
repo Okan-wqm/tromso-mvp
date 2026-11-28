@@ -5,9 +5,10 @@ measured weights beside it, and the plan as it was from any measured point. Comp
 - The start is today's estimated average (farm/feeding/projection.py: the estimate from the last measured point,
   after today's feedings), or, for "where the plan said we would be", a measured point of the batch's stay in the
   unit (its stocking, a weighing): the weight and the fish measured then. A plan from a past start is the plan as it
-  stood that day (owner decision 12 as decided after review 1): the assignments recorded by then, each on the days it
-  was in force as then recorded (read.as_recorded), and the temperature measured by then, held; nothing measured or
-  assigned since leaks into it, and no day's sensor values are read.
+  stood that day (owner decision 12 as decided after review 1): the assignments, their protocols' tables, the
+  temperature profiles and the planned harvests and transports (their fasts) each as recorded by the end of that day,
+  found by its id (read.as_recorded, core.versions: never by a name), and the temperature measured by then, held;
+  nothing measured, assigned or planned since leaks into it, and no day's sensor values are read.
 - Each day ahead reads the ration's basis of that day at the weight reached (farm/feeding/ration.py, Policy.basis):
   the protocol in force that day, the band at that weight, its SFR at the temperature, the expected FCR and the uneaten
   share there. The day's ration counts as given, and the fish grow by the one growth rule (farm/feeding/growth.py):
@@ -24,7 +25,7 @@ measured weights beside it, and the plan as it was from any measured point. Comp
   the basis's reason, never a default. The platform owner's horizon (core.platform.plan_horizon_days) stops it too."""
 import uuid
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.utils import formats
@@ -224,8 +225,9 @@ def plan(unit, share, target_g, start_day=None, horizon_days=None):
     if chosen is None:
         forecast = _ahead(policy, unit, batch, today, estimate.end_g, share.count, target_g, horizon_days, today)
     else:
-        forecast = _ahead(_as_recorded(policy, unit, batch, chosen.day), unit, batch, chosen.day, chosen.avg_weight_g,
-                          chosen.fish, target_g, horizon_days, today)
+        recorded = _as_recorded(policy, unit, batch, chosen.day, horizon_days)
+        forecast = _ahead(recorded, unit, batch, chosen.day, chosen.avg_weight_g, chosen.fish, target_g, horizon_days,
+                          today)
     return Plan(forecast, tuple(Against(point, forecast.weight_on(point.day) if point.day > start else None)
                                 for point in points), chosen, today, batch)
 
@@ -245,19 +247,12 @@ def plan_of(unit, batch_id, start_day=None, horizon_days=None):
     return plan(unit, share, target.target_weight_g if target is not None else None, start_day, horizon_days)
 
 
-def _as_recorded(policy, unit, batch, day):
-    """The policy of the plan from a past `day`: the protocols' and the profiles' rows of the unit and the batch as they
-    were recorded by the end of that day, with their tables and profiles (read.as_recorded)."""
-    from farm.models import ProtocolAssignment, TemperatureProfileAssignment
-    moment = end_of(day, unit)
-    rows = feeding_read.as_recorded(ProtocolAssignment, [unit.pk], [batch.pk], moment)
-    profile_rows = feeding_read.as_recorded(TemperatureProfileAssignment, [unit.pk], [batch.pk], moment)
-    tables = dict(policy.tables)
-    missing = {row.protocol_id for row in rows} - set(tables)
-    if missing:
-        tables.update(feeding_read.tables(missing))
-    profiles = feeding_read.profiles({row.profile_id: row.profile for row in profile_rows}.values())
-    return policy.recorded(rows, tables, profile_rows, profiles)
+def _as_recorded(policy, unit, batch, day, horizon_days):
+    """The policy of the plan from a past `day`: the protocols' and the profiles' rows of the unit and the batch, their
+    tables and profiles, and the fasts the plans of the unit asked over the plan's days, every row as it was recorded
+    by the end of that day (read.as_recorded: by its id, core.versions)."""
+    return policy.recorded(**feeding_read.as_recorded({unit.pk: unit}, [batch.pk], day,
+                                                      day + timedelta(days=horizon_days), end_of(day, unit)))
 
 
 # ---- the projection as a service (owner decision 20) ------------------------------------------------------------

@@ -355,10 +355,12 @@ class Policy:
         self._profiles = Resolver(self.profile_rows, 'profile',
                                   {pk: found.profile.species_id for pk, found in self.profiles.items()}, self.species)
 
-    def recorded(self, rows, tables, profile_rows, profiles):
-        """The same policy over other rows: the assignments as they were recorded on a past day (read.as_recorded), with
-        their tables and profiles. The temperatures, the fasts and the species stay this policy's."""
-        return replace(self, assignments=rows, tables=tables, profile_rows=profile_rows, profiles=profiles)
+    def recorded(self, assignments, tables, profile_rows, profiles, fasting):
+        """The same policy over the rows as they were recorded on a past day (read.as_recorded): the assignments with
+        their tables and profiles, and the fasts the plans of then asked. The temperatures and the species stay this
+        policy's."""
+        return replace(self, assignments=assignments, tables=tables, profile_rows=profile_rows, profiles=profiles,
+                       fasting=fasting)
 
     def resolve(self, unit_id, batch_id, day):
         """(the protocol's assignment row in force, a unit's row of another species read past)."""

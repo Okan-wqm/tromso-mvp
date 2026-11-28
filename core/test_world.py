@@ -317,7 +317,8 @@ def forms_world(admin, client):
     a person saves it (its RowListView, the record's version sent with it): a contact of the north site, a supplier with
     a contact, a feeder with a calibration, a feed suited to the salmon, a medicine with its withdrawal, a reorder level of
     the store, a monitoring board with a card, a task and a recurring task with a checklist, a device with a channel and
-    its calibration, a sensor credential, and a draft lice report and biomass report. Made on MOMENT's day."""
+    its calibration, a sensor credential, a draft lice report and biomass report, and a draft temperature profile with
+    its points. Made on MOMENT's day."""
     from core.crud import Resource
     from farm.models import Equipment, EquipmentType, Feed, Medicine, ProductionDepartment, Site, Species, Supplier, Tank
     from farm.tests.helpers import rows_data
@@ -392,6 +393,11 @@ def forms_world(admin, client):
                       f'bands-{index}-expected_fcr': '', f'bands-{index}-sfr_80': '1.1', f'bands-{index}-sfr_120': '1.3'})
     response = client.post(reverse('farm:feedingprotocol_table', args=[protocol.pk]), table)
     made.append(f'table of {protocol}: {response.status_code}')
+    # A draft temperature profile with three points over the fish's weight, saved through its own address.
+    from farm.models import TemperatureProfile
+    profile = TemperatureProfile.objects.create(name='Test hall profile', species=salmon)
+    rows(profile, 'points', [{'weight_g': '0', 'temperature_c': '8'}, {'weight_g': '500', 'temperature_c': '10'},
+                             {'weight_g': '2000', 'temperature_c': '12'}])
     # A draft experiment (its creator leads it) with a design of one factor and one group, saved through its own address.
     from experiments.models import Experiment
     response = client.post(reverse('experiments:experiment_create'), {
@@ -412,13 +418,16 @@ def forms_world(admin, client):
 
 
 def states_world(admin, client):
-    """The common states a form shows as it is, beside the drafts above (review B3): a feeding protocol assigned to a
-    unit (its table fixed), a started experiment with a tank placed (its design and places fixed), a reviewed knowledge
-    entry, and a device whose channel was placed and moved (a placement history). Each is a record of its own."""
+    """The common states a form shows as it is, beside the drafts above (review B3): a feeding protocol and a temperature
+    profile assigned to a unit (the table fixed; the species and the reading between points fixed), a started
+    experiment with a tank placed (its design and places fixed), a reviewed knowledge entry, and a device whose channel was placed and moved (a placement history). Each is a record of its own."""
     from datetime import timedelta
 
     from experiments.models import Experiment
-    from farm.models import Feed, FeedingProtocol, ProductionDepartment, ProtocolAssignment, Site, Species
+    from farm.models import (
+        Feed, FeedingProtocol, ProductionDepartment, ProtocolAssignment, Site, Species, TemperatureProfile,
+        TemperatureProfileAssignment, TemperatureProfilePoint,
+    )
     from farm.tests.helpers import make_species, point_of
     from farm.tests.test_stock import make_unit
     from knowledge.models import Document, KnowledgeEntry
@@ -443,6 +452,12 @@ def states_world(admin, client):
     spare = make_unit('TX-02', trials)
     ProtocolAssignment.objects.create(protocol=protocol, unit=spare,
                                       valid_from=MOMENT.date() - timedelta(days=5))
+    # an assigned temperature profile: active with its points, given to the same unit (its species and its reading
+    # between points fixed)
+    profile = TemperatureProfile.objects.create(name='Test assigned profile', species=salmon, status='active')
+    for weight, temperature in (('0', '9'), ('1000', '11')):
+        TemperatureProfilePoint.objects.create(profile=profile, weight_g=D(weight), temperature_c=D(temperature))
+    TemperatureProfileAssignment.objects.create(profile=profile, unit=spare, valid_from=MOMENT.date() - timedelta(days=5))
     # a started experiment: one group of one replicate, running since three days ago (no tank placed: a placed tank links
     # the Production units page to the experiment, which that page's new look does not say yet: reported, not hidden)
     first = MOMENT.date() - timedelta(days=3)

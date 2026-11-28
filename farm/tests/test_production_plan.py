@@ -27,7 +27,7 @@ from ..models import (
     TemperatureProfile, TemperatureProfileAssignment, TemperatureProfilePoint, WeightSource,
 )
 from ..stock import read as stock_read, services as stock_services
-from .helpers import role, rows_data
+from .helpers import recorded_at, role, rows_data
 from .test_harvest import HarvestTestCase
 from .test_protocols import PROTOCOL_KEEPER, ProtocolTestCase, table_data
 from .test_stock import make_unit
@@ -124,11 +124,9 @@ class PlanTestCase(HarvestTestCase):
         self.assertEqual(response.status_code, 204)
 
     def recorded_back(self, days_ago):
-        """Every assignment row as made `days_ago` (a farm's rows were made when they were, not on the test's day): a
-        plan from a past start reads only the rows recorded by then (decision 12)."""
-        moment = timezone.now() - timedelta(days=days_ago)
-        ProtocolAssignment.all_objects.update(created_at=moment)
-        TemperatureProfileAssignment.all_objects.update(created_at=moment)
+        """Every row as made `days_ago` (a farm's rows were made when they were, not on the test's day): their versions
+        (core.versions). A plan from a past start reads only the rows recorded by then, as they were then (decision 12)."""
+        recorded_at(timezone.now() - timedelta(days=days_ago))
 
     def set_target(self, grams, batch=None):
         response = self.client.post(reverse('farm:productionplan_create'), {

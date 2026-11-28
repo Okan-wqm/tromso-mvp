@@ -47,9 +47,11 @@ from django.db.models import Q
 from django.utils import formats
 from django.utils.translation import gettext as _, ngettext
 
+from core import versions
 from farm.models import HandlingPlanItem, HandlingRule
 from farm.models.handling import MAX_FASTING_HOURS, HandlingKind
 from farm.models.site import zone_of
+from farm.stock import read as stock_read
 from farm.stock.dates import local_today, start_of
 from farm.water.degree_days import BatchWater, accrual_text, degree_days_text, projected_sentence
 
@@ -342,13 +344,34 @@ def fast_of(item, water=None, requirement=None, done_too=False):
     return Fast(item, requirement, start_of_fast(item.unit, item.date, requirement, water, item.batch_id))
 
 
-def fasts(units, first, last):
+def planned_as_of(units, first, moment):
+    """The plans (HandlingPlanItem) of these units (Tank, with their sites) for `first` or later, as they were recorded
+    at `moment`, each found by its id (core.versions): one made since is not read, one changed or cancelled since is
+    read as it was. Their units are the ones given, their batches read once with their species."""
+    by_id = {unit.pk: unit for unit in units}
+    items = [item for item in versions.as_of(HandlingPlanItem, moment, unit=list(by_id)) if item.date >= first]
+    batches = stock_read.batches_of({item.batch_id for item in items})
+    for item in items:
+        item.unit, item.batch = by_id[item.unit_id], batches[item.batch_id]
+    return items
+
+
+def fasts(units, first, last, as_of=None):
     """{(unit id, day): Fast} for the fasting days from `first` to `last` of these units; where the fasts of two
     plans overlap, the one that starts first wins. Loaded once for a page or a walk: the rules and, for the plans
-    whose rule asks for degree-days, the water of their batches (one reading for the farm's today of each unit)."""
+    whose rule asks for degree-days, the water of their batches (one reading for the farm's today of each unit).
+    `as_of` (a moment): the fasts of the plans as they were recorded then (`planned_as_of`: the plan from a past start,
+    owner decision 12), their water read as on that moment's day on each unit's clock."""
     # A plan of any later day can have started its fast by `last` (a purge has no longest: it is the water's).
-    items = list(HandlingPlanItem.objects.filter(unit__in=units, date__gte=first)
-                 .select_related('unit__production_department__site', 'batch__species', 'operation'))
+    if as_of is None:
+        items = list(HandlingPlanItem.objects.filter(unit__in=units, date__gte=first)
+                     .select_related('unit__production_department__site', 'batch__species', 'operation'))
+        today_of = local_today
+    else:
+        items = planned_as_of(units, first, as_of)
+
+        def today_of(unit):
+            return as_of.astimezone(zone_of(unit.production_department.site)).date()
     requirements = {}
     for item in items:
         key = (item.kind, item.batch.species_id)
@@ -357,8 +380,8 @@ def fasts(units, first, last):
     degrees = [item for item in items if item.is_open and requirements[(item.kind, item.batch.species_id)]
                and requirements[(item.kind, item.batch.species_id)].degree_days]
     waters = {}
-    for today in {local_today(item.unit) for item in degrees}:
-        members = [item for item in degrees if local_today(item.unit) == today]
+    for today in {today_of(item.unit) for item in degrees}:
+        members = [item for item in degrees if today_of(item.unit) == today]
         water = BatchWater({item.batch_id for item in members}, today)
         waters.update({item.pk: water for item in members})
     found = {}

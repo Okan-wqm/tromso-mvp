@@ -225,6 +225,8 @@ RAW_SQL = {
     'core/rev.py:rev': 'the revision counters of core_rev',
     'core/rev.py:settle': 'the revision counters of core_rev',
     'core/rev.py:stamp': 'the revision counters of core_rev',
+    'core/versions.py:as_of': 'the versions of kept rows (core_row_versions); a sealed model’s are those of the rows '
+                              'its sealed manager returns (the manager’s own query, compiled into the read)',
     'inventory/services.py:item_for': 'an advisory lock, no rows',
     'knowledge/search.py:parse': 'the text search configuration’s stems of the typed words, no rows',
     'sensors/alarms.py:_extremes': 'the readings of a channel a sensor alarm rule watches, evaluated as the system',

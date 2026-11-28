@@ -13,3 +13,7 @@ REVOKE UPDATE ON ALL SEQUENCES IN SCHEMA public FROM balik_app;
 REVOKE UPDATE, DELETE ON audit_log, alarm_clearances, alarm_notifications, alarm_delivery_attempts, alarm_escalations,
   alarm_acknowledgements, withdrawal_acknowledgements, regulatory_report_snapshots FROM balik_app;
 REVOKE DELETE ON alarms FROM balik_app;
+-- The rows' versions (core.versions) are written by the kept tables' triggers alone, whose functions run as the owner
+-- (core migration 0021): the app role reads them and may not insert, change or delete one, so what a row was cannot be
+-- rewritten from a page or a script.
+REVOKE INSERT, UPDATE, DELETE ON core_row_versions FROM balik_app;

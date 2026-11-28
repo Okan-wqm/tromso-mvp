@@ -63,4 +63,14 @@ SCREENS = {
         read=no('read by the code that proves a stored figure still valid; the database viewer shows the table'),
         columns={'*': system('moved by the revision triggers (core.operations.TrackRev)')},
     ),
+    'RowVersion': Screen(
+        create=no('written by the database: a trigger of each kept table opens a version when a row is made or '
+                  'changed (core.versions)'),
+        edit=no('written by the database: the trigger closes a version when its row is changed or deleted; the app '
+                'may not write the table'),
+        delete=no('kept: what a row was is never forgotten'),
+        read=no('read by the plan from a past start, by the rows\' ids (core.versions.as_of); the database viewer '
+                'shows the table with its values masked'),
+        columns={'*': system('written by the versions\' triggers (core.operations.KeepVersions)')},
+    ),
 }

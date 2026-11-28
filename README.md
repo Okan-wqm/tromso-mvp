@@ -2688,9 +2688,10 @@ stay in the unit (its stocking, each weighing) with the estimate the weighing re
 realised bFCR since the previous point against the expected FCR on the feed given, and what the plan said for that
 day. **Plan from** chooses the start: today's estimate, or a measured point (`?from=<day>`), from which the plan is
 worked out again **as it stood that day** (decision 12 as decided after review 1): the weight and fish measured then, only
-the protocol and profile assignment rows recorded by the end of that day (rows made later are left out; a row ended or
-changed since is read with the days it had then, from the activity log: `read.as_recorded`, `core.audit.values_before`),
-and the temperature measured by then, held (none by then and no profile: the plan stops and says so; no later reading
+the protocol and profile assignment rows, their protocols' tables and their profiles' points, and the planned harvests
+and transports whose fasts the days ask, each **as recorded by the end of that day, found by its id** (`read.as_recorded`,
+Row versions below: a row made later is left out; a row renamed, ended, cancelled or changed since is read as it was;
+another row given an old name since is never taken for it), and the temperature measured by then, held (none by then and no profile: the plan stops and says so; no later reading
 leaks in, and no day's sensor values are read). The page says what the plan holds; a day that is no measured point of the stay shows today's. One page of words for both
 looks (`farm/harvest/plan_page.py`: the classic template draws the props the island draws). A drawn chart of the two
 lines is not built: the page is tables.
@@ -5465,7 +5466,8 @@ through the ORM.
 
 **Sensitive data.** `config/database.py` lists the masked columns (`auth_user.password`,
 `messages.body`: what people write to each other, see Messages, and `audit_log.changes`: it holds the digests of
-private values, and what changed is read on the activity log page). A masked
+private values, and what changed is read on the activity log page; `core_row_versions.data`: what a kept row was, the
+rows of a sealed unit's records too, see Row versions). A masked
 column is never read from the database: its cells show a placeholder, it cannot be sorted, filtered or
 searched (that would reveal it a character at a time) and the export leaves it out. A column that
 holds a secret belongs in that list; a test fails when a column named like a password, secret, token
@@ -5636,7 +5638,36 @@ row, whatever the number of keys; the apply itself writes one row per key. A sam
 of a millisecond. The measurement is the temporary test `tests_rev_overhead.py` (kept in the notes, not in the
 repository).
 
+## Row versions (`core_row_versions`, `core/versions.py`)
+
+`core_rev` counts changes and keeps no values. What a row **was** at a past moment is kept for the tables a production
+plan from a past start reads (the plan as it stood that day, decision 12 as decided after review 1): the protocols'
+and the temperature profiles' assignment rows, the feeding protocols with their bands and cells, the temperature
+profiles with their points, and the planned harvests and transports (`core.versions.VERSIONED`; farm migration 0056).
+
+- **Written by the database.** Each kept table has three triggers (`core.operations.KeepVersions`): an insert opens a
+  version holding the row's values whole (`to_jsonb`), an update that changes anything closes it and opens the next, a
+  delete or a TRUNCATE closes it. A version is valid from `valid_from` up to, not including, `valid_to` (open: the row
+  now); the moments are `clock_timestamp()`. Every writer is covered: the services, `bulk_create`, the admin, raw SQL.
+  The trigger functions run as their owner (`SECURITY DEFINER`, core migration 0021), and the app's role may read the
+  table but not insert, change or delete a version (`deploy/db/sql/grants.sql`, tried by `check-roles.sh`).
+- **Read by identity.** `core.versions.as_of(model, moment, **any_of)` gives the rows as they were at `moment`, each
+  found by its primary key, never by a name or a label: a row renamed since, and another given its old name since, are
+  each themselves. A row made after `moment` is not read; one changed or deleted since is read as it was; one
+  soft-deleted then is left out unless asked for. The values are typed as the table types them
+  (`jsonb_populate_record`). A sealed model's rows are those its sealed manager returns for the viewer of the moment
+  (the manager's own query compiled into the read). The instances are read, never saved; a link followed loads the
+  record as it is now (a band's feed, a plan's operation).
+- **The rows there before** got one version each when the triggers came, from when they were made (a band and a cell
+  from their protocol's making, since a table is saved whole); a row deleted by then two, as it was before its delete
+  and from it on. Their earlier values are not known: a plan from a start before the migration reads them with the values they had when it came.
+- **Not kept**: the handling rules (a fast's hours and degree-days), the feeds, the species and the water: a past plan
+  reads them as they are now (the water as measured by then, decided).
+- A migration that renames or retypes a kept column rewrites the versions' values too: a column a version lacks reads
+  NULL. The database viewer masks the values column (the rows of a sealed unit's records are in it).
+
 ## Local setup
+
 
 ```
 npm install && npm run build                 # compiles frontend/*.ts into static/js (use `npm run watch` while editing),
@@ -7143,6 +7174,7 @@ runs the server:
 | `sensors/` | The Sensors panel: devices, channels and their bindings (`models/`, `bindings.py`), the live water source the farm reads through `farm/water/sources.py` (`provider.py`, `read.py`), alarms and quality (`alarms.py`, `quality.py`), a credential's rotation (`credentials.py`) and a dead letter's resolution (`services.py`), the charts and the trail (`chart.py`, `trail.py`), `sensors/CONTRACT.md`, tests (README, Sensors) |
 | `sensors-ingest/` | The ingest service (Rust): reads the broker's sensor messages and writes the readings (`CONTRACT-REQUESTS.md`, `BENCH.md`) |
 | `core/rev.py`, `core/operations.py`, `core/migrations/0014_rev.py`, `farm/migrations/0050_rev_triggers.py`, `sensors/migrations/0014_rev_triggers.py` | Revisions (`core_rev`): the triggers that move a revision per (scope, key) whenever an input of the water's judgement changes, the `TrackRev` migration operation, the presence check (core.W005), `manage.py core_rev_repair`, `manage.py core_rev_rebuild` and `manage.py core_rev_drop_hypertable_triggers` (README, Revisions) |
+| `core/versions.py`, `core/operations.py` (`KeepVersions`), `core/migrations/0021_row_versions.py`, `farm/migrations/0056_row_versions.py` | Row versions (`core_row_versions`): every version of the rows a production plan from a past start reads, kept by triggers, read by identity at a moment (`as_of`; README, Row versions) |
 | `core/checks.py`, `core/ranges.py`, `core/text.py` | The system checks run at start (the built catalogs and assets); periods as PostgreSQL compares them, for exclusion constraints; lower case in the person's language |
 | `knowledge/` | Knowledge: the library's documents and their pages, the knowledge entries (`models/`), reading a PDF's text (`extraction.py`), the full-text search (`search.py`), the reference in APA form (`citation.py`), the file, text and review views (`views.py`), the review's write (`services.py`), the tabs (`forms/`, `resources/`, `templates/knowledge/`) |
 | `farm/species_catalog.py` | The species catalogue: fills the blank fields of a known species; data in code, no rows |

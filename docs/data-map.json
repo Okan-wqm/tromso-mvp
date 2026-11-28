@@ -4035,6 +4035,138 @@
     },
     {
       "app": "core",
+      "model": "RowVersion",
+      "table": "core_row_versions",
+      "description": "One version of a kept row (core.versions): the row's values, whole, and the moments between which they were the row's.",
+      "columns": [
+        {
+          "name": "id",
+          "field": "id",
+          "type": "bigint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "primary key"
+        },
+        {
+          "name": "table_name",
+          "field": "table_name",
+          "type": "varchar(63)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the versions' triggers (core.operations.KeepVersions)"
+        },
+        {
+          "name": "row_id",
+          "field": "row_id",
+          "type": "varchar(64)",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the versions' triggers (core.operations.KeepVersions)"
+        },
+        {
+          "name": "valid_from",
+          "field": "valid_from",
+          "type": "timestamp with time zone",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the versions' triggers (core.operations.KeepVersions)"
+        },
+        {
+          "name": "valid_to",
+          "field": "valid_to",
+          "type": "timestamp with time zone",
+          "null": true,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the versions' triggers (core.operations.KeepVersions)"
+        },
+        {
+          "name": "data",
+          "field": "data",
+          "type": "jsonb",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [],
+          "how": "system",
+          "why": "written by the versions' triggers (core.operations.KeepVersions)"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "chk_core_row_versions_span",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "uq_core_row_versions_open",
+          "kind": "unique",
+          "fields": [
+            "table_name",
+            "row_id"
+          ],
+          "conditional": true
+        }
+      ],
+      "screens": {
+        "create": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the database: a trigger of each kept table opens a version when a row is made or changed (core.versions)"
+        },
+        "edit": {
+          "status": "none",
+          "paths": [],
+          "why": "written by the database: the trigger closes a version when its row is changed or deleted; the app may not write the table"
+        },
+        "delete": {
+          "status": "none",
+          "paths": [],
+          "why": "kept: what a row was is never forgotten"
+        },
+        "read": {
+          "status": "none",
+          "paths": [],
+          "why": "read by the plan from a past start, by the rows' ids (core.versions.as_of); the database viewer shows the table with its values masked"
+        }
+      },
+      "note": "",
+      "forms": [],
+      "delete_kind": "no soft-delete column: a row goes, or stays, with what owns it",
+      "soft_delete": false,
+      "restore": {
+        "status": "n/a",
+        "why": ""
+      },
+      "viewer": {
+        "section": "Administration",
+        "masked": [
+          "data"
+        ],
+        "left_out": false
+      },
+      "tests": [
+        "core/tests_versions.py",
+        "farm/tests/test_migration_row_versions.py"
+      ]
+    },
+    {
+      "app": "core",
       "model": "EntryKey",
       "table": "entry_keys",
       "description": "The key a new-record form carries (core.crud.ENTRY_KEY) and the record its first sending created, for every kind of record (F-232): the same form sent twice, by a double click, a retried request or two sendings at once, creates one record, and the second sending opens it.",
@@ -10621,6 +10753,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
@@ -10802,6 +10935,8 @@
       },
       "tests": [
         "core/test_world.py",
+        "farm/tests/test_migration_row_versions.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
         "experiments/tests/__init__.py",
@@ -11229,6 +11364,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_harvest_pages_next.py",
         "farm/tests/test_migration_production_plan.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_one_column_table.py",
         "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py",
@@ -12328,6 +12464,7 @@
         "farm/tests/test_feeds.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_feeding_acknowledgement.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_private_contacts.py",
         "farm/tests/test_probe_review.py",
         "farm/tests/test_production_plan.py",
@@ -16537,6 +16674,7 @@
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_migration_production_plan.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_production_departments.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_restore.py",
@@ -17245,6 +17383,7 @@
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
         "farm/tests/test_cleaner_ration.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py",
         "farm/tests/test_protocols.py",
@@ -18270,6 +18409,7 @@
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_migration_production_plan.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_migration_site_zone.py",
         "farm/tests/test_overview_truth.py",
         "farm/tests/test_private_contacts.py",
@@ -19413,6 +19553,7 @@
         "core/test_world.py",
         "core/tests_rev.py",
         "core/tests_scope.py",
+        "core/tests_versions.py",
         "core/tests_workspaces.py",
         "farm/tests/helpers.py",
         "farm/tests/test_cleaner_size_limit.py",
@@ -19421,6 +19562,7 @@
         "farm/tests/test_harvest.py",
         "farm/tests/test_health.py",
         "farm/tests/test_migration_production_plan.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_migration_withdrawals.py",
         "farm/tests/test_restore.py",
         "farm/tests/test_size_mix.py",
@@ -22981,6 +23123,7 @@
         "farm/tests/test_migration_feeding_acknowledgement.py",
         "farm/tests/test_migration_points.py",
         "farm/tests/test_migration_production_plan.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_ph_scale.py",
         "farm/tests/test_ph_scale_salt_added.py",
         "farm/tests/test_production_overview_next.py",
@@ -23418,6 +23561,7 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
         "core/tests_workspaces.py",
         "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py"
@@ -23630,6 +23774,10 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_versions.py",
+        "farm/tests/test_migration_row_versions.py",
+        "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py"
       ]
     },
@@ -23942,7 +24090,10 @@
         "left_out": false
       },
       "tests": [
+        "core/test_world.py",
+        "core/tests_versions.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_migration_row_versions.py",
         "farm/tests/test_production_plan.py",
         "farm/tests/test_production_plans_reads.py"
       ]

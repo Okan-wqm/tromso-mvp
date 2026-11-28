@@ -73,6 +73,10 @@ refused balik_app "DELETE FROM alarms WHERE false"
 refused balik_app "UPDATE alarm_acknowledgements SET id = id WHERE false"
 refused balik_app "DELETE FROM withdrawal_acknowledgements WHERE false"
 refused balik_app "UPDATE regulatory_report_snapshots SET content = content WHERE false"
+refused balik_app "INSERT INTO core_row_versions (table_name, row_id, valid_from, data) VALUES ('check_roles', '0', now(), '{}')"
+refused balik_app "UPDATE core_row_versions SET valid_to = valid_to WHERE false"
+refused balik_app "DELETE FROM core_row_versions WHERE false"
+allowed balik_app "SELECT count(*) FROM core_row_versions"
 equals balik_app "SELECT count(*) FROM information_schema.table_privileges WHERE grantee = 'balik_app' AND privilege_type IN ('TRUNCATE', 'REFERENCES', 'TRIGGER')" 0
 
 echo "== the ingest role (sensors_ingest): its contract and its rows, nothing else"

@@ -33,16 +33,14 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db.models import Prefetch, Q, Sum
-from django.utils import timezone, translation
-from django.utils.text import capfirst
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from core import audit
-from core.dates import read_day
+from core import versions
 from farm.handling import fasting
 from farm.models import (
-    Batch, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, StockMovement, Tank,
-    TemperatureProfileAssignment, TemperatureProfilePoint,
+    Batch, Feed, FeedingProtocol, FeedingRecord, ProtocolAssignment, ProtocolBand, ProtocolRate, StockMovement, Tank,
+    TemperatureProfile, TemperatureProfileAssignment, TemperatureProfilePoint,
 )
 from farm.models.feeding import FeedTarget
 from farm.models.site import zone_of
@@ -110,20 +108,38 @@ def lineage(unit_ids):
         units |= more
 
 
-def tables(protocol_ids):
-    """{protocol id: ration.Table} of these protocols, their bands in weight order with their feed and cells."""
-    bands = ProtocolBand.objects.select_related('feed').prefetch_related('rates').order_by('min_weight_g')
-    found = {}
-    for protocol in (FeedingProtocol.all_objects.filter(pk__in=protocol_ids).select_related('species')
-                     .prefetch_related(Prefetch('bands', bands))):
-        found[protocol.pk] = Table(protocol, tuple(
-            Band(band.pk, band.min_weight_g, band.max_weight_g, band.feed, band.meals_per_day, band.expected_fcr,
-                 tuple(Cell(rate.temperature_c, rate.sfr_pct)
-                       for rate in sorted(band.rates.all(), key=lambda rate: rate.temperature_c)),
-                 band.uneaten_pct, band.mortality_pct_month)
-            for band in protocol.bands.all()))
-    return found
+def _table(protocol, bands, cells):
+    """The ration.Table of a protocol: its bands (ProtocolBand rows) in weight order, each with its feed and its cells
+    (`cells`: band id -> its ProtocolRate rows) in temperature order."""
+    return Table(protocol, tuple(
+        Band(band.pk, band.min_weight_g, band.max_weight_g, band.feed, band.meals_per_day, band.expected_fcr,
+             tuple(Cell(rate.temperature_c, rate.sfr_pct)
+                   for rate in sorted(cells.get(band.pk, ()), key=lambda rate: rate.temperature_c)),
+             band.uneaten_pct, band.mortality_pct_month)
+        for band in sorted(bands, key=lambda band: band.min_weight_g)))
 
+
+def tables(protocol_ids, moment=None):
+    """{protocol id: ration.Table} of these protocols, their bands in weight order with their feed and cells. With
+    `moment`: the protocols, their bands and their cells as they were then, each found by its id (core.versions; a
+    band's feed is the feed as it is now)."""
+    if moment is None:
+        bands = ProtocolBand.objects.select_related('feed').prefetch_related('rates')
+        return {protocol.pk: _table(protocol, protocol.bands.all(),
+                                    {band.pk: band.rates.all() for band in protocol.bands.all()})
+                for protocol in (FeedingProtocol.all_objects.filter(pk__in=protocol_ids).select_related('species')
+                                 .prefetch_related(Prefetch('bands', bands)))}
+    protocols = versions.as_of(FeedingProtocol, moment, deleted=True, id=list(protocol_ids))
+    bands = versions.as_of(ProtocolBand, moment, protocol=[protocol.pk for protocol in protocols])
+    cells = defaultdict(list)
+    for rate in versions.as_of(ProtocolRate, moment, band=[band.pk for band in bands]):
+        cells[rate.band_id].append(rate)
+    feeds = Feed.all_objects.in_bulk({band.feed_id for band in bands})
+    of_protocol = defaultdict(list)
+    for band in bands:
+        band.feed = feeds[band.feed_id]
+        of_protocol[band.protocol_id].append(band)
+    return {protocol.pk: _table(protocol, of_protocol[protocol.pk], cells) for protocol in protocols}
 
 
 def profile_assignments(units, batch_ids, first):
@@ -132,49 +148,36 @@ def profile_assignments(units, batch_ids, first):
                 .filter(Q(valid_until__isnull=True) | Q(valid_until__gte=first)).select_related('profile'))
 
 
-def profiles(found_profiles):
+def profiles(found_profiles, moment=None):
     """{profile id: ration.Profile} of these temperature profiles (TemperatureProfile rows), their points in weight
-    order (one query). Every profile asked has an entry, one without points too (it reads as a ProfileGap, never a
-    crash)."""
+    order (one query; with `moment`, the points as they were then, core.versions). Every profile asked has an entry,
+    one without points too (it reads as a ProfileGap, never a crash)."""
     found_profiles = {profile.pk: profile for profile in found_profiles}
     points = {pk: [] for pk in found_profiles}
     if found_profiles:
-        for point in TemperatureProfilePoint.objects.filter(profile_id__in=list(found_profiles)).order_by('weight_g'):
+        found = (TemperatureProfilePoint.objects.filter(profile_id__in=list(found_profiles)) if moment is None else
+                 versions.as_of(TemperatureProfilePoint, moment, profile=list(found_profiles)))
+        for point in sorted(found, key=lambda point: point.weight_g):
             points[point.profile_id].append((point.weight_g, point.temperature_c))
     return {pk: Profile(profile, tuple(points[pk]), profile.temperature_between)
             for pk, profile in found_profiles.items()}
 
 
-def as_recorded(model, unit_ids, batch_ids, moment):
-    """The assignment rows of `model` (ProtocolAssignment, TemperatureProfileAssignment) of these units and batches as
-    they were recorded at `moment` (owner decision 12, as decided after review 1: the plan from a past start is the plan
-    as it stood then): only the rows created by then, the rows deleted since among them, each with the first day, last
-    day and table it had then (the log's values from before the changes made since: core.audit.values_before). The
-    rows are not saved: they are read. A table renamed since is found by the name it had."""
-    subject = model._meta.get_field(model.SUBJECT)
-    rows = list(model.all_objects.filter(Q(unit_id__in=list(unit_ids)) | Q(batch_id__in=list(batch_ids)),
-                                         created_at__lte=moment)
-                .filter(Q(is_deleted=False) | Q(deleted_at__gt=moment)).select_related(model.SUBJECT))
-    with translation.override('en'):
-        labels = {name: str(capfirst(model._meta.get_field(name).verbose_name))
-                  for name in ('valid_from', 'valid_until', model.SUBJECT)}
-    earlier = audit.values_before(model, [row.pk for row in rows], moment)
-    names = {said for values in earlier.values() for label, said in values.items()
-             if label == labels[model.SUBJECT] and said}
-    by_name = {}
-    for table in subject.related_model.all_objects.filter(name__in=names):
-        by_name.setdefault(table.name, table)
-    for row in rows:
-        values = earlier.get(str(row.pk), {})
-        if labels['valid_from'] in values and values[labels['valid_from']]:
-            row.valid_from = read_day(values[labels['valid_from']]) or row.valid_from
-        if labels['valid_until'] in values:
-            said = values[labels['valid_until']]
-            row.valid_until = read_day(said) if said else None
-        table = by_name.get(values.get(labels[model.SUBJECT]))
-        if table is not None:
-            setattr(row, model.SUBJECT, table)
-    return rows
+def as_recorded(units, batch_ids, first, last, moment):
+    """What the plan from a past start reads (owner decision 12, as decided after review 1: the plan as it stood then),
+    as the keyword arguments of ration.Policy.recorded: the protocols' and the temperature profiles' assignment rows of
+    these units (Tank, by id) and batches, the tables and the profiles they named, and the fasts from `first` to `last`
+    of the harvests and transports planned for these units, every row as it was at `moment`, found by its id
+    (core.versions), never by a name or a label: a row made since is not read, one changed or deleted since is read as
+    it was."""
+    unit_ids, batch_ids = list(units), list(batch_ids)
+    rows = versions.as_of(ProtocolAssignment, moment, unit=unit_ids, batch=batch_ids)
+    profile_rows = versions.as_of(TemperatureProfileAssignment, moment, unit=unit_ids, batch=batch_ids)
+    named = versions.as_of(TemperatureProfile, moment, deleted=True, id=sorted({row.profile_id for row in profile_rows}))
+    fasts = fasting.fasts(list(units.values()), first, last, as_of=moment)
+    return {'assignments': rows, 'tables': tables({row.protocol_id for row in rows}, moment),
+            'profile_rows': profile_rows, 'profiles': profiles(named, moment),
+            'fasting': lambda unit_id, day: fasts.get((unit_id, day))}
 
 
 def policy(units, batch_ids, first, now, read=(), ahead_days=0):

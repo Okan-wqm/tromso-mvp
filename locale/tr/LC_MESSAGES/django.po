@@ -18917,6 +18917,12 @@ msgstr "Aşılamalar"
 msgid "Vaccine"
 msgstr "Aşı"
 
+msgid "Valid from"
+msgstr "Geçerlilik başlangıcı"
+
+msgid "Valid to"
+msgstr "Geçerlilik bitişi"
+
 msgid "Value"
 msgstr "Değer"
 
@@ -21785,6 +21791,12 @@ msgstr "rol"
 
 msgid "roles"
 msgstr "roller"
+
+msgid "row version"
+msgstr "satır sürümü"
+
+msgid "row versions"
+msgstr "satır sürümleri"
 
 msgid "safe"
 msgstr "güvenli"

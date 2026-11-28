@@ -30,3 +30,7 @@ What follows from it:
   snapshots) are refused `UPDATE` and `DELETE` by the app role's rights as well as by their triggers (grants.sql). One
   exception: `alarms` keeps `UPDATE`, because the alarm service locks an alarm's row (`SELECT ... FOR UPDATE`, which
   needs it); its trigger still refuses every change. `check-roles.sh` tries them.
+- **The rows' versions** (`core_row_versions`, core.versions: what a kept row was at any moment, which a production
+  plan from a past start reads) are refused `INSERT`, `UPDATE` and `DELETE` by the app role's rights (grants.sql). The
+  kept tables' triggers write them through functions that run as their owner (`SECURITY DEFINER`, core migration 0021),
+  so every write of the app still keeps its version, and no page or script can rewrite one. `check-roles.sh` tries them.

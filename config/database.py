@@ -42,7 +42,10 @@ VIEWER = Viewer(
             # A broker credential's hash, where the ingest's broker secret lies (a file name, masked as every column named
             # like a secret), and what a device sent that could not be stored (it may hold anything).
             'sensors_credential': ('password_hash',), 'sensors_connection': ('secret_file',),
-            'sensors_dead_letter': ('payload',)},
+            'sensors_dead_letter': ('payload',),
+            # What a kept row was (core.versions): the rows of a sealed unit's records too, which the viewer's grid,
+            # not being their manager, would show past the seal. Each row's values now are on its own table.
+            'core_row_versions': ('data',)},
     # One line per table where the model's docstring does not say it in the project's words.
     descriptions={
         'employees': _('The people of the company for HR: number, name (or the account that names them), type and the '

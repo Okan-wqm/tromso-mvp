@@ -9,7 +9,12 @@
   locked from its apply to the end of that COMMIT);
 - `core_rev_<table>_<scope>_trunc`, an AFTER TRUNCATE statement trigger: a TRUNCATE fires no row trigger, so it moves
   every key of the scope at once (`core_rev_truncated`), with the whole history as the day.
-Because they are triggers, every writer is covered: the services, `bulk_create`, the admin, raw SQL and a restore."""
+Because they are triggers, every writer is covered: the services, `bulk_create`, the admin, raw SQL and a restore.
+
+`KeepVersions` keeps every version of a table's rows in `core_row_versions` (core.versions), by three triggers calling
+the functions of migration core/0021: `core_versions_<table>_row` (an insert opens a version, a delete closes it),
+`core_versions_<table>_upd` (an update that changes anything closes the version open and opens one) and
+`core_versions_<table>_trunc` (a TRUNCATE closes every version open)."""
 import re
 
 from django.db.migrations.operations.base import Operation
@@ -192,3 +197,82 @@ class KeepRows(Operation):
     @property
     def migration_name_fragment(self):
         return f'keep_{self.table}'
+
+
+# The values a soft-deleted row had before its delete, as far as the base class's columns say (core.models.AuditedModel).
+UNDELETED = """'{"is_deleted": false, "deleted_at": null, "deleted_by_id": null}'::jsonb"""
+
+
+class KeepVersions(Operation):
+    """Keeps every version of `table`'s rows in core_row_versions (core.versions): an insert opens a version with the
+    row's values, an update that changes any of them closes it and opens the next, a delete or a TRUNCATE closes it.
+    The triggers' functions run as their owner (migration core/0021), so the app's role, which may not write the
+    versions, still keeps them.
+
+    The rows already there when the triggers come get one version each, from `since`, an SQL expression of the row
+    (`{row}.created_at`, or a parent's) giving the moment its values are known from: before the versions were kept, a
+    row's earlier values are unknown, and its values now are read for every moment since then. With `soft_deleted` (a
+    core.models.AuditedModel table), a row deleted by then gets two: as it was before its delete, up to `deleted_at`,
+    and as it is from then on. `key`: the primary key's column."""
+    reversible = True
+    reduces_to_sql = True
+
+    def __init__(self, table, since, soft_deleted=False, key='id'):
+        if not (NAME.match(table) and NAME.match(key)):
+            raise ValueError(f'KeepVersions: {table!r} and {key!r} must be plain lower-case names.')
+        if len(self.names_of(table)[-1]) > LONGEST:
+            raise ValueError(f'KeepVersions: the trigger names of {table!r} would be longer than {LONGEST}.')
+        if '{row}' not in since or "'" in since or ';' in since:
+            raise ValueError("KeepVersions: `since` is an expression of {row}, with no ' and no ;.")
+        self.table, self.since, self.soft_deleted, self.key = table, since, soft_deleted, key
+
+    @staticmethod
+    def names_of(table):
+        return tuple(f'core_versions_{table}_{suffix}' for suffix in ('row', 'upd', 'trunc'))
+
+    def deconstruct(self):
+        return self.__class__.__name__, [self.table, self.since], {'soft_deleted': self.soft_deleted, 'key': self.key}
+
+    def state_forwards(self, app_label, state):
+        pass
+
+    def _backfill(self):
+        since = f"COALESCE(({self.since.format(row='r')}), '-infinity'::timestamptz)"
+        head = f"INSERT INTO core_row_versions (table_name, row_id, valid_from, valid_to, data) SELECT '{self.table}', " \
+               f'r.{self.key}::text, '
+        if not self.soft_deleted:
+            return [f'{head}{since}, NULL, to_jsonb(r) FROM {self.table} r']
+        deleted = f'r.is_deleted AND r.deleted_at IS NOT NULL AND r.deleted_at >= {since}'
+        return [f'{head}{since}, r.deleted_at, to_jsonb(r) || {UNDELETED} FROM {self.table} r WHERE {deleted}',
+                f'{head}CASE WHEN {deleted} THEN r.deleted_at ELSE {since} END, NULL, to_jsonb(r) FROM {self.table} r']
+
+    def sql_forwards(self):
+        row, update, trunc = self.names_of(self.table)
+        return [
+            f"CREATE TRIGGER {row} AFTER INSERT OR DELETE ON {self.table} FOR EACH ROW "
+            f"EXECUTE FUNCTION core_row_version('{self.key}')",
+            f"CREATE TRIGGER {update} AFTER UPDATE ON {self.table} FOR EACH ROW WHEN (OLD.* IS DISTINCT FROM NEW.*) "
+            f"EXECUTE FUNCTION core_row_version('{self.key}')",
+            f'CREATE TRIGGER {trunc} AFTER TRUNCATE ON {self.table} FOR EACH STATEMENT '
+            f'EXECUTE FUNCTION core_row_versions_truncated()',
+            *self._backfill(),
+        ]
+
+    def sql_backwards(self):
+        return [*(f'DROP TRIGGER IF EXISTS {name} ON {self.table}' for name in self.names_of(self.table)),
+                f"DELETE FROM core_row_versions WHERE table_name = '{self.table}'"]
+
+    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+        for statement in self.sql_forwards():
+            schema_editor.execute(statement, params=None)
+
+    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+        for statement in self.sql_backwards():
+            schema_editor.execute(statement, params=None)
+
+    def describe(self):
+        return f'Keep every version of the rows of {self.table}'
+
+    @property
+    def migration_name_fragment(self):
+        return f'versions_{self.table}'

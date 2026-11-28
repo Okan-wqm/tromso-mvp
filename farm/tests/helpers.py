@@ -164,3 +164,13 @@ def may_record(user, *codenames):
     for cached in ('_perm_cache', '_user_perm_cache', '_group_perm_cache'):
         user.__dict__.pop(cached, None)
     return user
+
+
+def recorded_at(moment):
+    """Every row version kept so far (core.versions) as recorded at `moment`: a farm's rows were made when they were,
+    not on the test's day, and a TestCase writes them all at once. Each row's last version is its values from `moment`
+    on; the versions it had before it within the test are moved there too, empty."""
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute('UPDATE core_row_versions SET valid_from = %s, '
+                       'valid_to = CASE WHEN valid_to IS NULL THEN NULL ELSE %s END', [moment, moment])

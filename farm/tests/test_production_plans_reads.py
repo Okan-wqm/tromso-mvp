@@ -36,7 +36,7 @@ from ..models.site import zone_of
 from ..stock import read as stock_read, services as stock_services
 from ..stock.dates import local_today
 from ..water.degree_days import BatchWater
-from .helpers import going_on, may_record, point_of, role
+from .helpers import going_on, may_record, point_of, recorded_at, role
 from .test_feeding import FeedingTestCase
 from .test_harvest import HARVEST_KEEPER
 from .test_stock import make_unit
@@ -340,10 +340,19 @@ class BudgetTests(Fixtures, FeedingTestCase):
     feeding, the forecast with its profile)."""
 
     # measured 55 at 3 and at 9 units (2026-11-22); 63 since the degree-days read the closed probe days (2026-11-27,
-    # REVIEW-2 of wip/degree-days approved 65). With a feeding protocol and a temperature profile on every row, each row
-    # walks its plan ahead (the profiles' rows and points, the tables, their bands and cells; the fasts read once by the
-    # walk's policy): the ceiling is the measurement on that path (review 1 of the production plan, M2), the same at 3
-    # and at 9 units: measured 68 on 2026-11-28 (main 65 without either). Never raised without a review.
+    # REVIEW-2 of wip/degree-days approved a ceiling of 65). With a feeding protocol and a temperature profile on every
+    # row (main's fixture has neither), measured 68 at 3 and at 9 units on 2026-11-28: flat. Main at 899e07db measures 63
+    # on its fixture; the queries more, each named by its SQL (CI runs 46086880562, main, and 46087652437, this branch):
+    #   +1 temperature_profile_assignments: the profiles' rows in force (read.profile_assignments);
+    #   +1 temperature_profile_points: their points (read.profiles);
+    #   +3 feeding_protocols, feeding_protocol_bands, feeding_protocol_rates: the protocols' tables (read.tables, one
+    #      query and two prefetches; main's fixture assigns no protocol, so it reads no table);
+    #   +1 water_freshness: the freshness rules, read once the protocol's ration asks a day's temperature (main's
+    #      fixture never asks one);
+    #   -1 handling_plan_items: the fasts are read once, by the walk's policy for the days ahead too (main read them a
+    #      second time for its forecasts).
+    # 63 + 6 - 1 = 68, each once a page whatever its rows (review 1 of the production plan, M2). Never raised without a
+    # review.
     CEILING = 68
 
     def setUp(self):
@@ -439,6 +448,7 @@ class GrowthPlanBudgetTests(Fixtures, FeedingTestCase):
         ProtocolAssignment.objects.create(protocol=protocol, batch=self.fish, valid_from=self.day(30),
                                           group_id=uuid.uuid4())
         self.warm(self.unit, 29, 1)
+        recorded_at(datetime.now(UTC) - timedelta(days=31))   # the protocol and its row as made then (core.versions)
         self.weighed = []
 
     def weigh(self, count):

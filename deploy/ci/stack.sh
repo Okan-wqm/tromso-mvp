@@ -7,15 +7,17 @@
 #            host name farm.ci.invalid on 127.0.0.1
 #   up       the restic repository made, the stack started; every service healthy (the release step ran to its end)
 #   roles    scripts/check-roles.sh: the app role refused DDL and TRUNCATE, the ingest and backup roles their bounds
-#   data     synthetic data: the first admin (createsuperuser), the HR demonstration company (seed_hr_demo, run
-#            with DEBUG on as a developer would), 60 days of readings written as the ingest role, the old chunks compressed
+#   data     synthetic data: the first admin (createsuperuser); a development tool (seed_hr_demo) refused; the database
+#            marked as the stack's and the HR demonstration company written by the stack's seeder (seed_stack_proof,
+#            the app role, DEBUG off); 60 days of readings written as the ingest role, the old chunks compressed
 #   smoke    deploy/ci/smoke.py: HTTPS, redirects, headers, hashed static files and their cache, the sign-in, every page
 #            reachable from the home page answered without a server error, the sign-in rate limit
 #   mqtt     the broker's TLS listener: refused without a client certificate, refused with a certificate and a wrong
 #            password, accepted with a certificate and the right one
 #   backup   a dump, a base backup and a ship now; then a marker row, its WAL archived and shipped (for the PITR step)
 #   restore  a second, empty installation (project farm-restore): the latest snapshot fetched from the repository,
-#            the dump restored, every table's row count equal to the backup's, the application's migrations all applied
+#            the dump restored, every table's row count equal to the backup's, the application's migrations all applied,
+#            the stack's mark not carried (its seeder refused there)
 #   pitr     the base backup and the archived WAL of that snapshot replayed into a third server: the marker row is there
 #   network  who reaches whom, outside names, the way out of every service, and no packet out of the proxy's and the
 #            broker's networks (a capture on the runner's uplink)
@@ -40,6 +42,15 @@ say() { echo "== $*"; }
 psql_as() {  # psql_as ROLE SECRET SQL: in the database container, as ROLE with its own password
   "${DC[@]}" exec -T -e ROLE="$1" -e SECRET="$2" -e SQL="$3" db sh -c \
     'PGPASSWORD=$(head -n 1 "/run/secrets/$SECRET") psql -X -h db -U "$ROLE" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -At -c "$SQL"'
+}
+refused() {  # refused REASON COMMAND...: COMMAND must fail and say REASON; its output is printed as expected, not a failure
+  local reason=$1 out
+  shift
+  if out=$("$@" 2>&1); then echo "$out"; echo "FAIL: it ran; expected a refusal saying: $reason"; exit 1; fi
+  case "$out" in
+    *"$reason"*) echo "$out" | grep -v '^$' | tail -n 3 | sed 's/^/expected: /'; echo "ok    refused: $reason" ;;
+    *) echo "$out"; echo "FAIL: it failed, but not with a refusal saying: $reason"; exit 1 ;;
+  esac
 }
 health() { docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$1" 2>/dev/null || echo missing; }
 
@@ -264,8 +275,23 @@ data() {
   say "the first admin (createsuperuser, as the app role)"
   "${DC[@]}" run --rm -T -e DJANGO_SUPERUSER_PASSWORD="$(cat "$ADMIN_PASSWORD_FILE")" manage \
     python manage.py createsuperuser --no-input --username ci-admin --email ci-admin@farm.ci.invalid
-  say "synthetic data: the HR demonstration company (seed_hr_demo, DEBUG on as on a developer's machine)"
-  "${DC[@]}" run --rm -T -e DJANGO_DEBUG=1 manage python manage.py seed_hr_demo
+  # The synthetic data is the product's own, written as a farm's server writes (the app role, DEBUG off, through the
+  # services) by the stack's seeder (manage.py seed_stack_proof, kind stack in README, Management commands), which runs
+  # only on a database carrying the stack's mark. No development tool runs here: the stack is the production stack,
+  # and the dev guard refusing on it is part of the proof.
+  say "a development tool refused on the production stack: seed_hr_demo with DEBUG on, as the app role (no superuser)"
+  refused "the database role is not a superuser" "${DC[@]}" run --rm -T -e DJANGO_DEBUG=1 manage python manage.py seed_hr_demo
+  say "the stack's seeder refused on a database without the stack's mark"
+  refused "does not carry the stack's mark" "${DC[@]}" run --rm -T manage python manage.py seed_stack_proof --by ci-admin
+  say "the database marked as the stack's (its comment, core/management/stackproof.py): the app role may not, the owner may"
+  local mark mark_sql
+  mark=$(sed -n "s/^MARK = '\([^']*\)'$/\1/p" core/management/stackproof.py)
+  [ -n "$mark" ] || { echo "FAIL: no MARK in core/management/stackproof.py"; exit 1; }
+  mark_sql="DO \$\$ BEGIN EXECUTE format('COMMENT ON DATABASE %I IS %L', current_database(), '$mark'); END \$\$"
+  refused "must be owner of database" psql_as balik_app db_app_password "$mark_sql"
+  psql_as balik_owner db_owner_password "$mark_sql"
+  say "synthetic data: the HR demonstration company, no sign-in (seed_stack_proof, as the app role, DEBUG off)"
+  "${DC[@]}" run --rm -T manage python manage.py seed_stack_proof --by ci-admin
   say "synthetic readings, written as the ingest role (new chunks made by a role that owns nothing)"
   psql_as sensors_ingest db_ingest_password "INSERT INTO sensors_reading (channel_no, ts, value)
     SELECT 1, ts, 7 + random() FROM generate_series(now() - interval '60 days', now(), interval '10 minutes') AS ts"
@@ -381,6 +407,8 @@ restore() {
   "${RC[@]}" run --rm -T --no-deps restore verify-counts "$dump.counts"
   say "the application on the restored database: every migration applied (migrate --check)"
   "${RC[@]}" run --rm -T manage python manage.py migrate --check
+  say "the stack's mark not carried by the restore (pg_restore without --create applies no database comment): seeder refused"
+  refused "does not carry the stack's mark" "${RC[@]}" run --rm -T manage python manage.py seed_stack_proof --by ci-admin
   say "a repository that cannot be read fails the prune check and records no success: missing, wrong password, no network"
   local agent=/usr/local/lib/balik-backup/agent.sh case_env
   for case_env in "RESTIC_REPOSITORY=/offsite/no-such-repository" "RESTIC_PASSWORD_FILE=/tmp/wrong-password" \
@@ -514,7 +542,8 @@ from farm.models import ProductionDepartment, Site
 from farm.tests.helpers import point_of
 from farm.tests.test_stock import make_unit
 from farm.water import services
-user = get_user_model().objects.create_user("tsmove", "tsmove@farm.ci.invalid", None)
+# the writer may record (farm/water/services.py asks who may since a039d48c): an account with every right, no password
+user = get_user_model().objects.create_superuser("tsmove", "tsmove@farm.ci.invalid", None)
 hall = ProductionDepartment.objects.create(site=Site.objects.create(name="Move", code="MV"), name="Hall A", code="HA")
 point = point_of(make_unit("T-01", hall))
 for days in (1, 20):

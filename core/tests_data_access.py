@@ -204,7 +204,10 @@ PRESENT_ALLOWED = {
 
 # ---- rule S ------------------------------------------------------------------------------------------------------------
 SERVICE_WRITES = {'save', 'create', 'bulk_create', 'bulk_update', 'update', 'delete', 'soft_delete', 'get_or_create',
-                  'update_or_create'}
+                  'update_or_create',
+                  # Django's async writes (review 6, R6-1)
+                  'asave', 'acreate', 'abulk_create', 'abulk_update', 'aupdate', 'adelete', 'aget_or_create',
+                  'aupdate_or_create'}
 HOOKS = (('add', 'create_record'), ('change', 'change_record'), ('delete', 'delete_record'))
 # {tab: the two writers}: a tab crud saves although its area's service writes the same model too. Found when the guard
 # came (the review of wip/hr-one-path, M-2); each is closed by the follow-up listed in the plan. Never add one.
@@ -338,9 +341,12 @@ def _scan_writes(module, tree, models=None, service_forms=None):
     `save_base(...)`.
     Not seen at all: a row or a queryset that comes from anything else and is written (a parameter, `def f(rows):
     rows.update(...)`; what a helper returns, `placements(person).update(...)`, `row = first(...)`, then
-    `row.save()`; a pair of names given one value, `rows, n = helper()`; a `with ... as`), a related manager
-    (`person.postings.create()`), a model built through `getattr` or `apps.get_model(...)` (`M = apps.get_model(...)`,
-    then `M(...)`), and raw SQL (rule W)."""
+    `row.save()`; a pair of names given one value, `rows, n = helper()`; a starred target, `rows, *rest = ...`; a
+    `with ... as`; a queryset held at module level or in a class body and written in a function or a method; one held
+    as `cls.<name>`; a walrus written at once, `(rows := Posting.objects...).update(...)`), a manager reached through
+    `_meta.managers[...]` or `_meta.managers_map[...]`, a related manager (`person.postings.create()`), a model built
+    through `getattr` or `apps.get_model(...)` (`M = apps.get_model(...)`, then `M(...)`), and raw SQL (rule W). A
+    write is any of SERVICE_WRITES, Django's async ones (`aupdate`, `asave`, ...) too."""
     models = models or _models()
     service_forms = _service_forms() if service_forms is None else service_forms
     forms_by_name = {(form.__module__, form.__name__): model for form, model in service_forms.items()}
@@ -1085,6 +1091,7 @@ class OneWriterTests(SimpleTestCase):
                                     '        rows.update(title="x")']),
             'for': head + lines(['def f():', '    for one in Posting.objects.filter(pk=1):', '        one.save()']),
             'comprehension': head + lines(['def f():', '    [one.delete() for one in Posting.objects.all()]']),
+            'async': head + 'Posting.objects.filter(pk=1).aupdate(title="x")',
             'self in another method': head + lines(['class Job:', '    def __init__(self):',
                                                     '        self.rows = Posting.objects.filter(pk=1)',
                                                     '    def run(self):', '        self.rows.update(title="x")']),
@@ -1120,6 +1127,20 @@ class OneWriterTests(SimpleTestCase):
             'a related manager': lines(['def f(person):', '    person.postings.create(title="x")']),
             'built through apps.get_model': lines(['def f():', '    M = apps.get_model("hr", "Posting")',
                                                    '    M(title="x").save()']),
+            # review 6, R6-1
+            '_meta.managers': head + 'Posting._meta.managers[0].filter(pk=1).update(title="x")',
+            '_meta.managers_map': head + 'Posting._meta.managers_map["objects"].filter(pk=1).delete()',
+            'held at module level': head + lines(['rows = Posting.objects.filter(pk=1)', 'def f():',
+                                                  '    rows.update(title="x")']),
+            'held in a class body': head + lines(['class Job:', '    rows = Posting.objects.filter(pk=1)',
+                                                  '    def run(self):', '        self.rows.update(title="x")']),
+            'cls.<name>': head + lines(['class Job:', '    @classmethod', '    def setup(cls):',
+                                        '        cls.rows = Posting.objects.filter(pk=1)', '    @classmethod',
+                                        '    def run(cls):', '        cls.rows.update(title="x")']),
+            'starred target': head + lines(['def f():', '    rows, *rest = Posting.objects.filter(pk=1), 1, 2',
+                                            '    rows.update(title="x")']),
+            'a walrus written at once': head + lines(['def f():',
+                                                      '    (rows := Posting.objects.filter(pk=1)).update(title="x")']),
         }
         for case, source in unseen.items():
             with self.subTest(unseen=case):

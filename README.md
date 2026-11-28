@@ -6531,8 +6531,9 @@ edit, a row list and a delete, below the views, so a service that locks in its o
 record posted without one confirmed nothing and is refused (400, said), one changed since is not deleted (said, back on
 the confirmation), a record without a version (a hard-deleted one) has nothing to confirm.
 
-Every model form of the project derives from `core.crud.BoundedModelForm` (`TabbedForm` too; `core/tests_forms_bounded.py`
-holds it): each number input the form takes from its model says the bounds of the field's MinValueValidator and
+Every model form class of the project derives from `core.crud.BoundedModelForm` (`TabbedForm` too;
+`core/tests_forms_bounded.py` holds it; the one form built by Django's `modelform_factory`, a link list's details in
+`core/links.py`, is not, and its only use, an equipment's systems with their role and criticality, has no number field): each number input the form takes from its model says the bounds of the field's MinValueValidator and
 MaxValueValidator (`bounded_inputs`, the same figures as the database's check), so no form sets them by hand. A field
 the form declares itself says its own (`min_value`, `max_value`); a localised decimal typed as text has none. The pH
 window scale's two ends are bounded by a check on the table, not by validators on the fields, and its form says them
@@ -6581,9 +6582,13 @@ the code for it, project-wide:
 What it does not see: a row or a queryset that comes from anything else and is written: one handed in as a parameter
 (`def f(rows): rows.update(...)`, `row.save()`, `row.delete()`, `row.soft_delete(user)`), what a helper returns
 (`placements(person).update(...)`; `row = first(...)`, then `row.save()`), a pair of names given one value
-(`rows, n = helper()`), a `with ... as`; a related manager (`person.postings.create()`, `person.assignments.filter(...)
+(`rows, n = helper()`), a starred target (`rows, *rest = ...`), a `with ... as`, a queryset held at module level or in a
+class body and written in a function or a method, one held as `cls.<name>`, a walrus written at once
+(`(rows := Posting.objects...).update(...)`); a manager reached through `_meta.managers[...]` or
+`_meta.managers_map[...]`; a related manager (`person.postings.create()`, `person.assignments.filter(...)
 .update(...)`); a model built through `getattr` or `apps.get_model(...)` (`M = apps.get_model(...)`, then `M(...)`); and
-raw SQL (rule W reads the code for that). `core/tests_data_access.py` holds one case of each spelling named here:
+raw SQL (rule W reads the code for that). A write is any of Django's write calls, the async ones (`aupdate`, `asave`,
+`acreate`, ...) too. `core/tests_data_access.py` holds one case of each spelling named here:
 counted, flagged, or not seen. Those are the code review's until the one write gate in core (the withdrawal gate's hook layer,
 `farm/withdrawal_gate.py`, made the gate of every rule) holds the model itself at run time: the follow-up listed in the
 plan.

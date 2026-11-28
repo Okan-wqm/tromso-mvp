@@ -335,7 +335,9 @@ heartbeat() {
   if COMPOSE="${DC[*]}" ENV_FILE="$ENV_FILE" sh deploy/scripts/heartbeat.sh > "$T/heartbeat.out"; then
     cat "$T/heartbeat.out"; echo "FAIL: the heartbeat passed with a failing archiver"; exit 1
   fi
-  grep FAIL "$T/heartbeat.out"
+  # the red heartbeat is the expected outcome here: its FAIL lines printed as such, and the archiver must be among them
+  grep FAIL "$T/heartbeat.out" | sed "s/^/expected: /"
+  grep -q "^FAIL  backup: the WAL archiver is failing" "$T/heartbeat.out" \n    || { cat "$T/heartbeat.out"; echo "FAIL: the heartbeat was red, but not for the archiver"; exit 1; }
   say "the archive writable again: the archiver catches up and the heartbeat is green"
   "${DC[@]}" exec -T -u root db chmod 0700 /wal-archive
   for _ in $(seq 1 60); do
@@ -553,7 +555,8 @@ from farm.models import ProductionDepartment, Site
 from farm.tests.helpers import point_of
 from farm.tests.test_stock import make_unit
 from farm.water import services
-user = get_user_model().objects.create_user("tsmove", "tsmove@farm.ci.invalid", None)
+# the writer may record (farm/water/services.py asks who may since a039d48c): an account with every right, no password
+user = get_user_model().objects.create_superuser("tsmove", "tsmove@farm.ci.invalid", None)
 hall = ProductionDepartment.objects.create(site=Site.objects.create(name="Move", code="MV"), name="Hall A", code="HA")
 point = point_of(make_unit("T-01", hall))
 for days in (1, 20):

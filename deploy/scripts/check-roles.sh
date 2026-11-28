@@ -72,6 +72,13 @@ refused balik_app "DELETE FROM audit_log WHERE false"
 refused balik_app "DELETE FROM alarms WHERE false"
 refused balik_app "DELETE FROM alarm_open WHERE false"
 refused balik_app "INSERT INTO alarm_open (alarm_id) SELECT id FROM alarms WHERE false"
+# The two attacks on a SECURITY DEFINER trigger (core.operations.DefinerTrigger): a trigger of the app's own on a
+# temporary table, calling the function, is refused; a temporary table named like the queue is never written by it.
+equals balik_app "SELECT count(*) FROM pg_default_acl WHERE defaclrole = 'balik_owner'::regrole AND defaclobjtype = 'f' AND defaclnamespace = 0" 1
+refused balik_app "BEGIN; CREATE TEMP TABLE alarms (LIKE public.alarms INCLUDING DEFAULTS); CREATE TRIGGER forged AFTER INSERT ON pg_temp.alarms REFERENCING NEW TABLE AS opened FOR EACH STATEMENT EXECUTE FUNCTION public.alarm_open_opened(); ROLLBACK"
+shadow=$(as balik_app "BEGIN; CREATE TEMP TABLE alarm_open (alarm_id bigint); INSERT INTO public.alarms (source, parameter, severity, opened_at, summary) VALUES ('system', 'check_roles', 'warning', now(), 'check-roles'); SELECT (SELECT count(*) FROM public.alarm_open WHERE alarm_id = currval(pg_get_serial_sequence('public.alarms', 'id'))) || '/' || (SELECT count(*) FROM pg_temp.alarm_open)" | tail -n 1 || true)   # (psql prints each statement's tag first)
+if [ "$shadow" = "1/0" ]; then echo "ok    balik_app: a temporary alarm_open is never the queue written"
+else echo "FAIL  balik_app: with a temporary alarm_open, an alarm gave '$shadow' (public/temporary), not '1/0'"; failures=$((failures + 1)); fi
 allowed balik_app "BEGIN; INSERT INTO alarms (source, parameter, severity, opened_at, summary) VALUES ('system', 'check_roles', 'warning', now(), 'check-roles'); ROLLBACK"
 refused balik_app "UPDATE alarm_acknowledgements SET id = id WHERE false"
 refused balik_app "DELETE FROM withdrawal_acknowledgements WHERE false"

@@ -5,7 +5,7 @@ beside 100,000 alarms of history (each with its notification, escalation, cleara
 snooze), counted by PostgreSQL (core.testing.reads): a whole pass of the alarm worker (`engine.run_once`), its notify
 step, the pages' floods, the open list and the overview's open alarms read no more of each history table beside the
 one than beside the other (core.testing.assert_reads_do_not_grow)."""
-from django.db import connection, transaction
+from django.db import DatabaseError, connection, transaction
 from django.test import TransactionTestCase, override_settings
 
 from core.testing import assert_reads_do_not_grow, reads
@@ -58,6 +58,27 @@ class OpenQueueTests(OpenWorld, AlarmsCase):
              "'warning', %s, 'early')", [alarm, self.now])
         self.assertNotIn(alarm, self.queue())
         self.assertEqual(checks.open_alarms_hold(None), [])
+
+    def test_a_temporary_table_can_neither_call_the_triggers_nor_be_written_by_them(self):
+        """The two attacks on a SECURITY DEFINER trigger (core.operations.DefinerTrigger), made here as the owner, who
+        may: deploy/scripts/check-roles.sh makes them as the app role, who may not even make the forged trigger."""
+        rows('SET CONSTRAINTS ALL IMMEDIATE')
+        with self.assertRaisesMessage(DatabaseError, 'runs for public.alarms only'), transaction.atomic():
+            rows('CREATE TEMP TABLE alarms (LIKE public.alarms INCLUDING DEFAULTS)')       # forged: a trigger of its own
+            rows('CREATE TRIGGER forged AFTER INSERT ON pg_temp.alarms REFERENCING NEW TABLE AS opened '
+                 'FOR EACH STATEMENT EXECUTE FUNCTION public.alarm_open_opened()')
+            rows("INSERT INTO pg_temp.alarms (source, parameter, severity, opened_at, summary) VALUES ('system', "
+                 "'forged', 'warning', now(), 'forged')")
+
+        class Shadowed(Exception):
+            pass
+        with self.assertRaises(Shadowed), transaction.atomic():                  # turned aside: a table of the name
+            rows('CREATE TEMP TABLE alarm_open (alarm_id bigint)')
+            (alarm,) = rows("INSERT INTO public.alarms (source, parameter, severity, opened_at, summary) VALUES "
+                            "('system', 'shadowed', 'warning', now(), 'shadowed') RETURNING id")[0]
+            self.assertEqual(rows('SELECT count(*) FROM public.alarm_open WHERE alarm_id = %s', [alarm]), [(1,)])
+            self.assertEqual(rows('SELECT count(*) FROM pg_temp.alarm_open'), [(0,)])
+            raise Shadowed
 
     def test_a_queue_out_of_step_with_the_clearances_is_named_both_ways(self):
         made = [self.open(f'open{number}') for number in range(2)]

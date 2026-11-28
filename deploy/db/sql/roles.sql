@@ -52,3 +52,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE balik_owner IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO balik_app;
 ALTER DEFAULT PRIVILEGES FOR ROLE balik_owner IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO balik_app;
+-- A function the owner makes is not everyone's to call: a SECURITY DEFINER trigger function would otherwise be one any
+-- role could hang on a trigger of its own temporary table (core.operations.DefinerTrigger). Firing a trigger needs no
+-- EXECUTE.
+ALTER DEFAULT PRIVILEGES FOR ROLE balik_owner REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;

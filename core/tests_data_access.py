@@ -818,7 +818,7 @@ class WriteLayerTests(SimpleTestCase):
                        'hr/management/commands/helpers/build.py', 'hr/management/demo.py', 'core/management/devtool.py'):
             with self.subTest(module=module):
                 self.assertFalse(write_allowed(module))
-        helper = ast.parse('from hr.models import Shift' + chr(10) + 'Shift.objects.get_or_create(code="X")')
+        helper = ast.parse('from hr.models import Posting' + chr(10) + 'Posting.objects.get_or_create(title="x")')
         visitor = _Scan('hr/management/commands/_helper.py')
         visitor.visit(helper)
         self.assertEqual(outside({'hr/management/commands/_helper.py': {'writes': visitor.writes}}),

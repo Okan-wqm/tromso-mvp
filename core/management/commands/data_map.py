@@ -26,6 +26,11 @@ class Command(BaseCommand):
             stale = [path.name for path, text in files.items()
                      if not path.exists() or path.read_bytes() != text.encode('utf-8')]
             if stale:
+                import difflib
+                for path, text in files.items():
+                    old = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+                    for line in list(difflib.unified_diff(old, text.splitlines(), lineterm="", n=2))[:120]:
+                        self.stderr.write("DMDIFF " + line)
                 raise CommandError(f'{", ".join(stale)} out of date: run `manage.py data_map` and commit the result.')
             self.stdout.write('The data map is up to date.')
             return

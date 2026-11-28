@@ -11343,6 +11343,9 @@ msgstr "Ikke invitert: ingen e-postadresse. Legg til en, og send deretter invita
 msgid "Not invited: the account is inactive."
 msgstr "Ikke invitert: kontoen er inaktiv."
 
+msgid "Not known here: the unit’s sensors that work this value out could not be read."
+msgstr "Ikke kjent her: enhetens sensorer som beregner denne verdien, kunne ikke leses."
+
 msgid "Not linked to any system"
 msgstr "Ikke knyttet til noe system"
 
@@ -19369,6 +19372,14 @@ msgstr "Regnet ut fra verdiene"
 #, python-format
 msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong phosphate changes this dose."
 msgstr "Regnet ut med fosfat %(p)s mg/L som P (%(po4)s som PO₄): feil fosfat endrer denne dosen."
+
+#, python-format
+msgid "Worked out with the %(input)s of %(point)s."
+msgstr "Beregnet med %(input)s fra %(point)s."
+
+#, python-format
+msgid "Worked out with the pH and temperature of %(point)s."
+msgstr "Beregnet med pH og temperatur fra %(point)s."
 
 msgid "Working"
 msgstr "Jobber"

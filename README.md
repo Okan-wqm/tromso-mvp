@@ -1797,12 +1797,18 @@ The judge's rule for each point (`judge.point_verdict`):
     no cap applies and the entry order changes nothing. An analyser's value is worked out by ONE rule everywhere (the
     coordinator's decision on review 11, N5): a unit's own-water point (its middle, an outlet, a depth) inside its
     unit's standing place, built on the one tier resolver `read.tiers` (the place's newest fresh TAN with the pH and
-    temperature fresh in its own tier, else its system's), filed where its sensor is bound; any other point in its own
-    place. The unit's page, the outlet's own page (`latest`, `_standing_worked`), the log and the history rows
-    (`late_results_of`) all read it so, and each builds what it reads by one helper (`read.reading_places`: the places
-    and every point in them, the Context over all of them). Where the unit's place works out the TAN of another of its
-    points (the newest), the outlet's page says "Not worked out here: the unit works out its newest TAN at another
-    point (see the unit)."
+    temperature fresh in its own tier, else its system's), filed where its sensor is bound, with or without a value (a
+    value-less one keeps its reason, a refused one its "cannot be evaluated"); any other point in its own place. The
+    unit's page, the outlet's own page (`latest`, `_standing_worked`), the log and the history rows (`late_results_of`,
+    valued and fresh ones only) all read it so, and each builds what it reads by one helper (`read.reading_places`: the
+    places and every point in them, the Context over all of them). ONLY the live worked-out NH₃ and NH₄ follow the
+    unit's place: the outlet's own TAN, pH and temperature shown, and the worked-out values of its samples, stay its
+    own. Where its worked-out value used another point's pH or temperature, it says whose ("Worked out with the pH and
+    temperature of Middle."). Nothing filed at the outlet while it has a fresh live TAN means the unit works out the TAN
+    of another of its points (the newest): "Not worked out here: the unit works out its newest TAN at another point (see
+    the unit)." The unit's place's sensors are asked apart from the outlet's own, so the outlet's "sensors failed" is
+    of its own sensors; when only the unit's fail, its worked-out value says so ("Not known here: the unit's sensors
+    that work this value out could not be read.").
   - **On its history row:** the same way, whatever else the page holds.
 - **The late check at entry never blocks the write.** It is one read for all the samples of a write, in a savepoint.
   If it fails, each point is read on its own, so one unreadable point does not strip the others' words. The samples of

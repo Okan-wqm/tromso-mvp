@@ -11373,6 +11373,9 @@ msgstr "Davet edilmedi: e-posta adresi yok. Bir adres ekleyin, sonra daveti gön
 msgid "Not invited: the account is inactive."
 msgstr "Davet edilmedi: hesap pasif."
 
+msgid "Not known here: the unit’s sensors that work this value out could not be read."
+msgstr "Burada bilinmiyor: bu değeri hesaplayan birim sensörleri okunamadı."
+
 msgid "Not linked to any system"
 msgstr "Hiçbir sisteme bağlı değil"
 
@@ -19419,6 +19422,14 @@ msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong pho
 msgstr ""
 "Fosfat %(p)s mg/L P olarak (%(po4)s PO₄ olarak) alınarak hesaplandı: yanlış bir fosfat bu dozu "
 "değiştirir."
+
+#, python-format
+msgid "Worked out with the %(input)s of %(point)s."
+msgstr "%(point)s noktasının %(input)s değeriyle hesaplandı."
+
+#, python-format
+msgid "Worked out with the pH and temperature of %(point)s."
+msgstr "%(point)s noktasının pH ve sıcaklık değerleriyle hesaplandı."
 
 msgid "Working"
 msgstr "Çalışan"

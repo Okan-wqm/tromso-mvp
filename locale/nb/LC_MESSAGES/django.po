@@ -19374,12 +19374,20 @@ msgid "Worked out with phosphate %(p)s mg/L as P (%(po4)s as PO₄): a wrong pho
 msgstr "Regnet ut med fosfat %(p)s mg/L som P (%(po4)s som PO₄): feil fosfat endrer denne dosen."
 
 #, python-format
-msgid "Worked out with the %(input)s of %(point)s."
-msgstr "Beregnet med %(input)s fra %(point)s."
+msgid "Worked out with the %(input)s of %(name)s."
+msgstr "Beregnet med %(input)s fra %(name)s."
 
 #, python-format
-msgid "Worked out with the pH and temperature of %(point)s."
-msgstr "Beregnet med pH og temperatur fra %(point)s."
+msgid "Worked out with the %(input)s of its system, %(name)s."
+msgstr "Beregnet med %(input)s fra systemet, %(name)s."
+
+#, python-format
+msgid "Worked out with the pH and temperature of %(name)s."
+msgstr "Beregnet med pH og temperatur fra %(name)s."
+
+#, python-format
+msgid "Worked out with the pH and temperature of its system, %(name)s."
+msgstr "Beregnet med pH og temperatur fra systemet, %(name)s."
 
 msgid "Working"
 msgstr "Jobber"

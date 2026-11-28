@@ -19424,12 +19424,20 @@ msgstr ""
 "değiştirir."
 
 #, python-format
-msgid "Worked out with the %(input)s of %(point)s."
-msgstr "%(point)s noktasının %(input)s değeriyle hesaplandı."
+msgid "Worked out with the %(input)s of %(name)s."
+msgstr "%(name)s noktasının %(input)s değeriyle hesaplandı."
 
 #, python-format
-msgid "Worked out with the pH and temperature of %(point)s."
-msgstr "%(point)s noktasının pH ve sıcaklık değerleriyle hesaplandı."
+msgid "Worked out with the %(input)s of its system, %(name)s."
+msgstr "Sistemi %(name)s için %(input)s değeriyle hesaplandı."
+
+#, python-format
+msgid "Worked out with the pH and temperature of %(name)s."
+msgstr "%(name)s noktasının pH ve sıcaklık değerleriyle hesaplandı."
+
+#, python-format
+msgid "Worked out with the pH and temperature of its system, %(name)s."
+msgstr "Sistemi %(name)s için pH ve sıcaklık değerleriyle hesaplandı."
 
 msgid "Working"
 msgstr "Çalışan"

@@ -1,7 +1,8 @@
 # The go-live package's proof (docs/ops/, deploy/): the production stack of deploy/compose.yml built and started on a
 # throwaway runner as a farm's server runs it, then checked from outside (deploy/ci/stack.sh, one step each):
 #   roles    the app role refused DDL and TRUNCATE, the ingest and backup roles held to theirs
-#   data     the first admin, synthetic data (the HR demonstration company, 60 days of readings, compressed chunks)
+#   data     the first admin, a development tool refused, synthetic data (the HR demonstration company by the stack's
+#            own seeder on its marked database, 60 days of readings, compressed chunks)
 #   smoke    HTTPS, redirects, headers, hashed static files and their cache, sign-in, every reachable page, rate limit
 #   mqtt     the broker's TLS listener with client certificates and per-device passwords
 #   backup   dump, base backup, archived WAL, encrypted and shipped to the "off-server" repository (a runner folder)

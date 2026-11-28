@@ -125,6 +125,13 @@ POINT_RELATED = ('point__unit__production_department__site', 'point__system__sit
                  'point__equipment__production_department__site')
 # Where a unit's water is read from (Source.via).
 UNIT, SYSTEM = 'unit', 'system'
+
+
+def place_key(place):
+    """THE key of a place in a read's maps (the places, the water `latest` returns, the units a place's water concerns,
+    a series' lookups): a sampling point by its id, a unit read without a point of its own (`latest`, `units`) by
+    (UNIT, its id). Ids of two tables never share one key, whatever they are (review 13)."""
+    return place.pk if isinstance(place, SamplingPoint) else (UNIT, place.pk)
 # The other points of a unit that measure its own water (owner rule A9.1, owner 2026-11-08): within it or leaving it (a
 # depth point, an outlet, a drain); never an inlet, which measures the supply stream, not the unit's water.
 OWN_WATER_KINDS = [kind for kind in kinds_with(FlowRole.WITHIN, FlowRole.OUT) if kind != PointKind.MIDDLE]
@@ -1003,7 +1010,7 @@ class Context:
     def __init__(self, points, since, units=()):
         points = list(points)
         self.served = self._served(points)                # point id -> the live units its water concerns
-        self.served.update({unit.pk: [unit] for unit in units})     # a unit read without a point (`latest`, `units`)
+        self.served.update({place_key(unit): [unit] for unit in units})   # a unit read without a point (`latest`)
         self.until = None                        # a read of the past: the samples up to that moment (`latest`)
         self._worked, self._newest = {}, {}      # a sample's readings; a point's worked-out values (`worked_at`)
         self._samples = {}                        # sample id -> the one object of it in this Context (`_derived`)
@@ -1027,12 +1034,12 @@ class Context:
 
     # -- the water a sample was taken in --
     def water_types(self, point):
-        return {unit.water_type for unit in self.served[point.pk]}
+        return {unit.water_type for unit in self.served[place_key(point)]}
 
     def water_origin(self, point):
         """Where the salt of the water at a point comes from (Tank.water_origin; cross review F3): its units' origin when
         they all say the same, else '' (not said: a salinity of 1 to 5 permil is taken as diluted sea water)."""
-        return common_origin(self.served[point.pk])
+        return common_origin(self.served[place_key(point)])
 
     @staticmethod
     def _why_no_limit(exposures):
@@ -1044,11 +1051,11 @@ class Context:
 
     def holds_fish(self, point, day):
         """Whether a unit the point's water concerns holds fish now, on `day` (SpeciesBook.holds)."""
-        return any(self.book.holds(unit.pk, day) for unit in self.served[point.pk])
+        return any(self.book.holds(unit.pk, day) for unit in self.served[place_key(point)])
 
     def exposures(self, point, day):
         """[(species id, water type)] a value at this point on `day` is judged for."""
-        return [(species_id, unit.water_type) for unit in self.served[point.pk]
+        return [(species_id, unit.water_type) for unit in self.served[place_key(point)]
                 for species_id in self.book.on(unit.pk, day)]
 
     def _ionic_series(self, code):
@@ -1068,7 +1075,8 @@ class Context:
             if value is None:
                 fresh = freshness.fresh_for(code)
                 for where in (observation.point, self.middles.get(observation.point.owner.pk)):
-                    hit = None if where is None else self._ionic_series(code).latest(where.pk, observation.at, fresh)
+                    hit = None if where is None else self._ionic_series(code).latest(place_key(where), observation.at,
+                                                                                     fresh)
                     if hit is not None and self._ionic_series(code).fresh(hit, observation.at):
                         value = hit.value
                         break
@@ -1098,7 +1106,7 @@ class Context:
         point = observation.point
         fresh = freshness.fresh_for(parameters.SALINITY)
         for where in (point, self.middles.get(point.owner.pk)):
-            found = None if where is None else self.salinity.latest(where.pk, observation.at, fresh)
+            found = None if where is None else self.salinity.latest(place_key(where), observation.at, fresh)
             if found is not None and self.salinity.fresh(found, observation.at):
                 return found.value, freshness.fresh_until(parameters.SALINITY, found.at, found.fresh_for)
         return assumed_salinity(self.water_types(point)), None
@@ -1146,7 +1154,7 @@ class Context:
         if salinity is None:
             return refused('salinity')
         temperature = sensed.get(parameters.TEMPERATURE)
-        served = self.served.get(observation.point.pk)
+        served = self.served.get(place_key(observation.point))
         origin = scale_origin(served if served is not None else Context._served([observation.point])[observation.point.pk])
         found = ph_on_nbs(ph.as_measured, ph.scale, temperature, salinity, origin)
         if found.value is None:
@@ -1617,6 +1625,23 @@ def _newest_ids(points, since, until=None):
     return found
 
 
+def newest_manuals(points, since, until, context):
+    """`manual(point)`: {code: Reading} of each point's newest samples (`_manual`), the samples read once for all of
+    `points` (`_newest_ids`, one query, then one for the samples). THE one source of a read's samples, for `latest` and
+    for `late_results_of` (review 13, R13-1)."""
+    ids = _newest_ids(points, since, until=until)
+    samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(
+        {sample_id for slots in ids.values() for sample_id in slots.values()})
+    manuals = {}
+
+    def manual(point):
+        if point.pk not in manuals:
+            manuals[point.pk] = _manual(point, ids, samples, context)
+        return manuals[point.pk]
+
+    return manual
+
+
 def _manual(point, newest, samples, context):
     """{code: Reading} of the point's latest samples: each slot's newest sample with what follows from it."""
     found = {}
@@ -1885,12 +1910,12 @@ def _places(points, own, units=()):
             continue
         found[point.pk] = _places_of_tiers(unit_tiers[point.unit_id], point)
     # A unit with no point of its own (`units`): nothing of its own, its system's tier as a unit point's (A9), keyed by
-    # the unit, the system's sensors observed at the unit where the system has no loop point.
+    # `place_key` (UNIT, its id: never a point's key), the system's sensors observed at the unit where the system has no loop point.
     units = list(units)
     if units:
         bare_tiers = tiers(units, nested=False, own={unit.pk: [] for unit in units}, sites=False)
         for unit in units:
-            found[unit.pk] = _places_of_tiers(bare_tiers[unit.pk], unit)
+            found[place_key(unit)] = _places_of_tiers(bare_tiers[unit.pk], unit)
     return found
 
 
@@ -1922,11 +1947,12 @@ def latest(points, now=None, at=None, own=None, units=()):
     bound there then), fresh and judged relative to it; nothing from after it. `own`: the `own_water` of the points'
     units when the caller has read it (not read again).
 
-    `units`: units with no point of their own to read their water at (`unanchored`), each read in the same pass, keyed by
-    its own id: its system's tier (A9: the loop point's samples and probes, or the system's probes) judged for its own
-    fish as a unit point's system tier is, each value saying it is its system's (`messages.from_system`); with no
-    system, nothing (its oxygen then has no fresh value: critical where it holds fish, `_silence`; review 4 of the
-    branch, L1: one water read, the card, the pages and the alarms read it there)."""
+    `units`: units with no point of their own to read their water at (`unanchored`), each read in the same pass, keyed
+    by `place_key(unit)`, (UNIT, its id), never sharing a point's key: its system's tier (A9: the loop point's samples
+    and probes, or the system's probes) judged for its own fish as a unit point's system tier is, each value saying it
+    is its system's (`messages.from_system`); with no system, nothing (its oxygen then has no fresh value: critical
+    where it holds fish, `_silence`; review 4 of the branch, L1: one water read, the card, the pages and the alarms read
+    it there)."""
     moment = at or now or timezone.now()
     since = moment - WINDOW
     points = list(points)
@@ -1934,21 +1960,20 @@ def latest(points, now=None, at=None, own=None, units=()):
     units = list(Tank.objects.filter(pk__in=[unit.pk for unit in units])
                  .select_related('production_department__site', 'system')) if units else []
     places, standing, everything = reading_places(points, own, units)
-    ids = _newest_ids(everything, since, until=at)
-    samples = WaterMeasurement.objects.select_related(*POINT_RELATED).in_bulk(
-        {sample_id for slots in ids.values() for sample_id in slots.values()})
     context = Context(everything, since, units)
     # Every point's worked-out values, looked back at in batches for the judge (Context.prefetch_newest_worked).
     context.until = at
     context.prefetch_newest_worked(everything)
+    manual = newest_manuals(everything, since, at, context)
     # The live values of the places asked for, and apart, of the standing places only added for an outlet's live
     # worked-out values (review 12, R12-4: a point's `sensors_failed` is of its own sources; an outlet whose unit's
     # sensors could not be read says so on its worked-out value, `worked_here`).
-    asked = {point.pk for point in points} | {unit.pk for unit in units}
+    asked = {place_key(place) for place in (*points, *units)}
     own_targets, added_targets = ([target for key, each in places.items() if (key in asked) is mine
                                    for target, _origin, _point in (*each.own_targets, *each.system_targets)]
                                   for mine in (True, False))
-    added_targets = [target for target in added_targets if target not in set(own_targets)]
+    already = set(own_targets)
+    added_targets = [target for target in added_targets if target not in already]
 
     def ask(targets):
         return sources.latest(targets, moment) if at is None else _values_at(targets, at)
@@ -1956,13 +1981,6 @@ def latest(points, now=None, at=None, own=None, units=()):
     answer = ask(own_targets)
     added = ask(added_targets) if added_targets else sources.Answer({})
     answer = sources.Answer({**added.values, **answer.values}, answer.failed)
-    manuals = {}
-
-    def manual(point):
-        if point.pk not in manuals:
-            manuals[point.pk] = _manual(point, ids, samples, context)
-        return manuals[point.pk]
-
     stood = {}
 
     def worked_here(point):
@@ -1975,16 +1993,14 @@ def latest(points, now=None, at=None, own=None, units=()):
             return {NH3_N.code: Reading(NH3_N, None, Observation(point, moment, Origin.SENSOR, {}), True,
                                         str(messages.UNIT_SENSORS_FAILED), inputs_until=dict.fromkeys(NH3_N.inputs))}
         if anchor.pk not in stood:
-            where = places[anchor.pk]
-            stood[anchor.pk] = _standing_worked(where, answer, context, moment, [manual(each) for each in where.own],
-                                                [manual(each) for each in where.system])
+            stood[anchor.pk] = _standing_worked(places[anchor.pk], answer, context, moment, manual)
         return stood[anchor.pk].get(point.pk, {})
 
     water = {}
     for point, place in [*((point, point) for point in points), *((None, unit) for unit in units)]:
         # `place`: the point, or a unit without one (its water's clock and fish; keyed by its id)
-        where = places[place.pk]
-        point_water = water[place.pk] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit,
+        where = places[place_key(place)]
+        point_water = water[place_key(place)] = PointWater(point, sensors_failed=answer.failed, for_unit=where.for_unit,
                                                    system_point=where.system[0] if point is None and where.system
                                                    else None,
                                                    standing_place=_system_place(where, place) if point is None
@@ -2131,12 +2147,27 @@ def bound_at(reading):
     sensor is BOUND, never where it is observed. A system's own sensor (origin system sensor) observed at a unit's point
     (or at a unit without one), where the system has no loop point, is the system's: (sources.SYSTEM, its id). Observed
     at the system's loop point it is the loop's own (`sensor_targets`), as a probe bound to that point is."""
-    point = reading.point
-    if reading.sample.live and reading.sample.origin == Origin.SYSTEM_SENSOR:
+    return _belongs(reading.sample) if reading.sample.live else reading.point.pk
+
+
+def _belongs(observation):
+    """Where a live observation belongs (`bound_at`): its point, or for a system's own sensor observed at a unit's point
+    or at a unit (a system without a loop point) the system, (sources.SYSTEM, its id)."""
+    point = observation.point
+    if observation.origin == Origin.SYSTEM_SENSOR:
         if isinstance(point, SamplingPoint) and point.system_id and point.kind == PointKind.MIDDLE:
             return point.pk
         return (sources.SYSTEM, point.unit.system_id if isinstance(point, SamplingPoint) else point.system_id)
-    return point.pk
+    return place_key(point)
+
+
+def _source_of(observation):
+    """(whether it is a system's own sensor, the name it is said by) of a live input (`messages.worked_with`): the
+    point it belongs to, or its system (review 13, R13-2: never the point a system's probe is observed at)."""
+    if isinstance(_belongs(observation), tuple) and _belongs(observation)[0] == sources.SYSTEM:
+        point = observation.point
+        return True, (point.unit.system if isinstance(point, SamplingPoint) else point.system).name
+    return False, observation.point.name
 
 
 def record_of(reading, now=None, status=None):
@@ -2251,8 +2282,8 @@ def late_results_of(samples):
     points = list({sample.point_id: sample.point for sample in samples}.values())
     places, standing, everything = reading_places(points)
     context = Context(everything, now - WINDOW)
-    context.prefetch_newest_worked(points, late=False)
-    live = live_worked_at(points, places, standing, context, now)
+    context.prefetch_newest_worked(everything, late=False)
+    live = live_worked_at(points, places, standing, context, now, newest_manuals(everything, now - WINDOW, None, context))
     found = {}
     for point in points:
         mine = {str(sample.pk): sample for sample in samples if sample.point_id == point.pk}
@@ -2321,30 +2352,33 @@ def reading_places(points, own=None, units=()):
     return places, standing, list(everything.values())
 
 
-def _standing_worked(where, answer, context, now, own_manual=(), system_manual=()):
+def _standing_worked(where, answer, context, now, manual):
     """{point id: {worked-out code: Reading}} of the live worked-out values a place works out (`_place_live`,
     `_live_worked`: each tier's newest fresh TAN with the pH, temperature and salinity fresh in its own tier, else its
     system's), each filed where its sensor is bound (`bound_at`), WHATEVER its value: one without a value keeps its
     reason and its refusal (review 12, R12-1). A value worked out with a pH or temperature of another point than its own
     says whose (`messages.worked_with`). What a unit's own-water point read on its own takes as its own (`latest`) and
-    what a result entered at a point is judged against (`live_worked_at`, valued and fresh ones only)."""
+    what a result entered at a point is judged against (`live_worked_at`, valued and fresh ones only). `manual(point)`:
+    the place's newest samples, from the one source of a read's samples (`newest_manuals`), required: a sensor pH on
+    another scale is put on the NBS scale with the place's temperature, a sample's where no probe's is fresh, the same
+    for the pages and the log (review 13, R13-1)."""
     _own, _system, fresh_own, fresh_system, fresh_live = _place_live(
-        _live(where.own_targets, answer), list(own_manual), _live(where.system_targets, answer), list(system_manual),
-        context, now, partial(_at_moment, where))
+        _live(where.own_targets, answer), [manual(each) for each in where.own], _live(where.system_targets, answer),
+        [manual(each) for each in where.system], context, now, partial(_at_moment, where))
     found = defaultdict(dict)
     for _tier, (worked, inputs) in sorted(_live_worked(fresh_own, fresh_system, fresh_live, context).items()):
         for code, reading in worked.items():
             if code not in DERIVED:
                 continue
             here = bound_at(reading)
-            elsewhere = {code: each.point for code, each in inputs.items()
-                         if code in (parameters.PH, parameters.TEMPERATURE) and getattr(each.point, 'pk', None) != here}
+            elsewhere = {code: _source_of(each) for code, each in inputs.items()
+                         if code in (parameters.PH, parameters.TEMPERATURE) and _belongs(each) != here}
             if elsewhere and reading.value is not None:
                 _say(reading, messages.worked_with(elsewhere))
             found[here].setdefault(code, reading)
     return found
 
-def live_worked_at(points, places, standing, context, now):
+def live_worked_at(points, places, standing, context, now, manual):
     """{point id: [Reading]} of the fresh live NH₃ BOUND at each point now, worked out as every page works it (reviews
     9, P6, 10, F1 and 11, N5): a unit's own-water point inside its unit's standing place, any other point inside its own
     place (`reading_places`, `_standing_worked`). So the activity log and a history row say of a sample what the pages
@@ -2356,7 +2390,7 @@ def live_worked_at(points, places, standing, context, now):
     for point in points:
         anchor = standing.get(point.pk, point)
         if anchor.pk not in worked:
-            worked[anchor.pk] = _standing_worked(places[anchor.pk], answer, context, now)
+            worked[anchor.pk] = _standing_worked(places[anchor.pk], answer, context, now, manual)
         reading = worked[anchor.pk].get(point.pk, {}).get(NH3_N.code)
         found[point.pk] = [reading] if reading is not None and reading.value is not None and reading.fresh(now) else []
     return found
@@ -2538,7 +2572,7 @@ def owner_water(owners, now=None):
     anchored = anchors(units, own)
     middles = {**middle_points([owner for owner in owners if owner_type_of(owner) != 'unit']), **anchored}
     water = latest(list(middles.values()), now, own=own, units=unanchored(units, anchored))
-    return {owner.pk: water[middles[owner.pk].pk] if owner.pk in middles else water.get(owner.pk, PointWater(None))
+    return {owner.pk: water[middles[owner.pk].pk] if owner.pk in middles else water.get(place_key(owner), PointWater(None))
             for owner in owners}
 
 
@@ -2581,7 +2615,7 @@ def points_water(units, now=None, middle_only=()):
     # A unit with no point to read its own water at: its water read at its system (`latest`, `units`), first, where it
     # says something (a value, or fish whose oxygen it judges); else none, as before.
     for unit in bare:
-        standing = water[unit.pk]
+        standing = water[place_key(unit)]
         if standing.readings or standing.holds_fish:
             found[unit.pk] = [standing, *found[unit.pk]]
     return found

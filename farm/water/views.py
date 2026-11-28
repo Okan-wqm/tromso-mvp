@@ -213,7 +213,7 @@ def _latest(site, next_look=False):
                                                          key=point_order)]
     rows = []
     for owner, point in entries:
-        point_water = water[point.pk] if point is not None else water.get(owner.pk, read.PointWater(None))
+        point_water = water[point.pk] if point is not None else water.get(read.place_key(owner), read.PointWater(None))
         rows.append({'owner': owner, 'point': point, 'loop': isinstance(owner, System), 'water': point_water,
                      'history_url': reverse('farm:tank_water', args=[owner.pk]) if next_look and isinstance(owner, Tank)
                      else history_url(point or owner)})

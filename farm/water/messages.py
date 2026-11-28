@@ -460,13 +460,17 @@ UNIT_SENSORS_FAILED = _('Not known here: the unit’s sensors that work this val
 
 
 def worked_with(elsewhere):
-    """Which pH and temperature a value worked out in its unit's place used, when not its own point's (review 12, R12-3):
-    "Worked out with the pH and temperature of Middle." `elsewhere`: {input code: the point}."""
-    points = {getattr(point, 'pk', point): point for point in elsewhere.values()}
-    if len(points) == 1 and len(elsewhere) == 2:
-        return _('Worked out with the pH and temperature of %(point)s.') % {'point': next(iter(points.values())).name}
-    return ' '.join(str(_('Worked out with the %(input)s of %(point)s.') % {
-        'input': INPUT_WORDS.get(code, code), 'point': point.name}) for code, point in sorted(elsewhere.items()))
+    """Which pH and temperature a value worked out in its unit's place used, when not its own point's (reviews 12, R12-3
+    and 13, R13-2): "Worked out with the pH and temperature of Middle.", "… of its system, RAS 2." (a system's own
+    probe, never named by the point it is observed at). `elsewhere`: {input code: (a system's, its name)}."""
+    if len(set(elsewhere.values())) == 1 and len(elsewhere) == 2:
+        system, name = next(iter(elsewhere.values()))
+        both = (_('Worked out with the pH and temperature of its system, %(name)s.') if system
+                else _('Worked out with the pH and temperature of %(name)s.'))
+        return both % {'name': name}
+    return ' '.join(str((_('Worked out with the %(input)s of its system, %(name)s.') if system
+                         else _('Worked out with the %(input)s of %(name)s.')) % {
+        'input': INPUT_WORDS.get(code, code), 'name': name}) for code, (system, name) in sorted(elsewhere.items()))
 
 
 # What a superseded result is said as, by the judge's word (farm/water/judge.py `PointVerdict.said_as`): THE one table,

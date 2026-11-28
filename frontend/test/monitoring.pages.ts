@@ -335,8 +335,32 @@ function bigCards(tab: Page, root = '.monitor-grid'): Promise<string[]> {
         if (hidden && !(said?.offsetParent && said.classList.contains('is-alert') && said.textContent?.includes(String(hidden)))) wrong.push(`${code}: ${hidden} alerts folded away`);
         if (hidden && said?.offsetParent && !inside(said, frame)) wrong.push(`${code}: "${(said.textContent ?? '').trim()}" is not inside the card`);
       }
+      // drawn at the size of its place (the pane, a wall): its reasons a region of their own as many lines as the
+      // server's fold said (rl-N; a reason's lines counted from its words: render.reason_lines), every one of them in
+      // it; what they take the CHART gives first, and it keeps at least a quarter of a line above its least height
+      // (cm-N: the catalogue's give_units), so a value's tile and a reason are never cut and the card holds a quarter
+      // line more than it says (FIT_ALERTS is measured by this)
+      const region = card.querySelector<HTMLElement>('.monitor-reasons');
+      const fitted = Boolean(card.closest('.monitor-dock') || document.documentElement.hasAttribute('data-wall'));
+      if (fitted && region && document.documentElement.dataset.ui === 'next') {
+        const lines = Number(/\brl-(\d+)\b/.exec(region.className)?.[1] ?? 0);
+        const line = Number.parseFloat(getComputedStyle(region).lineHeight);
+        const high = region.getBoundingClientRect().height;
+        if (!lines) wrong.push(`${code}: its reasons' region says no lines`);
+        else if (high > lines * line * 1.02 + 1) wrong.push(`${code}: its reasons take ${(high / line).toFixed(2)} lines, the server said ${lines}`);
+        for (const reason of Array.from(region.querySelectorAll<HTMLElement>(':scope > li')).filter((each) => each.offsetParent)) {
+          if (!inside(reason, region.getBoundingClientRect())) wrong.push(`${code}: "${(reason.textContent ?? '').trim().slice(0, 24)}" out of its reasons' region`);
+        }
+        const drawing = card.querySelector<HTMLElement>('.w-chart');
+        if (drawing && drawing.getBoundingClientRect().height) {
+          const least = Number.parseFloat(getComputedStyle(drawing).minHeight);
+          const spare = (drawing.getBoundingClientRect().height - least) / line;
+          if (!least) wrong.push(`${code}: the chart has no least height to give way to`);
+          else if (spare < 0.25) wrong.push(`${code}: the chart ${spare.toFixed(2)} lines above its least height`);
+        }
+      }
       // nothing of a widget runs out of its place (a value's tile squeezed over its hairline by the reasons above the
-      // grid: what FIT_ALERTS is measured by, monitoring/cards/render.py fold); a frame that scrolls is its own
+      // grid: round 5); a frame that scrolls is its own
       for (const widget of Array.from(card.querySelectorAll<HTMLElement>('.card-grid > .w'))) {
         const room = widget.getBoundingClientRect();
         if (!room.height) continue;
@@ -437,6 +461,32 @@ function spills(tab: Page, root = '.monitor-grid'): Promise<string[]> {
           wrong.push(`${code}: "${(node.textContent ?? '').trim().slice(0, 30)}" outside its card`);
         }
       }
+    }
+    return wrong;
+  }, root);
+}
+
+/** Every chart of a full-height card brought down to its least height (its reasons' region made as high as the card
+ *  allows: the chart gives way first, down to cm-N): its words, labels and locator, that lie over one another; and
+ *  whether it reached that height. [] when every chart there still reads. */
+function chartAtItsLeast(tab: Page, root: string): Promise<string[]> {
+  return tab.evaluate((selector) => {
+    const wrong: string[] = [];
+    for (const card of Array.from(document.querySelectorAll<HTMLElement>(`${selector} .monitor-card.is-fit[data-fill]`))) {
+      const drawing = card.querySelector<HTMLElement>('.w-chart');
+      const chart = drawing?.querySelector<SVGElement>('svg.monitor-chart-svg');
+      const region = card.querySelector<HTMLElement>('.monitor-reasons');
+      if (!drawing || !chart || !region || !card.getBoundingClientRect().height) continue;
+      const code = card.querySelector('h3')?.textContent?.trim() ?? '?';
+      region.style.setProperty('--rl', '40');
+      const least = Number.parseFloat(getComputedStyle(drawing).minHeight);
+      if (Math.abs(drawing.getBoundingClientRect().height - least) > 1) wrong.push(`${code}: the chart did not come down to its least height`);
+      const words = Array.from(chart.querySelectorAll('text, .chart-locator')).map((node) => [node.textContent?.trim().slice(0, 16) ?? '', node.getBoundingClientRect()] as const)
+        .filter(([, box]) => box.width > 0);
+      words.forEach(([one, a], index) => words.slice(index + 1).forEach(([two, b]) => {
+        if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) wrong.push(`${code}: "${one}" lies over "${two}" at the chart's least height`);
+      }));
+      region.style.removeProperty('--rl');
     }
     return wrong;
   }, root);
@@ -811,8 +861,8 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
     });
 
     for (const language of LANGUAGES) {
-      for (const [name, width, height] of [...['pane-tw08', 'pane-tw09', 'pane-tw12', 'pane-tw10', 'pane-tw11', 'pane-tw01', 'pane-tw14', 'pane-tw15']
-        .map((each) => [each, 1440, 900] as const), ['pane-tw15', 1920, 1080] as const, ['pane-tw15', 3840, 2160] as const]) {
+      for (const [name, width, height] of [...['pane-tw08', 'pane-tw09', 'pane-tw12', 'pane-tw10', 'pane-tw11', 'pane-tw01', 'pane-tw14', 'pane-tw15', 'pane-tw16']
+        .map((each) => [each, 1440, 900] as const), ...['pane-tw15', 'pane-tw16'].flatMap((each) => [[each, 1920, 1080], [each, 3840, 2160]] as const)]) {
         await t.test(`${name} ${language} at ${width}x${height}: the pane's Big card of an old, a many-valued, an old acid water, many alerts`, async () => {
           mode = 'cards';
           const { tab, violations } = await open(`${name}-${language}`, width, height);
@@ -820,6 +870,7 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
           await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
           assert.deepEqual(await bigCards(tab, '.monitor-dock'), [], 'the pane\u2019s Big card, nothing of it cut');
           assert.deepEqual(await spills(tab, '.monitor-dock'), [], 'nothing of the pane\u2019s card runs out of it');
+          assert.deepEqual(await chartAtItsLeast(tab, '.monitor-dock'), [], 'the chart at its least height still reads');
           assert.deepEqual(await besideTheCards(tab), [], 'beside the cards');
           assert.deepEqual(await smallTargets(tab), [], 'every control a 44 px target');
           assert.deepEqual(await lowContrast(tab), [], 'card text under 4.5:1');
@@ -867,6 +918,8 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
           assert.ok(seen.shown >= 1, `${seen.shown} cards on the screen`);
           assert.deepEqual(await bigCards(tab), [], `page ${page}: every Big card whole, its foot in sight`);
           assert.deepEqual(await spills(tab), [], `page ${page}: nothing of a card runs out of it`);
+          assert.deepEqual(await chartAtItsLeast(tab, '.monitor-grid'), [], `page ${page}: the chart at its least height still reads`);
+          assert.deepEqual(await bigCards(tab), [], `page ${page}: every Big card whole again`);
           assert.deepEqual(await covered(tab), [], 'nothing lies over the band, a state word or the buttons of the wall');
           }
           assert.deepEqual(violations, [], 'CSP violations');
@@ -920,6 +973,35 @@ test('Operations › Monitoring in the new look, in a browser', { skip: skipWith
         assert.deepEqual(await covered(tab), [], 'nothing lies over the band, a state word or the buttons of the wall');
         assert.deepEqual(violations, [], 'CSP violations');
         if (language === 'en') await shot(tab, `wall-en-${width}`, false);
+        await tab.close();
+      });
+    }
+
+    for (const language of LANGUAGES) {
+      await t.test(`the CLASSIC wall of Small cards ${language} (the default look): no card hides that alerts exist`, async () => {
+        mode = 'cards';
+        const { tab, violations } = await open(`wall-classic-${language}`, 1920, 1080);
+        await tab.waitForSelector('.monitor-grid[data-poll-state="live"] > .monitor-card');
+        await tab.waitForFunction(() => document.querySelector('.monitor-grid')?.hasAttribute('data-page'));
+        assert.equal(await tab.evaluate(() => document.documentElement.dataset.ui ?? ''), '', 'the classic look');
+        const pages = Number(await tab.evaluate(() => document.querySelector<HTMLElement>('.monitor-grid')?.dataset.pageCount ?? '1'));
+        const at = (): Promise<number> => tab.evaluate(() => Number(document.querySelector<HTMLElement>('.monitor-grid')?.dataset.page ?? '1'));
+        for (let guard = 0; guard < pages && (await at()) > 1; guard += 1) await tab.keyboard.press('PageUp');
+        const codes = new Set<string>();
+        for (let page = 1; page <= pages; page += 1) {
+          if (page > 1) {
+            await tab.keyboard.press('PageDown');
+            await tab.waitForFunction((wanted) => document.querySelector<HTMLElement>('.monitor-grid')?.dataset.page === String(wanted), page);
+          }
+          assert.deepEqual(await smallSaid(tab), [], `page ${page}: a Small card never hides that alerts exist`);
+          for (const code of await tab.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('.monitor-grid > .monitor-card')).filter((card) => {
+            const box = card.getBoundingClientRect();
+            return box.height > 0 && box.bottom > 0 && box.top < innerHeight;
+          }).map((card) => card.querySelector('h3')?.textContent?.trim() ?? ''))) codes.add(code);
+        }
+        assert.ok(['TW-14', 'TW-15', 'TW-16'].every((code) => codes.has(code)), `the wall's pages: ${[...codes]}`);
+        assert.deepEqual(violations, [], 'CSP violations');
+        if (language === 'en') await shot(tab, 'wall-classic-en-1920', false);
         await tab.close();
       });
     }

@@ -22,6 +22,13 @@ def card_of(measure=builtin.BIG_MEASURE, **water):
 VIEW = N(id='w6')
 
 
+def drawn(card):
+    """`card` with what render._views reads of it besides its template: its unit, the sections its person may read, the
+    sources that could not be read."""
+    card.unit, card.sections, card.failed = N(pk=1), frozenset({'water', 'chart', 'stock', 'feeding', 'health'}), ()
+    return card
+
+
 def tiles(card, values, columns=1):
     return render.tiled(card, VIEW, tuple(tuple(range(values // columns)) for _ in range(columns)))
 
@@ -56,30 +63,49 @@ class TilesTests(SimpleTestCase):
 class FoldTests(SimpleTestCase):
     """What a fitted card shows of its reasons (render.fold), one rule for every size of card: notes past what it holds
     fold into "+N"; an alert (critical, warning, no recent data) only past what the card holds, and then said in words.
-    A Big card drawn at the size of its place (the pane, a wall) holds FIT_ALERTS alerts (measured by the browser test:
-    frontend/test/monitoring.pages.ts, TW-15 in the pane and on the walls, 1080p and 4K, three languages) and FIT_NOTES
-    notes; a Small card's one line the worst one."""
-    def state(self, key, count):
-        return N(key=key, reasons=tuple(f'reason {number}' for number in range(count)))
+    A Big card drawn at the size of its place (the pane, a wall) holds LINES: FIT_ALERTS of an alert card's (measured:
+    the browser test holds every card's chart a quarter of a line above its least height, frontend/test/
+    monitoring.pages.ts) and FIT_NOTES of a note card's, the line that says how many more among them; a Small card's
+    one line the worst reason."""
+    def state(self, key, count, words='reason'):
+        return N(key=key, reasons=tuple(f'{words} {number}' for number in range(count)))
 
     def test_what_each_size_holds(self):
         self.assertEqual(render.HOLDS, {'big': (render.FIT_ALERTS, render.FIT_NOTES), 'small': (1, 1)})
-        # (measured: six alerts and the notice overflow the Big card's value tiles at 4K, in the pane and on a wall)
-        self.assertEqual(render.FIT_ALERTS, 5)
+        # (measured: at eight lines of reasons the chart keeps half a line above its least height on every surface in
+        # en, nb and tr; at nine it is at its least)
+        self.assertEqual((render.FIT_ALERTS, render.FIT_NOTES), (8, 3))
 
-    def test_notes_fold_past_the_first_few(self):
+    def test_a_reasons_lines_come_from_its_words_and_the_cards_width(self):
+        per_line = int((builtin.BIG_MEASURE[0] - render.REASON_INSET) / render.REASON_CHAR_EM)
+        self.assertEqual(render.reason_lines('x' * per_line, builtin.BIG_MEASURE[0]), 1)
+        self.assertEqual(render.reason_lines('x' * (per_line + 1), builtin.BIG_MEASURE[0]), 2)
+        self.assertEqual(render.reason_lines('x' * (per_line + 1), builtin.BIG_MEASURE[0] * 2), 1)
+
+    def test_notes_fold_past_what_the_card_holds(self):
         for key in ('unjudged', 'note', 'ok'):
             folded = render.fold(self.state(key, 10))
-            self.assertEqual((folded.shown, len(folded.rest), folded.alerts), (render.FIT_NOTES, 10 - render.FIT_NOTES, False))
-        self.assertEqual(render.fold(self.state('note', render.FIT_NOTES)).rest, ())
+            # (one of its lines is the "+N")
+            self.assertEqual((folded.shown, len(folded.rest), folded.alerts, folded.lines),
+                             (render.FIT_NOTES - 1, 10 - render.FIT_NOTES + 1, False, render.FIT_NOTES - 1), key)
+        held = render.fold(self.state('note', render.FIT_NOTES))
+        self.assertEqual((held.rest, held.lines), ((), render.FIT_NOTES))
 
     def test_an_alert_is_never_folded_while_the_card_holds_it(self):
         for key in ('critical', 'warning', 'blind'):
             folded = render.fold(self.state(key, render.FIT_ALERTS))
-            self.assertEqual((folded.shown, folded.rest), (render.FIT_ALERTS, ()), key)
+            self.assertEqual((folded.shown, folded.rest, folded.lines), (render.FIT_ALERTS, (), render.FIT_ALERTS), key)
             past = render.fold(self.state(key, render.FIT_ALERTS + 2))
-            self.assertEqual((len(past.rest), past.alerts), (2, True), key)
+            self.assertEqual((past.shown, len(past.rest), past.alerts, past.lines),
+                             (render.FIT_ALERTS - 1, 3, True, render.FIT_ALERTS - 1), key)
         self.assertGreater(render.FIT_ALERTS, render.FIT_NOTES)
+
+    def test_a_reason_of_two_lines_takes_two_of_what_the_card_holds(self):
+        long = 'x' * 100                                       # two lines of the built-in Big card
+        folded = render.fold(N(key='critical', reasons=(long,) * 5))
+        self.assertEqual((folded.shown, len(folded.rest), folded.lines), (3, 2, 6))
+        # the first is said, however long
+        self.assertEqual(render.fold(N(key='critical', reasons=('x' * 2000, 'y'))).shown, 1)
 
     def test_a_small_card_says_its_worst_and_never_hides_that_there_are_more(self):
         for key in ('critical', 'warning', 'blind'):
@@ -88,6 +114,26 @@ class FoldTests(SimpleTestCase):
             self.assertEqual(render.fold(self.state(key, 1), 'small').rest, (), key)
         notes = render.fold(self.state('unjudged', 4), 'small')
         self.assertEqual((notes.shown, len(notes.rest), notes.alerts), (1, 3, False))
+
+
+class GivesTests(SimpleTestCase):
+    def test_the_chart_of_a_full_height_card_gives_way_down_to_its_least_height(self):
+        """The chart gives way to the reasons first, down to its give_units (never more than its place); the other
+        widgets never do; a card that is not full height has no least height to give way to."""
+        chart = catalogue.WIDGETS['chart']
+        self.assertEqual(chart.give_units, 22.0)
+        self.assertEqual([spec.type for spec in catalogue.WIDGETS.values() if spec.give_units], ['chart'])
+        views = {view.type: view for view in render._views(drawn(card_of()), lambda spec: True)}
+        self.assertEqual(views['chart'].give, 'cm-22')
+        self.assertEqual({view.give for kind, view in views.items() if kind != 'chart'}, {''})
+        low = card_of()
+        low.template.layout = {'schema': 1, 'widgets': [{**widget, 'h': 2} if widget['type'] == 'chart' else widget
+                                                        for widget in builtin.BIG_LAYOUT['widgets']]}
+        place = fitted_place({'w': 12, 'h': 2}, 21, builtin.BIG_MEASURE)[1]
+        self.assertEqual({view.type: view for view in render._views(drawn(low), lambda spec: True)}['chart'].give,
+                         f'cm-{int(place)}')
+        wide = drawn(card_of(measure=(61, 48)))
+        self.assertEqual({view.type: view for view in render._views(wide, lambda spec: True)}['chart'].give, '')
 
 
 class ColumnsTests(SimpleTestCase):

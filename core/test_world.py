@@ -35,7 +35,7 @@ built and read.
     water_page_world(admin)           after world(), for Water chemistry's tests only: a sample on TM-01 voided
     sensors_world(admin)            after world(), for the Sensors pages' tests only: a simulated device, credentials,
                                       alarm rules and events, dead letters, the ingest's heartbeat
-    monitoring_world(admin)           fifteen more units of Test Hall A, one in each state a monitoring card can be in
+    monitoring_world(admin)           sixteen more units of Test Hall A, one in each state a monitoring card can be in
                                       (OK, critical, warning, no recent data, no limit, note, empty, an old critical, many values,
                                       an old sample in the CO2 region),
                                       and a wall board of the hall's units on a 55" TV read from 2 m (wall_board), a board
@@ -809,17 +809,27 @@ MONITORING_UNITS = (
     # the TAN gives, the CO2 of a probe): every one of them is said on a Big card wherever it is drawn, never folded
     ('TW-14', 'Test tank many alarms', True, True, 1, {'temperature_c': '20', 'oxygen_mg_l': '4.5', 'ph': '8.5',
                                                        'alkalinity_mg_l': '85', 'tan_mg_l': '3', 'co2_mg_l': '20'}),
-    # more values past their critical limits than a Big card in a pane or on a wall holds (eight: MANY_ALERTS's
-    # limits): the card says the first ones and, in words, how many more there are ("2 more alerts, see the band"); a
-    # Small card says the worst and "7 more alerts" (monitoring/cards/render.py fold)
+    # more values past their critical limits than a Big card in a pane or on a wall holds (ten, a line each: Test char's
+    # limits, MANY_ALERTS; its many values' rows take room from the chart too): the card says the first ones and, in
+    # words, how many more there are ("7 more alerts, see the band"); a Small card says the worst and "9 more alerts"
+    # (monitoring/cards/render.py fold)
     ('TW-15', 'Test tank more alarms than a card holds', True, False, 1, {
         'temperature_c': '20', 'oxygen_mg_l': '4.5', 'ph': '8.5', 'alkalinity_mg_l': '85', 'tan_mg_l': '3',
-        'co2_mg_l': '20', 'nitrite_n_mg_l': '0.5', 'nitrate_n_mg_l': '80', 'tgp_pct': '106'}),
+        'co2_mg_l': '20', 'nitrite_n_mg_l': '0.5', 'nitrate_n_mg_l': '80', 'tgp_pct': '106', 'salinity_ppt': '10',
+        'turbidity_ntu': '30'}),
+    # its middle point's water inside its limits, its side outlet's (LONG_POINT, OTHER_POINTS) past five critical limits:
+    # the worst fresh value decides, so each reason names that point, and each runs to two lines of a Big card
+    # (render.reason_lines)
+    ('TW-16', 'Test tank long reasons', True, False, 1, {
+        'temperature_c': '13', 'oxygen_mg_l': '9', 'ph': '7.2', 'alkalinity_mg_l': '85', 'nitrite_n_mg_l': '0.02',
+        'nitrate_n_mg_l': '10'}),
 )
 # The units stocked with a second species of their own (Test char), whose limits judge more of the water than the
-# salmon's (the salmon's leave the nitrite, the nitrate and the TGP to "no limit", which TW-05, TW-09 and TW-11 need):
-# every value of TW-15 past its critical limit.
-MANY_ALERTS = ('TW-15',)
+# salmon's (the salmon's leave the nitrite, the nitrate, the TGP, the salinity and the turbidity to "no limit", which
+# TW-05, TW-09, TW-10 and TW-11 need): every value of TW-15 past its critical limit, TW-16's side outlet's past five.
+MANY_ALERTS = ('TW-15', 'TW-16')
+# The long name of TW-16's side outlet: what makes each of its reasons two lines long.
+LONG_POINT = 'Test outlet sump at the far end of the second long raceway'
 CHAR_LIMITS = (('temperature_c', {'warning_high': '15', 'critical_high': '18'}),
                ('oxygen_mg_l', {'critical_low': '6', 'warning_low': '7'}),
                ('ph', {'critical_low': '6.5', 'warning_low': '6.8', 'warning_high': '7.8', 'critical_high': '8.2'}),
@@ -828,13 +838,17 @@ CHAR_LIMITS = (('temperature_c', {'warning_high': '15', 'critical_high': '18'}),
                ('co2_mg_l', {'warning_high': '10', 'critical_high': '15'}),
                ('nitrite_n_mg_l', {'warning_high': '0.05', 'critical_high': '0.1'}),
                ('nitrate_n_mg_l', {'warning_high': '30', 'critical_high': '50'}),
-               ('tgp_pct', {'warning_high': '101', 'critical_high': '103'}))
+               ('tgp_pct', {'warning_high': '101', 'critical_high': '103'}),
+               ('salinity_ppt', {'warning_high': '3', 'critical_high': '5'}),
+               ('turbidity_ntu', {'warning_high': '10', 'critical_high': '20'}))
 # A unit's second sample, an hour before MOMENT: what stays fresh beside its old values.
 FRESH_TOO = {'TW-04': {'oxygen_mg_l': '9'}}
 # Samples at a unit's OTHER sampling points (point kind, hours back, values): fresh at TW-01's inlet, old at TW-08's
 # bottom drain, so a card's box of the other points says values with their ages, a fresh one and an old one.
 OTHER_POINTS = {'TW-01': ('inlet', 1, {'temperature_c': '12.8', 'oxygen_mg_l': '9.4', 'ph': '7.15'}),
-                'TW-08': ('bottom_drain', 30, {'temperature_c': '13.2', 'oxygen_mg_l': '8.6', 'ph': '7.05'})}
+                'TW-08': ('bottom_drain', 30, {'temperature_c': '13.2', 'oxygen_mg_l': '8.6', 'ph': '7.05'}),
+                'TW-16': ('side_outlet', 1, {'temperature_c': '20', 'oxygen_mg_l': '4.5', 'ph': '8.5',
+                                             'nitrite_n_mg_l': '0.5', 'nitrate_n_mg_l': '80'})}
 
 
 TEST_WALL = 'Test wall, Hall A'
@@ -850,14 +864,15 @@ TEST_LOW_WATER = 'Test big, low water'
 
 
 def monitoring_world(admin):
-    """Fifteen more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
+    """Sixteen more units of Test Hall A for the monitoring cards (MONITORING_UNITS), one in each state a card can be in:
     OK (fresh water inside its limits, a feeding protocol in force), critical and warning (the oxygen past its critical
     and its warning limit), no recent data (its temperature 30 hours old, its oxygen fresh), no limit (a nitrite no
     limit row judges), a note (no feeding protocol: no ration, and why), empty (no fish), and a critical oxygen 30 hours
     old (critical, and stale), units with more values at their middle point than the Big card's tiles hold (10, 15
     and 17: no limit), an old sample in the CO2 region of its chart and a fresh one (critical), and samples at two
     units' other sampling points (OTHER_POINTS: a fresh one and an old one), and one with many values past their critical
-    limits at once (TW-14), and one with more of them than a card holds (TW-15, Test char: MANY_ALERTS).
+    limits at once (TW-14), one with more of them than a card holds (TW-15, Test char: MANY_ALERTS), and one whose
+    five reasons each take two lines (TW-16: its side outlet, LONG_POINT, past five limits).
     1,000 salmon of 50 g each, stocked ten days back; the
     protocol is a test table of one band (12 and 14 °C) fed with the water world's test feed; the salmon's alkalinity band
     (70 to 150 mg/L) is set here. Through the services where
@@ -902,7 +917,11 @@ def monitoring_world(admin):
                          values={key: D(value) for key, value in FRESH_TOO[code].items()})
         if code in OTHER_POINTS:
             kind, back, other = OTHER_POINTS[code]
-            water.record(admin, point=point_of(unit, kind), measured_at=MOMENT - timedelta(hours=back),
+            point = point_of(unit, kind)
+            if code == 'TW-16':
+                point.name = LONG_POINT
+                point.save(update_fields=['name'])
+            water.record(admin, point=point, measured_at=MOMENT - timedelta(hours=back),
                          source='manual', values={key: D(value) for key, value in other.items()})
     wall_board(hall)
     operator_board(hall)

@@ -206,7 +206,9 @@ class SmallCardTests(SmallCase):
         self.assertEqual(first.attrs['title'], 'Dissolved oxygen (mg/L O₂): Critical')
         self.assertTrue(text(first).startswith('O₂ (mg/L) 5.00 · critical limit 6.00'))
         self.assertIn('tw:text-crit-text', first.classes)
-        self.assertIn('+1', text(more))
+        # (an alert it folds is said in words, in its tone: never a bare "+1", in the classic look too)
+        self.assertIn('1 more alert', text(more))
+        self.assertIn('is-alert', more.classes)
         self.assertEqual(more.attrs['title'], 'pH (NBS scale): Critical')
         # every reason is on the card in full, for a screen reader and a pointer; none is only a count
         for reason in read.cards([self.t2], self.reader, read.resolve.Choice(view=builtin.SMALL))[0].state.reasons:

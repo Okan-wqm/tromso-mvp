@@ -114,6 +114,8 @@ NAMED = {
     ('alarms/outbox.py', 'SUMMARY_AFTER'): "the coordinator's 24 h after which cleared criticals not yet sent go as one "
                                            'summary: a bound on what is told one by one, not a farm rule',
     ('alarms/outbox.py', 'CLAIM'): "the advisory lock class of a notification being sent: an identity, not a threshold",
+    ('alarms/checks.py', 'SHOWN'): 'how many alarm ids a warning of alarms.W001 names, the rest counted: the length of a '
+                                    'message, not a farm rule',
     ('alarms/models.py', 'CLOCK_SKEW_BOUNDS'): "the refusal of nonsense of a device clock limit: at most the ingest "
                                                "contract's hour",
     ('alarms/models.py', 'CLOCK_WINDOW_BOUNDS'): 'the refusal of nonsense of a device clock window (none to an hour), '

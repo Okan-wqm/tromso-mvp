@@ -112,11 +112,11 @@ Landing a branch, one at a time, in the agreed order:
 3. Full `scripts/test.sh` on the branch, plus `makemigrations --check`, `npm run check`, `npm test`.
    A branch with a migration or a change under `sensors-ingest/` also runs `sensors-ingest/tests/run.sh` (CI's `rust` job: the ingest's tests on the schema Django migrates).
 4. Back up the dev database (`pg_dump -U balik`, about 7 minutes, into `Programlar\db-backups\`).
-5. Fast-forward `main`, stop the dev server and any alarm worker (the compose `alarms` service, a `run_alarm_worker`),
-   then `migrate` + `compile_catalogs` + `npm run build` in one go, then
-   start the dev server. Stopped first: a server still running the old code writes what the new migrations have just
-   converted or removed (core/0011 makes the log's personal data private, and an old server would write it plain again
-   behind it). After it, `manage.py check --database default` must be quiet (core.W003 to core.W006, alarms.W001).
+5. Fast-forward `main`, stop the dev server and any alarm worker, then `migrate` + `compile_catalogs` + `npm run build`
+   in one go, then start the dev server. Stopped first: a server still running the old code writes what the new
+   migrations have just converted or removed (core/0011 makes the log's personal data private, and an old server would
+   write it plain again behind it); an alarm worker (the compose `alarms` service, a `run_alarm_worker`) writes alarms.
+   After it, `manage.py check --database default` must be quiet (core.W003 to core.W006, alarms.W001).
 6. Live check through the real pages (create, edit and delete one record of every new kind; crawl the pages in
    EN, NB and TR), then push, then remove the worktree and delete the merged branch.
 7. Update the README section and the relevant notes in the same batch, and tell the owner what to click to check.

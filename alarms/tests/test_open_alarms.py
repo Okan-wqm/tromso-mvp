@@ -5,14 +5,15 @@ beside 100,000 alarms of history (each with its notification, escalation, cleara
 snooze), counted by PostgreSQL (core.testing.reads): a whole pass of the alarm worker (`engine.run_once`), its notify
 step, the pages' floods, the open list and the overview's open alarms read no more of each history table beside the
 one than beside the other (core.testing.assert_reads_do_not_grow)."""
-from django.db import connection
+from django.db import connection, transaction
+from django.test import TransactionTestCase, override_settings
 
 from core.testing import assert_reads_do_not_grow, reads
 
 from .. import checks, engine, floods, read, services
 from ..models import OPEN, Alarm, AlarmClearance
 from ..rules import current
-from . import AlarmsCase
+from . import RECORDING, AlarmsCase, AlarmsWorld
 
 STEP = 50_000
 HISTORY_TABLES = ('alarms', 'alarm_clearances', 'alarm_acknowledgements', 'alarm_notifications', 'alarm_escalations',
@@ -25,11 +26,14 @@ def rows(sql, params=None):
         return cursor.fetchall() if cursor.description else None
 
 
-class OpenQueueTests(AlarmsCase):
+class OpenWorld(AlarmsWorld):
     def open(self, name, severity='critical'):
+        """A new alarm of the alarm system, of its own kind, open."""
         return services.open_alarm(source='system', farm_wide=True, parameter=name, severity=severity, at=self.now,
                                    summary=name, site=self.bergen)
 
+
+class OpenQueueTests(OpenWorld, AlarmsCase):
     def queue(self):
         return {alarm_id for (alarm_id,) in rows('SELECT alarm_id FROM alarm_open')}
 
@@ -58,7 +62,7 @@ class OpenQueueTests(AlarmsCase):
     def test_a_queue_out_of_step_with_the_clearances_is_named_both_ways(self):
         made = [self.open(f'open{number}') for number in range(2)]
         self.assertEqual(checks.open_alarms_hold(None), [])
-        rows('TRUNCATE alarm_open')                                       # what a superuser's TRUNCATE leaves
+        rows('DELETE FROM alarm_open')                                    # what a hand repair or a TRUNCATE leaves
         (missing,) = checks.open_alarms_hold(None)
         self.assertEqual(missing.id, 'alarms.W001')
         self.assertIn('2 open alarm(s) are missing', missing.msg)
@@ -74,10 +78,17 @@ class OpenQueueTests(AlarmsCase):
         self.assertEqual(checks.open_alarms_hold(None), [])
         self.assertEqual(self.queue(), {made[1].pk})
 
-    # ---- what the readers read, beside a growing history -------------------------------------------------------------
+
+@override_settings(ALARM_TRANSPORTS=RECORDING)
+class OpenHistoryTests(OpenWorld, TransactionTestCase):
+    """What the readers read beside a growing history, committed and vacuumed as a farm's is (written in the measuring
+    transaction, its rows are not all-visible and the planner's looks at the ends of indexes over them read thousands of
+    rows each: a cost of the test's own making, review 2, M2)."""
+    serialized_rollback = True
+
     def grow(self):
         """STEP more alarms opened 30 days before the test's moment, each notified, escalated, snoozed (the snooze
-        ended), acknowledged and cleared. Returns STEP: the rows each history table gained."""
+        ended), acknowledged and cleared, committed and vacuumed. Returns STEP: the rows each history table gained."""
         steps = [
             ("INSERT INTO alarms (source, parameter, severity, opened_at, summary) SELECT 'system', 'old', 'warning', "
              "%s::timestamptz - interval '30 days', 'old ' || n FROM generate_series(1, %s) n", [self.now, STEP]),
@@ -102,7 +113,7 @@ class OpenQueueTests(AlarmsCase):
         ]
         for sql, params in steps:
             rows(sql, params)
-        rows('ANALYZE ' + ', '.join(HISTORY_TABLES) + ', alarm_open')
+        rows('VACUUM ANALYZE ' + ', '.join(HISTORY_TABLES) + ', alarm_open')
         return STEP
 
     def fresh(self, opened, name):
@@ -119,7 +130,7 @@ class OpenQueueTests(AlarmsCase):
 
         def run_once():
             self.fresh(opened, 'pass')
-            with reads() as found:
+            with transaction.atomic(), reads() as found:
                 summary = engine.run_once(self.now)
             self.assertFalse(summary.failed_steps)
             return found
@@ -131,7 +142,7 @@ class OpenQueueTests(AlarmsCase):
         def notify():
             self.fresh(opened, 'open')
             summary = engine.Summary()
-            with reads() as found:
+            with transaction.atomic(), reads() as found:
                 engine.notify(self.now, summary, current())
             self.assertFalse(summary.failed_steps)
             return found
@@ -142,7 +153,7 @@ class OpenQueueTests(AlarmsCase):
 
         def look(what, call):
             def measure():
-                with reads() as found:
+                with transaction.atomic(), reads() as found:
                     got = call()
                 if what == 'the open list':
                     self.assertEqual({alarm.pk for alarm in got}, opened)

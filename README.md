@@ -7340,9 +7340,10 @@ cursor. Parallel workers are off in the block (their reads are other processes')
 history is asked as a difference (`core.testing.assert_reads_do_not_grow`): the history grown, a look to warm the
 session, the measured look; grown again, warmed, measured again; the two counts of each history table may differ by
 at most a hundred rows either way, where a scan reads all that was added, and the first must be below what was added
-(a scan in the first could otherwise hide one in the second). What does not depend on the history counts alike on
-both sides, the planner's first looks at the ends of indexes over rows no vacuum has seen among them. The outbox's
-tests ask it so: `backlog()` and a whole sending round beside 50,000 and 100,000 notifications of history; a whole
+(a scan in the first could otherwise hide one in the second). The history is committed and vacuumed first, as a
+farm's is (those tests are TransactionTestCases): rows the measuring transaction wrote itself are not all-visible, and
+the planner's looks at the ends of indexes over them read thousands of rows a statement, a cost of the test's own
+making that hid in a one-sided difference (run 46078949779). The outbox's tests ask it so: `backlog()` and a whole sending round beside 50,000 and 100,000 notifications of history; a whole
 pass of the alarm worker (`engine.run_once`) and the open alarms' readers (its notify step, the floods, the open list,
 the overview) beside 50,000 and 100,000 alarms of history, each notified, escalated, snoozed, acknowledged and
 cleared. A round with

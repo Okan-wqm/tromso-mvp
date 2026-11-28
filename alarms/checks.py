@@ -16,6 +16,8 @@ from django.utils.module_loading import import_string
 from .models import Channel
 from .transports import Transport
 
+SHOWN = 20         # alarm ids a warning of alarms.W001 names; the rest are counted
+
 
 @register(deploy=True)
 def transports_declare_limits(app_configs, **kwargs):
@@ -88,5 +90,5 @@ def open_alarms_hold(app_configs, **kwargs):
     return found
 
 
-def _ids(ids, shown=20):
-    return ', '.join(str(each) for each in ids[:shown]) + (f' and {len(ids) - shown} more' if len(ids) > shown else '')
+def _ids(ids):
+    return ', '.join(str(each) for each in ids[:SHOWN]) + (f' and {len(ids) - SHOWN} more' if len(ids) > SHOWN else '')

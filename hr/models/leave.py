@@ -67,6 +67,8 @@ class LeaveRequest(AuditedModel):
     requests for the person's team, and is not the person, approves or rejects it. What it costs in days is read
     (hr.leave.leave_days), never stored, and so is whether the person is on leave today."""
 
+    service_written = True       # hr.services is its one writer (core.models.AuditedModel)
+
     Status = LeaveStatus
 
     employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='leave_requests',

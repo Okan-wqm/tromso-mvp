@@ -28,6 +28,7 @@ from .helpers import WINDOW_WAY_OUT, correction_window, make_facility, point_of,
 from .test_feeding import FeedingTestCase
 from .test_protocols import ProtocolTestCase
 from farm import withdrawal_gate
+from core.testing import delete_confirmed
 
 HARVEST_KEEPER = ('view_harvestrecord', 'view_handlingplanitem', 'add_handlingplanitem', 'change_handlingplanitem',
                   'delete_handlingplanitem', 'view_productionplan', 'add_productionplan', 'change_productionplan',
@@ -491,7 +492,7 @@ class PlanItemTests(HarvestTestCase):
         self.assertEqual(HandlingPlanItem.objects.get().status_on(self.today), 'planned')
         logged = AuditLog.objects.filter(entity_type='planned harvest or transport').values_list('action', flat=True)
         self.assertEqual(sorted(logged), ['create', 'update', 'update', 'update'])
-        self.client.post(reverse('farm:handlingplanitem_delete', args=[item.pk]))
+        delete_confirmed(self.client, reverse('farm:handlingplanitem_delete', args=[item.pk]))
         self.assertTrue(HandlingPlanItem.all_objects.get().is_deleted)
 
     def test_a_planned_transport_and_the_rules_of_a_plan(self):
@@ -1041,7 +1042,7 @@ class ProductionPlanTests(HarvestTestCase):
                       .context['form'].errors)
         self.harvest()                                                       # the batch leaves the stock
         self.assertContains(self.client.get(self.list_url), 'No longer in stock')
-        self.client.post(reverse('farm:productionplan_delete', args=[plan.pk]))
+        delete_confirmed(self.client, reverse('farm:productionplan_delete', args=[plan.pk]))
         self.assertFalse(ProductionPlan.objects.exists())
         self.assertEqual(sorted(AuditLog.objects.filter(entity_type='production plan').values_list('action', flat=True)),
                          ['create', 'delete', 'update'])
@@ -1078,7 +1079,7 @@ class SlaughterFacilityTests(HarvestTestCase):
         self.assertEqual((facility.operator, facility.address, facility.municipality, facility.latitude,
                           facility.longitude, list(facility.species.all()), facility.capacity_tonnes_per_day,
                           facility.notes, facility.status), (None, '', '', None, None, [], None, '', 'inactive'))
-        self.client.post(reverse('farm:slaughterfacility_delete', args=[facility.pk]))
+        delete_confirmed(self.client, reverse('farm:slaughterfacility_delete', args=[facility.pk]))
         self.assertTrue(SlaughterFacility.all_objects.get(pk=facility.pk).is_deleted)
         self.assertEqual(sorted(AuditLog.objects.filter(entity_type='slaughter facility').values_list(
             'action', flat=True)), ['create', 'delete', 'update'])
@@ -1104,7 +1105,7 @@ class SlaughterFacilityTests(HarvestTestCase):
         self.harvest(count=10, transport=self.boat)
         plan = softdelete.plan_delete(self.facility)
         self.assertEqual(plan.blockers, ['1 harvest record still belongs to it. Set it inactive instead.'])
-        self.client.post(reverse('farm:slaughterfacility_delete', args=[self.facility.pk]))
+        delete_confirmed(self.client, reverse('farm:slaughterfacility_delete', args=[self.facility.pk]))
         self.assertFalse(SlaughterFacility.objects.get().is_deleted)
         self.assertEqual(softdelete.plan_delete(operator).blockers, ['1 slaughter facility still belongs to it.'])
         self.assertEqual(softdelete.plan_delete(self.boat).blockers, ['1 harvest record still belongs to it.'])
@@ -1156,7 +1157,7 @@ class HandlingRuleTests(HarvestTestCase):
         self.post(general, kind='treatment', fasting_amount='12')
         general.refresh_from_db()
         self.assertEqual((general.min_fasting_hours, general.note), (12, ''))
-        self.client.post(reverse('farm:handlingrule_delete', args=[rule.pk]))
+        delete_confirmed(self.client, reverse('farm:handlingrule_delete', args=[rule.pk]))
         self.assertFalse(HandlingRule.objects.filter(pk=rule.pk).exists())
         with self.assertRaises(IntegrityError), transaction.atomic():
             HandlingRule.objects.create(kind='harvest', min_fasting_hours=1)
@@ -1345,7 +1346,7 @@ class DeletePlanTests(HarvestTestCase):
         self.assertEqual((plan.can_delete, plan.detach, dict(plan.kept)),
                          (True, [(item, 'destination_unit')], {HandlingPlanItem: 1}))
         self.client.force_login(get_user_model().objects.create_superuser('root', 'root@example.com', 'x'))
-        self.client.post(reverse('farm:tank_delete', args=[self.t1.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[self.t1.pk]))
         item.refresh_from_db()
         self.assertIsNone(item.destination_unit)
         self.assertFalse(HandlingPlanItem.objects.filter(pk=planned_from.pk).exists())

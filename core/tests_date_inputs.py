@@ -19,6 +19,7 @@ from django.test import SimpleTestCase, TestCase
 from django.utils import translation
 
 from .dates import read_day
+from .testing import is_test_module
 from .widgets import DayInput, MomentInput
 
 DAY, MOMENT = date(2026, 10, 26), datetime(2026, 10, 26, 21, 4)
@@ -84,8 +85,9 @@ class DateInputTests(SimpleTestCase):
     def test_no_page_or_form_has_a_browser_date_box(self):
         found = []
         for path in sorted(Path(settings.BASE_DIR).rglob('*')):
-            if path.suffix not in ('.html', '.py') or any(part in ('tests', 'migrations', 'node_modules', '.build')
-                                                          for part in path.parts) or path.name.startswith('tests'):
+            relative = path.relative_to(settings.BASE_DIR)
+            if path.suffix not in ('.html', '.py') or any(part in ('migrations', 'node_modules', '.build')
+                                                          for part in relative.parts) or is_test_module(relative):
                 continue
             for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
                 if re.search(r'''attrs=\{'type': '(date|datetime-local)'|type="(date|datetime-local)"''', line):
@@ -274,8 +276,7 @@ def date_parsers_outside_core_dates():
     for app in APPS:
         for path in Path(settings.BASE_DIR, app).rglob('*.py'):
             relative = path.relative_to(settings.BASE_DIR).as_posix()
-            if relative == 'core/dates.py' or '/migrations/' in relative or '/tests' in relative or \
-                    path.name.startswith('test'):
+            if relative == 'core/dates.py' or '/migrations/' in relative or is_test_module(relative):
                 continue
             found += [f'{relative}:{line} {what}' for line, what in date_parsers_in(
                 ast.parse(path.read_text(encoding='utf-8')))]

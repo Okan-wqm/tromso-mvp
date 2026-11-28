@@ -16,6 +16,7 @@ from . import access, audit, navigation
 from .access import Area
 from .navigation import Entry, Group as MenuGroup, Section, Workspace
 from .models import AuditLog
+from core.testing import delete_confirmed
 
 # An area set with an Everyone column on Sites, for the matrix tests (ACCESS_AREAS names it).
 SCOPED_AREAS = [
@@ -78,7 +79,7 @@ class ScopedResourceTests(TestCase):
         self.assertEqual(self.client.post(self.url('edit', self.outside), {
             **site_data(name='Taken over', code='BBB'), 'version': before.version}).status_code, 404)
         self.assertEqual(self.client.get(self.url('delete', self.outside)).status_code, 404)
-        self.assertEqual(self.client.post(self.url('delete', self.outside)).status_code, 404)
+        self.assertEqual(delete_confirmed(self.client, self.url('delete', self.outside)).status_code, 404)
         self.assertEqual(self.client.post(self.url('contacts', self.outside),
                                           {'version': before.version}).status_code, 404)
         after = Site.objects.get(pk=self.outside.pk)

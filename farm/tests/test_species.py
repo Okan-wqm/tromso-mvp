@@ -22,6 +22,7 @@ from ..models.species import SCIENTIFIC_NAME, normalise_scientific_name
 from ..resources import SpeciesResource
 from .helpers import role
 from farm import withdrawal_gate
+from core.testing import delete_confirmed
 
 SPECIES_MANAGER = ('view_species', 'add_species', 'change_species', 'delete_species', 'view_auditlog')
 WATERS = Species.WATER_FIELDS
@@ -108,7 +109,7 @@ class SpeciesRoundTripTests(SpeciesTestCase):
              True, 'TLP', 'wrasse', Decimal('12.0'), 'inactive', 'Moved to sea', self.user, 2))
 
         # Delete: hidden, not erased
-        self.client.post(reverse('farm:species_delete', args=[species.pk]))
+        delete_confirmed(self.client, reverse('farm:species_delete', args=[species.pk]))
         self.assertFalse(Species.objects.exists())
         self.assertEqual(stored(Species.all_objects.get(), 'is_deleted', 'deleted_by'), (True, self.user))
         self.assertEqual(list(self.client.get(reverse('farm:species_list')).context['objects']), [])
@@ -488,7 +489,7 @@ class SpeciesDeleteAndRestoreTests(SpeciesTestCase):
         page = self.client.get(reverse('farm:species_delete', args=[species.pk]))
         self.assertContains(page, 'Delete “Nile tilapia (TLN)”?')
         self.assertContains(page, 'restored from the admin')
-        self.client.post(reverse('farm:species_delete', args=[species.pk]))
+        delete_confirmed(self.client, reverse('farm:species_delete', args=[species.pk]))
         self.assertEqual(list(AuditLog.objects.values_list('action', 'entity_type', 'entity_label')),
                          [('delete', 'species', 'Nile tilapia (TLN)')])
 
@@ -541,7 +542,7 @@ class SpeciesAuditTests(SpeciesTestCase):
         species = Species.objects.get()
         self.edit(species, local_name='Tilapia', official_code='TLN', status='discontinued', brackish=True,
                   cleaner_fish_type='wrasse', max_weight_ratio='2')
-        self.client.post(reverse('farm:species_delete', args=[species.pk]))
+        delete_confirmed(self.client, reverse('farm:species_delete', args=[species.pk]))
         created, edited, deleted = AuditLog.objects.order_by('created_at')
         self.assertEqual((created.action, created.entity_type, created.entity_label),
                          ('create', 'species', 'Nile tilapia (TLN)'))
@@ -606,7 +607,7 @@ class SpeciesPermissionTests(SpeciesTestCase):
         self.assertEqual(self.create(code='NEW').status_code, 403)
         self.edit(species, common_name='Changed')
         self.assertEqual(stored(species, 'common_name'), ('Changed',))
-        self.client.post(reverse('farm:species_delete', args=[species.pk]))
+        delete_confirmed(self.client, reverse('farm:species_delete', args=[species.pk]))
         self.assertTrue(Species.all_objects.get(pk=species.pk).is_deleted)
 
     def test_no_view_permission_no_tab_and_no_menu_entry(self):

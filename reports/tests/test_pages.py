@@ -27,6 +27,7 @@ from ..models import Report, ReportSnapshot, ResistanceSuspicion, UnitAnswer
 from ..periods import OSLO
 from .helpers import OCTOBER, ReportTestCase, day, previewed
 from .schema import errors
+from core.testing import delete_confirmed
 
 FILED_AT = '2026-11-03T09:30'
 
@@ -87,7 +88,7 @@ class DraftTests(ReportPagesTestCase):
                          ([None, private('kari@example.com')], [None, private('+47 98989898')], [None, 'Kari Nord']))
         self.assertEqual(changed.changes['Contact telephone'], [private('+47 98989898'), private('+47 12345678')])
         self.assertNotIn('kari@example.com', str(list(AuditLog.objects.values_list('changes', flat=True))))
-        self.client.post(reverse('reports:report_delete', args=[report.pk]))
+        delete_confirmed(self.client, reverse('reports:report_delete', args=[report.pk]))
         self.assertTrue(Report.all_objects.get(pk=report.pk).is_deleted)
         self.assertFalse(Report.objects.exists())
         actions = list(AuditLog.objects.filter(entity_type='regulatory report').order_by('created_at')
@@ -248,7 +249,7 @@ class FilingTests(ReportPagesTestCase):
         self.assertIn('It was filed and cannot change: start a correction instead.',
                       response.context['form'].non_field_errors())
         self.assertEqual(plan_delete(report).blockers, ['It was filed: start a correction instead.'])
-        self.client.post(reverse('reports:report_delete', args=[report.pk]))
+        delete_confirmed(self.client, reverse('reports:report_delete', args=[report.pk]))
         self.assertFalse(Report.all_objects.get(pk=report.pk).is_deleted)
         # The database refuses it whatever writes: the report, what was filed, the answers.
         for change in (lambda: Report.objects.filter(pk=report.pk).update(contact_phone='+47 1'),
@@ -410,14 +411,14 @@ class IntegrationTests(ReportPagesTestCase):
 
     def test_a_discarded_draft_comes_back_from_the_admin_unless_another_was_started(self):
         _response, report = self.start()
-        self.client.post(reverse('reports:report_delete', args=[report.pk]))
+        delete_confirmed(self.client, reverse('reports:report_delete', args=[report.pk]))
         admin_user = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin_user)
         changelist = reverse('admin:reports_report_changelist')
         self.client.post(changelist, {'action': 'restore', '_selected_action': [str(report.pk)]})
         self.assertFalse(Report.all_objects.get(pk=report.pk).is_deleted)
         self.client.force_login(self.user)
-        self.client.post(reverse('reports:report_delete', args=[report.pk]))
+        delete_confirmed(self.client, reverse('reports:report_delete', args=[report.pk]))
         _response, again = self.start()
         self.client.force_login(admin_user)
         self.client.post(changelist, {'action': 'restore', '_selected_action': [str(report.pk)]})

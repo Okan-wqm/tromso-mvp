@@ -913,6 +913,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "experiments/tests/test_review.py",
         "alarms/tests/test_alarms.py",
         "alarms/tests/test_defects.py",
@@ -2492,6 +2493,7 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "alarms/tests/test_cross_review.py",
         "alarms/tests/test_defects.py",
         "alarms/tests/test_who_ends_a_level.py"
@@ -3619,6 +3621,7 @@
         "core/tests_private_log.py",
         "core/tests_scope.py",
         "core/tests_sealing.py",
+        "core/tests_service_tab.py",
         "core/tests_workspaces.py",
         "farm/tests/test_assignments.py",
         "farm/tests/test_batch_details.py",
@@ -3696,6 +3699,7 @@
         "hr/tests/test_departments.py",
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_correction.py",
         "hr/tests/test_manager_rights.py",
@@ -3703,6 +3707,7 @@
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
@@ -4362,6 +4367,19 @@
           ],
           "how": "form",
           "why": ""
+        },
+        {
+          "name": "plan_batch_cells",
+          "field": "plan_batch_cells",
+          "type": "smallint",
+          "null": false,
+          "choices": [],
+          "link": null,
+          "on_form": [
+            "PlatformSettingsForm › Shift schedule"
+          ],
+          "how": "form",
+          "why": ""
         }
       ],
       "constraints": [
@@ -4417,6 +4435,12 @@
         },
         {
           "name": "chk_platform_settings_probe_tolerance",
+          "kind": "check",
+          "fields": [],
+          "conditional": false
+        },
+        {
+          "name": "chk_platform_settings_plan_batch",
           "kind": "check",
           "fields": [],
           "conditional": false
@@ -4486,6 +4510,7 @@
             "sensor_hold_seconds": "Degree-days",
             "assumption_cap_days": "Degree-days",
             "probe_sample_tolerance_c": "Degree-days",
+            "plan_batch_cells": "Shift schedule",
             "version": ""
           }
         }
@@ -4502,6 +4527,7 @@
         "left_out": false
       },
       "tests": [
+        "core/testing.py",
         "core/tests_kept_rows.py",
         "core/tests_platform.py",
         "core/tests_rev.py",
@@ -4515,6 +4541,8 @@
         "farm/tests/test_withdrawal_delivery_after.py",
         "farm/tests/test_withdrawal_delivery_paths.py",
         "farm/tests/test_withdrawal_gate.py",
+        "hr/tests/test_one_path.py",
+        "hr/tests/test_review_two.py",
         "alarms/tests/test_freshness.py",
         "alarms/tests/test_reference.py"
       ]
@@ -16375,10 +16403,12 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_leave_type_privacy.py",
+        "hr/tests/test_one_path.py",
         "hr/tests/test_org_tree.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_own_record.py",
@@ -16387,6 +16417,8 @@
         "hr/tests/test_realm.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_review_five.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
         "hr/tests/test_team_today.py",
@@ -18119,8 +18151,11 @@
         "hr/tests/test_attendance.py",
         "hr/tests/test_departments.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_one_path.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
         "experiments/tests/test_amend.py",
@@ -26401,7 +26436,7 @@
           "why": ""
         }
       },
-      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page.",
+      "note": "A person's own clock-in and clock-out are written by hr.services at the server's time; a clock-in left open longer than Scheduling settings' limit is a forgotten clock-out, closed on the Attendance page. The Attendance page's entries, corrections and voids are hr.services.enter_presence, correct_presence and void_presence.",
       "forms": [
         {
           "form": "AttendanceRecordForm",
@@ -26418,8 +26453,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -26430,18 +26465,23 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_list_next.py",
         "hr/tests/test_menu_access.py",
+        "hr/tests/test_one_path.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_review_five.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roles.py"
       ]
     },
@@ -26765,7 +26805,7 @@
           "why": ""
         }
       },
-      "note": "Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move.",
+      "note": "Where a person works is a dated placement, not a column: the Placement tab saves it through hr.services.move. The form saves through hr.services.add_employee and change_employee; a last day is hr.services.leave_company.",
       "forms": [
         {
           "form": "EmployeeForm",
@@ -26788,8 +26828,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -26798,7 +26838,9 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_restore.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
@@ -26806,6 +26848,7 @@
         "hr/tests/test_employees.py",
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_correction.py",
@@ -26813,12 +26856,14 @@
         "hr/tests/test_leave_type_privacy.py",
         "hr/tests/test_list_next.py",
         "hr/tests/test_menu_access.py",
+        "hr/tests/test_one_path.py",
         "hr/tests/test_own_record.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scope.py",
@@ -27093,6 +27138,7 @@
         "core/tests_workspaces.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_leave.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py"
       ]
@@ -27470,7 +27516,7 @@
           "why": ""
         }
       },
-      "note": "One approval step: Edit also approves, rejects and cancels; nobody decides their own request.",
+      "note": "One approval step: Edit also approves, rejects and cancels; nobody decides their own request. Filed and changed through hr.services.file_leave and change_leave.",
       "forms": [
         {
           "form": "LeaveRequestForm",
@@ -27488,8 +27534,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -27501,6 +27547,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
         "hr/tests/test_after_create.py",
         "hr/tests/test_attendance.py",
@@ -27519,6 +27566,7 @@
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roles.py"
       ]
     },
@@ -27842,11 +27890,13 @@
         "hr/tests/test_leave_types_linked.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
+        "hr/tests/test_one_path.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roles.py"
       ]
     },
@@ -28215,6 +28265,7 @@
         "hr/tests/test_org_tree.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_realm.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_scope.py"
       ]
     },
@@ -28500,8 +28551,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -28509,15 +28560,19 @@
         "left_out": false
       },
       "tests": [
+        "core/tests_data_access.py",
         "farm/tests/test_systems.py",
         "hr/tests/helpers_people.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_employees.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
+        "hr/tests/test_one_path.py",
         "hr/tests/test_own_record.py",
         "hr/tests/test_realm.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_scope.py",
         "hr/tests/test_services.py"
       ]
@@ -29207,7 +29262,7 @@
           "why": ""
         }
       },
-      "note": "A cell is planned on its own dialog or in a batch (hr.services.plan_shifts): all cells or none.",
+      "note": "A cell is planned on its own dialog (hr.services.plan_day) or in a batch (hr.services.plan_shifts): all cells or none, by the same rules.",
       "forms": [
         {
           "form": "ShiftAssignmentForm",
@@ -29224,8 +29279,8 @@
       "delete_kind": "soft delete through the delete plan",
       "soft_delete": true,
       "restore": {
-        "status": "admin",
-        "why": "the Restore action in the admin (platform admin)"
+        "status": "none",
+        "why": "not restored in the admin: hr.services is its one writer, so a voided or removed one is entered again on its page, where the rules run"
       },
       "viewer": {
         "section": "People",
@@ -29236,22 +29291,28 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_restore.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
+        "hr/tests/test_one_path.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_review_five.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_team_today.py",
@@ -29628,23 +29689,28 @@
         "core/test_world.py",
         "core/tests_private_log.py",
         "core/tests_workspaces.py",
+        "farm/tests/test_restore.py",
         "hr/tests/test_attendance.py",
         "hr/tests/test_boundary.py",
         "hr/tests/test_crew.py",
         "hr/tests/test_employment_bounds.py",
         "hr/tests/test_forgotten.py",
+        "hr/tests/test_governing.py",
         "hr/tests/test_hardening.py",
         "hr/tests/test_leave.py",
         "hr/tests/test_leave_impact.py",
         "hr/tests/test_manager_rights.py",
         "hr/tests/test_menu_access.py",
         "hr/tests/test_on_shift.py",
+        "hr/tests/test_one_path.py",
         "hr/tests/test_overview_chart.py",
         "hr/tests/test_preset_restore.py",
         "hr/tests/test_production_permissions.py",
         "hr/tests/test_production_team.py",
         "hr/tests/test_realm_reads.py",
         "hr/tests/test_review.py",
+        "hr/tests/test_review_five.py",
+        "hr/tests/test_review_two.py",
         "hr/tests/test_roles.py",
         "hr/tests/test_roster.py",
         "hr/tests/test_scheduling_settings.py",
@@ -38794,6 +38860,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_panel_next.py",
         "core/tests_sealing.py",
         "core/tests_workspaces.py",
@@ -42192,6 +42259,7 @@
       },
       "tests": [
         "core/test_world.py",
+        "core/tests_data_access.py",
         "core/tests_workspaces.py",
         "sensors/tests/test_contract.py",
         "sensors/tests/test_operations.py",

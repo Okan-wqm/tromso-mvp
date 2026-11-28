@@ -1,15 +1,13 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from core import navigation
 from core.crud import CodedFormMixin, TabbedForm, tab_fields
 from core.widgets import DayInput
 
-from .. import leave, read, scope, services
+from .. import scope, services
 from ..models import Employee, LeaveRequest, LeaveType
-from ..models.leave import LeaveStatus
 
 TYPE_TABS = [('details', _('Details'), ['name', 'code', 'annual_days', 'needs_approval', 'status'])]
 REQUEST_TABS = [('request', _('Request'), ['employee', 'leave_type', 'first_day', 'last_day', 'reason'])]
@@ -37,8 +35,11 @@ class LeaveTypeForm(CodedFormMixin, TabbedForm):
 class LeaveRequestForm(TabbedForm):
     """A request for leave: for oneself, or by a lead for a person of their team. It is filed pending (or granted at once
     for a type that needs no approval) and decided by someone else (hr.services.decide_leave), so the status and the decision
-    are not here. The reason is the person's own words: it is shown to them and to the holders of Everyone only, and the form
-    drops it for anyone else. A request can be changed while it is pending; the person and the type are chosen once."""
+    are not here. The reason is the person's own words: the form shows it to them and to the holders of Everyone only
+    (hr.scope.sees_reason). A request can be changed while it is pending; the person is chosen once. The form reads what
+    was typed and says the days out of order on their field; what a request must keep (inside the employment, a day
+    charged, the yearly allowance, pending to be changed, a reason only its person writes) is hr.services.file_leave's
+    and change_leave's, the one write path the tab hands its save to."""
 
     tabs = REQUEST_TABS
     fixed_after_creation = ('employee',)
@@ -68,7 +69,7 @@ class LeaveRequestForm(TabbedForm):
         own = Employee.objects.filter(user=user).first() if user is not None else None
         if self.instance._state.adding and own is not None and not self.is_bound:
             self.initial.setdefault('employee', own.pk)
-        self.fields['leave_type'].queryset = LeaveType.objects.filter(status='active')
+        self.fields['leave_type'].queryset = LeaveType.objects.filter(status=LeaveType.Status.ACTIVE)
         if not self.fields['leave_type'].queryset.exists():
             # An empty list with no word of why was a dead end (flow fault B-03): say what is missing and where it is.
             # Where: by the menu's own names (core.navigation.trail, as the correction window's refusal says its page,
@@ -78,40 +79,16 @@ class LeaveRequestForm(TabbedForm):
                 '%(where)s › %(types)s, by a person whose role may.') % {
                 'where': navigation.trail('hr.view_schedulingsettings', _('Scheduling settings')),
                 'types': _('Leave types')}
-        employee = own if self.instance._state.adding else self.instance.employee
-        if not self.instance._state.adding and employee.user_id != getattr(user, 'pk', None) \
-                and not user.has_perm(scope.ALL):
+        if not self.instance._state.adding and not scope.sees_reason(user, self.instance.employee):
             del self.fields['reason']          # the person's own words: not for a lead
 
     def clean(self):
         cleaned = super().clean()
-        if self.errors:
-            return cleaned
-        adding = self.instance._state.adding
-        if not adding and self.instance.status != LeaveStatus.PENDING:
-            raise ValidationError(_('Only a pending request can be changed.'))
-        employee = cleaned.get('employee') or self.instance.employee
-        first, last, kind = cleaned['first_day'], cleaned['last_day'], cleaned['leave_type']
-        if last < first:
-            self.add_error('last_day', _('The last day cannot be before the first.'))
-            return cleaned
-        services.check_employed(employee, first, last)
-        if adding and 'reason' in self.fields and employee.user_id != getattr(self.user, 'pk', None):
-            cleaned['reason'] = ''
-            self.instance.reason = ''
-        site = read.site_on(employee, first)
-        charged = leave.charged_by_year(first, last, site)
-        if not charged:
-            self.add_error('last_day', _('These days are all weekends or holidays: nothing would be charged.'))
-            return cleaned
-        if kind.annual_days is not None:
-            for year, days in charged.items():
-                used = leave.used(employee, kind, year, site, exclude=None if adding else self.instance)
-                if used + days > kind.annual_days:
-                    self.add_error('leave_type', _('This is %(days)s days of %(kind)s in %(year)s and %(left)s are left.')
-                                   % {'days': days, 'kind': kind.name, 'year': year, 'left': kind.annual_days - used})
-                    break
-        if adding and not kind.needs_approval:
-            self.instance.status = LeaveStatus.APPROVED
-            self.instance.decided_at = timezone.now()
+        if cleaned.get('first_day') is not None and cleaned.get('last_day') is not None:
+            # The days in order, on their field before the table's check answers in its place (the service again).
+            try:
+                services.check_days(cleaned['first_day'], cleaned['last_day'])
+            except ValidationError as error:
+                for field, messages in error.message_dict.items():
+                    self.add_error(field, messages)
         return cleaned

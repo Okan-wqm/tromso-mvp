@@ -1106,6 +1106,14 @@ msgid "%(kind)s form sections"
 msgstr "Seksjoner i skjemaet: %(kind)s"
 
 #, python-format
+msgid ""
+"%(kind)s “%(record)s” is written on its own page only, by the rules of that page: it is not "
+"restored here; enter it again there."
+msgstr ""
+"%(kind)s «%(record)s» skrives bare på sin egen side, etter reglene for den siden: den "
+"gjenopprettes ikke her; registrer den på nytt der."
+
+#, python-format
 msgid "%(label)s %(value)s, %(status)s; limits: %(limits)s"
 msgstr "%(label)s %(value)s, %(status)s; grenser: %(limits)s"
 
@@ -4398,6 +4406,10 @@ msgstr ""
 "Høyst %(minutes)s minutter. Mens den slumrer, varsles ingen om denne alarmen, og den eskaleres "
 "ikke; den utløses, lagres og avsluttes fortsatt."
 
+#, python-format
+msgid "At most %(most)s days can be planned at once: select fewer and repeat."
+msgstr "Høyst %(most)s dager kan planlegges om gangen: velg færre og gjenta."
+
 msgid "At most 720 hours (30 days)."
 msgstr "Høyst 720 timer (30 dager)."
 
@@ -6176,6 +6188,9 @@ msgid ""
 "Days of cover: what is on hand at the site divided by the kilos fed a day there over the last 7 "
 "days."
 msgstr "Dager dekning: beholdningen på lokaliteten delt på kiloene fôret der per dag de siste 7 dagene."
+
+msgid "Days planned in one go on the shift schedule"
+msgstr "Dager planlagt på én gang i vaktplanen"
 
 msgid "Days that are not working days, for every site or for one."
 msgstr "Dager som ikke er arbeidsdager, for alle lokaliteter eller for én."
@@ -8741,13 +8756,24 @@ msgstr ""
 
 msgid ""
 "How many days back a daily record (a stock operation, a feeding, a water sample, a movement of "
-"the store, a plan, a treatment) may be dated, and how old a record may be voided. Older records "
-"stay as they are. 1 to 3650; 31 until you set another."
+"the store, a plan, a treatment) may be dated, how old a record may be voided, and how long after "
+"its last day an approved leave may still be shortened or cancelled. Older records stay as they "
+"are. 1 to 3650; 31 until you set another."
 msgstr ""
 "Hvor mange dager tilbake en daglig registrering (en beholdningsoperasjon, en fôring, en "
-"vannprøve, en lagerbevegelse, en plan, en behandling) kan dateres, og hvor gammel en registrering"
-" kan være når den annulleres. Eldre registreringer blir stående som de er. 1 til 3650; 31 til "
-"dere setter noe annet."
+"vannprøve, en lagerbevegelse, en plan, en behandling) kan dateres, hvor gammel en registrering "
+"kan være når den annulleres, og hvor lenge etter siste dag en godkjent permisjon fortsatt kan "
+"forkortes eller kanselleres. Eldre registreringer blir stående som de er. 1 til 3650; 31 til dere"
+" setter noe annet."
+
+msgid ""
+"How many days of the shift schedule may be planned in one go (a paint over the week’s grid: "
+"people times days). More than this is refused, and the person paints fewer and repeats. 1 to "
+"5000; 500 until you set another."
+msgstr ""
+"Hvor mange dager i vaktplanen som kan planlegges på én gang (en maling over ukens rutenett: "
+"personer ganger dager). Flere enn dette avvises, og personen maler færre og gjentar. 1 til 5000; "
+"500 til dere setter noe annet."
 
 msgid "How many heartbeats a value stays fresh without a new one; then the place shows no recent data."
 msgstr "Hvor mange hjerteslag en verdi forblir fersk uten en ny; deretter viser stedet ingen nye data."
@@ -9097,6 +9123,15 @@ msgid "It carried %(count)d harvest: keep “%(category)s” ticked."
 msgid_plural "It carried %(count)d harvests: keep “%(category)s” ticked."
 msgstr[0] "Den fraktet %(count)d høsting: la «%(category)s» stå avkrysset."
 msgstr[1] "Den fraktet %(count)d høstinger: la «%(category)s» stå avkrysset."
+
+msgid ""
+"It disappears from every list but is not erased: the record stays in the database and the "
+"activity log keeps its history. It is not restored from the admin: one deleted by mistake is "
+"entered again on its page."
+msgstr ""
+"Den forsvinner fra alle lister, men slettes ikke: registreringen blir stående i databasen, og "
+"aktivitetsloggen beholder historikken. Den gjenopprettes ikke fra administrasjonen: en som er "
+"slettet ved en feil, registreres på nytt på sin egen side."
 
 msgid ""
 "It disappears from every list but is not erased: the record stays in the database, the activity "
@@ -17655,6 +17690,11 @@ msgstr ""
 msgid "This %(name)s cannot be deleted yet."
 msgstr "Denne posten (%(name)s) kan ikke slettes ennå."
 
+#. Translators: %(name)s is the kind of record in lower case (e.g. site).
+#, python-format
+msgid "This %(name)s was changed while you were looking at it: check it and delete it again."
+msgstr "Denne %(name)s ble endret mens du så på den: kontroller den og slett den på nytt."
+
 msgid "This account already belongs to another employee."
 msgstr "Denne kontoen tilhører allerede en annen ansatt."
 
@@ -17684,6 +17724,10 @@ msgstr "Denne gruppen er annullert."
 
 msgid "This day is already a holiday for this site."
 msgstr "Denne dagen er allerede en fridag for denne lokaliteten."
+
+#, python-format
+msgid "This delete was not confirmed: open the delete of this %(name)s again and confirm it there."
+msgstr "Slettingen ble ikke bekreftet: åpne slettingen av denne %(name)s igjen og bekreft den der."
 
 msgid "This department already has a department with this name."
 msgstr "Denne avdelingen har allerede en avdeling med dette navnet."
@@ -17750,6 +17794,9 @@ msgstr "Dette oppsettet er for stort til å lagres."
 #, python-format
 msgid "This leave ended on %(day)s, more than %(days)s days ago: it can no longer be corrected."
 msgstr "Denne permisjonen sluttet %(day)s, for mer enn %(days)s dager siden: den kan ikke rettes lenger."
+
+msgid "This leave type is no longer offered."
+msgstr "Denne permisjonstypen tilbys ikke lenger."
 
 #, python-format
 msgid "This liner is %(low)s to %(high)s mm thick."

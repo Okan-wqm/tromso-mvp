@@ -66,7 +66,7 @@ class SiteForm(CodedFormMixin, TabbedForm):
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': _('e.g. Main Production Site')}),
             'code': forms.TextInput(attrs={'placeholder': _('e.g. MPS-001'), 'data-uppercase': ''}),
-            'lokalitetsnummer': forms.NumberInput(attrs={'placeholder': _('e.g. 12345'), 'min': 10000, 'max': 99999}),
+            'lokalitetsnummer': forms.NumberInput(attrs={'placeholder': _('e.g. 12345')}),
             'organisation_number': forms.TextInput(
                 attrs={'placeholder': _('9-digit Norwegian organisation number'), 'inputmode': 'numeric'}),
             'reports_from': DayInput(),

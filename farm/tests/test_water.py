@@ -31,6 +31,7 @@ from ..water.evaluate import Limits, Status, judge, worst
 from .helpers import WINDOW_WAY_OUT, correction_window, make_species, point_of, role, stock_fish
 from .test_stock import make_unit
 from farm import withdrawal_gate
+from core.testing import delete_confirmed
 
 WATER_KEEPER = ('view_watermeasurement', 'add_watermeasurement', 'delete_watermeasurement', 'view_tank',
                 'delete_tank', 'view_system', 'delete_system', 'view_samplingpoint', 'view_species', 'delete_species', 'view_waterlimit',
@@ -621,7 +622,7 @@ class LimitTests(WaterTestCase):
         limit.refresh_from_db()
         self.assertEqual((limit.warning_low, limit.warning_high, limit.water_type, limit.version),
                          (None, D('110.0000'), 'saltwater', 2))
-        self.client.post(reverse('farm:waterlimit_delete', args=[limit.pk]))
+        delete_confirmed(self.client, reverse('farm:waterlimit_delete', args=[limit.pk]))
         self.assertTrue(WaterLimit.all_objects.get().is_deleted)
         self.assertEqual(list(AuditLog.objects.order_by('created_at').values_list('action', 'entity_type')),
                          [('create', 'water limit'), ('update', 'water limit'), ('delete', 'water limit')])
@@ -718,7 +719,7 @@ class LimitTests(WaterTestCase):
         page = self.client.get(reverse('farm:species_delete', args=[self.salmon.pk]))
         self.assertContains(page, 'Water limits deleted with it')
         self.assertContains(page, str(limit))
-        self.client.post(reverse('farm:species_delete', args=[self.salmon.pk]))
+        delete_confirmed(self.client, reverse('farm:species_delete', args=[self.salmon.pk]))
         self.assertTrue(WaterLimit.all_objects.get().is_deleted)
         self.assertIn(('delete', 'water limit'), list(AuditLog.objects.values_list('action', 'entity_type')))
 
@@ -735,7 +736,7 @@ class DeletePlanTests(WaterTestCase):
         page = self.client.get(reverse('farm:tank_delete', args=[self.t2.pk]))
         self.assertContains(page, 'Sampling points kept with it <span class="count">4</span>', html=True)
         self.assertContains(page, 'Water samples kept with it <span class="count">2</span>', html=True)
-        self.client.post(reverse('farm:tank_delete', args=[self.t2.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[self.t2.pk]))
         self.assertEqual(WaterMeasurement.objects.filter(point__unit=self.t2).count(), 0)
         self.assertEqual(SamplingPoint.objects.filter(unit=self.t2).count(), 0)
         self.assertEqual(WaterMeasurement.all_objects.filter(point__unit=self.t2, is_deleted=False).count(), 2)

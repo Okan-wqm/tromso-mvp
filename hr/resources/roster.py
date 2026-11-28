@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
-from core import audit, listprops, query
+from core import listprops, query
 from core.crud import Mount, Resource
 from core.dates import read_day, weekday_day
 from farm.stock.dates import site_today
@@ -14,8 +14,9 @@ from ..models import Employee, ShiftAssignment
 class ShiftAssignmentResource(services.PersonFirst, Resource):
     """The Shift schedule: a week of the team as a table, one cell per person and day. A cell opens the plan of that
     person and day (a dialog; the list's create route takes `?employee=&day=` for an empty one). The rows are the people
-    the viewer reaches (`scoped`, and per day for the week read, hr.scope.visible_days); the rules run on every save
-    (hr.rules, through hr.services.evaluate)."""
+    the viewer reaches (`scoped`, and per day for the week read, hr.scope.visible_days). Every write is hr.services'
+    (plan_day, and plan_shifts for a cleared cell, as the batch plan): the rules run on every save (hr.rules, through
+    hr.services.evaluate); the tab reads the form, hands it over and tells the warnings."""
 
     model = ShiftAssignment
     form_class = ShiftAssignmentForm
@@ -25,6 +26,7 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
     list_template = 'hr/roster.html'
     icon = 'calendar'
     private_fields = ('note',)
+    service_writes = True
 
     @classmethod
     def queryset(cls):
@@ -80,23 +82,29 @@ class ShiftAssignmentResource(services.PersonFirst, Resource):
     @classmethod
     def shifts(cls):
         from ..models import Shift
-        return Shift.objects.filter(status='active')
+        return Shift.objects.filter(status=Shift.Status.ACTIVE)
 
     @classmethod
-    def snapshot(cls, assignment):
-        """The cell, and the warnings the plan was saved with (their codes, as the rules name them): a lead who goes on past
-        a warning leaves it in the log."""
-        values = super().snapshot(assignment)
-        warnings = getattr(assignment, 'warnings', [])
-        if warnings:
-            values['Warnings'] = [audit.message(rules.TEXT[code]) for code in sorted({w.code for w in warnings})]
-        return values
-
-    @classmethod
-    def after_save(cls, request, assignment, created):
-        services.lock_employed(assignment.employee, assignment.day)       # the employment rule under the person's lock
-        for finding in getattr(assignment, 'warnings', []):
+    def plan(cls, request, employee, day, values, expected):
+        """The cell through hr.services.plan_day, as the dialog knows it (`expected`: no plan yet, or the one edited); the
+        warnings it was saved with are told (and are in its log entry)."""
+        row, warnings = services.plan_day(request.user, employee, day, values['shift'], values['note'], expected)
+        for finding in warnings:
             messages.warning(request, rules.text(finding))
+        return row
+
+    @classmethod
+    def create_record(cls, request, form):
+        values = form.cleaned_data
+        return cls.plan(request, values['employee'], values['day'], values, None)
+
+    @classmethod
+    def change_record(cls, request, form, current):
+        return cls.plan(request, current.employee, current.day, form.cleaned_data, current)
+
+    @classmethod
+    def delete_record(cls, request, record, seen):
+        services.clear_day(request.user, record, seen)
 
     # --- the new look (core.crud.ListView: list_template_next, list_next_props), the words of hr/roster.html ----------
     list_template_next = 'hr/roster_next.html'

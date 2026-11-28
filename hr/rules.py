@@ -59,8 +59,14 @@ class Finding:
 
 
 def monday(day):
-    """The Monday of the ISO week of `day`."""
+    """The Monday of the ISO week of `day`: the one start of HR's week (a total, a rule, a page)."""
     return day - timedelta(days=day.weekday())
+
+
+def week_minutes(planned, week):
+    """The planned minutes of the week starting on the Monday `week`: the one weekly total, of the rule and of the
+    roster's row."""
+    return sum(item.net_minutes for item in planned if monday(item.day) == week)
 
 
 def findings(planned, leave_days, holidays, settings, weeks, only=None):
@@ -92,7 +98,7 @@ def findings(planned, leave_days, holidays, settings, weeks, only=None):
         if rest < settings.min_rest_minutes:
             found.append(Finding(REST_SHORT, settings.rest_rule, after.day, rest))
     for week in sorted(wanted):
-        total = sum(item.net_minutes for item in ordered if monday(item.day) == week)
+        total = week_minutes(ordered, week)
         if total > settings.standard_week_minutes:
             found.append(Finding(WEEK_HOURS, WARN, week, total))
     found.extend(_runs(sorted(by_day), settings.max_consecutive_days, wanted))

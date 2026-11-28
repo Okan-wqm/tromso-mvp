@@ -23,6 +23,7 @@ from . import access, audit, navigation
 from .crud import Resource
 from .audit import message
 from .models import AuditedModel, AuditLog
+from core.testing import delete_confirmed
 
 
 class AuthFlowTests(TestCase):
@@ -279,7 +280,7 @@ class RoleTests(AdminTestCase):
 
         # Delete
         self.assertContains(self.client.get(reverse('core:group_delete', args=[role.pk])), 'Delete “Site editor”?')
-        self.client.post(reverse('core:group_delete', args=[role.pk]))
+        delete_confirmed(self.client, reverse('core:group_delete', args=[role.pk]))
         self.assertFalse(Group.objects.exists())
 
     def test_create_edit_and_delete_imply_read(self):
@@ -328,7 +329,7 @@ class RoleTests(AdminTestCase):
         self.client.post(reverse('core:group_edit', args=[role.pk]), {
             'name': 'Feeder', 'permissions': perms('farm.add_site', 'core.view_auditlog'),
         })
-        self.client.post(reverse('core:group_delete', args=[role.pk]))
+        delete_confirmed(self.client, reverse('core:group_delete', args=[role.pk]))
         log = list(AuditLog.objects.order_by('created_at').values_list('action', 'entity_type', 'entity_id', 'changes'))
         self.assertEqual(log, [
             ('create', 'role', str(role.pk), {'Role name': [None, 'Feeder'], 'Permissions': [None, 'Sites: read']}),
@@ -472,7 +473,7 @@ class AccessTests(AdminTestCase):
         self.assertTrue(Site.objects.filter(code='SB').exists())
         self.assertEqual(self.client.post(reverse('farm:site_edit', args=[site.pk]),
                                           site_data(name='Renamed', code='SA', version='1')).status_code, 403)
-        self.assertEqual(self.client.post(reverse('farm:site_delete', args=[site.pk])).status_code, 403)
+        self.assertEqual(delete_confirmed(self.client, reverse('farm:site_delete', args=[site.pk])).status_code, 403)
         self.assertEqual(self.client.get(reverse('core:activity_log')).status_code, 403)
         site.refresh_from_db()
         self.assertEqual((site.name, site.is_deleted), ('Site A', False))

@@ -24,6 +24,7 @@ from .language import save_account_language
 from .models import AuditLog, Profile
 from .tests import perms, user_data
 from farm import withdrawal_gate
+from core.testing import delete_confirmed
 
 COOKIE = settings.LANGUAGE_COOKIE_NAME
 LANGUAGES = [code for code, _ in settings.LANGUAGES]
@@ -444,7 +445,7 @@ class ActivityLogLanguageTests(TestCase):
         ProductionDepartment.objects.create(name='Hall A', code='HA', site=site)
         self.user.groups.add(role('Production department manager', 'view_productiondepartment'))
         self.in_language('tr')
-        self.client.post(reverse('farm:site_delete', args=[site.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[site.pk]))
         rows = {row.entity_type: row for row in AuditLog.objects.all()}
         self.assertEqual(set(rows), {'site', 'production department'})
         self.assertEqual(rows['production department'].action, 'delete')     # deleted with its site (F-212)

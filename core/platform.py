@@ -4,6 +4,7 @@ read, so a rule that depends on one cannot read it its own way.
 - `correction_window_days()`: how far back a daily record may be dated and how old a record may be voided (farm/stock/
   dates.py applies it; every message that names the days reads it here), and `window_way_out()`, the sentence every
   refusal by the window ends with: whose setting it is and where it is changed;
+- `plan_batch_cells()`: how many days of the shift schedule one paint may plan (hr.services.plan_shifts);
 - `second_approval_required(kind)`: whether an acknowledgement of that kind waits for a second person (the kinds are
   APPROVALS); the hook of the withdrawal acknowledgement calls it with 'withdrawal';
 
@@ -48,6 +49,11 @@ def forget():
 def correction_window_days():
     """How many days back a daily record may be dated, and how old a record may be voided."""
     return current().correction_window_days
+
+
+def plan_batch_cells():
+    """How many days of the shift schedule may be planned in one go (one request's bound)."""
+    return current().plan_batch_cells
 
 
 def unknown_withdrawal_days():

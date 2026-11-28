@@ -13,6 +13,8 @@ from django.template import Context, Template
 from django.template.loader import render_to_string
 from django.test import SimpleTestCase
 
+from .testing import is_test_module
+
 HOSTILE = '<img src=x onerror=alert(1)>'
 ESCAPED = '&lt;img src=x onerror=alert(1)&gt;'
 
@@ -82,7 +84,7 @@ class TemplateEscapingTests(SimpleTestCase):
     def test_only_the_known_builders_mark_markup_safe(self):
         found = set()
         for name, path in _sources('*.py'):
-            if '/tests' in f'/{name}' or name.split('/')[-1].startswith('test'):
+            if is_test_module(name):
                 continue
             if SAFE_MARKERS.search(path.read_text(encoding='utf-8')):
                 found.add(name)

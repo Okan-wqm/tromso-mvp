@@ -20,7 +20,7 @@ from django.utils import translation
 from core import access, database, navigation
 from core.dates import company_today
 from core.models import AuditLog, Profile
-from core.testing import FrozenClock
+from core.testing import delete_confirmed, FrozenClock
 
 from ..feeding import read, services, views as feeding_views
 from ..feeding.fold import Feeding, Point, PointKind, walk
@@ -866,18 +866,18 @@ class DeletePlanTests(FeedingTestCase):
         feeding = self.record(feeder=feeder)
         self.assertContains(self.client.get(reverse('farm:feed_delete', args=[self.feed.pk])),
                             '1 feeding record still belongs to it.')
-        self.client.post(reverse('farm:feed_delete', args=[self.feed.pk]))
-        self.client.post(reverse('farm:equipment_delete', args=[feeder.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[self.feed.pk]))
+        delete_confirmed(self.client, reverse('farm:equipment_delete', args=[feeder.pk]))
         self.assertTrue(Feed.objects.filter(pk=self.feed.pk).exists())
         self.assertTrue(Equipment.objects.filter(pk=feeder.pk).exists())
         # Emptied, the unit can be deleted, as with its stock history (owner decision Q-F3); its feedings stay.
         self.mortality(self.batch, 10000, days_ago=0)
-        self.client.post(reverse('farm:tank_delete', args=[self.t1.pk]))
+        delete_confirmed(self.client, reverse('farm:tank_delete', args=[self.t1.pk]))
         self.assertTrue(Tank.all_objects.get(pk=self.t1.pk).is_deleted)
         self.assertTrue(FeedingRecord.objects.filter(pk=feeding.pk).exists())
         # A voided feeding does not hold its feed back.
         services.void_feeding(self.user, feeding, 'Never fed')
-        self.client.post(reverse('farm:feed_delete', args=[self.feed.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[self.feed.pk]))
         self.assertTrue(Feed.all_objects.get(pk=self.feed.pk).is_deleted)
 
 

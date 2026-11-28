@@ -21,7 +21,11 @@ needs the same way:
   record the first one created;
 - a second place: a tab's `mounts` serve the same Resource, views and records again under another address and
   panel (HR's people pages under Production › Team); the request carries the mount it came by (`mount_of`), the
-  tab's `scoped` narrows the rows to it, and every link and redirect stays in it.
+  tab's `scoped` narrows the rows to it, and every link and redirect stays in it;
+- one writer: a tab whose records its area's service writes (`service_writes`) hands every write to that service, which
+  checks its own rules, locks in its own order and logs; crud keeps the form, the verb, the scope, the version and the
+  pages (core/tests_data_access.py, rule S, holds a record to one writer; a service tab with something crud would
+  have saved beside the record is refused when it is declared).
 """
 import copy
 import uuid
@@ -36,13 +40,14 @@ from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied, Validatio
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import F, Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import path, reverse
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 
-from . import audit, formpanels, formprops, listprops, navigation, softdelete
+from . import audit, formpanels, formpayload, formprops, listprops, navigation, softdelete
+from .confirmed import ChangedMeanwhile, NotConfirmed, as_confirmed, changed_meanwhile, unchanged
 from .models import AuditedModel, AuditLog, EntryKey, violated_constraint
 from .softdelete import plan_delete
 from .ui import is_next
@@ -126,7 +131,43 @@ class Fieldset:
     help: str = ''
 
 
-class TabbedForm(forms.ModelForm):
+def bounded_inputs(form):
+    """Gives each number input of a model form the bounds its model field holds (its MinValueValidator and
+    MaxValueValidator: the same figures as the database's check), so the browser says them as the save does. Only the
+    fields the form takes from the model (a field the form declares itself says its own bounds) and only a number
+    input (a localised decimal typed as text has none). Applied once, by BoundedModelForm."""
+    from django.core.exceptions import FieldDoesNotExist
+    from django.core.validators import MaxValueValidator, MinValueValidator
+    from django.db import connection
+    declared = type(form).declared_fields
+    for name, field in form.fields.items():
+        if name in declared or getattr(field.widget, 'input_type', None) != 'number':
+            continue
+        try:
+            column = form._meta.model._meta.get_field(name)
+        except FieldDoesNotExist:
+            continue
+        # the column type's own range (an integer's 2147483647) is no bound the model sets: not said
+        storable = connection.ops.integer_field_ranges.get(column.get_internal_type(), ())
+        for validator in column.validators:
+            if not isinstance(validator, (MinValueValidator, MaxValueValidator)) or callable(validator.limit_value) \
+                    or validator.limit_value in storable:
+                continue                        # another rule, the type's range, or a bound worked out at each check
+            # a whole number as it is, a decimal as its text (an attribute, and a form payload, carry no Decimal)
+            limit = validator.limit_value if isinstance(validator.limit_value, int) else str(validator.limit_value)
+            field.widget.attrs['min' if isinstance(validator, MinValueValidator) else 'max'] = limit
+
+
+class BoundedModelForm(forms.ModelForm):
+    """The model form every form of the project derives from (core/tests_forms_bounded.py holds it): its number
+    inputs say the bounds their model fields hold (`bounded_inputs`), so no form sets them by hand."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        bounded_inputs(self)
+
+
+class TabbedForm(BoundedModelForm):
     """A model form whose fields are split over inner tabs: `tabs = [(key, label, [fields])]`, where a
     tab can group some of its fields under a heading (Fieldset) and say a word about itself (`tab_help`).
     `fixed_after_creation` names the fields chosen once: they are shown but cannot be changed on an
@@ -292,6 +333,16 @@ def tab_fields(tabs):
             for name in (item.names if isinstance(item, Fieldset) else [item])]
 
 
+def refusal_on_form(form, error):
+    """Puts a ValidationError raised at the save (a service's refusal, a rule under a lock) on the form: each message on
+    its field when the error names fields the form has, else above the form."""
+    if hasattr(error, 'error_dict') and set(error.error_dict) <= {*form.fields, NON_FIELD_ERRORS}:
+        form.add_error(None, error)
+        return
+    form.add_error(None, error.message_dict.get(NON_FIELD_ERRORS, error.messages) if hasattr(error, 'error_dict')
+                   else error.messages)
+
+
 def constraint_error(form, error):
     """Puts a database constraint's refusal (`error`, an IntegrityError) on the form, on the constraint's last field
     the form shows, with its message. False when the error names no constraint of the form's model."""
@@ -440,7 +491,28 @@ class Resource:
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
+        if cls.service_writes:
+            dropped = cls.left_to_crud()
+            if dropped:
+                raise TypeError(f'{cls.__name__} has service_writes, so crud saves nothing beside the record, and it has '
+                                f'{", ".join(dropped)}: the service writes those too, or the tab is not a service tab.')
         Resource.registry.append(cls)
+
+    @classmethod
+    def left_to_crud(cls):
+        """What crud would save or run beside the record and does not for a tab with `service_writes`: refused when
+        the tab is declared, so nothing is dropped without a word."""
+        found = []
+        if cls.form_class is not None and cls.model is not None:
+            # the fields the form really has (`fields = '__all__'` and `exclude` too), not what its Meta spells
+            found += [f'the many-to-many field {field.name} on its form (form.save_m2m)'
+                      for field in cls.model._meta.many_to_many if field.name in cls.form_class.base_fields]
+        if cls.row_lists:
+            found.append('row lists')
+        for hook in ('after_save', 'change_severity'):
+            if getattr(cls, hook).__func__ is not getattr(Resource, hook).__func__:
+                found.append(f'its own {hook}')
+        return found
 
     model = None
     form_class = None
@@ -586,8 +658,36 @@ class Resource:
     @classmethod
     def after_save(cls, request, obj, created):
         """Runs inside the save transaction, after the audit row; e.g. invite a new user. A ValidationError raised here
-        rolls the save back and is shown on the form (a rule checked under a lock the form could not hold: HR's
-        employment bound)."""
+        rolls the save back and is shown on the form (a rule checked under a lock the form could not hold). Never run
+        for a tab whose service writes its records (`service_writes`): the service does what follows its write."""
+
+    # One writer (the architecture audit of 26.11.2026, H-5): the records of a tab with `service_writes` are written by
+    # their area's service only, never by crud beside it. crud reads the form (the fields, their parsing and the model's
+    # own checks), the verb, the scope, the record's lock and its version, and then hands the write to these, which call
+    # the service: it checks its rules itself, locks in its own order and writes its own audit row. A ValidationError
+    # it raises is shown on the form, each message on its field when the field is there; a PermissionDenied is a 403.
+    # crud saves nothing beside the record for such a tab (no form.save_m2m, no row list, no change_severity, no
+    # after_save): a tab that has one of them is refused when it is declared (left_to_crud).
+    service_writes = False
+
+    @classmethod
+    def create_record(cls, request, form):
+        """The new record from the valid `form`, written by the service; returns it."""
+        raise NotImplementedError(f'{cls.__name__} has service_writes and offers Create: say which service writes it')
+
+    @classmethod
+    def change_record(cls, request, form, current):
+        """The edit `form` asks of `current` (the record as locked now, its version checked), written by the service;
+        returns the saved record."""
+        raise NotImplementedError(f'{cls.__name__} has service_writes and offers Edit: say which service writes it')
+
+    @classmethod
+    def delete_record(cls, request, record, seen):
+        """Deletes (voids) `record`, as the person reached it, through the service. `seen` is the version the
+        confirmation posted ('' when none): the service asks its own rules first (the record's, the reach of its day)
+        and then, last and under its own lock, whether the record is still the one confirmed
+        (core.confirmed.as_confirmed)."""
+        raise NotImplementedError(f'{cls.__name__} has service_writes and offers Delete: say which service deletes it')
 
     @classmethod
     def after_commit(cls, request, obj, created):
@@ -834,6 +934,13 @@ class CreateView(FormView):
             return done(request, self.url('detail', obj.pk))
         return done(request, self.url('list'))
 
+    def refused(self, form):
+        """The form again after a refusal at the save (the database, the service, a rule under a lock): 422, as an
+        edit's refusal answers; a form that is not valid is the page again as before."""
+        response = self.page(form)
+        response.status_code = 422
+        return response
+
     def post(self, request):
         r = self.resource
         if DRAFT in request.POST:    # TabbedForm.refresh_on: the form again with what was entered
@@ -847,15 +954,19 @@ class CreateView(FormView):
         if sent is None:
             try:
                 with transaction.atomic():
-                    obj = form.save(commit=False)
-                    for field in ('created_by', 'updated_by'):
-                        if hasattr(obj, field):
-                            setattr(obj, field, request.user)
-                    obj.save()
-                    form.note_sent(obj)
-                    form.save_m2m()
-                    audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
-                    r.after_save(request, obj, created=True)
+                    if r.service_writes:
+                        obj = r.create_record(request, form)
+                        form.note_sent(obj)
+                    else:
+                        obj = form.save(commit=False)
+                        for field in ('created_by', 'updated_by'):
+                            if hasattr(obj, field):
+                                setattr(obj, field, request.user)
+                        obj.save()
+                        form.note_sent(obj)
+                        form.save_m2m()
+                        audit.record_create(request.user, obj, r.recorded(obj), entity_type=r.entity_type())
+                        r.after_save(request, obj, created=True)
             except IntegrityError as error:
                 # The same form sent twice at once: the other request's insert held the key's unique index until it
                 # committed, so its record is there now.
@@ -868,14 +979,13 @@ class CreateView(FormView):
                     if not (constraint_error(form, error) or trigger_refusal(form, error)):
                         raise
                     form.instance._state.adding = True     # the page is the new-record form again
-                    return self.page(form)
+                    return self.refused(form)
             except ValidationError as error:
-                # Its key stands for a record of another kind (EntryKey.note), or a rule `after_save` checks under its lock
-                # refused it (HR's employment bound): nothing was written.
-                form.add_error(None, error.message_dict.get(NON_FIELD_ERRORS, error.messages)
-                               if hasattr(error, 'error_dict') else error.messages)
+                # Its key stands for a record of another kind (EntryKey.note), the service refused it, or a rule
+                # `after_save` checks under its lock refused it: nothing was written.
+                refusal_on_form(form, error)
                 form.instance._state.adding = True
-                return self.page(form)
+                return self.refused(form)
             else:
                 r.after_commit(request, obj, created=True)
                 # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
@@ -922,9 +1032,11 @@ class UpdateView(FormView):
 
                 def write():
                     current = self.locked_object(pk)
-                    if versioned and form.cleaned_data.get('version') != current.version \
-                            or getattr(read, 'version', None) != getattr(current, 'version', None):
+                    if versioned and not unchanged(form.cleaned_data.get('version'), current) \
+                            or not unchanged(getattr(read, 'version', None), current):
                         raise Crossed
+                    if r.service_writes:
+                        return r.change_record(request, form, current)
                     before = r.recorded(current)
                     obj = form.save(commit=False)
                     if versioned:
@@ -952,14 +1064,12 @@ class UpdateView(FormView):
         except Clashed:
             return self.page(form, self.get_object(pk))
         except Crossed:
-            # Translators: %(name)s is the kind of record in lower case (e.g. site).
-            messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                      'The form now shows their version; make your changes again.')
-                           % {'name': r.name})
+            messages.error(request, changed_meanwhile(r.name))
             return done(request, self.url('edit', pk))
         except ValidationError as error:
-            # The save asked something first (Resource.edited): the form again with the question, nothing saved.
-            form.add_error(None, error.messages)
+            # The save asked something first (Resource.edited), or the service refused it: the form again with the
+            # question or the reason, nothing saved.
+            refusal_on_form(form, error)
             response = self.page(form, self.get_object(pk), withdrawal_change=getattr(error, 'change', None),
                                  question_template=r.question_template)
             response.status_code = 422
@@ -997,10 +1107,43 @@ class DeleteView(ResourceView):
             return render_page(request, 'crud/confirm_delete_next.html', self.context(
                 object=obj, props=formprops.confirm_delete_props(request, obj, plan, name=self.resource.name,
                                                                  action=request.path, cancel=self.url('list'))))
-        return render_page(request, 'crud/confirm_delete.html', self.context(object=obj, plan=plan))
+        return render_page(request, 'crud/confirm_delete.html', self.context(
+            object=obj, plan=plan, outcome=formpayload.delete_outcome(obj, plan), version=getattr(obj, 'version', None)))
 
     def post(self, request, pk):
+        """The delete, refused in one order on every tab: the scope (a record the person does not reach is a 404), the
+        record's own rule (`Resource.allowed`, a 403), a service's own refusals (HR: the reach of the day, under its
+        lock), and last whether it is the record the confirmation showed (core.confirmed.as_confirmed, on the version
+        it posted: none is a 400, said; a record changed since is not deleted, said, back on the confirmation). A record
+        without a version (a hard-deleted one) has nothing to confirm and deletes."""
+        try:
+            return self.deleted(request, pk, request.POST.get('version', ''))
+        except NotConfirmed:
+            return HttpResponseBadRequest(_('This delete was not confirmed: open the delete of this %(name)s again and '
+                                            'confirm it there.') % {'name': self.resource.name})
+        except ChangedMeanwhile as error:
+            messages.error(request, ' '.join(error.messages))
+            return done(request, self.url('delete', pk))
+
+    def deleted(self, request, pk, seen):
         r = self.resource
+        if r.service_writes:
+            # The service locks in its own order (HR: the person before the record), asks its own rules and then the
+            # version under that lock (as_confirmed, last), and logs; a refusal is said.
+            try:
+                with transaction.atomic():
+                    obj = self.get_object(pk)
+                    if not r.allowed(request, obj, 'delete'):
+                        raise PermissionDenied
+                    r.delete_record(request, obj, seen)
+            except ChangedMeanwhile:
+                raise
+            except ValidationError as error:
+                messages.error(request, ' '.join(error.messages))
+                return done(request, self.url('list'))
+            # Translators: %(name)s is the kind of record, capitalised (e.g. Site); %(object)s is the record.
+            flash(request, _('%(name)s “%(object)s” deleted.'), r, obj)
+            return done(request, self.url('list'))
         with transaction.atomic():
             # What the delete takes along is locked before the record itself, the deepest first (core.softdelete,
             # LOCK ORDER), as a unit's save locks the unit before its department.
@@ -1010,6 +1153,7 @@ class DeleteView(ResourceView):
             obj = self.locked_object(pk)
             if not r.allowed(request, obj, 'delete'):
                 raise PermissionDenied
+            as_confirmed(obj, seen, r.name)
             if isinstance(obj, AuditedModel):
                 plan = plan_delete(obj)
                 if not plan.can_delete:
@@ -1064,12 +1208,8 @@ class RowListView(ResourceView):
             # travels with the list), its version moved on. Asked again under the lock whether the record has
             # the list: a report filed meanwhile has no answers to change any more.
             current = self.locked_object(pk)
-            versioned = isinstance(current, AuditedModel)
-            if versioned and request.POST.get('version') != str(current.version):
-                # Translators: %(name)s is the kind of record in lower case (e.g. site).
-                messages.error(request, _('Someone else changed this %(name)s while you were editing it. '
-                                          'The form now shows their version; make your changes again.')
-                               % {'name': r.name})
+            if not unchanged(request.POST.get('version'), current):
+                messages.error(request, changed_meanwhile(r.name))
                 return done(request, self.url('edit', pk), stay=True)
             if not rows.applies_to(current):
                 raise Http404
@@ -1086,7 +1226,7 @@ class RowListView(ResourceView):
                                                                           'withdrawal_change': getattr(error, 'change', None)})
                 response.status_code = 422
                 return response
-            if versioned:
+            if isinstance(current, AuditedModel):
                 current.version += 1
                 current.updated_by = request.user
                 current.save(update_fields=['version', 'updated_by', 'updated_at'])

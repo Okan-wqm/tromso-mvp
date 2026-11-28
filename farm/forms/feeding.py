@@ -7,6 +7,8 @@ from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.utils.translation import gettext_lazy as _
 
+from core.crud import BoundedModelForm
+
 from ..feeding import services
 from ..models import Equipment, Feed, FeedingRecord
 from ..models.feeding import FeedTarget, feeders_for
@@ -32,7 +34,7 @@ class FeedChoice(forms.ModelChoiceField):
         return feed_label(feed)
 
 
-class FeedingForm(Acknowledged, ServiceErrors, forms.ModelForm):
+class FeedingForm(Acknowledged, ServiceErrors, BoundedModelForm):
     """Feed given to the unit: the day (the farm's today), the feed (active feeds, those that suit the
     unit's fish first), the kilos to the gram, and optionally the meals, the time, the feeder (one of
     the unit's site) and notes."""

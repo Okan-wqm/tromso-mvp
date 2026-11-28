@@ -2,10 +2,10 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from core.crud import RowFormSet
+from core.crud import BoundedModelForm, RowFormSet
 
 
-class ContactForm(forms.ModelForm):
+class ContactForm(BoundedModelForm):
     """One row of a contact list (farm.models.contact.Contact); `contact_formset` gives it its model."""
 
     class Meta:

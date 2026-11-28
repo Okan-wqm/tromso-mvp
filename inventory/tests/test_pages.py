@@ -19,6 +19,7 @@ from ..models import (
     InventoryItem, InventoryLot, InventoryOperation, ReorderLevel, StorageLocation,
 )
 from .helpers import D, StoreTestCase, departure_data, location_data, receipt_data, receipt_row
+from core.testing import delete_confirmed
 
 MODAL = {'X-Modal': '1'}
 
@@ -247,7 +248,7 @@ class LocationTabTests(StoreTestCase):
         self.assertEqual([entry.action for entry in log], ['create', 'update'])
         self.assertEqual(log[1].changes['Feeder'], ['Feeder FD-1 (FD-1)', None])
         # Delete.
-        self.assertEqual(self.client.post(reverse('inventory:storagelocation_delete', args=[silo.pk]),
+        self.assertEqual(delete_confirmed(self.client, reverse('inventory:storagelocation_delete', args=[silo.pk]),
                                           headers=MODAL).status_code, 204)
         self.assertTrue(StorageLocation.all_objects.get(pk=silo.pk).is_deleted)
 
@@ -272,13 +273,13 @@ class LocationTabTests(StoreTestCase):
         self.receive('10')
         confirm = self.client.get(reverse('inventory:storagelocation_delete', args=[self.store.pk]))
         self.assertContains(confirm, 'It holds stock')
-        self.client.post(reverse('inventory:storagelocation_delete', args=[self.store.pk]))
+        delete_confirmed(self.client, reverse('inventory:storagelocation_delete', args=[self.store.pk]))
         self.assertFalse(StorageLocation.all_objects.get(pk=self.store.pk).is_deleted)
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin)
         self.assertContains(self.client.get(reverse('farm:site_delete', args=[self.bergen.pk])), 'It holds stock')
         # The empty location of the other site goes with it.
-        self.client.post(reverse('farm:site_delete', args=[self.tromso.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.tromso.pk]))
         self.assertTrue(StorageLocation.all_objects.get(pk=self.far.pk).is_deleted)
 
     def test_deleting_the_feeder_leaves_the_silo_without_one(self):
@@ -287,7 +288,7 @@ class LocationTabTests(StoreTestCase):
         self.silo.save()
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin)
-        self.client.post(reverse('farm:equipment_delete', args=[feeder.pk]))
+        delete_confirmed(self.client, reverse('farm:equipment_delete', args=[feeder.pk]))
         self.silo.refresh_from_db()
         self.assertIsNone(self.silo.feeder)
 
@@ -295,9 +296,9 @@ class LocationTabTests(StoreTestCase):
         self.receive('10')
         admin = get_user_model().objects.create_superuser('root', 'root@example.com', 'x')
         self.client.force_login(admin)
-        self.client.post(reverse('farm:supplier_delete', args=[self.mill.pk]))
+        delete_confirmed(self.client, reverse('farm:supplier_delete', args=[self.mill.pk]))
         self.assertFalse(Supplier.all_objects.get(pk=self.mill.pk).is_deleted)
-        self.client.post(reverse('farm:feed_delete', args=[self.feed.pk]))
+        delete_confirmed(self.client, reverse('farm:feed_delete', args=[self.feed.pk]))
         self.feed.refresh_from_db()
         self.assertFalse(self.feed.is_deleted)
 

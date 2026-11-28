@@ -13,6 +13,7 @@ from ..models import Employee, OfficeDepartment, Posting
 from ..units import token
 from .helpers import user
 from .helpers_people import PeopleTestCase, TOP, employee, place
+from core.testing import delete_confirmed
 
 DAY = date(2026, 3, 2)
 
@@ -137,7 +138,7 @@ class EmployeeUrlMatrixTests(PeopleTestCase):
         for person in (self.in_a, self.in_b):
             for actor in (self.hr, self.lead_a):
                 self.client.force_login(actor)
-                self.assertEqual(self.client.post(f'/hr/team/{person.pk}/delete/').status_code, 404)
+                self.assertEqual(delete_confirmed(self.client, f'/hr/team/{person.pk}/delete/').status_code, 404)
                 self.assertEqual(self.client.get(f'/hr/team/{person.pk}/delete/').status_code, 404)
 
     def test_every_route_of_the_hr_resources_has_an_expectation(self):

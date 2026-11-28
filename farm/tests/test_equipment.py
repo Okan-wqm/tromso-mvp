@@ -16,6 +16,7 @@ from ..equipment_types import TYPES
 from ..models import (Equipment, EquipmentSystem, EquipmentType, FeederCalibration, ProductionDepartment, Site,
                       System)
 from .helpers import leave_without_site, role, rows_data
+from core.testing import delete_confirmed
 
 EQUIPMENT_MANAGER = (
     'view_equipment', 'add_equipment', 'change_equipment', 'delete_equipment', 'view_site', 'delete_site',
@@ -132,7 +133,7 @@ class EquipmentRoundTripTests(EquipmentTestCase):
         self.assertEqual(self.links(pump), [('R2', True, 'backup', 3)])
 
         # Delete: hidden, kept with its links for a restore
-        self.client.post(reverse('farm:equipment_delete', args=[pump.pk]))
+        delete_confirmed(self.client, reverse('farm:equipment_delete', args=[pump.pk]))
         self.assertFalse(Equipment.objects.exists())
         self.assertTrue(Equipment.all_objects.get().is_deleted)
         self.assertEqual(EquipmentSystem.objects.count(), 1)
@@ -530,7 +531,7 @@ class EquipmentDeletePlanTests(EquipmentTestCase):
         self.make(name='Motor', code='MO', parent=unit, department=self.hall_b)
         page = self.client.get(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.assertContains(page, 'Equipment deleted with it')
-        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
+        delete_confirmed(self.client, reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.assertFalse(Equipment.objects.exists())
         self.assertEqual(self.log(), [('delete', 'equipment', 'Filter unit (FU)'), ('delete', 'equipment', 'Motor (MO)'),
                                       ('delete', 'production department', 'Hall A (HA)')])
@@ -539,7 +540,7 @@ class EquipmentDeletePlanTests(EquipmentTestCase):
         unit = self.make(name='Filter unit', code='FU')
         self.make(name='Motor', code='MO', parent=unit)
         self.assertContains(self.client.get(reverse('farm:equipment_delete', args=[unit.pk])), 'Motor (MO)')
-        self.client.post(reverse('farm:equipment_delete', args=[unit.pk]))
+        delete_confirmed(self.client, reverse('farm:equipment_delete', args=[unit.pk]))
         self.assertEqual(self.log(), [('delete', 'equipment', 'Filter unit (FU)'), ('delete', 'equipment', 'Motor (MO)')])
 
     def test_deleting_a_system_keeps_the_links_and_restoring_it_brings_them_back(self):
@@ -547,7 +548,7 @@ class EquipmentDeletePlanTests(EquipmentTestCase):
         page = self.client.get(reverse('farm:system_delete', args=[self.ras.pk]))
         self.assertContains(page, 'Equipment linked to it')
         self.assertContains(page, 'Pump (P1)')
-        self.client.post(reverse('farm:system_delete', args=[self.ras.pk]))
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[self.ras.pk]))
         self.assertEqual(EquipmentSystem.objects.get().system, self.ras)
         listing = self.client.get(reverse('farm:equipment_list'))
         self.assertContains(listing, 'No system')
@@ -559,7 +560,7 @@ class EquipmentDeletePlanTests(EquipmentTestCase):
 
     def test_deleting_a_site_deletes_its_equipment_with_its_departments_and_restoring_it_brings_them_back(self):
         pump = self.make()
-        self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.bergen.pk]))
         pump.refresh_from_db()
         self.assertTrue(pump.is_deleted)
         softdelete.restore(Site.all_objects.get(pk=self.bergen.pk), self.user)
@@ -569,7 +570,7 @@ class EquipmentDeletePlanTests(EquipmentTestCase):
 
     def test_a_restored_equipment_is_checked_like_a_new_one(self):
         pump = self.make()
-        self.client.post(reverse('farm:equipment_delete', args=[pump.pk]))
+        delete_confirmed(self.client, reverse('farm:equipment_delete', args=[pump.pk]))
         self.make(name='New pump', code='P1')
         with self.assertRaisesMessage(ValidationError, 'Other equipment already uses this code.'):
             softdelete.restore(Equipment.all_objects.get(pk=pump.pk), self.user)

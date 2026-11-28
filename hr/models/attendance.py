@@ -30,6 +30,8 @@ class AttendanceRecord(AuditedModel):
     lead typed the time on the site's clock, and must say why). Two stretches of one person never overlap and at most
     one is open, as exclusion constraints on the time range."""
 
+    service_written = True       # hr.services is its one writer (core.models.AuditedModel)
+
     class Via(models.TextChoices):
         SELF = 'self', _('Clocked in by the person')
         ENTERED = 'entered', _('Entered by hand')

@@ -3,13 +3,12 @@ from django.db.models.functions import Coalesce
 from django.utils import formats
 from django.utils.translation import gettext_lazy as _
 
-from core import audit, listprops
-from core.crud import Mount, Resource, tab_fields
+from core import listprops
+from core.crud import Mount, Resource
 from farm.stock.dates import site_today
 
 from .. import scope, services, units
 from ..forms import EmployeeForm
-from ..forms.employee import PLACEMENT_FIELDS
 from ..models import Employee, EmploymentType, Posting
 
 STATUSES = [('current', _('Working here')), ('left', _('Left'))]
@@ -19,7 +18,8 @@ class EmployeeResource(Resource):
     """The Team list. A person reaches only the people of their own team (hr.scope.team) unless they hold Everyone:
     the rule is `scoped`, so the list, a person's page, their edit and the placement they are given are all of the
     team, whatever the address. Read gives the read page; only Create and Edit give the form. There is no delete: a
-    person who leaves gets a last day."""
+    person who leaves gets a last day. Every write is hr.services' (add_employee, change_employee, which hands a last day
+    to leave_company and a placement to move): the tab reads the form and hands it over."""
 
     model = Employee
     form_class = EmployeeForm
@@ -33,6 +33,7 @@ class EmployeeResource(Resource):
     detail_template = 'hr/employee_detail.html'
     page_size = 50
     icon = 'users'
+    service_writes = True
 
     @classmethod
     def queryset(cls):
@@ -88,22 +89,12 @@ class EmployeeResource(Resource):
         }
 
     @classmethod
-    def snapshot(cls, employee):
-        """The person's own columns; where they work is logged as placements (hr.services)."""
-        fields = [name for name in tab_fields(EmployeeForm.tabs) if name not in PLACEMENT_FIELDS]
-        return audit.snapshot(employee, fields, getattr(EmployeeForm.Meta, 'labels', {}))
+    def create_record(cls, request, form):
+        return services.add_employee(request.user, form.values(), form.placement)
 
     @classmethod
-    def after_save(cls, request, employee, created):
-        """The placement the form asked for, and the placements agreeing with a last day, in the same transaction."""
-        placement = getattr(employee, 'placement', None)
-        if placement is not None:
-            department, title, day = placement
-            services.move(request.user, employee, department, title, day)
-        services.align_placements(request.user, employee)
-        conflict = services.employment_conflicts(employee, employee.joined_on, employee.left_on)    # the row is locked
-        if conflict is not None:
-            raise conflict
+    def change_record(cls, request, form, current):
+        return services.change_employee(request.user, current, form.values(), form.placement)
 
     @classmethod
     def detail_extras(cls, request, employee):

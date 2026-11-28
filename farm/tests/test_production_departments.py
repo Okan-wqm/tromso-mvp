@@ -10,6 +10,7 @@ from core.models import AuditLog
 
 from ..models import ProductionDepartment, Site
 from .helpers import leave_without_site, role
+from core.testing import delete_confirmed
 
 PRODUCTION_DEPARTMENT_MANAGER = (
     'view_productiondepartment', 'add_productiondepartment', 'change_productiondepartment', 'delete_productiondepartment',
@@ -61,7 +62,7 @@ class DepartmentRoundTripTests(ProductionDepartmentTestCase):
         self.assertEqual((department.name, department.type, department.site, department.capacity, department.notes,
                           department.version), ('Hatchery hall B', 'nursery', self.bergen, None, '', 2))
         # Delete
-        self.client.post(reverse('farm:productiondepartment_delete', args=[department.pk]))
+        delete_confirmed(self.client, reverse('farm:productiondepartment_delete', args=[department.pk]))
         self.assertFalse(ProductionDepartment.objects.exists())
         self.assertTrue(ProductionDepartment.all_objects.get().is_deleted)
 
@@ -145,7 +146,8 @@ class DepartmentAuditAndPermissionTests(ProductionDepartmentTestCase):
         self.assertEqual(self.client.get(reverse('farm:productiondepartment_list')).status_code, 200)
         self.assertEqual(
             self.client.post(reverse('farm:productiondepartment_create'), production_department_data(self.bergen)).status_code, 403)
-        self.assertEqual(self.client.post(reverse('farm:productiondepartment_delete', args=[department.pk])).status_code, 403)
+        deleting = reverse('farm:productiondepartment_delete', args=[department.pk])
+        self.assertEqual(delete_confirmed(self.client, deleting).status_code, 403)
         self.assertNotContains(self.client.get(reverse('home')), reverse('farm:site_list'))
 
 

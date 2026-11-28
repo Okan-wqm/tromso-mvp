@@ -3,13 +3,14 @@ from datetime import date, time, timedelta
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.db import transaction
+from django.utils import timezone
 
 from core.management.devtool import DevCommand
 from farm.models import ProductionDepartment, Site
 from farm.stock.dates import site_today
 
-from ...models import (AttendanceRecord, Employee, Holiday, LeaveRequest, LeaveType, OfficeDepartment, Posting,
-                       Shift, ShiftAssignment)
+from ... import models, services
+from ...models import Holiday, LeaveType, OfficeDepartment, Shift
 
 PASSWORD = 'demo-password-1'
 
@@ -48,7 +49,7 @@ class Command(DevCommand):
             users = self.users(groups)
             site = self.company()
             people = self.people(users, site)
-            self.time(people)
+            self.time(users, people)
         self.stdout.write(f'HR demo ready. Sign in as demo_lead_hatchery, demo_lead_nursery, demo_staff, demo_hr or demo_auditor '
                           f'with the password {PASSWORD}.')
 
@@ -102,18 +103,24 @@ class Command(DevCommand):
             ('D-08', users['demo_hr'], '', '', finance, 'HR officer'),
             ('D-09', None, 'Frida', 'Foss', finance, 'Accountant'),
         ]
+        # The people and what follows are written as the demonstration's own people would write them, through
+        # hr.services (the one writer of these records: every rule runs and every record is logged): the HR
+        # administrator takes people on and plans, a person files their own leave, a lead marks someone present.
+        hr_admin = users['demo_hr']
         people = {}
         for number, account, first, last, department, title in roster:
             kind = 'student' if title == 'Student helper' else 'staff'
-            person, _ = Employee.objects.get_or_create(employee_number=number, defaults={
-                'user': account, 'first_name': first, 'last_name': last, 'joined_on': start, 'employment_type': kind})
-            if not Posting.objects.filter(employee=person).exists():
-                field = 'production_department' if isinstance(department, ProductionDepartment) else 'office_department'
-                Posting.objects.create(employee=person, valid_from=start, title=title, **{field: department})
+            person = models.Employee.objects.filter(employee_number=number).first()
+            if person is None:
+                person = services.add_employee(hr_admin, {
+                    'employee_number': number, 'user': account, 'first_name': first, 'last_name': last,
+                    'joined_on': start, 'employment_type': kind}, (department, title, start))
+            elif not person.postings.exists():
+                services.move(hr_admin, person, department, title, start)
             people[number] = person
         return people
 
-    def time(self, people):
+    def time(self, users, people):
         today = site_today(None)
         monday = today - timedelta(days=today.weekday())
         shifts = {}
@@ -121,18 +128,19 @@ class Command(DevCommand):
                                              ('NIGHT', 'Night', time(22), time(6), 4)):
             shifts[code], _ = Shift.objects.get_or_create(code=code, defaults={
                 'name': name, 'starts_at': start, 'ends_at': end, 'break_minutes': 30 if code != 'NIGHT' else 0, 'tone': tone})
+        week = [monday + timedelta(days=n) for n in range(5)]
         for number, code in (('D-03', 'EARLY'), ('D-04', 'EARLY'), ('D-05', 'LATE'), ('D-06', 'EARLY'), ('D-07', 'LATE')):
-            for n in range(5):
-                ShiftAssignment.objects.get_or_create(employee=people[number], day=monday + timedelta(days=n),
-                                                      defaults={'shift': shifts[code]})
+            planned = set(people[number].assignments.filter(day__in=week).values_list('day', flat=True))
+            cells = [(people[number], day) for day in week if day not in planned]
+            if cells:
+                services.plan_shifts(users['demo_hr'], cells, shifts[code])
         Holiday.objects.get_or_create(day=date(today.year, 12, 25), site=None, defaults={'name': 'Christmas Day'})
         annual, _ = LeaveType.objects.get_or_create(code='DEMO-ANNUAL', defaults={'name': 'Annual leave'})
         LeaveType.objects.get_or_create(code='DEMO-SICK', defaults={'name': 'Sick leave', 'needs_approval': False})
         first = monday + timedelta(days=21)
-        if not LeaveRequest.objects.filter(employee=people['D-03']).exists():
-            LeaveRequest.objects.create(employee=people['D-03'], leave_type=annual, first_day=first,
-                                        last_day=first + timedelta(days=3), reason='Visiting family')
-        if not AttendanceRecord.objects.filter(employee=people['D-04']).exists():
-            from django.utils import timezone
-            AttendanceRecord.objects.create(employee=people['D-04'], clock_in=timezone.now() - timedelta(minutes=5),
-                                            via='self')
+        if not people['D-03'].leave_requests.exists():
+            services.file_leave(users['demo_staff'], people['D-03'], annual, first, first + timedelta(days=3),
+                                'Visiting family')
+        if not people['D-04'].attendance.exists():
+            services.enter_presence(users['demo_lead_hatchery'], people['D-04'], timezone.now() - timedelta(minutes=5),
+                                    None, 'Demonstration: came in through the gate without a phone')

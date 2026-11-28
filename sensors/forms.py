@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext as _, gettext_lazy, ngettext_lazy
 
-from core.crud import DRAFT, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
+from core.crud import DRAFT, BoundedModelForm, CodedFormMixin, RowFormSet, TabbedForm, tab_fields
 from core.dates import on_clock
 from farm.models import Equipment, SamplingPoint, Site, System, Tank
 from farm.models.site import zone_of
@@ -338,7 +338,7 @@ class SiteClockDateTimeField(forms.DateTimeField):
 on_site_clock = on_clock
 
 
-class CalibrationForm(forms.ModelForm):
+class CalibrationForm(BoundedModelForm):
     """A row of a channel's calibrations: from when, gain and offset, by whom."""
 
     class Meta:

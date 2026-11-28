@@ -16,7 +16,10 @@ import os
 from datetime import datetime, timezone as dt_timezone
 from unittest import mock
 
+from core.modules import is_test_module  # noqa: F401  a re-export: production imports core.modules, never this module
+
 CLOCK = 'django.utils.timezone.now'
+
 
 # Moments at which the UTC day is not the company's (Europe/Oslo unless the environment names another). The first is
 # the middle of the CI run that found the class (run 42921917659, 23:17 to 23:57 UTC on 10.11.2026).
@@ -88,3 +91,47 @@ def run_clock(text=None):
     clock = mock.patch(CLOCK, side_effect=lambda: start + (datetime.now(dt_timezone.utc) - began))
     clock.start()
     return clock
+
+
+def platform_settings_data(**overrides):
+    """What the Platform settings form posts for the row as stored, with `overrides`: every field the form has (a new
+    setting is taken along without touching the tests that post it), a ticked box as 'on' and an unticked one left out,
+    as a browser sends them, and the row's version."""
+    from core.forms import PlatformSettingsForm
+    from core.models import PlatformSettings
+    row = PlatformSettings.get()
+    data = {'version': row.version}
+    for name, field in PlatformSettingsForm.base_fields.items():
+        if name == 'version' or not hasattr(row, name):
+            continue
+        data[name] = getattr(row, name)
+    data.update(overrides)
+    for name, value in list(data.items()):
+        if isinstance(value, bool):
+            if value:
+                data[name] = 'on'
+            else:
+                del data[name]
+    return data
+
+
+def delete_confirmed(client, url, data=None, **extra):
+    """Posts a tab's delete as its confirmation page does: with the version the confirmation shows of the record as it
+    is now (core.crud.DeleteView refuses a delete without it, and one of a record changed since). When the
+    confirmation does not open (a record the person may not reach, a route that is no tab's), the post goes as it is,
+    so the refusal the test expects is the view's own. `data` and `extra` are the post's."""
+    data = dict(data or {})
+    if 'version' not in data:
+        page = client.get(url, **extra)
+        version = None
+        if page.status_code == 200 and page.context is not None:
+            try:
+                version = page.context['version']
+            except KeyError:
+                try:
+                    version = page.context['props'].get('version')
+                except KeyError:
+                    version = None
+        if version is not None:
+            data['version'] = version
+    return client.post(url, data, **extra)

@@ -153,11 +153,13 @@ PLATFORM_TABS = [
     ('clocks', _('Clocks'), ['clock_tolerance_seconds']),
     ('degree_days', _('Degree-days'), ['sensor_day_hours', 'sensor_hold_seconds', 'assumption_cap_days',
                                          'probe_sample_tolerance_c']),
+    ('schedule', _('Shift schedule'), ['plan_batch_cells']),
 ]
 
 
 class PlatformSettingsForm(TabbedForm):
-    """The platform owner's settings (core.models.PlatformSettings); the bounds are the database's."""
+    """The platform owner's settings (core.models.PlatformSettings); the bounds are the database's, and every number
+    input says them (core.crud.BoundedModelForm)."""
 
     tabs = PLATFORM_TABS
 
@@ -166,9 +168,13 @@ class PlatformSettingsForm(TabbedForm):
         fields = tab_fields(PLATFORM_TABS)
         help_texts = {
             'correction_window_days': _('How many days back a daily record (a stock operation, a feeding, a water sample, '
-                                        'a movement of the store, a plan, a treatment) may be dated, and how old a record '
-                                        'may be voided. Older records stay as they are. 1 to 3650; 31 until you set '
-                                        'another.'),
+                                        'a movement of the store, a plan, a treatment) may be dated, how old a record '
+                                        'may be voided, and how long after its last day an approved leave may still be '
+                                        'shortened or cancelled. Older records stay as they are. 1 to 3650; 31 until you '
+                                        'set another.'),
+            'plan_batch_cells': _('How many days of the shift schedule may be planned in one go (a paint over the '
+                                  'week’s grid: people times days). More than this is refused, and the person paints '
+                                  'fewer and repeats. 1 to 5000; 500 until you set another.'),
             'second_approval_withdrawal': _('When ticked, going on past a medicine withdrawal (a harvest during one, a '
                                             'treatment reaching back over a harvest) needs a second person’s approval. '
                                             'That approval is not built yet: while this is ticked, every such step is '

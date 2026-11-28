@@ -9,6 +9,7 @@ from core.softdelete import plan_delete
 from ..models import Employee, Posting
 from .helpers import fields_of
 from .helpers_people import PeopleTestCase, TOP, employee, place
+from core.testing import delete_confirmed
 
 
 def data(department=None, **overrides):
@@ -56,7 +57,7 @@ class EmployeeRoundTripTests(PeopleTestCase):
         self.assertEqual((new.valid_from, new.valid_until, new.production_department, new.title),
                          (date(2026, 6, 1), None, self.dept_a, 'Researcher'))
         # There is no delete: a person leaves with a last day
-        self.assertEqual(self.client.post(f'/hr/team/{person.pk}/delete/').status_code, 404)
+        self.assertEqual(delete_confirmed(self.client, f'/hr/team/{person.pk}/delete/').status_code, 404)
 
     def test_a_person_with_an_account_is_named_by_it(self):
         self.client.force_login(self.hr)

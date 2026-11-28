@@ -11,6 +11,7 @@ from farm.models import ProductionDepartment, Site
 
 from ..models import OfficeDepartment
 from .helpers import HrTestCase, fields_of, user
+from core.testing import delete_confirmed
 
 
 def data(site=None, **overrides):
@@ -58,7 +59,7 @@ class RoundTripTests(OfficeDepartmentTestCase):
                           department.description, department.version),
                          ('Finance and pay', 'inactive', None, None, '', 2))
         # Delete: soft, and logged
-        self.client.post(reverse('hr:officedepartment_delete', args=[department.pk]))
+        delete_confirmed(self.client, reverse('hr:officedepartment_delete', args=[department.pk]))
         self.assertFalse(OfficeDepartment.objects.filter(pk=department.pk).exists())
         self.assertTrue(OfficeDepartment.all_objects.get(pk=department.pk).is_deleted)
         actions = list(AuditLog.objects.filter(entity_id=str(department.pk)).order_by('created_at')
@@ -199,7 +200,7 @@ class DeleteAndRestoreTests(OfficeDepartmentTestCase):
         self.make(name='Child', code='CHD', parent=top)
         plan = plan_delete(top)
         self.assertFalse(plan.can_delete)
-        self.client.post(reverse('hr:officedepartment_delete', args=[top.pk]))
+        delete_confirmed(self.client, reverse('hr:officedepartment_delete', args=[top.pk]))
         self.assertTrue(OfficeDepartment.objects.filter(pk=top.pk).exists())
 
     def test_the_admin_restores_a_deleted_department_checked_like_a_new_one(self):
@@ -232,7 +233,8 @@ class PermissionTests(OfficeDepartmentTestCase):
         self.assertEqual(self.client.get(reverse('hr:officedepartment_create')).status_code, 403)
         self.assertEqual(self.client.post(reverse('hr:officedepartment_edit', args=[department.pk]),
                                           data(self.bergen, name='X1', version='1')).status_code, 403)
-        self.assertEqual(self.client.post(reverse('hr:officedepartment_delete', args=[department.pk])).status_code, 403)
+        self.assertEqual(delete_confirmed(self.client,
+                                          reverse('hr:officedepartment_delete', args=[department.pk])).status_code, 403)
         department.refresh_from_db()
         self.assertEqual((department.name, department.is_deleted), ('Finance', False))
 

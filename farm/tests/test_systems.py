@@ -11,6 +11,7 @@ from core.models import AuditLog
 
 from ..models import ProductionDepartment, Site, System
 from .helpers import role
+from core.testing import delete_confirmed
 
 SYSTEM_MANAGER = (
     'view_system', 'add_system', 'change_system', 'delete_system', 'view_site', 'delete_site',
@@ -69,7 +70,7 @@ class SystemRoundTripTests(SystemTestCase):
                           system.max_biomass_kg, system.version),
                          ('Smolt RAS 2', 'flow_through', 'maintenance', self.bergen, Decimal('130.00'), None, 2))
         # Delete
-        self.client.post(reverse('farm:system_delete', args=[system.pk]))
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[system.pk]))
         self.assertFalse(System.objects.exists())
         self.assertTrue(System.all_objects.get().is_deleted)
 
@@ -213,7 +214,7 @@ class SystemDeleteTests(SystemTestCase):
     def test_deleting_a_system_deletes_the_systems_nested_under_it(self):
         self.assertContains(self.client.get(reverse('farm:system_delete', args=[self.top.pk])),
                             'Systems deleted with it')
-        self.client.post(reverse('farm:system_delete', args=[self.top.pk]))
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[self.top.pk]))
         self.assertFalse(System.objects.exists())
         self.assertEqual(self.log(), [('delete', 'system', 'Child (CH)'), ('delete', 'system', 'Top (TOP)')])
 
@@ -221,7 +222,7 @@ class SystemDeleteTests(SystemTestCase):
         page = self.client.get(reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertContains(page, 'Systems deleted with it')
         self.assertContains(page, 'Production departments deleted with it')
-        self.client.post(reverse('farm:site_delete', args=[self.bergen.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.bergen.pk]))
         self.assertFalse(System.objects.exists())
         self.hall.refresh_from_db()
         self.assertEqual((self.hall.site, self.hall.is_deleted), (self.bergen, True))
@@ -233,7 +234,7 @@ class SystemDeleteTests(SystemTestCase):
     def test_deleting_a_department_leaves_its_systems_in_place_without_a_production_department(self):
         page = self.client.get(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.assertContains(page, 'Systems that lose their production department')
-        self.client.post(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
+        delete_confirmed(self.client, reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
         self.top.refresh_from_db()
         self.assertEqual((self.top.production_department, self.top.is_deleted, self.top.version), (None, False, 2))
         self.assertEqual(self.log(), [('delete', 'production department', 'Hall A (HA)'), ('update', 'system', 'Top (TOP)')])

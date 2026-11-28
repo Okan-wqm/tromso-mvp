@@ -14,6 +14,8 @@ class ShiftAssignment(AuditedModel):
     live rows) and nothing else holds the roster: leave and holidays are joined when it is read, and there is no
     publish step: every change is logged with what it was before and after. A cleared cell is a soft delete."""
 
+    service_written = True       # hr.services is its one writer (core.models.AuditedModel)
+
     employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='assignments',
                                  verbose_name=_('Employee'))
     day = models.DateField(_('Day'))

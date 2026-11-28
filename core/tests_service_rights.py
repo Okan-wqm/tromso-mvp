@@ -38,12 +38,15 @@ NOT_A_WRITER = {
     'hr.services.can_correct': 'a question (may this person correct the request), no write',
     'hr.services.can_cancel': 'a question (may this person cancel the request), no write',
     'hr.services.own_employee': "a question (this person's own employee record), no write",
+    'hr.services.deciders_of': 'a question (which of these requests this person decides), no write',
+    'hr.services.reached': "a check inside the HR services' checked calls (the reach of their cells), no write",
     'messaging.services.contacts': 'a question (whom this person may write to), no write',
     'farm.handling.check.second_person_must_approve': 'a question (must a second person approve), no write',
     'farm.handling.check.require_acknowledged': "a check of the warnings the caller's form acknowledged, inside its "
                                                 'checked write',
     'farm.handling.check.needs_second_person': 'a question (does this acknowledgement need a second person), no write',
-    'core.softdelete.execute': "the delete plan's step, inside crud's checked delete (the tab's Delete right)",
+    'core.softdelete.execute': "the delete plan's step, inside crud's checked delete (the tab's Delete right) or a "
+                               "service's checked void (hr.services.void_presence)",
     'core.softdelete.restore': "the delete plan's restore, inside the admin's checked restore",
     'farm.health.withdrawal.guarded': "the withdrawal guard around a checked write (the caller's right asked first)",
     'farm.health.withdrawal.guarded_ceiling': "the withdrawal guard around a checked write (the caller's right asked "

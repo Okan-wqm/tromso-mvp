@@ -13,6 +13,8 @@ from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase
 from django.urls import reverse
 
+from core.testing import is_test_module
+
 from ..water import calculation, chemistry, deffeyes, dosing, messages, native, read
 from .helpers import role
 from .test_water import WaterTestCase
@@ -88,7 +90,7 @@ class FormulaTests(SimpleTestCase):
         called = []
         for path in [*ROOT.glob('*/**/*.py')]:
             relative = path.relative_to(ROOT).as_posix()
-            if ('/tests/' in relative or relative.split('/')[-1].startswith('test') or '/migrations/' in relative
+            if (is_test_module(relative) or '/migrations/' in relative
                     or relative.startswith(('chemcore/', 'node_modules/', 'static/')) or relative in (
                         'farm/water/native.py', 'farm/water/chemistry.py')):
                 continue

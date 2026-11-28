@@ -13,6 +13,7 @@ from core.models import AuditedModel, AuditLog
 
 from ..models import ProductionDepartment, Site, Species, System
 from .helpers import role
+from core.testing import delete_confirmed
 
 
 class RestoreTestCase(TestCase):
@@ -53,8 +54,8 @@ class RestoreTests(RestoreTestCase):
         child = System.objects.create(site=self.site, name='Loop', code='LP', parent=self.system)
         earlier = System.objects.create(site=self.site, name='Old loop', code='OL', parent=self.system)
         self.client.force_login(self.admin_user)
-        self.client.post(reverse('farm:system_delete', args=[earlier.pk]))
-        self.client.post(reverse('farm:system_delete', args=[self.system.pk]))
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[earlier.pk]))
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[self.system.pk]))
         self.assertEqual(System.objects.count(), 0)
         softdelete.restore(System.all_objects.get(pk=self.system.pk), self.admin_user)
         self.assertEqual(set(System.objects.all()), {System.objects.get(pk=self.system.pk), System.objects.get(pk=child.pk)})
@@ -65,7 +66,7 @@ class RestoreTests(RestoreTestCase):
     def test_a_site_comes_back_with_its_production_departments(self):
         department = ProductionDepartment.objects.create(site=self.site, name='Hall', code='HA')
         self.client.force_login(self.admin_user)
-        self.client.post(reverse('farm:site_delete', args=[self.site.pk]))
+        delete_confirmed(self.client, reverse('farm:site_delete', args=[self.site.pk]))
         softdelete.restore(Site.all_objects.get(), self.admin_user)
         self.assertEqual(ProductionDepartment.objects.get(), department)
         self.assertEqual(System.objects.get(), self.system)
@@ -111,7 +112,8 @@ class AdminTests(RestoreTestCase):
         self.assertNotContains(page, reverse('admin:farm_system_add'))
         change = reverse('admin:farm_system_change', args=[self.system.pk])
         self.assertEqual(self.client.post(change, {'name': 'Hacked'}).status_code, 403)
-        self.assertEqual(self.client.post(reverse('admin:farm_system_delete', args=[self.system.pk])).status_code, 403)
+        self.assertEqual(delete_confirmed(self.client,
+                                          reverse('admin:farm_system_delete', args=[self.system.pk])).status_code, 403)
         self.assertEqual(System.all_objects.get().name, 'RAS')
 
     def restore_via_admin(self, *records):
@@ -163,3 +165,61 @@ class DeleteConfirmationPromiseTests(RestoreTestCase):
             self.assertContains(self.client.get(url), 'restored from the admin')
         for name in ('site', 'productiondepartment', 'system', 'species'):
             self.assertEqual(self.client.get(reverse(f'admin:farm_{name}_changelist')).status_code, 200)
+
+    def test_a_record_its_service_alone_writes_is_not_promised_a_restore(self):
+        """The review of the HR branch, F-2: the admin offers no restore of a planned day, so the confirmation, in both
+        looks, says it is entered again on its page instead."""
+        from datetime import date, time
+
+        from hr.models import Employee, Shift, ShiftAssignment
+        person = Employee.objects.create(employee_number='E-1', last_name='Alfa', joined_on=date(2026, 1, 1))
+        shift = Shift.objects.create(name='Early', code='EARLY', starts_at=time(6), ends_at=time(14))
+        plan = ShiftAssignment.objects.create(employee=person, day=date(2026, 3, 2), shift=shift)
+        self.client.force_login(self.admin_user)
+        url = reverse('hr:shiftassignment_delete', args=[plan.pk])
+        for look in ('classic', 'next'):
+            with self.subTest(look=look):
+                page = self.client.get(url, {'ui': look})
+                self.assertNotContains(page, 'it can be restored from the admin')
+                self.assertContains(page, 'It is not restored from the admin: one deleted by mistake is entered again on '
+                                          'its page.')
+
+
+class ConfirmedVersionTests(RestoreTestCase):
+    """The review of the HR branch, F-3: a delete is of the record as the person confirmed it. The confirmation carries
+    its version, as an edit does, and a record changed since is not deleted: said, as an edit is."""
+
+    def test_the_confirmation_carries_the_version_in_both_looks(self):
+        self.client.force_login(self.admin_user)
+        url = reverse('farm:system_delete', args=[self.system.pk])
+        self.assertContains(self.client.get(url, {'ui': 'classic'}), 'name="version" value="1"')
+        self.assertEqual(self.client.get(url, {'ui': 'next'}).context['props']['version'], 1)
+
+    def test_a_delete_that_confirms_no_version_is_refused(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.post(reverse('farm:system_delete', args=[self.system.pk]))
+        self.assertContains(response, 'This delete was not confirmed', status_code=400)
+        self.assertFalse(System.all_objects.get(pk=self.system.pk).is_deleted)
+        self.assertEqual(delete_confirmed(self.client,
+                                          reverse('farm:system_delete', args=[self.system.pk])).status_code,
+                         302)
+        self.assertTrue(System.all_objects.get(pk=self.system.pk).is_deleted)
+
+    def test_a_record_without_a_version_has_nothing_to_confirm_and_deletes(self):
+        """Review 4, R4-2: only a versioned record (an AuditedModel) must post its version; a role is erased outright."""
+        from django.contrib.auth.models import Group
+        role = Group.objects.create(name='Short-lived role')
+        self.client.force_login(self.admin_user)
+        self.assertEqual(self.client.post(reverse('core:group_delete', args=[role.pk])).status_code, 302)
+        self.assertFalse(Group.objects.filter(pk=role.pk).exists())
+
+    def test_a_record_changed_since_its_confirmation_is_not_deleted(self):
+        self.client.force_login(self.admin_user)
+        System.objects.filter(pk=self.system.pk).update(name='RAS renamed', version=2)      # someone else's edit
+        response = delete_confirmed(self.client, reverse('farm:system_delete', args=[self.system.pk]), {'version': '1'})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(System.all_objects.get(pk=self.system.pk).is_deleted)
+        said = [str(message) for message in response.wsgi_request._messages]
+        self.assertTrue(any('This system was changed while you were looking at it' in text for text in said), said)
+        delete_confirmed(self.client, reverse('farm:system_delete', args=[self.system.pk]), {'version': '2'})
+        self.assertTrue(System.all_objects.get(pk=self.system.pk).is_deleted)

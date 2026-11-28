@@ -15,6 +15,7 @@ from ..cards import builtin
 from ..forms import CardTemplateAssignmentForm, CardTemplateForm
 from ..models import CardTemplate, CardTemplateAssignment
 from . import MonitoringCase
+from core.testing import delete_confirmed
 
 DESIGNER = ('view_cardtemplate', 'add_cardtemplate', 'change_cardtemplate', 'delete_cardtemplate',
             'view_cardtemplateassignment', 'add_cardtemplateassignment', 'change_cardtemplateassignment',
@@ -88,7 +89,7 @@ class TemplateRoundTripTests(PagesCase):
         updated = AuditLog.objects.get(entity_type='card template', action='update')
         self.assertIn('at 3,0', updated.changes['Layout'][1])
         # delete, then restore: each logged
-        self.client.post(reverse('monitoring:cardtemplate_delete', args=[template.pk]))
+        delete_confirmed(self.client, reverse('monitoring:cardtemplate_delete', args=[template.pk]))
         self.assertTrue(CardTemplate.all_objects.get(pk=template.pk).is_deleted)
         softdelete.restore(CardTemplate.all_objects.get(pk=template.pk), self.designer)
         self.assertEqual(set(AuditLog.objects.filter(entity_id=str(template.pk)).values_list('action', flat=True)),
@@ -192,7 +193,7 @@ class RulePagesTests(PagesCase):
         self.client.post(edit, {**data, 'unit': '', 'kind': 'tank'})
         rule.refresh_from_db()
         self.assertEqual((rule.unit, rule.kind, rule.version), (None, 'tank', 2))
-        self.client.post(reverse('monitoring:cardtemplateassignment_delete', args=[rule.pk]))
+        delete_confirmed(self.client, reverse('monitoring:cardtemplateassignment_delete', args=[rule.pk]))
         self.assertTrue(CardTemplateAssignment.all_objects.get(pk=rule.pk).is_deleted)
         self.assertEqual(AuditLog.objects.filter(entity_id=str(rule.pk)).count(), 3)
 

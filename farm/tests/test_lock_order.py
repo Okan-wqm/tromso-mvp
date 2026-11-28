@@ -11,6 +11,7 @@ from django.urls import reverse
 
 from ..models import ProductionDepartment, Site, Tank
 from .test_stock import make_unit
+from core.testing import delete_confirmed
 
 
 class LockOrderTests(TransactionTestCase):
@@ -56,7 +57,7 @@ class LockOrderTests(TransactionTestCase):
             held.wait(10)
             client = Client(raise_request_exception=True)
             client.force_login(self.user)
-            response = client.post(reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
+            response = delete_confirmed(client, reverse('farm:productiondepartment_delete', args=[self.hall.pk]))
             assert response.status_code in (200, 302), response.status_code
 
         self.assertEqual(self.run_together(('save', save_the_unit), ('delete', delete_the_department)),

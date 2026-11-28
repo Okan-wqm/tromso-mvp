@@ -25,6 +25,7 @@ from tasks.models import Task
 
 from .. import read
 from . import ALL_RIGHTS, MonitoringCase, chosen
+from core.testing import delete_confirmed
 
 MOMENT = datetime(2026, 11, 4, 12, 0, 30, tzinfo=utc.utc)
 
@@ -121,7 +122,7 @@ class TokenTests(MonitoringCase):
                 self.bergen, date=self.day(1).isoformat(), units=[str(self.t1.pk)]))),
             ('a task', lambda: task_services.complete(self.user, task)),
             ('a unit edited', edit_unit),
-            ('a unit deleted', lambda: self.client.post(reverse('farm:tank_delete', args=[spare.pk]))),
+            ('a unit deleted', lambda: delete_confirmed(self.client, reverse('farm:tank_delete', args=[spare.pk]))),
             ('a unit restored', lambda: softdelete.restore(Tank.all_objects.get(pk=spare.pk), self.user)),
         ]
 

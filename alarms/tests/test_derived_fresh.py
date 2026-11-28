@@ -758,25 +758,38 @@ class OutletPageTests(WaterTestCase):
 
     logged = AnalyserAtOwnPointTests.logged
 
-    def test_the_log_converts_the_ph_with_the_samples_temperature_as_the_page_does(self):
+    def test_the_page_and_the_log_work_the_analyser_out_with_one_temperature(self):
         """Review 13, R13-1: sea water, the outlet's TAN analyser, a total-scale pH probe on the middle, no temperature
-        probe, the middle's fresh sample temperature. The pages put the pH on the NBS scale with the sample's
-        temperature and work the analyser's NH₃ out; the log does the same (one source of the place's samples), so the
-        lab's critical keyed in behind it is a late result there too."""
+        probe, the middle's fresh sample temperature. The pH is put on the NBS scale with the sample's temperature (no
+        probe's is fresh: Context.sensor_ph) wherever the analyser is worked out, the page and the log (one source of a
+        read's samples, `newest_manuals`), so both say the same of it: worked out without a temperature of its own
+        (a live NH₃ takes a probe's, `Context.temperature_of`), never "the pH could not be converted" on one of them.
+        (A live NH₃ with a value always has a fresh probe temperature, which the conversion then takes before any
+        sample's: what the samples change is this value-less case, the reason and the state, review 13.)"""
         Tank.objects.filter(pk=self.t1.pk).update(water_type='saltwater', water_origin='seawater')
         self.t1.refresh_from_db()
         self.bind('tan_mg_l', 0.5, self.outlet, 'A1')
         self.bind('ph', 7.6, self.mid1, 'P1', ph_scale='total')
         self.sample(self.mid1, hours=0.5, temperature_c='12.0', salinity_ppt='30.0')
         self.live()
-        nh3 = self.outlet_nh3()
-        self.assertTrue(nh3.sample.live)
-        self.assertIsNotNone(nh3.value)
         lab = self.sample(self.outlet, hours=24, source='lab', **{**BAD, 'salinity_ppt': '30.0'})
-        said = self.logged(lab)
-        self.assertIsNotNone(said)
-        self.assertTrue(said[1].startswith('Late result: critical '), said)
-        self.assertIn(' at Outlet on ', said[1])
+        worked = []
+        real = read_water._standing_worked
+
+        def seen(*args):
+            found = real(*args)
+            worked.append(found.get(self.outlet.pk, {}).get(NH3))
+            return found
+
+        with mock.patch.object(read_water, '_standing_worked', side_effect=seen):
+            page = self.outlet_nh3()
+            read_water.late_results_of([lab])
+        self.assertEqual(len(worked), 2)
+        self.assertTrue(all(each is not None for each in worked), worked)
+        self.assertEqual([(each.note, bool(each.refused)) for each in worked],
+                         [(worked[0].note, False)] * 2)
+        self.assertEqual((page.value, bool(page.refused)), (None, False))
+        self.assertIn(worked[0].note, page.note)
 
     def test_a_systems_own_probe_is_named_as_the_systems(self):
         """Review 13, R13-2: a system without a loop point, its pH and temperature probes on the system: the outlet's
